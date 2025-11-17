@@ -487,7 +487,7 @@ All API calls must respect that contract.
 
 ### 5.5 – Admin Session Attendance (`/admin/sessions/[id]/attendance`)
 
-- [ ] **5.5.1 – Implement attendance table**
+- [x] **5.5.1 – Implement attendance table**
 
   - **Goal:** Show and manage attendance for a specific session.
   - **Requirements:**
@@ -501,7 +501,7 @@ All API calls must respect that contract.
   - **Output:**
     - Admin attendance page.
 
-- [ ] **5.5.2 – Admin controls & pool list export**
+- [x] **5.5.2 – Admin controls & pool list export**
   - **Goal:** Allow admin to confirm payments and export attendee lists.
   - **Requirements:**
     - Controls on each row:
