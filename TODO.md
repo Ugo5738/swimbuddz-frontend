@@ -346,7 +346,7 @@ All API calls must respect that contract.
 
 ### 4.1 – Sessions List (`/sessions`)
 
-- [ ] **4.1.1 – Implement sessions page**
+- [x] **4.1.1 – Implement sessions page**
   - **Goal:** Show upcoming sessions for logged-in members.
   - **Requirements:**
     - `src/app/(sessions)/sessions/page.tsx`.
@@ -364,7 +364,7 @@ All API calls must respect that contract.
 
 ### 4.2 – Session Sign-in (`/sessions/[id]/sign-in`)
 
-- [ ] **4.2.1 – Implement session sign-in page scaffolding**
+- [x] **4.2.1 – Implement session sign-in page scaffolding**
 
   - **Goal:** Implement layout and data fetching for sign-in page.
   - **Requirements:**
@@ -378,7 +378,7 @@ All API calls must respect that contract.
   - **Output:**
     - Read-only summary view for selected session.
 
-- [ ] **4.2.2 – Implement 3-step sign-in UI**
+- [x] **4.2.2 – Implement 3-step sign-in UI**
 
   - **Goal:** Match the 3-step flow described in `UI_FLOWS.md`.
   - **Requirements:**
@@ -397,7 +397,7 @@ All API calls must respect that contract.
   - **Output:**
     - Functional sign-in that creates attendance records.
 
-- [ ] **4.2.3 – Confirmation state**
+- [x] **4.2.3 – Confirmation state**
   - **Goal:** Confirm sign-in and show payment instructions.
   - **Requirements:**
     - After successful sign-in:
@@ -418,7 +418,7 @@ All API calls must respect that contract.
 
 ### 5.1 – Admin Layout & Guard
 
-- [ ] **5.1.1 – Implement `(admin)/layout.tsx`**
+- [x] **5.1.1 – Implement `(admin)/layout.tsx`**
   - **Goal:** Wrap admin routes with AdminLayout and role check.
   - **Requirements:**
     - Create `src/app/(admin)/layout.tsx`.
@@ -432,7 +432,7 @@ All API calls must respect that contract.
 
 ### 5.2 – Admin Dashboard (`/admin/dashboard`)
 
-- [ ] **5.2.1 – Implement dashboard**
+- [x] **5.2.1 – Implement dashboard**
   - **Goal:** Provide quick overview for admins.
   - **Requirements:**
     - `src/app/(admin)/dashboard/page.tsx`.
@@ -446,7 +446,7 @@ All API calls must respect that contract.
 
 ### 5.3 – Admin Members (`/admin/members`)
 
-- [ ] **5.3.1 – Implement members table**
+- [x] **5.3.1 – Implement members table**
 
   - **Goal:** Show and filter members.
   - **Requirements:**
@@ -462,7 +462,7 @@ All API calls must respect that contract.
   - **Output:**
     - Admin members view with filtering controls.
 
-- [ ] **5.3.2 – Membership status controls**
+- [x] **5.3.2 – Membership status controls**
   - **Goal:** Allow admins to change membership status.
   - **Requirements:**
     - For each row, allow:
@@ -473,7 +473,7 @@ All API calls must respect that contract.
 
 ### 5.4 – Admin Sessions (`/admin/sessions`)
 
-- [ ] **5.4.1 – Admin sessions list & creation**
+- [x] **5.4.1 – Admin sessions list & creation**
   - **Goal:** Let admins manage sessions.
   - **Requirements:**
     - `src/app/(admin)/sessions/page.tsx`.

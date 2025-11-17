@@ -24,13 +24,7 @@ type ButtonProps = {
   className?: string;
 } & ButtonHTMLAttributes<HTMLButtonElement>;
 
-export function Button({
-  children,
-  variant = "primary",
-  size = "md",
-  className,
-  ...props
-}: ButtonProps) {
+export function Button({ children, variant = "primary", size = "md", className, ...props }: ButtonProps) {
   return (
     <button className={clsx(baseClasses, variants[variant], sizes[size], className)} {...props}>
       {children}
