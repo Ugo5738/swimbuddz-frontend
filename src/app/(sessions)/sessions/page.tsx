@@ -1,7 +1,12 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { LoadingCard } from "@/components/ui/LoadingCard";
 import { mockSessions } from "./data";
+import { Alert } from "@/components/ui/Alert";
 
 function formatDate(date: string, start: string, end: string) {
   const formattedDate = new Date(date).toLocaleDateString("en-NG", {
@@ -18,6 +23,19 @@ function formatCurrency(value: number) {
 
 export default function SessionsPage() {
   // TODO: Replace mockSessions with apiGet("/api/v1/sessions", { auth: true })
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const id = setTimeout(() => {
+      if (mockSessions.length === 0) {
+        setError("Unable to load sessions. Please try again later.");
+      }
+      setLoading(false);
+    }, 400);
+    return () => clearTimeout(id);
+  }, []);
+
   return (
     <div className="space-y-8">
       <header className="space-y-2">
@@ -27,41 +45,48 @@ export default function SessionsPage() {
           This page uses mock data for now. Once the backend endpoint is available we will hydrate it with real sessions for logged-in members.
         </p>
       </header>
-      <div className="grid gap-6 md:grid-cols-2">
-        {mockSessions.map((session) => (
-          <Card key={session.id} className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <h2 className="text-xl font-semibold text-slate-900">{session.title}</h2>
-                <p className="text-sm text-slate-500">{session.location}</p>
-              </div>
-              <Badge variant="info">{session.type}</Badge>
-            </div>
-            <p className="text-sm font-semibold text-slate-700">
-              {formatDate(session.date, session.startTime, session.endTime)}
-            </p>
-            <p className="text-sm text-slate-600">{session.description}</p>
-            <div className="flex flex-wrap gap-4 text-sm">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500">Pool fee</p>
-                <p className="font-semibold text-slate-900">{formatCurrency(session.poolFee)}</p>
-              </div>
-              {session.rideShareFee ? (
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500">Ride-share</p>
-                  <p className="font-semibold text-slate-900">{formatCurrency(session.rideShareFee)}</p>
+      <section aria-live="polite">
+        {loading ? (
+          <LoadingCard text="Loading sessions..." />
+        ) : error ? (
+          <Alert variant="error" title="Error loading sessions">
+            {error}
+          </Alert>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2">
+            {mockSessions.map((session) => (
+              <Card key={session.id} className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <h2 className="text-xl font-semibold text-slate-900">{session.title}</h2>
+                    <p className="text-sm text-slate-500">{session.location}</p>
+                  </div>
+                  <Badge variant="info">{session.type}</Badge>
                 </div>
-              ) : null}
-            </div>
-            <Link
-              href={`/sessions/${session.id}/sign-in`}
-              className="inline-flex font-semibold text-cyan-700 hover:underline"
-            >
-              Sign in &rarr;
-            </Link>
-          </Card>
-        ))}
-      </div>
+                <p className="text-sm font-semibold text-slate-700">
+                  {formatDate(session.date, session.startTime, session.endTime)}
+                </p>
+                <p className="text-sm text-slate-600">{session.description}</p>
+                <div className="flex flex-wrap gap-4 text-sm">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Pool fee</p>
+                    <p className="font-semibold text-slate-900">{formatCurrency(session.poolFee)}</p>
+                  </div>
+                  {session.rideShareFee ? (
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-slate-500">Ride-share</p>
+                      <p className="font-semibold text-slate-900">{formatCurrency(session.rideShareFee)}</p>
+                    </div>
+                  ) : null}
+                </div>
+                <Link href={`/sessions/${session.id}/sign-in`} className="inline-flex font-semibold text-cyan-700 hover:underline">
+                  Sign in &rarr;
+                </Link>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

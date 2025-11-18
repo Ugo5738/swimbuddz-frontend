@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Alert } from "@/components/ui/Alert";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
 import { apiPatch } from "@/lib/api";
+import { LoadingCard } from "@/components/ui/LoadingCard";
 
 const mockProfile = {
   name: "Ada Obi",
@@ -29,17 +30,51 @@ type Profile = typeof mockProfile;
 export default function MemberProfilePage() {
   // TODO: Replace mock with apiGet("/api/v1/members/me", { auth: true }) once backend ready.
   const [profile, setProfile] = useState<Profile>(mockProfile);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
+
+  useEffect(() => {
+    const id = setTimeout(() => {
+      if (!mockProfile) setError("Unable to load profile");
+      setLoading(false);
+    }, 400);
+    return () => clearTimeout(id);
+  }, []);
+
+  const headerMarkup = (
+    <header className="space-y-2">
+      <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">My profile</p>
+      <h1 className="text-4xl font-bold text-slate-900">Welcome back, {profile.name.split(" ")[0]}</h1>
+      <p className="text-sm text-slate-600">
+        This page will fetch real member data and persist changes via the backend once APIs are available.
+      </p>
+    </header>
+  );
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        {headerMarkup}
+        <LoadingCard text="Loading profile..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        {headerMarkup}
+        <Alert variant="error" title="Error loading profile">
+          {error}
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <header className="space-y-2">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">My profile</p>
-        <h1 className="text-4xl font-bold text-slate-900">Welcome back, {profile.name.split(" ")[0]}</h1>
-        <p className="text-sm text-slate-600">
-          This page will fetch real member data and persist changes via the backend once APIs are available.
-        </p>
-      </header>
+      {headerMarkup}
 
       <div className="flex justify-end">
         <Button variant="secondary" onClick={() => setEditing((prev) => !prev)}>

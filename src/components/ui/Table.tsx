@@ -13,7 +13,7 @@ type TableSectionProps = {
 
 export function Table({ children, className }: TableProps) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+    <div className="overflow-x-auto rounded-2xl border border-slate-100 bg-white shadow-sm">
       <table className={clsx("w-full border-collapse text-left text-sm text-slate-700", className)}>
         {children}
       </table>

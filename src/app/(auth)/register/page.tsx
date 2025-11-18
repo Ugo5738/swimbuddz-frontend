@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import clsx from "clsx";
+import { phoneCodes } from "@/lib/phoneCodes";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { PasswordField } from "@/components/ui/PasswordField";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
@@ -22,6 +25,7 @@ const steps = [
 const initialFormState = {
   fullName: "",
   email: "",
+  phoneCountryCode: "+234",
   phone: "",
   password: "",
   swimLevel: "",
@@ -48,6 +52,11 @@ export default function RegisterPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   }
 
+  function formatPhoneInput(value: string) {
+    const digitsOnly = value.replace(/[^\d]/g, "");
+    return digitsOnly.replace(/^0+/, "");
+  }
+
   async function handleSubmit() {
     setErrorMessage(null);
     setSubmitting(true);
@@ -56,7 +65,7 @@ export default function RegisterPage() {
         {
           fullName: formData.fullName,
           email: formData.email,
-          phone: formData.phone,
+          phone: `${formData.phoneCountryCode} ${formData.phone}`,
           swimLevel: formData.swimLevel,
           goals: formData.goals,
           availability: formData.availability,
@@ -116,26 +125,43 @@ export default function RegisterPage() {
       <header className="space-y-3 text-center">
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">Join SwimBuddz</p>
         <h1 className="text-4xl font-bold text-slate-900">Registration</h1>
-        <p className="text-base text-slate-600">Multi-step flow as described in UI_FLOWS.md. Backend wiring lands in TODO 3.1.2.</p>
+        <p className="text-base text-slate-600">Follow the simple six-step flow to become an official SwimBuddz member.</p>
       </header>
 
-      <div className="flex flex-wrap justify-center gap-2">
-        {steps.map((step, index) => (
-          <div
-            key={step.title}
-            className={`flex min-w-[140px] flex-col items-center rounded-xl border px-3 py-2 text-sm ${
-              index === currentStep
-                ? "border-cyan-500 bg-cyan-50 text-cyan-900"
-                : index < currentStep
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                  : "border-slate-200 bg-white text-slate-500"
-            }`}
-          >
-            <span className="text-xs font-semibold">Step {index + 1}</span>
-            <span className="font-medium">{step.title}</span>
-          </div>
-        ))}
-      </div>
+      <ol className="flex flex-col gap-4 md:flex-row md:items-center" aria-label="Registration progress">
+        {steps.map((step, index) => {
+          const state = index < currentStep ? "complete" : index === currentStep ? "current" : "upcoming";
+          return (
+            <li key={step.title} className="flex items-center gap-3 md:flex-1">
+              <div className="flex items-center gap-3">
+                <span
+                  className={clsx(
+                    "flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm font-semibold",
+                    state === "complete" && "border-emerald-500 bg-emerald-500 text-white",
+                    state === "current" && "border-cyan-500 text-cyan-700",
+                    state === "upcoming" && "border-slate-300 text-slate-400"
+                  )}
+                >
+                  {index + 1}
+                </span>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Step {index + 1}</p>
+                  <p className="text-sm font-medium text-slate-900">{step.title}</p>
+                </div>
+              </div>
+              {index < steps.length - 1 ? (
+                <span
+                  className={clsx(
+                    "hidden flex-1 rounded-md border-b-2 md:block",
+                    state === "complete" ? "border-emerald-300" : "border-slate-200"
+                  )}
+                  aria-hidden
+                />
+              ) : null}
+            </li>
+          );
+        })}
+      </ol>
 
       {errorMessage ? (
         <Alert variant="error" title="Registration error">
@@ -172,17 +198,43 @@ export default function RegisterPage() {
                 onChange={(event) => updateField("email", event.target.value)}
                 required
               />
-              <Input
-                label="Phone"
-                name="phone"
-                placeholder="0801 234 5678"
-                value={formData.phone}
-                onChange={(event) => updateField("phone", event.target.value)}
-                required
-              />
-              <Input
+              <div className="space-y-1 text-sm font-medium text-slate-700">
+                <span className="flex items-center gap-1">
+                  Phone
+                  <span aria-hidden="true" className="text-rose-500">
+                    *
+                  </span>
+                </span>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <div className="sm:w-56">
+                    <Select
+                      label="Country code"
+                      hideLabel
+                      value={formData.phoneCountryCode}
+                      onChange={(event) => updateField("phoneCountryCode", event.target.value)}
+                      required
+                    >
+                      {phoneCodes.map((country) => (
+                        <option key={country.code} value={country.dial_code}>
+                          {country.name} ({country.dial_code})
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                  <Input
+                    label="Phone number"
+                    hideLabel
+                    name="phone"
+                    placeholder="8012345678"
+                    value={formData.phone}
+                    onChange={(event) => updateField("phone", formatPhoneInput(event.target.value))}
+                    required
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+              <PasswordField
                 label="Password"
-                type="password"
                 name="password"
                 placeholder="Create a secure password"
                 value={formData.password}

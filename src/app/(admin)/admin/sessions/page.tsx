@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Card } from "@/components/ui/Card";
 import { Table, TableHead, TableRow, TableHeaderCell, TableBody, TableCell } from "@/components/ui/Table";
 import { Input } from "@/components/ui/Input";
@@ -8,6 +8,7 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
+import { LoadingCard } from "@/components/ui/LoadingCard";
 
 const mockSessions = [
   {
@@ -49,10 +50,16 @@ const initialFormState = {
 
 export default function AdminSessionsPage() {
   const [sessions, setSessions] = useState(mockSessions);
+  const [loading, setLoading] = useState(true);
   const [formState, setFormState] = useState(initialFormState);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const id = setTimeout(() => setLoading(false), 400);
+    return () => clearTimeout(id);
+  }, []);
 
   function updateField(field: keyof typeof initialFormState, value: string) {
     setFormState((prev) => ({ ...prev, [field]: value }));
@@ -106,7 +113,11 @@ export default function AdminSessionsPage() {
         <p className="text-sm text-slate-600">List uses mock data; creation form simulates API calls.</p>
       </header>
 
-      <Card className="space-y-4">
+      {loading ? (
+        <LoadingCard text="Loading sessions..." />
+      ) : (
+        <>
+          <Card className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-900">Create session</h2>
         {message ? (
           <Alert variant="info" title={message} />
@@ -144,8 +155,8 @@ export default function AdminSessionsPage() {
         </form>
       </Card>
 
-      <Table>
-        <TableHead>
+          <Table>
+            <TableHead>
           <TableRow>
             <TableHeaderCell>Title</TableHeaderCell>
             <TableHeaderCell>Type</TableHeaderCell>
@@ -171,7 +182,9 @@ export default function AdminSessionsPage() {
             </TableRow>
           ))}
         </TableBody>
-      </Table>
+          </Table>
+        </>
+      )}
     </div>
   );
 }

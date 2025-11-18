@@ -10,12 +10,12 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
-      <header className="border-b bg-white">
+      <header className="border-b bg-white" role="banner">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-5 md:flex-row md:items-center md:justify-between">
           <Link href="/" className="text-2xl font-semibold tracking-tight text-cyan-700">
             SwimBuddz
           </Link>
-          <nav className="flex flex-wrap items-center gap-4 text-sm font-medium text-slate-600">
+          <nav className="flex flex-wrap items-center gap-4 text-sm font-medium text-slate-600" aria-label="Main navigation">
             <Link href="/" className="hover:text-cyan-700">
               Home
             </Link>
@@ -40,8 +40,10 @@ export function MainLayout({ children }: MainLayoutProps) {
           </nav>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
-      <footer className="border-t bg-white">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8" role="main">
+        {children}
+      </main>
+      <footer className="border-t bg-white" role="contentinfo">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-6 text-sm text-slate-600 md:flex-row md:items-center md:justify-between">
           <p>© {year} SwimBuddz. All rights reserved.</p>
           <div className="flex gap-4">

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/auth";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { PasswordField } from "@/components/ui/PasswordField";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 
@@ -60,14 +61,13 @@ export default function LoginPage() {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />
-          <Input
-            type="password"
-            name="password"
+          <PasswordField
             label="Password"
+            name="password"
             placeholder="••••••••"
-            required
             value={password}
             onChange={(event) => setPassword(event.target.value)}
+            required
           />
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Signing in..." : "Sign in"}

@@ -250,6 +250,7 @@ All API calls must respect that contract.
     - Form with:
       - Email.
       - Password (or suitable auth method defined in backend/infra).
+      - Include inline password visibility toggle (eye icon) inside the input field.
     - On submit:
       - Use Supabase client to sign in.
       - On success:
@@ -279,7 +280,8 @@ All API calls must respect that contract.
       5. Community engagement & consents.
       6. Agreements.
     - Use `src/components/forms/` for step UI elements where helpful.
-    - Show step indicators and “Next”/“Back” navigation; disable Next until required fields are valid.
+    - Show step indicators with connecting lines to illustrate progress and “Next”/“Back” navigation; disable Next until required fields are valid.
+    - Phone capture must use a country-code dropdown populated with all countries (default Nigeria) plus the local number input.
   - **Output:**
     - Working front-end only (no backend calls yet).
 
@@ -517,7 +519,7 @@ All API calls must respect that contract.
 
 ### 5.6 – Admin Announcements (`/admin/announcements`)
 
-- [ ] **5.6.1 – Implement admin announcement manager**
+- [x] **5.6.1 – Implement admin announcement manager**
   - **Goal:** CRUD for announcements.
   - **Requirements:**
     - `src/app/(admin)/announcements/page.tsx`.
@@ -537,18 +539,7 @@ All API calls must respect that contract.
 
 ## PHASE 6 – UX Polish & Reliability
 
-### 6.1 – Loading & Error States
-
-- [ ] **6.1.1 – Implement loading indicators**
-
-  - **Goal:** Avoid blank screens during data fetch.
-  - **Requirements:**
-    - For each data-fetching page (sessions, announcements, profile, admin lists):
-      - Show loading skeleton or “Loading…” state.
-  - **Output:**
-    - All major networked pages have visible loading states.
-
-- [ ] **6.1.2 – Implement error handling**
+- [x] **6.1.2 – Implement error handling**
   - **Goal:** Show meaningful errors for failed API calls.
   - **Requirements:**
     - Handle non-2xx responses from `api.ts`.
@@ -559,7 +550,7 @@ All API calls must respect that contract.
 
 ### 6.2 – Mobile-First Checks
 
-- [ ] **6.2.1 – Mobile responsiveness pass**
+- [x] **6.2.1 – Mobile responsiveness pass**
   - **Goal:** Ensure key flows work well on narrow screens.
   - **Requirements:**
     - Test on mobile viewport sizes:
@@ -575,7 +566,7 @@ All API calls must respect that contract.
 
 ### 6.3 – Accessibility Basics
 
-- [ ] **6.3.1 – Accessibility improvements**
+- [x] **6.3.1 – Accessibility improvements**
   - **Goal:** Improve accessibility and semantics.
   - **Requirements:**
     - Ensure:
