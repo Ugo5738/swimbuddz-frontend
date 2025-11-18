@@ -267,23 +267,21 @@ All API calls must respect that contract.
 
 ### 3.1 – Registration Flow (`/register`)
 
-- [x] **3.1.1 – Multi-step registration UI**
+- [x] **3.1.1 – Multi-step registration UI (MVP)**
 
-  - **Goal:** Implement the multi-step registration described in `UI_FLOWS.md`.
-  - **Requirements:**
-    - `src/app/(auth)/register/page.tsx` as client component.
-    - Steps:
-      1. Basic info.
-      2. Swimming experience & goals.
-      3. Logistics & availability.
-      4. Safety & medical.
-      5. Community engagement & consents.
-      6. Agreements.
-    - Use `src/components/forms/` for step UI elements where helpful.
-    - Show step indicators with connecting lines to illustrate progress and “Next”/“Back” navigation; disable Next until required fields are valid.
-    - Phone capture must use a country-code dropdown populated with all countries (default Nigeria) plus the local number input.
-  - **Output:**
-    - Working front-end only (no backend calls yet).
+  - **Goal:** Implement the initial six-step registration UI described in `UI_FLOWS.md`.
+  - **Requirements (completed MVP scope):**
+    - `src/app/(auth)/register/page.tsx` as client component with progress indicator + Next/Back controls.
+    - Steps (original Lagos-focused spec):
+      1. Basic info (name, email, phone with country code selector).
+      2. Swimming experience & goals (level, deep-water comfort checkbox, strokes, goals text).
+      3. Logistics & availability (preferred times + locations).
+      4. Safety & medical (emergency contact, optional medical info).
+      5. Community engagement & consents (discovery source, socials, volunteer interest, comms preference, photo consent).
+      6. Agreements (guidelines + privacy acknowledgements with links).
+    - Phone capture uses global country code dropdown populated with all countries (default Nigeria).
+    - Front-end only (no backend calls yet); validation keeps Next disabled until required fields are completed.
+  - **Notes:** This MVP is complete. See 3.1.3 and 3.1.4 for the global-ready upgrade work (new fields + payload).
 
 - [x] **3.1.2 – Hook registration UI to Supabase + backend**
   - **Goal:** Actually register user and create member profile.
@@ -298,6 +296,25 @@ All API calls must respect that contract.
       - Show clear error messages.
   - **Output:**
     - Fully functional registration flow.
+
+- [x] **3.1.3 – Global-ready registration fields**
+  - **Goal:** Expand the `/register` UI so it captures every data point described in the updated docs.
+  - **Requirements:**
+    - Update `src/app/(auth)/register/page.tsx` with new field groups covering geography/time zone, strokes (multi-select), interests/goals, certifications/background, logistics/travel, facility/equipment access, emergency contact region, community engagement (discovery, socials, volunteer roles), language + communication preferences, payment readiness/currency, and membership tier selection that allows Community/Club/Academy simultaneously.
+    - Time zone capture must use a searchable dropdown (combobox) seeded with the canonical IANA list so users can type to find e.g. `Africa/Lagos` quickly without free-text inconsistencies.
+    - Implement conditional sub-sections (e.g., extra prompts when “Coach” or “Academy” tiers are selected) without blocking other users.
+    - Ensure validation + copy reflects which fields are required vs optional.
+  - **Output:**
+    - Revised registration UI that matches `UI_FLOWS.md` and `ROUTES_AND_PAGES.md`.
+
+- [ ] **3.1.4 – Registration payload & API alignment**
+  - **Goal:** Persist the new registration data end to end.
+  - **Requirements:**
+    - Extend `RegistrationPayload` and `registerMember` in `src/lib/registration.ts` (and any related API helpers) to include the new fields.
+    - Map to backend-friendly keys, adding TODO comments where API contract updates are pending.
+    - Handle multi-select values (e.g., strokes, membership tiers) consistently in the payload.
+  - **Output:**
+    - Backend receives the full global-ready registration data.
 
 ### 3.2 – Member Profile (`/member/profile`)
 
@@ -323,6 +340,14 @@ All API calls must respect that contract.
     - Show success and error feedback.
   - **Output:**
     - Profile page that supports edit → save → re-fetch.
+
+- [x] **3.2.3 – Surface new profile attributes**
+  - **Goal:** Make the additional registration data visible/editable where appropriate.
+  - **Requirements:**
+    - Update `src/app/(member)/profile/page.tsx` to display the expanded fields (geo/time zone, strokes, interests, certifications, logistics, engagement prefs, membership tiers, etc.).
+    - Ensure edit forms (and any admin/member management UIs) can update the same data set, respecting backend permissions.
+  - **Output:**
+    - Member profile mirrors the richer dataset and keeps it maintainable post-registration.
 
 ---
 

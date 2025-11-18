@@ -19,12 +19,13 @@ The implementation of pages should follow these flows closely.
 3. On `/register`:
 
    - Multi-step registration:
-     - Step 1: Basic info (name, email, phone).
-     - Step 2: Swimming level, deep-water comfort, strokes, interests, goals.
-     - Step 3: Availability and location preference.
-     - Step 4: Emergency contact & optional medical info.
-     - Step 5: How they heard about SwimBuddz, socials, volunteer interest, comms preference, photo/video consent.
-     - Step 6: Confirm agreements to guidelines + privacy (with links).
+     - Step 1: Basic info (name, email, international phone capture, city, country, time zone).
+     - Step 2: Swimming level, deep-water comfort, strokes (multi-select), interests/goals (fitness, open water, remote coaching, academy track), certifications/background (coach, lifeguard, CPR).
+     - Step 3: Availability and global logistics (preferred locations, ability to travel/relocate, existing pool/open-water access, equipment needs).
+     - Step 4: Emergency contact & optional medical info (include region + special safety considerations).
+     - Step 5: Community engagement & consents (discovery source, socials, volunteer interest, language preference, comms preference, payment readiness, currency preference, photo/video consent, multi-select membership tiers so users can opt into Community/Club/Academy simultaneously).
+     - Step 6: Confirm agreements to guidelines + privacy (with links and any regional policy addenda).
+   - Allow multiple membership tiers to be selected simultaneously and surface conditional follow-up fields only when relevant (e.g., coaching credentials, hosting sessions).
 
 4. When user submits final step:
 

@@ -133,12 +133,13 @@ Implement pages in `src/app/` using the Next.js App Router.
 
 - Multi-step form:
 
-  1. Basic info (name, email, phone).
-  2. Swimming experience & goals.
-  3. Logistics & availability.
-  4. Safety & medical info.
-  5. Community engagement & consents.
-  6. Agreement to guidelines & privacy.
+  1. Basic info – full name, email, global phone capture (country code selector), city, country, and time zone.
+  2. Swimming experience & goals – level, deep-water comfort, preferred strokes (multi-select), interests/goals, and any certifications (coach, lifeguard, CPR, first aid).
+  3. Logistics & availability – preferred locations worldwide, ability to travel/relocate, local facility access, time-of-day availability, and equipment needs.
+  4. Safety & medical info – emergency contact (name, relationship, phone, region) and optional safety/medical notes.
+  5. Community engagement & consents – discovery source, social handles, volunteer interest, language preference, communication preference, payment readiness + currency preference, photo/video consent, and membership tier selection that supports choosing Community, Club, Academy in any combination.
+  6. Agreement to guidelines & privacy (include any regional addenda if required).
+- Show conditional fields only when relevant (e.g., additional info when “Coach” certification or “Academy” tier is selected).
 
 - On completion:
   - Create Supabase user.
