@@ -54,6 +54,9 @@ export function Header() {
 
                     {session ? (
                         <>
+                            <Link href="/dashboard" className="hover:text-cyan-700">
+                                Dashboard
+                            </Link>
                             <Link href="/profile" className="hover:text-cyan-700">
                                 Profile
                             </Link>

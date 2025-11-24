@@ -642,6 +642,51 @@ All API calls must respect that contract.
 
 ---
 
+## PHASE 7 – Academy Layer
+
+### 7.1 – Academy API Client
+
+- [x] **7.1.1 – Implement Academy API client**
+  - **Goal:** Typed client for Academy Service.
+  - **Requirements:**
+    - `src/lib/academy.ts`.
+    - Interfaces for `Program`, `Cohort`, `Enrollment`, `Milestone`, `StudentProgress`.
+    - API functions for CRUD and progress updates.
+  - **Output:**
+    - Reusable API client.
+
+### 7.2 – Admin Academy Dashboard (`/admin/academy`)
+
+- [x] **7.2.1 – Implement Admin Academy page**
+  - **Goal:** Manage programs and cohorts.
+  - **Requirements:**
+    - `src/app/(admin)/admin/academy/page.tsx`.
+    - List Programs and Cohorts.
+    - Show status and capacity.
+  - **Output:**
+    - Admin view for Academy management.
+
+### 7.3 – Member Dashboard & Academy View
+
+- [x] **7.3.1 – Implement Member Dashboard**
+  - **Goal:** Central hub for members.
+  - **Requirements:**
+    - `src/app/(member)/dashboard/page.tsx`.
+    - Links to Profile, Academy, Announcements.
+  - **Output:**
+    - Dashboard landing page.
+
+- [x] **7.3.2 – Implement Student Academy page**
+  - **Goal:** View enrollments and progress.
+  - **Requirements:**
+    - `src/app/(member)/dashboard/academy/page.tsx`.
+    - List active enrollments.
+    - Show milestones and progress status.
+  - **Output:**
+    - Student view of their academy journey.
+
+---
+
 ## IMPLEMENTATION ORDER SUMMARY
 
 If you are an AI agent, **implement in this order**:
@@ -653,5 +698,6 @@ If you are an AI agent, **implement in this order**:
 5. Phase 4 – Sessions + sign-in.
 6. Phase 5 – Admin area (dashboard, members, sessions, attendance, announcements).
 7. Phase 6 – UX polish, loading/error, mobile, accessibility.
+8. Phase 7 – Academy Layer (admin & student views).
 
 Do not skip ahead or introduce new features that are not described here or in the other documentation files.
