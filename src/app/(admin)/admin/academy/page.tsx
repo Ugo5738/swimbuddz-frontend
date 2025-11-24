@@ -3,11 +3,16 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { AcademyApi, Program, Cohort } from "@/lib/academy";
+import { CreateProgramModal } from "@/components/academy/CreateProgramModal";
+import { CreateCohortModal } from "@/components/academy/CreateCohortModal";
 
 export default function AdminAcademyPage() {
     const [programs, setPrograms] = useState<Program[]>([]);
     const [cohorts, setCohorts] = useState<Cohort[]>([]);
     const [loading, setLoading] = useState(true);
+
+    const [isCreateProgramOpen, setIsCreateProgramOpen] = useState(false);
+    const [isCreateCohortOpen, setIsCreateCohortOpen] = useState(false);
 
     useEffect(() => {
         async function loadData() {
@@ -27,6 +32,14 @@ export default function AdminAcademyPage() {
         loadData();
     }, []);
 
+    const handleProgramCreated = (newProgram: Program) => {
+        setPrograms((prev) => [...prev, newProgram]);
+    };
+
+    const handleCohortCreated = (newCohort: Cohort) => {
+        setCohorts((prev) => [newCohort, ...prev]);
+    };
+
     if (loading) {
         return <div>Loading...</div>;
     }
@@ -39,11 +52,16 @@ export default function AdminAcademyPage() {
                     <p className="text-slate-600">Manage programs, cohorts, and enrollments.</p>
                 </div>
                 <div className="flex gap-2">
-                    {/* TODO: Add Create Modal */}
-                    <button className="rounded bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700">
+                    <button
+                        onClick={() => setIsCreateProgramOpen(true)}
+                        className="rounded bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700"
+                    >
                         Create Program
                     </button>
-                    <button className="rounded bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700">
+                    <button
+                        onClick={() => setIsCreateCohortOpen(true)}
+                        className="rounded bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700"
+                    >
                         Create Cohort
                     </button>
                 </div>
@@ -102,6 +120,19 @@ export default function AdminAcademyPage() {
                     )}
                 </div>
             </div>
+
+            <CreateProgramModal
+                isOpen={isCreateProgramOpen}
+                onClose={() => setIsCreateProgramOpen(false)}
+                onSuccess={handleProgramCreated}
+            />
+
+            <CreateCohortModal
+                isOpen={isCreateCohortOpen}
+                onClose={() => setIsCreateCohortOpen(false)}
+                onSuccess={handleCohortCreated}
+                programs={programs}
+            />
         </div>
     );
 }

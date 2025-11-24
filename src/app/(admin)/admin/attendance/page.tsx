@@ -9,7 +9,7 @@ import { format } from "date-fns";
 type Session = {
     id: string;
     start_time: string;
-    location_name: string;
+    location: string;
 };
 
 type Attendance = {
@@ -34,7 +34,7 @@ export default function AdminAttendancePage() {
     useEffect(() => {
         async function fetchSessions() {
             try {
-                const data = await apiGet<Session[]>("/api/v1/sessions/");
+                const data = await apiGet<Session[]>("/api/v1/sessions/", { auth: true });
                 setSessions(data);
                 if (data.length > 0) {
                     setSelectedSessionId(data[0].id);
@@ -54,12 +54,13 @@ export default function AdminAttendancePage() {
 
         async function fetchAttendance() {
             setLoadingAttendance(true);
+            setError(null); // Clear previous errors
             try {
-                const data = await apiGet<Attendance[]>(`/api/v1/sessions/${selectedSessionId}/attendance`);
+                const data = await apiGet<Attendance[]>(`/api/v1/sessions/${selectedSessionId}/attendance`, { auth: true });
                 setAttendanceList(data);
-            } catch (err) {
+            } catch (err: any) {
                 console.error("Failed to fetch attendance", err);
-                setError("Failed to load attendance list.");
+                setError(`Failed to load attendance list: ${err.message || "Unknown error"}`);
             } finally {
                 setLoadingAttendance(false);
             }
@@ -112,7 +113,7 @@ export default function AdminAttendancePage() {
                     >
                         {sessions.map((s) => (
                             <option key={s.id} value={s.id}>
-                                {format(new Date(s.start_time), "MMM d, yyyy h:mm a")} - {s.location_name}
+                                {format(new Date(s.start_time), "MMM d, yyyy h:mm a")} - {s.location}
                             </option>
                         ))}
                     </select>
@@ -123,7 +124,7 @@ export default function AdminAttendancePage() {
                     <h2 className="text-xl font-bold">Attendance List</h2>
                     {selectedSessionId && sessions.find(s => s.id === selectedSessionId) && (
                         <p className="text-sm text-slate-600">
-                            {format(new Date(sessions.find(s => s.id === selectedSessionId)!.start_time), "MMMM d, yyyy h:mm a")} - {sessions.find(s => s.id === selectedSessionId)!.location_name}
+                            {format(new Date(sessions.find(s => s.id === selectedSessionId)!.start_time), "MMMM d, yyyy h:mm a")} - {sessions.find(s => s.id === selectedSessionId)!.location}
                         </p>
                     )}
                 </div>

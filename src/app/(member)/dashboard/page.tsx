@@ -1,9 +1,38 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/auth";
+
+const ADMIN_EMAILS = ["admin@admin.com"];
+
 export default function MemberDashboardPage() {
+    const [isAdmin, setIsAdmin] = useState(false);
+    const router = useRouter();
+
+    useEffect(() => {
+        async function checkAdmin() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user && user.email && ADMIN_EMAILS.includes(user.email)) {
+                setIsAdmin(true);
+                router.push("/admin/dashboard"); // Redirect to Admin Dashboard
+            }
+        }
+        checkAdmin();
+    }, [router]);
+
+    // If redirecting, we can show a loading state or just the member view briefly
+    if (isAdmin) {
+        return (
+            <div className="flex min-h-screen items-center justify-center">
+                <div className="text-lg font-medium text-slate-600">Redirecting to Admin Dashboard...</div>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-6">
             <header className="space-y-2">

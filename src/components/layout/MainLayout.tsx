@@ -1,5 +1,8 @@
+"use client";
+
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Header } from "./Header";
 
 type MainLayoutProps = {
@@ -7,7 +10,13 @@ type MainLayoutProps = {
 };
 
 export function MainLayout({ children }: MainLayoutProps) {
+  const pathname = usePathname();
   const year = new Date().getFullYear();
+  const isAdminRoute = pathname?.startsWith("/admin");
+
+  if (isAdminRoute) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
