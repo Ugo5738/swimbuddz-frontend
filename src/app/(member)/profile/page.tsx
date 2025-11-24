@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Alert } from "@/components/ui/Alert";
@@ -8,8 +9,28 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
-import { apiPatch } from "@/lib/api";
+import { apiPatch, apiGet } from "@/lib/api";
+import { completePendingRegistrationOnBackend } from "@/lib/registration";
 import { LoadingCard } from "@/components/ui/LoadingCard";
+import { OptionPillGroup } from "@/components/forms/OptionPillGroup";
+import { SingleSelectPills } from "@/components/forms/SingleSelectPills";
+import { TimezoneCombobox } from "@/components/forms/TimezoneCombobox";
+import {
+  strokesOptions,
+  interestOptions,
+  certificationOptions,
+  coachingSpecialtyOptions,
+  travelFlexibilityOptions,
+  membershipTierOptions,
+  paymentReadinessOptions,
+  volunteerInterestOptions,
+  academyFocusOptions,
+  facilityAccessOptions,
+  equipmentNeedsOptions,
+  availabilityOptions,
+  timeOfDayOptions,
+  locationOptions
+} from "@/lib/options";
 
 const levelLabels: Record<string, string> = {
   beginner: "Beginner",
@@ -79,12 +100,20 @@ type Profile = {
   goalsNarrative: string;
   certifications: string[];
   coachingExperience: string;
-  availability: string;
-  timeOfDayAvailability: string;
-  locationPreference: string;
+  coachingSpecialties: string[];
+  coachingYears: string;
+  coachingPortfolioLink: string;
+  coachingDocumentLink: string;
+  coachingDocumentFileName: string;
+  availabilitySlots: string[];
+  timeOfDayAvailability: string[];
+  locationPreference: string[];
+  locationPreferenceOther: string;
   travelFlexibility: string;
-  facilityAccess: string;
-  equipmentNeeds: string;
+  facilityAccess: string[];
+  facilityAccessOther: string;
+  equipmentNeeds: string[];
+  equipmentNeedsOther: string;
   travelNotes: string;
   emergencyContactName: string;
   emergencyContactRelationship: string;
@@ -92,16 +121,19 @@ type Profile = {
   emergencyContactRegion: string;
   medicalInfo: string;
   safetyNotes: string;
-  volunteerInterest: string;
-  volunteerRoles: string;
+  volunteerInterest: string[];
+  volunteerRolesDetail: string;
   discoverySource: string;
-  socialHandles: string;
+  socialInstagram: string;
+  socialLinkedIn: string;
+  socialOther: string;
   languagePreference: string;
   commsPreference: string;
   paymentReadiness: string;
   currencyPreference: string;
   consentPhoto: string;
   membershipTiers: string[];
+  academyFocusAreas: string[];
   academyFocus: string;
   paymentNotes: string;
 };
@@ -122,12 +154,20 @@ const mockProfile: Profile = {
   goalsNarrative: "Build endurance for open-water races and help mentor new swimmers.",
   certifications: ["cpr"],
   coachingExperience: "Volunteer mentor for beginner clinics.",
-  availability: "Weekday evenings and Saturday mornings",
-  timeOfDayAvailability: "6am – 9am, 5pm – 8pm",
-  locationPreference: "Yaba, Ikoyi, remote when travelling",
+  coachingSpecialties: ["technique", "open_water_coach"],
+  coachingYears: "3_5",
+  coachingPortfolioLink: "https://coach.swimbuddz.com/ada",
+  coachingDocumentLink: "https://drive.google.com/cert",
+  coachingDocumentFileName: "coaching-certificate.pdf",
+  availabilitySlots: ["weekday_evening", "weekend_morning"],
+  timeOfDayAvailability: ["early_morning", "evening"],
+  locationPreference: ["yaba", "remote_global"],
+  locationPreferenceOther: "Ikoyi, Lagos when in town",
   travelFlexibility: "regional",
-  facilityAccess: "Yaba tech pool, Landmark beach",
-  equipmentNeeds: "Needs fins and paddles",
+  facilityAccess: ["city_pool", "open_water"],
+  facilityAccessOther: "Access to partner hotel pool when traveling",
+  equipmentNeeds: ["fins", "paddles"],
+  equipmentNeedsOther: "",
   travelNotes: "Available for Lagos <-> Accra trips monthly",
   emergencyContactName: "Chinedu Obi",
   emergencyContactRelationship: "Brother",
@@ -135,50 +175,199 @@ const mockProfile: Profile = {
   emergencyContactRegion: "Abuja, Nigeria",
   medicalInfo: "Mild asthma, uses inhaler",
   safetyNotes: "Carry inhaler during open-water sessions",
-  volunteerInterest: "Ride share coordination and mentoring",
-  volunteerRoles: "Ride lead, WhatsApp moderator",
+  volunteerInterest: ["ride_share", "mentor"],
+  volunteerRolesDetail: "Ride lead, WhatsApp moderator",
   discoverySource: "friend",
-  socialHandles: "@swimbuddzada on Instagram",
+  socialInstagram: "@swimbuddzada",
+  socialLinkedIn: "https://linkedin.com/in/adaobi",
+  socialOther: "",
   languagePreference: "English",
   commsPreference: "whatsapp",
   paymentReadiness: "need_notice",
   currencyPreference: "NGN",
   consentPhoto: "yes",
   membershipTiers: ["community", "club"],
+  academyFocusAreas: ["travel_meets"],
   academyFocus: "",
   paymentNotes: "Needs receipts for corporate reimbursements"
 };
 
-export default function MemberProfilePage() {
+type MemberResponse = {
+  id: string;
+  auth_id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  city: string;
+  country: string;
+  time_zone: string;
+  is_active: boolean;
+  registration_complete: boolean;
+  swim_level: string;
+  deep_water_comfort: string;
+  strokes: string[];
+  interests: string[];
+  goals_narrative: string;
+  goals_other: string;
+  certifications: string[];
+  coaching_experience: string;
+  coaching_specialties: string[];
+  coaching_years: string;
+  coaching_portfolio_link: string;
+  coaching_document_link: string;
+  coaching_document_file_name: string;
+  availability_slots: string[];
+  time_of_day_availability: string[];
+  location_preference: string[];
+  location_preference_other: string;
+  travel_flexibility: string;
+  facility_access: string[];
+  facility_access_other: string;
+  equipment_needs: string[];
+  equipment_needs_other: string;
+  travel_notes: string;
+  emergency_contact_name: string;
+  emergency_contact_relationship: string;
+  emergency_contact_phone: string;
+  emergency_contact_region: string;
+  medical_info: string;
+  safety_notes: string;
+  volunteer_interest: string[];
+  volunteer_roles_detail: string;
+  discovery_source: string;
+  social_instagram: string;
+  social_linkedin: string;
+  social_other: string;
+  language_preference: string;
+  comms_preference: string;
+  payment_readiness: string;
+  currency_preference: string;
+  consent_photo: string;
+  membership_tiers: string[];
+  academy_focus_areas: string[];
+  academy_focus: string;
+  payment_notes: string;
+};
+
+function mapMemberResponseToProfile(data: MemberResponse): Profile {
+  return {
+    name: `${data.first_name} ${data.last_name}`,
+    email: data.email,
+    phone: data.phone,
+    city: data.city,
+    country: data.country,
+    timeZone: data.time_zone,
+    status: data.is_active ? "Active member" : "Inactive",
+    role: "Member", // Default role
+    swimLevel: data.swim_level,
+    deepWaterComfort: data.deep_water_comfort,
+    strokes: data.strokes || [],
+    interests: data.interests || [],
+    goalsNarrative: data.goals_narrative,
+    certifications: data.certifications || [],
+    coachingExperience: data.coaching_experience,
+    coachingSpecialties: data.coaching_specialties || [],
+    coachingYears: data.coaching_years,
+    coachingPortfolioLink: data.coaching_portfolio_link,
+    coachingDocumentLink: data.coaching_document_link,
+    coachingDocumentFileName: data.coaching_document_file_name,
+    availabilitySlots: data.availability_slots || [],
+    timeOfDayAvailability: data.time_of_day_availability || [],
+    locationPreference: data.location_preference || [],
+    locationPreferenceOther: data.location_preference_other,
+    travelFlexibility: data.travel_flexibility,
+    facilityAccess: data.facility_access || [],
+    facilityAccessOther: data.facility_access_other,
+    equipmentNeeds: data.equipment_needs || [],
+    equipmentNeedsOther: data.equipment_needs_other,
+    travelNotes: data.travel_notes,
+    emergencyContactName: data.emergency_contact_name,
+    emergencyContactRelationship: data.emergency_contact_relationship,
+    emergencyContactPhone: data.emergency_contact_phone,
+    emergencyContactRegion: data.emergency_contact_region,
+    medicalInfo: data.medical_info,
+    safetyNotes: data.safety_notes,
+    volunteerInterest: data.volunteer_interest || [],
+    volunteerRolesDetail: data.volunteer_roles_detail,
+    discoverySource: data.discovery_source,
+    socialInstagram: data.social_instagram,
+    socialLinkedIn: data.social_linkedin,
+    socialOther: data.social_other,
+    languagePreference: data.language_preference,
+    commsPreference: data.comms_preference,
+    paymentReadiness: data.payment_readiness,
+    currencyPreference: data.currency_preference,
+    consentPhoto: data.consent_photo,
+    membershipTiers: data.membership_tiers || [],
+    academyFocusAreas: data.academy_focus_areas || [],
+    academyFocus: data.academy_focus,
+    paymentNotes: data.payment_notes
+  };
+}
+
+
+
+function ProfileContent() {
   // TODO: Replace mock with apiGet("/api/v1/members/me", { auth: true }) once backend ready.
-  const [profile, setProfile] = useState<Profile>(mockProfile);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
+  const [completingRegistration, setCompletingRegistration] = useState(false);
 
   useEffect(() => {
-    const id = setTimeout(() => {
-      if (!mockProfile) setError("Unable to load profile");
-      setLoading(false);
-    }, 400);
-    return () => clearTimeout(id);
-  }, []);
+    const action = searchParams.get("action");
+    if (action === "complete_registration") {
+      setCompletingRegistration(true);
+      completePendingRegistrationOnBackend()
+        .then((result) => {
+          if (result.status === "error") {
+            setError(`Registration completion failed: ${result.message}`);
+          } else {
+            // Refresh profile or show success
+            // For now, just remove the query param
+            router.replace("/profile");
+          }
+        })
+        .finally(() => {
+          setCompletingRegistration(false);
+        });
+    }
+
+    // Fetch real profile data
+    setLoading(true);
+    apiGet<MemberResponse>("/api/v1/members/me", { auth: true })
+      .then((data: MemberResponse) => {
+        setProfile(mapMemberResponseToProfile(data));
+        setError(null);
+      })
+      .catch((err: Error) => {
+        console.error("Failed to fetch profile:", err);
+        setError("Unable to load profile. Please try again.");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [searchParams, router]);
 
   const headerMarkup = (
     <header className="space-y-2">
       <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">My profile</p>
-      <h1 className="text-4xl font-bold text-slate-900">Welcome back, {profile.name.split(" ")[0]}</h1>
+      <h1 className="text-4xl font-bold text-slate-900">Welcome back, {profile?.name?.split(" ")[0] ?? "Member"}</h1>
       <p className="text-sm text-slate-600">
         This page will fetch real member data and persist changes via the backend once APIs are available.
       </p>
     </header>
   );
 
-  if (loading) {
+  if (loading || completingRegistration) {
     return (
       <div className="space-y-6">
         {headerMarkup}
-        <LoadingCard text="Loading profile..." />
+        <LoadingCard text={completingRegistration ? "Finalizing your registration..." : "Loading profile..."} />
       </div>
     );
   }
@@ -193,6 +382,8 @@ export default function MemberProfilePage() {
       </div>
     );
   }
+
+  if (!profile) return null;
 
   return (
     <div className="space-y-6">
@@ -279,6 +470,39 @@ export default function MemberProfilePage() {
             {profile.coachingExperience ? (
               <Detail label="Coaching experience" value={profile.coachingExperience} fullSpan />
             ) : null}
+            {profile.coachingSpecialties.length ? (
+              <Detail label="Coaching specialties" fullSpan>
+                <div className="flex flex-wrap gap-2">
+                  {profile.coachingSpecialties.map((item) => (
+                    <Badge key={item}>{formatToken(item)}</Badge>
+                  ))}
+                </div>
+              </Detail>
+            ) : null}
+            {profile.coachingYears ? (
+              <Detail label="Years coaching" value={formatToken(profile.coachingYears)} />
+            ) : null}
+            {profile.coachingPortfolioLink ? (
+              <Detail label="Portfolio link" fullSpan>
+                <a href={profile.coachingPortfolioLink} className="text-cyan-700 underline" target="_blank" rel="noreferrer">
+                  {profile.coachingPortfolioLink}
+                </a>
+              </Detail>
+            ) : null}
+            {profile.coachingDocumentLink || profile.coachingDocumentFileName ? (
+              <Detail label="Supporting docs" fullSpan>
+                <div className="text-sm text-slate-700">
+                  {profile.coachingDocumentLink ? (
+                    <a href={profile.coachingDocumentLink} className="text-cyan-700 underline" target="_blank" rel="noreferrer">
+                      View credential
+                    </a>
+                  ) : null}
+                  {profile.coachingDocumentFileName ? (
+                    <p className="text-xs text-slate-500">Uploaded file: {profile.coachingDocumentFileName}</p>
+                  ) : null}
+                </div>
+              </Detail>
+            ) : null}
           </div>
         )}
       </Card>
@@ -288,15 +512,38 @@ export default function MemberProfilePage() {
           <Card className="space-y-4">
             <h2 className="text-lg font-semibold text-slate-900">Logistics & availability</h2>
             <div className="grid gap-4 md:grid-cols-2">
-              <Detail label="Weekly availability" value={profile.availability} fullSpan />
-              <Detail label="Time of day" value={profile.timeOfDayAvailability} />
-              <Detail label="Preferred locations" value={profile.locationPreference} />
+              <Detail label="Weekly availability" fullSpan>
+                {profile.availabilitySlots.length ? profile.availabilitySlots.map(formatToken).join(", ") : "--"}
+              </Detail>
+              <Detail label="Time of day">
+                {profile.timeOfDayAvailability.length ? profile.timeOfDayAvailability.map(formatToken).join(", ") : "--"}
+              </Detail>
+              <Detail label="Preferred locations" fullSpan>
+                {profile.locationPreference.length ? (
+                  <span>
+                    {profile.locationPreference.map(formatToken).join(", ")}
+                    {profile.locationPreferenceOther ? ` • ${profile.locationPreferenceOther}` : ""}
+                  </span>
+                ) : (
+                  profile.locationPreferenceOther || "--"
+                )}
+              </Detail>
               <Detail
                 label="Travel readiness"
                 value={travelFlexibilityLabels[profile.travelFlexibility] ?? formatToken(profile.travelFlexibility)}
               />
-              <Detail label="Facility access" value={profile.facilityAccess} />
-              <Detail label="Equipment needs" value={profile.equipmentNeeds} />
+              <Detail label="Facility access">
+                {profile.facilityAccess.length
+                  ? `${profile.facilityAccess.map(formatToken).join(", ")}${profile.facilityAccessOther ? ` • ${profile.facilityAccessOther}` : ""
+                  }`
+                  : profile.facilityAccessOther || "--"}
+              </Detail>
+              <Detail label="Equipment needs">
+                {profile.equipmentNeeds.length
+                  ? `${profile.equipmentNeeds.map(formatToken).join(", ")}${profile.equipmentNeedsOther ? ` • ${profile.equipmentNeedsOther}` : ""
+                  }`
+                  : profile.equipmentNeedsOther || "--"}
+              </Detail>
               <Detail label="Travel notes" value={profile.travelNotes || "--"} fullSpan />
             </div>
           </Card>
@@ -308,9 +555,36 @@ export default function MemberProfilePage() {
                 label="Discovery source"
                 value={discoverySourceLabels[profile.discoverySource] ?? formatToken(profile.discoverySource)}
               />
-              <Detail label="Social handles" value={profile.socialHandles || "--"} />
-              <Detail label="Volunteer interest" value={profile.volunteerInterest} />
-              <Detail label="Volunteer roles" value={profile.volunteerRoles || "--"} />
+              <Detail label="Social links" fullSpan>
+                <div className="flex flex-col gap-1 text-sm text-slate-700">
+                  {profile.socialInstagram ? (
+                    <span>Instagram: {profile.socialInstagram}</span>
+                  ) : null}
+                  {profile.socialLinkedIn ? (
+                    <a href={profile.socialLinkedIn} className="text-cyan-700 underline" target="_blank" rel="noreferrer">
+                      LinkedIn profile
+                    </a>
+                  ) : null}
+                  {profile.socialOther ? (
+                    <a href={profile.socialOther} className="text-cyan-700 underline" target="_blank" rel="noreferrer">
+                      Other: {profile.socialOther}
+                    </a>
+                  ) : null}
+                  {!profile.socialInstagram && !profile.socialLinkedIn && !profile.socialOther ? <span>--</span> : null}
+                </div>
+              </Detail>
+              <Detail label="Volunteer interest" fullSpan>
+                {profile.volunteerInterest.length ? (
+                  <div className="flex flex-wrap gap-2">
+                    {profile.volunteerInterest.map((item) => (
+                      <Badge key={item}>{formatToken(item)}</Badge>
+                    ))}
+                  </div>
+                ) : (
+                  "--"
+                )}
+              </Detail>
+              <Detail label="Volunteer roles" value={profile.volunteerRolesDetail || "--"} />
               <Detail label="Language" value={profile.languagePreference} />
               <Detail label="Comms preference" value={formatToken(profile.commsPreference)} />
               <Detail
@@ -320,7 +594,16 @@ export default function MemberProfilePage() {
               <Detail label="Currency" value={profile.currencyPreference.toUpperCase()} />
               <Detail label="Photo consent" value={profile.consentPhoto === "yes" ? "Consented" : "No media"} />
               <Detail label="Payment notes" value={profile.paymentNotes || "--"} fullSpan />
-              {profile.academyFocus ? <Detail label="Academy focus" value={profile.academyFocus} fullSpan /> : null}
+              {profile.academyFocusAreas.length ? (
+                <Detail label="Academy focus areas" fullSpan>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.academyFocusAreas.map((area) => (
+                      <Badge key={area}>{formatToken(area)}</Badge>
+                    ))}
+                  </div>
+                </Detail>
+              ) : null}
+              {profile.academyFocus ? <Detail label="Academy notes" value={profile.academyFocus} fullSpan /> : null}
             </div>
           </Card>
 
@@ -350,17 +633,25 @@ type FormState = {
   timeZone: string;
   swimLevel: string;
   deepWaterComfort: string;
-  strokesText: string;
-  interestsText: string;
+  strokes: string[];
+  interests: string[];
   goalsNarrative: string;
-  certificationsText: string;
+  certifications: string[];
   coachingExperience: string;
-  availability: string;
-  timeOfDayAvailability: string;
-  locationPreference: string;
+  coachingSpecialties: string[];
+  coachingYears: string;
+  coachingPortfolioLink: string;
+  coachingDocumentLink: string;
+  coachingDocumentFileName: string;
+  availabilitySlots: string[];
+  timeOfDayAvailability: string[];
+  locationPreference: string[];
+  locationPreferenceOther: string;
   travelFlexibility: string;
-  facilityAccess: string;
-  equipmentNeeds: string;
+  facilityAccess: string[];
+  facilityAccessOther: string;
+  equipmentNeeds: string[];
+  equipmentNeedsOther: string;
   travelNotes: string;
   emergencyContactName: string;
   emergencyContactRelationship: string;
@@ -368,16 +659,19 @@ type FormState = {
   emergencyContactRegion: string;
   medicalInfo: string;
   safetyNotes: string;
-  volunteerInterest: string;
-  volunteerRoles: string;
+  volunteerInterest: string[];
+  volunteerRolesDetail: string;
   discoverySource: string;
-  socialHandles: string;
+  socialInstagram: string;
+  socialLinkedIn: string;
+  socialOther: string;
   languagePreference: string;
   commsPreference: string;
   paymentReadiness: string;
   currencyPreference: string;
   consentPhoto: string;
-  membershipTiersText: string;
+  membershipTiers: string[];
+  academyFocusAreas: string[];
   academyFocus: string;
   paymentNotes: string;
 };
@@ -389,17 +683,25 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
     timeZone: profile.timeZone,
     swimLevel: profile.swimLevel,
     deepWaterComfort: profile.deepWaterComfort,
-    strokesText: profile.strokes.join(", "),
-    interestsText: profile.interests.join(", "),
+    strokes: profile.strokes,
+    interests: profile.interests,
     goalsNarrative: profile.goalsNarrative,
-    certificationsText: profile.certifications.join(", "),
+    certifications: profile.certifications,
     coachingExperience: profile.coachingExperience,
-    availability: profile.availability,
+    coachingSpecialties: profile.coachingSpecialties,
+    coachingYears: profile.coachingYears,
+    coachingPortfolioLink: profile.coachingPortfolioLink,
+    coachingDocumentLink: profile.coachingDocumentLink,
+    coachingDocumentFileName: profile.coachingDocumentFileName,
+    availabilitySlots: profile.availabilitySlots,
     timeOfDayAvailability: profile.timeOfDayAvailability,
     locationPreference: profile.locationPreference,
+    locationPreferenceOther: profile.locationPreferenceOther,
     travelFlexibility: profile.travelFlexibility,
     facilityAccess: profile.facilityAccess,
+    facilityAccessOther: profile.facilityAccessOther,
     equipmentNeeds: profile.equipmentNeeds,
+    equipmentNeedsOther: profile.equipmentNeedsOther,
     travelNotes: profile.travelNotes,
     emergencyContactName: profile.emergencyContactName,
     emergencyContactRelationship: profile.emergencyContactRelationship,
@@ -408,30 +710,23 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
     medicalInfo: profile.medicalInfo,
     safetyNotes: profile.safetyNotes,
     volunteerInterest: profile.volunteerInterest,
-    volunteerRoles: profile.volunteerRoles,
+    volunteerRolesDetail: profile.volunteerRolesDetail,
     discoverySource: profile.discoverySource,
-    socialHandles: profile.socialHandles,
+    socialInstagram: profile.socialInstagram,
+    socialLinkedIn: profile.socialLinkedIn,
+    socialOther: profile.socialOther,
     languagePreference: profile.languagePreference,
     commsPreference: profile.commsPreference,
     paymentReadiness: profile.paymentReadiness,
     currencyPreference: profile.currencyPreference,
     consentPhoto: profile.consentPhoto,
-    membershipTiersText: profile.membershipTiers.join(", "),
+    membershipTiers: profile.membershipTiers,
+    academyFocusAreas: profile.academyFocusAreas,
     academyFocus: profile.academyFocus,
     paymentNotes: profile.paymentNotes
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  function updateField<K extends keyof FormState>(field: K, value: FormState[K]) {
-    setFormState((prev) => ({ ...prev, [field]: value }));
-  }
-
-  const parseList = (value: string) =>
-    value
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean);
 
   async function handleSave() {
     setSaving(true);
@@ -444,17 +739,25 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
       timeZone: formState.timeZone,
       swimLevel: formState.swimLevel,
       deepWaterComfort: formState.deepWaterComfort,
-      strokes: parseList(formState.strokesText),
-      interests: parseList(formState.interestsText),
+      strokes: formState.strokes,
+      interests: formState.interests,
       goalsNarrative: formState.goalsNarrative,
-      certifications: parseList(formState.certificationsText),
+      certifications: formState.certifications,
       coachingExperience: formState.coachingExperience,
-      availability: formState.availability,
+      coachingSpecialties: formState.coachingSpecialties,
+      coachingYears: formState.coachingYears,
+      coachingPortfolioLink: formState.coachingPortfolioLink,
+      coachingDocumentLink: formState.coachingDocumentLink,
+      coachingDocumentFileName: formState.coachingDocumentFileName,
+      availabilitySlots: formState.availabilitySlots,
       timeOfDayAvailability: formState.timeOfDayAvailability,
       locationPreference: formState.locationPreference,
+      locationPreferenceOther: formState.locationPreferenceOther,
       travelFlexibility: formState.travelFlexibility,
       facilityAccess: formState.facilityAccess,
+      facilityAccessOther: formState.facilityAccessOther,
       equipmentNeeds: formState.equipmentNeeds,
+      equipmentNeedsOther: formState.equipmentNeedsOther,
       travelNotes: formState.travelNotes,
       emergencyContactName: formState.emergencyContactName,
       emergencyContactRelationship: formState.emergencyContactRelationship,
@@ -463,15 +766,18 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
       medicalInfo: formState.medicalInfo,
       safetyNotes: formState.safetyNotes,
       volunteerInterest: formState.volunteerInterest,
-      volunteerRoles: formState.volunteerRoles,
+      volunteerRolesDetail: formState.volunteerRolesDetail,
       discoverySource: formState.discoverySource,
-      socialHandles: formState.socialHandles,
+      socialInstagram: formState.socialInstagram,
+      socialLinkedIn: formState.socialLinkedIn,
+      socialOther: formState.socialOther,
       languagePreference: formState.languagePreference,
       commsPreference: formState.commsPreference,
       paymentReadiness: formState.paymentReadiness,
       currencyPreference: formState.currencyPreference,
       consentPhoto: formState.consentPhoto,
-      membershipTiers: parseList(formState.membershipTiersText),
+      membershipTiers: formState.membershipTiers,
+      academyFocusAreas: formState.academyFocusAreas,
       academyFocus: formState.academyFocus,
       paymentNotes: formState.paymentNotes
     };
@@ -490,12 +796,20 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
           goals: formState.goalsNarrative,
           certifications: updatedProfile.certifications,
           coaching_experience: formState.coachingExperience,
-          availability: formState.availability,
-          time_of_day_availability: formState.timeOfDayAvailability,
-          location_preference: formState.locationPreference,
+          coaching_specialties: updatedProfile.coachingSpecialties,
+          coaching_years: formState.coachingYears,
+          coaching_portfolio_link: formState.coachingPortfolioLink,
+          coaching_document_link: formState.coachingDocumentLink,
+          coaching_document_file_name: formState.coachingDocumentFileName,
+          availability_slots: updatedProfile.availabilitySlots,
+          time_of_day_availability: updatedProfile.timeOfDayAvailability,
+          location_preference: updatedProfile.locationPreference,
+          location_preference_other: formState.locationPreferenceOther,
           travel_flexibility: formState.travelFlexibility,
-          facility_access: formState.facilityAccess,
-          equipment_needs: formState.equipmentNeeds,
+          facility_access: updatedProfile.facilityAccess,
+          facility_access_other: formState.facilityAccessOther,
+          equipment_needs: updatedProfile.equipmentNeeds,
+          equipment_needs_other: formState.equipmentNeedsOther,
           travel_notes: formState.travelNotes,
           emergency_contact_name: formState.emergencyContactName,
           emergency_contact_relationship: formState.emergencyContactRelationship,
@@ -503,17 +817,19 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
           emergency_contact_region: formState.emergencyContactRegion,
           medical_info: formState.medicalInfo,
           safety_notes: formState.safetyNotes,
-          volunteer_interest: formState.volunteerInterest,
-          volunteer_roles: formState.volunteerRoles,
+          volunteer_interest: updatedProfile.volunteerInterest,
+          volunteer_roles_detail: formState.volunteerRolesDetail,
           discovery_source: formState.discoverySource,
-          social_handles: formState.socialHandles,
+          social_instagram: formState.socialInstagram,
+          social_linkedin: formState.socialLinkedIn,
+          social_other: formState.socialOther,
           language_preference: formState.languagePreference,
           comms_preference: formState.commsPreference,
           payment_readiness: formState.paymentReadiness,
           currency_preference: formState.currencyPreference,
           consent_photo: formState.consentPhoto,
-          // TODO: align membership tier updates with backend enum expectation.
           membership_tiers: updatedProfile.membershipTiers,
+          academy_focus_areas: updatedProfile.academyFocusAreas,
           academy_focus: formState.academyFocus,
           payment_notes: formState.paymentNotes
         },
@@ -535,222 +851,425 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
           {error}
         </Alert>
       ) : null}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Input label="City" value={formState.city} onChange={(event) => updateField("city", event.target.value)} />
+      <div className="grid gap-6 md:grid-cols-2">
+        <Input
+          label="City"
+          value={formState.city}
+          onChange={(e) => setFormState({ ...formState, city: e.target.value })}
+        />
         <Input
           label="Country"
           value={formState.country}
-          onChange={(event) => updateField("country", event.target.value)}
+          onChange={(e) => setFormState({ ...formState, country: e.target.value })}
         />
-        <Input
-          label="Time zone"
-          value={formState.timeZone}
-          onChange={(event) => updateField("timeZone", event.target.value)}
-        />
-        <Select
-          label="Swimming level"
-          value={formState.swimLevel}
-          onChange={(event) => updateField("swimLevel", event.target.value)}
-        >
-          <option value="beginner">Beginner</option>
-          <option value="intermediate">Intermediate</option>
-          <option value="advanced">Advanced</option>
-        </Select>
-        <Select
-          label="Deep-water comfort"
-          value={formState.deepWaterComfort}
-          onChange={(event) => updateField("deepWaterComfort", event.target.value)}
-        >
-          <option value="learning">Learning</option>
-          <option value="comfortable">Comfortable</option>
-          <option value="expert">Expert</option>
-        </Select>
-        <Textarea
-          label="Preferred strokes"
-          hint="Comma-separated"
-          rows={2}
-          value={formState.strokesText}
-          onChange={(event) => updateField("strokesText", event.target.value)}
-        />
-        <Textarea
-          label="Interests"
-          hint="Comma-separated"
-          rows={2}
-          value={formState.interestsText}
-          onChange={(event) => updateField("interestsText", event.target.value)}
-        />
-        <Textarea
-          label="Narrative goals"
-          rows={3}
-          value={formState.goalsNarrative}
-          onChange={(event) => updateField("goalsNarrative", event.target.value)}
-        />
-        <Textarea
-          label="Certifications"
-          hint="Comma-separated"
-          rows={2}
-          value={formState.certificationsText}
-          onChange={(event) => updateField("certificationsText", event.target.value)}
-        />
-        <Textarea
-          label="Coaching experience"
-          rows={2}
-          value={formState.coachingExperience}
-          onChange={(event) => updateField("coachingExperience", event.target.value)}
-        />
-        <Textarea
-          label="Weekly availability"
-          rows={2}
-          value={formState.availability}
-          onChange={(event) => updateField("availability", event.target.value)}
-        />
-        <Input
-          label="Time-of-day availability"
-          value={formState.timeOfDayAvailability}
-          onChange={(event) => updateField("timeOfDayAvailability", event.target.value)}
-        />
-        <Textarea
-          label="Preferred locations"
-          rows={2}
-          value={formState.locationPreference}
-          onChange={(event) => updateField("locationPreference", event.target.value)}
-        />
-        <Select
-          label="Travel readiness"
-          value={formState.travelFlexibility}
-          onChange={(event) => updateField("travelFlexibility", event.target.value)}
-        >
-          <option value="local_only">Local sessions only</option>
-          <option value="regional">Regional travel is OK</option>
-          <option value="global">Global / relocation ready</option>
-        </Select>
-        <Textarea
-          label="Facility access"
-          rows={2}
-          value={formState.facilityAccess}
-          onChange={(event) => updateField("facilityAccess", event.target.value)}
-        />
-        <Textarea
-          label="Equipment needs"
-          rows={2}
-          value={formState.equipmentNeeds}
-          onChange={(event) => updateField("equipmentNeeds", event.target.value)}
-        />
-        <Textarea
-          label="Travel notes"
-          rows={2}
-          value={formState.travelNotes}
-          onChange={(event) => updateField("travelNotes", event.target.value)}
-        />
-        <Input
-          label="Emergency contact name"
-          value={formState.emergencyContactName}
-          onChange={(event) => updateField("emergencyContactName", event.target.value)}
-        />
-        <Input
-          label="Relationship"
-          value={formState.emergencyContactRelationship}
-          onChange={(event) => updateField("emergencyContactRelationship", event.target.value)}
-        />
-        <Input
-          label="Emergency phone"
-          value={formState.emergencyContactPhone}
-          onChange={(event) => updateField("emergencyContactPhone", event.target.value)}
-        />
-        <Input
-          label="Emergency region"
-          value={formState.emergencyContactRegion}
-          onChange={(event) => updateField("emergencyContactRegion", event.target.value)}
-        />
-        <Textarea
-          label="Medical info"
-          rows={2}
-          value={formState.medicalInfo}
-          onChange={(event) => updateField("medicalInfo", event.target.value)}
-        />
-        <Textarea
-          label="Safety notes"
-          rows={2}
-          value={formState.safetyNotes}
-          onChange={(event) => updateField("safetyNotes", event.target.value)}
-        />
-        <Textarea
-          label="Volunteer interest"
-          rows={2}
-          value={formState.volunteerInterest}
-          onChange={(event) => updateField("volunteerInterest", event.target.value)}
-        />
-        <Textarea
-          label="Volunteer roles"
-          rows={2}
-          value={formState.volunteerRoles}
-          onChange={(event) => updateField("volunteerRoles", event.target.value)}
-        />
-        <Input
-          label="Discovery source"
-          value={formState.discoverySource}
-          onChange={(event) => updateField("discoverySource", event.target.value)}
-        />
-        <Input
-          label="Social handles"
-          value={formState.socialHandles}
-          onChange={(event) => updateField("socialHandles", event.target.value)}
-        />
-        <Input
-          label="Language preference"
-          value={formState.languagePreference}
-          onChange={(event) => updateField("languagePreference", event.target.value)}
-        />
-        <Select
-          label="Comms preference"
-          value={formState.commsPreference}
-          onChange={(event) => updateField("commsPreference", event.target.value)}
-        >
-          <option value="sms">SMS</option>
-          <option value="whatsapp">WhatsApp</option>
-          <option value="email">Email</option>
-        </Select>
-        <Select
-          label="Payment readiness"
-          value={formState.paymentReadiness}
-          onChange={(event) => updateField("paymentReadiness", event.target.value)}
-        >
-          <option value="ready_now">Ready to pay now</option>
-          <option value="need_notice">Need advance notice</option>
-          <option value="sponsor_support">Looking for sponsor support</option>
-        </Select>
-        <Input
-          label="Preferred currency"
-          value={formState.currencyPreference}
-          onChange={(event) => updateField("currencyPreference", event.target.value)}
-        />
-        <Select
-          label="Photo consent"
-          value={formState.consentPhoto}
-          onChange={(event) => updateField("consentPhoto", event.target.value)}
-        >
-          <option value="yes">Yes</option>
-          <option value="no">No</option>
-        </Select>
-        <Textarea
-          label="Membership tiers"
-          hint="Comma-separated"
-          rows={2}
-          value={formState.membershipTiersText}
-          onChange={(event) => updateField("membershipTiersText", event.target.value)}
-        />
-        <Textarea
-          label="Academy focus"
-          rows={2}
-          value={formState.academyFocus}
-          onChange={(event) => updateField("academyFocus", event.target.value)}
-        />
-        <Textarea
-          label="Payment notes"
-          rows={2}
-          value={formState.paymentNotes}
-          onChange={(event) => updateField("paymentNotes", event.target.value)}
-        />
+        <div className="md:col-span-2">
+          <TimezoneCombobox
+            label="Time zone"
+            value={formState.timeZone}
+            onChange={(value) => setFormState({ ...formState, timeZone: value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Select
+            label="Swimming level"
+            value={formState.swimLevel}
+            onChange={(e) => setFormState({ ...formState, swimLevel: e.target.value })}
+          >
+            <option value="">Select level</option>
+            {Object.entries(levelLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div className="md:col-span-2">
+          <Select
+            label="Deep-water comfort"
+            value={formState.deepWaterComfort}
+            onChange={(e) => setFormState({ ...formState, deepWaterComfort: e.target.value })}
+          >
+            <option value="">Select comfort level</option>
+            <option value="Comfortable">Comfortable</option>
+            <option value="Not comfortable">Not comfortable</option>
+          </Select>
+        </div>
+        <div className="md:col-span-2">
+          <OptionPillGroup
+            label="Preferred strokes"
+            options={strokesOptions}
+            selected={formState.strokes}
+            onToggle={(value) => {
+              const newStrokes = formState.strokes.includes(value)
+                ? formState.strokes.filter((s) => s !== value)
+                : [...formState.strokes, value];
+              setFormState({ ...formState, strokes: newStrokes });
+            }}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <OptionPillGroup
+            label="Interests"
+            options={interestOptions}
+            selected={formState.interests}
+            onToggle={(value) => {
+              const newInterests = formState.interests.includes(value)
+                ? formState.interests.filter((i) => i !== value)
+                : [...formState.interests, value];
+              setFormState({ ...formState, interests: newInterests });
+            }}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Textarea
+            label="Narrative goals"
+            value={formState.goalsNarrative}
+            onChange={(e) => setFormState({ ...formState, goalsNarrative: e.target.value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <OptionPillGroup
+            label="Certifications"
+            options={certificationOptions}
+            selected={formState.certifications}
+            onToggle={(value) => {
+              const newCerts = formState.certifications.includes(value)
+                ? formState.certifications.filter((c) => c !== value)
+                : [...formState.certifications, value];
+              setFormState({ ...formState, certifications: newCerts });
+            }}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Textarea
+            label="Coaching experience"
+            value={formState.coachingExperience}
+            onChange={(e) => setFormState({ ...formState, coachingExperience: e.target.value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <OptionPillGroup
+            label="Coaching specialties"
+            options={coachingSpecialtyOptions}
+            selected={formState.coachingSpecialties}
+            onToggle={(value) => {
+              const newSpecs = formState.coachingSpecialties.includes(value)
+                ? formState.coachingSpecialties.filter((s) => s !== value)
+                : [...formState.coachingSpecialties, value];
+              setFormState({ ...formState, coachingSpecialties: newSpecs });
+            }}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Select
+            label="Years coaching"
+            value={formState.coachingYears}
+            onChange={(e) => setFormState({ ...formState, coachingYears: e.target.value })}
+          >
+            <option value="">Select range</option>
+            <option value="under_1">Less than 1 year</option>
+            <option value="1_3">1 – 3 years</option>
+            <option value="3_5">3 – 5 years</option>
+            <option value="5_plus">5+ years</option>
+          </Select>
+        </div>
+        <div className="md:col-span-2">
+          <Input
+            label="Portfolio / website"
+            type="url"
+            value={formState.coachingPortfolioLink}
+            onChange={(e) => setFormState({ ...formState, coachingPortfolioLink: e.target.value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Input
+            label="Certification link"
+            type="url"
+            value={formState.coachingDocumentLink}
+            onChange={(e) => setFormState({ ...formState, coachingDocumentLink: e.target.value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Input
+            label="Uploaded credential filename"
+            value={formState.coachingDocumentFileName}
+            onChange={(e) => setFormState({ ...formState, coachingDocumentFileName: e.target.value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <OptionPillGroup
+            label="Weekly availability slots"
+            options={availabilityOptions}
+            selected={formState.availabilitySlots}
+            onToggle={(value) => {
+              const newSlots = formState.availabilitySlots.includes(value)
+                ? formState.availabilitySlots.filter((s) => s !== value)
+                : [...formState.availabilitySlots, value];
+              setFormState({ ...formState, availabilitySlots: newSlots });
+            }}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <OptionPillGroup
+            label="Time-of-day availability"
+            options={timeOfDayOptions}
+            selected={formState.timeOfDayAvailability}
+            onToggle={(value) => {
+              const newTimes = formState.timeOfDayAvailability.includes(value)
+                ? formState.timeOfDayAvailability.filter((t) => t !== value)
+                : [...formState.timeOfDayAvailability, value];
+              setFormState({ ...formState, timeOfDayAvailability: newTimes });
+            }}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <OptionPillGroup
+            label="Preferred locations"
+            options={locationOptions}
+            selected={formState.locationPreference}
+            onToggle={(value) => {
+              const newLocs = formState.locationPreference.includes(value)
+                ? formState.locationPreference.filter((l) => l !== value)
+                : [...formState.locationPreference, value];
+              setFormState({ ...formState, locationPreference: newLocs });
+            }}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Input
+            label="Other location"
+            value={formState.locationPreferenceOther}
+            onChange={(e) => setFormState({ ...formState, locationPreferenceOther: e.target.value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <SingleSelectPills
+            label="Travel readiness"
+            options={travelFlexibilityOptions}
+            value={formState.travelFlexibility}
+            onChange={(value) => setFormState({ ...formState, travelFlexibility: value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <OptionPillGroup
+            label="Facility access"
+            options={facilityAccessOptions}
+            selected={formState.facilityAccess}
+            onToggle={(value) => {
+              const newAccess = formState.facilityAccess.includes(value)
+                ? formState.facilityAccess.filter((a) => a !== value)
+                : [...formState.facilityAccess, value];
+              setFormState({ ...formState, facilityAccess: newAccess });
+            }}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Input
+            label="Facility access (other)"
+            value={formState.facilityAccessOther}
+            onChange={(e) => setFormState({ ...formState, facilityAccessOther: e.target.value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <OptionPillGroup
+            label="Equipment needs"
+            options={equipmentNeedsOptions}
+            selected={formState.equipmentNeeds}
+            onToggle={(value) => {
+              const newNeeds = formState.equipmentNeeds.includes(value)
+                ? formState.equipmentNeeds.filter((n) => n !== value)
+                : [...formState.equipmentNeeds, value];
+              setFormState({ ...formState, equipmentNeeds: newNeeds });
+            }}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Input
+            label="Equipment needs (other)"
+            value={formState.equipmentNeedsOther}
+            onChange={(e) => setFormState({ ...formState, equipmentNeedsOther: e.target.value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Textarea
+            label="Travel notes"
+            value={formState.travelNotes}
+            onChange={(e) => setFormState({ ...formState, travelNotes: e.target.value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Input
+            label="Emergency contact name"
+            value={formState.emergencyContactName}
+            onChange={(e) => setFormState({ ...formState, emergencyContactName: e.target.value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Input
+            label="Relationship"
+            value={formState.emergencyContactRelationship}
+            onChange={(e) => setFormState({ ...formState, emergencyContactRelationship: e.target.value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Input
+            label="Emergency phone"
+            value={formState.emergencyContactPhone}
+            onChange={(e) => setFormState({ ...formState, emergencyContactPhone: e.target.value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Input
+            label="Emergency region"
+            value={formState.emergencyContactRegion}
+            onChange={(e) => setFormState({ ...formState, emergencyContactRegion: e.target.value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Textarea
+            label="Medical info"
+            value={formState.medicalInfo}
+            onChange={(e) => setFormState({ ...formState, medicalInfo: e.target.value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Textarea
+            label="Safety notes"
+            value={formState.safetyNotes}
+            onChange={(e) => setFormState({ ...formState, safetyNotes: e.target.value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <OptionPillGroup
+            label="Volunteer interest"
+            options={volunteerInterestOptions}
+            selected={formState.volunteerInterest}
+            onToggle={(value) => {
+              const newInterests = formState.volunteerInterest.includes(value)
+                ? formState.volunteerInterest.filter((i) => i !== value)
+                : [...formState.volunteerInterest, value];
+              setFormState({ ...formState, volunteerInterest: newInterests });
+            }}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Textarea
+            label="Volunteer roles detail"
+            value={formState.volunteerRolesDetail}
+            onChange={(e) => setFormState({ ...formState, volunteerRolesDetail: e.target.value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Input
+            label="Discovery source"
+            value={formState.discoverySource}
+            onChange={(e) => setFormState({ ...formState, discoverySource: e.target.value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Input
+            label="Instagram handle"
+            value={formState.socialInstagram}
+            onChange={(e) => setFormState({ ...formState, socialInstagram: e.target.value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Input
+            label="LinkedIn / professional link"
+            value={formState.socialLinkedIn}
+            onChange={(e) => setFormState({ ...formState, socialLinkedIn: e.target.value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Input
+            label="Other social link"
+            value={formState.socialOther}
+            onChange={(e) => setFormState({ ...formState, socialOther: e.target.value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Input
+            label="Language preference"
+            value={formState.languagePreference}
+            onChange={(e) => setFormState({ ...formState, languagePreference: e.target.value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Select
+            label="Comms preference"
+            value={formState.commsPreference}
+            onChange={(e) => setFormState({ ...formState, commsPreference: e.target.value })}
+          >
+            <option value="whatsapp">WhatsApp</option>
+            <option value="email">Email</option>
+            <option value="sms">SMS</option>
+          </Select>
+        </div>
+        <div className="md:col-span-2">
+          <SingleSelectPills
+            label="Payment readiness"
+            options={paymentReadinessOptions}
+            value={formState.paymentReadiness}
+            onChange={(value) => setFormState({ ...formState, paymentReadiness: value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Input
+            label="Preferred currency"
+            value={formState.currencyPreference}
+            onChange={(e) => setFormState({ ...formState, currencyPreference: e.target.value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Select
+            label="Photo consent"
+            value={formState.consentPhoto}
+            onChange={(e) => setFormState({ ...formState, consentPhoto: e.target.value })}
+          >
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </Select>
+        </div>
+        <div className="md:col-span-2">
+          <OptionPillGroup
+            label="Membership tiers"
+            options={membershipTierOptions}
+            selected={formState.membershipTiers}
+            onToggle={(value) => {
+              const newTiers = formState.membershipTiers.includes(value)
+                ? formState.membershipTiers.filter((t) => t !== value)
+                : [...formState.membershipTiers, value];
+              setFormState({ ...formState, membershipTiers: newTiers });
+            }}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <OptionPillGroup
+            label="Academy focus areas"
+            options={academyFocusOptions}
+            selected={formState.academyFocusAreas}
+            onToggle={(value) => {
+              const newAreas = formState.academyFocusAreas.includes(value)
+                ? formState.academyFocusAreas.filter((a) => a !== value)
+                : [...formState.academyFocusAreas, value];
+              setFormState({ ...formState, academyFocusAreas: newAreas });
+            }}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Textarea
+            label="Academy focus"
+            value={formState.academyFocus}
+            onChange={(e) => setFormState({ ...formState, academyFocus: e.target.value })}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Textarea
+            label="Payment notes"
+            value={formState.paymentNotes}
+            onChange={(e) => setFormState({ ...formState, paymentNotes: e.target.value })}
+          />
+        </div>
       </div>
       <div className="flex flex-wrap gap-3">
         <Button variant="secondary" type="button" onClick={onCancel} disabled={saving}>
@@ -760,7 +1279,15 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
           {saving ? "Saving..." : "Save changes"}
         </Button>
       </div>
-    </div>
+    </div >
+  );
+}
+
+export default function MemberProfilePage() {
+  return (
+    <Suspense fallback={<LoadingCard text="Loading profile..." />}>
+      <ProfileContent />
+    </Suspense>
   );
 }
 

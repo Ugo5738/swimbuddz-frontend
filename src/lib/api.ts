@@ -13,14 +13,15 @@ type RequestOptions = {
 };
 
 async function buildHeaders(auth?: boolean, headers?: HeadersInit): Promise<HeadersInit> {
-  const result: HeadersInit = {
-    "Content-Type": "application/json",
-    ...headers
-  };
+  const result = new Headers(headers);
+
+  if (!result.has("Content-Type")) {
+    result.set("Content-Type", "application/json");
+  }
 
   if (auth) {
     const token = await getCurrentAccessToken();
-    if (token) result["Authorization"] = `Bearer ${token}`;
+    if (token) result.set("Authorization", `Bearer ${token}`);
   }
 
   return result;

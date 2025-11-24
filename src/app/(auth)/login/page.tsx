@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/auth";
+import { completePendingRegistrationOnBackend } from "@/lib/registration";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { PasswordField } from "@/components/ui/PasswordField";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
@@ -27,14 +28,21 @@ export default function LoginPage() {
       password
     });
 
-    setLoading(false);
-
     if (signInError) {
+      setLoading(false);
       setError(signInError.message);
       return;
     }
 
-    const redirect = searchParams.get("redirect") || "/member/profile";
+    const completion = await completePendingRegistrationOnBackend();
+    if (completion.status === "error") {
+      setLoading(false);
+      setError(`Signed in, but ${completion.message}`);
+      return;
+    }
+
+    setLoading(false);
+    const redirect = searchParams.get("redirect") || "/profile";
     router.push(redirect);
   }
 
@@ -78,5 +86,13 @@ export default function LoginPage() {
         </p>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }

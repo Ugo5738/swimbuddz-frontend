@@ -2,7 +2,8 @@ import { supabase, getCurrentAccessToken } from "./auth";
 import { apiPost } from "./api";
 
 export type RegistrationPayload = {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
   city: string;
@@ -16,12 +17,20 @@ export type RegistrationPayload = {
   goalsOther?: string;
   certifications: string[];
   coachingExperience?: string;
-  availability: string;
-  timeOfDayAvailability: string;
-  locationPreference: string;
+  coachingSpecialties: string[];
+  coachingYears?: string;
+  coachingPortfolioLink?: string;
+  coachingDocumentLink?: string;
+  coachingDocumentFileName?: string;
+  availabilitySlots: string[];
+  timeOfDayAvailability: string[];
+  locationPreference: string[];
+  locationPreferenceOther?: string;
   travelFlexibility: string;
-  facilityAccess?: string;
-  equipmentNeeds?: string;
+  facilityAccess?: string[];
+  facilityAccessOther?: string;
+  equipmentNeeds?: string[];
+  equipmentNeedsOther?: string;
   travelNotes?: string;
   emergencyContactName: string;
   emergencyContactRelationship: string;
@@ -29,31 +38,45 @@ export type RegistrationPayload = {
   emergencyContactRegion: string;
   medicalInfo?: string;
   safetyNotes?: string;
-  volunteerInterest: string;
-  volunteerRoles?: string;
+  volunteerInterest: string[];
+  volunteerRolesDetail?: string;
   discoverySource: string;
-  socialHandles?: string;
+  socialInstagram?: string;
+  socialLinkedIn?: string;
+  socialOther?: string;
   languagePreference: string;
   commsPreference: string;
   paymentReadiness: string;
   currencyPreference: string;
   consentPhoto: string;
   membershipTiers: string[];
+  academyFocusAreas: string[];
   academyFocus?: string;
   paymentNotes?: string;
 };
 
-export async function registerMember(payload: RegistrationPayload, password: string) {
-  const { error: signUpError } = await supabase.auth.signUp({
+export type RegistrationResult =
+  | { status: "complete" }
+  | { status: "email_confirmation_required" };
+
+export type PendingCompletionStatus =
+  | { status: "none" }
+  | { status: "completed" }
+  | { status: "error"; message: string };
+
+export async function registerMember(payload: RegistrationPayload, password: string): Promise<RegistrationResult> {
+  const { data, error: signUpError } = await supabase.auth.signUp({
     email: payload.email,
     password,
     options: {
       data: {
-        full_name: payload.fullName,
+        first_name: payload.firstName,
+        last_name: payload.lastName,
         phone: payload.phone,
         city: payload.city,
         country: payload.country
-      }
+      },
+      emailRedirectTo: `${window.location.origin}/auth/callback`
     }
   });
 
@@ -61,55 +84,62 @@ export async function registerMember(payload: RegistrationPayload, password: str
     throw new Error(signUpError.message);
   }
 
+  const supabaseUserId = data.user?.id;
+
+  if (!supabaseUserId) {
+    throw new Error("Unable to determine Supabase user ID after sign-up.");
+  }
+
+  await savePendingRegistrationToBackend(supabaseUserId, payload);
+
   const token = await getCurrentAccessToken();
 
   if (!token) {
-    throw new Error("Unable to retrieve access token after sign-up.");
+    return { status: "email_confirmation_required" };
   }
 
+  const completion = await completePendingRegistrationOnBackend();
+  if (completion.status === "error") {
+    throw new Error(completion.message);
+  }
+
+  return { status: "complete" };
+}
+
+export async function completePendingRegistrationOnBackend(): Promise<PendingCompletionStatus> {
+  const token = await getCurrentAccessToken();
+  if (!token) {
+    return { status: "none" };
+  }
+
+  try {
+    await apiPost("/api/v1/pending-registrations/complete", undefined, { auth: true });
+    return { status: "completed" };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to finish registration.";
+    // If the member already exists or pending is gone (race condition/idempotency), consider success
+    if (
+      message.includes("already exists") ||
+      message.includes("Pending registration not found") ||
+      (error as any)?.response?.status === 400 ||
+      (error as any)?.response?.status === 404
+    ) {
+      return { status: "completed" };
+    }
+    return { status: "error", message };
+  }
+}
+
+async function savePendingRegistrationToBackend(userId: string, payload: RegistrationPayload) {
+  // Backend expects snake_case fields at the top level
   const backendPayload = {
-    full_name: payload.fullName,
-    email: payload.email,
-    phone: payload.phone,
-    city: payload.city,
-    country: payload.country,
-    time_zone: payload.timeZone,
-    swim_level: payload.swimLevel,
-    deep_water_comfort: payload.deepWaterComfort,
-    strokes: payload.strokes,
-    interests: payload.interests,
-    goals: payload.goalsNarrative,
-    // TODO: confirm final backend key for \"other goals\" text.
-    goals_other: payload.goalsOther,
-    certifications: payload.certifications,
-    coaching_experience: payload.coachingExperience,
-    availability: payload.availability,
-    time_of_day_availability: payload.timeOfDayAvailability,
-    location_preference: payload.locationPreference,
-    travel_flexibility: payload.travelFlexibility,
-    facility_access: payload.facilityAccess,
-    equipment_needs: payload.equipmentNeeds,
-    travel_notes: payload.travelNotes,
-    emergency_contact_name: payload.emergencyContactName,
-    emergency_contact_relationship: payload.emergencyContactRelationship,
-    emergency_contact_phone: payload.emergencyContactPhone,
-    emergency_contact_region: payload.emergencyContactRegion,
-    medical_info: payload.medicalInfo,
-    safety_notes: payload.safetyNotes,
-    volunteer_interest: payload.volunteerInterest,
-    volunteer_roles: payload.volunteerRoles,
-    discovery_source: payload.discoverySource,
-    social_handles: payload.socialHandles,
-    language_preference: payload.languagePreference,
-    comms_preference: payload.commsPreference,
-    payment_readiness: payload.paymentReadiness,
-    currency_preference: payload.currencyPreference,
-    consent_photo: payload.consentPhoto,
-    // TODO: align membership tier enum values with backend contract.
-    membership_tiers: payload.membershipTiers,
-    academy_focus: payload.academyFocus,
-    payment_notes: payload.paymentNotes
+
+    first_name: payload.firstName,
+    last_name: payload.lastName,
+    // We can pass other fields if the backend schema allows extra fields or if we want to store them in profile_data_json
+    // The backend currently takes the whole body and dumps it to JSON for profile_data
+    ...payload
   };
 
-  await apiPost("/api/v1/members", backendPayload, { auth: true });
+  await apiPost("/api/v1/pending-registrations/", backendPayload);
 }

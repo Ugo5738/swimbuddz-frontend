@@ -287,20 +287,40 @@ All API calls must respect that contract.
   - **Goal:** Actually register user and create member profile.
   - **Requirements:**
     - On final submit:
-      - Create Supabase user (sign-up).
-      - Retrieve access token from Supabase.
-      - Call backend `POST /api/v1/members/` with full profile body (shape defined in API_CONTRACT).
+      - Call backend `POST /api/v1/pending-registrations` with the full registration payload.
+      - Create Supabase user (sign-up) which triggers email confirmation.
+      - Redirect to a “Check your email” page.
+    - Handle Supabase email-confirmation redirect:
+      - Provide `/auth/callback` route so Supabase can redirect back with tokens.
+      - After confirmation/login, call `POST /api/v1/pending-registrations/complete` to finalize member creation.
     - On success:
       - Redirect to `/member/profile`.
     - On error:
       - Show clear error messages.
   - **Output:**
-    - Fully functional registration flow.
+    - Fully functional registration flow with email verification.
 
 - [x] **3.1.3 – Global-ready registration fields**
   - **Goal:** Expand the `/register` UI so it captures every data point described in the updated docs.
   - **Requirements:**
     - Update `src/app/(auth)/register/page.tsx` with new field groups covering geography/time zone, strokes (multi-select), interests/goals, certifications/background, logistics/travel, facility/equipment access, emergency contact region, community engagement (discovery, socials, volunteer roles), language + communication preferences, payment readiness/currency, and membership tier selection that allows Community/Club/Academy simultaneously.
+    - Rename the “Narrative goals” field to “What are you hoping to achieve?” (or similar plain-language copy) and update helper text accordingly.
+    - Expand the coach flow: keep the textarea (with helper text) plus add structured sub-fields (e.g., checkboxes for specialties, years coaching) and provide a secure upload input for certifications/supporting documents (file upload or link entry).
+    - Reduce textarea fatigue in the logistics step:
+      - Weekly availability → chip/checkbox grid (weekday mornings/evenings, weekend, remote).
+      - Time-of-day availability → multi-select or pills.
+      - Preferred locations → multi-select list with optional “Other” text input.
+      - Facility/water access → checkbox set (city pool, open water, home pool, other) plus optional text.
+      - Equipment needs → chip-based multi-select for common gear + optional free-text.
+      - Keep one optional “Travel notes” textarea for edge cases (visa/ride-share notes).
+    - Community step refinements:
+      - Place the “Language preference” input beneath the “Other social link” field to keep all socials grouped together.
+      - Default the photo/video consent toggle to “Yes” so members actively opt out if needed.
+    - Community & consents refinements:
+      - Volunteer interest / roles → chip-based multi-select with an optional “Specific roles” textarea for detail.
+      - Social handles → structured inputs (e.g., Instagram + LinkedIn/Other) or chip selector rather than a single freeform line.
+      - Payment readiness → pill or radio control for quick selection (Ready now / Need notice / Need sponsorship).
+      - Membership tiers helper text reinforcing multi-select; show tier-specific sub-fields (e.g., Academy focus chips) before the textarea.
     - Time zone capture must use a searchable dropdown (combobox) seeded with the canonical IANA list so users can type to find e.g. `Africa/Lagos` quickly without free-text inconsistencies.
     - Implement conditional sub-sections (e.g., extra prompts when “Coach” or “Academy” tiers are selected) without blocking other users.
     - Ensure validation + copy reflects which fields are required vs optional.
@@ -315,6 +335,24 @@ All API calls must respect that contract.
     - Handle multi-select values (e.g., strokes, membership tiers) consistently in the payload.
   - **Output:**
     - Backend receives the full global-ready registration data.
+
+### 3.1.7 – Public policy refresh
+
+- [x] **3.1.7.1 – Update community guidelines page**
+  - **Goal:** Sync `/guidelines` with the latest Google Doc content.
+  - **Requirements:**
+    - Replace the summaries with the full copy provided by ops (including headings, numbered sections, emojis, and contact info).
+    - Ensure the “Last updated” date and Google Doc link match the supplied source.
+  - **Output:**
+    - `src/app/(public)/guidelines/page.tsx` mirrors the shared document content.
+
+- [x] **3.1.7.2 – Update privacy policy page**
+  - **Goal:** Sync `/privacy` with the latest SwimBuddz privacy policy.
+  - **Requirements:**
+    - Replace the existing cards with the full policy sections provided (Who we are, What we collect, etc.).
+    - Include contact info, update date, and the correct Google Doc permalink.
+  - **Output:**
+    - `src/app/(public)/privacy/page.tsx` renders the new privacy policy.
 
 ### 3.2 – Member Profile (`/member/profile`)
 
@@ -463,7 +501,7 @@ All API calls must respect that contract.
   - **Goal:** Provide quick overview for admins.
   - **Requirements:**
     - `src/app/(admin)/dashboard/page.tsx`.
-    - Fetch aggregated info from backend (if available), or stub for later:
+    - Fetch aggregated info from backend: `GET /api/v1/admin/dashboard-stats`.
       - Total members.
       - Active vs inactive counts.
       - Upcoming sessions with sign-in counts.

@@ -9,7 +9,8 @@ const adminNav = [
   { href: "/admin/dashboard", label: "Dashboard" },
   { href: "/admin/members", label: "Members" },
   { href: "/admin/sessions", label: "Sessions" },
-  { href: "/admin/announcements", label: "Announcements" }
+  { href: "/admin/announcements", label: "Announcements" },
+  { href: "/admin/attendance", label: "Attendance" }
 ];
 
 export function AdminLayout({ children }: AdminLayoutProps) {

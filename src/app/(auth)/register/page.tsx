@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { phoneCodes } from "@/lib/phoneCodes";
@@ -11,8 +11,29 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
-import { registerMember } from "@/lib/registration";
+import { registerMember, type RegistrationPayload } from "@/lib/registration";
 import { TimezoneCombobox } from "@/components/forms/TimezoneCombobox";
+import { OptionPillGroup } from "@/components/forms/OptionPillGroup";
+import { SingleSelectPills } from "@/components/forms/SingleSelectPills";
+import {
+  strokesOptions,
+  interestOptions,
+  certificationOptions,
+  coachingSpecialtyOptions,
+  travelFlexibilityOptions,
+  membershipTierOptions,
+  paymentReadinessOptions,
+  volunteerInterestOptions,
+  academyFocusOptions,
+  facilityAccessOptions,
+  equipmentNeedsOptions,
+  availabilityOptions,
+  timeOfDayOptions,
+  locationOptions,
+  countryOptions,
+  discoverySourceOptions,
+  currencyOptions
+} from "@/lib/options";
 
 const steps = [
   {
@@ -35,69 +56,9 @@ const steps = [
   { title: "Agreements", description: "Confirm that you’ve read our guidelines and privacy commitments." }
 ];
 
-const strokesOptions = [
-  { value: "freestyle", label: "Freestyle" },
-  { value: "backstroke", label: "Backstroke" },
-  { value: "breaststroke", label: "Breaststroke" },
-  { value: "butterfly", label: "Butterfly" },
-  { value: "im", label: "Individual medley" },
-  { value: "open_water", label: "Open water" },
-  { value: "other", label: "Other" }
-];
-
-const interestOptions = [
-  { value: "fitness", label: "Fitness & wellness" },
-  { value: "triathlon", label: "Triathlon / multi-sport" },
-  { value: "remote_coaching", label: "Remote coaching" },
-  { value: "academy_track", label: "Academy track" },
-  { value: "open_water", label: "Open water" },
-  { value: "volunteering", label: "Volunteering" }
-];
-
-const certificationOptions = [
-  { value: "coach", label: "Coach" },
-  { value: "lifeguard", label: "Lifeguard" },
-  { value: "cpr", label: "CPR" },
-  { value: "first_aid", label: "First aid" }
-];
-
-const travelFlexibilityOptions = [
-  { value: "local_only", label: "Local sessions only" },
-  { value: "regional", label: "Regional travel is OK" },
-  { value: "global", label: "Global / relocation ready" }
-];
-
-const membershipTierOptions = [
-  { value: "community", label: "Community" },
-  { value: "club", label: "Club" },
-  { value: "academy", label: "Academy" }
-];
-
-const paymentReadinessOptions = [
-  { value: "ready_now", label: "Ready to pay now" },
-  { value: "need_notice", label: "Need advance notice" },
-  { value: "sponsor_support", label: "Looking for sponsor support" }
-];
-
-const discoverySourceOptions = [
-  { value: "friend", label: "Friend / referral" },
-  { value: "instagram", label: "Instagram" },
-  { value: "event", label: "Event or meet-up" },
-  { value: "search", label: "Search" },
-  { value: "other", label: "Other" }
-];
-
-const countryOptions = Array.from(new Set(phoneCodes.map((country) => country.name))).sort();
-
-const currencyOptions = [
-  { value: "NGN", label: "NGN" },
-  { value: "USD", label: "USD" },
-  { value: "GBP", label: "GBP" },
-  { value: "EUR", label: "EUR" }
-];
-
 type FormState = {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   phoneCountryCode: string;
@@ -113,12 +74,20 @@ type FormState = {
   goalsOther: string;
   certifications: string[];
   coachingExperience: string;
-  availability: string;
-  timeOfDayAvailability: string;
-  locationPreference: string;
+  coachingSpecialties: string[];
+  coachingYears: string;
+  coachingPortfolioLink: string;
+  coachingDocumentLink: string;
+  coachingDocumentFileName: string;
+  availabilitySlots: string[];
+  timeOfDayAvailability: string[];
+  locationPreference: string[];
+  locationPreferenceOther: string;
   travelFlexibility: string;
-  facilityAccess: string;
-  equipmentNeeds: string;
+  facilityAccess: string[];
+  facilityAccessOther: string;
+  equipmentNeeds: string[];
+  equipmentNeedsOther: string;
   travelNotes: string;
   emergencyContactName: string;
   emergencyContactRelationship: string;
@@ -127,16 +96,19 @@ type FormState = {
   emergencyContactRegion: string;
   medicalInfo: string;
   safetyNotes: string;
-  volunteerInterest: string;
-  volunteerRoles: string;
+  volunteerInterest: string[];
+  volunteerRolesDetail: string;
   discoverySource: string;
-  socialHandles: string;
+  socialInstagram: string;
+  socialLinkedIn: string;
+  socialOther: string;
   languagePreference: string;
   commsPreference: string;
   paymentReadiness: string;
   currencyPreference: string;
   consentPhoto: string;
   membershipTiers: string[];
+  academyFocusAreas: string[];
   academyFocus: string;
   paymentNotes: string;
   acceptedGuidelines: boolean;
@@ -144,7 +116,8 @@ type FormState = {
 };
 
 const initialFormState: FormState = {
-  fullName: "",
+  firstName: "",
+  lastName: "",
   email: "",
   password: "",
   phoneCountryCode: "+234",
@@ -160,12 +133,20 @@ const initialFormState: FormState = {
   goalsOther: "",
   certifications: [],
   coachingExperience: "",
-  availability: "",
-  timeOfDayAvailability: "",
-  locationPreference: "",
+  coachingSpecialties: [],
+  coachingYears: "",
+  coachingPortfolioLink: "",
+  coachingDocumentLink: "",
+  coachingDocumentFileName: "",
+  availabilitySlots: [],
+  timeOfDayAvailability: [],
+  locationPreference: [],
+  locationPreferenceOther: "",
   travelFlexibility: "",
-  facilityAccess: "",
-  equipmentNeeds: "",
+  facilityAccess: [],
+  facilityAccessOther: "",
+  equipmentNeeds: [],
+  equipmentNeedsOther: "",
   travelNotes: "",
   emergencyContactName: "",
   emergencyContactRelationship: "",
@@ -174,30 +155,78 @@ const initialFormState: FormState = {
   emergencyContactRegion: "",
   medicalInfo: "",
   safetyNotes: "",
-  volunteerInterest: "",
-  volunteerRoles: "",
+  volunteerInterest: [],
+  volunteerRolesDetail: "",
   discoverySource: "",
-  socialHandles: "",
+  socialInstagram: "",
+  socialLinkedIn: "",
+  socialOther: "",
   languagePreference: "English",
-  commsPreference: "sms",
+  commsPreference: "whatsapp",
   paymentReadiness: "",
   currencyPreference: "NGN",
-  consentPhoto: "no",
+  consentPhoto: "yes",
   membershipTiers: [],
+  academyFocusAreas: [],
   academyFocus: "",
   paymentNotes: "",
   acceptedGuidelines: false,
   acceptedPrivacy: false
 };
 
-type MultiValueField = "strokes" | "interests" | "certifications" | "membershipTiers";
+type MultiValueField =
+  | "strokes"
+  | "interests"
+  | "certifications"
+  | "membershipTiers"
+  | "coachingSpecialties"
+  | "availabilitySlots"
+  | "timeOfDayAvailability"
+  | "locationPreference"
+  | "facilityAccess"
+  | "equipmentNeeds"
+  | "volunteerInterest"
+  | "academyFocusAreas";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormState>(initialFormState);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [dynamicTimeOptions, setDynamicTimeOptions] = useState<{ value: string; label: string }[]>([]);
+
+  useEffect(() => {
+    async function fetchSessions() {
+      try {
+        const res = await fetch("http://localhost:8000/api/v1/sessions/");
+        if (res.ok) {
+          const sessions = await res.json();
+          // Deduplicate by title to create options
+          const uniqueTitles = new Set();
+          const options: { value: string; label: string }[] = [];
+
+          sessions.forEach((s: any) => {
+            if (!uniqueTitles.has(s.title)) {
+              uniqueTitles.add(s.title);
+              // Create a value from title (slugify)
+              const value = s.title.toLowerCase().replace(/\s+/g, "_").replace(/[()]/g, "");
+              options.push({ value, label: s.title });
+            }
+          });
+
+          if (options.length > 0) {
+            setDynamicTimeOptions(options);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch sessions", err);
+      }
+    }
+    fetchSessions();
+  }, []);
 
   function updateField<T extends keyof FormState>(field: T, value: FormState[T]) {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -221,43 +250,53 @@ export default function RegisterPage() {
     switch (currentStep) {
       case 0:
         return Boolean(
-          formData.fullName &&
-            formData.email &&
-            formData.password &&
-            formData.phone &&
-            formData.city &&
-            formData.country &&
-            formData.timeZone
+          formData.firstName &&
+          formData.lastName &&
+          formData.email &&
+          formData.password &&
+          formData.phone &&
+          formData.city &&
+          formData.country &&
+          formData.timeZone
         );
       case 1:
+        const coachSelected = formData.certifications.includes("coach");
+        const coachFieldsValid = coachSelected
+          ? Boolean(
+            formData.coachingExperience.trim() &&
+            formData.coachingSpecialties.length > 0 &&
+            formData.coachingYears
+          )
+          : true;
         return (
           Boolean(formData.swimLevel && formData.deepWaterComfort && formData.goalsNarrative) &&
           formData.strokes.length > 0 &&
-          (formData.interests.length > 0 || Boolean(formData.goalsOther.trim()))
+          (formData.interests.length > 0 || Boolean(formData.goalsOther.trim())) &&
+          coachFieldsValid
         );
       case 2:
-        return Boolean(
-          formData.availability &&
-            formData.timeOfDayAvailability &&
-            formData.locationPreference &&
-            formData.travelFlexibility
+        return (
+          formData.availabilitySlots.length > 0 &&
+          formData.timeOfDayAvailability.length > 0 &&
+          (formData.locationPreference.length > 0 || Boolean(formData.locationPreferenceOther.trim())) &&
+          Boolean(formData.travelFlexibility)
         );
       case 3:
         return Boolean(
           formData.emergencyContactName &&
-            formData.emergencyContactRelationship &&
-            formData.emergencyContactPhone &&
-            formData.emergencyContactRegion
+          formData.emergencyContactRelationship &&
+          formData.emergencyContactPhone &&
+          formData.emergencyContactRegion
         );
       case 4:
         return (
           Boolean(
-            formData.volunteerInterest &&
-              formData.discoverySource &&
-              formData.languagePreference &&
-              formData.commsPreference &&
-              formData.paymentReadiness &&
-              formData.currencyPreference
+            formData.volunteerInterest.length &&
+            formData.discoverySource &&
+            formData.languagePreference &&
+            formData.commsPreference &&
+            formData.paymentReadiness &&
+            formData.currencyPreference
           ) && formData.membershipTiers.length > 0
         );
       case 5:
@@ -271,51 +310,68 @@ export default function RegisterPage() {
     setErrorMessage(null);
     setSubmitting(true);
     try {
-      await registerMember(
-        {
-          fullName: formData.fullName,
-          email: formData.email,
-          phone: `${formData.phoneCountryCode} ${formData.phone}`.trim(),
-          city: formData.city,
-          country: formData.country,
-          timeZone: formData.timeZone,
-          swimLevel: formData.swimLevel,
-          deepWaterComfort: formData.deepWaterComfort,
-          strokes: formData.strokes,
-          interests: formData.interests,
-          goalsNarrative: formData.goalsNarrative,
-          goalsOther: formData.goalsOther,
-          certifications: formData.certifications,
-          coachingExperience: formData.coachingExperience,
-          availability: formData.availability,
-          timeOfDayAvailability: formData.timeOfDayAvailability,
-          locationPreference: formData.locationPreference,
-          travelFlexibility: formData.travelFlexibility,
-          facilityAccess: formData.facilityAccess,
-          equipmentNeeds: formData.equipmentNeeds,
-          travelNotes: formData.travelNotes,
-          emergencyContactName: formData.emergencyContactName,
-          emergencyContactRelationship: formData.emergencyContactRelationship,
-          emergencyContactPhone: `${formData.emergencyContactPhoneCountryCode} ${formData.emergencyContactPhone}`.trim(),
-          emergencyContactRegion: formData.emergencyContactRegion,
-          medicalInfo: formData.medicalInfo,
-          safetyNotes: formData.safetyNotes,
-          volunteerInterest: formData.volunteerInterest,
-          volunteerRoles: formData.volunteerRoles,
-          discoverySource: formData.discoverySource,
-          socialHandles: formData.socialHandles,
-          languagePreference: formData.languagePreference,
-          commsPreference: formData.commsPreference,
-          paymentReadiness: formData.paymentReadiness,
-          currencyPreference: formData.currencyPreference,
-          consentPhoto: formData.consentPhoto,
-          membershipTiers: formData.membershipTiers,
-          academyFocus: formData.academyFocus,
-          paymentNotes: formData.paymentNotes
-        },
-        formData.password
-      );
-      router.push("/member/profile");
+      const payload: RegistrationPayload = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: `${formData.phoneCountryCode} ${formData.phone}`.trim(),
+        city: formData.city,
+        country: formData.country,
+        timeZone: formData.timeZone,
+        swimLevel: formData.swimLevel,
+        deepWaterComfort: formData.deepWaterComfort,
+        strokes: formData.strokes,
+        interests: formData.interests,
+        goalsNarrative: formData.goalsNarrative,
+        goalsOther: formData.goalsOther,
+        certifications: formData.certifications,
+        coachingExperience: formData.coachingExperience,
+        coachingSpecialties: formData.coachingSpecialties,
+        coachingYears: formData.coachingYears,
+        coachingPortfolioLink: formData.coachingPortfolioLink,
+        coachingDocumentLink: formData.coachingDocumentLink,
+        coachingDocumentFileName: formData.coachingDocumentFileName,
+        availabilitySlots: formData.availabilitySlots,
+        timeOfDayAvailability: formData.timeOfDayAvailability,
+        locationPreference: formData.locationPreference,
+        locationPreferenceOther: formData.locationPreferenceOther,
+        travelFlexibility: formData.travelFlexibility,
+        facilityAccess: formData.facilityAccess,
+        facilityAccessOther: formData.facilityAccessOther,
+        equipmentNeeds: formData.equipmentNeeds,
+        equipmentNeedsOther: formData.equipmentNeedsOther,
+        travelNotes: formData.travelNotes,
+        emergencyContactName: formData.emergencyContactName,
+        emergencyContactRelationship: formData.emergencyContactRelationship,
+        emergencyContactPhone: `${formData.emergencyContactPhoneCountryCode} ${formData.emergencyContactPhone}`.trim(),
+        emergencyContactRegion: formData.emergencyContactRegion,
+        medicalInfo: formData.medicalInfo,
+        safetyNotes: formData.safetyNotes,
+        volunteerInterest: formData.volunteerInterest,
+        volunteerRolesDetail: formData.volunteerRolesDetail,
+        discoverySource: formData.discoverySource,
+        socialInstagram: formData.socialInstagram,
+        socialLinkedIn: formData.socialLinkedIn,
+        socialOther: formData.socialOther,
+        languagePreference: formData.languagePreference,
+        commsPreference: formData.commsPreference,
+        paymentReadiness: formData.paymentReadiness,
+        currencyPreference: formData.currencyPreference,
+        consentPhoto: formData.consentPhoto,
+        membershipTiers: formData.membershipTiers,
+        academyFocusAreas: formData.academyFocusAreas,
+        academyFocus: formData.academyFocus,
+        paymentNotes: formData.paymentNotes
+      } as const;
+
+      const result = await registerMember(payload, formData.password);
+
+      if (result.status === "email_confirmation_required") {
+        setRegistrationSuccess(true);
+        return;
+      }
+
+      router.push("/profile");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to complete registration.";
       setErrorMessage(message);
@@ -338,6 +394,23 @@ export default function RegisterPage() {
     }
   }
 
+  if (registrationSuccess) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-6 text-center">
+        <header className="space-y-3">
+          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">Join SwimBuddz</p>
+          <h1 className="text-4xl font-bold text-slate-900">Global registration</h1>
+        </header>
+        <Alert variant="info" title="Registration successful">
+          Check your email to confirm your account.
+        </Alert>
+        <Button onClick={() => router.push("/")} variant="secondary">
+          Back to Home
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <header className="space-y-3 text-center">
@@ -356,7 +429,7 @@ export default function RegisterPage() {
               <div className="flex items-center gap-3">
                 <span
                   className={clsx(
-                    "flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm font-semibold",
+                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 text-sm font-semibold",
                     state === "complete" && "border-emerald-500 bg-emerald-500 text-white",
                     state === "current" && "border-cyan-500 text-cyan-700",
                     state === "upcoming" && "border-slate-300 text-slate-400"
@@ -389,6 +462,12 @@ export default function RegisterPage() {
         </Alert>
       ) : null}
 
+      {infoMessage ? (
+        <Alert variant="info" title="Next step">
+          {infoMessage}
+        </Alert>
+      ) : null}
+
       <Card className="space-y-6">
         <div className="space-y-2">
           <p className="text-sm font-semibold uppercase tracking-wide text-cyan-600">
@@ -401,14 +480,24 @@ export default function RegisterPage() {
         <div className="space-y-4">
           {currentStep === 0 && (
             <>
-              <Input
-                label="Full name"
-                name="fullName"
-                placeholder="Ada Obi"
-                value={formData.fullName}
-                onChange={(event) => updateField("fullName", event.target.value)}
-                required
-              />
+              <div className="grid gap-4 md:grid-cols-2">
+                <Input
+                  label="First name"
+                  name="firstName"
+                  placeholder="Ada"
+                  value={formData.firstName}
+                  onChange={(event) => updateField("firstName", event.target.value)}
+                  required
+                />
+                <Input
+                  label="Last name"
+                  name="lastName"
+                  placeholder="Obi"
+                  value={formData.lastName}
+                  onChange={(event) => updateField("lastName", event.target.value)}
+                  required
+                />
+              </div>
               <Input
                 label="Email"
                 type="email"
@@ -435,9 +524,9 @@ export default function RegisterPage() {
                   required
                 >
                   <option value="">Select country</option>
-                  {countryOptions.map((country) => (
-                    <option key={country} value={country}>
-                      {country}
+                  {countryOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
                     </option>
                   ))}
                 </Select>
@@ -538,7 +627,8 @@ export default function RegisterPage() {
                 hint="Tell us what you’re most excited about"
               />
               <Textarea
-                label="Narrative goals"
+                label="What are you hoping to achieve?"
+                hint="Share global ambitions like racing goals, travel plans, or ways SwimBuddz can support you."
                 name="goalsNarrative"
                 rows={3}
                 placeholder="Prep for triathlon, build open-water confidence, remote coaching, etc."
@@ -562,44 +652,117 @@ export default function RegisterPage() {
                 hint="Optional"
               />
               {formData.certifications.includes("coach") ? (
-                <Textarea
-                  label="Coaching background"
-                  rows={3}
-                  placeholder="Share credentials, clubs, or focus areas"
-                  value={formData.coachingExperience}
-                  onChange={(event) => updateField("coachingExperience", event.target.value)}
-                />
+                <div className="space-y-4 rounded-md border border-slate-200 p-4">
+                  <p className="text-sm font-semibold text-slate-900">Coach verification</p>
+                  <Textarea
+                    label="Coaching background & philosophy"
+                    rows={3}
+                    placeholder="Share credentials, clubs, or focus areas"
+                    value={formData.coachingExperience}
+                    onChange={(event) => updateField("coachingExperience", event.target.value)}
+                    required
+                  />
+                  <OptionPillGroup
+                    label="Specialties"
+                    options={coachingSpecialtyOptions}
+                    selected={formData.coachingSpecialties}
+                    onToggle={(value) => toggleMultiValue("coachingSpecialties", value)}
+                    hint="Select all areas you support"
+                    required
+                  />
+                  <Select
+                    label="Years coaching"
+                    value={formData.coachingYears}
+                    onChange={(event) => updateField("coachingYears", event.target.value)}
+                    required
+                  >
+                    <option value="">Select range</option>
+                    <option value="under_1">Less than 1 year</option>
+                    <option value="1_3">1 – 3 years</option>
+                    <option value="3_5">3 – 5 years</option>
+                    <option value="5_plus">5+ years</option>
+                  </Select>
+                  <Input
+                    label="Portfolio / website (optional)"
+                    type="url"
+                    placeholder="https://coach.example.com"
+                    value={formData.coachingPortfolioLink}
+                    onChange={(event) => updateField("coachingPortfolioLink", event.target.value)}
+                  />
+                  <Input
+                    label="Certification or credential link"
+                    type="url"
+                    placeholder="https://drive.google.com/..."
+                    value={formData.coachingDocumentLink}
+                    onChange={(event) => updateField("coachingDocumentLink", event.target.value)}
+                  />
+                  <div className="space-y-1 text-sm text-slate-600">
+                    <p className="font-medium text-slate-800">Upload supporting document (PDF or image)</p>
+                    <input
+                      type="file"
+                      accept=".pdf,.png,.jpg,.jpeg"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0] ?? null;
+                        updateField("coachingDocumentFileName", file ? file.name : "");
+                      }}
+                      className="text-sm text-slate-700 file:mr-4 file:rounded-md file:border-0 file:bg-cyan-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-cyan-500"
+                    />
+                    {formData.coachingDocumentFileName ? (
+                      <p className="text-xs text-slate-500">Selected: {formData.coachingDocumentFileName}</p>
+                    ) : (
+                      <p className="text-xs text-slate-500">You can skip upload and use the link field above if preferred.</p>
+                    )}
+                    <p className="text-xs text-slate-500">
+                      Uploaded files are stored securely; admins verify every coach credential before granting access.
+                    </p>
+                  </div>
+                </div>
               ) : null}
             </>
           )}
 
           {currentStep === 2 && (
             <>
-              <Textarea
+              <OptionPillGroup
                 label="Weekly availability"
-                name="availability"
-                rows={3}
-                placeholder="Weekday evenings, Saturday mornings, remote sessions"
-                value={formData.availability}
-                onChange={(event) => updateField("availability", event.target.value)}
+                options={[
+                  { value: "weekday_morning", label: "Weekday mornings" },
+                  { value: "weekday_evening", label: "Weekday evenings" },
+                  { value: "weekend_morning", label: "Weekend mornings" },
+                  { value: "weekend_evening", label: "Weekend evenings" },
+                  { value: "remote_friendly", label: "Remote / virtual" },
+                  { value: "travel_ready", label: "Traveling often" }
+                ]}
+                selected={formData.availabilitySlots}
+                onToggle={(value) => toggleMultiValue("availabilitySlots", value)}
                 required
+                hint="Select all that apply"
+              />
+              <OptionPillGroup
+                label="Time-of-day preferences"
+                options={dynamicTimeOptions.length > 0 ? dynamicTimeOptions : timeOfDayOptions}
+                selected={formData.timeOfDayAvailability}
+                onToggle={(value) => toggleMultiValue("timeOfDayAvailability", value)}
+                required
+              />
+              <OptionPillGroup
+                label="Preferred locations"
+                options={[
+                  { value: "ago", label: "Ago (Sunfit)" },
+                  { value: "yaba", label: "Yaba (Rowe Park)" },
+                  { value: "victoria_island", label: "Victoria Island (Federal Palace)" },
+                  { value: "remote_global", label: "Remote / Global" },
+                  { value: "traveling_locations", label: "Traveling locations" }
+                ]}
+                selected={formData.locationPreference}
+                onToggle={(value) => toggleMultiValue("locationPreference", value)}
+                hint="You can pick multiple cities or simply choose remote"
               />
               <Input
-                label="Time-of-day availability"
-                name="timeOfDayAvailability"
-                placeholder="Early mornings, lunch breaks, nights"
-                value={formData.timeOfDayAvailability}
-                onChange={(event) => updateField("timeOfDayAvailability", event.target.value)}
-                required
-              />
-              <Textarea
-                label="Preferred locations"
-                name="locationPreference"
-                rows={2}
-                placeholder="Yaba, Ikoyi, Accra, remote, etc."
-                value={formData.locationPreference}
-                onChange={(event) => updateField("locationPreference", event.target.value)}
-                required
+                label="Other location (optional)"
+                placeholder="Add another city or area"
+                value={formData.locationPreferenceOther}
+                onChange={(event) => updateField("locationPreferenceOther", event.target.value)}
               />
               <Select
                 label="Travel & relocation readiness"
@@ -615,20 +778,48 @@ export default function RegisterPage() {
                   </option>
                 ))}
               </Select>
-              <Textarea
+              <OptionPillGroup
                 label="Facility / water access"
-                rows={2}
-                placeholder="City pools, open water, home pool"
-                value={formData.facilityAccess}
-                onChange={(event) => updateField("facilityAccess", event.target.value)}
+                options={[
+                  { value: "city_pool", label: "City pool" },
+                  { value: "club_pool", label: "Club pool" },
+                  { value: "open_water", label: "Open water" },
+                  { value: "home_pool", label: "Home pool" },
+                  { value: "gym_pool", label: "Gym / hotel pool" },
+                  { value: "other", label: "Other" }
+                ]}
+                selected={formData.facilityAccess}
+                onToggle={(value) => toggleMultiValue("facilityAccess", value)}
+                hint="Helps us host you locally"
               />
-              <Textarea
+              {formData.facilityAccess.includes("other") ? (
+                <Input
+                  label="Describe facility access"
+                  value={formData.facilityAccessOther}
+                  onChange={(event) => updateField("facilityAccessOther", event.target.value)}
+                />
+              ) : null}
+              <OptionPillGroup
                 label="Equipment needs"
-                rows={2}
-                placeholder="Fins, paddles, snorkel, warm-up gear"
-                value={formData.equipmentNeeds}
-                onChange={(event) => updateField("equipmentNeeds", event.target.value)}
+                options={[
+                  { value: "fins", label: "Fins" },
+                  { value: "snorkel", label: "Snorkel" },
+                  { value: "paddles", label: "Paddles" },
+                  { value: "buoy", label: "Pull buoy" },
+                  { value: "wetsuit", label: "Wetsuit" },
+                  { value: "other", label: "Other" }
+                ]}
+                selected={formData.equipmentNeeds}
+                onToggle={(value) => toggleMultiValue("equipmentNeeds", value)}
+                hint="Select the gear you'd like us to prep"
               />
+              {formData.equipmentNeeds.includes("other") ? (
+                <Input
+                  label="Other equipment needs"
+                  value={formData.equipmentNeedsOther}
+                  onChange={(event) => updateField("equipmentNeedsOther", event.target.value)}
+                />
+              ) : null}
               <Textarea
                 label="Travel notes (optional)"
                 rows={2}
@@ -727,32 +918,46 @@ export default function RegisterPage() {
                   </option>
                 ))}
               </Select>
-              <Input
-                label="Social handles (optional)"
-                placeholder="@swimbuddz on IG, LinkedIn"
-                value={formData.socialHandles}
-                onChange={(event) => updateField("socialHandles", event.target.value)}
-              />
-              <Textarea
-                label="Volunteer interest / community roles"
-                rows={3}
-                placeholder="Ride share lead, mentor, host sessions"
-                value={formData.volunteerInterest}
-                onChange={(event) => updateField("volunteerInterest", event.target.value)}
-                required
-              />
-              <Textarea
-                label="Specific roles you can support (optional)"
-                rows={2}
-                value={formData.volunteerRoles}
-                onChange={(event) => updateField("volunteerRoles", event.target.value)}
-              />
+              <div className="grid gap-4 md:grid-cols-2">
+                <Input
+                  label="Instagram handle"
+                  placeholder="@swimbuddz"
+                  value={formData.socialInstagram}
+                  onChange={(event) => updateField("socialInstagram", event.target.value)}
+                />
+                <Input
+                  label="LinkedIn / professional link"
+                  placeholder="linkedin.com/in/you"
+                  value={formData.socialLinkedIn}
+                  onChange={(event) => updateField("socialLinkedIn", event.target.value)}
+                />
+                <Input
+                  label="Other social link (optional)"
+                  placeholder="TikTok, YouTube, blog"
+                  value={formData.socialOther}
+                  onChange={(event) => updateField("socialOther", event.target.value)}
+                />
+              </div>
               <Input
                 label="Language preference"
                 placeholder="English, French, Yoruba"
                 value={formData.languagePreference}
                 onChange={(event) => updateField("languagePreference", event.target.value)}
                 required
+              />
+              <OptionPillGroup
+                label="Volunteer interest / community roles"
+                options={volunteerInterestOptions}
+                selected={formData.volunteerInterest}
+                onToggle={(value) => toggleMultiValue("volunteerInterest", value)}
+                required
+                hint="Pick all the areas you’re excited about"
+              />
+              <Textarea
+                label="Specific roles you can support (optional)"
+                rows={2}
+                value={formData.volunteerRolesDetail}
+                onChange={(event) => updateField("volunteerRolesDetail", event.target.value)}
               />
               <Select
                 label="Preferred communication channel"
@@ -761,23 +966,17 @@ export default function RegisterPage() {
                 onChange={(event) => updateField("commsPreference", event.target.value)}
                 required
               >
-                <option value="sms">SMS</option>
                 <option value="whatsapp">WhatsApp</option>
                 <option value="email">Email</option>
+                <option value="sms">SMS</option>
               </Select>
-              <Select
+              <SingleSelectPills
                 label="Payment readiness"
+                options={paymentReadinessOptions}
                 value={formData.paymentReadiness}
-                onChange={(event) => updateField("paymentReadiness", event.target.value)}
+                onChange={(value) => updateField("paymentReadiness", value)}
                 required
-              >
-                <option value="">Select readiness</option>
-                {paymentReadinessOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </Select>
+              />
               <Select
                 label="Preferred currency"
                 value={formData.currencyPreference}
@@ -797,8 +996,8 @@ export default function RegisterPage() {
                 onChange={(event) => updateField("consentPhoto", event.target.value)}
                 required
               >
-                <option value="no">No</option>
                 <option value="yes">Yes</option>
+                <option value="no">No</option>
               </Select>
               <OptionPillGroup
                 label="Membership tiers"
@@ -806,16 +1005,25 @@ export default function RegisterPage() {
                 selected={formData.membershipTiers}
                 onToggle={(value) => toggleMultiValue("membershipTiers", value)}
                 required
-                hint="Choose all that apply"
+                hint="Choose all that apply – each tier unlocks different benefits"
               />
               {formData.membershipTiers.includes("academy") ? (
-                <Textarea
-                  label="Academy focus"
-                  rows={3}
-                  placeholder="Academy goals, readiness, travel logistics"
-                  value={formData.academyFocus}
-                  onChange={(event) => updateField("academyFocus", event.target.value)}
-                />
+                <>
+                  <OptionPillGroup
+                    label="Academy focus areas"
+                    options={academyFocusOptions}
+                    selected={formData.academyFocusAreas}
+                    onToggle={(value) => toggleMultiValue("academyFocusAreas", value)}
+                    hint="Tell us what you want to prioritise"
+                  />
+                  <Textarea
+                    label="Academy additional context"
+                    rows={3}
+                    placeholder="Academy goals, readiness, travel logistics"
+                    value={formData.academyFocus}
+                    onChange={(event) => updateField("academyFocus", event.target.value)}
+                  />
+                </>
               ) : null}
               <Textarea
                 label="Payment notes (optional)"
@@ -868,51 +1076,4 @@ export default function RegisterPage() {
   );
 }
 
-type OptionPillGroupProps = {
-  label: string;
-  options: { value: string; label: string }[];
-  selected: string[];
-  onToggle: (value: string) => void;
-  hint?: string;
-  required?: boolean;
-};
 
-function OptionPillGroup({ label, options, selected, onToggle, hint, required }: OptionPillGroupProps) {
-  return (
-    <fieldset className="space-y-2">
-      <legend className="text-sm font-semibold text-slate-700">
-        {label}
-        {required ? (
-          <span aria-hidden="true" className="text-rose-500">
-            *
-          </span>
-        ) : null}
-      </legend>
-      {hint ? <p className="text-xs text-slate-500">{hint}</p> : null}
-      <div className="flex flex-wrap gap-2">
-        {options.map((option) => {
-          const active = selected.includes(option.value);
-          return (
-            <label
-              key={option.value}
-              className={clsx(
-                "inline-flex cursor-pointer items-center rounded-full border px-4 py-2 text-sm font-medium",
-                active
-                  ? "border-cyan-600 bg-cyan-50 text-cyan-900"
-                  : "border-slate-300 text-slate-600 hover:border-slate-400"
-              )}
-            >
-              <input
-                type="checkbox"
-                className="sr-only"
-                checked={active}
-                onChange={() => onToggle(option.value)}
-              />
-              {option.label}
-            </label>
-          );
-        })}
-      </div>
-    </fieldset>
-  );
-}

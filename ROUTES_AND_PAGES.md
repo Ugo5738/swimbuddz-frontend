@@ -142,9 +142,26 @@ Implement pages in `src/app/` using the Next.js App Router.
 - Show conditional fields only when relevant (e.g., additional info when “Coach” certification or “Academy” tier is selected).
 
 - On completion:
-  - Create Supabase user.
-  - Call backend `POST /api/v1/members/`.
-  - Redirect to a “Welcome / Next steps” state (e.g. profile page or WhatsApp group links).
+  - Call backend `POST /api/v1/pending-registrations` with full profile data.
+  - Create Supabase user (sign-up) which triggers email confirmation.
+  - Redirect to a “Check your email” page.
+
+**File:** `src/app/(auth)/register/page.tsx`
+
+---
+
+### `/auth/callback`
+
+**Goal:** Handle Supabase Auth redirects (e.g., email confirmation).
+
+**Responsibilities:**
+
+- Exchange code for session.
+- If confirming registration:
+  - Call `POST /api/v1/pending-registrations/complete` to finalize member creation.
+  - Redirect to `/member/profile`.
+
+**File:** `src/app/auth/callback/route.ts`
 
 **File:** `src/app/(auth)/register/page.tsx`
 

@@ -64,7 +64,7 @@ export default function AdminSessionAttendancePage() {
       <header className="space-y-2">
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">Admin · Attendance</p>
         <h1 className="text-4xl font-bold text-slate-900">Session attendance</h1>
-        <p className="text-sm text-slate-600">This page uses mock data until `/api/v1/admin/sessions/{id}/attendance` is ready.</p>
+        <p className="text-sm text-slate-600">This page uses mock data until <code className="bg-slate-100 px-1 py-0.5 rounded">/api/v1/admin/sessions/{"{id}"}/attendance</code> is ready.</p>
       </header>
 
       {loading ? (

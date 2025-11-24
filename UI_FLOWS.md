@@ -30,14 +30,17 @@ The implementation of pages should follow these flows closely.
 4. When user submits final step:
 
    - Frontend:
-     - Creates Supabase user (if not already created).
-     - Obtains access token.
-     - Calls backend `POST /api/v1/members/` with full profile data.
+     - Calls backend `POST /api/v1/pending-registrations` with full profile data.
+     - Creates Supabase user (sign-up).
    - On success:
-     - Displays short “Welcome” message.
-     - Redirects to `/member/profile`.
+     - Displays “Check your email” screen.
 
-5. On `/member/profile`:
+5. User clicks confirmation link in email:
+   - Supabase verifies email and redirects to `/auth/callback`.
+   - App calls `POST /api/v1/pending-registrations/complete`.
+   - Redirects to `/member/profile`.
+
+6. On `/member/profile`:
    - User sees their saved data.
    - Optional: Show suggested WhatsApp groups and links (based on level & location).
 
