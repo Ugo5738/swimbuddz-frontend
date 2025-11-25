@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { toast } from "sonner";
 import { Card } from "@/components/ui/Card";
-import { AcademyApi, Program, Milestone } from "@/lib/academy";
+import { EditProgramModal } from "@/components/academy/EditProgramModal";
+import { AddMilestoneModal } from "@/components/academy/AddMilestoneModal";
+import { AcademyApi, Milestone, Program } from "@/lib/academy";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export default function ProgramDetailsPage() {
     const params = useParams();
@@ -14,6 +16,8 @@ export default function ProgramDetailsPage() {
     const [program, setProgram] = useState<Program | null>(null);
     const [milestones, setMilestones] = useState<Milestone[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isAddMilestoneModalOpen, setIsAddMilestoneModalOpen] = useState(false);
 
     useEffect(() => {
         async function loadData() {
@@ -71,7 +75,7 @@ export default function ProgramDetailsPage() {
                 </div>
                 <div className="flex gap-2">
                     <button
-                        onClick={() => toast.info("Edit feature coming soon")} // Placeholder for Edit
+                        onClick={() => setIsEditModalOpen(true)}
                         className="rounded bg-white px-4 py-2 text-sm font-medium text-slate-700 border border-slate-300 hover:bg-slate-50"
                     >
                         Edit
@@ -110,7 +114,7 @@ export default function ProgramDetailsPage() {
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-lg font-semibold text-slate-900">Milestones</h2>
                             <button
-                                onClick={() => toast.info("Add Milestone feature coming soon")}
+                                onClick={() => setIsAddMilestoneModalOpen(true)}
                                 className="text-sm text-cyan-600 hover:text-cyan-700 font-medium"
                             >
                                 + Add Milestone
@@ -135,16 +139,71 @@ export default function ProgramDetailsPage() {
                     </Card>
                 </div>
 
-                {/* Sidebar / Stats (Placeholder) */}
+                {/* Sidebar / Stats */}
                 <div className="space-y-6">
                     <Card>
                         <h2 className="text-lg font-semibold text-slate-900 mb-4">Curriculum</h2>
-                        <pre className="text-xs bg-slate-50 p-2 rounded overflow-auto max-h-60">
-                            {JSON.stringify(program.curriculum_json, null, 2)}
-                        </pre>
+                        {!program.curriculum_json || Object.keys(program.curriculum_json).length === 0 ? (
+                            <p className="text-sm text-slate-500">No curriculum defined yet.</p>
+                        ) : (
+                            <div className="space-y-3">
+                                {Array.isArray(program.curriculum_json) ? (
+                                    // Handle array curriculum
+                                    program.curriculum_json.map((item: any, index: number) => (
+                                        <div key={index} className="p-3 bg-slate-50 rounded-lg">
+                                            <p className="text-sm font-medium text-slate-900">{item}</p>
+                                        </div>
+                                    ))
+                                ) : typeof program.curriculum_json === 'object' ? (
+                                    // Handle object curriculum (e.g., weeks)
+                                    Object.entries(program.curriculum_json).map(([key, value]: [string, any]) => (
+                                        <div key={key} className="p-3 bg-slate-50 rounded-lg">
+                                            <p className="text-xs font-semibold text-slate-700 uppercase mb-1">{key}</p>
+                                            {typeof value === 'string' ? (
+                                                <p className="text-sm text-slate-900">{value}</p>
+                                            ) : Array.isArray(value) ? (
+                                                <ul className="text-sm text-slate-900 list-disc list-inside space-y-1">
+                                                    {value.map((item: any, idx: number) => (
+                                                        <li key={idx}>{typeof item === 'string' ? item : JSON.stringify(item)}</li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <p className="text-sm text-slate-900">{JSON.stringify(value)}</p>
+                                            )}
+                                        </div>
+                                    ))
+                                ) : (
+                                    // Fallback for primitive types
+                                    <p className="text-sm text-slate-900">{String(program.curriculum_json)}</p>
+                                )}
+                            </div>
+                        )}
                     </Card>
                 </div>
             </div>
+
+            {program && (
+                <>
+                    <EditProgramModal
+                        isOpen={isEditModalOpen}
+                        onClose={() => setIsEditModalOpen(false)}
+                        onSuccess={(updatedProgram) => {
+                            setProgram(updatedProgram);
+                            toast.success("Program updated successfully");
+                        }}
+                        program={program}
+                    />
+                    <AddMilestoneModal
+                        isOpen={isAddMilestoneModalOpen}
+                        onClose={() => setIsAddMilestoneModalOpen(false)}
+                        onSuccess={(newMilestone) => {
+                            setMilestones([...milestones, newMilestone]);
+                            toast.success("Milestone added successfully");
+                        }}
+                        programId={program.id}
+                    />
+                </>
+            )}
         </div>
     );
 }

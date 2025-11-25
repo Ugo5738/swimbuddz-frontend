@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { Card } from "@/components/ui/Card";
+import { EditCohortModal } from "@/components/academy/EditCohortModal";
 import {
-    AcademyApi, Cohort, Milestone, EnrollmentWithStudent,
+    AcademyApi, Cohort,
+    EnrollmentWithStudent,
+    Milestone,
     ProgressStatus
 } from "@/lib/academy";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export default function CohortDetailsPage() {
@@ -19,6 +22,7 @@ export default function CohortDetailsPage() {
     const [milestones, setMilestones] = useState<Milestone[]>([]);
     const [students, setStudents] = useState<EnrollmentWithStudent[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     const loadData = async () => {
         try {
@@ -115,7 +119,7 @@ export default function CohortDetailsPage() {
                     </Badge>
                     <div className="flex gap-2">
                         <button
-                            onClick={() => toast.info("Edit feature coming soon")}
+                            onClick={() => setIsEditModalOpen(true)}
                             className="rounded bg-white px-4 py-2 text-sm font-medium text-slate-700 border border-slate-300 hover:bg-slate-50"
                         >
                             Edit
@@ -193,6 +197,18 @@ export default function CohortDetailsPage() {
                     </table>
                 </div>
             </Card>
+
+            {cohort && (
+                <EditCohortModal
+                    isOpen={isEditModalOpen}
+                    onClose={() => setIsEditModalOpen(false)}
+                    onSuccess={(updatedCohort) => {
+                        setCohort(updatedCohort);
+                        toast.success("Cohort updated successfully");
+                    }}
+                    cohort={cohort}
+                />
+            )}
         </div>
     );
 }

@@ -151,7 +151,7 @@ export const AcademyApi = {
     getOpenCohorts: () => apiGet<Cohort[]>("/api/v1/academy/cohorts/open"),
 
     selfEnroll: (cohortId: string) =>
-        apiPost<Enrollment>(`/api/v1/academy/enrollments/me?cohort_id=${cohortId}`, {}, { auth: true }),
+        apiPost<Enrollment>(`/api/v1/academy/enrollments/me`, { cohort_id: cohortId }, { auth: true }),
 
     listCohortStudents: (cohortId: string) =>
         apiGet<EnrollmentWithStudent[]>(`/api/v1/academy/cohorts/${cohortId}/students`, { auth: true }),
