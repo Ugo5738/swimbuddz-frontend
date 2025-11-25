@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/Card";
 import { AcademyApi, Program, Cohort } from "@/lib/academy";
 import { CreateProgramModal } from "@/components/academy/CreateProgramModal";
@@ -14,6 +16,8 @@ export default function AdminAcademyPage() {
     const [isCreateProgramOpen, setIsCreateProgramOpen] = useState(false);
     const [isCreateCohortOpen, setIsCreateCohortOpen] = useState(false);
 
+    const router = useRouter();
+
     useEffect(() => {
         async function loadData() {
             try {
@@ -25,6 +29,7 @@ export default function AdminAcademyPage() {
                 setCohorts(cohortsData);
             } catch (error) {
                 console.error("Failed to load academy data", error);
+                toast.error("Failed to load academy data");
             } finally {
                 setLoading(false);
             }
@@ -38,6 +43,32 @@ export default function AdminAcademyPage() {
 
     const handleCohortCreated = (newCohort: Cohort) => {
         setCohorts((prev) => [newCohort, ...prev]);
+    };
+
+    const handleDeleteProgram = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        if (!confirm("Are you sure you want to delete this program?")) return;
+        try {
+            await AcademyApi.deleteProgram(id);
+            setPrograms(prev => prev.filter(p => p.id !== id));
+            toast.success("Program deleted");
+        } catch (error) {
+            console.error("Failed to delete program", error);
+            toast.error("Failed to delete program");
+        }
+    };
+
+    const handleDeleteCohort = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        if (!confirm("Are you sure you want to delete this cohort?")) return;
+        try {
+            await AcademyApi.deleteCohort(id);
+            setCohorts(prev => prev.filter(c => c.id !== id));
+            toast.success("Cohort deleted");
+        } catch (error) {
+            console.error("Failed to delete cohort", error);
+            toast.error("Failed to delete cohort");
+        }
     };
 
     if (loading) {
@@ -78,7 +109,11 @@ export default function AdminAcademyPage() {
                     ) : (
                         <div className="space-y-3">
                             {programs.map((program) => (
-                                <Card key={program.id} className="flex flex-col gap-2">
+                                <Card
+                                    key={program.id}
+                                    className="flex flex-col gap-2 cursor-pointer hover:shadow-md transition-shadow relative group"
+                                    onClick={() => router.push(`/admin/academy/programs/${program.id}`)} // Assuming we will create this page or it exists. Actually user said "manage members and details". Programs define curriculum.
+                                >
                                     <div className="flex justify-between">
                                         <h3 className="font-medium text-slate-900">{program.name}</h3>
                                         <span className="text-xs font-medium uppercase text-slate-500">{program.level}</span>
@@ -101,7 +136,11 @@ export default function AdminAcademyPage() {
                     ) : (
                         <div className="space-y-3">
                             {cohorts.map((cohort) => (
-                                <Card key={cohort.id} className="flex flex-col gap-2">
+                                <Card
+                                    key={cohort.id}
+                                    className="flex flex-col gap-2 cursor-pointer hover:shadow-md transition-shadow relative group"
+                                    onClick={() => router.push(`/admin/academy/cohorts/${cohort.id}`)}
+                                >
                                     <div className="flex justify-between">
                                         <h3 className="font-medium text-slate-900">{cohort.name}</h3>
                                         <span className={`text-xs font-medium uppercase ${cohort.status === 'active' ? 'text-green-600' : 'text-slate-500'

@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPatch } from "./api";
+import { apiGet, apiPost, apiPut, apiDelete } from "./api";
 
 // --- Types ---
 
@@ -67,6 +67,7 @@ export interface Enrollment {
     payment_status: PaymentStatus;
     created_at: string;
     updated_at: string;
+    cohort?: Cohort; // Added for eager loading
 }
 
 export interface Milestone {
@@ -90,13 +91,26 @@ export interface StudentProgress {
     updated_at: string;
 }
 
-// --- API Functions ---
+export interface MemberBasicInfo {
+    id: string;
+    first_name?: string;
+    last_name?: string;
+    email: string;
+}
 
+export interface EnrollmentWithStudent extends Enrollment {
+    member: MemberBasicInfo;
+    progress_records: StudentProgress[];
+}
+
+// --- API Functions ---
 export const AcademyApi = {
     // Programs
     listPrograms: () => apiGet<Program[]>("/api/v1/academy/programs"),
     createProgram: (data: Partial<Program>) => apiPost<Program>("/api/v1/academy/programs", data, { auth: true }),
     getProgram: (id: string) => apiGet<Program>(`/api/v1/academy/programs/${id}`),
+    updateProgram: (id: string, data: Partial<Program>) => apiPut<Program>(`/api/v1/academy/programs/${id}`, data, { auth: true }),
+    deleteProgram: (id: string) => apiDelete<void>(`/api/v1/academy/programs/${id}`, { auth: true }),
 
     // Cohorts
     listCohorts: (programId?: string) => {
@@ -105,6 +119,8 @@ export const AcademyApi = {
     },
     createCohort: (data: Partial<Cohort>) => apiPost<Cohort>("/api/v1/academy/cohorts", data, { auth: true }),
     getCohort: (id: string) => apiGet<Cohort>(`/api/v1/academy/cohorts/${id}`),
+    updateCohort: (id: string, data: Partial<Cohort>) => apiPut<Cohort>(`/api/v1/academy/cohorts/${id}`, data, { auth: true }),
+    deleteCohort: (id: string) => apiDelete<void>(`/api/v1/academy/cohorts/${id}`, { auth: true }),
 
     // Milestones
     listMilestones: (programId: string) => apiGet<Milestone[]>(`/api/v1/academy/programs/${programId}/milestones`),
@@ -130,4 +146,13 @@ export const AcademyApi = {
 
     getStudentProgress: (enrollmentId: string) =>
         apiGet<StudentProgress[]>(`/api/v1/academy/enrollments/${enrollmentId}/progress`),
+
+    // New Methods
+    getOpenCohorts: () => apiGet<Cohort[]>("/api/v1/academy/cohorts/open"),
+
+    selfEnroll: (cohortId: string) =>
+        apiPost<Enrollment>(`/api/v1/academy/enrollments/me?cohort_id=${cohortId}`, {}, { auth: true }),
+
+    listCohortStudents: (cohortId: string) =>
+        apiGet<EnrollmentWithStudent[]>(`/api/v1/academy/cohorts/${cohortId}/students`, { auth: true }),
 };
