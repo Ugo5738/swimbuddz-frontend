@@ -155,4 +155,7 @@ export const AcademyApi = {
 
     listCohortStudents: (cohortId: string) =>
         apiGet<EnrollmentWithStudent[]>(`/api/v1/academy/cohorts/${cohortId}/students`, { auth: true }),
+
+    updateEnrollment: (id: string, data: Partial<Enrollment>) =>
+        apiPut<Enrollment>(`/api/v1/academy/enrollments/${id}`, data, { auth: true }),
 };

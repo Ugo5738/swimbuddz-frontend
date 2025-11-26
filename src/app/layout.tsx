@@ -13,7 +13,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "SwimBuddz",
   description:
-    "SwimBuddz – community, club, and academy for swimmers in Lagos. Mobile-first web experience built with Next.js."
+    "SwimBuddz – building a global swimming community (community, club, and academy). Mobile-first experience for swimmers worldwide, currently active in Lagos."
 };
 
 type RootLayoutProps = {
