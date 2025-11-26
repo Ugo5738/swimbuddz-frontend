@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
+import { apiEndpoints } from "@/lib/config";
 
 type Album = {
     id: string;
@@ -32,15 +33,12 @@ export default function GalleryPage() {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchAlbums();
-    }, [filter]);
-
-    const fetchAlbums = async () => {
+    const fetchAlbums = useCallback(async () => {
         try {
+            setLoading(true);
             const url = filter
-                ? `/api/media/albums?album_type=${filter}`
-                : '/api/media/albums';
+                ? `${apiEndpoints.media}/albums?album_type=${filter}`
+                : `${apiEndpoints.media}/albums`;
             const response = await fetch(url);
             if (response.ok) {
                 const data = await response.json();
@@ -51,7 +49,11 @@ export default function GalleryPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [filter]);
+
+    useEffect(() => {
+        fetchAlbums();
+    }, [fetchAlbums]);
 
     return (
         <div className="space-y-8">
@@ -68,8 +70,8 @@ export default function GalleryPage() {
                 <button
                     onClick={() => setFilter(null)}
                     className={`rounded-full px-4 py-2 text-sm font-semibold transition ${filter === null
-                            ? "bg-cyan-600 text-white"
-                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        ? "bg-cyan-600 text-white"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                         }`}
                 >
                     All Albums
@@ -77,8 +79,8 @@ export default function GalleryPage() {
                 <button
                     onClick={() => setFilter("session")}
                     className={`rounded-full px-4 py-2 text-sm font-semibold transition ${filter === "session"
-                            ? "bg-cyan-600 text-white"
-                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        ? "bg-cyan-600 text-white"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                         }`}
                 >
                     Sessions
@@ -86,8 +88,8 @@ export default function GalleryPage() {
                 <button
                     onClick={() => setFilter("event")}
                     className={`rounded-full px-4 py-2 text-sm font-semibold transition ${filter === "event"
-                            ? "bg-cyan-600 text-white"
-                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        ? "bg-cyan-600 text-white"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                         }`}
                 >
                     Events
@@ -95,8 +97,8 @@ export default function GalleryPage() {
                 <button
                     onClick={() => setFilter("academy")}
                     className={`rounded-full px-4 py-2 text-sm font-semibold transition ${filter === "academy"
-                            ? "bg-cyan-600 text-white"
-                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        ? "bg-cyan-600 text-white"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                         }`}
                 >
                     Academy
