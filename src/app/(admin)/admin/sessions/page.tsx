@@ -1,406 +1,622 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
-import { Card } from "@/components/ui/Card";
-import { Table, TableHead, TableRow, TableHeaderCell, TableBody, TableCell } from "@/components/ui/Table";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/auth";
+import { SessionCalendar } from "@/components/admin/SessionCalendar";
+import { TemplatesSidebar } from "@/components/admin/TemplatesSidebar";
+import { GenerateSessionsModal } from "@/components/admin/GenerateSessionsModal";
+import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { LoadingCard } from "@/components/ui/LoadingCard";
-import { Modal } from "@/components/ui/Modal";
-import { supabase } from "@/lib/auth";
+import { Calendar, List, Plus } from "lucide-react";
+import type { EventInput, DateSelectArg, EventClickArg } from "@fullcalendar/core";
 
 interface Session {
   id: string;
   title: string;
-  session_type: string;
-  location_name: string;
+  session_type?: string;
+  location: string;
   start_time: string;
   end_time: string;
-  max_participants: number;
-  price: number;
-  drop_in_fee: number;
-  is_active: boolean;
+  pool_fee: number;
+  capacity: number;
   description?: string;
-  location?: string; // Backend field
-  pool_fee?: number; // Backend field
-  capacity?: number; // Backend field
+  template_id?: string;
+  is_recurring_instance?: boolean;
 }
 
-const initialFormState = {
-  title: "",
-  session_type: "Club",
-  location_name: "main_pool",
-  description: "",
-  date: "",
-  startTime: "",
-  endTime: "",
-  price: "",
-  drop_in_fee: "",
-  max_participants: "20"
-};
+interface Template {
+  id: string;
+  title: string;
+  description?: string;
+  location: string;
+  pool_fee: number;
+  capacity: number;
+  day_of_week: number;
+  start_time: string;
+  duration_minutes: number;
+  auto_generate: boolean;
+  is_active: boolean;
+}
 
 export default function AdminSessionsPage() {
+  const [view, setView] = useState<"calendar" | "list">("calendar");
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
-  const [formState, setFormState] = useState(initialFormState);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Edit State
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editSession, setEditSession] = useState<Session | null>(null);
-  const [editFormState, setEditFormState] = useState(initialFormState);
+  // Modals
+  const [showCreateSession, setShowCreateSession] = useState(false);
+  const [showCreateTemplate, setShowCreateTemplate] = useState(false);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
-  const fetchSessions = async () => {
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
     try {
       setLoading(true);
-
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
 
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
+      if (!token) {
+        setError("Not authenticated");
+        return;
       }
 
-      const res = await fetch("/api/v1/sessions/", { headers });
-      if (!res.ok) throw new Error("Failed to fetch sessions");
-      const data = await res.json();
+      const headers = { "Authorization": `Bearer ${token}` };
 
-      // Map backend fields to frontend fields
-      const mappedData = data.map((s: any) => ({
-        ...s,
-        price: s.pool_fee || 0,
-        max_participants: s.capacity || 20,
-        location_name: s.location || "main_pool",
-        // Try to extract session_type from description if stored there
-        session_type: s.description?.match(/^\[(.*?)\]/)?.[1] || "Club",
-        description: s.description?.replace(/^\[.*?\]\s*/, "") || ""
-      }));
+      // Fetch sessions
+      const sessionsRes = await fetch("/api/v1/sessions/", { headers });
+      if (sessionsRes.ok) {
+        const sessionsData = await sessionsRes.json();
+        setSessions(sessionsData);
+      }
 
-      setSessions(mappedData);
+      // Fetch templates
+      const templatesRes = await fetch("/api/v1/sessions/templates", { headers });
+      if (templatesRes.ok) {
+        const templatesData = await templatesRes.json();
+        setTemplates(templatesData);
+      }
     } catch (err) {
       console.error(err);
-      setError("Failed to load sessions");
+      setError("Failed to load data");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchSessions();
-  }, []);
-
-  function updateField(field: keyof typeof initialFormState, value: string) {
-    setFormState((prev) => ({ ...prev, [field]: value }));
-  }
-
-  function updateEditField(field: keyof typeof initialFormState, value: string) {
-    setEditFormState((prev) => ({ ...prev, [field]: value }));
-  }
-
-  async function handleCreate(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSaving(true);
-    setMessage(null);
-    setError(null);
-
-    if (!formState.title || !formState.location_name || !formState.date || !formState.startTime || !formState.endTime) {
-      setError("Title, location, date, and times are required.");
-      setSaving(false);
-      return;
-    }
-
+  const handleCreateTemplate = async (data: any) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
 
-      if (!token) {
-        throw new Error("Not authenticated");
-      }
-
-      const headers = {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      };
-
-      // Construct ISO timestamps
-      const start_time = new Date(`${formState.date}T${formState.startTime}`).toISOString();
-      const end_time = new Date(`${formState.date}T${formState.endTime}`).toISOString();
-
-      // Store session_type in description for now
-      const fullDescription = `[${formState.session_type}] ${formState.description}`;
-
-      const payload = {
-        title: formState.title,
-        description: fullDescription,
-        location: formState.location_name,
-        pool_fee: Number(formState.price || 0),
-        capacity: Number(formState.max_participants),
-        start_time,
-        end_time,
-      };
-
-      const res = await fetch("/api/v1/sessions/", {
+      const res = await fetch("/api/v1/sessions/templates", {
         method: "POST",
-        headers,
-        body: JSON.stringify(payload),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(data)
       });
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || "Failed to create session");
-      }
+      if (!res.ok) throw new Error("Failed to create template");
 
-      await fetchSessions();
-      setMessage("Session created successfully");
-      setFormState(initialFormState);
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : "Unable to create session.";
-      setError(msg);
-    } finally {
-      setSaving(false);
+      await fetchData();
+      setShowCreateTemplate(false);
+    } catch (err) {
+      console.error(err);
     }
-  }
+  };
 
-  function openEditModal(session: Session) {
-    setEditSession(session);
-    const date = new Date(session.start_time);
-    const endDate = new Date(session.end_time);
-
-    setEditFormState({
-      title: session.title,
-      session_type: session.session_type,
-      location_name: session.location_name,
-      description: session.description || "",
-      date: date.toISOString().split('T')[0],
-      startTime: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
-      endTime: endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
-      price: String(session.price),
-      drop_in_fee: String(session.drop_in_fee),
-      max_participants: String(session.max_participants)
-    });
-    setIsEditModalOpen(true);
-  }
-
-  async function handleUpdate(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!editSession) return;
-
-    setSaving(true);
-    setError(null);
-
+  const handleUpdateTemplate = async (templateId: string, data: any) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
 
-      if (!token) throw new Error("Not authenticated");
+      const res = await fetch(`/api/v1/sessions/templates/${templateId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(data)
+      });
 
-      const headers = {
+      if (!res.ok) throw new Error("Failed to update template");
+
+      await fetchData();
+      setShowCreateTemplate(false);
+      setSelectedTemplate(null);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleGenerateSessions = async (templateId: string, weeks: number, skipConflicts: boolean) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+
+    const res = await fetch(`/api/v1/sessions/templates/${templateId}/generate`, {
+      method: "POST",
+      headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`
-      };
+      },
+      body: JSON.stringify({ weeks, skip_conflicts: skipConflicts })
+    });
 
-      const start_time = new Date(`${editFormState.date}T${editFormState.startTime}`).toISOString();
-      const end_time = new Date(`${editFormState.date}T${editFormState.endTime}`).toISOString();
-      const fullDescription = `[${editFormState.session_type}] ${editFormState.description}`;
+    if (!res.ok) throw new Error("Failed to generate sessions");
 
-      const payload = {
-        title: editFormState.title,
-        description: fullDescription,
-        location: editFormState.location_name,
-        pool_fee: Number(editFormState.price || 0),
-        capacity: Number(editFormState.max_participants),
-        start_time,
-        end_time,
-      };
+    const result = await res.json();
+    await fetchData();
+    return result;
+  };
 
-      const res = await fetch(`/api/v1/sessions/${editSession.id}`, {
-        method: "PATCH",
-        headers,
-        body: JSON.stringify(payload),
-      });
+  const handleDeleteTemplate = async (templateId: string) => {
+    if (!confirm("Delete this template?")) return;
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || "Failed to update session");
-      }
-
-      await fetchSessions();
-      setIsEditModalOpen(false);
-      setMessage("Session updated successfully");
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : "Unable to update session.";
-      setError(msg);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleDelete(sessionId: string) {
-    if (!confirm("Are you sure you want to delete this session?")) return;
-
-    setSaving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
-      if (!token) throw new Error("Not authenticated");
 
-      const headers = { "Authorization": `Bearer ${token}` };
-
-      const res = await fetch(`/api/v1/sessions/${sessionId}`, {
+      await fetch(`/api/v1/sessions/templates/${templateId}`, {
         method: "DELETE",
-        headers,
+        headers: { "Authorization": `Bearer ${token}` }
       });
 
-      if (!res.ok) throw new Error("Failed to delete session");
-
-      await fetchSessions();
-      setMessage("Session deleted successfully");
-    } catch (error) {
-      console.error(error);
-      setError("Failed to delete session");
-    } finally {
-      setSaving(false);
+      await fetchData();
+    } catch (err) {
+      console.error(err);
     }
-  }
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    if (!confirm("Delete this session?")) return;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      await fetch(`/api/v1/sessions/${sessionId}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+
+      await fetchData();
+      setSelectedSession(null);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Convert sessions to calendar events
+  const calendarEvents: EventInput[] = sessions.map(session => ({
+    id: session.id,
+    title: session.title,
+    start: session.start_time,
+    end: session.end_time,
+    extendedProps: {
+      session_type: session.session_type || "Club",
+      location: session.location,
+      pool_fee: session.pool_fee,
+      capacity: session.capacity,
+      is_recurring_instance: session.is_recurring_instance
+    }
+  }));
+
+  const handleDateSelect = (selectInfo: DateSelectArg) => {
+    setSelectedDate(selectInfo.start);
+    setShowCreateSession(true);
+  };
+
+  const handleEventClick = (clickInfo: EventClickArg) => {
+    const session = sessions.find(s => s.id === clickInfo.event.id);
+    if (session) {
+      setSelectedSession(session);
+    }
+  };
+
+  if (loading) return <LoadingCard text="Loading sessions..." />;
 
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">Admin · Sessions</p>
-        <h1 className="text-4xl font-bold text-slate-900">Manage sessions</h1>
-        <p className="text-sm text-slate-600">Create and manage swim sessions.</p>
+        <p className="text-sm font-semibold uppercase tracking-wider text-cyan-600">Admin · Sessions</p>
+        <h1 className="text-4xl font-bold text-slate-900">Sessions Management</h1>
+        <p className="text-slate-600">Manage swim sessions and recurring templates</p>
       </header>
 
-      {loading && sessions.length === 0 ? (
-        <LoadingCard text="Loading sessions..." />
+      {error && <Alert variant="error" title="Error">{error}</Alert>}
+
+      {/* View Toggle */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setView("calendar")}
+          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${view === "calendar"
+            ? "bg-cyan-600 text-white"
+            : "bg-white text-slate-600 hover:bg-slate-50"
+            }`}
+        >
+          <Calendar className="h-4 w-4" />
+          <span>Calendar View</span>
+        </button>
+        <button
+          onClick={() => setView("list")}
+          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${view === "list"
+            ? "bg-cyan-600 text-white"
+            : "bg-white text-slate-600 hover:bg-slate-50"
+            }`}
+        >
+          <List className="h-4 w-4" />
+          <span>List View</span>
+        </button>
+        <div className="ml-auto">
+          <Button onClick={() => setShowCreateSession(true)}>
+            <Plus className="h-4 w-4" />
+            <span>Create Session</span>
+          </Button>
+        </div>
+      </div>
+
+      {view === "calendar" ? (
+        <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+          <SessionCalendar
+            events={calendarEvents}
+            onDateSelect={handleDateSelect}
+            onEventClick={handleEventClick}
+          />
+          <TemplatesSidebar
+            templates={templates}
+            onCreateTemplate={() => {
+              setSelectedTemplate(null);
+              setShowCreateTemplate(true);
+            }}
+            onGenerateSessions={(templateId) => {
+              const template = templates.find(t => t.id === templateId);
+              if (template) {
+                setSelectedTemplate(template);
+                setShowGenerateModal(true);
+              }
+            }}
+            onDeleteTemplate={handleDeleteTemplate}
+            onEditTemplate={(template) => {
+              setSelectedTemplate(template);
+              setShowCreateTemplate(true);
+            }}
+          />
+        </div>
       ) : (
-        <>
-          <Card className="space-y-4">
-            <h2 className="text-lg font-semibold text-slate-900">Create session</h2>
-            {message ? (
-              <Alert variant="info" title={message} />
-            ) : null}
-            {error ? (
-              <Alert variant="error" title={error} />
-            ) : null}
-            <form className="grid gap-4 md:grid-cols-2" onSubmit={handleCreate}>
-              <Input label="Title" value={formState.title} onChange={(event) => updateField("title", event.target.value)} required />
-              <Select label="Type" value={formState.session_type} onChange={(event) => updateField("session_type", event.target.value)}>
-                <option value="Club">Club</option>
-                <option value="Meetup">Meetup</option>
-                <option value="Academy">Academy</option>
-              </Select>
-              <Select label="Location" value={formState.location_name} onChange={(event) => updateField("location_name", event.target.value)}>
-                <option value="main_pool">Main Pool</option>
-                <option value="diving_pool">Diving Pool</option>
-                <option value="kids_pool">Kids Pool</option>
-                <option value="open_water">Open Water</option>
-              </Select>
-              <Textarea
-                label="Description"
-                className="md:col-span-2"
-                rows={3}
-                value={formState.description}
-                onChange={(event) => updateField("description", event.target.value)}
-              />
-              <Input label="Date" type="date" value={formState.date} onChange={(event) => updateField("date", event.target.value)} required />
-              <div className="grid grid-cols-2 gap-4">
-                <Input label="Start time" type="time" value={formState.startTime} onChange={(event) => updateField("startTime", event.target.value)} required />
-                <Input label="End time" type="time" value={formState.endTime} onChange={(event) => updateField("endTime", event.target.value)} required />
-              </div>
-              <Input label="Price (Pool Fee)" type="number" min="0" value={formState.price} onChange={(event) => updateField("price", event.target.value)} />
-              <Input label="Max Participants" type="number" min="1" value={formState.max_participants} onChange={(event) => updateField("max_participants", event.target.value)} />
+        <div className="rounded-lg border border-slate-200 bg-white">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="border-b border-slate-200 bg-slate-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Title</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Date</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Time</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Location</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {sessions.map((session) => (
+                  <tr key={session.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-3 text-sm">
+                      {session.is_recurring_instance && <span className="mr-1">🔁</span>}
+                      {session.title}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-slate-600">
+                      {new Date(session.start_time).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-slate-600">
+                      {new Date(session.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-slate-600">{session.location}</td>
+                    <td className="px-4 py-3">
+                      <Button size="sm" variant="danger" onClick={() => handleDeleteSession(session.id)}>
+                        Delete
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
-              <div className="md:col-span-2 flex justify-end">
-                <Button type="submit" disabled={saving}>
-                  {saving ? "Saving..." : "Create session"}
-                </Button>
-              </div>
-            </form>
-          </Card>
+      {/* Generate Sessions Modal */}
+      <GenerateSessionsModal
+        isOpen={showGenerateModal}
+        onClose={() => setShowGenerateModal(false)}
+        template={selectedTemplate}
+        onGenerate={handleGenerateSessions}
+      />
 
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableHeaderCell>Title</TableHeaderCell>
-                <TableHeaderCell>Type</TableHeaderCell>
-                <TableHeaderCell>Location</TableHeaderCell>
-                <TableHeaderCell>Date</TableHeaderCell>
-                <TableHeaderCell>Time</TableHeaderCell>
-                <TableHeaderCell>Price</TableHeaderCell>
-                <TableHeaderCell>Max</TableHeaderCell>
-                <TableHeaderCell>Actions</TableHeaderCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {sessions.map((session) => (
-                <TableRow key={session.id}>
-                  <TableCell>{session.title}</TableCell>
-                  <TableCell>{session.session_type}</TableCell>
-                  <TableCell>{session.location_name}</TableCell>
-                  <TableCell>{new Date(session.start_time).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    {new Date(session.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} –
-                    {new Date(session.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </TableCell>
-                  <TableCell>₦{(session.price || 0).toLocaleString()}</TableCell>
-                  <TableCell>{session.max_participants}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button variant="secondary" size="sm" onClick={() => openEditModal(session)}>Edit</Button>
-                      <Button variant="danger" size="sm" onClick={() => handleDelete(session.id)}>Delete</Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Session">
-            <form className="grid gap-4 md:grid-cols-2" onSubmit={handleUpdate}>
-              <Input label="Title" value={editFormState.title} onChange={(event) => updateEditField("title", event.target.value)} required />
-              <Select label="Type" value={editFormState.session_type} onChange={(event) => updateEditField("session_type", event.target.value)}>
-                <option value="Club">Club</option>
-                <option value="Meetup">Meetup</option>
-                <option value="Academy">Academy</option>
-              </Select>
-              <Select label="Location" value={editFormState.location_name} onChange={(event) => updateEditField("location_name", event.target.value)}>
-                <option value="main_pool">Main Pool</option>
-                <option value="diving_pool">Diving Pool</option>
-                <option value="kids_pool">Kids Pool</option>
-                <option value="open_water">Open Water</option>
-              </Select>
-              <Textarea
-                label="Description"
-                className="md:col-span-2"
-                rows={3}
-                value={editFormState.description}
-                onChange={(event) => updateEditField("description", event.target.value)}
-              />
-              <Input label="Date" type="date" value={editFormState.date} onChange={(event) => updateEditField("date", event.target.value)} required />
-              <div className="grid grid-cols-2 gap-4">
-                <Input label="Start time" type="time" value={editFormState.startTime} onChange={(event) => updateEditField("startTime", event.target.value)} required />
-                <Input label="End time" type="time" value={editFormState.endTime} onChange={(event) => updateEditField("endTime", event.target.value)} required />
+      {/* Session Details Modal */}
+      {selectedSession && (
+        <Modal
+          isOpen={!!selectedSession}
+          onClose={() => setSelectedSession(null)}
+          title="Session Details"
+        >
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm font-medium text-slate-700">Title</p>
+              <p className="text-slate-900">{selectedSession.title}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-700">Location</p>
+              <p className="text-slate-900">{selectedSession.location}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm font-medium text-slate-700">Start Time</p>
+                <p className="text-slate-900">
+                  {new Date(selectedSession.start_time).toLocaleString()}
+                </p>
               </div>
-              <Input label="Price (Pool Fee)" type="number" min="0" value={editFormState.price} onChange={(event) => updateEditField("price", event.target.value)} />
-              <Input label="Max Participants" type="number" min="1" value={editFormState.max_participants} onChange={(event) => updateEditField("max_participants", event.target.value)} />
-
-              <div className="md:col-span-2 flex justify-end gap-2">
-                <Button type="button" variant="secondary" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
-                <Button type="submit" disabled={saving}>
-                  {saving ? "Updating..." : "Update Session"}
-                </Button>
+              <div>
+                <p className="text-sm font-medium text-slate-700">End Time</p>
+                <p className="text-slate-900">
+                  {new Date(selectedSession.end_time).toLocaleString()}
+                </p>
               </div>
-            </form>
-          </Modal>
-        </>
+            </div>
+            {selectedSession.is_recurring_instance && (
+              <Alert variant="info" title="Recurring Session">
+                This session was generated from a template
+              </Alert>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setSelectedSession(null)}>
+                Close
+              </Button>
+              <Button variant="danger" onClick={() => handleDeleteSession(selectedSession.id)}>
+                Delete
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Create Session Modal */}
+      {showCreateSession && (
+        <SimpleSessionForm
+          onClose={() => setShowCreateSession(false)}
+          onCreate={async (data: any) => {
+            try {
+              const { data: { session } } = await supabase.auth.getSession();
+              const token = session?.access_token;
+
+              const res = await fetch("/api/v1/sessions/", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+              });
+
+              if (!res.ok) throw new Error("Failed to create session");
+
+              await fetchData();
+              setShowCreateSession(false);
+            } catch (err) {
+              console.error(err);
+              alert("Failed to create session");
+            }
+          }}
+          initialDate={selectedDate}
+        />
+      )}
+
+      {/* Create/Edit Template Modal */}
+      {showCreateTemplate && (
+        <SimpleTemplateForm
+          onClose={() => {
+            setShowCreateTemplate(false);
+            setSelectedTemplate(null);
+          }}
+          onCreate={handleCreateTemplate}
+          onUpdate={handleUpdateTemplate}
+          initialData={selectedTemplate}
+        />
       )}
     </div>
+  );
+}
+
+// Simplified session form component
+function SimpleSessionForm({
+  onClose,
+  onCreate,
+  initialDate
+}: {
+  onClose: () => void;
+  onCreate: (data: any) => void;
+  initialDate?: Date | null;
+}) {
+  const now = new Date();
+  const defaultStartDate = initialDate || now;
+  const defaultEndDate = new Date(defaultStartDate.getTime() + 3 * 60 * 60 * 1000); // 3 hours later
+
+  const formatDateTimeLocal = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  const [formData, setFormData] = useState({
+    title: "",
+    location: "main_pool",
+    start_time: formatDateTimeLocal(defaultStartDate),
+    end_time: formatDateTimeLocal(defaultEndDate),
+    pool_fee: 2000,
+    capacity: 20,
+    description: ""
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Convert datetime-local format to ISO format for the backend
+    const sessionData = {
+      ...formData,
+      start_time: new Date(formData.start_time).toISOString(),
+      end_time: new Date(formData.end_time).toISOString()
+    };
+
+    onCreate(sessionData);
+  };
+
+  return (
+    <Modal isOpen={true} onClose={onClose} title="Create Session">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input
+          label="Title"
+          value={formData.title}
+          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          required
+        />
+        <Select
+          label="Location"
+          value={formData.location}
+          onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+        >
+          <option value="main_pool">Main Pool</option>
+          <option value="training_pool">Training Pool</option>
+          <option value="outdoor_pool">Outdoor Pool</option>
+        </Select>
+        <Input
+          label="Start Time"
+          type="datetime-local"
+          value={formData.start_time}
+          onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+          required
+        />
+        <Input
+          label="End Time"
+          type="datetime-local"
+          value={formData.end_time}
+          onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
+          required
+        />
+        <Input
+          label="Pool Fee (cents)"
+          type="number"
+          value={formData.pool_fee}
+          onChange={(e) => setFormData({ ...formData, pool_fee: parseInt(e.target.value) })}
+          required
+        />
+        <Input
+          label="Capacity"
+          type="number"
+          value={formData.capacity}
+          onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) })}
+          required
+        />
+        <Textarea
+          label="Description (optional)"
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+        />
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button type="submit">Create Session</Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+// Simplified template form component
+function SimpleTemplateForm({
+  onClose,
+  onCreate,
+  onUpdate,
+  initialData
+}: {
+  onClose: () => void;
+  onCreate: (data: any) => void;
+  onUpdate?: (id: string, data: any) => void;
+  initialData?: Template | null;
+}) {
+  const [formData, setFormData] = useState({
+    title: initialData?.title || "",
+    location: initialData?.location || "main_pool",
+    day_of_week: initialData?.day_of_week ?? 5, // Saturday
+    start_time: initialData?.start_time || "09:00",
+    duration_minutes: initialData?.duration_minutes || 180,
+    pool_fee: initialData?.pool_fee || 2000,
+    capacity: initialData?.capacity || 20,
+    auto_generate: initialData?.auto_generate || false
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (initialData && onUpdate) {
+      onUpdate(initialData.id, formData);
+    } else {
+      onCreate(formData);
+    }
+  };
+
+  return (
+    <Modal isOpen={true} onClose={onClose} title={initialData ? "Edit Template" : "Create Template"}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input
+          label="Title"
+          value={formData.title}
+          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          required
+        />
+        <Select
+          label="Day of Week"
+          value={formData.day_of_week.toString()}
+          onChange={(e) => setFormData({ ...formData, day_of_week: parseInt(e.target.value) })}
+        >
+          <option value="0">Monday</option>
+          <option value="1">Tuesday</option>
+          <option value="2">Wednesday</option>
+          <option value="3">Thursday</option>
+          <option value="4">Friday</option>
+          <option value="5">Saturday</option>
+          <option value="6">Sunday</option>
+        </Select>
+        <Input
+          label="Start Time"
+          type="time"
+          value={formData.start_time}
+          onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+          required
+        />
+        <Input
+          label="Duration (minutes)"
+          type="number"
+          value={formData.duration_minutes}
+          onChange={(e) => setFormData({ ...formData, duration_minutes: parseInt(e.target.value) })}
+          required
+        />
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button type="submit">{initialData ? "Update Template" : "Create Template"}</Button>
+        </div>
+      </form>
+    </Modal>
   );
 }

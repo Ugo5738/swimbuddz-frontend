@@ -10,6 +10,8 @@ import { PasswordField } from "@/components/ui/PasswordField";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 
+const ADMIN_EMAILS = ["admin@admin.com", "admin@gmail.com"];
+
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -42,6 +44,14 @@ function LoginContent() {
     }
 
     setLoading(false);
+
+    // Check if user is admin and redirect accordingly
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user && user.email && ADMIN_EMAILS.includes(user.email)) {
+      router.push("/admin/dashboard");
+      return;
+    }
+
     const redirect = searchParams.get("redirect") || "/profile";
     router.push(redirect);
   }
