@@ -24,6 +24,7 @@ interface FormData {
   firstName: string;
   lastName: string;
   email: string;
+  password?: string;
   phone: string;
   gender: string;
   dateOfBirth: string;
@@ -64,6 +65,7 @@ const initialFormData: FormData = {
   firstName: "",
   lastName: "",
   email: "",
+  password: "",
   phone: "",
   gender: "",
   dateOfBirth: "",
@@ -152,6 +154,7 @@ export default function RegisterPage() {
           formData.firstName &&
           formData.lastName &&
           formData.email &&
+          formData.password && formData.password.length >= 8 &&
           formData.phone &&
           formData.gender &&
           formData.dateOfBirth &&
@@ -214,6 +217,7 @@ export default function RegisterPage() {
       const payload = {
         // Core fields
         email: formData.email,
+        password: formData.password,
         first_name: formData.firstName,
         last_name: formData.lastName,
         phone: formData.phone,
@@ -298,6 +302,7 @@ export default function RegisterPage() {
               firstName: formData.firstName,
               lastName: formData.lastName,
               email: formData.email,
+              password: formData.password,
               phone: formData.phone,
               gender: formData.gender,
               dateOfBirth: formData.dateOfBirth,

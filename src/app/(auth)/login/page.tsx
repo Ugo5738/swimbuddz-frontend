@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, FormEvent, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/auth";
-import { completePendingRegistrationOnBackend } from "@/lib/registration";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { PasswordField } from "@/components/ui/PasswordField";
-import { Button } from "@/components/ui/Button";
-import { Alert } from "@/components/ui/Alert";
+import { supabase } from "@/lib/auth";
+import { completePendingRegistrationOnBackend } from "@/lib/registration";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useState } from "react";
 
-const ADMIN_EMAILS = ["admin@admin.com", "admin@gmail.com"];
+const ADMIN_EMAILS = ["admin@admin.com"];
 
 function LoginContent() {
   const router = useRouter();

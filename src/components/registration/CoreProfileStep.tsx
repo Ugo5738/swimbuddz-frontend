@@ -5,13 +5,15 @@ import { Upload, X } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Country, City } from "country-state-city";
-import { getCountries, getCountryCallingCode } from "react-phone-number-input/input";
+import 'react-phone-number-input/style.css'
+import PhoneInput from 'react-phone-number-input'
 
 interface CoreProfileStepProps {
     formData: {
         firstName: string;
         lastName: string;
         email: string;
+        password?: string;
         phone: string;
         gender: string;
         dateOfBirth: string;
@@ -27,14 +29,12 @@ interface CoreProfileStepProps {
 // Get all countries
 const countries = Country.getAllCountries();
 
-// Get all country calling codes
-const phoneCountries = getCountries();
+
 
 export function CoreProfileStep({ formData, onUpdate }: CoreProfileStepProps) {
     const [photoPreview, setPhotoPreview] = useState<string | null>(
         formData.profilePhotoUrl || null
     );
-    const [countryCode, setCountryCode] = useState("NG"); // Default to Nigeria
 
     // Get cities for selected country
     const selectedCountry = countries.find((c) => c.name === formData.country);
@@ -60,11 +60,7 @@ export function CoreProfileStep({ formData, onUpdate }: CoreProfileStepProps) {
         onUpdate("profilePhotoUrl", "");
     };
 
-    // Get country name from code
-    const getCountryName = (countryCode: string) => {
-        const country = countries.find(c => c.isoCode === countryCode);
-        return country?.name || countryCode;
-    };
+
 
     return (
         <div className="space-y-6">
@@ -148,41 +144,30 @@ export function CoreProfileStep({ formData, onUpdate }: CoreProfileStepProps) {
                 placeholder="john.doe@example.com"
             />
 
+            <Input
+                label="Password"
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => onUpdate("password", e.target.value)}
+                required
+                placeholder="••••••••"
+                hint="Must be at least 8 characters"
+            />
+
             <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                     Phone Number <span className="text-red-500">*</span>
                 </label>
-                <div className="flex gap-2">
-                    <select
-                        value={countryCode}
-                        onChange={(e) => setCountryCode(e.target.value)}
-                        className="w-32 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
-                    >
-                        {phoneCountries.map((country) => {
-                            const callingCode = getCountryCallingCode(country);
-                            const name = getCountryName(country);
-                            return (
-                                <option key={country} value={country}>
-                                    +{callingCode} {name}
-                                </option>
-                            );
-                        })}
-                    </select>
-                    <input
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => {
-                            // Remove any non-digit characters
-                            const cleaned = e.target.value.replace(/\D/g, "");
-                            onUpdate("phone", cleaned);
-                        }}
-                        required
-                        placeholder="8012345678"
-                        className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
-                    />
-                </div>
+                <PhoneInput
+                    placeholder="Enter phone number"
+                    value={formData.phone}
+                    onChange={(value) => onUpdate("phone", value)}
+                    defaultCountry="NG"
+                    className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                />
                 <p className="mt-1 text-xs text-slate-600">
-                    Select your country code and enter your phone number without the leading 0
+                    Enter your phone number with country code
                 </p>
             </div>
 
