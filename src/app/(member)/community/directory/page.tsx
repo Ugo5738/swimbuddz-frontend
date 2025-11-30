@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/Card";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { Search, MapPin, Award } from "lucide-react";
+import { apiEndpoints } from "@/lib/config";
 
 interface Member {
     id: string;
@@ -35,7 +36,7 @@ export default function MemberDirectoryPage() {
     const fetchMembers = async () => {
         try {
             // TODO: Update API endpoint to filter by show_in_directory=true
-            const response = await fetch("http://localhost:8000/api/v1/members/");
+            const response = await fetch(`${apiEndpoints.members}/`);
             if (response.ok) {
                 const data = await response.json();
                 // Filter only members who opted in to directory

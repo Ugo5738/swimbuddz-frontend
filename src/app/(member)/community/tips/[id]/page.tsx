@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { ArrowLeft, Calendar, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
 import ReactMarkdown from "react-markdown";
+import { apiEndpoints } from "@/lib/config";
 
 interface ContentPost {
     id: string;
@@ -49,7 +50,7 @@ export default function ContentDetailPage() {
 
     const fetchPost = async () => {
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/content/${postId}`);
+            const response = await fetch(`${apiEndpoints.content}/${postId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPost(data);
@@ -63,7 +64,7 @@ export default function ContentDetailPage() {
 
     const fetchComments = async () => {
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/content/${postId}/comments`);
+            const response = await fetch(`${apiEndpoints.content}/${postId}/comments`);
             if (response.ok) {
                 const data = await response.json();
                 setComments(data);
@@ -82,7 +83,7 @@ export default function ContentDetailPage() {
             const memberId = "temp-member-id";
 
             const response = await fetch(
-                `http://localhost:8000/api/v1/content/${postId}/comments?member_id=${memberId}`,
+                `${apiEndpoints.content}/${postId}/comments?member_id=${memberId}`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },

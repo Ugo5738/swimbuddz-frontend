@@ -4,7 +4,7 @@
  */
 
 // API Base URL - changes between dev/prod
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
 // External Links
 export const WHATSAPP_GROUP_URL = process.env.NEXT_PUBLIC_WHATSAPP_URL || 'https://chat.whatsapp.com/BVtV5iKH9LhCBphqXqDVYv';
@@ -46,6 +46,9 @@ export const apiEndpoints = {
 
     // Transport
     transport: `${API_BASE_URL}/api/v1/transport`,
+
+    // Challenges
+    challenges: `${API_BASE_URL}/api/v1/challenges`,
 } as const;
 
 // Helper function to build full endpoint URLs

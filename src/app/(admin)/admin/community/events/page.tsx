@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
 import { Plus, Calendar, Users, Trash2 } from "lucide-react";
 import { format } from "date-fns";
+import { apiEndpoints } from "@/lib/config";
 
 interface Event {
     id: string;
@@ -47,7 +48,7 @@ export default function AdminEventsPage() {
 
     const fetchEvents = async () => {
         try {
-            const response = await fetch("http://localhost:8000/api/v1/events/");
+            const response = await fetch(`${apiEndpoints.events}/`);
             if (response.ok) {
                 const data = await response.json();
                 setEvents(data);
@@ -78,7 +79,7 @@ export default function AdminEventsPage() {
             };
 
             const response = await fetch(
-                `http://localhost:8000/api/v1/events/?created_by=${createdBy}`,
+                `${apiEndpoints.events}/?created_by=${createdBy}`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -109,7 +110,7 @@ export default function AdminEventsPage() {
         if (!confirm("Are you sure you want to delete this event?")) return;
 
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/events/${eventId}`, {
+            const response = await fetch(`${apiEndpoints.events}/${eventId}`, {
                 method: "DELETE",
             });
 

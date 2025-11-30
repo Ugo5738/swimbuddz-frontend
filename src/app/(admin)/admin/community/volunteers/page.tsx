@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
 import { Plus, Users, Trash2 } from "lucide-react";
+import { apiEndpoints } from "@/lib/config";
 
 interface VolunteerRole {
     id: string;
@@ -37,7 +38,7 @@ export default function AdminVolunteersPage() {
     const fetchRoles = async () => {
         try {
             const response = await fetch(
-                "http://localhost:8000/api/v1/volunteers/roles?active_only=false"
+                `${apiEndpoints.volunteers}/roles?active_only=false`
             );
             if (response.ok) {
                 const data = await response.json();
@@ -62,7 +63,7 @@ export default function AdminVolunteersPage() {
                 is_active: formData.is_active,
             };
 
-            const response = await fetch("http://localhost:8000/api/v1/volunteers/roles", {
+            const response = await fetch(`${apiEndpoints.volunteers}/roles`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
@@ -87,7 +88,7 @@ export default function AdminVolunteersPage() {
     const handleToggleActive = async (roleId: string, currentStatus: boolean) => {
         try {
             const response = await fetch(
-                `http://localhost:8000/api/v1/volunteers/roles/${roleId}`,
+                `${apiEndpoints.volunteers}/roles/${roleId}`,
                 {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
@@ -108,7 +109,7 @@ export default function AdminVolunteersPage() {
 
         try {
             const response = await fetch(
-                `http://localhost:8000/api/v1/volunteers/roles/${roleId}`,
+                `${apiEndpoints.volunteers}/roles/${roleId}`,
                 { method: "DELETE" }
             );
 
@@ -230,8 +231,8 @@ export default function AdminVolunteersPage() {
                                         <h3 className="text-lg font-semibold text-slate-900">{role.title}</h3>
                                         <span
                                             className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${role.is_active
-                                                    ? "bg-emerald-100 text-emerald-700"
-                                                    : "bg-slate-100 text-slate-600"
+                                                ? "bg-emerald-100 text-emerald-700"
+                                                : "bg-slate-100 text-slate-600"
                                                 }`}
                                         >
                                             {role.is_active ? "Active" : "Inactive"}

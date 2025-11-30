@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
 import { Plus, BookOpen, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
+import { apiEndpoints } from "@/lib/config";
 
 interface ContentPost {
     id: string;
@@ -42,7 +43,7 @@ export default function AdminContentPage() {
 
     const fetchPosts = async () => {
         try {
-            const response = await fetch("http://localhost:8000/api/v1/content/?published_only=false");
+            const response = await fetch(`${apiEndpoints.content}/?published_only=false`);
             if (response.ok) {
                 const data = await response.json();
                 setPosts(data);
@@ -67,7 +68,7 @@ export default function AdminContentPage() {
             };
 
             const response = await fetch(
-                `http://localhost:8000/api/v1/content/?created_by=${createdBy}`,
+                `${apiEndpoints.content}/?created_by=${createdBy}`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -88,7 +89,7 @@ export default function AdminContentPage() {
     const handlePublishPost = async (postId: string) => {
         try {
             const response = await fetch(
-                `http://localhost:8000/api/v1/content/${postId}/publish`,
+                `${apiEndpoints.content}/${postId}/publish`,
                 { method: "POST" }
             );
 
@@ -104,7 +105,7 @@ export default function AdminContentPage() {
         if (!confirm("Are you sure you want to delete this post?")) return;
 
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/content/${postId}`, {
+            const response = await fetch(`${apiEndpoints.content}/${postId}`, {
                 method: "DELETE",
             });
 
@@ -252,8 +253,8 @@ export default function AdminContentPage() {
                                         <h3 className="text-lg font-semibold text-slate-900">{post.title}</h3>
                                         <span
                                             className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${post.status === "published"
-                                                    ? "bg-emerald-100 text-emerald-700"
-                                                    : "bg-amber-100 text-amber-700"
+                                                ? "bg-emerald-100 text-emerald-700"
+                                                : "bg-amber-100 text-amber-700"
                                                 }`}
                                         >
                                             {post.status}

@@ -7,6 +7,7 @@ import { Calendar, MapPin, Users, Filter } from "lucide-react";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import Link from "next/link";
 import { format } from "date-fns";
+import { apiEndpoints } from "@/lib/config";
 
 interface Event {
     id: string;
@@ -54,7 +55,7 @@ export default function EventsPage() {
 
     const fetchEvents = async () => {
         try {
-            const response = await fetch("http://localhost:8000/api/v1/events/");
+            const response = await fetch(`${apiEndpoints.events}/`);
             if (response.ok) {
                 const data = await response.json();
                 setEvents(data);

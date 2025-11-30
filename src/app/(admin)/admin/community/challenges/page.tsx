@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Plus, Trophy, Trash2 } from "lucide-react";
+import { apiEndpoints } from "@/lib/config";
 
 interface ClubChallenge {
     id: string;
@@ -34,7 +35,7 @@ export default function AdminChallengesPage() {
     const fetchChallenges = async () => {
         try {
             const response = await fetch(
-                "http://localhost:8000/api/v1/challenges/club?active_only=false"
+                `${apiEndpoints.challenges}/club?active_only=false`
             );
             if (response.ok) {
                 const data = await response.json();
@@ -58,7 +59,7 @@ export default function AdminChallengesPage() {
                 is_active: formData.is_active,
             };
 
-            const response = await fetch("http://localhost:8000/api/v1/challenges/club", {
+            const response = await fetch(`${apiEndpoints.challenges}/club`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
@@ -82,7 +83,7 @@ export default function AdminChallengesPage() {
     const handleToggleActive = async (challengeId: string, currentStatus: boolean) => {
         try {
             const response = await fetch(
-                `http://localhost:8000/api/v1/challenges/club/${challengeId}`,
+                `${apiEndpoints.challenges}/club/${challengeId}`,
                 {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
@@ -103,7 +104,7 @@ export default function AdminChallengesPage() {
 
         try {
             const response = await fetch(
-                `http://localhost:8000/api/v1/challenges/club/${challengeId}`,
+                `${apiEndpoints.challenges}/club/${challengeId}`,
                 { method: "DELETE" }
             );
 
@@ -222,8 +223,8 @@ export default function AdminChallengesPage() {
                                             </h3>
                                             <span
                                                 className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${challenge.is_active
-                                                        ? "bg-emerald-100 text-emerald-700"
-                                                        : "bg-slate-100 text-slate-600"
+                                                    ? "bg-emerald-100 text-emerald-700"
+                                                    : "bg-slate-100 text-slate-600"
                                                     }`}
                                             >
                                                 {challenge.is_active ? "Active" : "Inactive"}
