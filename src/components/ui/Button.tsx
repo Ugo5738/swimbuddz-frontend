@@ -8,7 +8,8 @@ const variants = {
   primary: "bg-cyan-600 text-white hover:bg-cyan-500",
   secondary: "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
   ghost: "text-cyan-700 hover:bg-cyan-50",
-  danger: "bg-rose-600 text-white hover:bg-rose-500"
+  danger: "bg-rose-600 text-white hover:bg-rose-500",
+  outline: "border border-slate-200 bg-transparent text-slate-700 hover:bg-slate-50"
 } as const;
 
 const sizes = {

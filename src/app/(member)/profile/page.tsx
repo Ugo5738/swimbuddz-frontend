@@ -15,6 +15,7 @@ import { LoadingCard } from "@/components/ui/LoadingCard";
 import { OptionPillGroup } from "@/components/forms/OptionPillGroup";
 import { SingleSelectPills } from "@/components/forms/SingleSelectPills";
 import { TimezoneCombobox } from "@/components/forms/TimezoneCombobox";
+import { UpcomingSessions } from "@/components/profile/UpcomingSessions";
 import {
   strokesOptions,
   interestOptions,
@@ -245,6 +246,7 @@ type MemberResponse = {
   payment_readiness: string;
   currency_preference: string;
   consent_photo: string;
+  membership_tier: string;
   membership_tiers: string[];
   academy_focus_areas: string[];
   academy_focus: string;
@@ -300,7 +302,9 @@ function mapMemberResponseToProfile(data: MemberResponse): Profile {
     paymentReadiness: data.payment_readiness || "",
     currencyPreference: data.currency_preference || "",
     consentPhoto: data.consent_photo || "",
-    membershipTiers: data.membership_tiers || [],
+    membershipTiers: data.membership_tiers && data.membership_tiers.length > 0
+      ? data.membership_tiers.map(t => t.toLowerCase())
+      : (data.membership_tier ? [data.membership_tier.toLowerCase()] : []),
     academyFocusAreas: data.academy_focus_areas || [],
     academyFocus: data.academy_focus || "",
     paymentNotes: data.payment_notes || ""
@@ -390,234 +394,260 @@ function ProfileContent() {
     <div className="space-y-6">
       {headerMarkup}
 
-      <div className="flex justify-end">
-        <Button variant="secondary" onClick={() => setEditing((prev) => !prev)}>
-          {editing ? "Cancel editing" : "Edit profile"}
-        </Button>
-      </div>
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Left Column: Status & Sessions */}
+        <div className="space-y-6 lg:col-span-1">
+          <Card className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">Membership</h2>
+            <div className="flex flex-wrap gap-2">
+              {profile.membershipTiers.length ? (
+                profile.membershipTiers.map((tier) => (
+                  <Badge key={tier} variant={tier === "academy" ? "success" : tier === "club" ? "info" : "default"}>
+                    {membershipTierLabels[tier] ?? formatToken(tier)}
+                  </Badge>
+                ))
+              ) : (
+                <p className="text-sm text-slate-600">No tier selected.</p>
+              )}
+            </div>
+            <div className="pt-2">
+              <Button variant="outline" className="w-full" onClick={() => router.push("/register?upgrade=true")}>
+                Upgrade / Change Tier
+              </Button>
+            </div>
+          </Card>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className="space-y-3">
-          <h2 className="text-lg font-semibold text-slate-900">Contact & location</h2>
-          <p className="text-sm text-slate-600">{profile.email}</p>
-          <p className="text-sm text-slate-600">{profile.phone}</p>
-          <p className="text-sm text-slate-600">
-            {profile.city}, {profile.country}
-          </p>
-          <p className="text-sm text-slate-600">Time zone: {profile.timeZone}</p>
-        </Card>
-        <Card className="space-y-3">
-          <h2 className="text-lg font-semibold text-slate-900">Status</h2>
-          <Badge variant="info">{profile.status}</Badge>
-          <p className="text-sm text-slate-600">Role: {profile.role}</p>
-          <div>
-            <p className="text-xs uppercase tracking-wide text-slate-500">Membership tiers</p>
-            {profile.membershipTiers.length ? (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {profile.membershipTiers.map((tier) => (
-                  <Badge key={tier}>{membershipTierLabels[tier] ?? formatToken(tier)}</Badge>
-                ))}
-              </div>
+          <Card className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">Upcoming Sessions</h2>
+            <UpcomingSessions />
+          </Card>
+        </div>
+
+        {/* Right Column: Profile Details */}
+        <div className="space-y-6 lg:col-span-2">
+          <Card className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900">Contact & Location</h2>
+              <Button variant="ghost" size="sm" onClick={() => setEditing((prev) => !prev)}>
+                {editing ? "Cancel" : "Edit"}
+              </Button>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Detail label="Email" value={profile.email} />
+              <Detail label="Phone" value={profile.phone} />
+              <Detail label="Location" value={`${profile.city}, ${profile.country}`} />
+              <Detail label="Time zone" value={profile.timeZone} />
+            </div>
+          </Card>
+
+          <Card className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">Swim profile</h2>
+            {editing ? (
+              <ProfileEditForm
+                profile={profile}
+                onSuccess={(updated) => {
+                  setProfile(updated);
+                  setEditing(false);
+                }}
+                onCancel={() => setEditing(false)}
+              />
             ) : (
-              <p className="text-sm text-slate-600">No tier selected yet.</p>
-            )}
-          </div>
-        </Card>
-      </div>
-
-      <Card className="space-y-4">
-        <h2 className="text-lg font-semibold text-slate-900">Swim profile</h2>
-        {editing ? (
-          <ProfileEditForm
-            profile={profile}
-            onSuccess={(updated) => {
-              setProfile(updated);
-              setEditing(false);
-            }}
-            onCancel={() => setEditing(false)}
-          />
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            <Detail label="Level" value={levelLabels[profile.swimLevel] ?? profile.swimLevel} />
-            <Detail label="Deep-water comfort" value={deepWaterLabels[profile.deepWaterComfort] ?? profile.deepWaterComfort} />
-            <Detail label="Goals" value={profile.goalsNarrative} fullSpan />
-            <Detail
-              label="Interests"
-              value={profile.interests.length ? profile.interests.map(formatToken).join(", ") : "--"}
-              fullSpan
-            />
-            <Detail label="Strokes" fullSpan>
-              {profile.strokes.length ? (
-                <div className="flex flex-wrap gap-2">
-                  {profile.strokes.map((stroke) => (
-                    <Badge key={stroke}>{formatToken(stroke)}</Badge>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-slate-600">No strokes shared yet</p>
-              )}
-            </Detail>
-            <Detail label="Certifications" fullSpan>
-              {profile.certifications.length ? (
-                <div className="flex flex-wrap gap-2">
-                  {profile.certifications.map((cert) => (
-                    <Badge key={cert}>{formatToken(cert)}</Badge>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-slate-600">None added yet</p>
-              )}
-            </Detail>
-            {profile.coachingExperience ? (
-              <Detail label="Coaching experience" value={profile.coachingExperience} fullSpan />
-            ) : null}
-            {profile.coachingSpecialties.length ? (
-              <Detail label="Coaching specialties" fullSpan>
-                <div className="flex flex-wrap gap-2">
-                  {profile.coachingSpecialties.map((item) => (
-                    <Badge key={item}>{formatToken(item)}</Badge>
-                  ))}
-                </div>
-              </Detail>
-            ) : null}
-            {profile.coachingYears ? (
-              <Detail label="Years coaching" value={formatToken(profile.coachingYears)} />
-            ) : null}
-            {profile.coachingPortfolioLink ? (
-              <Detail label="Portfolio link" fullSpan>
-                <a href={profile.coachingPortfolioLink} className="text-cyan-700 underline" target="_blank" rel="noreferrer">
-                  {profile.coachingPortfolioLink}
-                </a>
-              </Detail>
-            ) : null}
-            {profile.coachingDocumentLink || profile.coachingDocumentFileName ? (
-              <Detail label="Supporting docs" fullSpan>
-                <div className="text-sm text-slate-700">
-                  {profile.coachingDocumentLink ? (
-                    <a href={profile.coachingDocumentLink} className="text-cyan-700 underline" target="_blank" rel="noreferrer">
-                      View credential
-                    </a>
-                  ) : null}
-                  {profile.coachingDocumentFileName ? (
-                    <p className="text-xs text-slate-500">Uploaded file: {profile.coachingDocumentFileName}</p>
-                  ) : null}
-                </div>
-              </Detail>
-            ) : null}
-          </div>
-        )}
-      </Card>
-
-      {!editing ? (
-        <>
-          <Card className="space-y-4">
-            <h2 className="text-lg font-semibold text-slate-900">Logistics & availability</h2>
-            <div className="grid gap-4 md:grid-cols-2">
-              <Detail label="Weekly availability" fullSpan>
-                {profile.availabilitySlots.length ? profile.availabilitySlots.map(formatToken).join(", ") : "--"}
-              </Detail>
-              <Detail label="Time of day">
-                {profile.timeOfDayAvailability.length ? profile.timeOfDayAvailability.map(formatToken).join(", ") : "--"}
-              </Detail>
-              <Detail label="Preferred locations" fullSpan>
-                {profile.locationPreference.length ? (
-                  <span>
-                    {profile.locationPreference.map(formatToken).join(", ")}
-                    {profile.locationPreferenceOther ? ` • ${profile.locationPreferenceOther}` : ""}
-                  </span>
-                ) : (
-                  profile.locationPreferenceOther || "--"
-                )}
-              </Detail>
-              <Detail
-                label="Travel readiness"
-                value={travelFlexibilityLabels[profile.travelFlexibility] ?? formatToken(profile.travelFlexibility)}
-              />
-              <Detail label="Facility access">
-                {profile.facilityAccess.length
-                  ? `${profile.facilityAccess.map(formatToken).join(", ")}${profile.facilityAccessOther ? ` • ${profile.facilityAccessOther}` : ""
-                  }`
-                  : profile.facilityAccessOther || "--"}
-              </Detail>
-              <Detail label="Equipment needs">
-                {profile.equipmentNeeds.length
-                  ? `${profile.equipmentNeeds.map(formatToken).join(", ")}${profile.equipmentNeedsOther ? ` • ${profile.equipmentNeedsOther}` : ""
-                  }`
-                  : profile.equipmentNeedsOther || "--"}
-              </Detail>
-              <Detail label="Travel notes" value={profile.travelNotes || "--"} fullSpan />
-            </div>
-          </Card>
-
-          <Card className="space-y-4">
-            <h2 className="text-lg font-semibold text-slate-900">Community & preferences</h2>
-            <div className="grid gap-4 md:grid-cols-2">
-              <Detail
-                label="Discovery source"
-                value={discoverySourceLabels[profile.discoverySource] ?? formatToken(profile.discoverySource)}
-              />
-              <Detail label="Social links" fullSpan>
-                <div className="flex flex-col gap-1 text-sm text-slate-700">
-                  {profile.socialInstagram ? (
-                    <span>Instagram: {profile.socialInstagram}</span>
-                  ) : null}
-                  {profile.socialLinkedIn ? (
-                    <a href={profile.socialLinkedIn} className="text-cyan-700 underline" target="_blank" rel="noreferrer">
-                      LinkedIn profile
-                    </a>
-                  ) : null}
-                  {profile.socialOther ? (
-                    <a href={profile.socialOther} className="text-cyan-700 underline" target="_blank" rel="noreferrer">
-                      Other: {profile.socialOther}
-                    </a>
-                  ) : null}
-                  {!profile.socialInstagram && !profile.socialLinkedIn && !profile.socialOther ? <span>--</span> : null}
-                </div>
-              </Detail>
-              <Detail label="Volunteer interest" fullSpan>
-                {profile.volunteerInterest.length ? (
-                  <div className="flex flex-wrap gap-2">
-                    {profile.volunteerInterest.map((item) => (
-                      <Badge key={item}>{formatToken(item)}</Badge>
-                    ))}
-                  </div>
-                ) : (
-                  "--"
-                )}
-              </Detail>
-              <Detail label="Volunteer roles" value={profile.volunteerRolesDetail || "--"} />
-              <Detail label="Language" value={profile.languagePreference} />
-              <Detail label="Comms preference" value={formatToken(profile.commsPreference)} />
-              <Detail
-                label="Payment readiness"
-                value={paymentReadinessLabels[profile.paymentReadiness] ?? formatToken(profile.paymentReadiness)}
-              />
-              <Detail label="Currency" value={profile.currencyPreference.toUpperCase()} />
-              <Detail label="Photo consent" value={profile.consentPhoto === "yes" ? "Consented" : "No media"} />
-              <Detail label="Payment notes" value={profile.paymentNotes || "--"} fullSpan />
-              {profile.academyFocusAreas.length ? (
-                <Detail label="Academy focus areas" fullSpan>
-                  <div className="flex flex-wrap gap-2">
-                    {profile.academyFocusAreas.map((area) => (
-                      <Badge key={area}>{formatToken(area)}</Badge>
-                    ))}
-                  </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Detail label="Level" value={levelLabels[profile.swimLevel] ?? profile.swimLevel} />
+                <Detail label="Deep-water comfort" value={deepWaterLabels[profile.deepWaterComfort] ?? profile.deepWaterComfort} />
+                <Detail label="Goals" value={profile.goalsNarrative} fullSpan />
+                <Detail
+                  label="Interests"
+                  value={profile.interests.length ? profile.interests.map(formatToken).join(", ") : "--"}
+                  fullSpan
+                />
+                <Detail label="Strokes" fullSpan>
+                  {profile.strokes.length ? (
+                    <div className="flex flex-wrap gap-2">
+                      {profile.strokes.map((stroke) => (
+                        <Badge key={stroke}>{formatToken(stroke)}</Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-600">No strokes shared yet</p>
+                  )}
                 </Detail>
-              ) : null}
-              {profile.academyFocus ? <Detail label="Academy notes" value={profile.academyFocus} fullSpan /> : null}
-            </div>
+
+                {(profile.membershipTiers.includes("club") || profile.membershipTiers.includes("academy")) && (
+                  <>
+                    <Detail label="Certifications" fullSpan>
+                      {profile.certifications.length ? (
+                        <div className="flex flex-wrap gap-2">
+                          {profile.certifications.map((cert) => (
+                            <Badge key={cert}>{formatToken(cert)}</Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-slate-600">None added yet</p>
+                      )}
+                    </Detail>
+                    {profile.coachingExperience ? (
+                      <Detail label="Coaching experience" value={profile.coachingExperience} fullSpan />
+                    ) : null}
+                    {profile.coachingSpecialties.length ? (
+                      <Detail label="Coaching specialties" fullSpan>
+                        <div className="flex flex-wrap gap-2">
+                          {profile.coachingSpecialties.map((item) => (
+                            <Badge key={item}>{formatToken(item)}</Badge>
+                          ))}
+                        </div>
+                      </Detail>
+                    ) : null}
+                    {profile.coachingYears ? (
+                      <Detail label="Years coaching" value={formatToken(profile.coachingYears)} />
+                    ) : null}
+                    {profile.coachingPortfolioLink ? (
+                      <Detail label="Portfolio link" fullSpan>
+                        <a href={profile.coachingPortfolioLink} className="text-cyan-700 underline" target="_blank" rel="noreferrer">
+                          {profile.coachingPortfolioLink}
+                        </a>
+                      </Detail>
+                    ) : null}
+                    {profile.coachingDocumentLink || profile.coachingDocumentFileName ? (
+                      <Detail label="Supporting docs" fullSpan>
+                        <div className="text-sm text-slate-700">
+                          {profile.coachingDocumentLink ? (
+                            <a href={profile.coachingDocumentLink} className="text-cyan-700 underline" target="_blank" rel="noreferrer">
+                              View credential
+                            </a>
+                          ) : null}
+                          {profile.coachingDocumentFileName ? (
+                            <p className="text-xs text-slate-500">Uploaded file: {profile.coachingDocumentFileName}</p>
+                          ) : null}
+                        </div>
+                      </Detail>
+                    ) : null}
+                  </>
+                )}
+              </div>
+            )}
           </Card>
 
-          <Alert variant="info" title="Emergency & safety">
-            <p>
-              Emergency contact: {profile.emergencyContactName} ({profile.emergencyContactRelationship}) – {profile.emergencyContactPhone}
-            </p>
-            <p>Region: {profile.emergencyContactRegion}</p>
-            <p>Medical info: {profile.medicalInfo || "--"}</p>
-            <p>Safety notes: {profile.safetyNotes || "--"}</p>
-          </Alert>
-        </>
-      ) : null}
+          {!editing ? (
+            <>
+              {(profile.membershipTiers.includes("club") || profile.membershipTiers.includes("academy")) && (
+                <Card className="space-y-4">
+                  <h2 className="text-lg font-semibold text-slate-900">Logistics & availability</h2>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Detail label="Weekly availability" fullSpan>
+                      {profile.availabilitySlots.length ? profile.availabilitySlots.map(formatToken).join(", ") : "--"}
+                    </Detail>
+                    <Detail label="Time of day">
+                      {profile.timeOfDayAvailability.length ? profile.timeOfDayAvailability.map(formatToken).join(", ") : "--"}
+                    </Detail>
+                    <Detail label="Preferred locations" fullSpan>
+                      {profile.locationPreference.length ? (
+                        <span>
+                          {profile.locationPreference.map(formatToken).join(", ")}
+                          {profile.locationPreferenceOther ? ` • ${profile.locationPreferenceOther}` : ""}
+                        </span>
+                      ) : (
+                        profile.locationPreferenceOther || "--"
+                      )}
+                    </Detail>
+                    <Detail
+                      label="Travel readiness"
+                      value={travelFlexibilityLabels[profile.travelFlexibility] ?? formatToken(profile.travelFlexibility)}
+                    />
+                    <Detail label="Facility access">
+                      {profile.facilityAccess.length
+                        ? `${profile.facilityAccess.map(formatToken).join(", ")}${profile.facilityAccessOther ? ` • ${profile.facilityAccessOther}` : ""
+                        }`
+                        : profile.facilityAccessOther || "--"}
+                    </Detail>
+                    <Detail label="Equipment needs">
+                      {profile.equipmentNeeds.length
+                        ? `${profile.equipmentNeeds.map(formatToken).join(", ")}${profile.equipmentNeedsOther ? ` • ${profile.equipmentNeedsOther}` : ""
+                        }`
+                        : profile.equipmentNeedsOther || "--"}
+                    </Detail>
+                    <Detail label="Travel notes" value={profile.travelNotes || "--"} fullSpan />
+                  </div>
+                </Card>
+              )}
+
+              <Card className="space-y-4">
+                <h2 className="text-lg font-semibold text-slate-900">Community & preferences</h2>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Detail
+                    label="Discovery source"
+                    value={discoverySourceLabels[profile.discoverySource] ?? formatToken(profile.discoverySource)}
+                  />
+                  <Detail label="Social links" fullSpan>
+                    <div className="flex flex-col gap-1 text-sm text-slate-700">
+                      {profile.socialInstagram ? (
+                        <span>Instagram: {profile.socialInstagram}</span>
+                      ) : null}
+                      {profile.socialLinkedIn ? (
+                        <a href={profile.socialLinkedIn} className="text-cyan-700 underline" target="_blank" rel="noreferrer">
+                          LinkedIn profile
+                        </a>
+                      ) : null}
+                      {profile.socialOther ? (
+                        <a href={profile.socialOther} className="text-cyan-700 underline" target="_blank" rel="noreferrer">
+                          Other: {profile.socialOther}
+                        </a>
+                      ) : null}
+                      {!profile.socialInstagram && !profile.socialLinkedIn && !profile.socialOther ? <span>--</span> : null}
+                    </div>
+                  </Detail>
+                  <Detail label="Volunteer interest" fullSpan>
+                    {profile.volunteerInterest.length ? (
+                      <div className="flex flex-wrap gap-2">
+                        {profile.volunteerInterest.map((item) => (
+                          <Badge key={item}>{formatToken(item)}</Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      "--"
+                    )}
+                  </Detail>
+                  <Detail label="Volunteer roles" value={profile.volunteerRolesDetail || "--"} />
+                  <Detail label="Language" value={profile.languagePreference} />
+                  <Detail label="Comms preference" value={formatToken(profile.commsPreference)} />
+                  <Detail
+                    label="Payment readiness"
+                    value={paymentReadinessLabels[profile.paymentReadiness] ?? formatToken(profile.paymentReadiness)}
+                  />
+                  <Detail label="Currency" value={profile.currencyPreference.toUpperCase()} />
+                  <Detail label="Photo consent" value={profile.consentPhoto === "yes" ? "Consented" : "No media"} />
+                  <Detail label="Payment notes" value={profile.paymentNotes || "--"} fullSpan />
+                  {profile.membershipTiers.includes("academy") && (
+                    <>
+                      {profile.academyFocusAreas.length ? (
+                        <Detail label="Academy focus areas" fullSpan>
+                          <div className="flex flex-wrap gap-2">
+                            {profile.academyFocusAreas.map((area) => (
+                              <Badge key={area}>{formatToken(area)}</Badge>
+                            ))}
+                          </div>
+                        </Detail>
+                      ) : null}
+                      {profile.academyFocus ? <Detail label="Academy notes" value={profile.academyFocus} fullSpan /> : null}
+                    </>
+                  )}
+                </div>
+              </Card>
+
+              {(profile.membershipTiers.includes("club") || profile.membershipTiers.includes("academy")) && (
+                <Alert variant="info" title="Emergency & safety">
+                  <p>
+                    Emergency contact: {profile.emergencyContactName} ({profile.emergencyContactRelationship}) – {profile.emergencyContactPhone}
+                  </p>
+                  <p>Region: {profile.emergencyContactRegion}</p>
+                  <p>Medical info: {profile.medicalInfo || "--"}</p>
+                  <p>Safety notes: {profile.safetyNotes || "--"}</p>
+                </Alert>
+              )}
+            </>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
@@ -728,6 +758,9 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isClub = profile.membershipTiers.includes("club") || profile.membershipTiers.includes("academy");
+  const isAcademy = profile.membershipTiers.includes("academy");
 
   async function handleSave() {
     setSaving(true);
@@ -928,349 +961,355 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
             onChange={(e) => setFormState({ ...formState, goalsNarrative: e.target.value })}
           />
         </div>
-        <div className="md:col-span-2">
-          <OptionPillGroup
-            label="Certifications"
-            options={certificationOptions}
-            selected={formState.certifications}
-            onToggle={(value) => {
-              const newCerts = formState.certifications.includes(value)
-                ? formState.certifications.filter((c) => c !== value)
-                : [...formState.certifications, value];
-              setFormState({ ...formState, certifications: newCerts });
-            }}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Textarea
-            label="Coaching experience"
-            value={formState.coachingExperience}
-            onChange={(e) => setFormState({ ...formState, coachingExperience: e.target.value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <OptionPillGroup
-            label="Coaching specialties"
-            options={coachingSpecialtyOptions}
-            selected={formState.coachingSpecialties}
-            onToggle={(value) => {
-              const newSpecs = formState.coachingSpecialties.includes(value)
-                ? formState.coachingSpecialties.filter((s) => s !== value)
-                : [...formState.coachingSpecialties, value];
-              setFormState({ ...formState, coachingSpecialties: newSpecs });
-            }}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Select
-            label="Years coaching"
-            value={formState.coachingYears}
-            onChange={(e) => setFormState({ ...formState, coachingYears: e.target.value })}
-          >
-            <option value="">Select range</option>
-            <option value="under_1">Less than 1 year</option>
-            <option value="1_3">1 – 3 years</option>
-            <option value="3_5">3 – 5 years</option>
-            <option value="5_plus">5+ years</option>
-          </Select>
-        </div>
-        <div className="md:col-span-2">
-          <Input
-            label="Portfolio / website"
-            type="url"
-            value={formState.coachingPortfolioLink}
-            onChange={(e) => setFormState({ ...formState, coachingPortfolioLink: e.target.value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Input
-            label="Certification link"
-            type="url"
-            value={formState.coachingDocumentLink}
-            onChange={(e) => setFormState({ ...formState, coachingDocumentLink: e.target.value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Input
-            label="Uploaded credential filename"
-            value={formState.coachingDocumentFileName}
-            onChange={(e) => setFormState({ ...formState, coachingDocumentFileName: e.target.value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <OptionPillGroup
-            label="Weekly availability slots"
-            options={availabilityOptions}
-            selected={formState.availabilitySlots}
-            onToggle={(value) => {
-              const newSlots = formState.availabilitySlots.includes(value)
-                ? formState.availabilitySlots.filter((s) => s !== value)
-                : [...formState.availabilitySlots, value];
-              setFormState({ ...formState, availabilitySlots: newSlots });
-            }}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <OptionPillGroup
-            label="Time-of-day availability"
-            options={timeOfDayOptions}
-            selected={formState.timeOfDayAvailability}
-            onToggle={(value) => {
-              const newTimes = formState.timeOfDayAvailability.includes(value)
-                ? formState.timeOfDayAvailability.filter((t) => t !== value)
-                : [...formState.timeOfDayAvailability, value];
-              setFormState({ ...formState, timeOfDayAvailability: newTimes });
-            }}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <OptionPillGroup
-            label="Preferred locations"
-            options={locationOptions}
-            selected={formState.locationPreference}
-            onToggle={(value) => {
-              const newLocs = formState.locationPreference.includes(value)
-                ? formState.locationPreference.filter((l) => l !== value)
-                : [...formState.locationPreference, value];
-              setFormState({ ...formState, locationPreference: newLocs });
-            }}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Input
-            label="Other location"
-            value={formState.locationPreferenceOther}
-            onChange={(e) => setFormState({ ...formState, locationPreferenceOther: e.target.value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <SingleSelectPills
-            label="Travel readiness"
-            options={travelFlexibilityOptions}
-            value={formState.travelFlexibility}
-            onChange={(value) => setFormState({ ...formState, travelFlexibility: value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <OptionPillGroup
-            label="Facility access"
-            options={facilityAccessOptions}
-            selected={formState.facilityAccess}
-            onToggle={(value) => {
-              const newAccess = formState.facilityAccess.includes(value)
-                ? formState.facilityAccess.filter((a) => a !== value)
-                : [...formState.facilityAccess, value];
-              setFormState({ ...formState, facilityAccess: newAccess });
-            }}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Input
-            label="Facility access (other)"
-            value={formState.facilityAccessOther}
-            onChange={(e) => setFormState({ ...formState, facilityAccessOther: e.target.value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <OptionPillGroup
-            label="Equipment needs"
-            options={equipmentNeedsOptions}
-            selected={formState.equipmentNeeds}
-            onToggle={(value) => {
-              const newNeeds = formState.equipmentNeeds.includes(value)
-                ? formState.equipmentNeeds.filter((n) => n !== value)
-                : [...formState.equipmentNeeds, value];
-              setFormState({ ...formState, equipmentNeeds: newNeeds });
-            }}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Input
-            label="Equipment needs (other)"
-            value={formState.equipmentNeedsOther}
-            onChange={(e) => setFormState({ ...formState, equipmentNeedsOther: e.target.value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Textarea
-            label="Travel notes"
-            value={formState.travelNotes}
-            onChange={(e) => setFormState({ ...formState, travelNotes: e.target.value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Input
-            label="Emergency contact name"
-            value={formState.emergencyContactName}
-            onChange={(e) => setFormState({ ...formState, emergencyContactName: e.target.value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Input
-            label="Relationship"
-            value={formState.emergencyContactRelationship}
-            onChange={(e) => setFormState({ ...formState, emergencyContactRelationship: e.target.value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Input
-            label="Emergency phone"
-            value={formState.emergencyContactPhone}
-            onChange={(e) => setFormState({ ...formState, emergencyContactPhone: e.target.value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Input
-            label="Emergency region"
-            value={formState.emergencyContactRegion}
-            onChange={(e) => setFormState({ ...formState, emergencyContactRegion: e.target.value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Textarea
-            label="Medical info"
-            value={formState.medicalInfo}
-            onChange={(e) => setFormState({ ...formState, medicalInfo: e.target.value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Textarea
-            label="Safety notes"
-            value={formState.safetyNotes}
-            onChange={(e) => setFormState({ ...formState, safetyNotes: e.target.value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <OptionPillGroup
-            label="Volunteer interest"
-            options={volunteerInterestOptions}
-            selected={formState.volunteerInterest}
-            onToggle={(value) => {
-              const newInterests = formState.volunteerInterest.includes(value)
-                ? formState.volunteerInterest.filter((i) => i !== value)
-                : [...formState.volunteerInterest, value];
-              setFormState({ ...formState, volunteerInterest: newInterests });
-            }}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Textarea
-            label="Volunteer roles detail"
-            value={formState.volunteerRolesDetail}
-            onChange={(e) => setFormState({ ...formState, volunteerRolesDetail: e.target.value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Input
-            label="Discovery source"
-            value={formState.discoverySource}
-            onChange={(e) => setFormState({ ...formState, discoverySource: e.target.value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Input
-            label="Instagram handle"
-            value={formState.socialInstagram}
-            onChange={(e) => setFormState({ ...formState, socialInstagram: e.target.value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Input
-            label="LinkedIn / professional link"
-            value={formState.socialLinkedIn}
-            onChange={(e) => setFormState({ ...formState, socialLinkedIn: e.target.value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Input
-            label="Other social link"
-            value={formState.socialOther}
-            onChange={(e) => setFormState({ ...formState, socialOther: e.target.value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Input
-            label="Language preference"
-            value={formState.languagePreference}
-            onChange={(e) => setFormState({ ...formState, languagePreference: e.target.value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Select
-            label="Comms preference"
-            value={formState.commsPreference}
-            onChange={(e) => setFormState({ ...formState, commsPreference: e.target.value })}
-          >
-            <option value="whatsapp">WhatsApp</option>
-            <option value="email">Email</option>
-            <option value="sms">SMS</option>
-          </Select>
-        </div>
-        <div className="md:col-span-2">
-          <SingleSelectPills
-            label="Payment readiness"
-            options={paymentReadinessOptions}
-            value={formState.paymentReadiness}
-            onChange={(value) => setFormState({ ...formState, paymentReadiness: value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Input
-            label="Preferred currency"
-            value={formState.currencyPreference}
-            onChange={(e) => setFormState({ ...formState, currencyPreference: e.target.value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Select
-            label="Photo consent"
-            value={formState.consentPhoto}
-            onChange={(e) => setFormState({ ...formState, consentPhoto: e.target.value })}
-          >
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
-          </Select>
-        </div>
-        <div className="md:col-span-2">
-          <OptionPillGroup
-            label="Membership tiers"
-            options={membershipTierOptions}
-            selected={formState.membershipTiers}
-            onToggle={(value) => {
-              const newTiers = formState.membershipTiers.includes(value)
-                ? formState.membershipTiers.filter((t) => t !== value)
-                : [...formState.membershipTiers, value];
-              setFormState({ ...formState, membershipTiers: newTiers });
-            }}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <OptionPillGroup
-            label="Academy focus areas"
-            options={academyFocusOptions}
-            selected={formState.academyFocusAreas}
-            onToggle={(value) => {
-              const newAreas = formState.academyFocusAreas.includes(value)
-                ? formState.academyFocusAreas.filter((a) => a !== value)
-                : [...formState.academyFocusAreas, value];
-              setFormState({ ...formState, academyFocusAreas: newAreas });
-            }}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Textarea
-            label="Academy focus"
-            value={formState.academyFocus}
-            onChange={(e) => setFormState({ ...formState, academyFocus: e.target.value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <Textarea
-            label="Payment notes"
-            value={formState.paymentNotes}
-            onChange={(e) => setFormState({ ...formState, paymentNotes: e.target.value })}
-          />
-        </div>
+
+
+        {isClub && (
+          <>
+            <div className="md:col-span-2">
+              <OptionPillGroup
+                label="Certifications"
+                options={certificationOptions}
+                selected={formState.certifications}
+                onToggle={(value) => {
+                  const newCerts = formState.certifications.includes(value)
+                    ? formState.certifications.filter((c) => c !== value)
+                    : [...formState.certifications, value];
+                  setFormState({ ...formState, certifications: newCerts });
+                }}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Textarea
+                label="Coaching experience"
+                value={formState.coachingExperience}
+                onChange={(e) => setFormState({ ...formState, coachingExperience: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <OptionPillGroup
+                label="Coaching specialties"
+                options={coachingSpecialtyOptions}
+                selected={formState.coachingSpecialties}
+                onToggle={(value) => {
+                  const newSpecs = formState.coachingSpecialties.includes(value)
+                    ? formState.coachingSpecialties.filter((s) => s !== value)
+                    : [...formState.coachingSpecialties, value];
+                  setFormState({ ...formState, coachingSpecialties: newSpecs });
+                }}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Select
+                label="Years coaching"
+                value={formState.coachingYears}
+                onChange={(e) => setFormState({ ...formState, coachingYears: e.target.value })}
+              >
+                <option value="">Select range</option>
+                <option value="under_1">Less than 1 year</option>
+                <option value="1_3">1 – 3 years</option>
+                <option value="3_5">3 – 5 years</option>
+                <option value="5_plus">5+ years</option>
+              </Select>
+            </div>
+            <div className="md:col-span-2">
+              <Input
+                label="Portfolio / website"
+                type="url"
+                value={formState.coachingPortfolioLink}
+                onChange={(e) => setFormState({ ...formState, coachingPortfolioLink: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Input
+                label="Certification link"
+                type="url"
+                value={formState.coachingDocumentLink}
+                onChange={(e) => setFormState({ ...formState, coachingDocumentLink: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Input
+                label="Uploaded credential filename"
+                value={formState.coachingDocumentFileName}
+                onChange={(e) => setFormState({ ...formState, coachingDocumentFileName: e.target.value })}
+              />
+            </div>
+          </>
+        )}
+        {isClub && (
+          <>
+            <div className="md:col-span-2">
+              <OptionPillGroup
+                label="Weekly availability slots"
+                options={availabilityOptions}
+                selected={formState.availabilitySlots}
+                onToggle={(value) => {
+                  const newSlots = formState.availabilitySlots.includes(value)
+                    ? formState.availabilitySlots.filter((s) => s !== value)
+                    : [...formState.availabilitySlots, value];
+                  setFormState({ ...formState, availabilitySlots: newSlots });
+                }}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <OptionPillGroup
+                label="Time-of-day availability"
+                options={timeOfDayOptions}
+                selected={formState.timeOfDayAvailability}
+                onToggle={(value) => {
+                  const newTimes = formState.timeOfDayAvailability.includes(value)
+                    ? formState.timeOfDayAvailability.filter((t) => t !== value)
+                    : [...formState.timeOfDayAvailability, value];
+                  setFormState({ ...formState, timeOfDayAvailability: newTimes });
+                }}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <OptionPillGroup
+                label="Preferred locations"
+                options={locationOptions}
+                selected={formState.locationPreference}
+                onToggle={(value) => {
+                  const newLocs = formState.locationPreference.includes(value)
+                    ? formState.locationPreference.filter((l) => l !== value)
+                    : [...formState.locationPreference, value];
+                  setFormState({ ...formState, locationPreference: newLocs });
+                }}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Input
+                label="Other location"
+                value={formState.locationPreferenceOther}
+                onChange={(e) => setFormState({ ...formState, locationPreferenceOther: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <SingleSelectPills
+                label="Travel readiness"
+                options={travelFlexibilityOptions}
+                value={formState.travelFlexibility}
+                onChange={(value) => setFormState({ ...formState, travelFlexibility: value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <OptionPillGroup
+                label="Facility access"
+                options={facilityAccessOptions}
+                selected={formState.facilityAccess}
+                onToggle={(value) => {
+                  const newAccess = formState.facilityAccess.includes(value)
+                    ? formState.facilityAccess.filter((a) => a !== value)
+                    : [...formState.facilityAccess, value];
+                  setFormState({ ...formState, facilityAccess: newAccess });
+                }}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Input
+                label="Facility access (other)"
+                value={formState.facilityAccessOther}
+                onChange={(e) => setFormState({ ...formState, facilityAccessOther: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <OptionPillGroup
+                label="Equipment needs"
+                options={equipmentNeedsOptions}
+                selected={formState.equipmentNeeds}
+                onToggle={(value) => {
+                  const newNeeds = formState.equipmentNeeds.includes(value)
+                    ? formState.equipmentNeeds.filter((n) => n !== value)
+                    : [...formState.equipmentNeeds, value];
+                  setFormState({ ...formState, equipmentNeeds: newNeeds });
+                }}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Input
+                label="Equipment needs (other)"
+                value={formState.equipmentNeedsOther}
+                onChange={(e) => setFormState({ ...formState, equipmentNeedsOther: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Textarea
+                label="Travel notes"
+                value={formState.travelNotes}
+                onChange={(e) => setFormState({ ...formState, travelNotes: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Input
+                label="Emergency contact name"
+                value={formState.emergencyContactName}
+                onChange={(e) => setFormState({ ...formState, emergencyContactName: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Input
+                label="Relationship"
+                value={formState.emergencyContactRelationship}
+                onChange={(e) => setFormState({ ...formState, emergencyContactRelationship: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Input
+                label="Emergency phone"
+                value={formState.emergencyContactPhone}
+                onChange={(e) => setFormState({ ...formState, emergencyContactPhone: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Input
+                label="Emergency region"
+                value={formState.emergencyContactRegion}
+                onChange={(e) => setFormState({ ...formState, emergencyContactRegion: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Textarea
+                label="Medical info"
+                value={formState.medicalInfo}
+                onChange={(e) => setFormState({ ...formState, medicalInfo: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Textarea
+                label="Safety notes"
+                value={formState.safetyNotes}
+                onChange={(e) => setFormState({ ...formState, safetyNotes: e.target.value })}
+              />
+            </div>
+          </>
+        )}
+        {isClub && (
+          <>
+            <div className="md:col-span-2">
+              <OptionPillGroup
+                label="Volunteer interest"
+                options={volunteerInterestOptions}
+                selected={formState.volunteerInterest}
+                onToggle={(value) => {
+                  const newInterests = formState.volunteerInterest.includes(value)
+                    ? formState.volunteerInterest.filter((i) => i !== value)
+                    : [...formState.volunteerInterest, value];
+                  setFormState({ ...formState, volunteerInterest: newInterests });
+                }}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Textarea
+                label="Volunteer roles detail"
+                value={formState.volunteerRolesDetail}
+                onChange={(e) => setFormState({ ...formState, volunteerRolesDetail: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Input
+                label="Discovery source"
+                value={formState.discoverySource}
+                onChange={(e) => setFormState({ ...formState, discoverySource: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Input
+                label="Instagram handle"
+                value={formState.socialInstagram}
+                onChange={(e) => setFormState({ ...formState, socialInstagram: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Input
+                label="LinkedIn / professional link"
+                value={formState.socialLinkedIn}
+                onChange={(e) => setFormState({ ...formState, socialLinkedIn: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Input
+                label="Other social link"
+                value={formState.socialOther}
+                onChange={(e) => setFormState({ ...formState, socialOther: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Input
+                label="Language preference"
+                value={formState.languagePreference}
+                onChange={(e) => setFormState({ ...formState, languagePreference: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Select
+                label="Comms preference"
+                value={formState.commsPreference}
+                onChange={(e) => setFormState({ ...formState, commsPreference: e.target.value })}
+              >
+                <option value="whatsapp">WhatsApp</option>
+                <option value="email">Email</option>
+                <option value="sms">SMS</option>
+              </Select>
+            </div>
+            <div className="md:col-span-2">
+              <SingleSelectPills
+                label="Payment readiness"
+                options={paymentReadinessOptions}
+                value={formState.paymentReadiness}
+                onChange={(value) => setFormState({ ...formState, paymentReadiness: value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Input
+                label="Preferred currency"
+                value={formState.currencyPreference}
+                onChange={(e) => setFormState({ ...formState, currencyPreference: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Select
+                label="Photo consent"
+                value={formState.consentPhoto}
+                onChange={(e) => setFormState({ ...formState, consentPhoto: e.target.value })}
+              >
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </Select>
+            </div>
+            <div className="md:col-span-2">
+              <Textarea
+                label="Payment notes"
+                value={formState.paymentNotes}
+                onChange={(e) => setFormState({ ...formState, paymentNotes: e.target.value })}
+              />
+            </div>
+          </>
+        )}
+
+        {isAcademy && (
+          <>
+            <div className="md:col-span-2">
+              <OptionPillGroup
+                label="Academy focus areas"
+                options={academyFocusOptions}
+                selected={formState.academyFocusAreas}
+                onToggle={(value) => {
+                  const newAreas = formState.academyFocusAreas.includes(value)
+                    ? formState.academyFocusAreas.filter((a) => a !== value)
+                    : [...formState.academyFocusAreas, value];
+                  setFormState({ ...formState, academyFocusAreas: newAreas });
+                }}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Textarea
+                label="Academy focus"
+                value={formState.academyFocus}
+                onChange={(e) => setFormState({ ...formState, academyFocus: e.target.value })}
+              />
+            </div>
+          </>
+        )}
       </div>
       <div className="flex flex-wrap gap-3">
         <Button variant="secondary" type="button" onClick={onCancel} disabled={saving}>

@@ -83,8 +83,8 @@ export function Header() {
                     {/* Auth Actions */}
                     {session ? (
                         <>
-                            <Link href="/dashboard" className="hover:text-cyan-700">
-                                Dashboard
+                            <Link href="/profile" className="hover:text-cyan-700">
+                                Profile
                             </Link>
                             <button
                                 onClick={handleLogout}
@@ -138,8 +138,8 @@ export function Header() {
                         {/* Auth Actions */}
                         {session ? (
                             <>
-                                <Link href="/dashboard" onClick={closeMobileMenu} className="hover:text-cyan-700 py-2 border-t pt-3 mt-2">
-                                    Dashboard
+                                <Link href="/profile" onClick={closeMobileMenu} className="hover:text-cyan-700 py-2 border-t pt-3 mt-2">
+                                    Profile
                                 </Link>
                                 <button
                                     onClick={handleLogout}

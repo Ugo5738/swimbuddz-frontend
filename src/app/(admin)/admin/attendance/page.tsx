@@ -16,10 +16,9 @@ type Attendance = {
     id: string;
     member_name: string;
     member_email: string;
-    ride_share_option: string;
-    payment_status: string;
-    ride_notes: string;
-    total_fee: number;
+    status: string;
+    role: string;
+    notes: string;
 };
 
 export default function AdminAttendancePage() {
@@ -144,10 +143,10 @@ export default function AdminAttendancePage() {
                                         Name
                                     </th>
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
-                                        Ride Share
+                                        Status
                                     </th>
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
-                                        Payment
+                                        Role
                                     </th>
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
                                         Notes
@@ -163,19 +162,14 @@ export default function AdminAttendancePage() {
                                         </td>
                                         <td className="whitespace-nowrap px-6 py-4">
                                             <span className="inline-flex rounded-full bg-slate-100 px-2 text-xs font-semibold leading-5 text-slate-800">
-                                                {attendance.ride_share_option === "none" ? "None" :
-                                                    attendance.ride_share_option === "lead" ? "Lead" : "Join"}
+                                                {attendance.status}
                                             </span>
                                         </td>
-                                        <td className="whitespace-nowrap px-6 py-4">
-                                            <div className="text-sm text-slate-900">₦{attendance.total_fee.toLocaleString()}</div>
-                                            <span className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${attendance.payment_status === "paid" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
-                                                }`}>
-                                                {attendance.payment_status}
-                                            </span>
+                                        <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-700">
+                                            {attendance.role}
                                         </td>
                                         <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">
-                                            {attendance.ride_notes || "--"}
+                                            {attendance.notes || "--"}
                                         </td>
                                     </tr>
                                 ))}

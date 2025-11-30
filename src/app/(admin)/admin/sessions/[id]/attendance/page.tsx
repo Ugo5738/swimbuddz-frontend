@@ -12,18 +12,18 @@ const mockAttendance = [
   {
     id: "1",
     name: "Ada Obi",
-    level: "Intermediate",
-    rideShareRole: "Driver (2 seats)",
-    paymentStatus: "Pending",
-    attendanceStatus: "Registered"
+    email: "ada@example.com",
+    status: "PRESENT",
+    role: "SWIMMER",
+    notes: "Looking forward to the session"
   },
   {
     id: "2",
     name: "Bola Adeyemi",
-    level: "Beginner",
-    rideShareRole: "Passenger",
-    paymentStatus: "Confirmed",
-    attendanceStatus: "Registered"
+    email: "bola@example.com",
+    status: "LATE",
+    role: "SWIMMER",
+    notes: "Will arrive 15 mins late"
   }
 ];
 
@@ -38,22 +38,7 @@ export default function AdminSessionAttendancePage() {
     return () => clearTimeout(id);
   }, []);
 
-  async function updateStatus(memberId: string, action: "payment" | "no_show") {
-    setUpdatingId(memberId);
-    setError(null);
-    setSuccess(null);
 
-    try {
-      // TODO: replace with real API calls
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setSuccess(action === "payment" ? "Payment confirmed (mock)" : "Marked no-show (mock)");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to update attendee.";
-      setError(message);
-    } finally {
-      setUpdatingId(null);
-    }
-  }
 
   function handleExport() {
     alert("Exporting pool list (mock)");
@@ -88,51 +73,24 @@ export default function AdminSessionAttendancePage() {
             <TableHead>
               <TableRow>
                 <TableHeaderCell>Name</TableHeaderCell>
-                <TableHeaderCell>Level</TableHeaderCell>
-                <TableHeaderCell>Ride-share</TableHeaderCell>
-                <TableHeaderCell>Payment</TableHeaderCell>
+                <TableHeaderCell>Email</TableHeaderCell>
                 <TableHeaderCell>Status</TableHeaderCell>
-                <TableHeaderCell>Actions</TableHeaderCell>
+                <TableHeaderCell>Role</TableHeaderCell>
+                <TableHeaderCell>Notes</TableHeaderCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {mockAttendance.map((attendee) => (
                 <TableRow key={attendee.id}>
                   <TableCell>{attendee.name}</TableCell>
-                  <TableCell>{attendee.level}</TableCell>
-                  <TableCell>{attendee.rideShareRole}</TableCell>
+                  <TableCell>{attendee.email}</TableCell>
                   <TableCell>
-                    <Badge variant={attendee.paymentStatus === "Confirmed" ? "success" : "warning"}>
-                      {attendee.paymentStatus}
+                    <Badge variant={attendee.status === "PRESENT" ? "success" : "warning"}>
+                      {attendee.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    <Badge variant={attendee.attendanceStatus === "Registered" ? "info" : "warning"}>
-                      {attendee.attendanceStatus}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        disabled={updatingId === attendee.id}
-                        onClick={() => updateStatus(attendee.id, "payment")}
-                      >
-                        {updatingId === attendee.id ? "Updating..." : "Confirm payment"}
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        disabled={updatingId === attendee.id}
-                        onClick={() => updateStatus(attendee.id, "no_show")}
-                      >
-                        {updatingId === attendee.id ? "Updating..." : "Mark no-show"}
-                      </Button>
-                    </div>
-                  </TableCell>
+                  <TableCell>{attendee.role}</TableCell>
+                  <TableCell>{attendee.notes || "--"}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

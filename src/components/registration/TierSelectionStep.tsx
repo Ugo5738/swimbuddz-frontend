@@ -61,11 +61,13 @@ const tierOptions: TierOption[] = [
 interface TierSelectionStepProps {
     selectedTier: Tier | null;
     onSelectTier: (tier: Tier) => void;
+    disabledTier?: Tier | null;
 }
 
 export function TierSelectionStep({
     selectedTier,
     onSelectTier,
+    disabledTier,
 }: TierSelectionStepProps) {
     return (
         <div className="space-y-6">
@@ -81,15 +83,19 @@ export function TierSelectionStep({
             <div className="grid gap-4 md:grid-cols-3">
                 {tierOptions.map((tier) => {
                     const isSelected = selectedTier === tier.value;
+                    const isDisabled = disabledTier === tier.value;
 
                     return (
                         <Card
                             key={tier.value}
-                            className={`cursor-pointer transition-all hover:shadow-lg ${isSelected
+                            className={`transition-all ${isDisabled
+                                ? "opacity-50 cursor-not-allowed border-slate-200 bg-slate-50"
+                                : "cursor-pointer hover:shadow-lg"
+                                } ${isSelected
                                     ? "border-2 border-cyan-500 shadow-lg"
-                                    : "border border-slate-200 hover:border-cyan-300"
+                                    : !isDisabled ? "border border-slate-200 hover:border-cyan-300" : ""
                                 }`}
-                            onClick={() => onSelectTier(tier.value)}
+                            onClick={() => !isDisabled && onSelectTier(tier.value)}
                         >
                             <div className="space-y-4">
                                 {/* Header */}

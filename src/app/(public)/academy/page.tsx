@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
+import { UpcomingCohorts } from "@/components/academy/UpcomingCohorts";
 
 const benefits = [
     "Structured programs and cohorts (6-8 week courses)",
@@ -132,19 +133,20 @@ export default function AcademyPage() {
             </section>
 
             {/* Available Programs */}
-            <section className="space-y-4">
-                <h2 className="text-2xl font-semibold text-slate-900">Available Programs</h2>
-                <Card className="p-6 text-center">
-                    <p className="text-slate-600 mb-4">
-                        Explore our current Academy programs and cohort schedules.
-                    </p>
-                    <Link
-                        href="/member/academy"
-                        className="inline-block rounded-full bg-cyan-600 px-6 py-3 font-semibold text-white hover:bg-cyan-500 transition"
-                    >
-                        View Programs & Enroll
+            <section className="space-y-6">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div>
+                        <h2 className="text-2xl font-semibold text-slate-900">Upcoming Cohorts</h2>
+                        <p className="text-slate-600 mt-2">
+                            Secure your spot in our next structured learning cycle.
+                        </p>
+                    </div>
+                    <Link href="/member/academy" className="text-cyan-600 font-semibold hover:text-cyan-700 flex items-center gap-1">
+                        View all programs <span aria-hidden="true">&rarr;</span>
                     </Link>
-                </Card>
+                </div>
+
+                <UpcomingCohorts />
             </section>
 
             {/* CTA Section */}

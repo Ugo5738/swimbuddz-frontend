@@ -43,6 +43,9 @@ export const apiEndpoints = {
 
     // Payments
     payments: `${API_BASE_URL}/api/v1/payments`,
+
+    // Transport
+    transport: `${API_BASE_URL}/api/v1/transport`,
 } as const;
 
 // Helper function to build full endpoint URLs
