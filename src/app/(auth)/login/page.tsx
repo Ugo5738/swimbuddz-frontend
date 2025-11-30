@@ -1,14 +1,14 @@
 "use client";
 
-import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
+import { useState, FormEvent, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { supabase } from "@/lib/auth";
+import { completePendingRegistrationOnBackend } from "@/lib/registration";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { PasswordField } from "@/components/ui/PasswordField";
-import { supabase } from "@/lib/auth";
-import { completePendingRegistrationOnBackend } from "@/lib/registration";
-import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, Suspense, useState } from "react";
+import { Button } from "@/components/ui/Button";
+import { Alert } from "@/components/ui/Alert";
 
 const ADMIN_EMAILS = ["admin@admin.com"];
 
