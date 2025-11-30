@@ -1,9 +1,8 @@
 import { supabase, getCurrentAccessToken } from "./auth";
+import { API_BASE_URL } from "./config";
 
-const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-if (!baseUrl) {
-  console.warn("NEXT_PUBLIC_API_BASE_URL is not set. API calls will fail until configured.");
+if (!process.env.NEXT_PUBLIC_API_BASE_URL && !process.env.NEXT_PUBLIC_API_URL) {
+  console.warn("API base URL env var is not set (expected NEXT_PUBLIC_API_BASE_URL or NEXT_PUBLIC_API_URL). Falling back to localhost.");
 }
 
 type RequestOptions = {
@@ -28,12 +27,8 @@ async function buildHeaders(auth?: boolean, headers?: HeadersInit): Promise<Head
 }
 
 async function request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
-  if (!baseUrl) {
-    throw new Error("NEXT_PUBLIC_API_BASE_URL is not defined");
-  }
-
   const headers = await buildHeaders(options.auth, options.headers);
-  const response = await fetch(`${baseUrl}${path}`, {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     method,
     headers,
     body: options.body ? JSON.stringify(options.body) : undefined,

@@ -30,7 +30,8 @@ Publish directory: .next
 **Environment Variables** (click "Show advanced" → "New variable"):
 ```bash
 # Required
-NEXT_PUBLIC_API_URL=https://your-backend-api.com
+NEXT_PUBLIC_API_BASE_URL=https://your-backend-api.com
+# (Legacy support) If you already use NEXT_PUBLIC_API_URL, it will still work, but prefer NEXT_PUBLIC_API_BASE_URL.
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
@@ -111,17 +112,20 @@ Every time you push to your GitHub repo:
 
 ### Production (.env variables in Netlify)
 ```bash
-NEXT_PUBLIC_API_URL=https://api.swimbuddz.com
+NEXT_PUBLIC_API_BASE_URL=https://api.swimbuddz.com
+# NEXT_PUBLIC_API_URL=https://api.swimbuddz.com  # supported legacy key
 ```
 
 ### Staging (separate site)
 ```bash
-NEXT_PUBLIC_API_URL=https://api-staging.swimbuddz.com
+NEXT_PUBLIC_API_BASE_URL=https://api-staging.swimbuddz.com
+# NEXT_PUBLIC_API_URL=https://api-staging.swimbuddz.com  # supported legacy key
 ```
 
 ### Development (local .env.local)
 ```bash
-NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+# NEXT_PUBLIC_API_URL=http://localhost:8000  # supported legacy key
 ```
 
 ---
@@ -143,7 +147,7 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 ### API Calls Fail
 
 **Check:**
-1. `NEXT_PUBLIC_API_URL` is correct in Netlify env vars
+1. `NEXT_PUBLIC_API_BASE_URL` (or legacy `NEXT_PUBLIC_API_URL`) is set correctly in Netlify env vars
 2. Backend allows CORS from Netlify domain
 3. Backend is accessible (not localhost!)
 

@@ -3,8 +3,9 @@
  * Centralizes all environment-dependent URLs and values
  */
 
-// API Base URL - changes between dev/prod
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+// API Base URL - changes between dev/prod. Support legacy NEXT_PUBLIC_API_URL for deployments that still use it.
+const envApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL;
+export const API_BASE_URL = envApiBaseUrl || 'http://localhost:8000';
 
 // External Links
 export const WHATSAPP_GROUP_URL = process.env.NEXT_PUBLIC_WHATSAPP_URL || 'https://chat.whatsapp.com/BVtV5iKH9LhCBphqXqDVYv';
