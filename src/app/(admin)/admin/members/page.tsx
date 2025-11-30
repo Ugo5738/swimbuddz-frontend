@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
+import { supabase } from "@/lib/auth";
+import { API_BASE_URL } from "@/lib/config";
 
 // Define Member type based on backend response
 interface Member {
@@ -47,7 +49,17 @@ export default function AdminMembersPage() {
     const fetchMembers = async () => {
         try {
             setIsLoading(true);
-            const res = await fetch("/api/v1/members/");
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+
+            if (!token) {
+                setError("Not authenticated");
+                return;
+            }
+
+            const res = await fetch(`${API_BASE_URL}/api/v1/members/`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
             if (!res.ok) throw new Error("Failed to fetch members");
             const data = await res.json();
             setMembers(data);
@@ -114,9 +126,15 @@ export default function AdminMembersPage() {
                 registration_complete: true,
             };
 
-            const res = await fetch("/api/v1/members/", {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+
+            const res = await fetch(`${API_BASE_URL}/api/v1/members/`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
                 body: JSON.stringify(payload),
             });
 
@@ -146,9 +164,15 @@ export default function AdminMembersPage() {
                 location_preference: [formData.location_preference], // Backend expects list
             };
 
-            const res = await fetch(`/api/v1/members/${editingMember.id}`, {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+
+            const res = await fetch(`${API_BASE_URL}/api/v1/members/${editingMember.id}`, {
                 method: "PATCH",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
                 body: JSON.stringify(payload),
             });
 

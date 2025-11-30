@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { supabase } from "@/lib/auth";
+import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import {
   Users,
@@ -75,14 +76,14 @@ export default function AdminDashboardPage() {
         };
 
         // Fetch Stats
-        const statsRes = await fetch("/api/v1/admin/dashboard-stats", { headers });
+        const statsRes = await fetch(`${API_BASE_URL}/api/v1/admin/dashboard-stats`, { headers });
         if (statsRes.ok) {
           const statsData = await statsRes.json();
           setStats(statsData);
         }
 
         // Fetch Sessions (for list)
-        const sessionsRes = await fetch("/api/v1/sessions/", { headers });
+        const sessionsRes = await fetch(`${API_BASE_URL}/api/v1/sessions/`, { headers });
         if (sessionsRes.ok) {
           const sessionsData = await sessionsRes.json();
           // Filter for upcoming and take top 5
@@ -95,14 +96,14 @@ export default function AdminDashboardPage() {
         }
 
         // Fetch Announcements (for list)
-        const announcementsRes = await fetch("/api/v1/communications/announcements/", { headers });
+        const announcementsRes = await fetch(`${API_BASE_URL}/api/v1/communications/announcements/`, { headers });
         if (announcementsRes.ok) {
           const announcementsData = await announcementsRes.json();
           setAnnouncements(announcementsData.slice(0, 5));
         }
 
         // Fetch Recent Enrollments
-        const enrollmentsRes = await fetch("/api/v1/academy/enrollments/", { headers });
+        const enrollmentsRes = await fetch(`${API_BASE_URL}/api/v1/academy/enrollments/`, { headers });
         if (enrollmentsRes.ok) {
           const enrollmentsData = await enrollmentsRes.json();
           setRecentEnrollments(enrollmentsData.slice(0, 5));

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/auth";
+import { API_BASE_URL } from "@/lib/config";
 import { SessionCalendar } from "@/components/admin/SessionCalendar";
 import { TemplatesSidebar } from "@/components/admin/TemplatesSidebar";
 import { GenerateSessionsModal } from "@/components/admin/GenerateSessionsModal";
@@ -76,14 +77,14 @@ export default function AdminSessionsPage() {
       const headers = { "Authorization": `Bearer ${token}` };
 
       // Fetch sessions
-      const sessionsRes = await fetch("/api/v1/sessions/", { headers });
+      const sessionsRes = await fetch(`${API_BASE_URL}/api/v1/sessions/`, { headers });
       if (sessionsRes.ok) {
         const sessionsData = await sessionsRes.json();
         setSessions(sessionsData);
       }
 
       // Fetch templates
-      const templatesRes = await fetch("/api/v1/sessions/templates", { headers });
+      const templatesRes = await fetch(`${API_BASE_URL}/api/v1/sessions/templates`, { headers });
       if (templatesRes.ok) {
         const templatesData = await templatesRes.json();
         setTemplates(templatesData);
@@ -101,7 +102,7 @@ export default function AdminSessionsPage() {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
 
-      const res = await fetch("/api/v1/sessions/templates", {
+      const res = await fetch(`${API_BASE_URL}/api/v1/sessions/templates`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -124,7 +125,7 @@ export default function AdminSessionsPage() {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
 
-      const res = await fetch(`/api/v1/sessions/templates/${templateId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/sessions/templates/${templateId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -147,7 +148,7 @@ export default function AdminSessionsPage() {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
 
-    const res = await fetch(`/api/v1/sessions/templates/${templateId}/generate`, {
+    const res = await fetch(`${API_BASE_URL}/api/v1/sessions/templates/${templateId}/generate`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -170,7 +171,7 @@ export default function AdminSessionsPage() {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
 
-      await fetch(`/api/v1/sessions/templates/${templateId}`, {
+      await fetch(`${API_BASE_URL}/api/v1/sessions/templates/${templateId}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -188,7 +189,7 @@ export default function AdminSessionsPage() {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
 
-      await fetch(`/api/v1/sessions/${sessionId}`, {
+      await fetch(`${API_BASE_URL}/api/v1/sessions/${sessionId}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
