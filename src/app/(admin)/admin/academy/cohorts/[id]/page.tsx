@@ -9,14 +9,23 @@ import { PaymentStatusBadge } from "@/components/academy/PaymentStatusBadge";
 import { UpdateEnrollmentModal } from "@/components/academy/UpdateEnrollmentModal";
 import {
     AcademyApi, Cohort,
-    EnrollmentWithStudent,
+    Enrollment,
     Milestone,
     ProgressStatus,
     StudentProgress
 } from "@/lib/academy";
+import { API_BASE_URL } from "@/lib/config";
+import { supabase } from "@/lib/auth";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+
+type MemberBasicInfo = {
+    id: string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+};
 
 export default function CohortDetailsPage() {
     const params = useParams();
@@ -25,7 +34,8 @@ export default function CohortDetailsPage() {
 
     const [cohort, setCohort] = useState<Cohort | null>(null);
     const [milestones, setMilestones] = useState<Milestone[]>([]);
-    const [students, setStudents] = useState<EnrollmentWithStudent[]>([]);
+    const [students, setStudents] = useState<Enrollment[]>([]);
+    const [memberLookup, setMemberLookup] = useState<Record<string, MemberBasicInfo>>({});
     const [loading, setLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -38,7 +48,7 @@ export default function CohortDetailsPage() {
 
     // Enrollment Update Modal State
     const [isEnrollmentModalOpen, setIsEnrollmentModalOpen] = useState(false);
-    const [selectedEnrollment, setSelectedEnrollment] = useState<EnrollmentWithStudent | null>(null);
+    const [selectedEnrollment, setSelectedEnrollment] = useState<Enrollment | null>(null);
 
     const loadData = async () => {
         try {
@@ -50,9 +60,26 @@ export default function CohortDetailsPage() {
             const milestonesData = await AcademyApi.listMilestones(cohortData.program_id);
             setMilestones(milestonesData);
 
-            // 3. Get Students with Progress
+            // 3. Get Students (enrollments) and hydrate member info via members service
             const studentsData = await AcademyApi.listCohortStudents(cohortId);
             setStudents(studentsData);
+
+            const memberIds = Array.from(new Set(studentsData.map((s) => s.member_id)));
+            if (memberIds.length) {
+                const { data: { session } } = await supabase.auth.getSession();
+                const token = session?.access_token;
+                const membersRes = await fetch(`${API_BASE_URL}/api/v1/members/`, {
+                    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+                });
+                if (membersRes.ok) {
+                    const members = await membersRes.json() as MemberBasicInfo[];
+                    const lookup = members.reduce<Record<string, MemberBasicInfo>>((acc, m) => {
+                        if (memberIds.includes(m.id)) acc[m.id] = m;
+                        return acc;
+                    }, {});
+                    setMemberLookup(lookup);
+                }
+            }
 
         } catch (error) {
             console.error("Failed to load cohort details", error);
@@ -93,17 +120,15 @@ export default function CohortDetailsPage() {
         setIsMilestoneModalOpen(true);
     };
 
-    const handleEnrollmentClick = (enrollment: EnrollmentWithStudent) => {
+    const handleEnrollmentClick = (enrollment: Enrollment) => {
         setSelectedEnrollment(enrollment);
         setIsEnrollmentModalOpen(true);
     };
 
-    const calculateCompletion = (student: EnrollmentWithStudent): number => {
+    const calculateCompletion = (student: Enrollment): number => {
         if (milestones.length === 0) return 0;
-        const achievedCount = student.progress_records.filter(
-            p => p.status === ProgressStatus.ACHIEVED
-        ).length;
-        return Math.round((achievedCount / milestones.length) * 100);
+        // Progress records no longer embedded; placeholder 0 until progress API supplies them
+        return 0;
     };
 
     const calculateAverageCompletion = (): number => {
@@ -114,6 +139,14 @@ export default function CohortDetailsPage() {
 
     const getPendingPaymentsCount = (): number => {
         return students.filter(s => s.payment_status === "pending").length;
+    };
+
+    const formatStudentName = (enrollment: Enrollment) => {
+        const member = memberLookup[enrollment.member_id];
+        if (member?.first_name || member?.last_name) {
+            return `${member.first_name ?? ""} ${member.last_name ?? ""}`.trim();
+        }
+        return member?.email || enrollment.member_id;
     };
 
     if (loading) {
@@ -241,8 +274,10 @@ export default function CohortDetailsPage() {
                                     return (
                                         <tr key={student.id} className="hover:bg-slate-50/50">
                                             <td className="p-4 font-medium text-slate-900">
-                                                {student.member.first_name} {student.member.last_name}
-                                                <div className="text-xs font-normal text-slate-500">{student.member.email}</div>
+                                                {formatStudentName(student)}
+                                                <div className="text-xs font-normal text-slate-500">
+                                                    {memberLookup[student.member_id]?.email || student.member_id}
+                                                </div>
                                             </td>
                                             <td className="p-4">
                                                 <button onClick={() => handleEnrollmentClick(student)}>
@@ -266,8 +301,8 @@ export default function CohortDetailsPage() {
                                                 </div>
                                             </td>
                                             {milestones.map((milestone) => {
-                                                const progress = student.progress_records.find(p => p.milestone_id === milestone.id);
-                                                const isAchieved = progress?.status === ProgressStatus.ACHIEVED;
+                                                // Progress records are no longer embedded; prompt modal for updates.
+                                                const isAchieved = false;
 
                                                 return (
                                                     <td key={milestone.id} className="p-4">
@@ -275,8 +310,8 @@ export default function CohortDetailsPage() {
                                                             onClick={() => handleMilestoneClick(
                                                                 milestone,
                                                                 student.id,
-                                                                `${student.member.first_name} ${student.member.last_name}`,
-                                                                progress
+                                                                formatStudentName(student),
+                                                                undefined
                                                             )}
                                                             className={`flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium transition-colors ${isAchieved
                                                                 ? 'bg-green-100 text-green-700 hover:bg-green-200'
@@ -287,11 +322,6 @@ export default function CohortDetailsPage() {
                                                                 }`} />
                                                             {isAchieved ? 'Achieved' : 'Pending'}
                                                         </button>
-                                                        {isAchieved && progress?.achieved_at && (
-                                                            <div className="mt-1 text-[10px] text-slate-400">
-                                                                {new Date(progress.achieved_at).toLocaleDateString()}
-                                                            </div>
-                                                        )}
                                                     </td>
                                                 );
                                             })}

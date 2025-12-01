@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import Link from "next/link";
+import { API_BASE_URL } from "@/lib/config";
 
 type Photo = {
     id: string;
@@ -32,7 +33,7 @@ export default function AlbumUploadPage() {
 
     const fetchAlbum = async () => {
         try {
-            const response = await fetch(`/api/media/albums/${albumId}`);
+            const response = await fetch(`${API_BASE_URL}/api/v1/media/albums/${albumId}`);
             if (response.ok) {
                 const data = await response.json();
                 setAlbumTitle(data.title);
@@ -63,7 +64,7 @@ export default function AlbumUploadPage() {
                 formData.append('file', file);
                 if (caption) formData.append('caption', caption);
 
-                const response = await fetch(`/api/media/albums/${albumId}/photos`, {
+                const response = await fetch(`${API_BASE_URL}/api/v1/media/albums/${albumId}/photos`, {
                     method: 'POST',
                     body: formData
                 });
@@ -92,7 +93,7 @@ export default function AlbumUploadPage() {
 
     const toggleFeatured = async (photoId: string, isFeatured: boolean) => {
         try {
-            const response = await fetch(`/api/media/photos/${photoId}`, {
+            const response = await fetch(`${API_BASE_URL}/api/v1/media/photos/${photoId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ is_featured: !isFeatured })
@@ -110,7 +111,7 @@ export default function AlbumUploadPage() {
         if (!confirm('Are you sure you want to delete this photo?')) return;
 
         try {
-            const response = await fetch(`/api/media/photos/${photoId}`, {
+            const response = await fetch(`${API_BASE_URL}/api/v1/media/photos/${photoId}`, {
                 method: 'DELETE'
             });
 

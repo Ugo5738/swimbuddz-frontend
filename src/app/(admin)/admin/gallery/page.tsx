@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/Card";
 import Link from "next/link";
+import { API_BASE_URL } from "@/lib/config";
 
 type Album = {
     id: string;
@@ -22,7 +23,7 @@ export default function AdminGalleryPage() {
 
     const fetchAlbums = async () => {
         try {
-            const response = await fetch('/api/media/albums');
+            const response = await fetch(`${API_BASE_URL}/api/v1/media/albums`);
             if (response.ok) {
                 const data = await response.json();
                 setAlbums(data);
@@ -40,7 +41,7 @@ export default function AdminGalleryPage() {
         }
 
         try {
-            const response = await fetch(`/api/media/albums/${albumId}`, {
+            const response = await fetch(`${API_BASE_URL}/api/v1/media/albums/${albumId}`, {
                 method: 'DELETE'
             });
 

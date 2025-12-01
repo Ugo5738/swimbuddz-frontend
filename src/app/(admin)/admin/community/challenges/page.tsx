@@ -35,7 +35,7 @@ export default function AdminChallengesPage() {
     const fetchChallenges = async () => {
         try {
             const response = await fetch(
-                `${apiEndpoints.challenges}/club?active_only=false`
+                `${apiEndpoints.challenges}?active_only=false`
             );
             if (response.ok) {
                 const data = await response.json();
@@ -59,7 +59,7 @@ export default function AdminChallengesPage() {
                 is_active: formData.is_active,
             };
 
-            const response = await fetch(`${apiEndpoints.challenges}/club`, {
+            const response = await fetch(`${apiEndpoints.challenges}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
@@ -83,7 +83,7 @@ export default function AdminChallengesPage() {
     const handleToggleActive = async (challengeId: string, currentStatus: boolean) => {
         try {
             const response = await fetch(
-                `${apiEndpoints.challenges}/club/${challengeId}`,
+                `${apiEndpoints.challenges}/${challengeId}`,
                 {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
@@ -104,7 +104,7 @@ export default function AdminChallengesPage() {
 
         try {
             const response = await fetch(
-                `${apiEndpoints.challenges}/club/${challengeId}`,
+                `${apiEndpoints.challenges}/${challengeId}`,
                 { method: "DELETE" }
             );
 

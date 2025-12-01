@@ -95,12 +95,7 @@ export interface MemberBasicInfo {
     id: string;
     first_name?: string;
     last_name?: string;
-    email: string;
-}
-
-export interface EnrollmentWithStudent extends Enrollment {
-    member: MemberBasicInfo;
-    progress_records: StudentProgress[];
+    email?: string;
 }
 
 // --- API Functions ---
@@ -154,7 +149,7 @@ export const AcademyApi = {
         apiPost<Enrollment>(`/api/v1/academy/enrollments/me`, { cohort_id: cohortId }, { auth: true }),
 
     listCohortStudents: (cohortId: string) =>
-        apiGet<EnrollmentWithStudent[]>(`/api/v1/academy/cohorts/${cohortId}/students`, { auth: true }),
+        apiGet<Enrollment[]>(`/api/v1/academy/cohorts/${cohortId}/students`, { auth: true }),
 
     updateEnrollment: (id: string, data: Partial<Enrollment>) =>
         apiPut<Enrollment>(`/api/v1/academy/enrollments/${id}`, data, { auth: true }),

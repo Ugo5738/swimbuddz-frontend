@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import Link from "next/link";
+import { API_BASE_URL } from "@/lib/config";
 
 export default function CreateAlbumPage() {
     const router = useRouter();
@@ -19,7 +20,7 @@ export default function CreateAlbumPage() {
         setSubmitting(true);
 
         try {
-            const response = await fetch('/api/media/albums', {
+            const response = await fetch(`${API_BASE_URL}/api/v1/media/albums`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
