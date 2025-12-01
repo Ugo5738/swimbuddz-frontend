@@ -44,6 +44,7 @@ interface FormData {
   locationPreference: string[];
   timeOfDayAvailability: string[];
   consentPhoto: string;
+  clubNotes: string;
 
   // Academy Details (Step 4)
   academySkillAssessment: {
@@ -55,11 +56,24 @@ interface FormData {
   academyGoals: string;
   academyPreferredCoachGender: string;
   academyLessonPreference: string;
+  academyProgram: string;
+  academyLevel: string;
+  academyGoal: string;
+  academySchedule: string;
+  academyNotes: string;
 
   // Volunteer & Interests (Step 5)
   volunteerInterest: string[];
   interestTags: string[];
   showInDirectory: boolean;
+  socialInstagram?: string;
+  socialLinkedIn?: string;
+  socialOther?: string;
+  languagePreference: string;
+  commsPreference: string;
+  paymentReadiness: string;
+  currencyPreference: string;
+  paymentNotes?: string;
 }
 
 const initialFormData: FormData = {
@@ -83,6 +97,7 @@ const initialFormData: FormData = {
   locationPreference: [],
   timeOfDayAvailability: [],
   consentPhoto: "yes",
+  clubNotes: "", // New field
   academySkillAssessment: {
     canFloat: false,
     headUnderwater: false,
@@ -92,9 +107,22 @@ const initialFormData: FormData = {
   academyGoals: "",
   academyPreferredCoachGender: "",
   academyLessonPreference: "",
+  academyProgram: "", // New field
+  academyLevel: "", // New field
+  academyGoal: "", // New field
+  academySchedule: "", // New field
+  academyNotes: "", // New field
   volunteerInterest: [],
   interestTags: [],
   showInDirectory: true, // Default to opted-in
+  socialInstagram: "", // New field
+  socialLinkedIn: "", // New field
+  socialOther: "", // New field
+  languagePreference: "english", // New field
+  commsPreference: "whatsapp", // New field
+  paymentReadiness: "ready_now", // New field
+  currencyPreference: "NGN", // New field
+  paymentNotes: "", // New field
 };
 
 function RegisterContent() {
@@ -107,7 +135,9 @@ function RegisterContent() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [currentTier, setCurrentTier] = useState<Tier | null>(null);
 
   useEffect(() => {
@@ -292,6 +322,14 @@ function RegisterContent() {
         interest_tags: formData.interestTags,
         interests: formData.interestTags, // Map tags to main interests field for profile display
         consent_photo: formData.consentPhoto, // Send for all tiers
+        social_instagram: formData.socialInstagram,
+        social_linkedin: formData.socialLinkedIn,
+        social_other: formData.socialOther,
+        language_preference: formData.languagePreference,
+        comms_preference: formData.commsPreference,
+        payment_readiness: formData.paymentReadiness,
+        currency_preference: formData.currencyPreference,
+        payment_notes: formData.paymentNotes,
 
         // Club (if applicable)
         ...(formData.membershipTier === "club" || formData.membershipTier === "academy" ? {
@@ -301,7 +339,7 @@ function RegisterContent() {
           medical_info: formData.medicalInfo,
           location_preference: formData.locationPreference,
           time_of_day_availability: formData.timeOfDayAvailability,
-
+          club_notes: formData.clubNotes, // Pass club notes
         } : {}),
 
         // Academy (if applicable)
@@ -310,6 +348,12 @@ function RegisterContent() {
           academy_goals: formData.academyGoals,
           academy_preferred_coach_gender: formData.academyPreferredCoachGender,
           academy_lesson_preference: formData.academyLessonPreference,
+          // Pass other academy fields if they are used in the future
+          academy_program: formData.academyProgram,
+          academy_level: formData.academyLevel,
+          academy_goal: formData.academyGoal,
+          academy_schedule: formData.academySchedule,
+          academy_notes: formData.academyNotes,
         } : {}),
 
         // Volunteer
@@ -391,7 +435,7 @@ function RegisterContent() {
               medicalInfo: formData.medicalInfo,
               locationPreference: formData.locationPreference,
               timeOfDayAvailability: formData.timeOfDayAvailability,
-              consentPhoto: formData.consentPhoto,
+              clubNotes: formData.clubNotes || "",
             }}
             onUpdate={updateField}
             onToggleMulti={toggleMultiValue}
@@ -418,6 +462,15 @@ function RegisterContent() {
               volunteerInterest: formData.volunteerInterest,
               interestTags: formData.interestTags,
               showInDirectory: formData.showInDirectory,
+              socialInstagram: formData.socialInstagram || "",
+              socialLinkedIn: formData.socialLinkedIn || "",
+              socialOther: formData.socialOther || "",
+              languagePreference: formData.languagePreference,
+              commsPreference: formData.commsPreference,
+              paymentReadiness: formData.paymentReadiness,
+              currencyPreference: formData.currencyPreference,
+              paymentNotes: formData.paymentNotes || "",
+              consentPhoto: formData.consentPhoto,
             }}
             onToggleMulti={toggleMultiValue}
             onUpdate={updateField}

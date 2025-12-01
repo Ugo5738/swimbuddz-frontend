@@ -290,14 +290,14 @@ function mapMemberResponseToProfile(data: MemberResponse): Profile {
     safetyNotes: data.safety_notes || "",
     volunteerInterest: data.volunteer_interest || [],
     volunteerRolesDetail: data.volunteer_roles_detail || "",
-    discoverySource: data.discovery_source || "",
+    discoverySource: data.discovery_source || "other",
     socialInstagram: data.social_instagram || "",
     socialLinkedIn: data.social_linkedin || "",
     socialOther: data.social_other || "",
-    languagePreference: data.language_preference || "",
-    commsPreference: data.comms_preference || "",
+    languagePreference: data.language_preference || "english",
+    commsPreference: data.comms_preference || "whatsapp",
     paymentReadiness: data.payment_readiness || "",
-    currencyPreference: data.currency_preference || "",
+    currencyPreference: data.currency_preference || "NGN",
     consentPhoto: data.consent_photo || "",
     membershipTiers: data.membership_tiers && data.membership_tiers.length > 0
       ? data.membership_tiers.map(t => t.toLowerCase())
@@ -605,13 +605,13 @@ function ProfileContent() {
                     )}
                   </Detail>
                   <Detail label="Volunteer roles" value={profile.volunteerRolesDetail || "--"} />
-                  <Detail label="Language" value={profile.languagePreference} />
+                  <Detail label="Language" value={profile.languagePreference || "english"} />
                 <Detail label="Comms preference" value={formatToken(profile.commsPreference || "whatsapp")} />
                   <Detail
                     label="Payment readiness"
                     value={paymentReadinessLabels[profile.paymentReadiness] ?? formatToken(profile.paymentReadiness)}
                   />
-                  <Detail label="Currency" value={profile.currencyPreference.toUpperCase()} />
+                  <Detail label="Currency" value={(profile.currencyPreference || "NGN").toUpperCase()} />
                   <Detail label="Photo consent" value={profile.consentPhoto === "yes" ? "Consented" : "No media"} />
                   <Detail label="Payment notes" value={profile.paymentNotes || "--"} fullSpan />
                   {profile.membershipTiers.includes("academy") && (

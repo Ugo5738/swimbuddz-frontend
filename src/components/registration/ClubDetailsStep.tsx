@@ -13,7 +13,7 @@ interface ClubDetailsStepProps {
         medicalInfo: string;
         locationPreference: string[];
         timeOfDayAvailability: string[];
-        consentPhoto: string;
+        clubNotes: string;
     };
     onUpdate: (field: string, value: string | string[]) => void;
     onToggleMulti: (field: string, value: string) => void;
@@ -113,39 +113,13 @@ export function ClubDetailsStep({
                 hint="When are you typically available?"
             />
 
-            {/* Media Consent */}
-            <div className="space-y-2">
-                <label className="block text-sm font-medium text-slate-700">
-                    Photo & Video Consent <span className="text-rose-500">*</span>
-                </label>
-                <p className="text-sm text-slate-600">
-                    Can we feature you in photos/videos for social media and promotional materials?
-                </p>
-                <div className="flex gap-4">
-                    <label className="flex items-center gap-2">
-                        <input
-                            type="radio"
-                            name="consentPhoto"
-                            value="yes"
-                            checked={formData.consentPhoto === "yes"}
-                            onChange={(e) => onUpdate("consentPhoto", e.target.value)}
-                            className="h-4 w-4 border-slate-300 text-cyan-600 focus:ring-cyan-500"
-                        />
-                        <span className="text-sm text-slate-700">Yes, I consent</span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                        <input
-                            type="radio"
-                            name="consentPhoto"
-                            value="no"
-                            checked={formData.consentPhoto === "no"}
-                            onChange={(e) => onUpdate("consentPhoto", e.target.value)}
-                            className="h-4 w-4 border-slate-300 text-cyan-600 focus:ring-cyan-500"
-                        />
-                        <span className="text-sm text-slate-700">No, please don't feature me</span>
-                    </label>
-                </div>
-            </div>
+            {/* Additional Notes */}
+            <Textarea
+                label="Additional Notes (Optional)"
+                value={formData.clubNotes}
+                onChange={(e) => onUpdate("clubNotes", e.target.value)}
+                placeholder="Any other details you'd like to share..."
+            />
         </div>
     );
 }
