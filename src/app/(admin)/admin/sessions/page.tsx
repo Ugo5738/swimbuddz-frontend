@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { LoadingCard } from "@/components/ui/LoadingCard";
+import { OptionPillGroup } from "@/components/forms/OptionPillGroup";
 import { Calendar, List, Plus } from "lucide-react";
 import type { EventInput, DateSelectArg, EventClickArg } from "@fullcalendar/core";
 
@@ -28,6 +29,7 @@ interface Session {
   description?: string;
   template_id?: string;
   is_recurring_instance?: boolean;
+  allowed_tiers?: string[];
 }
 
 interface Template {
@@ -42,6 +44,7 @@ interface Template {
   duration_minutes: number;
   auto_generate: boolean;
   is_active: boolean;
+  allowed_tiers?: string[];
 }
 
 export default function AdminSessionsPage() {
@@ -469,7 +472,8 @@ function SimpleSessionForm({
     end_time: formatDateTimeLocal(defaultEndDate),
     pool_fee: 2000,
     capacity: 20,
-    description: ""
+    description: "",
+    allowed_tiers: ["club"]
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -536,6 +540,21 @@ function SimpleSessionForm({
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
         />
+        <OptionPillGroup
+          label="Allowed Tiers"
+          options={[
+            { value: "community", label: "Community" },
+            { value: "club", label: "Club" },
+            { value: "academy", label: "Academy" },
+          ]}
+          selected={formData.allowed_tiers}
+          onToggle={(value) => {
+            const newTiers = formData.allowed_tiers.includes(value)
+              ? formData.allowed_tiers.filter((t) => t !== value)
+              : [...formData.allowed_tiers, value];
+            setFormData({ ...formData, allowed_tiers: newTiers });
+          }}
+        />
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
           <Button type="submit">Create Session</Button>
@@ -565,7 +584,8 @@ function SimpleTemplateForm({
     duration_minutes: initialData?.duration_minutes || 180,
     pool_fee: initialData?.pool_fee || 2000,
     capacity: initialData?.capacity || 20,
-    auto_generate: initialData?.auto_generate || false
+    auto_generate: initialData?.auto_generate || false,
+    allowed_tiers: initialData?.allowed_tiers || ["club"]
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -612,6 +632,21 @@ function SimpleTemplateForm({
           value={formData.duration_minutes}
           onChange={(e) => setFormData({ ...formData, duration_minutes: parseInt(e.target.value) })}
           required
+        />
+        <OptionPillGroup
+          label="Allowed Tiers"
+          options={[
+            { value: "community", label: "Community" },
+            { value: "club", label: "Club" },
+            { value: "academy", label: "Academy" },
+          ]}
+          selected={formData.allowed_tiers}
+          onToggle={(value) => {
+            const newTiers = formData.allowed_tiers.includes(value)
+              ? formData.allowed_tiers.filter((t) => t !== value)
+              : [...formData.allowed_tiers, value];
+            setFormData({ ...formData, allowed_tiers: newTiers });
+          }}
         />
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>

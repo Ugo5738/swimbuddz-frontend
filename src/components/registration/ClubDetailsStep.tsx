@@ -21,8 +21,8 @@ interface ClubDetailsStepProps {
 
 const locationOptions = [
     { value: "rowe_park_yaba", label: "Rowe Park, Yaba" },
-    { value: "sunfit_ago", label: "Sunfit, Ago" },
-    { value: "federal_palace_vi", label: "Federal Palace Hotel, VI" },
+    // { value: "sunfit_ago", label: "Sunfit, Ago" },
+    // { value: "federal_palace_vi", label: "Federal Palace Hotel, VI" },
 ];
 
 const timeOptions = [

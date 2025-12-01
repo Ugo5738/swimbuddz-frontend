@@ -70,6 +70,7 @@ const discoverySourceLabels: Record<string, string> = {
   search: "Search",
   other: "Other"
 };
+const discoverySourceOptions = Object.entries(discoverySourceLabels).map(([value, label]) => ({ value, label }));
 
 const tokenOverrides: Record<string, string> = {
   cpr: "CPR",
@@ -609,7 +610,7 @@ function ProfileContent() {
                   </Detail>
                   <Detail label="Volunteer roles" value={profile.volunteerRolesDetail || "--"} />
                   <Detail label="Language" value={profile.languagePreference} />
-                  <Detail label="Comms preference" value={formatToken(profile.commsPreference)} />
+                <Detail label="Comms preference" value={formatToken(profile.commsPreference || "whatsapp")} />
                   <Detail
                     label="Payment readiness"
                     value={paymentReadinessLabels[profile.paymentReadiness] ?? formatToken(profile.paymentReadiness)}
@@ -747,7 +748,7 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
     socialLinkedIn: profile.socialLinkedIn,
     socialOther: profile.socialOther,
     languagePreference: profile.languagePreference,
-    commsPreference: profile.commsPreference,
+    commsPreference: profile.commsPreference || "whatsapp",
     paymentReadiness: profile.paymentReadiness,
     currencyPreference: profile.currencyPreference,
     consentPhoto: profile.consentPhoto,
@@ -1183,7 +1184,6 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
             </div>
           </>
         )}
-        {isClub && (
           <>
             <div className="md:col-span-2">
               <OptionPillGroup
@@ -1206,11 +1206,16 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
               />
             </div>
             <div className="md:col-span-2">
-              <Input
+              <Select
                 label="Discovery source"
                 value={formState.discoverySource}
                 onChange={(e) => setFormState({ ...formState, discoverySource: e.target.value })}
-              />
+              >
+                <option value="">Select an option</option>
+                {discoverySourceOptions.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </Select>
             </div>
             <div className="md:col-span-2">
               <Input
@@ -1258,6 +1263,9 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
                 value={formState.paymentReadiness}
                 onChange={(value) => setFormState({ ...formState, paymentReadiness: value })}
               />
+              <p className="mt-1 text-xs text-slate-500">
+                Helps admins plan billing (ready now, need notice, or sponsor support).
+              </p>
             </div>
             <div className="md:col-span-2">
               <Input
@@ -1281,10 +1289,10 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
                 label="Payment notes"
                 value={formState.paymentNotes}
                 onChange={(e) => setFormState({ ...formState, paymentNotes: e.target.value })}
+                helperText="Add billing preferences (e.g., needs invoice/receipt, company reimburses)."
               />
             </div>
           </>
-        )}
 
         {isAcademy && (
           <>

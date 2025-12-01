@@ -5,35 +5,70 @@ import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { LoadingCard } from "@/components/ui/LoadingCard";
-import { mockSessions } from "./data";
-import { Alert } from "@/components/ui/Alert";
+import { apiGet } from "@/lib/api";
 
-function formatDate(date: string, start: string, end: string) {
-  const formattedDate = new Date(date).toLocaleDateString("en-NG", {
+function formatDate(start: string, end: string) {
+  const dateObj = new Date(start);
+  const formattedDate = dateObj.toLocaleDateString("en-NG", {
     weekday: "short",
     month: "short",
     day: "numeric"
   });
-  return `${formattedDate} • ${start} – ${end}`;
+  const startTime = dateObj.toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" });
+  const endTime = new Date(end).toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" });
+  return `${formattedDate} • ${startTime} – ${endTime}`;
 }
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }).format(value);
 }
 
+interface Session {
+  id: string;
+  title: string;
+  location: string;
+  start_time: string;
+  end_time: string;
+  pool_fee: number;
+  ride_share_fee: number;
+  description?: string;
+  allowed_tiers: string[];
+}
+
 export default function SessionsPage() {
-  // TODO: Replace mockSessions with apiGet("/api/v1/sessions", { auth: true })
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const id = setTimeout(() => {
-      if (mockSessions.length === 0) {
+    async function loadData() {
+      try {
+        setLoading(true);
+        let tier = "community"; // Default for public
+
+        try {
+          // Try to get user profile to determine tier
+          const profile = await apiGet<any>("/api/v1/members/me", { auth: true });
+          if (profile) {
+            tier = profile.membership_tier || (profile.membership_tiers && profile.membership_tiers[0]) || "community";
+          }
+        } catch (e) {
+          // Not logged in or error fetching profile, stick to community
+          console.log("User not logged in or profile fetch failed, defaulting to community view.");
+        }
+
+        // Fetch sessions filtered by tier
+        // Note: The backend endpoint is public
+        const data = await apiGet<Session[]>(`/api/v1/sessions/?tier=${tier.toLowerCase()}`);
+        setSessions(data);
+      } catch (err) {
+        console.error(err);
         setError("Unable to load sessions. Please try again later.");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    }, 400);
-    return () => clearTimeout(id);
+    }
+    loadData();
   }, []);
 
   return (
@@ -42,7 +77,7 @@ export default function SessionsPage() {
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">Sessions</p>
         <h1 className="text-4xl font-bold text-slate-900">Upcoming swims</h1>
         <p className="text-base text-slate-600">
-          This page uses mock data for now. Once the backend endpoint is available we will hydrate it with real sessions for logged-in members.
+          Join us for a swim! Sessions are tailored to your membership tier.
         </p>
       </header>
       <section aria-live="polite">
@@ -52,30 +87,34 @@ export default function SessionsPage() {
           <Alert variant="error" title="Error loading sessions">
             {error}
           </Alert>
+        ) : sessions.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-slate-300 p-8 text-center">
+            <p className="text-slate-600">No upcoming sessions found for your tier.</p>
+          </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2">
-            {mockSessions.map((session) => (
+            {sessions.map((session) => (
               <Card key={session.id} className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
                     <h2 className="text-xl font-semibold text-slate-900">{session.title}</h2>
                     <p className="text-sm text-slate-500">{session.location}</p>
                   </div>
-                  <Badge variant="info">{session.type}</Badge>
+                  {/* <Badge variant="info">{session.type}</Badge> */}
                 </div>
                 <p className="text-sm font-semibold text-slate-700">
-                  {formatDate(session.date, session.startTime, session.endTime)}
+                  {formatDate(session.start_time, session.end_time)}
                 </p>
                 <p className="text-sm text-slate-600">{session.description}</p>
                 <div className="flex flex-wrap gap-4 text-sm">
                   <div>
                     <p className="text-xs uppercase tracking-wide text-slate-500">Pool fee</p>
-                    <p className="font-semibold text-slate-900">{formatCurrency(session.poolFee)}</p>
+                    <p className="font-semibold text-slate-900">{formatCurrency(session.pool_fee)}</p>
                   </div>
-                  {session.rideShareFee ? (
+                  {session.ride_share_fee ? (
                     <div>
                       <p className="text-xs uppercase tracking-wide text-slate-500">Ride-share</p>
-                      <p className="font-semibold text-slate-900">{formatCurrency(session.rideShareFee)}</p>
+                      <p className="font-semibold text-slate-900">{formatCurrency(session.ride_share_fee)}</p>
                     </div>
                   ) : null}
                 </div>
