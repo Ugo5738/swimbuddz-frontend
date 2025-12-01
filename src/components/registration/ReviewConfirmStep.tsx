@@ -15,10 +15,17 @@ interface ReviewConfirmStepProps {
         city: string;
         country: string;
         swimLevel: string;
+        gender?: string;
+        dateOfBirth?: string;
+        profilePhotoUrl?: string;
         // Club Details (if applicable)
         emergencyContactName?: string;
+        emergencyContactRelationship?: string;
+        emergencyContactPhone?: string;
         locationPreference?: string[];
         timeOfDayAvailability?: string[];
+        medicalInfo?: string;
+        clubNotes?: string;
         consentPhoto?: string;
         commsPreference?: string;
         paymentReadiness?: string;
@@ -32,6 +39,18 @@ interface ReviewConfirmStepProps {
         // Academy Details (if applicable)
         academyGoals?: string;
         academyLessonPreference?: string;
+        academyPreferredCoachGender?: string;
+        academyProgram?: string;
+        academyLevel?: string;
+        academyGoal?: string;
+        academySchedule?: string;
+        academyNotes?: string;
+        academySkillAssessment?: {
+            canFloat: boolean;
+            headUnderwater: boolean;
+            deepWaterComfort: boolean;
+            canSwim25m: boolean;
+        };
         // Volunteer
         volunteerInterest?: string[];
         showInDirectory: boolean;
@@ -46,11 +65,21 @@ export function ReviewConfirmStep({
     acceptedTerms,
     onAcceptTerms,
 }: ReviewConfirmStepProps) {
-    const tierLabel = formData.membershipTier === "community"
-        ? "Community"
-        : formData.membershipTier === "club"
-            ? "Club"
-            : "Academy";
+    const humanize = (value?: string) =>
+        value ? value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "";
+
+    const formatList = (values?: string[]) =>
+        values && values.length > 0 ? values.map(humanize).join(", ") : "None selected";
+
+    const formatAssessment = (label: string, value?: boolean) =>
+        `${label}: ${value ? "Yes" : "No"}`;
+
+    const tierLabel =
+        formData.membershipTier === "community"
+            ? "Community"
+            : formData.membershipTier === "club"
+                ? "Club"
+                : "Academy";
 
     return (
         <div className="space-y-6">
@@ -84,6 +113,22 @@ export function ReviewConfirmStep({
                                 {formData.firstName} {formData.lastName}
                             </dd>
                         </div>
+                        {formData.gender ? (
+                            <div className="grid grid-cols-3 gap-2">
+                                <dt className="text-slate-600">Gender:</dt>
+                                <dd className="col-span-2 font-medium text-slate-900 capitalize">
+                                    {formData.gender}
+                                </dd>
+                            </div>
+                        ) : null}
+                        {formData.dateOfBirth ? (
+                            <div className="grid grid-cols-3 gap-2">
+                                <dt className="text-slate-600">Date of Birth:</dt>
+                                <dd className="col-span-2 font-medium text-slate-900">
+                                    {formData.dateOfBirth}
+                                </dd>
+                            </div>
+                        ) : null}
                         <div className="grid grid-cols-3 gap-2">
                             <dt className="text-slate-600">Email:</dt>
                             <dd className="col-span-2 font-medium text-slate-900">{formData.email}</dd>
@@ -108,20 +153,20 @@ export function ReviewConfirmStep({
                             <div className="grid grid-cols-3 gap-2">
                                 <dt className="text-slate-600">Discovery:</dt>
                                 <dd className="col-span-2 font-medium text-slate-900">
-                                    {formData.discoverySource}
+                                    {humanize(formData.discoverySource)}
                                 </dd>
                             </div>
                         ) : null}
                         <div className="grid grid-cols-3 gap-2">
                             <dt className="text-slate-600">Language:</dt>
                             <dd className="col-span-2 font-medium text-slate-900 capitalize">
-                                {formData.languagePreference || "english"}
+                                {humanize(formData.languagePreference || "english")}
                             </dd>
                         </div>
                         <div className="grid grid-cols-3 gap-2">
                             <dt className="text-slate-600">Comms:</dt>
                             <dd className="col-span-2 font-medium text-slate-900 capitalize">
-                                {formData.commsPreference || "whatsapp"}
+                                {humanize(formData.commsPreference || "whatsapp")}
                             </dd>
                         </div>
                         <div className="grid grid-cols-3 gap-2">
@@ -133,7 +178,7 @@ export function ReviewConfirmStep({
                         <div className="grid grid-cols-3 gap-2">
                             <dt className="text-slate-600">Payment readiness:</dt>
                             <dd className="col-span-2 font-medium text-slate-900">
-                                {formData.paymentReadiness || "--"}
+                                {humanize(formData.paymentReadiness || "--")}
                             </dd>
                         </div>
                     </dl>
@@ -147,8 +192,22 @@ export function ReviewConfirmStep({
                             {formData.emergencyContactName && (
                                 <div className="grid grid-cols-3 gap-2">
                                     <dt className="text-slate-600">Emergency Contact:</dt>
+                                    <dd className="col-span-2 font-medium text-slate-900 space-y-1">
+                                        <div>{formData.emergencyContactName}</div>
+                                        {formData.emergencyContactRelationship ? (
+                                            <div className="text-slate-700">{formData.emergencyContactRelationship}</div>
+                                        ) : null}
+                                        {formData.emergencyContactPhone ? (
+                                            <div className="text-slate-700">{formData.emergencyContactPhone}</div>
+                                        ) : null}
+                                    </dd>
+                                </div>
+                            )}
+                            {formData.medicalInfo && (
+                                <div className="grid grid-cols-3 gap-2">
+                                    <dt className="text-slate-600">Medical Info:</dt>
                                     <dd className="col-span-2 font-medium text-slate-900">
-                                        {formData.emergencyContactName}
+                                        {formData.medicalInfo}
                                     </dd>
                                 </div>
                             )}
@@ -156,7 +215,7 @@ export function ReviewConfirmStep({
                                 <div className="grid grid-cols-3 gap-2">
                                     <dt className="text-slate-600">Locations:</dt>
                                     <dd className="col-span-2 font-medium text-slate-900">
-                                        {formData.locationPreference.length} selected
+                                        {formatList(formData.locationPreference)}
                                     </dd>
                                 </div>
                             )}
@@ -164,7 +223,15 @@ export function ReviewConfirmStep({
                                 <div className="grid grid-cols-3 gap-2">
                                     <dt className="text-slate-600">Time of day:</dt>
                                     <dd className="col-span-2 font-medium text-slate-900">
-                                        {formData.timeOfDayAvailability.length} selected
+                                        {formatList(formData.timeOfDayAvailability)}
+                                    </dd>
+                                </div>
+                            )}
+                            {formData.clubNotes && (
+                                <div className="grid grid-cols-3 gap-2">
+                                    <dt className="text-slate-600">Notes:</dt>
+                                    <dd className="col-span-2 font-medium text-slate-900">
+                                        {formData.clubNotes}
                                     </dd>
                                 </div>
                             )}
@@ -181,7 +248,7 @@ export function ReviewConfirmStep({
                                 <div className="grid grid-cols-3 gap-2">
                                     <dt className="text-slate-600">Lesson Preference:</dt>
                                     <dd className="col-span-2 font-medium text-slate-900 capitalize">
-                                        {formData.academyLessonPreference.replace("_", " ")}
+                                        {humanize(formData.academyLessonPreference)}
                                     </dd>
                                 </div>
                             )}
@@ -191,6 +258,65 @@ export function ReviewConfirmStep({
                                     <dd className="col-span-2 font-medium text-slate-900">
                                         {formData.academyGoals.substring(0, 100)}
                                         {formData.academyGoals.length > 100 ? "..." : ""}
+                                    </dd>
+                                </div>
+                            )}
+                            {formData.academyPreferredCoachGender && (
+                                <div className="grid grid-cols-3 gap-2">
+                                    <dt className="text-slate-600">Coach Preference:</dt>
+                                    <dd className="col-span-2 font-medium text-slate-900 capitalize">
+                                        {humanize(formData.academyPreferredCoachGender)}
+                                    </dd>
+                                </div>
+                            )}
+                            {formData.academyProgram && (
+                                <div className="grid grid-cols-3 gap-2">
+                                    <dt className="text-slate-600">Program:</dt>
+                                    <dd className="col-span-2 font-medium text-slate-900">
+                                        {humanize(formData.academyProgram)}
+                                    </dd>
+                                </div>
+                            )}
+                            {formData.academyLevel && (
+                                <div className="grid grid-cols-3 gap-2">
+                                    <dt className="text-slate-600">Level:</dt>
+                                    <dd className="col-span-2 font-medium text-slate-900">
+                                        {humanize(formData.academyLevel)}
+                                    </dd>
+                                </div>
+                            )}
+                            {formData.academyGoal && (
+                                <div className="grid grid-cols-3 gap-2">
+                                    <dt className="text-slate-600">Primary Goal:</dt>
+                                    <dd className="col-span-2 font-medium text-slate-900">
+                                        {humanize(formData.academyGoal)}
+                                    </dd>
+                                </div>
+                            )}
+                            {formData.academySchedule && (
+                                <div className="grid grid-cols-3 gap-2">
+                                    <dt className="text-slate-600">Schedule:</dt>
+                                    <dd className="col-span-2 font-medium text-slate-900">
+                                        {humanize(formData.academySchedule)}
+                                    </dd>
+                                </div>
+                            )}
+                            {formData.academySkillAssessment ? (
+                                <div className="grid grid-cols-3 gap-2">
+                                    <dt className="text-slate-600">Skills:</dt>
+                                    <dd className="col-span-2 space-y-1 font-medium text-slate-900">
+                                        <div>{formatAssessment("Can float", formData.academySkillAssessment.canFloat)}</div>
+                                        <div>{formatAssessment("Head underwater", formData.academySkillAssessment.headUnderwater)}</div>
+                                        <div>{formatAssessment("Deep water comfort", formData.academySkillAssessment.deepWaterComfort)}</div>
+                                        <div>{formatAssessment("Can swim 25m", formData.academySkillAssessment.canSwim25m)}</div>
+                                    </dd>
+                                </div>
+                            ) : null}
+                            {formData.academyNotes && (
+                                <div className="grid grid-cols-3 gap-2">
+                                    <dt className="text-slate-600">Notes:</dt>
+                                    <dd className="col-span-2 font-medium text-slate-900">
+                                        {formData.academyNotes}
                                     </dd>
                                 </div>
                             )}
@@ -206,7 +332,7 @@ export function ReviewConfirmStep({
                             <div className="grid grid-cols-3 gap-2">
                                 <dt className="text-slate-600">Volunteer Interests:</dt>
                                 <dd className="col-span-2 font-medium text-slate-900">
-                                    {formData.volunteerInterest.length} role(s)
+                                    {formatList(formData.volunteerInterest)}
                                 </dd>
                             </div>
                         )}
@@ -214,7 +340,7 @@ export function ReviewConfirmStep({
                             <div className="grid grid-cols-3 gap-2">
                                 <dt className="text-slate-600">Interests:</dt>
                                 <dd className="col-span-2 font-medium text-slate-900">
-                                    {formData.interestTags.length} selected
+                                    {formatList(formData.interestTags)}
                                 </dd>
                             </div>
                         )}

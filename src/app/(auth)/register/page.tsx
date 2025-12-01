@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -194,27 +194,33 @@ function RegisterContent() {
   }, [isUpgrade]);
 
   // Determine which steps to show based on selected tier
-  const getSteps = (): Step[] => {
-    const steps: Step[] = [
+  const steps = useMemo<Step[]>(() => {
+    const visibleSteps: Step[] = [
       { key: "tier", title: "Choose Tier", required: true },
       { key: "core", title: "Core Profile", required: true },
     ];
 
     if (formData.membershipTier === "club" || formData.membershipTier === "academy") {
-      steps.push({ key: "club", title: "Club Details", required: true });
+      visibleSteps.push({ key: "club", title: "Club Details", required: true });
     }
 
     if (formData.membershipTier === "academy") {
-      steps.push({ key: "academy", title: "Academy Details", required: true });
+      visibleSteps.push({ key: "academy", title: "Academy Details", required: true });
     }
 
-    steps.push({ key: "volunteer", title: "Volunteer & Interests", required: false });
-    steps.push({ key: "review", title: "Review & Confirm", required: true });
+    visibleSteps.push({ key: "volunteer", title: "Volunteer & Interests", required: false });
+    visibleSteps.push({ key: "review", title: "Review & Confirm", required: true });
 
-    return steps;
-  };
+    return visibleSteps;
+  }, [formData.membershipTier]);
 
-  const steps = getSteps();
+  // Clamp the current step if the visible steps shrink (e.g. switching from academy to community)
+  useEffect(() => {
+    if (currentStep >= steps.length) {
+      setCurrentStep(Math.max(steps.length - 1, 0));
+    }
+  }, [steps.length, currentStep]);
+
   const totalSteps = steps.length;
 
   const updateField = (field: string, value: any) => {
