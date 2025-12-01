@@ -30,7 +30,10 @@ import {
   equipmentNeedsOptions,
   availabilityOptions,
   timeOfDayOptions,
-  locationOptions
+  locationOptions,
+  currencyOptions,
+  discoverySourceOptions,
+  languageOptions
 } from "@/lib/options";
 
 const levelLabels: Record<string, string> = {
@@ -63,14 +66,7 @@ const membershipTierLabels: Record<string, string> = {
   academy: "Academy"
 };
 
-const discoverySourceLabels: Record<string, string> = {
-  friend: "Friend / referral",
-  instagram: "Instagram",
-  event: "Event or meet-up",
-  search: "Search",
-  other: "Other"
-};
-const discoverySourceOptions = Object.entries(discoverySourceLabels).map(([value, label]) => ({ value, label }));
+const discoverySourceLabels: Record<string, string> = Object.fromEntries(discoverySourceOptions.map(opt => [opt.value, opt.label]));
 
 const tokenOverrides: Record<string, string> = {
   cpr: "CPR",
@@ -743,11 +739,11 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
     safetyNotes: profile.safetyNotes,
     volunteerInterest: profile.volunteerInterest,
     volunteerRolesDetail: profile.volunteerRolesDetail,
-    discoverySource: profile.discoverySource,
+    discoverySource: profile.discoverySource || "other",
     socialInstagram: profile.socialInstagram,
     socialLinkedIn: profile.socialLinkedIn,
     socialOther: profile.socialOther,
-    languagePreference: profile.languagePreference,
+    languagePreference: profile.languagePreference || "english",
     commsPreference: profile.commsPreference || "whatsapp",
     paymentReadiness: profile.paymentReadiness,
     currencyPreference: profile.currencyPreference,
@@ -1208,7 +1204,7 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
             <div className="md:col-span-2">
               <Select
                 label="Discovery source"
-                value={formState.discoverySource}
+                value={formState.discoverySource || "other"}
                 onChange={(e) => setFormState({ ...formState, discoverySource: e.target.value })}
               >
                 <option value="">Select an option</option>
@@ -1239,11 +1235,15 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
               />
             </div>
             <div className="md:col-span-2">
-              <Input
+              <Select
                 label="Language preference"
                 value={formState.languagePreference}
                 onChange={(e) => setFormState({ ...formState, languagePreference: e.target.value })}
-              />
+              >
+                {languageOptions.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </Select>
             </div>
             <div className="md:col-span-2">
               <Select
@@ -1268,11 +1268,15 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
               </p>
             </div>
             <div className="md:col-span-2">
-              <Input
+              <Select
                 label="Preferred currency"
                 value={formState.currencyPreference}
                 onChange={(e) => setFormState({ ...formState, currencyPreference: e.target.value })}
-              />
+              >
+                {currencyOptions.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </Select>
             </div>
             <div className="md:col-span-2">
               <Select

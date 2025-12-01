@@ -137,3 +137,15 @@ export const currencyOptions = [
     { value: "EUR", label: "Euro (EUR)" },
     { value: "CAD", label: "Canadian Dollar (CAD)" }
 ];
+
+export const languageOptions = [
+    { value: "english", label: "English" },
+    { value: "french", label: "French" },
+    { value: "spanish", label: "Spanish" },
+    { value: "arabic", label: "Arabic" },
+    { value: "portuguese", label: "Portuguese" },
+    { value: "yoruba", label: "Yoruba" },
+    { value: "igbo", label: "Igbo" },
+    { value: "hausa", label: "Hausa" },
+    { value: "other", label: "Other" }
+];
