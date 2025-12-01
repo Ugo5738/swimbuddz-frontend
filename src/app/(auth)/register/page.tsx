@@ -17,6 +17,13 @@ import { apiGet, apiPatch } from "@/lib/api";
 import clsx from "clsx";
 
 type Tier = "community" | "club" | "academy";
+type StepKey = "tier" | "core" | "club" | "academy" | "volunteer" | "review";
+
+type Step = {
+  key: StepKey;
+  title: string;
+  required: boolean;
+};
 
 interface FormData {
   // Tier
@@ -187,22 +194,22 @@ function RegisterContent() {
   }, [isUpgrade]);
 
   // Determine which steps to show based on selected tier
-  const getSteps = () => {
-    const steps = [
-      { id: 1, title: "Choose Tier", required: true },
-      { id: 2, title: "Core Profile", required: true },
+  const getSteps = (): Step[] => {
+    const steps: Step[] = [
+      { key: "tier", title: "Choose Tier", required: true },
+      { key: "core", title: "Core Profile", required: true },
     ];
 
     if (formData.membershipTier === "club" || formData.membershipTier === "academy") {
-      steps.push({ id: 3, title: "Club Details", required: true });
+      steps.push({ key: "club", title: "Club Details", required: true });
     }
 
     if (formData.membershipTier === "academy") {
-      steps.push({ id: 4, title: "Academy Details", required: true });
+      steps.push({ key: "academy", title: "Academy Details", required: true });
     }
 
-    steps.push({ id: 5, title: "Volunteer & Interests", required: false });
-    steps.push({ id: 6, title: "Review & Confirm", required: true });
+    steps.push({ key: "volunteer", title: "Volunteer & Interests", required: false });
+    steps.push({ key: "review", title: "Review & Confirm", required: true });
 
     return steps;
   };
@@ -226,13 +233,13 @@ function RegisterContent() {
   };
 
   const isStepValid = (): boolean => {
-    const stepId = steps[currentStep].id;
+    const stepKey = steps[currentStep].key;
 
-    switch (stepId) {
-      case 1: // Tier Selection
+    switch (stepKey) {
+      case "tier":
         return formData.membershipTier !== null;
 
-      case 2: // Core Profile
+      case "core":
         return Boolean(
           formData.firstName &&
           formData.lastName &&
@@ -248,7 +255,7 @@ function RegisterContent() {
           formData.profilePhotoUrl // Photo is required
         );
 
-      case 3: // Club Details
+      case "club":
         return Boolean(
           formData.emergencyContactName &&
           formData.emergencyContactRelationship &&
@@ -257,17 +264,17 @@ function RegisterContent() {
           formData.timeOfDayAvailability.length > 0
         );
 
-      case 4: // Academy Details
+      case "academy":
         return Boolean(
           formData.academyGoals &&
           formData.academyPreferredCoachGender &&
           formData.academyLessonPreference
         );
 
-      case 5: // Volunteer & Interests
+      case "volunteer":
         return true; // Optional step
 
-      case 6: // Review & Confirm
+      case "review":
         return acceptedTerms;
 
       default:
@@ -392,10 +399,10 @@ function RegisterContent() {
   };
 
   const renderStep = () => {
-    const stepId = steps[currentStep].id;
+    const stepKey = steps[currentStep].key;
 
-    switch (stepId) {
-      case 1:
+    switch (stepKey) {
+      case "tier":
         return (
           <TierSelectionStep
             selectedTier={formData.membershipTier}
@@ -404,7 +411,7 @@ function RegisterContent() {
           />
         );
 
-      case 2:
+      case "core":
         return (
           <CoreProfileStep
             formData={{
@@ -425,7 +432,7 @@ function RegisterContent() {
           />
         );
 
-      case 3:
+      case "club":
         return (
           <ClubDetailsStep
             formData={{
@@ -442,7 +449,7 @@ function RegisterContent() {
           />
         );
 
-      case 4:
+      case "academy":
         return (
           <AcademyDetailsStep
             formData={{
@@ -455,7 +462,7 @@ function RegisterContent() {
           />
         );
 
-      case 5:
+      case "volunteer":
         return (
           <VolunteerInterestsStep
             formData={{
@@ -477,7 +484,7 @@ function RegisterContent() {
           />
         );
 
-      case 6:
+      case "review":
         return (
           <ReviewConfirmStep
             formData={formData}
@@ -522,11 +529,11 @@ function RegisterContent() {
           <div className="absolute left-0 top-1/2 -z-10 h-0.5 w-full bg-slate-200" />
           <div className="flex justify-between">
             {steps.map((step, index) => {
-              const isActive = step.id === currentStep;
-              const isCompleted = step.id < currentStep;
+              const isActive = index === currentStep;
+              const isCompleted = index < currentStep;
 
               return (
-                <div key={step.id} className="flex flex-col items-center gap-2 bg-slate-50 px-2">
+                <div key={step.key} className="flex flex-col items-center gap-2 bg-slate-50 px-2">
                   <div
                     className={clsx(
                       "flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-colors",
@@ -537,7 +544,7 @@ function RegisterContent() {
                           : "bg-slate-200 text-slate-500"
                     )}
                   >
-                    {isCompleted ? "✓" : step.id}
+                    {isCompleted ? "✓" : index + 1}
                   </div>
                   <span
                     className={clsx(

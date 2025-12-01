@@ -32,7 +32,7 @@ interface Session {
   pool_fee: number;
   ride_share_fee: number;
   description?: string;
-  allowed_tiers: string[];
+  type: "CLUB_SESSION" | "ACADEMY_CLASS" | "MEETUP" | "SPECIAL_EVENT";
 }
 
 export default function SessionsPage() {
@@ -44,22 +44,34 @@ export default function SessionsPage() {
     async function loadData() {
       try {
         setLoading(true);
-        let tier = "community"; // Default for public
+        let membership = "community"; // default if not logged in
 
         try {
-          // Try to get user profile to determine tier
           const profile = await apiGet<any>("/api/v1/members/me", { auth: true });
           if (profile) {
-            tier = profile.membership_tier || (profile.membership_tiers && profile.membership_tiers[0]) || "community";
+            membership = (
+              profile.membership_tier ||
+              (profile.membership_tiers && profile.membership_tiers[0]) ||
+              "community"
+            ).toLowerCase();
           }
         } catch (e) {
-          // Not logged in or error fetching profile, stick to community
           console.log("User not logged in or profile fetch failed, defaulting to community view.");
         }
 
-        // Fetch sessions filtered by tier
-        // Note: The backend endpoint is public
-        const data = await apiGet<Session[]>(`/api/v1/sessions/?tier=${tier.toLowerCase()}`);
+        // Filter by session type instead of allowed tiers
+        let types: string[] = [];
+        if (membership === "academy") {
+          types = ["CLUB_SESSION", "ACADEMY_CLASS", "MEETUP", "SPECIAL_EVENT"];
+        } else if (membership === "club") {
+          types = ["CLUB_SESSION", "MEETUP", "SPECIAL_EVENT"];
+        } else {
+          // public/community: show community and club meetups/events; exclude academy classes
+          types = ["CLUB_SESSION", "MEETUP", "SPECIAL_EVENT"];
+        }
+
+        const typeQuery = types.length ? `?types=${types.join(",")}` : "";
+        const data = await apiGet<Session[]>(`/api/v1/sessions/${typeQuery}`);
         setSessions(data);
       } catch (err) {
         console.error(err);

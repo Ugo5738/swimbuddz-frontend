@@ -18,12 +18,24 @@ interface ReviewConfirmStepProps {
         // Club Details (if applicable)
         emergencyContactName?: string;
         locationPreference?: string[];
+        timeOfDayAvailability?: string[];
+        consentPhoto?: string;
+        commsPreference?: string;
+        paymentReadiness?: string;
+        currencyPreference?: string;
+        paymentNotes?: string;
+        languagePreference?: string;
+        discoverySource?: string;
+        socialInstagram?: string;
+        socialLinkedIn?: string;
+        socialOther?: string;
         // Academy Details (if applicable)
         academyGoals?: string;
         academyLessonPreference?: string;
         // Volunteer
         volunteerInterest?: string[];
         showInDirectory: boolean;
+        interestTags?: string[];
     };
     acceptedTerms: boolean;
     onAcceptTerms: (accepted: boolean) => void;
@@ -92,6 +104,38 @@ export function ReviewConfirmStep({
                                 {formData.swimLevel}
                             </dd>
                         </div>
+                        {formData.discoverySource ? (
+                            <div className="grid grid-cols-3 gap-2">
+                                <dt className="text-slate-600">Discovery:</dt>
+                                <dd className="col-span-2 font-medium text-slate-900">
+                                    {formData.discoverySource}
+                                </dd>
+                            </div>
+                        ) : null}
+                        <div className="grid grid-cols-3 gap-2">
+                            <dt className="text-slate-600">Language:</dt>
+                            <dd className="col-span-2 font-medium text-slate-900 capitalize">
+                                {formData.languagePreference || "english"}
+                            </dd>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                            <dt className="text-slate-600">Comms:</dt>
+                            <dd className="col-span-2 font-medium text-slate-900 capitalize">
+                                {formData.commsPreference || "whatsapp"}
+                            </dd>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                            <dt className="text-slate-600">Currency:</dt>
+                            <dd className="col-span-2 font-medium text-slate-900 uppercase">
+                                {formData.currencyPreference || "NGN"}
+                            </dd>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                            <dt className="text-slate-600">Payment readiness:</dt>
+                            <dd className="col-span-2 font-medium text-slate-900">
+                                {formData.paymentReadiness || "--"}
+                            </dd>
+                        </div>
                     </dl>
                 </div>
 
@@ -113,6 +157,14 @@ export function ReviewConfirmStep({
                                     <dt className="text-slate-600">Locations:</dt>
                                     <dd className="col-span-2 font-medium text-slate-900">
                                         {formData.locationPreference.length} selected
+                                    </dd>
+                                </div>
+                            )}
+                            {formData.timeOfDayAvailability && formData.timeOfDayAvailability.length > 0 && (
+                                <div className="grid grid-cols-3 gap-2">
+                                    <dt className="text-slate-600">Time of day:</dt>
+                                    <dd className="col-span-2 font-medium text-slate-900">
+                                        {formData.timeOfDayAvailability.length} selected
                                     </dd>
                                 </div>
                             )}
@@ -158,12 +210,36 @@ export function ReviewConfirmStep({
                                 </dd>
                             </div>
                         )}
+                        {formData.interestTags && formData.interestTags.length > 0 && (
+                            <div className="grid grid-cols-3 gap-2">
+                                <dt className="text-slate-600">Interests:</dt>
+                                <dd className="col-span-2 font-medium text-slate-900">
+                                    {formData.interestTags.length} selected
+                                </dd>
+                            </div>
+                        )}
+                        {(formData.socialInstagram || formData.socialLinkedIn || formData.socialOther) && (
+                            <div className="grid grid-cols-3 gap-2">
+                                <dt className="text-slate-600">Social:</dt>
+                                <dd className="col-span-2 font-medium text-slate-900 space-y-1">
+                                    {formData.socialInstagram ? <div>Instagram: {formData.socialInstagram}</div> : null}
+                                    {formData.socialLinkedIn ? <div>LinkedIn: {formData.socialLinkedIn}</div> : null}
+                                    {formData.socialOther ? <div>Other: {formData.socialOther}</div> : null}
+                                </dd>
+                            </div>
+                        )}
                         <div className="grid grid-cols-3 gap-2">
                             <dt className="text-slate-600">Member Directory:</dt>
                             <dd className="col-span-2 font-medium text-slate-900">
                                 {formData.showInDirectory ? "Visible" : "Private"}
                             </dd>
                         </div>
+                        {formData.paymentNotes ? (
+                            <div className="grid grid-cols-3 gap-2">
+                                <dt className="text-slate-600">Payment notes:</dt>
+                                <dd className="col-span-2 font-medium text-slate-900">{formData.paymentNotes}</dd>
+                            </div>
+                        ) : null}
                     </dl>
                 </div>
             </div>

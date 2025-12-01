@@ -20,7 +20,7 @@ import type { EventInput, DateSelectArg, EventClickArg } from "@fullcalendar/cor
 interface Session {
   id: string;
   title: string;
-  session_type?: string;
+  type?: "CLUB_SESSION" | "ACADEMY_CLASS" | "MEETUP" | "SPECIAL_EVENT";
   location: string;
   start_time: string;
   end_time: string;
@@ -29,7 +29,6 @@ interface Session {
   description?: string;
   template_id?: string;
   is_recurring_instance?: boolean;
-  allowed_tiers?: string[];
 }
 
 interface Template {
@@ -44,7 +43,6 @@ interface Template {
   duration_minutes: number;
   auto_generate: boolean;
   is_active: boolean;
-  allowed_tiers?: string[];
 }
 
 export default function AdminSessionsPage() {
@@ -467,13 +465,13 @@ function SimpleSessionForm({
 
   const [formData, setFormData] = useState({
     title: "",
+    type: "CLUB_SESSION",
     location: "main_pool",
     start_time: formatDateTimeLocal(defaultStartDate),
     end_time: formatDateTimeLocal(defaultEndDate),
     pool_fee: 2000,
     capacity: 20,
     description: "",
-    allowed_tiers: ["club"]
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -498,6 +496,16 @@ function SimpleSessionForm({
           onChange={(e) => setFormData({ ...formData, title: e.target.value })}
           required
         />
+        <Select
+          label="Session type"
+          value={formData.type}
+          onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+        >
+          <option value="CLUB_SESSION">Club session</option>
+          <option value="ACADEMY_CLASS">Academy class</option>
+          <option value="MEETUP">Community meetup</option>
+          <option value="SPECIAL_EVENT">Special event</option>
+        </Select>
         <Select
           label="Location"
           value={formData.location}
@@ -540,21 +548,6 @@ function SimpleSessionForm({
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
         />
-        <OptionPillGroup
-          label="Allowed Tiers"
-          options={[
-            { value: "community", label: "Community" },
-            { value: "club", label: "Club" },
-            { value: "academy", label: "Academy" },
-          ]}
-          selected={formData.allowed_tiers}
-          onToggle={(value) => {
-            const newTiers = formData.allowed_tiers.includes(value)
-              ? formData.allowed_tiers.filter((t) => t !== value)
-              : [...formData.allowed_tiers, value];
-            setFormData({ ...formData, allowed_tiers: newTiers });
-          }}
-        />
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
           <Button type="submit">Create Session</Button>
@@ -578,14 +571,14 @@ function SimpleTemplateForm({
 }) {
   const [formData, setFormData] = useState({
     title: initialData?.title || "",
+    type: "CLUB_SESSION",
     location: initialData?.location || "main_pool",
     day_of_week: initialData?.day_of_week ?? 5, // Saturday
     start_time: initialData?.start_time || "09:00",
     duration_minutes: initialData?.duration_minutes || 180,
     pool_fee: initialData?.pool_fee || 2000,
     capacity: initialData?.capacity || 20,
-    auto_generate: initialData?.auto_generate || false,
-    allowed_tiers: initialData?.allowed_tiers || ["club"]
+    auto_generate: initialData?.auto_generate || false
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -632,21 +625,6 @@ function SimpleTemplateForm({
           value={formData.duration_minutes}
           onChange={(e) => setFormData({ ...formData, duration_minutes: parseInt(e.target.value) })}
           required
-        />
-        <OptionPillGroup
-          label="Allowed Tiers"
-          options={[
-            { value: "community", label: "Community" },
-            { value: "club", label: "Club" },
-            { value: "academy", label: "Academy" },
-          ]}
-          selected={formData.allowed_tiers}
-          onToggle={(value) => {
-            const newTiers = formData.allowed_tiers.includes(value)
-              ? formData.allowed_tiers.filter((t) => t !== value)
-              : [...formData.allowed_tiers, value];
-            setFormData({ ...formData, allowed_tiers: newTiers });
-          }}
         />
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
