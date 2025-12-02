@@ -1,5 +1,26 @@
-import { apiPost, apiGet } from "./api";
-import { RideShareOption } from "./transport";
+import { apiGet, apiPost } from "./api";
+
+export enum RideShareOption {
+  NONE = "none",
+  LEAD = "lead",
+  JOIN = "join"
+}
+
+export interface PickupLocation {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+export interface RideShareArea {
+  id: string;
+  ride_area_id: string;
+  ride_area_name: string;
+  pickup_locations: PickupLocation[];
+  cost: number;
+  capacity: number;
+  departure_time?: string;
+}
 
 type SignInOptions = {
   sessionId: string;
@@ -9,22 +30,46 @@ type SignInOptions = {
   needs_ride: boolean;
   can_offer_ride: boolean;
   pickup_location?: string;
+  ride_config_id?: string;
+  pickup_location_id?: string;
 };
 
 export async function signInToSession(options: SignInOptions) {
-  return apiPost(
+  // 1. Sign in to session (Attendance)
+  const attendance = await apiPost(
     `/api/v1/sessions/${options.sessionId}/sign-in`,
     {
       status: options.status,
-      role: "SWIMMER", // Default role
+      role: "SWIMMER",
       notes: options.notes,
       ride_share_option: options.ride_share_option,
       needs_ride: options.needs_ride,
       can_offer_ride: options.can_offer_ride,
-      pickup_location: options.pickup_location
+      pickup_location: options.pickup_location,
     },
     { auth: true }
   );
+
+  // 2. Book Ride if selected
+  if (options.ride_config_id && options.pickup_location_id) {
+    try {
+      const me = await apiGet<any>("/api/v1/members/me", { auth: true });
+
+      await apiPost(
+        `/api/v1/transport/sessions/${options.sessionId}/bookings`,
+        {
+          session_ride_config_id: options.ride_config_id,
+          pickup_location_id: options.pickup_location_id,
+          member_id: me.id
+        },
+        { auth: true }
+      );
+    } catch (e) {
+      console.error("Failed to book ride", e);
+    }
+  }
+
+  return attendance;
 }
 
 export interface Session {
@@ -35,9 +80,10 @@ export interface Session {
   date: string;
   startTime: string;
   endTime: string;
-  type: string;
+  type?: string;
   poolFee: number;
   rideShareFee?: number;
+  rideShareAreas?: RideShareArea[];
 }
 
 interface BackendSession {
@@ -46,15 +92,45 @@ interface BackendSession {
   description: string | null;
   location: string;
   pool_fee: number;
+  ride_share_fee?: number | null;
   capacity: number;
   start_time: string;
   end_time: string;
+  type?: string | null;
+}
+
+async function getMembership(): Promise<"community" | "club" | "academy"> {
+  try {
+    const profile = await apiGet<any>("/api/v1/members/me", { auth: true });
+    if (profile) {
+      const tier =
+        profile.membership_tier ||
+        (profile.membership_tiers && profile.membership_tiers[0]) ||
+        "community";
+      return (tier as string).toLowerCase() as "community" | "club" | "academy";
+    }
+  } catch (err) {
+    // ignore and fall back to community
+  }
+  return "community";
 }
 
 export async function getSessions(): Promise<Session[]> {
-  const data = await apiGet<BackendSession[]>("/api/v1/sessions", { auth: true });
+  const membership = await getMembership();
 
-  return data.map(session => {
+  let types: string[] = [];
+  if (membership === "academy") {
+    types = ["club", "academy", "community"];
+  } else if (membership === "club") {
+    types = ["club", "community"];
+  } else {
+    types = ["community"];
+  }
+
+  const typeQuery = types.length ? `?types=${types.join(",")}` : "";
+  const data = await apiGet<BackendSession[]>(`/api/v1/sessions/${typeQuery}`, { auth: true });
+
+  const mapped = data.map(session => {
     const startDate = new Date(session.start_time);
     const endDate = new Date(session.end_time);
 
@@ -66,14 +142,26 @@ export async function getSessions(): Promise<Session[]> {
       date: startDate.toISOString(),
       startTime: startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       endTime: endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      type: "CLUB_SESSION", // Default as it's not in the API response yet
+      type: (session.type || "club").toLowerCase(),
       poolFee: session.pool_fee,
+      rideShareFee: session.ride_share_fee ?? undefined,
     };
   });
+
+  const allowed = new Set(types);
+  return mapped.filter((session) => allowed.has(session.type || "club"));
 }
 
 export async function getSession(id: string): Promise<Session> {
   const session = await apiGet<BackendSession>(`/api/v1/sessions/${id}`, { auth: true });
+
+  // Fetch ride share configs from transport service
+  let rideShareAreas: RideShareArea[] = [];
+  try {
+    rideShareAreas = await apiGet<RideShareArea[]>(`/api/v1/transport/sessions/${id}/ride-configs`, { auth: true });
+  } catch (e) {
+    console.error("Failed to fetch ride configs", e);
+  }
 
   const startDate = new Date(session.start_time);
   const endDate = new Date(session.end_time);
@@ -86,7 +174,9 @@ export async function getSession(id: string): Promise<Session> {
     date: startDate.toISOString(),
     startTime: startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     endTime: endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    type: "CLUB_SESSION",
+    type: session.type || "club",
     poolFee: session.pool_fee,
+    rideShareFee: session.ride_share_fee ?? undefined,
+    rideShareAreas: rideShareAreas,
   };
 }

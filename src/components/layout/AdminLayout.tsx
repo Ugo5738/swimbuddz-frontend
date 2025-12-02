@@ -19,7 +19,8 @@ import {
   Menu,
   X,
   ChevronDown,
-  Mail
+  Mail,
+  Car
 } from "lucide-react";
 
 type AdminLayoutProps = {
@@ -49,6 +50,7 @@ const navSections: NavSection[] = [
     items: [
       { href: "/admin/members", label: "Members", icon: Users },
       { href: "/admin/sessions", label: "Sessions", icon: Calendar },
+      { href: "/admin/transport", label: "Transport", icon: Car },
       { href: "/admin/attendance", label: "Attendance", icon: ClipboardCheck }
     ]
   },
@@ -154,8 +156,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                           href={item.href}
                           onClick={() => setSidebarOpen(false)}
                           className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${active
-                              ? "bg-cyan-600 text-white shadow-lg shadow-cyan-600/50"
-                              : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
+                            ? "bg-cyan-600 text-white shadow-lg shadow-cyan-600/50"
+                            : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
                             }`}
                         >
                           <Icon className="h-5 w-5 shrink-0" />

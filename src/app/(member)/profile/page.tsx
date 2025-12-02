@@ -19,9 +19,6 @@ import { UpcomingSessions } from "@/components/profile/UpcomingSessions";
 import {
   strokesOptions,
   interestOptions,
-  certificationOptions,
-  coachingSpecialtyOptions,
-  travelFlexibilityOptions,
   membershipTierOptions,
   paymentReadinessOptions,
   volunteerInterestOptions,
@@ -33,7 +30,8 @@ import {
   locationOptions,
   currencyOptions,
   discoverySourceOptions,
-  languageOptions
+  languageOptions,
+  travelFlexibilityOptions
 } from "@/lib/options";
 
 const levelLabels: Record<string, string> = {
@@ -97,13 +95,7 @@ type Profile = {
   strokes: string[];
   interests: string[];
   goalsNarrative: string;
-  certifications: string[];
-  coachingExperience: string;
-  coachingSpecialties: string[];
-  coachingYears: string;
-  coachingPortfolioLink: string;
-  coachingDocumentLink: string;
-  coachingDocumentFileName: string;
+
   availabilitySlots: string[];
   timeOfDayAvailability: string[];
   locationPreference: string[];
@@ -151,13 +143,7 @@ const mockProfile: Profile = {
   strokes: ["freestyle", "backstroke", "open_water"],
   interests: ["fitness", "open_water", "volunteering"],
   goalsNarrative: "Build endurance for open-water races and help mentor new swimmers.",
-  certifications: ["cpr"],
-  coachingExperience: "Volunteer mentor for beginner clinics.",
-  coachingSpecialties: ["technique", "open_water_coach"],
-  coachingYears: "3_5",
-  coachingPortfolioLink: "https://coach.swimbuddz.com/ada",
-  coachingDocumentLink: "https://drive.google.com/cert",
-  coachingDocumentFileName: "coaching-certificate.pdf",
+
   availabilitySlots: ["weekday_evening", "weekend_morning"],
   timeOfDayAvailability: ["early_morning", "evening"],
   locationPreference: ["yaba", "remote_global"],
@@ -209,13 +195,7 @@ type MemberResponse = {
   interests: string[];
   goals_narrative: string;
   goals_other: string;
-  certifications: string[];
-  coaching_experience: string;
-  coaching_specialties: string[];
-  coaching_years: string;
-  coaching_portfolio_link: string;
-  coaching_document_link: string;
-  coaching_document_file_name: string;
+
   availability_slots: string[];
   time_of_day_availability: string[];
   location_preference: string[];
@@ -265,13 +245,7 @@ function mapMemberResponseToProfile(data: MemberResponse): Profile {
     strokes: data.strokes || [],
     interests: data.interests || [],
     goalsNarrative: data.goals_narrative || "",
-    certifications: data.certifications || [],
-    coachingExperience: data.coaching_experience || "",
-    coachingSpecialties: data.coaching_specialties || [],
-    coachingYears: data.coaching_years || "",
-    coachingPortfolioLink: data.coaching_portfolio_link || "",
-    coachingDocumentLink: data.coaching_document_link || "",
-    coachingDocumentFileName: data.coaching_document_file_name || "",
+
     availabilitySlots: data.availability_slots || [],
     timeOfDayAvailability: data.time_of_day_availability || [],
     locationPreference: data.location_preference || [],
@@ -470,57 +444,7 @@ function ProfileContent() {
                   )}
                 </Detail>
 
-                {(profile.membershipTiers.includes("club") || profile.membershipTiers.includes("academy")) && (
-                  <>
-                    <Detail label="Certifications" fullSpan>
-                      {profile.certifications.length ? (
-                        <div className="flex flex-wrap gap-2">
-                          {profile.certifications.map((cert) => (
-                            <Badge key={cert}>{formatToken(cert)}</Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-slate-600">None added yet</p>
-                      )}
-                    </Detail>
-                    {profile.coachingExperience ? (
-                      <Detail label="Coaching experience" value={profile.coachingExperience} fullSpan />
-                    ) : null}
-                    {profile.coachingSpecialties.length ? (
-                      <Detail label="Coaching specialties" fullSpan>
-                        <div className="flex flex-wrap gap-2">
-                          {profile.coachingSpecialties.map((item) => (
-                            <Badge key={item}>{formatToken(item)}</Badge>
-                          ))}
-                        </div>
-                      </Detail>
-                    ) : null}
-                    {profile.coachingYears ? (
-                      <Detail label="Years coaching" value={formatToken(profile.coachingYears)} />
-                    ) : null}
-                    {profile.coachingPortfolioLink ? (
-                      <Detail label="Portfolio link" fullSpan>
-                        <a href={profile.coachingPortfolioLink} className="text-cyan-700 underline" target="_blank" rel="noreferrer">
-                          {profile.coachingPortfolioLink}
-                        </a>
-                      </Detail>
-                    ) : null}
-                    {profile.coachingDocumentLink || profile.coachingDocumentFileName ? (
-                      <Detail label="Supporting docs" fullSpan>
-                        <div className="text-sm text-slate-700">
-                          {profile.coachingDocumentLink ? (
-                            <a href={profile.coachingDocumentLink} className="text-cyan-700 underline" target="_blank" rel="noreferrer">
-                              View credential
-                            </a>
-                          ) : null}
-                          {profile.coachingDocumentFileName ? (
-                            <p className="text-xs text-slate-500">Uploaded file: {profile.coachingDocumentFileName}</p>
-                          ) : null}
-                        </div>
-                      </Detail>
-                    ) : null}
-                  </>
-                )}
+
               </div>
             )}
           </Card>
@@ -606,7 +530,7 @@ function ProfileContent() {
                   </Detail>
                   <Detail label="Volunteer roles" value={profile.volunteerRolesDetail || "--"} />
                   <Detail label="Language" value={profile.languagePreference || "english"} />
-                <Detail label="Comms preference" value={formatToken(profile.commsPreference || "whatsapp")} />
+                  <Detail label="Comms preference" value={formatToken(profile.commsPreference || "whatsapp")} />
                   <Detail
                     label="Payment readiness"
                     value={paymentReadinessLabels[profile.paymentReadiness] ?? formatToken(profile.paymentReadiness)}
@@ -664,13 +588,7 @@ type FormState = {
   strokes: string[];
   interests: string[];
   goalsNarrative: string;
-  certifications: string[];
-  coachingExperience: string;
-  coachingSpecialties: string[];
-  coachingYears: string;
-  coachingPortfolioLink: string;
-  coachingDocumentLink: string;
-  coachingDocumentFileName: string;
+
   availabilitySlots: string[];
   timeOfDayAvailability: string[];
   locationPreference: string[];
@@ -714,13 +632,7 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
     strokes: profile.strokes,
     interests: profile.interests,
     goalsNarrative: profile.goalsNarrative,
-    certifications: profile.certifications,
-    coachingExperience: profile.coachingExperience,
-    coachingSpecialties: profile.coachingSpecialties,
-    coachingYears: profile.coachingYears,
-    coachingPortfolioLink: profile.coachingPortfolioLink,
-    coachingDocumentLink: profile.coachingDocumentLink,
-    coachingDocumentFileName: profile.coachingDocumentFileName,
+
     availabilitySlots: profile.availabilitySlots,
     timeOfDayAvailability: profile.timeOfDayAvailability,
     locationPreference: profile.locationPreference,
@@ -773,13 +685,7 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
       strokes: formState.strokes,
       interests: formState.interests,
       goalsNarrative: formState.goalsNarrative,
-      certifications: formState.certifications,
-      coachingExperience: formState.coachingExperience,
-      coachingSpecialties: formState.coachingSpecialties,
-      coachingYears: formState.coachingYears,
-      coachingPortfolioLink: formState.coachingPortfolioLink,
-      coachingDocumentLink: formState.coachingDocumentLink,
-      coachingDocumentFileName: formState.coachingDocumentFileName,
+
       availabilitySlots: formState.availabilitySlots,
       timeOfDayAvailability: formState.timeOfDayAvailability,
       locationPreference: formState.locationPreference,
@@ -825,13 +731,7 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
           strokes: updatedProfile.strokes,
           interests: updatedProfile.interests,
           goals: formState.goalsNarrative,
-          certifications: updatedProfile.certifications,
-          coaching_experience: formState.coachingExperience,
-          coaching_specialties: updatedProfile.coachingSpecialties,
-          coaching_years: formState.coachingYears,
-          coaching_portfolio_link: formState.coachingPortfolioLink,
-          coaching_document_link: formState.coachingDocumentLink,
-          coaching_document_file_name: formState.coachingDocumentFileName,
+
           availability_slots: updatedProfile.availabilitySlots,
           time_of_day_availability: updatedProfile.timeOfDayAvailability,
           location_preference: updatedProfile.locationPreference,
@@ -960,79 +860,6 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
         </div>
 
 
-        {isClub && (
-          <>
-            <div className="md:col-span-2">
-              <OptionPillGroup
-                label="Certifications"
-                options={certificationOptions}
-                selected={formState.certifications}
-                onToggle={(value) => {
-                  const newCerts = formState.certifications.includes(value)
-                    ? formState.certifications.filter((c) => c !== value)
-                    : [...formState.certifications, value];
-                  setFormState({ ...formState, certifications: newCerts });
-                }}
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Textarea
-                label="Coaching experience"
-                value={formState.coachingExperience}
-                onChange={(e) => setFormState({ ...formState, coachingExperience: e.target.value })}
-              />
-            </div>
-            <div className="md:col-span-2">
-              <OptionPillGroup
-                label="Coaching specialties"
-                options={coachingSpecialtyOptions}
-                selected={formState.coachingSpecialties}
-                onToggle={(value) => {
-                  const newSpecs = formState.coachingSpecialties.includes(value)
-                    ? formState.coachingSpecialties.filter((s) => s !== value)
-                    : [...formState.coachingSpecialties, value];
-                  setFormState({ ...formState, coachingSpecialties: newSpecs });
-                }}
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Select
-                label="Years coaching"
-                value={formState.coachingYears}
-                onChange={(e) => setFormState({ ...formState, coachingYears: e.target.value })}
-              >
-                <option value="">Select range</option>
-                <option value="under_1">Less than 1 year</option>
-                <option value="1_3">1 – 3 years</option>
-                <option value="3_5">3 – 5 years</option>
-                <option value="5_plus">5+ years</option>
-              </Select>
-            </div>
-            <div className="md:col-span-2">
-              <Input
-                label="Portfolio / website"
-                type="url"
-                value={formState.coachingPortfolioLink}
-                onChange={(e) => setFormState({ ...formState, coachingPortfolioLink: e.target.value })}
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Input
-                label="Certification link"
-                type="url"
-                value={formState.coachingDocumentLink}
-                onChange={(e) => setFormState({ ...formState, coachingDocumentLink: e.target.value })}
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Input
-                label="Uploaded credential filename"
-                value={formState.coachingDocumentFileName}
-                onChange={(e) => setFormState({ ...formState, coachingDocumentFileName: e.target.value })}
-              />
-            </div>
-          </>
-        )}
         {isClub && (
           <>
             <div className="md:col-span-2">
@@ -1180,123 +1007,123 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
             </div>
           </>
         )}
-          <>
-            <div className="md:col-span-2">
-              <OptionPillGroup
-                label="Volunteer interest"
-                options={volunteerInterestOptions}
-                selected={formState.volunteerInterest}
-                onToggle={(value) => {
-                  const newInterests = formState.volunteerInterest.includes(value)
-                    ? formState.volunteerInterest.filter((i) => i !== value)
-                    : [...formState.volunteerInterest, value];
-                  setFormState({ ...formState, volunteerInterest: newInterests });
-                }}
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Textarea
-                label="Volunteer roles detail"
-                value={formState.volunteerRolesDetail}
-                onChange={(e) => setFormState({ ...formState, volunteerRolesDetail: e.target.value })}
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Select
-                label="Discovery source"
-                value={formState.discoverySource || "other"}
-                onChange={(e) => setFormState({ ...formState, discoverySource: e.target.value })}
-              >
-                <option value="">Select an option</option>
-                {discoverySourceOptions.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </Select>
-            </div>
-            <div className="md:col-span-2">
-              <Input
-                label="Instagram handle"
-                value={formState.socialInstagram}
-                onChange={(e) => setFormState({ ...formState, socialInstagram: e.target.value })}
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Input
-                label="LinkedIn / professional link"
-                value={formState.socialLinkedIn}
-                onChange={(e) => setFormState({ ...formState, socialLinkedIn: e.target.value })}
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Input
-                label="Other social link"
-                value={formState.socialOther}
-                onChange={(e) => setFormState({ ...formState, socialOther: e.target.value })}
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Select
-                label="Language preference"
-                value={formState.languagePreference}
-                onChange={(e) => setFormState({ ...formState, languagePreference: e.target.value })}
-              >
-                {languageOptions.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </Select>
-            </div>
-            <div className="md:col-span-2">
-              <Select
-                label="Comms preference"
-                value={formState.commsPreference}
-                onChange={(e) => setFormState({ ...formState, commsPreference: e.target.value })}
-              >
-                <option value="whatsapp">WhatsApp</option>
-                <option value="email">Email</option>
-                <option value="sms">SMS</option>
-              </Select>
-            </div>
-            <div className="md:col-span-2">
-              <SingleSelectPills
-                label="Payment readiness"
-                options={paymentReadinessOptions}
-                value={formState.paymentReadiness}
-                onChange={(value) => setFormState({ ...formState, paymentReadiness: value })}
-              />
-              <p className="mt-1 text-xs text-slate-500">
-                Helps admins plan billing (ready now, need notice, or sponsor support).
-              </p>
-            </div>
-            <div className="md:col-span-2">
-              <Select
-                label="Preferred currency"
-                value={formState.currencyPreference}
-                onChange={(e) => setFormState({ ...formState, currencyPreference: e.target.value })}
-              >
-                {currencyOptions.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </Select>
-            </div>
-            <div className="md:col-span-2">
-              <Select
-                label="Photo consent"
-                value={formState.consentPhoto}
-                onChange={(e) => setFormState({ ...formState, consentPhoto: e.target.value })}
-              >
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </Select>
-            </div>
-            <div className="md:col-span-2">
-              <Textarea
-                label="Payment notes"
-                value={formState.paymentNotes}
-                onChange={(e) => setFormState({ ...formState, paymentNotes: e.target.value })}
-                helperText="Add billing preferences (e.g., needs invoice/receipt, company reimburses)."
-              />
-            </div>
-          </>
+        <>
+          <div className="md:col-span-2">
+            <OptionPillGroup
+              label="Volunteer interest"
+              options={volunteerInterestOptions}
+              selected={formState.volunteerInterest}
+              onToggle={(value) => {
+                const newInterests = formState.volunteerInterest.includes(value)
+                  ? formState.volunteerInterest.filter((i) => i !== value)
+                  : [...formState.volunteerInterest, value];
+                setFormState({ ...formState, volunteerInterest: newInterests });
+              }}
+            />
+          </div>
+          <div className="md:col-span-2">
+            <Textarea
+              label="Volunteer roles detail"
+              value={formState.volunteerRolesDetail}
+              onChange={(e) => setFormState({ ...formState, volunteerRolesDetail: e.target.value })}
+            />
+          </div>
+          <div className="md:col-span-2">
+            <Select
+              label="Discovery source"
+              value={formState.discoverySource || "other"}
+              onChange={(e) => setFormState({ ...formState, discoverySource: e.target.value })}
+            >
+              <option value="">Select an option</option>
+              {discoverySourceOptions.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </Select>
+          </div>
+          <div className="md:col-span-2">
+            <Input
+              label="Instagram handle"
+              value={formState.socialInstagram}
+              onChange={(e) => setFormState({ ...formState, socialInstagram: e.target.value })}
+            />
+          </div>
+          <div className="md:col-span-2">
+            <Input
+              label="LinkedIn / professional link"
+              value={formState.socialLinkedIn}
+              onChange={(e) => setFormState({ ...formState, socialLinkedIn: e.target.value })}
+            />
+          </div>
+          <div className="md:col-span-2">
+            <Input
+              label="Other social link"
+              value={formState.socialOther}
+              onChange={(e) => setFormState({ ...formState, socialOther: e.target.value })}
+            />
+          </div>
+          <div className="md:col-span-2">
+            <Select
+              label="Language preference"
+              value={formState.languagePreference}
+              onChange={(e) => setFormState({ ...formState, languagePreference: e.target.value })}
+            >
+              {languageOptions.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </Select>
+          </div>
+          <div className="md:col-span-2">
+            <Select
+              label="Comms preference"
+              value={formState.commsPreference}
+              onChange={(e) => setFormState({ ...formState, commsPreference: e.target.value })}
+            >
+              <option value="whatsapp">WhatsApp</option>
+              <option value="email">Email</option>
+              <option value="sms">SMS</option>
+            </Select>
+          </div>
+          <div className="md:col-span-2">
+            <SingleSelectPills
+              label="Payment readiness"
+              options={paymentReadinessOptions}
+              value={formState.paymentReadiness}
+              onChange={(value) => setFormState({ ...formState, paymentReadiness: value })}
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              Helps admins plan billing (ready now, need notice, or sponsor support).
+            </p>
+          </div>
+          <div className="md:col-span-2">
+            <Select
+              label="Preferred currency"
+              value={formState.currencyPreference}
+              onChange={(e) => setFormState({ ...formState, currencyPreference: e.target.value })}
+            >
+              {currencyOptions.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </Select>
+          </div>
+          <div className="md:col-span-2">
+            <Select
+              label="Photo consent"
+              value={formState.consentPhoto}
+              onChange={(e) => setFormState({ ...formState, consentPhoto: e.target.value })}
+            >
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </Select>
+          </div>
+          <div className="md:col-span-2">
+            <Textarea
+              label="Payment notes"
+              value={formState.paymentNotes}
+              onChange={(e) => setFormState({ ...formState, paymentNotes: e.target.value })}
+              hint="Add billing preferences (e.g., needs invoice/receipt, company reimburses)."
+            />
+          </div>
+        </>
 
         {isAcademy && (
           <>
@@ -1331,7 +1158,7 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
           {saving ? "Saving..." : "Save changes"}
         </Button>
       </div>
-    </div >
+    </div>
   );
 }
 

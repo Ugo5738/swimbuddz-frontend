@@ -4,29 +4,47 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
 import { getSessions, Session } from "@/lib/sessions";
+import { apiGet } from "@/lib/api";
 
 export function UpcomingSessions() {
     const [sessions, setSessions] = useState<Session[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [membership, setMembership] = useState<"community" | "club" | "academy">("community");
 
     useEffect(() => {
-        getSessions()
-            .then((data) => {
+        async function load() {
+            try {
+                setLoading(true);
+                try {
+                    const profile = await apiGet<any>("/api/v1/members/me", { auth: true });
+                    if (profile) {
+                        const tier =
+                            profile.membership_tier ||
+                            (profile.membership_tiers && profile.membership_tiers[0]) ||
+                            "community";
+                        setMembership((tier as string).toLowerCase() as "community" | "club" | "academy");
+                    }
+                } catch {
+                    setMembership("community");
+                }
+
+                const data = await getSessions();
                 // Filter for future sessions only
                 const futureSessions = data
                     .filter(session => new Date(session.date) >= new Date())
                     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
                     .slice(0, 3); // Show next 3 sessions
                 setSessions(futureSessions);
-            })
-            .catch((err) => {
+            } catch (err) {
                 console.error("Failed to load sessions:", err);
                 setError("Could not load upcoming sessions.");
-            })
-            .finally(() => setLoading(false));
+            } finally {
+                setLoading(false);
+            }
+        }
+        load();
     }, []);
 
     if (loading) {
@@ -58,9 +76,13 @@ export function UpcomingSessions() {
                             {new Date(session.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })} • {session.startTime}
                         </p>
                     </div>
-                    <Link href={`/sessions/${session.id}/sign-in`}>
-                        <Button size="sm" variant="outline">Sign In</Button>
-                    </Link>
+                    {membership === "community" && (session.type === "club" || session.type === "academy") ? (
+                        <span className="text-xs font-medium text-amber-700">Club members only</span>
+                    ) : (
+                        <Link href={`/sessions/${session.id}/sign-in`}>
+                            <Button size="sm" variant="outline">Sign In</Button>
+                        </Link>
+                    )}
                 </div>
             ))}
             <div className="text-center">

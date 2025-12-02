@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -20,6 +21,20 @@ interface Member {
     location_preference: string[];
     registration_complete: boolean;
     is_active: boolean;
+
+    // Additional comprehensive fields
+    membership_tier?: string;
+    city?: string;
+    country?: string;
+    time_zone?: string;
+    deep_water_comfort?: string;
+    goals_narrative?: string;
+    emergency_contact_name?: string;
+    emergency_contact_phone?: string;
+    medical_info?: string;
+    profile_photo_url?: string;
+    date_of_birth?: string;
+    gender?: string;
 }
 
 export default function AdminMembersPage() {
@@ -44,6 +59,13 @@ export default function AdminMembersPage() {
         phone: "",
         swim_level: "Beginner",
         location_preference: "Ikoyi",
+        membership_tier: "community",
+        city: "",
+        country: "Nigeria",
+        emergency_contact_name: "",
+        emergency_contact_phone: "",
+        medical_info: "",
+        goals_narrative: "",
     });
 
     const fetchMembers = async () => {
@@ -89,6 +111,13 @@ export default function AdminMembersPage() {
             phone: "",
             swim_level: "Beginner",
             location_preference: "Ikoyi",
+            membership_tier: "community",
+            city: "",
+            country: "Nigeria",
+            emergency_contact_name: "",
+            emergency_contact_phone: "",
+            medical_info: "",
+            goals_narrative: "",
         });
     };
 
@@ -108,6 +137,13 @@ export default function AdminMembersPage() {
             location_preference: Array.isArray(member.location_preference)
                 ? member.location_preference[0]
                 : member.location_preference || "Ikoyi",
+            membership_tier: member.membership_tier || "community",
+            city: member.city || "",
+            country: member.country || "Nigeria",
+            emergency_contact_name: member.emergency_contact_name || "",
+            emergency_contact_phone: member.emergency_contact_phone || "",
+            medical_info: member.medical_info || "",
+            goals_narrative: member.goals_narrative || "",
         });
         setIsEditModalOpen(true);
     };
@@ -192,6 +228,30 @@ export default function AdminMembersPage() {
         }
     };
 
+    const handleDeleteMember = async (memberId: string, memberName: string) => {
+        if (!confirm(`Are you sure you want to delete ${memberName}? This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+
+            const res = await fetch(`${API_BASE_URL}/api/v1/members/${memberId}`, {
+                method: "DELETE",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            if (!res.ok) {
+                throw new Error("Failed to delete member");
+            }
+
+            await fetchMembers();
+        } catch (err) {
+            alert(err instanceof Error ? err.message : "Failed to delete member");
+        }
+    };
+
     return (
         <div className="space-y-6">
             <header className="flex items-center justify-between">
@@ -229,7 +289,9 @@ export default function AdminMembersPage() {
                                 {members.map((member) => (
                                     <tr key={member.id} className="hover:bg-slate-50">
                                         <td className="px-4 py-3 font-medium text-slate-900">
-                                            {member.first_name} {member.last_name}
+                                            <Link href={`/admin/members/${member.id}`} className="hover:underline hover:text-cyan-700">
+                                                {member.first_name} {member.last_name}
+                                            </Link>
                                         </td>
                                         <td className="px-4 py-3">
                                             <div className="flex flex-col">
@@ -246,20 +308,34 @@ export default function AdminMembersPage() {
                                         <td className="px-4 py-3">
                                             <span
                                                 className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${member.registration_complete
-                                                        ? "bg-green-50 text-green-700"
-                                                        : "bg-yellow-50 text-yellow-700"
+                                                    ? "bg-green-50 text-green-700"
+                                                    : "bg-yellow-50 text-yellow-700"
                                                     }`}
                                             >
                                                 {member.registration_complete ? "Active" : "Pending"}
                                             </span>
                                         </td>
                                         <td className="px-4 py-3">
-                                            <button
-                                                onClick={() => openEditModal(member)}
-                                                className="text-cyan-600 hover:text-cyan-800 hover:underline"
-                                            >
-                                                Edit
-                                            </button>
+                                            <div className="flex gap-3">
+                                                <Link
+                                                    href={`/admin/members/${member.id}`}
+                                                    className="text-slate-600 hover:text-slate-900 hover:underline"
+                                                >
+                                                    View
+                                                </Link>
+                                                <button
+                                                    onClick={() => openEditModal(member)}
+                                                    className="text-cyan-600 hover:text-cyan-800 hover:underline"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteMember(member.id, `${member.first_name} ${member.last_name}`)}
+                                                    className="text-red-600 hover:text-red-800 hover:underline"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -410,6 +486,86 @@ export default function AdminMembersPage() {
                             <option value="Ikeja">Ikeja</option>
                         </Select>
                     </div>
+
+                    {/* Membership Management */}
+                    <div className="border-t pt-4">
+                        <h3 className="text-sm font-semibold mb-3 text-slate-700">Membership</h3>
+                        <Select
+                            label="Membership Tier"
+                            name="membership_tier"
+                            value={formData.membership_tier}
+                            onChange={handleInputChange}
+                        >
+                            <option value="community">Community</option>
+                            <option value="club">Club</option>
+                            <option value="academy">Academy</option>
+                        </Select>
+                    </div>
+
+                    {/* Location Details */}
+                    <div className="border-t pt-4">
+                        <h3 className="text-sm font-semibold mb-3 text-slate-700">Location</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <Input
+                                label="City"
+                                name="city"
+                                value={formData.city}
+                                onChange={handleInputChange}
+                            />
+                            <Input
+                                label="Country"
+                                name="country"
+                                value={formData.country}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Emergency Contact */}
+                    <div className="border-t pt-4">
+                        <h3 className="text-sm font-semibold mb-3 text-slate-700">Emergency Contact</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <Input
+                                label="Contact Name"
+                                name="emergency_contact_name"
+                                value={formData.emergency_contact_name}
+                                onChange={handleInputChange}
+                            />
+                            <Input
+                                label="Contact Phone"
+                                name="emergency_contact_phone"
+                                value={formData.emergency_contact_phone}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Medical Info */}
+                    <div className="border-t pt-4">
+                        <h3 className="text-sm font-semibold mb-3 text-slate-700">Medical Information</h3>
+                        <textarea
+                            name="medical_info"
+                            value={formData.medical_info}
+                            onChange={(e) => setFormData({ ...formData, medical_info: e.target.value })}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"
+                            rows={3}
+                            placeholder="Any medical conditions or allergies..."
+                        />
+                    </div>
+
+                    {/* Goals */}
+                    <div className="border-t pt-4">
+                        <h3 className="text-sm font-semibold mb-3 text-slate-700">Goals</h3>
+                        <textarea
+                            name="goals_narrative"
+                            value={formData.goals_narrative}
+                            onChange={(e) => setFormData({ ...formData, goals_narrative: e.target.value })}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"
+                            rows={3}
+                            placeholder="Swimming goals..."
+                        />
+                    </div>
+
                     <div className="flex justify-end gap-3 pt-4">
                         <Button
                             type="button"

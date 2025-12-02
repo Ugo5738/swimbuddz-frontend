@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet } from "@/lib/api";
+import { Alert } from "@/components/ui/Alert";
 
 function formatDate(start: string, end: string) {
   const dateObj = new Date(start);
@@ -30,22 +31,29 @@ interface Session {
   start_time: string;
   end_time: string;
   pool_fee: number;
-  ride_share_fee: number;
+  ride_share_fee?: number;
   description?: string;
-  type: "CLUB_SESSION" | "ACADEMY_CLASS" | "MEETUP" | "SPECIAL_EVENT";
+  type?: "club" | "academy" | "community";
+  ride_configs?: Array<{
+    id: string;
+    ride_area_name: string;
+    cost: number;
+    capacity: number;
+    pickup_locations?: Array<{ id: string; name: string }>;
+  }>;
 }
 
 export default function SessionsPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [membership, setMembership] = useState<"community" | "club" | "academy">("community");
 
   useEffect(() => {
     async function loadData() {
       try {
         setLoading(true);
         let membership = "community"; // default if not logged in
-
         try {
           const profile = await apiGet<any>("/api/v1/members/me", { auth: true });
           if (profile) {
@@ -58,21 +66,38 @@ export default function SessionsPage() {
         } catch (e) {
           console.log("User not logged in or profile fetch failed, defaulting to community view.");
         }
+        setMembership(membership as "community" | "club" | "academy");
 
         // Filter by session type instead of allowed tiers
         let types: string[] = [];
         if (membership === "academy") {
-          types = ["CLUB_SESSION", "ACADEMY_CLASS", "MEETUP", "SPECIAL_EVENT"];
+          types = ["club", "academy", "community"];
         } else if (membership === "club") {
-          types = ["CLUB_SESSION", "MEETUP", "SPECIAL_EVENT"];
+          types = ["club", "community"];
         } else {
-          // public/community: show community and club meetups/events; exclude academy classes
-          types = ["CLUB_SESSION", "MEETUP", "SPECIAL_EVENT"];
+          // public/community: show community-facing sessions only
+          types = ["community"];
         }
 
         const typeQuery = types.length ? `?types=${types.join(",")}` : "";
-        const data = await apiGet<Session[]>(`/api/v1/sessions/${typeQuery}`);
-        setSessions(data);
+        console.log("Fetching sessions for membership:", membership, "with types:", types);
+        const sessionsData = await apiGet<Session[]>(`/api/v1/sessions/${typeQuery}`);
+        console.log("Received sessions:", sessionsData);
+
+        // Fetch ride configs for each session
+        const sessionsWithRides = await Promise.all(
+          sessionsData.map(async (session) => {
+            try {
+              const rideConfigs = await apiGet<any[]>(`/api/v1/transport/sessions/${session.id}/ride-configs`);
+              return { ...session, ride_configs: rideConfigs };
+            } catch (err) {
+              // If ride configs fail, just return session without them
+              return { ...session, ride_configs: [] };
+            }
+          })
+        );
+
+        setSessions(sessionsWithRides);
       } catch (err) {
         console.error(err);
         setError("Unable to load sessions. Please try again later.");
@@ -112,7 +137,7 @@ export default function SessionsPage() {
                     <h2 className="text-xl font-semibold text-slate-900">{session.title}</h2>
                     <p className="text-sm text-slate-500">{session.location}</p>
                   </div>
-                  {/* <Badge variant="info">{session.type}</Badge> */}
+                  <Badge variant="info">{(session.type || "SESSION").replace("_", " ")}</Badge>
                 </div>
                 <p className="text-sm font-semibold text-slate-700">
                   {formatDate(session.start_time, session.end_time)}
@@ -123,16 +148,42 @@ export default function SessionsPage() {
                     <p className="text-xs uppercase tracking-wide text-slate-500">Pool fee</p>
                     <p className="font-semibold text-slate-900">{formatCurrency(session.pool_fee)}</p>
                   </div>
-                  {session.ride_share_fee ? (
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-slate-500">Ride-share</p>
-                      <p className="font-semibold text-slate-900">{formatCurrency(session.ride_share_fee)}</p>
-                    </div>
-                  ) : null}
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Ride-share</p>
+                    <p className="font-semibold text-slate-900">
+                      {session.ride_configs && session.ride_configs.length > 0
+                        ? `From ${formatCurrency(Math.min(...session.ride_configs.map(c => c.cost)))}`
+                        : "N/A"}
+                    </p>
+                  </div>
                 </div>
-                <Link href={`/sessions/${session.id}/sign-in`} className="inline-flex font-semibold text-cyan-700 hover:underline">
-                  Sign in &rarr;
-                </Link>
+                {session.ride_configs && session.ride_configs.length > 0 ? (
+                  <div className="rounded bg-emerald-50 px-3 py-2 space-y-1">
+                    <p className="text-xs font-semibold text-emerald-900">Ride-share available:</p>
+                    {session.ride_configs.map((config, idx) => (
+                      <div key={idx} className="text-xs text-emerald-800">
+                        • {config.ride_area_name} - {formatCurrency(config.cost)} ({config.pickup_locations?.length || 0} pickup points)
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+                {session.type === "club" && membership === "community" ? (
+                  <div className="text-sm text-amber-700">
+                    Club members only.{" "}
+                    <Link href="/club" className="font-semibold underline">
+                      Learn about Club tier
+                    </Link>
+                  </div>
+                ) : (
+                  <div>
+                    <Link
+                      href={`/sessions/${session.id}/sign-in`}
+                      className="inline-flex font-semibold text-cyan-700 hover:underline"
+                    >
+                      Sign in &rarr;
+                    </Link>
+                  </div>
+                )}
               </Card>
             ))}
           </div>

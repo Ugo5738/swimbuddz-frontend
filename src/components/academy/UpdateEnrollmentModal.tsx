@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { AcademyApi, EnrollmentStatus, PaymentStatus, EnrollmentWithStudent } from "@/lib/academy";
+import { AcademyApi, EnrollmentStatus, PaymentStatus, Enrollment, MemberBasicInfo } from "@/lib/academy";
+
+type EnrollmentWithStudent = Enrollment & { member?: MemberBasicInfo };
 
 interface UpdateEnrollmentModalProps {
     isOpen: boolean;
@@ -46,12 +48,14 @@ export function UpdateEnrollmentModal({ isOpen, onClose, enrollment, onSuccess }
             >
                 <h2 className="mb-4 text-xl font-bold text-slate-900">Update Enrollment</h2>
 
-                <div className="mb-4 rounded-lg bg-slate-50 p-3">
-                    <div className="text-sm font-medium text-slate-900">
-                        {enrollment.member.first_name} {enrollment.member.last_name}
+                {enrollment.member ? (
+                    <div className="mb-4 rounded-lg bg-slate-50 p-3">
+                        <div className="text-sm font-medium text-slate-900">
+                            {enrollment.member.first_name} {enrollment.member.last_name}
+                        </div>
+                        <div className="text-xs text-slate-500">{enrollment.member.email}</div>
                     </div>
-                    <div className="text-xs text-slate-500">{enrollment.member.email}</div>
-                </div>
+                ) : null}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
