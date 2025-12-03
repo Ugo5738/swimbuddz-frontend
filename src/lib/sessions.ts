@@ -10,6 +10,13 @@ export interface PickupLocation {
   id: string;
   name: string;
   description?: string;
+  is_available: boolean;
+  current_bookings: number;
+  max_capacity: number;
+  distance_text?: string;
+  duration_text?: string;
+  departure_time_calculated?: string;
+  arrival_time_calculated?: string;
 }
 
 export interface RideShareArea {
@@ -26,9 +33,9 @@ type SignInOptions = {
   sessionId: string;
   status: string; // PRESENT, LATE, EARLY
   notes?: string;
-  ride_share_option: RideShareOption;
-  needs_ride: boolean;
-  can_offer_ride: boolean;
+  ride_share_option?: RideShareOption;
+  needs_ride?: boolean;
+  can_offer_ride?: boolean;
   pickup_location?: string;
   ride_config_id?: string;
   pickup_location_id?: string;
@@ -37,14 +44,14 @@ type SignInOptions = {
 export async function signInToSession(options: SignInOptions) {
   // 1. Sign in to session (Attendance)
   const attendance = await apiPost(
-    `/api/v1/sessions/${options.sessionId}/sign-in`,
+    `/api/v1/attendance/sessions/${options.sessionId}/sign-in`,
     {
       status: options.status,
       role: "SWIMMER",
       notes: options.notes,
-      ride_share_option: options.ride_share_option,
-      needs_ride: options.needs_ride,
-      can_offer_ride: options.can_offer_ride,
+      ride_share_option: options.ride_share_option || RideShareOption.NONE,
+      needs_ride: options.needs_ride || false,
+      can_offer_ride: options.can_offer_ride || false,
       pickup_location: options.pickup_location,
     },
     { auth: true }
@@ -56,11 +63,10 @@ export async function signInToSession(options: SignInOptions) {
       const me = await apiGet<any>("/api/v1/members/me", { auth: true });
 
       await apiPost(
-        `/api/v1/transport/sessions/${options.sessionId}/bookings`,
+        `/api/v1/transport/sessions/${options.sessionId}/bookings?member_id=${me.id}`,
         {
           session_ride_config_id: options.ride_config_id,
           pickup_location_id: options.pickup_location_id,
-          member_id: me.id
         },
         { auth: true }
       );

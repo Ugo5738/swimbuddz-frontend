@@ -19,6 +19,19 @@ type Attendance = {
     status: string;
     role: string;
     notes: string;
+    member_id: string; // Needed for merging
+    ride_info?: {
+        pickup_location: string;
+        ride_number: number;
+        area_name: string;
+    };
+};
+
+type RideBooking = {
+    member_id: string;
+    pickup_location_name: string;
+    assigned_ride_number: number;
+    ride_area_name: string;
 };
 
 export default function AdminAttendancePage() {
@@ -55,8 +68,27 @@ export default function AdminAttendancePage() {
             setLoadingAttendance(true);
             setError(null); // Clear previous errors
             try {
-                const data = await apiGet<Attendance[]>(`/api/v1/sessions/${selectedSessionId}/attendance`, { auth: true });
-                setAttendanceList(data);
+                const [attendanceData, bookingsData] = await Promise.all([
+                    apiGet<Attendance[]>(`/api/v1/sessions/${selectedSessionId}/attendance`, { auth: true }),
+                    apiGet<RideBooking[]>(`/api/v1/transport/sessions/${selectedSessionId}/bookings`, { auth: true }).catch(() => []) // Fail gracefully if transport service is down or no bookings
+                ]);
+
+                // Merge bookings into attendance
+                const bookingsMap = new Map(bookingsData.map(b => [b.member_id, b]));
+
+                const mergedAttendance = attendanceData.map(record => {
+                    const booking = bookingsMap.get(record.member_id);
+                    return {
+                        ...record,
+                        ride_info: booking ? {
+                            pickup_location: booking.pickup_location_name,
+                            ride_number: booking.assigned_ride_number,
+                            area_name: booking.ride_area_name
+                        } : undefined
+                    };
+                });
+
+                setAttendanceList(mergedAttendance);
             } catch (err: any) {
                 console.error("Failed to fetch attendance", err);
                 setError(`Failed to load attendance list: ${err.message || "Unknown error"}`);
@@ -82,7 +114,7 @@ export default function AdminAttendancePage() {
     }
 
     return (
-        <div className="mx-auto max-w-5xl space-y-8 p-8">
+        <div className="mx-auto max-w-6xl space-y-8 p-8">
             <div className="flex items-center justify-between print:hidden">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Attendance Report</h1>
@@ -146,6 +178,9 @@ export default function AdminAttendancePage() {
                                         Status
                                     </th>
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+                                        Ride Info
+                                    </th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
                                         Role
                                     </th>
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
@@ -164,6 +199,18 @@ export default function AdminAttendancePage() {
                                             <span className="inline-flex rounded-full bg-slate-100 px-2 text-xs font-semibold leading-5 text-slate-800">
                                                 {attendance.status}
                                             </span>
+                                        </td>
+                                        <td className="whitespace-nowrap px-6 py-4">
+                                            {attendance.ride_info ? (
+                                                <div className="text-sm text-slate-700">
+                                                    <div className="font-medium">{attendance.ride_info.pickup_location}</div>
+                                                    <div className="text-xs text-slate-500">
+                                                        {attendance.ride_info.area_name} • Ride #{attendance.ride_info.ride_number}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <span className="text-sm text-slate-400">--</span>
+                                            )}
                                         </td>
                                         <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-700">
                                             {attendance.role}

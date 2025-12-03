@@ -12,9 +12,9 @@ import type { Session } from "@/lib/sessions";
 import { apiGet } from "@/lib/api";
 
 const steps = [
-  { title: "Identity", description: "Confirm who is signing in." },
-  { title: "Attendance", description: "Choose how you'll attend this session." },
-  { title: "Options & submit", description: "Add notes, ride-share info, then confirm." }
+  { title: "Identity", description: "Confirm who's attending." },
+  { title: "Attendance & Ride", description: "Choose attendance type and ride options." },
+  { title: "Review & Submit", description: "Review details and confirm sign-in." }
 ];
 
 type SessionSignInProps = {
@@ -25,10 +25,6 @@ export function SessionSignIn({ session }: SessionSignInProps) {
   const [step, setStep] = useState(0);
   const [status, setStatus] = useState<"PRESENT" | "LATE" | "EARLY">("PRESENT");
   const [note, setNote] = useState("");
-  const [rideShareOption, setRideShareOption] = useState<RideShareOption>(RideShareOption.NONE);
-  const [needsRide, setNeedsRide] = useState(false);
-  const [canOfferRide, setCanOfferRide] = useState(false);
-  const [pickupLocation, setPickupLocation] = useState("");
 
   // New State for Ride Share Booking
   const [selectedRideShareAreaId, setSelectedRideShareAreaId] = useState<string | null>(null);
@@ -69,12 +65,6 @@ export function SessionSignIn({ session }: SessionSignInProps) {
   }, []);
 
   function nextStep() {
-    if (step === 1 && hasRideShareAreas && !selectedRideShareAreaId && rideShareOption === RideShareOption.NONE) {
-      // If ride share areas exist, we might want to prompt or just let them skip if they selected NONE
-      // If they selected JOIN/LEAD in the old flow (which we might replace or keep as fallback), we handle it.
-      // Let's assume if they didn't select an area, they are skipping ride share booking.
-    }
-
     if (step < steps.length - 1) {
       setStep((current) => current + 1);
     } else {
@@ -96,10 +86,6 @@ export function SessionSignIn({ session }: SessionSignInProps) {
         sessionId: session.id,
         status,
         notes: note || undefined,
-        ride_share_option: rideShareOption,
-        needs_ride: needsRide,
-        can_offer_ride: canOfferRide,
-        pickup_location: pickupLocation || undefined,
         ride_config_id: selectedRideShareAreaId || undefined,
         pickup_location_id: selectedRideShareLocation || undefined,
       });
@@ -145,15 +131,43 @@ export function SessionSignIn({ session }: SessionSignInProps) {
             </div>
           </div>
 
-          <div className="mt-4 rounded bg-slate-50 p-3 text-sm">
-            <p className="font-semibold">Bank Transfer</p>
-            <p>Bank: GTBank</p>
-            <p>Account: 0123456789</p>
-            <p>Name: SwimBuddz</p>
-            <p className="mt-2 text-xs text-slate-500">Please send receipt to admin via WhatsApp.</p>
-          </div>
+          <div className="mt-4 space-y-3">
+            <div className="rounded-lg border border-slate-200 bg-white p-4">
+              <p className="font-semibold text-slate-900">💳 Bank Transfer</p>
+              <div className="mt-2 space-y-1 text-sm text-slate-700">
+                <div className="flex justify-between">
+                  <span className="text-slate-600">Bank:</span>
+                  <span className="font-medium">OPay</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-600">Account Number:</span>
+                  <span className="font-medium">7033588400</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-600">Account Name:</span>
+                  <span className="font-medium">Ugochukwu Nwachukwu</span>
+                </div>
+              </div>
+              <div className="mt-3 rounded bg-cyan-50 p-3 text-sm">
+                <p className="font-medium text-cyan-900">📱 Send Receipt via WhatsApp</p>
+                <p className="mt-1 text-cyan-800">
+                  After payment, please send your receipt to:{" "}
+                  <a
+                    href="https://wa.me/2347033588400"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold underline hover:text-cyan-600"
+                  >
+                    +234 703 358 8400
+                  </a>
+                </p>
+              </div>
+            </div>
 
-          <Button className="mt-4 w-full" disabled>Pay Online (Coming Soon)</Button>
+            <Button className="w-full" variant="secondary" disabled>
+              💳 Pay Online (Coming Soon)
+            </Button>
+          </div>
         </div>
       </Card>
     );
@@ -212,6 +226,12 @@ export function SessionSignIn({ session }: SessionSignInProps) {
               <>
                 <p className="text-base text-slate-700">{member.name}</p>
                 <p className="text-sm text-slate-500">{member.email}</p>
+                <div className="mt-4 rounded-lg border border-cyan-200 bg-cyan-50 p-3">
+                  <p className="text-sm font-medium text-cyan-900">✨ Coming Soon</p>
+                  <p className="mt-1 text-xs text-cyan-700">
+                    Invite and book sessions with friends!
+                  </p>
+                </div>
               </>
             ) : (
               <p className="text-sm text-amber-700">
@@ -238,7 +258,7 @@ export function SessionSignIn({ session }: SessionSignInProps) {
               />
             ) : null}
 
-            {hasRideShareAreas ? (
+            {hasRideShareAreas && (
               <div className="space-y-4 border-t border-slate-200 pt-4">
                 <h3 className="font-semibold text-slate-900">Ride Share Options</h3>
                 <p className="text-sm text-slate-600">Select a ride share area to book a seat.</p>
@@ -263,104 +283,226 @@ export function SessionSignIn({ session }: SessionSignInProps) {
                         <span className="font-medium text-slate-700">₦{area.cost.toLocaleString()}</span>
                       </div>
                       <p className="text-xs text-slate-500">Capacity: {area.capacity} per ride</p>
-                      {area.departure_time && (
-                        <p className="text-xs text-slate-500">Depart: {new Date(area.departure_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                      )}
                     </div>
                   ))}
                 </div>
 
                 {selectedRideShareAreaId && (
-                  <div className="mt-4 space-y-2 rounded bg-slate-50 p-3">
-                    <p className="text-sm font-medium text-slate-900">Select Pickup Location:</p>
-                    <div className="space-y-2">
-                      {session.rideShareAreas!.find(a => a.id === selectedRideShareAreaId)?.pickup_locations.map((loc) => (
-                        <label key={loc.id} className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            name="pickup_location"
-                            value={loc.id}
-                            checked={selectedRideShareLocation === loc.id}
-                            onChange={(e) => setSelectedRideShareLocation(e.target.value)}
-                            className="text-cyan-600 focus:ring-cyan-500"
-                          />
-                          <span className="text-sm text-slate-700">{loc.name}</span>
-                        </label>
-                      ))}
+                  <div className="mt-4 space-y-3 rounded-xl bg-slate-50 p-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-slate-900">Select Pickup Location</p>
+                      <span className="text-xs text-slate-500">
+                        *Only one location per area can be active at a time
+                      </span>
+                    </div>
+                    <div className="grid gap-3">
+                      {session.rideShareAreas!.find(a => a.id === selectedRideShareAreaId)?.pickup_locations.map((loc) => {
+                        const isSelected = selectedRideShareLocation === loc.id;
+                        const isFull = loc.current_bookings >= loc.max_capacity;
+
+                        return (
+                          <label
+                            key={loc.id}
+                            className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border-2 transition-all ${!loc.is_available
+                              ? 'cursor-not-allowed border-slate-200 bg-slate-50 opacity-60'
+                              : isSelected
+                                ? 'border-cyan-500 bg-gradient-to-br from-cyan-50 to-white shadow-lg shadow-cyan-100 ring-2 ring-cyan-200'
+                                : 'border-slate-200 bg-white hover:border-cyan-300 hover:shadow-md'
+                              }`}
+                          >
+                            {/* Header Section */}
+                            <div className="flex items-start justify-between gap-4 p-4 pb-3">
+                              <div className="flex items-start gap-3 flex-1">
+                                <div className="mt-0.5">
+                                  <input
+                                    type="radio"
+                                    name="pickup_location"
+                                    value={loc.id}
+                                    checked={isSelected}
+                                    onChange={(e) => setSelectedRideShareLocation(e.target.value)}
+                                    disabled={!loc.is_available}
+                                    className="h-5 w-5 border-slate-300 text-cyan-600 focus:ring-2 focus:ring-cyan-500 focus:ring-offset-1 disabled:cursor-not-allowed"
+                                  />
+                                </div>
+                                <div className="flex-1">
+                                  <p className={`text-base font-semibold leading-tight ${!loc.is_available ? 'text-slate-500' : 'text-slate-900'}`}>
+                                    📍 {loc.name}
+                                  </p>
+                                  {loc.description && (
+                                    <p className="mt-1 text-xs leading-relaxed text-slate-500">{loc.description}</p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col items-end gap-2">
+                                <div className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold shadow-sm ${!loc.is_available
+                                  ? 'bg-slate-200 text-slate-700'
+                                  : isFull
+                                    ? 'bg-gradient-to-r from-red-500 to-red-600 text-white'
+                                    : loc.current_bookings > 0
+                                      ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-white'
+                                      : 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white'
+                                  }`}>
+                                  {!loc.is_available
+                                    ? '🚫 Inactive'
+                                    : isFull
+                                      ? '🚫 Full'
+                                      : '✓ Available'}
+                                </div>
+                                <div className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium ${isSelected ? 'bg-white text-cyan-700' : 'bg-slate-100 text-slate-600'}`}>
+                                  <span>👥</span>
+                                  <span>{loc.current_bookings} / {loc.max_capacity}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Route Info Section */}
+                            {loc.distance_text && (
+                              <>
+                                <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
+                                <div className={`px-4 py-3 ${isSelected ? 'bg-cyan-50/50' : 'bg-slate-50'}`}>
+                                  <div className="space-y-2.5 text-xs">
+                                    <div className="flex items-baseline justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-base">🗺️</span>
+                                        <span className="font-medium text-slate-700">Distance:</span>
+                                      </div>
+                                      <span className={`text-sm font-semibold ${isSelected ? 'text-cyan-600' : 'text-slate-900'}`}>
+                                        {loc.distance_text} km
+                                      </span>
+                                    </div>
+                                    <div className="flex items-baseline justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-base">⏱️</span>
+                                        <span className="font-medium text-slate-700">Duration:</span>
+                                      </div>
+                                      <span className={`text-sm font-semibold ${isSelected ? 'text-cyan-600' : 'text-slate-900'}`}>
+                                        {loc.duration_text} mins
+                                      </span>
+                                    </div>
+                                    {loc.departure_time_calculated && (
+                                      <div className="flex items-baseline justify-between border-t border-slate-200 pt-2.5">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-base">🚗</span>
+                                          <span className="font-medium text-slate-700">Departure:</span>
+                                        </div>
+                                        <span className={`text-sm font-semibold ${isSelected ? 'text-cyan-600' : 'text-slate-900'}`}>
+                                          {new Date(loc.departure_time_calculated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </>
+                            )}
+
+                            {/* Warning Message */}
+                            {!loc.is_available && loc.current_bookings === 0 && (
+                              <div className="px-4 pb-3 pt-2">
+                                <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                                  <span>⚠️</span>
+                                  <span className="font-medium">Another location in this area is active</span>
+                                </div>
+                              </div>
+                            )}
+                          </label>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
-              </div>
-            ) : (
-              // Fallback to old simple ride share options if no areas configured
-              <div className="space-y-4 border-t border-slate-200 pt-4">
-                <Select
-                  label="Ride-share option"
-                  value={rideShareOption}
-                  onChange={(event) => setRideShareOption(event.target.value as RideShareOption)}
-                >
-                  <option value={RideShareOption.NONE}>I'll get there myself</option>
-                  <option value={RideShareOption.LEAD}>I can lead a carpool</option>
-                  <option value={RideShareOption.JOIN}>I want to join a carpool</option>
-                </Select>
-                <div className="space-y-2">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={needsRide}
-                      onChange={(e) => setNeedsRide(e.target.checked)}
-                      className="rounded border-slate-300"
-                    />
-                    <span className="text-sm text-slate-700">I need a ride to the session</span>
-                  </label>
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={canOfferRide}
-                      onChange={(e) => setCanOfferRide(e.target.checked)}
-                      className="rounded border-slate-300"
-                    />
-                    <span className="text-sm text-slate-700">I can offer a ride to others</span>
-                  </label>
-                </div>
-                <Input
-                  label="Pickup location (optional)"
-                  placeholder="e.g., Apple Junction, Ajegunle"
-                  value={pickupLocation}
-                  onChange={(event) => setPickupLocation(event.target.value)}
-                />
               </div>
             )}
           </div>
         )}
 
         {step === 2 && (
-          <div className="space-y-3 text-sm text-slate-700">
+          <div className="space-y-4 text-sm text-slate-700">
             <p>Review your selections and submit.</p>
             <ul className="list-disc space-y-2 pl-5">
               <li>
                 Status:{" "}
                 {status === "PRESENT" ? "Full session" : status === "LATE" ? "Arriving late" : "Leaving early"}
               </li>
-              {selectedArea ? (
+              {selectedArea && (
                 <>
                   <li>Ride Share: <span className="font-semibold">{selectedArea.ride_area_name}</span></li>
                   <li>Pickup: {selectedArea.pickup_locations.find(l => l.id === selectedRideShareLocation)?.name || "Not selected"}</li>
-                  <li>Cost: ₦{selectedArea.cost.toLocaleString()}</li>
+                  {(() => {
+                    const selectedLoc = selectedArea.pickup_locations.find(l => l.id === selectedRideShareLocation);
+                    return selectedLoc?.distance_text ? (
+                      <>
+                        <li>Distance: {selectedLoc.distance_text} km</li>
+                        <li>Duration: {selectedLoc.duration_text} mins</li>
+                        {selectedLoc.departure_time_calculated && (
+                          <>
+                            <li>Departure: {new Date(selectedLoc.departure_time_calculated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</li>
+                          </>
+                        )}
+                      </>
+                    ) : null;
+                  })()}
                 </>
-              ) : (
-                <li>
-                  Ride-share: {rideShareOption === RideShareOption.NONE ? "None" : rideShareOption === RideShareOption.LEAD ? "Lead carpool" : "Join carpool"}
-                </li>
               )}
               {note ? <li>Note: {note}</li> : null}
             </ul>
 
-            <div className="mt-4 border-t border-slate-200 pt-2">
-              <div className="flex justify-between font-bold text-slate-900">
-                <span>Total Estimated Cost:</span>
-                <span>₦{totalCost.toLocaleString()}</span>
+            <div className="border-t border-slate-200 pt-4">
+              <h3 className="font-semibold text-slate-900">Payment Breakdown</h3>
+              <div className="mt-2 space-y-2 text-sm text-slate-700">
+                <div className="flex justify-between">
+                  <span>Pool Fee:</span>
+                  <span>₦{session.poolFee.toLocaleString()}</span>
+                </div>
+                {selectedArea && (
+                  <div className="flex justify-between">
+                    <span>Ride Share ({selectedArea.ride_area_name}):</span>
+                    <span>₦{selectedArea.cost.toLocaleString()}</span>
+                  </div>
+                )}
+                <div className="flex justify-between border-t border-slate-200 pt-2 font-bold text-slate-900">
+                  <span>Total to Pay:</span>
+                  <span>₦{totalCost.toLocaleString()}</span>
+                </div>
               </div>
+            </div>
+
+            <div className="space-y-3 pt-2">
+              <div className="rounded-lg border border-slate-200 bg-white p-4">
+                <p className="font-semibold text-slate-900">💳 Bank Transfer Details</p>
+                <div className="mt-2 space-y-1 text-sm text-slate-700">
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">Bank:</span>
+                    <span className="font-medium">OPay</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">Account Number:</span>
+                    <span className="font-medium">7033588400</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">Account Name:</span>
+                    <span className="font-medium">Ugochukwu Nwachukwu</span>
+                  </div>
+                </div>
+                <div className="mt-3 rounded bg-cyan-50 p-3 text-sm">
+                  <p className="font-medium text-cyan-900">📱 Send Receipt via WhatsApp</p>
+                  <p className="mt-1 text-cyan-800">
+                    After payment, please send your receipt to:{" "}
+                    <a
+                      href="https://wa.me/2347033588400"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold underline hover:text-cyan-600"
+                    >
+                      +234 703 358 8400
+                    </a>
+                  </p>
+                </div>
+              </div>
+
+              <Button className="w-full" variant="secondary" disabled>
+                💳 Pay Online (Coming Soon)
+              </Button>
             </div>
           </div>
         )}
