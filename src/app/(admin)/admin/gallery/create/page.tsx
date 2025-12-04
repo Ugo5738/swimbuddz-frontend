@@ -1,17 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
-import Link from "next/link";
+import { supabase } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function CreateAlbumPage() {
     const router = useRouter();
     const [formData, setFormData] = useState({
         title: "",
         description: "",
-        album_type: "general"
+        album_type: "GENERAL"
     });
     const [submitting, setSubmitting] = useState(false);
 
@@ -20,10 +21,27 @@ export default function CreateAlbumPage() {
         setSubmitting(true);
 
         try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+
+            if (!token) {
+                alert("You need to be signed in to create an album");
+                setSubmitting(false);
+                return;
+            }
+
+            const payload = {
+                ...formData,
+                album_type: formData.album_type?.toUpperCase() || "GENERAL",
+            };
+
             const response = await fetch(`${API_BASE_URL}/api/v1/media/albums`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
             });
 
             if (response.ok) {
@@ -94,10 +112,15 @@ export default function CreateAlbumPage() {
                             onChange={(e) => setFormData({ ...formData, album_type: e.target.value })}
                             className="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
                         >
-                            <option value="session">Training Session</option>
-                            <option value="event">Community Event</option>
-                            <option value="academy">Academy Program</option>
-                            <option value="general">General</option>
+                            <option value="GENERAL">General</option>
+                            <option value="CLUB">Club</option>
+                            <option value="COMMUNITY">Community</option>
+                            <option value="SESSION">Session</option>
+                            <option value="EVENT">Event</option>
+                            <option value="ACADEMY">Academy</option>
+                            <option value="PRODUCT">Product</option>
+                            <option value="MARKETING">Marketing</option>
+                            <option value="USER_GENERATED">User Generated</option>
                         </select>
                     </div>
 

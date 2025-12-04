@@ -1,22 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
-import Link from "next/link";
+import { supabase } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 type Photo = {
     id: string;
     file_url: string;
     thumbnail_url: string | null;
-    caption: string | null;
-    is_featured: boolean;
+    title: string | null;
+    description: string | null;
+    alt_text: string | null;
 };
 
 export default function AlbumUploadPage() {
     const params = useParams();
-    const router = useRouter();
     const albumId = params?.id as string;
 
     const [albumTitle, setAlbumTitle] = useState("");
@@ -24,6 +25,11 @@ export default function AlbumUploadPage() {
     const [uploading, setUploading] = useState(false);
     const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
     const [caption, setCaption] = useState("");
+
+    const getAuthToken = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        return session?.access_token ?? null;
+    };
 
     useEffect(() => {
         if (albumId) {
@@ -37,7 +43,7 @@ export default function AlbumUploadPage() {
             if (response.ok) {
                 const data = await response.json();
                 setAlbumTitle(data.title);
-                setPhotos(data.photos || []);
+                setPhotos(data.media_items || []);
             }
         } catch (error) {
             console.error('Failed to fetch album:', error);
@@ -53,19 +59,35 @@ export default function AlbumUploadPage() {
     const handleUpload = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedFiles || selectedFiles.length === 0) return;
+        if (!albumId) {
+            alert("Missing album");
+            return;
+        }
 
         setUploading(true);
 
         try {
+            const token = await getAuthToken();
+            if (!token) {
+                alert("You need to be signed in to upload photos");
+                return;
+            }
+
             // Upload each file
             for (let i = 0; i < selectedFiles.length; i++) {
                 const file = selectedFiles[i];
                 const formData = new FormData();
                 formData.append('file', file);
-                if (caption) formData.append('caption', caption);
+                formData.append('album_id', albumId);
+                formData.append('media_type', 'IMAGE');
+                if (caption) formData.append('description', caption);
 
-                const response = await fetch(`${API_BASE_URL}/api/v1/media/albums/${albumId}/photos`, {
+                // Backend endpoint is /api/v1/media/media for uploads (router prefix + /media)
+                const response = await fetch(`${API_BASE_URL}/api/v1/media/media`, {
                     method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: formData
                 });
 
@@ -91,28 +113,21 @@ export default function AlbumUploadPage() {
         }
     };
 
-    const toggleFeatured = async (photoId: string, isFeatured: boolean) => {
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/media/photos/${photoId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ is_featured: !isFeatured })
-            });
-
-            if (response.ok) {
-                await fetchAlbum();
-            }
-        } catch (error) {
-            console.error('Failed to update photo:', error);
-        }
-    };
-
     const deletePhoto = async (photoId: string) => {
         if (!confirm('Are you sure you want to delete this photo?')) return;
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/media/photos/${photoId}`, {
-                method: 'DELETE'
+            const token = await getAuthToken();
+            if (!token) {
+                alert("You need to be signed in to delete a photo");
+                return;
+            }
+
+            const response = await fetch(`${API_BASE_URL}/api/v1/media/media/${photoId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             });
 
             if (response.ok) {
@@ -209,21 +224,12 @@ export default function AlbumUploadPage() {
                             <div key={photo.id} className="relative group">
                                 <img
                                     src={photo.thumbnail_url || photo.file_url}
-                                    alt={photo.caption || 'Photo'}
+                                    alt={photo.title || photo.description || 'Photo'}
                                     className="aspect-square w-full rounded-lg object-cover"
                                 />
 
                                 {/* Overlay with actions */}
                                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition rounded-lg flex flex-col items-center justify-center gap-2 p-2">
-                                    <button
-                                        onClick={() => toggleFeatured(photo.id, photo.is_featured)}
-                                        className={`text-xs px-3 py-1.5 rounded-full font-semibold transition ${photo.is_featured
-                                                ? 'bg-yellow-400 text-yellow-900'
-                                                : 'bg-white/20 text-white hover:bg-white/30'
-                                            }`}
-                                    >
-                                        {photo.is_featured ? '⭐ Featured' : 'Set Featured'}
-                                    </button>
                                     <button
                                         onClick={() => deletePhoto(photo.id)}
                                         className="text-xs px-3 py-1.5 rounded-full bg-red-500 text-white font-semibold hover:bg-red-600 transition"
@@ -232,8 +238,8 @@ export default function AlbumUploadPage() {
                                     </button>
                                 </div>
 
-                                {photo.caption && (
-                                    <p className="text-xs text-slate-600 mt-1 truncate">{photo.caption}</p>
+                                {(photo.title || photo.description) && (
+                                    <p className="text-xs text-slate-600 mt-1 truncate">{photo.title || photo.description}</p>
                                 )}
                             </div>
                         ))}
