@@ -110,8 +110,8 @@ const testimonials = [
   }
 ];
 
-// Placeholder hero images (replace with real images later)
-const heroImages = [
+// Default placeholder hero images (used when no admin-uploaded banners exist)
+const defaultHeroImages = [
   "https://images.unsplash.com/photo-1530549387789-4c1017266635?w=1920&q=80",
   "https://images.unsplash.com/photo-1519315901367-f34ff9154487?w=1920&q=80",
   "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=1920&q=80",
@@ -154,6 +154,35 @@ export default function HomePage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([]);
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
+  const [heroImages, setHeroImages] = useState<string[]>(defaultHeroImages);
+
+  // Fetch admin-uploaded banner images
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/media/assets`);
+        if (response.ok) {
+          const assets = await response.json();
+          const bannerUrls = assets
+            .filter((a: any) => a.key.startsWith("homepage_banner_") && a.media_item?.file_url)
+            .sort((a: any, b: any) => {
+              const orderA = parseInt(a.key.split("_").pop() || "0");
+              const orderB = parseInt(b.key.split("_").pop() || "0");
+              return orderA - orderB;
+            })
+            .map((a: any) => a.media_item.file_url);
+
+          if (bannerUrls.length > 0) {
+            setHeroImages(bannerUrls);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch banners:", error);
+        // Keep default images on error
+      }
+    };
+    fetchBanners();
+  }, []);
 
   // Rotate hero images
   useEffect(() => {
@@ -161,19 +190,35 @@ export default function HomePage() {
       setCurrentImageIndex((prev) => (prev + 1) % heroImages.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [heroImages.length]);
 
-  // Fetch gallery photos
+  // Fetch community showcase photos (from admin-configured assets)
   useEffect(() => {
     const fetchPhotos = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/media/media?limit=6`);
+        const response = await fetch(`${API_BASE_URL}/api/v1/media/assets`);
         if (response.ok) {
-          const data = await response.json();
-          setGalleryPhotos(data.slice(0, 6));
+          const assets = await response.json();
+          const communityPhotos = assets
+            .filter((a: any) => a.key.startsWith("community_photo_") && a.media_item?.file_url)
+            .sort((a: any, b: any) => {
+              const orderA = parseInt(a.key.split("_").pop() || "0");
+              const orderB = parseInt(b.key.split("_").pop() || "0");
+              return orderA - orderB;
+            })
+            .map((a: any) => ({
+              id: a.id,
+              file_url: a.media_item.file_url,
+              thumbnail_url: a.media_item.thumbnail_url,
+              title: a.description || "SwimBuddz community",
+            }));
+
+          if (communityPhotos.length > 0) {
+            setGalleryPhotos(communityPhotos);
+          }
         }
       } catch (error) {
-        console.error("Failed to fetch gallery photos:", error);
+        console.error("Failed to fetch community photos:", error);
       }
     };
     fetchPhotos();

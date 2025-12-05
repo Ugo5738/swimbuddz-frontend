@@ -12,13 +12,12 @@ import { ClubDetailsStep } from "@/components/registration/ClubDetailsStep";
 import { AcademyDetailsStep } from "@/components/registration/AcademyDetailsStep";
 import { VolunteerInterestsStep } from "@/components/registration/VolunteerInterestsStep";
 import { ReviewConfirmStep } from "@/components/registration/ReviewConfirmStep";
-import { AboutYouStep } from "@/components/registration/AboutYouStep";
 import { apiEndpoints } from "@/lib/config";
 import { apiGet, apiPatch } from "@/lib/api";
 import clsx from "clsx";
 
 type Tier = "community" | "club" | "academy";
-type StepKey = "tier" | "core" | "aboutyou" | "club" | "academy" | "volunteer" | "review";
+type StepKey = "tier" | "core" | "club" | "academy" | "volunteer" | "review";
 
 type Step = {
   key: StepKey;
@@ -214,7 +213,6 @@ function RegisterContent() {
     const visibleSteps: Step[] = [
       { key: "tier", title: "Choose Tier", required: true },
       { key: "core", title: "Core Profile", required: true },
-      { key: "aboutyou", title: "About You", required: true },
     ];
 
     if (formData.membershipTier === "club" || formData.membershipTier === "academy") {
@@ -294,11 +292,7 @@ function RegisterContent() {
           formData.academyLessonPreference
         );
 
-      case "aboutyou":
-        return Boolean(
-          formData.hopesFromSwimbuddz &&
-          formData.communityRulesAccepted
-        );
+
 
       case "volunteer":
         return true; // Optional step
@@ -395,10 +389,10 @@ function RegisterContent() {
         // About You (Vetting)
         occupation: formData.occupation,
         area_in_lagos: formData.areaInLagos,
-        how_found_us: formData.howFoundUs,
+        how_found_us: formData.discoverySource, // Map discovery source to vetting question
         previous_communities: formData.previousCommunities,
         hopes_from_swimbuddz: formData.hopesFromSwimbuddz,
-        community_rules_accepted: formData.communityRulesAccepted,
+        community_rules_accepted: true, // Accepted in Review step
 
         // Volunteer
         volunteer_interest: formData.volunteerInterest,
@@ -464,36 +458,15 @@ function RegisterContent() {
               swimLevel: formData.swimLevel,
               discoverySource: formData.discoverySource,
               profilePhotoUrl: formData.profilePhotoUrl,
+              occupation: formData.occupation,
+              areaInLagos: formData.areaInLagos,
+              previousCommunities: formData.previousCommunities,
             }}
             onUpdate={updateField}
           />
         );
 
-      case "aboutyou":
-        return (
-          <AboutYouStep
-            formData={{
-              occupation: formData.occupation,
-              area_in_lagos: formData.areaInLagos,
-              how_found_us: formData.howFoundUs,
-              previous_communities: formData.previousCommunities,
-              hopes_from_swimbuddz: formData.hopesFromSwimbuddz,
-              community_rules_accepted: formData.communityRulesAccepted,
-            }}
-            onUpdate={(field, value) => {
-              // Map snake_case back to camelCase for form state
-              const fieldMap: Record<string, string> = {
-                occupation: "occupation",
-                area_in_lagos: "areaInLagos",
-                how_found_us: "howFoundUs",
-                previous_communities: "previousCommunities",
-                hopes_from_swimbuddz: "hopesFromSwimbuddz",
-                community_rules_accepted: "communityRulesAccepted",
-              };
-              updateField(fieldMap[field] || field, value);
-            }}
-          />
-        );
+
 
       case "club":
         return (
@@ -541,6 +514,7 @@ function RegisterContent() {
               currencyPreference: formData.currencyPreference,
               paymentNotes: formData.paymentNotes || "",
               consentPhoto: formData.consentPhoto,
+              hopesFromSwimbuddz: formData.hopesFromSwimbuddz,
             }}
             onToggleMulti={toggleMultiValue}
             onUpdate={updateField}

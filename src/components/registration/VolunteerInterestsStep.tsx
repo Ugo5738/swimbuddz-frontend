@@ -26,6 +26,7 @@ interface VolunteerInterestsStepProps {
         currencyPreference: string;
         paymentNotes: string;
         consentPhoto: string;
+        hopesFromSwimbuddz?: string;
     };
     onToggleMulti: (field: string, value: string) => void;
     onUpdate: (field: string, value: any) => void;
@@ -65,6 +66,17 @@ export function VolunteerInterestsStep({
                     Tell us a bit more about yourself to help us personalize your experience.
                 </p>
             </div>
+
+            {/* Hopes from SwimBuddz */}
+            <Textarea
+                label="What do you hope to get from SwimBuddz?"
+                name="hopesFromSwimbuddz"
+                value={formData.hopesFromSwimbuddz || ""}
+                onChange={(e) => onUpdate("hopesFromSwimbuddz", e.target.value)}
+                placeholder="e.g., Learn to swim, improve my technique, meet like-minded people, stay fit..."
+                rows={3}
+                required
+            />
 
             {/* Social Media */}
             <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4">

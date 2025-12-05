@@ -22,6 +22,9 @@ interface CoreProfileStepProps {
         swimLevel: string;
         discoverySource: string;
         profilePhotoUrl?: string;
+        occupation?: string;
+        areaInLagos?: string;
+        previousCommunities?: string;
     };
     onUpdate: (field: string, value: any) => void;
 }
@@ -231,6 +234,16 @@ export function CoreProfileStep({ formData, onUpdate }: CoreProfileStepProps) {
                 />
             </div>
 
+            {/* Address / Area */}
+            <Input
+                label="Address"
+                name="areaInLagos"
+                value={formData.areaInLagos || ""}
+                onChange={(e) => onUpdate("areaInLagos", e.target.value)}
+                placeholder="e.g. Lekki, Yaba"
+                hint="Helps us coordinate sessions and ride-shares"
+            />
+
             {/* Location */}
             <div className="grid gap-4 md:grid-cols-2">
                 <Select
@@ -268,6 +281,16 @@ export function CoreProfileStep({ formData, onUpdate }: CoreProfileStepProps) {
                 </Select>
             </div>
 
+            {/* Occupation */}
+            <Input
+                label="Occupation"
+                name="occupation"
+                value={formData.occupation || ""}
+                onChange={(e) => onUpdate("occupation", e.target.value)}
+                placeholder="e.g. Software Engineer"
+                hint="This helps us understand our community better"
+            />
+
             {/* Swimming Level */}
             <Select
                 label="Current Swimming Level"
@@ -286,7 +309,7 @@ export function CoreProfileStep({ formData, onUpdate }: CoreProfileStepProps) {
 
             {/* Discovery Source */}
             <Select
-                label="How did you hear about SwimBuddz?"
+                label="How did you find out about SwimBuddz?"
                 name="discoverySource"
                 value={formData.discoverySource}
                 onChange={(e) => onUpdate("discoverySource", e.target.value)}
@@ -299,6 +322,21 @@ export function CoreProfileStep({ formData, onUpdate }: CoreProfileStepProps) {
                 <option value="event">Event/Beach Day</option>
                 <option value="other">Other</option>
             </Select>
+
+            {/* Previous Communities */}
+            <div className="space-y-1">
+                <label className="block text-sm font-medium text-slate-700">
+                    Previous Sports/Fitness Communities
+                </label>
+                <textarea
+                    name="previousCommunities"
+                    value={formData.previousCommunities || ""}
+                    onChange={(e) => onUpdate("previousCommunities", e.target.value)}
+                    placeholder="Tell us about any gyms, clubs, or groups you've been part of..."
+                    rows={3}
+                    className="flex w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+            </div>
         </div>
     );
 }

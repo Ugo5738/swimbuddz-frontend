@@ -73,6 +73,16 @@ export async function middleware(request: NextRequest) {
                 return NextResponse.redirect(new URL("/login", request.url));
             }
 
+            // Check if user is admin (by email)
+            const userEmail = session.user?.email;
+            const adminEmail = process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+            const isAdmin = userEmail && adminEmail && userEmail.toLowerCase() === adminEmail.toLowerCase();
+
+            // Admin users bypass all approval checks
+            if (isAdmin) {
+                return response;
+            }
+
             // Fetch member profile to check approval status
             const memberResponse = await fetch(
                 `${process.env.API_BASE_URL || "http://localhost:8000"}/api/v1/members/me`,
@@ -86,7 +96,12 @@ export async function middleware(request: NextRequest) {
             if (memberResponse.ok) {
                 const member = await memberResponse.json();
 
-                // Check approval status
+                // Check if member has admin role (legacy check)
+                if (member.role === "admin" || member.is_admin) {
+                    return response;
+                }
+
+                // Check approval status for non-admin members
                 if (member.approval_status === "pending") {
                     // Redirect pending members to the waiting page
                     if (pathname !== "/register/pending") {
@@ -119,6 +134,10 @@ export async function middleware(request: NextRequest) {
                         );
                     }
                 }
+            } else if (memberResponse.status === 404 && isAdminRoute) {
+                // No member profile but trying to access admin - might be admin-only user
+                // Allow through and let the admin page handle authorization
+                return response;
             }
         } catch (error) {
             console.error("Middleware error:", error);

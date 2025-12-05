@@ -55,6 +55,10 @@ interface ReviewConfirmStepProps {
         volunteerInterest?: string[];
         showInDirectory: boolean;
         interestTags?: string[];
+        occupation?: string;
+        areaInLagos?: string;
+        previousCommunities?: string;
+        hopesFromSwimbuddz?: string;
     };
     acceptedTerms: boolean;
     onAcceptTerms: (accepted: boolean) => void;
@@ -181,6 +185,30 @@ export function ReviewConfirmStep({
                                 {humanize(formData.paymentReadiness || "--")}
                             </dd>
                         </div>
+                        {formData.occupation && (
+                            <div className="grid grid-cols-3 gap-2">
+                                <dt className="text-slate-600">Occupation:</dt>
+                                <dd className="col-span-2 font-medium text-slate-900">
+                                    {formData.occupation}
+                                </dd>
+                            </div>
+                        )}
+                        {formData.areaInLagos && (
+                            <div className="grid grid-cols-3 gap-2">
+                                <dt className="text-slate-600">Area in Lagos:</dt>
+                                <dd className="col-span-2 font-medium text-slate-900">
+                                    {formData.areaInLagos}
+                                </dd>
+                            </div>
+                        )}
+                        {formData.previousCommunities && (
+                            <div className="grid grid-cols-3 gap-2">
+                                <dt className="text-slate-600">Prev. Communities:</dt>
+                                <dd className="col-span-2 font-medium text-slate-900">
+                                    {formData.previousCommunities}
+                                </dd>
+                            </div>
+                        )}
                     </dl>
                 </div>
 
@@ -364,6 +392,12 @@ export function ReviewConfirmStep({
                             <div className="grid grid-cols-3 gap-2">
                                 <dt className="text-slate-600">Payment notes:</dt>
                                 <dd className="col-span-2 font-medium text-slate-900">{formData.paymentNotes}</dd>
+                            </div>
+                        ) : null}
+                        {formData.hopesFromSwimbuddz ? (
+                            <div className="grid grid-cols-3 gap-2">
+                                <dt className="text-slate-600">Hopes from SwimBuddz:</dt>
+                                <dd className="col-span-2 font-medium text-slate-900">{formData.hopesFromSwimbuddz}</dd>
                             </div>
                         ) : null}
                     </dl>

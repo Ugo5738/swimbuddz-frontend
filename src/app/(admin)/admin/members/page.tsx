@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { supabase } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
+import { CheckCircle, XCircle, Clock, Eye, Pencil, Trash2, UserPlus } from "lucide-react";
 
 // Define Member type based on backend response
 interface Member {
@@ -21,6 +22,10 @@ interface Member {
     location_preference: string[];
     registration_complete: boolean;
     is_active: boolean;
+    approval_status: "pending" | "approved" | "rejected";
+    approved_at?: string;
+    approved_by?: string;
+    approval_notes?: string;
 
     // Additional comprehensive fields
     membership_tier?: string;
@@ -35,12 +40,22 @@ interface Member {
     profile_photo_url?: string;
     date_of_birth?: string;
     gender?: string;
+
+    // Vetting fields
+    occupation?: string;
+    area_in_lagos?: string;
+    how_found_us?: string;
+    previous_communities?: string;
+    hopes_from_swimbuddz?: string;
 }
+
+type FilterTab = "all" | "pending" | "approved" | "rejected";
 
 export default function AdminMembersPage() {
     const [members, setMembers] = useState<Member[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [filterTab, setFilterTab] = useState<FilterTab>("all");
 
     // Create Modal State
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -48,6 +63,12 @@ export default function AdminMembersPage() {
     // Edit Modal State
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingMember, setEditingMember] = useState<Member | null>(null);
+
+    // Approval Modal State
+    const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
+    const [approvingMember, setApprovingMember] = useState<Member | null>(null);
+    const [approvalNotes, setApprovalNotes] = useState("");
+    const [approvalAction, setApprovalAction] = useState<"approve" | "reject">("approve");
 
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -148,6 +169,13 @@ export default function AdminMembersPage() {
         setIsEditModalOpen(true);
     };
 
+    const openApprovalModal = (member: Member, action: "approve" | "reject") => {
+        setApprovingMember(member);
+        setApprovalAction(action);
+        setApprovalNotes("");
+        setIsApprovalModalOpen(true);
+    };
+
     const handleCreateMember = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -160,6 +188,7 @@ export default function AdminMembersPage() {
                 auth_id,
                 location_preference: [formData.location_preference], // Backend expects list
                 registration_complete: true,
+                approval_status: "approved", // Admin-created members are auto-approved
             };
 
             const { data: { session } } = await supabase.auth.getSession();
@@ -228,6 +257,43 @@ export default function AdminMembersPage() {
         }
     };
 
+    const handleApprovalAction = async () => {
+        if (!approvingMember) return;
+
+        setIsSubmitting(true);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+
+            const endpoint = approvalAction === "approve"
+                ? `${API_BASE_URL}/api/v1/admin/members/${approvingMember.id}/approve`
+                : `${API_BASE_URL}/api/v1/admin/members/${approvingMember.id}/reject`;
+
+            const res = await fetch(endpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ notes: approvalNotes }),
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.detail || `Failed to ${approvalAction} member`);
+            }
+
+            await fetchMembers();
+            setIsApprovalModalOpen(false);
+            setApprovingMember(null);
+            setApprovalNotes("");
+        } catch (err) {
+            alert(err instanceof Error ? err.message : `Failed to ${approvalAction} member`);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const handleDeleteMember = async (memberId: string, memberName: string) => {
         if (!confirm(`Are you sure you want to delete ${memberName}? This action cannot be undone.`)) {
             return;
@@ -252,25 +318,114 @@ export default function AdminMembersPage() {
         }
     };
 
+    // Filter members based on selected tab
+    const filteredMembers = members.filter(member => {
+        if (filterTab === "all") return true;
+        return member.approval_status === filterTab;
+    });
+
+    // Count for each status
+    const counts = {
+        all: members.length,
+        pending: members.filter(m => m.approval_status === "pending").length,
+        approved: members.filter(m => m.approval_status === "approved").length,
+        rejected: members.filter(m => m.approval_status === "rejected").length,
+    };
+
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case "approved":
+                return (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
+                        <CheckCircle className="h-3 w-3" />
+                        Approved
+                    </span>
+                );
+            case "rejected":
+                return (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700">
+                        <XCircle className="h-3 w-3" />
+                        Rejected
+                    </span>
+                );
+            default:
+                return (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
+                        <Clock className="h-3 w-3" />
+                        Pending
+                    </span>
+                );
+        }
+    };
+
     return (
         <div className="space-y-6">
             <header className="flex items-center justify-between">
                 <div className="space-y-2">
                     <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">Admin</p>
                     <h1 className="text-4xl font-bold text-slate-900">Members</h1>
-                    <p className="text-sm text-slate-600">Manage community members.</p>
+                    <p className="text-sm text-slate-600">Manage community members and approve registrations.</p>
                 </div>
-                <Button onClick={openCreateModal}>Create Member</Button>
+                <Button onClick={openCreateModal} className="flex items-center gap-2">
+                    <UserPlus className="h-4 w-4" />
+                    Create Member
+                </Button>
             </header>
+
+            {/* Filter Tabs */}
+            <div className="flex gap-2 border-b border-slate-200">
+                {(["all", "pending", "approved", "rejected"] as FilterTab[]).map((tab) => (
+                    <button
+                        key={tab}
+                        onClick={() => setFilterTab(tab)}
+                        className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${filterTab === tab
+                            ? "text-cyan-700"
+                            : "text-slate-500 hover:text-slate-700"
+                            }`}
+                    >
+                        <span className="capitalize">{tab}</span>
+                        <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${filterTab === tab
+                            ? "bg-cyan-100 text-cyan-700"
+                            : "bg-slate-100 text-slate-500"
+                            }`}>
+                            {counts[tab]}
+                        </span>
+                        {filterTab === tab && (
+                            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-600" />
+                        )}
+                    </button>
+                ))}
+            </div>
+
+            {/* Pending Approval Alert */}
+            {counts.pending > 0 && filterTab !== "pending" && (
+                <div className="p-4 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <Clock className="h-5 w-5 text-amber-600" />
+                        <span className="text-amber-800">
+                            <strong>{counts.pending}</strong> member{counts.pending > 1 ? "s" : ""} awaiting approval
+                        </span>
+                    </div>
+                    <Button
+                        variant="secondary"
+                        onClick={() => setFilterTab("pending")}
+                        className="text-sm"
+                    >
+                        Review Now
+                    </Button>
+                </div>
+            )}
 
             <Card>
                 {isLoading ? (
                     <div className="p-4 text-center text-slate-500">Loading members...</div>
                 ) : error ? (
                     <div className="p-4 text-center text-red-500">Error: {error}</div>
-                ) : members.length === 0 ? (
+                ) : filteredMembers.length === 0 ? (
                     <div className="p-8 text-center text-slate-500">
-                        No members found. Create one to get started.
+                        {filterTab === "all"
+                            ? "No members found. Create one to get started."
+                            : `No ${filterTab} members found.`}
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
@@ -279,14 +434,14 @@ export default function AdminMembersPage() {
                                 <tr>
                                     <th className="px-4 py-3 font-semibold">Name</th>
                                     <th className="px-4 py-3 font-semibold">Contact</th>
+                                    <th className="px-4 py-3 font-semibold">Tier</th>
                                     <th className="px-4 py-3 font-semibold">Level</th>
-                                    <th className="px-4 py-3 font-semibold">Location</th>
                                     <th className="px-4 py-3 font-semibold">Status</th>
                                     <th className="px-4 py-3 font-semibold">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200">
-                                {members.map((member) => (
+                                {filteredMembers.map((member) => (
                                     <tr key={member.id} className="hover:bg-slate-50">
                                         <td className="px-4 py-3 font-medium text-slate-900">
                                             <Link href={`/admin/members/${member.id}`} className="hover:underline hover:text-cyan-700">
@@ -299,41 +454,56 @@ export default function AdminMembersPage() {
                                                 <span className="text-xs text-slate-400">{member.phone}</span>
                                             </div>
                                         </td>
+                                        <td className="px-4 py-3">
+                                            <span className="capitalize">{member.membership_tier || "community"}</span>
+                                        </td>
                                         <td className="px-4 py-3">{member.swim_level}</td>
                                         <td className="px-4 py-3">
-                                            {Array.isArray(member.location_preference)
-                                                ? member.location_preference.join(", ")
-                                                : member.location_preference}
+                                            {getStatusBadge(member.approval_status)}
                                         </td>
                                         <td className="px-4 py-3">
-                                            <span
-                                                className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${member.registration_complete
-                                                    ? "bg-green-50 text-green-700"
-                                                    : "bg-yellow-50 text-yellow-700"
-                                                    }`}
-                                            >
-                                                {member.registration_complete ? "Active" : "Pending"}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex gap-3">
+                                            <div className="flex items-center gap-2">
                                                 <Link
                                                     href={`/admin/members/${member.id}`}
-                                                    className="text-slate-600 hover:text-slate-900 hover:underline"
+                                                    className="p-1.5 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-700"
+                                                    title="View"
                                                 >
-                                                    View
+                                                    <Eye className="h-4 w-4" />
                                                 </Link>
                                                 <button
                                                     onClick={() => openEditModal(member)}
-                                                    className="text-cyan-600 hover:text-cyan-800 hover:underline"
+                                                    className="p-1.5 rounded hover:bg-slate-100 text-slate-500 hover:text-cyan-600"
+                                                    title="Edit"
                                                 >
-                                                    Edit
+                                                    <Pencil className="h-4 w-4" />
                                                 </button>
+
+                                                {/* Approve/Reject buttons for pending members */}
+                                                {member.approval_status === "pending" && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => openApprovalModal(member, "approve")}
+                                                            className="p-1.5 rounded hover:bg-green-50 text-green-600 hover:text-green-700"
+                                                            title="Approve"
+                                                        >
+                                                            <CheckCircle className="h-4 w-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => openApprovalModal(member, "reject")}
+                                                            className="p-1.5 rounded hover:bg-red-50 text-red-500 hover:text-red-600"
+                                                            title="Reject"
+                                                        >
+                                                            <XCircle className="h-4 w-4" />
+                                                        </button>
+                                                    </>
+                                                )}
+
                                                 <button
                                                     onClick={() => handleDeleteMember(member.id, `${member.first_name} ${member.last_name}`)}
-                                                    className="text-red-600 hover:text-red-800 hover:underline"
+                                                    className="p-1.5 rounded hover:bg-red-50 text-slate-400 hover:text-red-600"
+                                                    title="Delete"
                                                 >
-                                                    Delete
+                                                    <Trash2 className="h-4 w-4" />
                                                 </button>
                                             </div>
                                         </td>
@@ -344,6 +514,72 @@ export default function AdminMembersPage() {
                     </div>
                 )}
             </Card>
+
+            {/* Approval Modal */}
+            <Modal
+                isOpen={isApprovalModalOpen}
+                onClose={() => setIsApprovalModalOpen(false)}
+                title={approvalAction === "approve" ? "Approve Member" : "Reject Member"}
+            >
+                <div className="space-y-4">
+                    <p className="text-slate-600">
+                        {approvalAction === "approve"
+                            ? `Are you sure you want to approve ${approvingMember?.first_name} ${approvingMember?.last_name}?`
+                            : `Are you sure you want to reject ${approvingMember?.first_name} ${approvingMember?.last_name}?`}
+                    </p>
+
+                    {/* Show vetting info if available */}
+                    {approvingMember && (approvingMember.occupation || approvingMember.area_in_lagos || approvingMember.how_found_us) && (
+                        <div className="rounded-lg bg-slate-50 p-4 space-y-2">
+                            <p className="text-sm font-semibold text-slate-700">Application Details:</p>
+                            {approvingMember.occupation && (
+                                <p className="text-sm"><strong>Occupation:</strong> {approvingMember.occupation}</p>
+                            )}
+                            {approvingMember.area_in_lagos && (
+                                <p className="text-sm"><strong>Area in Lagos:</strong> {approvingMember.area_in_lagos}</p>
+                            )}
+                            {approvingMember.how_found_us && (
+                                <p className="text-sm"><strong>How found us:</strong> {approvingMember.how_found_us}</p>
+                            )}
+                            {approvingMember.hopes_from_swimbuddz && (
+                                <p className="text-sm"><strong>Hopes:</strong> {approvingMember.hopes_from_swimbuddz}</p>
+                            )}
+                        </div>
+                    )}
+
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                            {approvalAction === "approve" ? "Approval notes (optional)" : "Reason for rejection (optional)"}
+                        </label>
+                        <textarea
+                            value={approvalNotes}
+                            onChange={(e) => setApprovalNotes(e.target.value)}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"
+                            rows={3}
+                            placeholder={approvalAction === "approve" ? "Any notes about this approval..." : "Reason for rejection..."}
+                        />
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4">
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => setIsApprovalModalOpen(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleApprovalAction}
+                            disabled={isSubmitting}
+                            className={approvalAction === "approve" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}
+                        >
+                            {isSubmitting
+                                ? (approvalAction === "approve" ? "Approving..." : "Rejecting...")
+                                : (approvalAction === "approve" ? "Approve Member" : "Reject Member")}
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
 
             {/* Create Modal */}
             <Modal
@@ -396,17 +632,19 @@ export default function AdminMembersPage() {
                             <option value="Pro">Pro</option>
                         </Select>
                         <Select
-                            label="Location Preference"
-                            name="location_preference"
-                            value={formData.location_preference}
+                            label="Membership Tier"
+                            name="membership_tier"
+                            value={formData.membership_tier}
                             onChange={handleInputChange}
                         >
-                            <option value="Ikoyi">Ikoyi</option>
-                            <option value="Lekki">Lekki</option>
-                            <option value="V.I.">V.I.</option>
-                            <option value="Ikeja">Ikeja</option>
+                            <option value="community">Community</option>
+                            <option value="club">Club</option>
+                            <option value="academy">Academy</option>
                         </Select>
                     </div>
+                    <p className="text-xs text-slate-500 bg-slate-50 p-2 rounded">
+                        Note: Admin-created members are automatically approved.
+                    </p>
                     <div className="flex justify-end gap-3 pt-4">
                         <Button
                             type="button"
@@ -475,22 +713,6 @@ export default function AdminMembersPage() {
                             <option value="Pro">Pro</option>
                         </Select>
                         <Select
-                            label="Location Preference"
-                            name="location_preference"
-                            value={formData.location_preference}
-                            onChange={handleInputChange}
-                        >
-                            <option value="Ikoyi">Ikoyi</option>
-                            <option value="Lekki">Lekki</option>
-                            <option value="V.I.">V.I.</option>
-                            <option value="Ikeja">Ikeja</option>
-                        </Select>
-                    </div>
-
-                    {/* Membership Management */}
-                    <div className="border-t pt-4">
-                        <h3 className="text-sm font-semibold mb-3 text-slate-700">Membership</h3>
-                        <Select
                             label="Membership Tier"
                             name="membership_tier"
                             value={formData.membership_tier}
@@ -538,32 +760,6 @@ export default function AdminMembersPage() {
                                 onChange={handleInputChange}
                             />
                         </div>
-                    </div>
-
-                    {/* Medical Info */}
-                    <div className="border-t pt-4">
-                        <h3 className="text-sm font-semibold mb-3 text-slate-700">Medical Information</h3>
-                        <textarea
-                            name="medical_info"
-                            value={formData.medical_info}
-                            onChange={(e) => setFormData({ ...formData, medical_info: e.target.value })}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"
-                            rows={3}
-                            placeholder="Any medical conditions or allergies..."
-                        />
-                    </div>
-
-                    {/* Goals */}
-                    <div className="border-t pt-4">
-                        <h3 className="text-sm font-semibold mb-3 text-slate-700">Goals</h3>
-                        <textarea
-                            name="goals_narrative"
-                            value={formData.goals_narrative}
-                            onChange={(e) => setFormData({ ...formData, goals_narrative: e.target.value })}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"
-                            rows={3}
-                            placeholder="Swimming goals..."
-                        />
                     </div>
 
                     <div className="flex justify-end gap-3 pt-4">

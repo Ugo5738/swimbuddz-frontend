@@ -15,12 +15,15 @@ import {
   CalendarDays,
   AlertCircle,
   ArrowRight,
-  Activity
+  Activity,
+  Clock
 } from "lucide-react";
 
 interface DashboardStats {
   total_members: number;
   active_members: number;
+  approved_members: number;
+  pending_approvals: number;
   upcoming_sessions_count: number;
   recent_announcements_count: number;
 }
@@ -152,7 +155,30 @@ export default function AdminDashboardPage() {
       </header>
 
       {/* Stats Grid */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
+        {/* Pending Approvals - Highlighted */}
+        <Card className="overflow-hidden border-l-4 border-l-amber-500 transition-shadow hover:shadow-lg bg-amber-50/50">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-amber-700">Pending Approvals</p>
+              <p className="text-3xl font-bold text-amber-900">{stats?.pending_approvals || 0}</p>
+            </div>
+            <div className="rounded-full bg-amber-100 p-3">
+              <Clock className="h-6 w-6 text-amber-600" />
+            </div>
+          </div>
+          {(stats?.pending_approvals || 0) > 0 ? (
+            <Link
+              href="/admin/members?filter=pending"
+              className="mt-4 flex items-center gap-1 text-sm font-medium text-amber-700 hover:text-amber-800"
+            >
+              Review now <ArrowRight className="h-4 w-4" />
+            </Link>
+          ) : (
+            <p className="mt-4 text-sm text-amber-600">All caught up!</p>
+          )}
+        </Card>
+
         <Card className="overflow-hidden border-l-4 border-l-cyan-500 transition-shadow hover:shadow-lg">
           <div className="flex items-start justify-between">
             <div className="space-y-1">
@@ -174,8 +200,8 @@ export default function AdminDashboardPage() {
         <Card className="overflow-hidden border-l-4 border-l-green-500 transition-shadow hover:shadow-lg">
           <div className="flex items-start justify-between">
             <div className="space-y-1">
-              <p className="text-sm font-medium text-slate-600">Active Members</p>
-              <p className="text-3xl font-bold text-slate-900">{stats?.active_members || 0}</p>
+              <p className="text-sm font-medium text-slate-600">Approved Members</p>
+              <p className="text-3xl font-bold text-slate-900">{stats?.approved_members || 0}</p>
             </div>
             <div className="rounded-full bg-green-100 p-3">
               <UserCheck className="h-6 w-6 text-green-600" />
@@ -183,7 +209,7 @@ export default function AdminDashboardPage() {
           </div>
           <div className="mt-4 flex items-center gap-1 text-sm text-slate-500">
             <TrendingUp className="h-4 w-4" />
-            <span>Recently active</span>
+            <span>Active members</span>
           </div>
         </Card>
 
@@ -369,10 +395,10 @@ export default function AdminDashboardPage() {
                         <td className="py-3">
                           <span
                             className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${enrollment.status === "active"
-                                ? "bg-green-100 text-green-700"
-                                : enrollment.status === "pending"
-                                  ? "bg-yellow-100 text-yellow-700"
-                                  : "bg-slate-100 text-slate-700"
+                              ? "bg-green-100 text-green-700"
+                              : enrollment.status === "pending"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-slate-100 text-slate-700"
                               }`}
                           >
                             {enrollment.status}
