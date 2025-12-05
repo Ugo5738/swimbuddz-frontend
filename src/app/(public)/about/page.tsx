@@ -265,29 +265,72 @@ export default function AboutPage() {
       </section>
 
       {/* OUR VISION */}
-      <section className="rounded-3xl bg-gradient-to-br from-cyan-600 to-cyan-700 px-8 py-12 text-white">
-        <div className="space-y-6 max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl font-bold">Our Vision</h2>
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-cyan-500 via-cyan-600 to-blue-700 px-8 py-16 text-white md:py-20">
+        {/* Wave decoration at top */}
+        <div className="absolute top-0 left-0 right-0 text-cyan-400/30">
+          <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full rotate-180 h-12 md:h-16">
+            <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" fill="currentColor" opacity="0.5" />
+          </svg>
+        </div>
+
+        {/* Decorative elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-24 -right-24 h-80 w-80 rounded-full bg-white/10 blur-3xl" />
+          <div className="absolute -bottom-32 -left-32 h-64 w-64 rounded-full bg-cyan-300/20 blur-3xl" />
+        </div>
+
+        <div className="relative z-10 space-y-8 max-w-3xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm px-4 py-2 text-sm font-medium">
+            <span className="text-lg">🌍</span>
+            Looking Ahead
+          </div>
+
+          <h2 className="text-3xl font-bold md:text-4xl">Our Vision</h2>
           <p className="text-xl text-cyan-50">
             We imagine a world where:
           </p>
-          <ul className="space-y-3 text-lg text-left text-cyan-50">
-            <li className="flex items-start gap-3">
-              <span className="mt-1">•</span>
-              <span>More adults are comfortable and confident in the water.</span>
+
+          <ul className="space-y-4 text-lg text-left max-w-2xl mx-auto">
+            <li className="flex items-start gap-4 bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+              <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/20 text-xl">
+                💧
+              </span>
+              <span className="text-cyan-50 pt-1">More adults are comfortable and confident in the water.</span>
             </li>
-            <li className="flex items-start gap-3">
-              <span className="mt-1">•</span>
-              <span>Swimming is seen as a normal part of a healthy lifestyle.</span>
+            <li className="flex items-start gap-4 bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+              <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/20 text-xl">
+                🏊
+              </span>
+              <span className="text-cyan-50 pt-1">Swimming is seen as a normal part of a healthy lifestyle.</span>
             </li>
-            <li className="flex items-start gap-3">
-              <span className="mt-1">•</span>
-              <span>Community, not isolation, is what keeps people going.</span>
+            <li className="flex items-start gap-4 bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+              <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/20 text-xl">
+                🤝
+              </span>
+              <span className="text-cyan-50 pt-1">Community, not isolation, is what keeps people going.</span>
             </li>
           </ul>
-          <p className="text-xl text-white pt-4">
-            <strong>SwimBuddz is our way of building that future</strong> — one swimmer, one session, one shared experience at a time.
-          </p>
+
+          <div className="pt-6">
+            <p className="text-xl text-white font-semibold">
+              <strong>SwimBuddz is our way of building that future</strong>
+            </p>
+            <p className="text-cyan-100 mt-2">
+              — one swimmer, one session, one shared experience at a time.
+            </p>
+          </div>
+
+          <div className="pt-4">
+            <Link
+              href="/register"
+              className="inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-lg font-semibold text-cyan-700 transition-all hover:bg-cyan-50 hover:scale-105 hover:shadow-xl hover:shadow-cyan-900/20"
+            >
+              Join SwimBuddz
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
         </div>
       </section>
     </div>

@@ -5,17 +5,20 @@ const whoSwimBudzIsFor = [
   {
     title: "Beginners",
     description: "Start from zero in a safe, supportive environment. Learn water confidence, breathing and basic strokes.",
-    icon: "🌊"
+    icon: "🌊",
+    gradient: "from-cyan-400 to-blue-500"
   },
   {
     title: "Fitness Swimmers",
     description: "Improve your technique, build endurance, and stay consistent with weekly group sessions.",
-    icon: "💪"
+    icon: "💪",
+    gradient: "from-emerald-400 to-teal-500"
   },
   {
     title: "Competitive / Ocean Curious",
     description: "Explore more advanced training, challenges and open-water goals over time.",
-    icon: "🏊"
+    icon: "🏊",
+    gradient: "from-purple-400 to-indigo-500"
   }
 ];
 
@@ -31,7 +34,8 @@ const tiers = [
       "Volunteer opportunities"
     ],
     pricing: "Free",
-    link: "/community"
+    link: "/community",
+    accent: "cyan"
   },
   {
     name: "Club",
@@ -44,7 +48,9 @@ const tiers = [
       "Everything in Community"
     ],
     pricing: "Pay-per-session",
-    link: "/club"
+    link: "/club",
+    accent: "blue",
+    featured: true
   },
   {
     name: "Academy",
@@ -57,7 +63,8 @@ const tiers = [
       "Everything in Community & Club"
     ],
     pricing: "Per cohort",
-    link: "/academy"
+    link: "/academy",
+    accent: "purple"
   }
 ];
 
@@ -99,39 +106,96 @@ const testimonials = [
   }
 ];
 
+// Wave SVG component for decorative borders
+function WaveDecoration({ className = "", flip = false }: { className?: string; flip?: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 1200 120"
+      preserveAspectRatio="none"
+      className={`w-full ${flip ? 'rotate-180' : ''} ${className}`}
+    >
+      <path
+        d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z"
+        fill="currentColor"
+        opacity="0.25"
+      />
+      <path
+        d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z"
+        fill="currentColor"
+        opacity="0.5"
+      />
+      <path
+        d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,googl172.46-45.71,248.8-84.81V0Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
 export default function HomePage() {
   return (
-    <div className="space-y-16">
+    <div className="space-y-20">
       {/* 1. HERO SECTION */}
-      <section className="space-y-6 rounded-3xl bg-gradient-to-br from-cyan-600 to-cyan-700 px-8 py-16 text-white shadow-xl">
-        <h1 className="text-4xl font-bold md:text-5xl lg:text-6xl">
-          Learn, train, and enjoy swimming with our swimming community.
-        </h1>
-        <p className="text-xl text-cyan-50 max-w-3xl md:text-2xl">
-          SwimBuddz connects beginners, fitness swimmers, and competitors in a structured but friendly swim community.
-        </p>
-        <p className="text-sm font-semibold tracking-wide text-cyan-100">
-          Building globally • Currently active in Lagos
-        </p>
-        <div className="flex flex-col gap-4 sm:flex-row pt-4">
-          <Link
-            href="/register"
-            className="rounded-full bg-white px-8 py-4 text-center text-lg font-semibold text-cyan-700 hover:bg-slate-50 transition shadow-lg"
-          >
-            Join SwimBuddz
-          </Link>
-          <Link
-            href="/sessions-and-events"
-            className="rounded-full border-2 border-white px-8 py-4 text-center text-lg font-semibold text-white hover:bg-white/10 transition"
-          >
-            View Upcoming Sessions
-          </Link>
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-cyan-500 via-cyan-600 to-blue-700 px-6 py-16 text-white shadow-2xl md:px-12 md:py-24">
+        {/* Decorative background elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          {/* Animated gradient orbs */}
+          <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-white/10 blur-3xl animate-pulse" />
+          <div className="absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-cyan-300/20 blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+
+          {/* Wave pattern at bottom */}
+          <div className="absolute bottom-0 left-0 right-0 text-cyan-400/30">
+            <WaveDecoration />
+          </div>
+
+          {/* Subtle grid overlay */}
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px]" />
+        </div>
+
+        <div className="relative z-10 max-w-4xl space-y-6">
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm px-4 py-2 text-sm font-medium">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+            </span>
+            Building globally • Currently active in Lagos
+          </div>
+
+          <h1 className="text-4xl font-bold leading-tight md:text-5xl lg:text-6xl">
+            Learn, train, and enjoy swimming with{" "}
+            <span className="relative">
+              <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-cyan-200 to-white">
+                our swimming community
+              </span>
+              <span className="absolute bottom-1 left-0 right-0 h-3 bg-cyan-300/30 -z-0 rounded" />
+            </span>
+          </h1>
+
+          <p className="text-lg text-cyan-50 max-w-2xl md:text-xl lg:text-2xl">
+            SwimBuddz connects beginners, fitness swimmers, and competitors in a structured but friendly swim community.
+          </p>
+
+          <div className="flex flex-col gap-4 sm:flex-row pt-4">
+            <Link
+              href="/register"
+              className="group relative inline-flex items-center justify-center rounded-full bg-white px-8 py-4 text-lg font-semibold text-cyan-700 transition-all hover:bg-cyan-50 hover:scale-105 hover:shadow-xl hover:shadow-cyan-900/20"
+            >
+              <span className="relative z-10">Join SwimBuddz</span>
+              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-200 to-white opacity-0 group-hover:opacity-20 transition-opacity" />
+            </Link>
+            <Link
+              href="/sessions-and-events"
+              className="inline-flex items-center justify-center rounded-full border-2 border-white/50 backdrop-blur-sm px-8 py-4 text-lg font-semibold text-white transition-all hover:bg-white/10 hover:border-white hover:scale-105"
+            >
+              View Upcoming Sessions
+            </Link>
+          </div>
         </div>
       </section>
 
       {/* 2. WHO SWIMBUDDZ IS FOR */}
-      <section className="space-y-8">
-        <div className="text-center space-y-3">
+      <section className="space-y-10">
+        <div className="text-center space-y-4">
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
             For Everyone
           </p>
@@ -141,18 +205,23 @@ export default function HomePage() {
         </div>
         <div className="grid gap-6 md:grid-cols-3">
           {whoSwimBudzIsFor.map((audience) => (
-            <Card key={audience.title} className="space-y-4 text-center">
-              <div className="text-5xl">{audience.icon}</div>
-              <h3 className="text-xl font-semibold text-slate-900">{audience.title}</h3>
-              <p className="text-slate-600">{audience.description}</p>
+            <Card key={audience.title} className="group relative overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
+              <div className={`absolute inset-0 bg-gradient-to-br ${audience.gradient} opacity-0 group-hover:opacity-5 transition-opacity`} />
+              <div className="relative space-y-4 text-center p-6">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 text-4xl shadow-sm">
+                  {audience.icon}
+                </div>
+                <h3 className="text-xl font-semibold text-slate-900">{audience.title}</h3>
+                <p className="text-slate-600">{audience.description}</p>
+              </div>
             </Card>
           ))}
         </div>
       </section>
 
       {/* 3. TIERS OVERVIEW */}
-      <section className="space-y-8">
-        <div className="text-center space-y-3">
+      <section className="space-y-10">
+        <div className="text-center space-y-4">
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
             Three Tiers
           </p>
@@ -163,59 +232,78 @@ export default function HomePage() {
             Start with Community, upgrade to Club for consistent training, or join Academy for structured learning.
           </p>
         </div>
-        <div className="grid gap-8 md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-3">
           {tiers.map((tier) => (
-            <Card key={tier.name} className="space-y-6 relative overflow-hidden">
-              <div>
-                <h3 className="text-2xl font-bold text-cyan-700">{tier.name}</h3>
-                <p className="text-slate-600 mt-2">{tier.description}</p>
-                <p className="text-sm font-semibold text-slate-500 mt-3">{tier.pricing}</p>
+            <Card
+              key={tier.name}
+              className={`relative overflow-hidden transition-all hover:shadow-lg ${tier.featured ? 'ring-2 ring-cyan-500 shadow-lg md:-translate-y-2' : ''
+                }`}
+            >
+              {tier.featured && (
+                <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-cyan-500 to-blue-500 py-1.5 text-center text-xs font-semibold text-white">
+                  Most Popular
+                </div>
+              )}
+              <div className={`space-y-6 ${tier.featured ? 'pt-10' : 'pt-6'} p-6`}>
+                <div>
+                  <h3 className="text-2xl font-bold text-cyan-700">{tier.name}</h3>
+                  <p className="text-slate-600 mt-2">{tier.description}</p>
+                  <p className="text-sm font-semibold text-slate-500 mt-3">{tier.pricing}</p>
+                </div>
+                <ul className="space-y-3">
+                  {tier.benefits.map((benefit, idx) => (
+                    <li key={idx} className="flex items-start gap-3 text-sm">
+                      <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-cyan-100 text-cyan-700">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </span>
+                      <span className="text-slate-700">{benefit}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href={tier.link}
+                  className={`block text-center font-semibold py-3 rounded-xl transition-all ${tier.featured
+                    ? 'bg-cyan-600 text-white hover:bg-cyan-500'
+                    : 'bg-slate-100 text-cyan-700 hover:bg-slate-200'
+                    }`}
+                >
+                  Learn more →
+                </Link>
               </div>
-              <ul className="space-y-3">
-                {tier.benefits.map((benefit, idx) => (
-                  <li key={idx} className="flex items-start gap-2 text-sm">
-                    <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-cyan-100 text-xs text-cyan-700">
-                      ✓
-                    </span>
-                    <span className="text-slate-700">{benefit}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href={tier.link}
-                className="block text-center font-semibold text-cyan-700 hover:text-cyan-600 mt-4"
-              >
-                Learn more →
-              </Link>
             </Card>
           ))}
         </div>
       </section>
 
       {/* 4. SESSIONS & EVENTS PREVIEW */}
-      <section className="space-y-6 rounded-2xl bg-slate-100 p-8">
+      <section className="space-y-6 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 p-8 md:p-10">
         <div>
           <h2 className="text-2xl font-bold text-slate-900">Upcoming Sessions & Events</h2>
           <p className="text-slate-600 mt-2">
             Join training sessions or RSVP to community events.
           </p>
         </div>
-        <Card className="p-6 text-center">
-          <p className="text-slate-600 mb-4">
+        <Card className="p-8 text-center bg-white/80 backdrop-blur">
+          <p className="text-slate-600 mb-6">
             View the full calendar of club sessions and community events.
           </p>
           <Link
             href="/sessions-and-events"
-            className="inline-block rounded-full bg-cyan-600 px-6 py-3 font-semibold text-white hover:bg-cyan-500 transition"
+            className="inline-flex items-center gap-2 rounded-full bg-cyan-600 px-8 py-3.5 font-semibold text-white hover:bg-cyan-500 transition-all hover:scale-105 hover:shadow-lg hover:shadow-cyan-500/25"
           >
             View Full Calendar
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </Link>
         </Card>
       </section>
 
       {/* 5. COMMUNITY HIGHLIGHTS / PHOTOS */}
-      <section className="space-y-8">
-        <div className="text-center space-y-3">
+      <section className="space-y-10">
+        <div className="text-center space-y-4">
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
             Our Community
           </p>
@@ -227,14 +315,15 @@ export default function HomePage() {
           </p>
         </div>
 
-        {/* Photo grid placeholder - will be populated from media service */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {/* Photo grid placeholder */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="aspect-square rounded-lg bg-gradient-to-br from-cyan-100 to-cyan-200 flex items-center justify-center"
+              className="group relative aspect-square rounded-2xl bg-gradient-to-br from-cyan-100 to-cyan-200 flex items-center justify-center overflow-hidden transition-all hover:shadow-lg"
             >
-              <span className="text-4xl">🏊</span>
+              <span className="text-4xl md:text-5xl group-hover:scale-110 transition-transform">🏊</span>
+              <div className="absolute inset-0 bg-gradient-to-t from-cyan-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
           ))}
         </div>
@@ -242,16 +331,19 @@ export default function HomePage() {
         <div className="text-center">
           <Link
             href="/gallery"
-            className="inline-block rounded-full border-2 border-cyan-600 px-8 py-3 font-semibold text-cyan-700 hover:bg-cyan-50 transition"
+            className="inline-flex items-center gap-2 rounded-full border-2 border-cyan-600 px-8 py-3.5 font-semibold text-cyan-700 hover:bg-cyan-50 transition-all hover:scale-105"
           >
             Browse Gallery
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </Link>
         </div>
       </section>
 
       {/* 6. HOW IT WORKS */}
-      <section className="space-y-8">
-        <div className="text-center space-y-3">
+      <section className="space-y-10">
+        <div className="text-center space-y-4">
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
             Simple Process
           </p>
@@ -260,9 +352,13 @@ export default function HomePage() {
           </h2>
         </div>
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-          {howItWorks.map((step) => (
-            <div key={step.step} className="space-y-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-cyan-600 text-2xl font-bold text-white">
+          {howItWorks.map((step, idx) => (
+            <div key={step.step} className="relative space-y-4">
+              {/* Connector line for desktop */}
+              {idx < howItWorks.length - 1 && (
+                <div className="hidden lg:block absolute top-6 left-[60%] w-full h-0.5 bg-gradient-to-r from-cyan-200 to-transparent" />
+              )}
+              <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-cyan-600 text-xl font-bold text-white shadow-lg shadow-cyan-500/25">
                 {step.step}
               </div>
               <h3 className="text-lg font-semibold text-slate-900">{step.title}</h3>
@@ -273,8 +369,8 @@ export default function HomePage() {
       </section>
 
       {/* 7. TESTIMONIALS */}
-      <section className="space-y-8 bg-slate-50 -mx-4 px-4 py-12 md:-mx-8 md:px-8 rounded-2xl">
-        <div className="text-center space-y-3">
+      <section className="space-y-10 bg-gradient-to-br from-slate-50 to-white -mx-4 px-4 py-12 md:-mx-8 md:px-8 rounded-3xl">
+        <div className="text-center space-y-4">
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
             Member Stories
           </p>
@@ -284,37 +380,62 @@ export default function HomePage() {
         </div>
         <div className="grid gap-6 md:grid-cols-3">
           {testimonials.map((testimonial, idx) => (
-            <Card key={idx} className="space-y-4">
-              <p className="text-slate-700 italic">"{testimonial.quote}"</p>
-              <p className="text-sm font-semibold text-cyan-700">— {testimonial.author}</p>
+            <Card key={idx} className="relative overflow-hidden">
+              <div className="absolute top-0 left-0 text-6xl text-cyan-100 font-serif leading-none">"</div>
+              <div className="relative space-y-4 p-6 pt-8">
+                <p className="text-slate-700 italic text-lg">"{testimonial.quote}"</p>
+                <p className="text-sm font-semibold text-cyan-700">— {testimonial.author}</p>
+              </div>
             </Card>
           ))}
         </div>
       </section>
 
       {/* 8. FINAL CTA STRIP */}
-      <section className="rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 px-8 py-16 text-center text-white shadow-xl">
-        <h2 className="text-3xl font-bold mb-4 md:text-4xl">
-          Ready to swim with people who actually show up?
-        </h2>
-        <p className="text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
-          Join SwimBuddz and start your next chapter in the water.
-        </p>
-        <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
-          <Link
-            href="/register"
-            className="rounded-full bg-cyan-600 px-8 py-4 text-lg font-semibold text-white hover:bg-cyan-500 transition shadow-lg"
-          >
-            Join SwimBuddz
-          </Link>
-          <Link
-            href="/about"
-            className="rounded-full border-2 border-white px-8 py-4 text-lg font-semibold text-white hover:bg-white/10 transition"
-          >
-            Learn More About Us
-          </Link>
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-6 py-16 text-center text-white shadow-2xl md:px-12 md:py-20">
+        {/* Decorative elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          {/* Wave at top */}
+          <div className="absolute top-0 left-0 right-0 text-cyan-500/20">
+            <WaveDecoration flip />
+          </div>
+
+          {/* Gradient orbs */}
+          <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
+          <div className="absolute top-1/2 right-1/4 translate-x-1/2 -translate-y-1/2 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl" />
+
+          {/* Subtle pattern */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.1),transparent_70%)]" />
+        </div>
+
+        <div className="relative z-10 max-w-3xl mx-auto space-y-6">
+          <h2 className="text-3xl font-bold md:text-4xl lg:text-5xl">
+            Ready to swim with people who{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">
+              actually show up?
+            </span>
+          </h2>
+          <p className="text-xl text-slate-300 max-w-2xl mx-auto">
+            Join SwimBuddz and start your next chapter in the water.
+          </p>
+          <div className="flex flex-col gap-4 sm:flex-row sm:justify-center pt-4">
+            <Link
+              href="/register"
+              className="group relative inline-flex items-center justify-center rounded-full bg-gradient-to-r from-cyan-500 to-cyan-600 px-8 py-4 text-lg font-semibold text-white transition-all hover:scale-105 hover:shadow-xl hover:shadow-cyan-500/25"
+            >
+              <span className="relative z-10">Join SwimBuddz</span>
+              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </Link>
+            <Link
+              href="/about"
+              className="inline-flex items-center justify-center rounded-full border-2 border-white/30 px-8 py-4 text-lg font-semibold text-white transition-all hover:bg-white/10 hover:border-white/50 hover:scale-105"
+            >
+              Learn More About Us
+            </Link>
+          </div>
         </div>
       </section>
     </div>
   );
 }
+

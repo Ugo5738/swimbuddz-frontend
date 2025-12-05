@@ -154,8 +154,8 @@ export default function GalleryPage() {
                         key={option.value || 'all'}
                         onClick={() => setFilter(option.value)}
                         className={`rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-200 ${filter === option.value
-                                ? "bg-cyan-600 text-white shadow-lg shadow-cyan-500/25 scale-105"
-                                : "bg-slate-100 text-slate-700 hover:bg-slate-200 hover:scale-105"
+                            ? "bg-cyan-600 text-white shadow-lg shadow-cyan-500/25 scale-105"
+                            : "bg-slate-100 text-slate-700 hover:bg-slate-200 hover:scale-105"
                             }`}
                     >
                         {option.label}
