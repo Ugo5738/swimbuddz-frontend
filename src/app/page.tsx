@@ -1,5 +1,9 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
+import { API_BASE_URL } from "@/lib/config";
 
 const whoSwimBudzIsFor = [
   {
@@ -106,6 +110,13 @@ const testimonials = [
   }
 ];
 
+// Placeholder hero images (replace with real images later)
+const heroImages = [
+  "https://images.unsplash.com/photo-1530549387789-4c1017266635?w=1920&q=80",
+  "https://images.unsplash.com/photo-1519315901367-f34ff9154487?w=1920&q=80",
+  "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=1920&q=80",
+];
+
 // Wave SVG component for decorative borders
 function WaveDecoration({ className = "", flip = false }: { className?: string; flip?: boolean }) {
   return (
@@ -125,71 +136,137 @@ function WaveDecoration({ className = "", flip = false }: { className?: string; 
         opacity="0.5"
       />
       <path
-        d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,googl172.46-45.71,248.8-84.81V0Z"
+        d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z"
         fill="currentColor"
       />
     </svg>
   );
 }
 
+type GalleryPhoto = {
+  id: string;
+  file_url: string;
+  thumbnail_url?: string;
+  title?: string;
+};
+
 export default function HomePage() {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([]);
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
+
+  // Rotate hero images
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % heroImages.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Fetch gallery photos
+  useEffect(() => {
+    const fetchPhotos = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/media/media?limit=6`);
+        if (response.ok) {
+          const data = await response.json();
+          setGalleryPhotos(data.slice(0, 6));
+        }
+      } catch (error) {
+        console.error("Failed to fetch gallery photos:", error);
+      }
+    };
+    fetchPhotos();
+  }, []);
+
+  const handleImageLoad = (id: string) => {
+    setLoadedImages(prev => new Set(prev).add(id));
+  };
+
   return (
     <div className="space-y-20">
-      {/* 1. HERO SECTION */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-cyan-500 via-cyan-600 to-blue-700 px-6 py-16 text-white shadow-2xl md:px-12 md:py-24">
-        {/* Decorative background elements */}
-        <div className="absolute inset-0 overflow-hidden">
+      {/* 1. HERO SECTION - Full screen height, full width */}
+      <section className="relative overflow-hidden min-h-[85vh] flex items-center -mx-4 md:-mx-[calc(50vw-50%)] w-[calc(100%+2rem)] md:w-screen" style={{ marginTop: '-2rem' }}>
+        {/* Background Image Slideshow */}
+        <div className="absolute inset-0">
+          {heroImages.map((img, idx) => (
+            <div
+              key={idx}
+              className={`absolute inset-0 transition-opacity duration-1000 ${idx === currentImageIndex ? 'opacity-100' : 'opacity-0'
+                }`}
+            >
+              <img
+                src={img}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            </div>
+          ))}
+          {/* Dark overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 via-cyan-900/70 to-blue-900/80" />
+
           {/* Animated gradient orbs */}
-          <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-white/10 blur-3xl animate-pulse" />
-          <div className="absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-cyan-300/20 blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+          <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-cyan-500/20 blur-3xl animate-pulse" />
+          <div className="absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-blue-500/20 blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
 
           {/* Wave pattern at bottom */}
-          <div className="absolute bottom-0 left-0 right-0 text-cyan-400/30">
-            <WaveDecoration />
+          <div className="absolute bottom-0 left-0 right-0 text-slate-900/50 h-24">
+            <WaveDecoration className="h-full" />
           </div>
-
-          {/* Subtle grid overlay */}
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px]" />
         </div>
 
-        <div className="relative z-10 max-w-4xl space-y-6">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm px-4 py-2 text-sm font-medium">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
-            </span>
-            Building globally • Currently active in Lagos
-          </div>
-
-          <h1 className="text-4xl font-bold leading-tight md:text-5xl lg:text-6xl">
-            Learn, train, and enjoy swimming with{" "}
-            <span className="relative">
-              <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-cyan-200 to-white">
-                our swimming community
+        {/* Hero Content */}
+        <div className="relative z-10 w-full max-w-6xl mx-auto px-6 py-20 md:px-12">
+          <div className="max-w-3xl space-y-8">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 text-sm font-medium text-white">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
               </span>
-              <span className="absolute bottom-1 left-0 right-0 h-3 bg-cyan-300/30 -z-0 rounded" />
-            </span>
-          </h1>
+              Building globally • Currently active in Lagos
+            </div>
 
-          <p className="text-lg text-cyan-50 max-w-2xl md:text-xl lg:text-2xl">
-            SwimBuddz connects beginners, fitness swimmers, and competitors in a structured but friendly swim community.
-          </p>
+            <h1 className="text-4xl font-bold leading-tight text-white md:text-5xl lg:text-6xl">
+              Learn, train, and enjoy swimming with{" "}
+              <span className="relative inline-block">
+                <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-300">
+                  our swimming community
+                </span>
+              </span>
+            </h1>
 
-          <div className="flex flex-col gap-4 sm:flex-row pt-4">
-            <Link
-              href="/register"
-              className="group relative inline-flex items-center justify-center rounded-full bg-white px-8 py-4 text-lg font-semibold text-cyan-700 transition-all hover:bg-cyan-50 hover:scale-105 hover:shadow-xl hover:shadow-cyan-900/20"
-            >
-              <span className="relative z-10">Join SwimBuddz</span>
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-200 to-white opacity-0 group-hover:opacity-20 transition-opacity" />
-            </Link>
-            <Link
-              href="/sessions-and-events"
-              className="inline-flex items-center justify-center rounded-full border-2 border-white/50 backdrop-blur-sm px-8 py-4 text-lg font-semibold text-white transition-all hover:bg-white/10 hover:border-white hover:scale-105"
-            >
-              View Upcoming Sessions
-            </Link>
+            <p className="text-lg text-slate-200 max-w-2xl md:text-xl">
+              SwimBuddz connects beginners, fitness swimmers, and competitors in a structured but friendly swim community.
+            </p>
+
+            <div className="flex flex-col gap-4 sm:flex-row pt-2">
+              <Link
+                href="/register"
+                className="group relative inline-flex items-center justify-center rounded-full bg-white px-8 py-4 text-lg font-semibold text-cyan-700 transition-all hover:bg-cyan-50 hover:scale-105 hover:shadow-xl hover:shadow-white/20"
+              >
+                <span className="relative z-10">Join SwimBuddz</span>
+              </Link>
+              <Link
+                href="/sessions-and-events"
+                className="inline-flex items-center justify-center rounded-full border-2 border-white/50 backdrop-blur-sm px-8 py-4 text-lg font-semibold text-white transition-all hover:bg-white/10 hover:border-white hover:scale-105"
+              >
+                View Upcoming Sessions
+              </Link>
+            </div>
           </div>
+        </div>
+
+        {/* Slide indicators */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+          {heroImages.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrentImageIndex(idx)}
+              className={`w-2 h-2 rounded-full transition-all ${idx === currentImageIndex ? 'bg-white w-8' : 'bg-white/50'
+                }`}
+              aria-label={`Go to slide ${idx + 1}`}
+            />
+          ))}
         </div>
       </section>
 
@@ -311,21 +388,45 @@ export default function HomePage() {
             Building a Culture Together
           </h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            We're building a culture of consistency, safety and fun in and out of the pool.
+            We&apos;re building a culture of consistency, safety and fun in and out of the pool.
           </p>
         </div>
 
-        {/* Photo grid placeholder */}
+        {/* Photo grid - real photos or placeholders */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div
-              key={i}
-              className="group relative aspect-square rounded-2xl bg-gradient-to-br from-cyan-100 to-cyan-200 flex items-center justify-center overflow-hidden transition-all hover:shadow-lg"
-            >
-              <span className="text-4xl md:text-5xl group-hover:scale-110 transition-transform">🏊</span>
-              <div className="absolute inset-0 bg-gradient-to-t from-cyan-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-          ))}
+          {galleryPhotos.length > 0 ? (
+            galleryPhotos.map((photo) => (
+              <div
+                key={photo.id}
+                className="group relative aspect-square rounded-2xl overflow-hidden bg-slate-100"
+              >
+                {!loadedImages.has(photo.id) && (
+                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-100 to-cyan-200 animate-pulse flex items-center justify-center">
+                    <span className="text-4xl">🏊</span>
+                  </div>
+                )}
+                <img
+                  src={photo.thumbnail_url || photo.file_url}
+                  alt={photo.title || "SwimBuddz community"}
+                  className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${loadedImages.has(photo.id) ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  onLoad={() => handleImageLoad(photo.id)}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            ))
+          ) : (
+            // Placeholder cards
+            [1, 2, 3, 4, 5, 6].map((i) => (
+              <div
+                key={i}
+                className="group relative aspect-square rounded-2xl bg-gradient-to-br from-cyan-100 to-cyan-200 flex items-center justify-center overflow-hidden transition-all hover:shadow-lg"
+              >
+                <span className="text-4xl md:text-5xl group-hover:scale-110 transition-transform">🏊</span>
+                <div className="absolute inset-0 bg-gradient-to-t from-cyan-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            ))
+          )}
         </div>
 
         <div className="text-center">
@@ -381,9 +482,9 @@ export default function HomePage() {
         <div className="grid gap-6 md:grid-cols-3">
           {testimonials.map((testimonial, idx) => (
             <Card key={idx} className="relative overflow-hidden">
-              <div className="absolute top-0 left-0 text-6xl text-cyan-100 font-serif leading-none">"</div>
+              <div className="absolute top-0 left-0 text-6xl text-cyan-100 font-serif leading-none">&quot;</div>
               <div className="relative space-y-4 p-6 pt-8">
-                <p className="text-slate-700 italic text-lg">"{testimonial.quote}"</p>
+                <p className="text-slate-700 italic text-lg">&quot;{testimonial.quote}&quot;</p>
                 <p className="text-sm font-semibold text-cyan-700">— {testimonial.author}</p>
               </div>
             </Card>
@@ -438,4 +539,3 @@ export default function HomePage() {
     </div>
   );
 }
-

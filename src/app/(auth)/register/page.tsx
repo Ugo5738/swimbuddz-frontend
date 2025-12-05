@@ -12,12 +12,13 @@ import { ClubDetailsStep } from "@/components/registration/ClubDetailsStep";
 import { AcademyDetailsStep } from "@/components/registration/AcademyDetailsStep";
 import { VolunteerInterestsStep } from "@/components/registration/VolunteerInterestsStep";
 import { ReviewConfirmStep } from "@/components/registration/ReviewConfirmStep";
+import { AboutYouStep } from "@/components/registration/AboutYouStep";
 import { apiEndpoints } from "@/lib/config";
 import { apiGet, apiPatch } from "@/lib/api";
 import clsx from "clsx";
 
 type Tier = "community" | "club" | "academy";
-type StepKey = "tier" | "core" | "club" | "academy" | "volunteer" | "review";
+type StepKey = "tier" | "core" | "aboutyou" | "club" | "academy" | "volunteer" | "review";
 
 type Step = {
   key: StepKey;
@@ -81,6 +82,14 @@ interface FormData {
   paymentReadiness: string;
   currencyPreference: string;
   paymentNotes?: string;
+
+  // About You (Vetting Questions)
+  occupation?: string;
+  areaInLagos?: string;
+  howFoundUs?: string;
+  previousCommunities?: string;
+  hopesFromSwimbuddz?: string;
+  communityRulesAccepted?: boolean;
 }
 
 const initialFormData: FormData = {
@@ -130,6 +139,13 @@ const initialFormData: FormData = {
   paymentReadiness: "ready_now", // New field
   currencyPreference: "NGN", // New field
   paymentNotes: "", // New field
+  // About You
+  occupation: "",
+  areaInLagos: "",
+  howFoundUs: "",
+  previousCommunities: "",
+  hopesFromSwimbuddz: "",
+  communityRulesAccepted: false,
 };
 
 function RegisterContent() {
@@ -198,6 +214,7 @@ function RegisterContent() {
     const visibleSteps: Step[] = [
       { key: "tier", title: "Choose Tier", required: true },
       { key: "core", title: "Core Profile", required: true },
+      { key: "aboutyou", title: "About You", required: true },
     ];
 
     if (formData.membershipTier === "club" || formData.membershipTier === "academy") {
@@ -275,6 +292,12 @@ function RegisterContent() {
           formData.academyGoals &&
           formData.academyPreferredCoachGender &&
           formData.academyLessonPreference
+        );
+
+      case "aboutyou":
+        return Boolean(
+          formData.hopesFromSwimbuddz &&
+          formData.communityRulesAccepted
         );
 
       case "volunteer":
@@ -369,6 +392,14 @@ function RegisterContent() {
           academy_notes: formData.academyNotes,
         } : {}),
 
+        // About You (Vetting)
+        occupation: formData.occupation,
+        area_in_lagos: formData.areaInLagos,
+        how_found_us: formData.howFoundUs,
+        previous_communities: formData.previousCommunities,
+        hopes_from_swimbuddz: formData.hopesFromSwimbuddz,
+        community_rules_accepted: formData.communityRulesAccepted,
+
         // Volunteer
         volunteer_interest: formData.volunteerInterest,
       };
@@ -435,6 +466,32 @@ function RegisterContent() {
               profilePhotoUrl: formData.profilePhotoUrl,
             }}
             onUpdate={updateField}
+          />
+        );
+
+      case "aboutyou":
+        return (
+          <AboutYouStep
+            formData={{
+              occupation: formData.occupation,
+              area_in_lagos: formData.areaInLagos,
+              how_found_us: formData.howFoundUs,
+              previous_communities: formData.previousCommunities,
+              hopes_from_swimbuddz: formData.hopesFromSwimbuddz,
+              community_rules_accepted: formData.communityRulesAccepted,
+            }}
+            onUpdate={(field, value) => {
+              // Map snake_case back to camelCase for form state
+              const fieldMap: Record<string, string> = {
+                occupation: "occupation",
+                area_in_lagos: "areaInLagos",
+                how_found_us: "howFoundUs",
+                previous_communities: "previousCommunities",
+                hopes_from_swimbuddz: "hopesFromSwimbuddz",
+                community_rules_accepted: "communityRulesAccepted",
+              };
+              updateField(fieldMap[field] || field, value);
+            }}
           />
         );
 
