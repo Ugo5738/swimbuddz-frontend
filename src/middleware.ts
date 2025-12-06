@@ -84,8 +84,9 @@ export async function middleware(request: NextRequest) {
             }
 
             // Fetch member profile to check approval status
+            const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
             const memberResponse = await fetch(
-                `${process.env.API_BASE_URL || "http://localhost:8000"}/api/v1/members/me`,
+                `${apiBaseUrl}/api/v1/members/me`,
                 {
                     headers: {
                         Authorization: `Bearer ${session.access_token}`,
@@ -138,10 +139,18 @@ export async function middleware(request: NextRequest) {
                 // No member profile but trying to access admin - might be admin-only user
                 // Allow through and let the admin page handle authorization
                 return response;
+            } else {
+                // API error or non-200 status - fail closed for security
+                console.error("Middleware: Failed to fetch member profile", memberResponse.status);
+                // If we can't verify the user, redirect to login or error
+                // But if it's a 500, maybe we should let them see a generic error?
+                // For now, redirecting to login is safer than letting them in.
+                return NextResponse.redirect(new URL("/login?error=auth_check_failed", request.url));
             }
         } catch (error) {
             console.error("Middleware error:", error);
-            // On error, allow the request to continue and let the page handle auth
+            // Fail closed: Redirect to login if we can't verify status
+            return NextResponse.redirect(new URL("/login?error=auth_check_error", request.url));
         }
     }
 

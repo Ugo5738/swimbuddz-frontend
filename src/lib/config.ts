@@ -3,8 +3,8 @@
  * Centralizes all environment-dependent URLs and values
  */
 
-// API Base URL - changes between dev/prod. Support legacy NEXT_PUBLIC_API_URL for deployments that still use it.
-const envApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL;
+// API Base URL - changes between dev/prod.
+const envApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 export const API_BASE_URL = envApiBaseUrl || 'http://localhost:8000';
 
 // External Links

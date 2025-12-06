@@ -1,8 +1,8 @@
 import { supabase, getCurrentAccessToken } from "./auth";
 import { API_BASE_URL } from "./config";
 
-if (!process.env.NEXT_PUBLIC_API_BASE_URL && !process.env.NEXT_PUBLIC_API_URL) {
-  console.warn("API base URL env var is not set (expected NEXT_PUBLIC_API_BASE_URL or NEXT_PUBLIC_API_URL). Falling back to localhost.");
+if (!process.env.NEXT_PUBLIC_API_BASE_URL) {
+  console.warn("API base URL env var is not set (expected NEXT_PUBLIC_API_BASE_URL). Falling back to localhost.");
 }
 
 type RequestOptions = {
