@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Upload, Trash2, GripVertical, Image as ImageIcon, Plus, AlertCircle } from "lucide-react";
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { API_BASE_URL } from "@/lib/config";
+import { Card } from "@/components/ui/Card";
 import { getCurrentAccessToken } from "@/lib/auth";
+import { API_BASE_URL } from "@/lib/config";
+import { AlertCircle, GripVertical, Image as ImageIcon, Plus, Trash2, Upload } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 type TabType = "banners" | "community";
 
@@ -406,7 +406,7 @@ export default function AdminHomepageMediaPage() {
                                         {photo?.file_url ? (
                                             <>
                                                 <img
-                                                    src={photo.thumbnail_url || photo.file_url}
+                                                    src={photo.file_url || photo.thumbnail_url}
                                                     alt={photo.title}
                                                     className="w-full h-full object-cover"
                                                 />

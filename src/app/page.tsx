@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { API_BASE_URL } from "@/lib/config";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 const whoSwimBudzIsFor = [
   {
@@ -451,7 +451,7 @@ export default function HomePage() {
                   </div>
                 )}
                 <img
-                  src={photo.thumbnail_url || photo.file_url}
+                  src={photo.file_url || photo.thumbnail_url}
                   alt={photo.title || "SwimBuddz community"}
                   className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${loadedImages.has(photo.id) ? 'opacity-100' : 'opacity-0'
                     }`}
