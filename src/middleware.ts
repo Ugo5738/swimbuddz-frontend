@@ -4,9 +4,6 @@ import { createServerClient } from "@supabase/ssr";
 
 // Routes that require an approved membership
 const MEMBER_ROUTES = [
-    "/community",
-    "/club",
-    "/academy",
     "/sessions",
     "/profile",
     "/dashboard",

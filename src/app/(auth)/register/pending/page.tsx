@@ -41,9 +41,9 @@ export default function RegistrationPendingPage() {
 
                 // If approved, redirect to profile
                 if (member.approval_status === "approved") {
-                    setTimeout(() => {
-                        router.push("/profile");
-                    }, 2000);
+                    // Force session refresh to ensure middleware sees the new status
+                    await supabase.auth.refreshSession();
+                    router.push("/profile");
                 }
             } else {
                 // Member not found - maybe registration incomplete
@@ -121,12 +121,15 @@ export default function RegistrationPendingPage() {
                         <p className="text-slate-600 mb-6">
                             Welcome to SwimBuddz{memberName ? `, ${memberName}` : ""}! Redirecting you to your profile...
                         </p>
-                        <Link
-                            href="/profile"
+                        <button
+                            onClick={async () => {
+                                await supabase.auth.refreshSession();
+                                router.push("/profile");
+                            }}
                             className="inline-flex items-center justify-center rounded-full bg-cyan-600 px-6 py-3 font-semibold text-white hover:bg-cyan-700 transition-colors"
                         >
                             Go to Profile
-                        </Link>
+                        </button>
                     </>
                 )}
 

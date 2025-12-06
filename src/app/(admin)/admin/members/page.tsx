@@ -528,22 +528,122 @@ export default function AdminMembersPage() {
                             : `Are you sure you want to reject ${approvingMember?.first_name} ${approvingMember?.last_name}?`}
                     </p>
 
-                    {/* Show vetting info if available */}
-                    {approvingMember && (approvingMember.occupation || approvingMember.area_in_lagos || approvingMember.how_found_us) && (
-                        <div className="rounded-lg bg-slate-50 p-4 space-y-2">
-                            <p className="text-sm font-semibold text-slate-700">Application Details:</p>
-                            {approvingMember.occupation && (
-                                <p className="text-sm"><strong>Occupation:</strong> {approvingMember.occupation}</p>
-                            )}
-                            {approvingMember.area_in_lagos && (
-                                <p className="text-sm"><strong>Area in Lagos:</strong> {approvingMember.area_in_lagos}</p>
-                            )}
-                            {approvingMember.how_found_us && (
-                                <p className="text-sm"><strong>How found us:</strong> {approvingMember.how_found_us}</p>
-                            )}
-                            {approvingMember.hopes_from_swimbuddz && (
-                                <p className="text-sm"><strong>Hopes:</strong> {approvingMember.hopes_from_swimbuddz}</p>
-                            )}
+                    {/* Member Details */}
+                    {approvingMember && (
+                        <div className="space-y-4">
+                            {/* Profile Header */}
+                            <div className="flex items-start gap-4 p-4 bg-slate-50 rounded-lg border border-slate-100">
+                                <div className="h-16 w-16 rounded-full bg-slate-200 overflow-hidden flex-shrink-0 border-2 border-white shadow-sm">
+                                    {approvingMember.profile_photo_url ? (
+                                        <img
+                                            src={approvingMember.profile_photo_url}
+                                            alt={`${approvingMember.first_name}'s profile`}
+                                            className="h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="h-full w-full flex items-center justify-center text-slate-400">
+                                            <UserPlus className="h-8 w-8" />
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-slate-900 text-lg">
+                                        {approvingMember.first_name} {approvingMember.last_name}
+                                    </h3>
+                                    <div className="text-sm text-slate-500 space-y-1">
+                                        <p>{approvingMember.email}</p>
+                                        <p>{approvingMember.phone}</p>
+                                        <p className="capitalize text-cyan-700 font-medium">
+                                            {approvingMember.membership_tier || "Community"} Member • {approvingMember.swim_level}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Personal Info */}
+                                <div className="space-y-3">
+                                    <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 border-b pb-1">
+                                        Personal Info
+                                    </h4>
+                                    <div className="space-y-2 text-sm">
+                                        <div>
+                                            <span className="text-slate-500 block text-xs">Location</span>
+                                            <span className="text-slate-900">
+                                                {approvingMember.city || "N/A"}, {approvingMember.country || "Nigeria"}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span className="text-slate-500 block text-xs">Date of Birth</span>
+                                            <span className="text-slate-900">
+                                                {approvingMember.date_of_birth ? new Date(approvingMember.date_of_birth).toLocaleDateString() : "N/A"}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span className="text-slate-500 block text-xs">Gender</span>
+                                            <span className="text-slate-900 capitalize">{approvingMember.gender || "N/A"}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Emergency Contact */}
+                                <div className="space-y-3">
+                                    <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 border-b pb-1">
+                                        Emergency Contact
+                                    </h4>
+                                    <div className="space-y-2 text-sm">
+                                        <div>
+                                            <span className="text-slate-500 block text-xs">Name</span>
+                                            <span className="text-slate-900">{approvingMember.emergency_contact_name || "N/A"}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-slate-500 block text-xs">Phone</span>
+                                            <span className="text-slate-900">{approvingMember.emergency_contact_phone || "N/A"}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-slate-500 block text-xs">Medical Info</span>
+                                            <span className="text-slate-900">{approvingMember.medical_info || "None provided"}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Vetting / Application Details */}
+                            <div className="space-y-3 pt-2">
+                                <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 border-b pb-1">
+                                    Application Details
+                                </h4>
+                                <div className="grid grid-cols-1 gap-3 text-sm bg-slate-50 p-3 rounded-lg">
+                                    <div>
+                                        <span className="text-slate-500 font-medium">Occupation: </span>
+                                        <span className="text-slate-900">{approvingMember.occupation || "N/A"}</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-slate-500 font-medium">Area in Lagos: </span>
+                                        <span className="text-slate-900">{approvingMember.area_in_lagos || "N/A"}</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-slate-500 font-medium">How found us: </span>
+                                        <span className="text-slate-900">{approvingMember.how_found_us || "N/A"}</span>
+                                    </div>
+                                    {approvingMember.hopes_from_swimbuddz && (
+                                        <div className="pt-1">
+                                            <span className="text-slate-500 font-medium block mb-1">Hopes from SwimBuddz:</span>
+                                            <p className="text-slate-900 bg-white p-2 rounded border border-slate-100 italic">
+                                                "{approvingMember.hopes_from_swimbuddz}"
+                                            </p>
+                                        </div>
+                                    )}
+                                    {approvingMember.goals_narrative && (
+                                        <div className="pt-1">
+                                            <span className="text-slate-500 font-medium block mb-1">Swimming Goals:</span>
+                                            <p className="text-slate-900 bg-white p-2 rounded border border-slate-100 italic">
+                                                "{approvingMember.goals_narrative}"
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     )}
 
