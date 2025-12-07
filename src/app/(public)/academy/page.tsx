@@ -4,12 +4,16 @@ import { UpcomingCohorts } from "@/components/academy/UpcomingCohorts";
 
 const benefits = [
     "Structured programs and cohorts (6-8 week courses)",
-    "Clearly defined milestones for progression",
-    "Direct coach feedback and progress tracking",
-    "Small group environment focused on learning",
-    "Recognition when you complete a level or cohort",
-    "Skill assessments and certifications",
-    "Everything in Community and Club tiers"
+    "Structured Curriculum & Milestones",
+    "Coach-Assigned Drills and Goals",
+    "Progress Tracking (Academy Level)",
+    "Cohort-Based Scheduling (8-12 weeks)",
+    "Coach Notes & Feedback History",
+    "Video Analysis (Optional)",
+    "Certification / Level Badge",
+    "Premium Resources",
+    "Priority Access",
+    "Everything in Community & Club"
 ];
 
 const learningPaths = [
@@ -37,7 +41,7 @@ const cohortStructure = [
     },
     {
         title: "Fixed Schedule",
-        description: "6-8 week programs with  consistent training times"
+        description: "Cohort-based scheduling (e.g. 8-week beginner program)"
     },
     {
         title: "Clear Milestones",
@@ -58,11 +62,10 @@ export default function AcademyPage() {
                     Academy Tier
                 </p>
                 <h1 className="text-4xl font-bold text-slate-900 md:text-5xl">
-                    Guided learning with clear milestones.
+                    A formal training program with a curriculum, assessments, and certification.
                 </h1>
                 <p className="text-lg text-slate-600 max-w-3xl">
-                    Academy is designed to answer the question: "If I show up and do the work, will I actually learn?"
-                    With structured cohorts, defined milestones, and coach feedback, the answer is a clear yes.
+                    From water comfort to advanced strokes. Access advanced training materials, dedicated academy-only events, and a more focused learning environment.
                 </p>
             </section>
 
@@ -151,9 +154,10 @@ export default function AcademyPage() {
 
             {/* CTA Section */}
             <section className="rounded-3xl bg-gradient-to-br from-cyan-600 to-cyan-700 px-8 py-12 text-center text-white">
-                <h2 className="text-3xl font-bold mb-4">Ready to Learn with Structure?</h2>
+                <h2 className="text-3xl font-bold mb-4">Who is this for?</h2>
                 <p className="text-lg mb-6 text-cyan-50 max-w-2xl mx-auto">
-                    Join Academy and get on a clear path from beginner to confident swimmer.
+                    Beginners who want to learn properly from scratch, or intermediates who want structured professional guidance and a clear progression path.
+                    Perfect for people who want to achieve something specific in a set timeframe.
                 </p>
                 <Link
                     href="/register"

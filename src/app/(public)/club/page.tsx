@@ -2,14 +2,15 @@ import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 
 const benefits = [
-    "Access to weekly Club training sessions",
-    "Ability to sign up for sessions and track your attendance",
-    "Ride-share coordination for selected sessions",
-    "Training-focused announcements and updates",
-    "Punctuality and commitment tracking system",
-    "Recognition for consistency and progress",
-    "Access to club challenges and badges",
-    "Everything in Community tier"
+    "Access to Regular Club Training Sessions (Weekly/Bi-weekly)",
+    "Session Booking & Attendance Tracking",
+    "Ride-Share Coordination",
+    "Progress Tracking (Basic skill improvements, Time tracking)",
+    "Exclusive Club Events (Technique workshops, fun races)",
+    "Eligibility for Internal Challenges & Awards",
+    "Recognition System (Titles, Badges)",
+    "Participation in External Activities (Triathlons, Open water)",
+    "Everything in Community"
 ];
 
 const trainingStructure = [
@@ -55,11 +56,11 @@ export default function ClubPage() {
                     Club Tier
                 </p>
                 <h1 className="text-4xl font-bold text-slate-900 md:text-5xl">
-                    Structured training and consistent pool time.
+                    Access to Regular Club Training Sessions
                 </h1>
                 <p className="text-lg text-slate-600 max-w-3xl">
-                    Club is where you build consistency, not just good intentions. Join weekly training sessions
-                    with a system that recognizes punctuality, commitment, and progress.
+                    For swimmers who want structured, ongoing improvement and belong to an active training group.
+                    Ongoing training at your pace.
                 </p>
             </section>
 
@@ -139,9 +140,9 @@ export default function ClubPage() {
 
             {/* CTA Section */}
             <section className="rounded-3xl bg-gradient-to-br from-cyan-600 to-cyan-700 px-8 py-12 text-center text-white">
-                <h2 className="text-3xl font-bold mb-4">Ready to Commit to Consistency?</h2>
+                <h2 className="text-3xl font-bold mb-4">Who is this for?</h2>
                 <p className="text-lg mb-6 text-cyan-50 max-w-2xl mx-auto">
-                    Upgrade to Club and start building the habit that will transform your swimming.
+                    Anyone who wants to swim regularly, get better, be part of a training culture, and track progress month-by-month.
                 </p>
                 <Link
                     href="/register"

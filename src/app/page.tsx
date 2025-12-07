@@ -29,12 +29,12 @@ const whoSwimBudzIsFor = [
 const tiers = [
   {
     name: "Community",
-    description: "The base layer that keeps everyone connected.",
+    description: "Join a welcoming space to connect with other swimming enthusiasts.",
     benefits: [
-      "Access to announcements and updates",
-      "Invitations to community events and meetups",
-      "Personal member profile",
-      "Access to swim tips and resources",
+      "Access to Community Events & Socials",
+      "Basic member profile",
+      "Access to Swim tips & education",
+      "Community group chats",
       "Volunteer opportunities"
     ],
     pricing: "Free",
@@ -43,30 +43,32 @@ const tiers = [
   },
   {
     name: "Club",
-    description: "Structured training and consistent pool time.",
+    description: "For swimmers who want structured, ongoing improvement and belong to an active training group.",
     benefits: [
-      "Weekly Club training sessions",
-      "Attendance and progress tracking",
-      "Ride-share coordination",
-      "Club challenges and badges",
-      "Everything in Community"
+      "Regular training exercises",
+      "Improvement at your own pace",
+      "Track your times & performance",
+      "Team culture & challenges",
+      "Everything in Community",
+      "Monthly subscription"
     ],
-    pricing: "Pay-per-session",
+    pricing: "Paid Monthly",
     link: "/club",
     accent: "blue",
     featured: true
   },
   {
     name: "Academy",
-    description: "Guided learning with clear milestones.",
+    description: "A formal training program with a curriculum, assessments, and certification.",
     benefits: [
-      "Structured 6-8 week cohorts",
-      "Defined learning milestones",
-      "Direct coach feedback",
-      "Small group environment",
+      "Structured curriculum/milestones",
+      "Coach-assigned drills and goals",
+      "Certification",
+      "Cohort-based program",
+      "Higher-value, deeper experience",
       "Everything in Community & Club"
     ],
-    pricing: "Per cohort",
+    pricing: "Paid — Cohort Based",
     link: "/academy",
     accent: "purple"
   }

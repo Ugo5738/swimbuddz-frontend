@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/Card";
 const communityFeatures = [
     {
         title: "Events Calendar",
-        description: "Beach days, social hangouts, watch parties, and community meetups.",
+        description: "Enjoy occasional social swims, casual meetups, beach hangouts, socials, watch parties and community-led activities.",
         link: "/community/events"
     },
     {
@@ -25,12 +25,12 @@ const communityFeatures = [
 ];
 
 const benefits = [
-    "Access to announcements and updates",
-    "Invitations to community events and meetups",
-    "Personal member profile",
-    "Optional inclusion in member directory",
-    "Access to swim tips, resources and educational content",
-    "Opportunities to volunteer and help build the community"
+    "Access to the Community Network",
+    "Access to Community Events (Social swims, casual meetups, beach hangouts)",
+    "Basic Member Profile",
+    "Access to Community Chats (General conversation, Q&A)",
+    "Educational Content (Swim tips, technique guides, lifestyle/fitness)",
+    "Opt-in Features (Volunteer roles, Interest tags)"
 ];
 
 export default function CommunityPage() {
@@ -42,11 +42,11 @@ export default function CommunityPage() {
                     Community Tier
                 </p>
                 <h1 className="text-4xl font-bold text-slate-900 md:text-5xl">
-                    The base layer that keeps everyone connected.
+                    Access to the Community Network
                 </h1>
                 <p className="text-lg text-slate-600 max-w-3xl">
-                    Everyone starts here. The Community tier keeps you plugged into SwimBuddz even on weeks you're not in the pool.
-                    It's where you stay informed, meet other swimmers, and access resources that help you grow.
+                    Designed for people who simply want to be part of the SwimBuddz family.
+                    A welcoming space to connect with swimmers from around the world.
                 </p>
             </section>
 
@@ -93,9 +93,9 @@ export default function CommunityPage() {
 
             {/* CTA Section */}
             <section className="rounded-3xl bg-gradient-to-br from-cyan-600 to-cyan-700 px-8 py-12 text-center text-white">
-                <h2 className="text-3xl font-bold mb-4">Ready to Join the Community?</h2>
+                <h2 className="text-3xl font-bold mb-4">Who is this for?</h2>
                 <p className="text-lg mb-6 text-cyan-50 max-w-2xl mx-auto">
-                    Start your SwimBuddz journey. Create your profile and get connected with swimmers who show up.
+                    Anyone who wants to join the movement, make friends, and participate casually—no commitments or training expectations.
                 </p>
                 <Link
                     href="/register"
