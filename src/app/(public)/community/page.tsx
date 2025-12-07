@@ -30,7 +30,7 @@ const benefits = [
     "Basic Member Profile",
     "Access to Community Chats (General conversation, Q&A)",
     "Educational Content (Swim tips, technique guides, lifestyle/fitness)",
-    "Opt-in Features (Volunteer roles, Interest tags)"
+    "Opt-in Features (Volunteer roles and opportunities)"
 ];
 
 export default function CommunityPage() {

@@ -2,10 +2,10 @@ import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 
 const benefits = [
-    "Access to Regular Club Training Sessions (Weekly/Bi-weekly)",
+    "Access to Regular Club Training Sessions (Weekly/Bi-weekly) - ongoing swimming exercise at your pace",
     "Session Booking & Attendance Tracking",
-    "Ride-Share Coordination",
-    "Progress Tracking (Basic skill improvements, Time tracking)",
+    "Ride-Share Coordination - Opt in to ride with other members in the club",
+    "Progress Tracking (Basic skill improvements, Time tracking, Feedback)",
     "Exclusive Club Events (Technique workshops, fun races)",
     "Eligibility for Internal Challenges & Awards",
     "Recognition System (Titles, Badges)",

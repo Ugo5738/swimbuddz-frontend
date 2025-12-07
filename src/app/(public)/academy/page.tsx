@@ -3,11 +3,11 @@ import { Card } from "@/components/ui/Card";
 import { UpcomingCohorts } from "@/components/academy/UpcomingCohorts";
 
 const benefits = [
-    "Structured programs and cohorts (6-8 week courses)",
-    "Structured Curriculum & Milestones",
+    "Structured programs and cohorts",
+    "Structured Curriculum & Milestones - water comfort, floating, breathing, endurance, efficiency",
     "Coach-Assigned Drills and Goals",
     "Progress Tracking (Academy Level)",
-    "Cohort-Based Scheduling (8-12 weeks)",
+    "Cohort-Based Scheduling (4+ weeks)",
     "Coach Notes & Feedback History",
     "Video Analysis (Optional)",
     "Certification / Level Badge",

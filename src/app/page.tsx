@@ -31,11 +31,13 @@ const tiers = [
     name: "Community",
     description: "Join a welcoming space to connect with other swimming enthusiasts.",
     benefits: [
+      "Access to Global Community Network of swimmers",
       "Access to Community Events & Socials",
       "Basic member profile",
       "Access to Swim tips & education",
       "Community group chats",
-      "Volunteer opportunities"
+      "Volunteer opportunities (media, logistics, etc.)",
+      "Access to SwimBuddz merchandise",
     ],
     pricing: "Free",
     link: "/community",
@@ -43,13 +45,14 @@ const tiers = [
   },
   {
     name: "Club",
-    description: "For swimmers who want structured, ongoing improvement and belong to an active training group.",
+    description: "For swimmers who want to make swimming a lifestyle, with structured, ongoing improvement and an active training group.",
     benefits: [
       "Regular training exercises",
       "Improvement at your own pace",
       "Track your times & performance",
       "Team culture & challenges",
       "Everything in Community",
+      "Exclusive club events",
       "Monthly subscription"
     ],
     pricing: "Paid Monthly",
