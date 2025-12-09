@@ -23,7 +23,7 @@ const tierOptions: TierOption[] = [
         label: "Community",
         tagline: "Join the SwimBuddz family",
         price: "Free",
-        priceNote: "Always free",
+        priceNote: "",
         icon: <Users className="h-6 w-6" />,
         accentColor: "cyan",
         features: [
