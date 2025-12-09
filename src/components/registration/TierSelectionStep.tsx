@@ -23,7 +23,7 @@ const tierOptions: TierOption[] = [
         label: "Community",
         tagline: "Join the SwimBuddz family",
         price: "Free",
-        priceNote: "",
+        priceNote: "Pay per event",
         icon: <Users className="h-6 w-6" />,
         accentColor: "cyan",
         features: [
@@ -37,7 +37,7 @@ const tierOptions: TierOption[] = [
     {
         value: "club",
         label: "Club",
-        tagline: "Train with us regularly",
+        tagline: "Swim with us regularly",
         price: "$10",
         priceNote: "per month",
         icon: <Star className="h-6 w-6" />,
@@ -45,8 +45,8 @@ const tierOptions: TierOption[] = [
         featured: true,
         includes: "Everything in Community, plus:",
         features: [
-            "Regular training sessions",
-            "Preferred training locations",
+            "Regular Swimming sessions",
+            "Preferred Swimming locations",
             "Club challenges & badges",
             "Attendance tracking",
             "Priority event access",
