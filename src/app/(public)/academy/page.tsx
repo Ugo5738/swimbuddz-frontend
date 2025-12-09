@@ -2,18 +2,58 @@ import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { UpcomingCohorts } from "@/components/academy/UpcomingCohorts";
 
-const benefits = [
-    "Structured programs and cohorts",
-    "Structured Curriculum & Milestones - water comfort, floating, breathing, endurance, efficiency",
-    "Coach-Assigned Drills and Goals",
-    "Progress Tracking (Academy Level)",
-    "Cohort-Based Scheduling (4+ weeks)",
-    "Coach Notes & Feedback History",
-    "Video Analysis (Optional)",
-    "Certification / Level Badge",
-    "Premium Resources",
-    "Priority Access",
-    "Everything in Community & Club"
+type Benefit = {
+    title: string;
+    description?: string;
+    subItems?: string[];
+};
+
+const benefits: Benefit[] = [
+    {
+        title: "Everything in Club",
+        description: ""
+    },
+    {
+        title: "Structured Curriculum & Milestones",
+        description: "(e.g., water comfort → floating → breathing → kick → arm movement → full stroke → endurance → efficiency)"
+    },
+    {
+        title: "Coach-Assigned Drills and Goals",
+        description: "Each swimmer receives personalized tasks to complete between sessions."
+    },
+    {
+        title: "Progress Tracking (Academy Level)",
+        subItems: [
+            "Detailed milestone tracking",
+            "Dates of completion",
+            "Skill gap analysis",
+            "Stroke-by-stroke progress"
+        ]
+    },
+    {
+        title: "Cohort-Based Scheduling",
+        description: "4+ weeks programs with classmates starting and graduating together."
+    },
+    {
+        title: "Coach Notes & Feedback History",
+        description: "A dedicated performance journal accessible on your profile."
+    },
+    {
+        title: "Video Analysis (Optional)",
+        description: "Coaches review your technique and provide annotated feedback."
+    },
+    {
+        title: "Certification / Level Badge",
+        description: "At the end of the cohort, swimmers receive badges/certificates showing their achieved level."
+    },
+    {
+        title: "Premium Resources",
+        description: "Access to exclusive academy materials, drills library, progression charts, and bonus sessions."
+    },
+    {
+        title: "Priority Access",
+        description: "Priority booking for sessions and limited-seat workshops."
+    }
 ];
 
 const learningPaths = [
@@ -72,14 +112,32 @@ export default function AcademyPage() {
             {/* Benefits Section */}
             <section className="space-y-6">
                 <h2 className="text-2xl font-semibold text-slate-900">What You Get</h2>
-                <Card className="space-y-4">
-                    <ul className="space-y-3">
+                <Card className="space-y-6 p-6">
+                    <ul className="space-y-6">
                         {benefits.map((benefit, index) => (
-                            <li key={index} className="flex items-start gap-3">
-                                <span className="mt-1 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-cyan-100 text-xs text-cyan-700">
+                            <li key={index} className="flex items-start gap-4">
+                                <span className="mt-1 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-cyan-100 text-sm text-cyan-700">
                                     ✓
                                 </span>
-                                <span className="text-slate-700">{benefit}</span>
+                                <div className="space-y-2">
+                                    <h3 className="font-semibold text-slate-900 text-lg leading-tight">
+                                        {benefit.title}
+                                    </h3>
+                                    {benefit.description && (
+                                        <p className="text-slate-600 leading-relaxed">
+                                            {benefit.description}
+                                        </p>
+                                    )}
+                                    {benefit.subItems && (
+                                        <ul className="list-disc pl-4 space-y-1 mt-2">
+                                            {benefit.subItems.map((subItem, idx) => (
+                                                <li key={idx} className="text-slate-600">
+                                                    {subItem}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
                             </li>
                         ))}
                     </ul>

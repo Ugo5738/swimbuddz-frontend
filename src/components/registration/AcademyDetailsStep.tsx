@@ -48,7 +48,7 @@ export function AcademyDetailsStep({
                     <div>
                         <h4 className="font-medium text-cyan-900">Current Skill Assessment</h4>
                         <p className="text-sm text-cyan-700">
-                            Be honest about your current abilities - this helps us place you in the right program level.
+                            Be honest about your current abilities - this helps us offer you the right programs.
                         </p>
                     </div>
                 </div>

@@ -1,16 +1,57 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 
-const benefits = [
-    "Access to Regular Club Training Sessions (Weekly/Bi-weekly) - ongoing swimming exercise at your pace",
-    "Session Booking & Attendance Tracking",
-    "Ride-Share Coordination - Opt in to ride with other members in the club",
-    "Progress Tracking (Basic skill improvements, Time tracking, Feedback)",
-    "Exclusive Club Events (Technique workshops, fun races)",
-    "Eligibility for Internal Challenges & Awards",
-    "Recognition System (Titles, Badges)",
-    "Participation in External Activities (Triathlons, Open water)",
-    "Everything in Community"
+type Benefit = {
+    title: string;
+    description?: string;
+    subItems?: string[];
+};
+
+const benefits: Benefit[] = [
+    {
+        title: "Everything in Community",
+        description: ""
+    },
+    {
+        title: "Access to Regular Club Swimming Sessions",
+        description: "Weekly or bi-weekly coached sessions. Ongoing swimming exercise at your pace."
+    },
+    {
+        title: "Session Booking & Attendance Tracking",
+        description: "RSVP to sessions, see your history, and stay consistent."
+    },
+    {
+        title: "Ride-Share Coordination",
+        description: "Organize Ride-Share transportation with other members per session."
+    },
+    {
+        title: "Progress Tracking (Club Level)",
+        subItems: [
+            "Basic skill improvements",
+            "Time tracking (e.g., 50m/100m times)",
+            "Feedback from lane captains or coaches"
+        ]
+    },
+    {
+        title: "Exclusive Club Events",
+        description: "Technique workshops, fun races, themed sessions, fitness days, etc."
+    },
+    {
+        title: "Eligibility for Internal Challenges & Awards",
+        subItems: [
+            "Time trials",
+            "Monthly/seasonal challenges",
+            "Progress & performance badges"
+        ]
+    },
+    {
+        title: "Recognition System",
+        description: "Earn and display titles like Best Freestyle, Most Improved, Distance King/Queen, etc., visible on your public profile."
+    },
+    {
+        title: "Participation in External Activities",
+        description: "Access to triathlons, open water swims, swimming festivals, team relays, and partner events."
+    }
 ];
 
 const trainingStructure = [
@@ -56,25 +97,43 @@ export default function ClubPage() {
                     Club Tier
                 </p>
                 <h1 className="text-4xl font-bold text-slate-900 md:text-5xl">
-                    Access to Regular Club Training Sessions
+                    Access to Regular Club Swimming Sessions
                 </h1>
                 <p className="text-lg text-slate-600 max-w-3xl">
-                    For swimmers who want structured, ongoing improvement and belong to an active training group.
-                    Ongoing training at your pace.
+                    For swimmers who want structured, ongoing improvement and belong to an active swimming group.
+                    Ongoing swimming at your pace.
                 </p>
             </section>
 
             {/* Benefits Section */}
             <section className="space-y-6">
                 <h2 className="text-2xl font-semibold text-slate-900">What You Get</h2>
-                <Card className="space-y-4">
-                    <ul className="space-y-3">
+                <Card className="space-y-6 p-6">
+                    <ul className="space-y-6">
                         {benefits.map((benefit, index) => (
-                            <li key={index} className="flex items-start gap-3">
-                                <span className="mt-1 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-cyan-100 text-xs text-cyan-700">
+                            <li key={index} className="flex items-start gap-4">
+                                <span className="mt-1 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-cyan-100 text-sm text-cyan-700">
                                     ✓
                                 </span>
-                                <span className="text-slate-700">{benefit}</span>
+                                <div className="space-y-2">
+                                    <h3 className="font-semibold text-slate-900 text-lg leading-tight">
+                                        {benefit.title}
+                                    </h3>
+                                    {benefit.description && (
+                                        <p className="text-slate-600 leading-relaxed">
+                                            {benefit.description}
+                                        </p>
+                                    )}
+                                    {benefit.subItems && (
+                                        <ul className="list-disc pl-4 space-y-1 mt-2">
+                                            {benefit.subItems.map((subItem, idx) => (
+                                                <li key={idx} className="text-slate-600">
+                                                    {subItem}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
                             </li>
                         ))}
                     </ul>
