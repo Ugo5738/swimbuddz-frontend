@@ -16,6 +16,7 @@ import { OptionPillGroup } from "@/components/forms/OptionPillGroup";
 import { SingleSelectPills } from "@/components/forms/SingleSelectPills";
 import { TimezoneCombobox } from "@/components/forms/TimezoneCombobox";
 import { UpcomingSessions } from "@/components/profile/UpcomingSessions";
+import { MembershipCard } from "@/components/profile/MembershipCard";
 import {
   strokesOptions,
   interestOptions,
@@ -82,7 +83,9 @@ function formatToken(value: string | null | undefined) {
 }
 
 type Profile = {
+  id: string;
   name: string;
+  joinedAt: string;
   email: string;
   phone: string;
   city: string;
@@ -95,6 +98,8 @@ type Profile = {
   strokes: string[];
   interests: string[];
   goalsNarrative: string;
+  occupation?: string;
+  areaInLagos?: string;
 
   availabilitySlots: string[];
   timeOfDayAvailability: string[];
@@ -123,14 +128,18 @@ type Profile = {
   paymentReadiness: string;
   currencyPreference: string;
   consentPhoto: string;
+  membershipTier: string; // legacy
   membershipTiers: string[];
+  requestedMembershipTiers: string[];
   academyFocusAreas: string[];
   academyFocus: string;
   paymentNotes: string;
 };
 
 const mockProfile: Profile = {
+  id: "mock-id-123",
   name: "Ada Obi",
+  joinedAt: "2024-01-01",
   email: "ada@example.com",
   phone: "+234 801 234 5678",
   city: "Lagos",
@@ -171,7 +180,9 @@ const mockProfile: Profile = {
   paymentReadiness: "need_notice",
   currencyPreference: "NGN",
   consentPhoto: "yes",
+  membershipTier: "club",
   membershipTiers: ["community", "club"],
+  requestedMembershipTiers: [],
   academyFocusAreas: ["travel_meets"],
   academyFocus: "",
   paymentNotes: "Needs receipts for corporate reimbursements"
@@ -180,6 +191,7 @@ const mockProfile: Profile = {
 type MemberResponse = {
   id: string;
   auth_id: string;
+  created_at: string;
   email: string;
   first_name: string;
   last_name: string;
@@ -223,16 +235,21 @@ type MemberResponse = {
   payment_readiness: string;
   currency_preference: string;
   consent_photo: string;
-  membership_tier: string;
+  membership_tier?: string; // legacy/single
   membership_tiers: string[];
-  academy_focus_areas: string[];
-  academy_focus: string;
-  payment_notes: string;
+  requested_membership_tiers?: string[];
+  academy_focus_areas?: string[];
+  academy_focus?: string;
+  payment_notes?: string;
+  occupation?: string;
+  area_in_lagos?: string;
 };
 
 function mapMemberResponseToProfile(data: MemberResponse): Profile {
   return {
+    id: data.id,
     name: `${data.first_name} ${data.last_name}`,
+    joinedAt: data.created_at,
     email: data.email,
     phone: data.phone || "",
     city: data.city || "",
@@ -273,12 +290,16 @@ function mapMemberResponseToProfile(data: MemberResponse): Profile {
     paymentReadiness: data.payment_readiness || "",
     currencyPreference: data.currency_preference || "NGN",
     consentPhoto: data.consent_photo || "",
+    membershipTier: data.membership_tier || "community",
     membershipTiers: data.membership_tiers && data.membership_tiers.length > 0
       ? data.membership_tiers.map(t => t.toLowerCase())
       : (data.membership_tier ? [data.membership_tier.toLowerCase()] : []),
+    requestedMembershipTiers: data.requested_membership_tiers || [],
     academyFocusAreas: data.academy_focus_areas || [],
     academyFocus: data.academy_focus || "",
-    paymentNotes: data.payment_notes || ""
+    paymentNotes: data.payment_notes || "",
+    occupation: data.occupation || "",
+    areaInLagos: data.area_in_lagos || ""
   };
 }
 
@@ -370,6 +391,29 @@ function ProfileContent() {
         <div className="space-y-6 lg:col-span-1">
           <Card className="space-y-4">
             <h2 className="text-lg font-semibold text-slate-900">Membership</h2>
+
+            {/* Membership Card */}
+            {(profile.membershipTiers.includes("club") || profile.membershipTiers.includes("academy")) && (
+              <div className="mb-4">
+                <MembershipCard
+                  name={profile.name}
+                  tier={profile.membershipTiers.includes("academy") ? "academy" : "club"}
+                  memberId={profile.id}
+                  joinedAt={profile.joinedAt}
+                />
+              </div>
+            )}
+
+            {/* Pending Upgrade Alert */}
+            {profile.requestedMembershipTiers && profile.requestedMembershipTiers.length > 0 && (
+              <Alert variant="info" title="Upgrade Request Pending">
+                <p>
+                  You have requested an upgrade to <strong>{profile.requestedMembershipTiers.join(", ")}</strong>.
+                  This request is pending admin approval. You will retain your current access until then.
+                </p>
+              </Alert>
+            )}
+
             <div className="flex flex-wrap gap-2">
               {profile.membershipTiers.length ? (
                 profile.membershipTiers.map((tier) => (
@@ -408,6 +452,8 @@ function ProfileContent() {
               <Detail label="Phone" value={profile.phone} />
               <Detail label="Location" value={`${profile.city}, ${profile.country}`} />
               <Detail label="Time zone" value={profile.timeZone} />
+              <Detail label="Occupation" value={profile.occupation || "--"} />
+              <Detail label="Area in Lagos" value={profile.areaInLagos || "--"} />
             </div>
           </Card>
 
@@ -423,10 +469,12 @@ function ProfileContent() {
                 onCancel={() => setEditing(false)}
               />
             ) : (
-              <div className="grid gap-4 md:grid-cols-2">
-                <Detail label="Level" value={levelLabels[profile.swimLevel] ?? profile.swimLevel} />
-                <Detail label="Deep-water comfort" value={deepWaterLabels[profile.deepWaterComfort] ?? profile.deepWaterComfort} />
-                <Detail label="Goals" value={profile.goalsNarrative} fullSpan />
+              <>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Detail label="Level" value={levelLabels[profile.swimLevel] ?? profile.swimLevel} />
+                  <Detail label="Deep-water comfort" value={deepWaterLabels[profile.deepWaterComfort] ?? profile.deepWaterComfort} />
+                  <Detail label="Goals" value={profile.goalsNarrative} fullSpan />
+                </div>
                 <Detail
                   label="Interests"
                   value={profile.interests.length ? profile.interests.map(formatToken).join(", ") : "--"}
@@ -443,9 +491,7 @@ function ProfileContent() {
                     <p className="text-sm text-slate-600">No strokes shared yet</p>
                   )}
                 </Detail>
-
-
-              </div>
+              </>
             )}
           </Card>
 
@@ -583,6 +629,8 @@ type FormState = {
   city: string;
   country: string;
   timeZone: string;
+  occupation: string;
+  areaInLagos: string;
   swimLevel: string;
   deepWaterComfort: string;
   strokes: string[];
@@ -627,11 +675,13 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
     city: profile.city,
     country: profile.country,
     timeZone: profile.timeZone,
-    swimLevel: profile.swimLevel,
+    swimLevel: profile.swimLevel || "",
     deepWaterComfort: profile.deepWaterComfort,
     strokes: profile.strokes,
     interests: profile.interests,
     goalsNarrative: profile.goalsNarrative,
+    occupation: profile.occupation || "",
+    areaInLagos: profile.areaInLagos || "",
 
     availabilitySlots: profile.availabilitySlots,
     timeOfDayAvailability: profile.timeOfDayAvailability,
@@ -680,6 +730,8 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
       city: formState.city,
       country: formState.country,
       timeZone: formState.timeZone,
+      occupation: formState.occupation,
+      areaInLagos: formState.areaInLagos,
       swimLevel: formState.swimLevel,
       deepWaterComfort: formState.deepWaterComfort,
       strokes: formState.strokes,
@@ -726,6 +778,8 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
           city: formState.city,
           country: formState.country,
           time_zone: formState.timeZone,
+          occupation: formState.occupation,
+          area_in_lagos: formState.areaInLagos,
           swim_level: formState.swimLevel,
           deep_water_comfort: formState.deepWaterComfort,
           strokes: updatedProfile.strokes,
@@ -783,22 +837,36 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
         </Alert>
       ) : null}
       <div className="grid gap-6 md:grid-cols-2">
-        <Input
-          label="City"
-          value={formState.city}
-          onChange={(e) => setFormState({ ...formState, city: e.target.value })}
-        />
-        <Input
-          label="Country"
-          value={formState.country}
-          onChange={(e) => setFormState({ ...formState, country: e.target.value })}
-        />
-        <div className="md:col-span-2">
-          <TimezoneCombobox
-            label="Time zone"
-            value={formState.timeZone}
-            onChange={(value) => setFormState({ ...formState, timeZone: value })}
-          />
+        {/* Contact & Location */}
+        <div className="md:col-span-2 space-y-4">
+          <h3 className="font-medium text-slate-900">Contact & Location</h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Input
+              label="City"
+              value={formState.city}
+              onChange={(e) => setFormState({ ...formState, city: e.target.value })}
+            />
+            <Input
+              label="Country"
+              value={formState.country}
+              onChange={(e) => setFormState({ ...formState, country: e.target.value })}
+            />
+            <TimezoneCombobox
+              label="Time zone"
+              value={formState.timeZone}
+              onChange={(value) => setFormState({ ...formState, timeZone: value })}
+            />
+            <Input
+              label="Occupation"
+              value={formState.occupation}
+              onChange={(e) => setFormState({ ...formState, occupation: e.target.value })}
+            />
+            <Input
+              label="Area in Lagos"
+              value={formState.areaInLagos}
+              onChange={(e) => setFormState({ ...formState, areaInLagos: e.target.value })}
+            />
+          </div>
         </div>
         <div className="md:col-span-2">
           <Select

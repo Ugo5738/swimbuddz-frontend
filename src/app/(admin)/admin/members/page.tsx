@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { supabase } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
-import { CheckCircle, XCircle, Clock, Eye, Pencil, Trash2, UserPlus } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Eye, Pencil, Trash2, UserPlus, TrendingUp } from "lucide-react";
 
 // Define Member type based on backend response
 interface Member {
@@ -47,9 +47,12 @@ interface Member {
     how_found_us?: string;
     previous_communities?: string;
     hopes_from_swimbuddz?: string;
+
+    // Upgrade flow
+    requested_membership_tiers?: string[];
 }
 
-type FilterTab = "all" | "pending" | "approved" | "rejected";
+type FilterTab = "all" | "pending" | "approved" | "rejected" | "upgrades";
 
 export default function AdminMembersPage() {
     const [members, setMembers] = useState<Member[]>([]);
@@ -68,7 +71,7 @@ export default function AdminMembersPage() {
     const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
     const [approvingMember, setApprovingMember] = useState<Member | null>(null);
     const [approvalNotes, setApprovalNotes] = useState("");
-    const [approvalAction, setApprovalAction] = useState<"approve" | "reject">("approve");
+    const [approvalAction, setApprovalAction] = useState<"approve" | "reject" | "upgrade">("approve"); // Added upgrade
 
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -169,7 +172,7 @@ export default function AdminMembersPage() {
         setIsEditModalOpen(true);
     };
 
-    const openApprovalModal = (member: Member, action: "approve" | "reject") => {
+    const openApprovalModal = (member: Member, action: "approve" | "reject" | "upgrade") => {
         setApprovingMember(member);
         setApprovalAction(action);
         setApprovalNotes("");
@@ -265,9 +268,14 @@ export default function AdminMembersPage() {
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token;
 
-            const endpoint = approvalAction === "approve"
-                ? `${API_BASE_URL}/api/v1/admin/members/${approvingMember.id}/approve`
-                : `${API_BASE_URL}/api/v1/admin/members/${approvingMember.id}/reject`;
+            let endpoint = "";
+            if (approvalAction === "approve") {
+                endpoint = `${API_BASE_URL}/api/v1/admin/members/${approvingMember.id}/approve`;
+            } else if (approvalAction === "reject") {
+                endpoint = `${API_BASE_URL}/api/v1/admin/members/${approvingMember.id}/reject`;
+            } else if (approvalAction === "upgrade") {
+                endpoint = `${API_BASE_URL}/api/v1/admin/members/${approvingMember.id}/approve-upgrade`;
+            }
 
             const res = await fetch(endpoint, {
                 method: "POST",
@@ -321,6 +329,9 @@ export default function AdminMembersPage() {
     // Filter members based on selected tab
     const filteredMembers = members.filter(member => {
         if (filterTab === "all") return true;
+        if (filterTab === "upgrades") {
+            return member.requested_membership_tiers && member.requested_membership_tiers.length > 0;
+        }
         return member.approval_status === filterTab;
     });
 
@@ -330,6 +341,7 @@ export default function AdminMembersPage() {
         pending: members.filter(m => m.approval_status === "pending").length,
         approved: members.filter(m => m.approval_status === "approved").length,
         rejected: members.filter(m => m.approval_status === "rejected").length,
+        upgrades: members.filter(m => m.requested_membership_tiers && m.requested_membership_tiers.length > 0).length,
     };
 
     const getStatusBadge = (status: string) => {
@@ -374,7 +386,7 @@ export default function AdminMembersPage() {
 
             {/* Filter Tabs */}
             <div className="flex gap-2 border-b border-slate-200">
-                {(["all", "pending", "approved", "rejected"] as FilterTab[]).map((tab) => (
+                {(["all", "pending", "approved", "rejected", "upgrades"] as FilterTab[]).map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setFilterTab(tab)}
@@ -397,22 +409,18 @@ export default function AdminMembersPage() {
                 ))}
             </div>
 
-            {/* Pending Approval Alert */}
-            {counts.pending > 0 && filterTab !== "pending" && (
+            {/* Pending Approval/Upgrade Alert */}
+            {(counts.pending > 0 && filterTab !== "pending" || counts.upgrades > 0 && filterTab !== "upgrades") && (
                 <div className="p-4 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Clock className="h-5 w-5 text-amber-600" />
                         <span className="text-amber-800">
-                            <strong>{counts.pending}</strong> member{counts.pending > 1 ? "s" : ""} awaiting approval
+                            {counts.pending > 0 && <span><strong>{counts.pending}</strong> new registration(s)</span>}
+                            {counts.pending > 0 && counts.upgrades > 0 && <span> and </span>}
+                            {counts.upgrades > 0 && <span><strong>{counts.upgrades}</strong> upgrade request(s)</span>}
+                            <span> awaiting action.</span>
                         </span>
                     </div>
-                    <Button
-                        variant="secondary"
-                        onClick={() => setFilterTab("pending")}
-                        className="text-sm"
-                    >
-                        Review Now
-                    </Button>
                 </div>
             )}
 
@@ -447,6 +455,11 @@ export default function AdminMembersPage() {
                                             <Link href={`/admin/members/${member.id}`} className="hover:underline hover:text-cyan-700">
                                                 {member.first_name} {member.last_name}
                                             </Link>
+                                            {member.requested_membership_tiers && member.requested_membership_tiers.length > 0 && (
+                                                <span className="ml-2 inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800">
+                                                    Upgrade Requested
+                                                </span>
+                                            )}
                                         </td>
                                         <td className="px-4 py-3">
                                             <div className="flex flex-col">
@@ -456,6 +469,11 @@ export default function AdminMembersPage() {
                                         </td>
                                         <td className="px-4 py-3">
                                             <span className="capitalize">{member.membership_tier || "community"}</span>
+                                            {member.requested_membership_tiers && member.requested_membership_tiers.length > 0 && (
+                                                <div className="text-xs text-purple-600">
+                                                    ➞ {member.requested_membership_tiers.join(", ")}
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="px-4 py-3">{member.swim_level}</td>
                                         <td className="px-4 py-3">
@@ -496,6 +514,17 @@ export default function AdminMembersPage() {
                                                             <XCircle className="h-4 w-4" />
                                                         </button>
                                                     </>
+                                                )}
+
+                                                {/* Approve Upgrade button */}
+                                                {member.approval_status === "approved" && member.requested_membership_tiers && member.requested_membership_tiers.length > 0 && (
+                                                    <button
+                                                        onClick={() => openApprovalModal(member, "upgrade")} // We need to update openApprovalModal signature or handle this
+                                                        className="p-1.5 rounded hover:bg-purple-50 text-purple-600 hover:text-purple-700"
+                                                        title="Approve Upgrade"
+                                                    >
+                                                        <TrendingUp className="h-4 w-4" />
+                                                    </button>
                                                 )}
 
                                                 <button

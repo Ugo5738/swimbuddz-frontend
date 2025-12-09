@@ -242,6 +242,7 @@ export function CoreProfileStep({ formData, onUpdate }: CoreProfileStepProps) {
                 onChange={(e) => onUpdate("areaInLagos", e.target.value)}
                 placeholder="e.g. Lekki, Yaba"
                 hint="Helps us coordinate sessions and ride-shares"
+                required
             />
 
             {/* Location */}
@@ -289,6 +290,7 @@ export function CoreProfileStep({ formData, onUpdate }: CoreProfileStepProps) {
                 onChange={(e) => onUpdate("occupation", e.target.value)}
                 placeholder="e.g. Software Engineer"
                 hint="This helps us understand our community better"
+                required
             />
 
             {/* Swimming Level */}
