@@ -1,4 +1,4 @@
-import { supabase, getCurrentAccessToken } from "./auth";
+import { getCurrentAccessToken } from "./auth";
 import { API_BASE_URL } from "./config";
 
 if (!process.env.NEXT_PUBLIC_API_BASE_URL) {
@@ -36,8 +36,15 @@ async function request<T>(method: string, path: string, options: RequestOptions 
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || `Request failed with status ${response.status}`);
+    // Prefer structured API errors: FastAPI typically returns { detail: "..." }.
+    try {
+      const data = await response.json();
+      const detail = typeof data?.detail === "string" ? data.detail : JSON.stringify(data);
+      throw new Error(detail || `Request failed with status ${response.status}`);
+    } catch {
+      const errorText = await response.text();
+      throw new Error(errorText || `Request failed with status ${response.status}`);
+    }
   }
 
   if (response.status === 204) {

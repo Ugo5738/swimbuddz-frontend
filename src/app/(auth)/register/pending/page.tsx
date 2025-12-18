@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Clock, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { supabase } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
+import { CheckCircle, Clock, RefreshCw, XCircle } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 type ApprovalStatus = "pending" | "approved" | "rejected" | "loading";
 
@@ -99,6 +99,11 @@ export default function RegistrationPendingPage() {
                                     Then you can access all SwimBuddz features
                                 </li>
                             </ul>
+                            <p className="mt-3 text-left text-sm text-slate-600">
+                                <a href="/membership" className="font-semibold text-cyan-700 hover:underline">
+                                    How membership works
+                                </a>
+                            </p>
                         </div>
                         <button
                             onClick={handleRefresh}

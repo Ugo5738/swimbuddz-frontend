@@ -1,23 +1,22 @@
 "use client";
 
-import { Suspense, useState, useEffect, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Alert } from "@/components/ui/Alert";
-import { LoadingCard } from "@/components/ui/LoadingCard";
-import { TierSelectionStep } from "@/components/registration/TierSelectionStep";
-import { CoreProfileStep } from "@/components/registration/CoreProfileStep";
-import { ClubDetailsStep } from "@/components/registration/ClubDetailsStep";
 import { AcademyDetailsStep } from "@/components/registration/AcademyDetailsStep";
-import { VolunteerInterestsStep } from "@/components/registration/VolunteerInterestsStep";
-import { ReviewConfirmStep } from "@/components/registration/ReviewConfirmStep";
-import { apiEndpoints } from "@/lib/config";
+import { ClubDetailsStep } from "@/components/registration/ClubDetailsStep";
+import { RegistrationConfirmStep } from "@/components/registration/RegistrationConfirmStep";
+import { RegistrationEssentialsStep } from "@/components/registration/RegistrationEssentialsStep";
+import { TierSelectionStep } from "@/components/registration/TierSelectionStep";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet, apiPatch } from "@/lib/api";
+import { createPendingRegistration } from "@/lib/registration";
 import clsx from "clsx";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 type Tier = "community" | "club" | "academy";
-type StepKey = "tier" | "core" | "club" | "academy" | "volunteer" | "review";
+type StepKey = "tier" | "essentials" | "club" | "academy" | "confirm";
 
 type Step = {
   key: StepKey;
@@ -29,7 +28,7 @@ interface FormData {
   // Tier
   membershipTier: Tier | null;
 
-  // Core Profile (Step 2)
+  // Account Essentials
   firstName: string;
   lastName: string;
   email: string;
@@ -43,7 +42,7 @@ interface FormData {
   discoverySource: string;
   profilePhotoUrl?: string;
 
-  // Club Details (Step 3)
+  // Club Readiness
   emergencyContactName: string;
   emergencyContactRelationship: string;
   emergencyContactPhone: string;
@@ -53,7 +52,7 @@ interface FormData {
   consentPhoto: string;
   clubNotes: string;
 
-  // Academy Details (Step 4)
+  // Academy Readiness
   academySkillAssessment: {
     canFloat: boolean;
     headUnderwater: boolean;
@@ -63,13 +62,8 @@ interface FormData {
   academyGoals: string;
   academyPreferredCoachGender: string;
   academyLessonPreference: string;
-  academyProgram: string;
-  academyLevel: string;
-  academyGoal: string;
-  academySchedule: string;
-  academyNotes: string;
 
-  // Volunteer & Interests (Step 5)
+  // Volunteer & Interests (post-registration)
   volunteerInterest: string[];
   interestTags: string[];
   showInDirectory: boolean;
@@ -82,7 +76,7 @@ interface FormData {
   currencyPreference: string;
   paymentNotes?: string;
 
-  // About You (Vetting Questions)
+  // About You (optional vetting)
   occupation?: string;
   areaInLagos?: string;
   howFoundUs?: string;
@@ -112,7 +106,7 @@ const initialFormData: FormData = {
   locationPreference: [],
   timeOfDayAvailability: [],
   consentPhoto: "yes",
-  clubNotes: "", // New field
+  clubNotes: "",
   academySkillAssessment: {
     canFloat: false,
     headUnderwater: false,
@@ -122,11 +116,6 @@ const initialFormData: FormData = {
   academyGoals: "",
   academyPreferredCoachGender: "",
   academyLessonPreference: "",
-  academyProgram: "", // New field
-  academyLevel: "", // New field
-  academyGoal: "", // New field
-  academySchedule: "", // New field
-  academyNotes: "", // New field
   volunteerInterest: [],
   interestTags: [],
   showInDirectory: true, // Default to opted-in
@@ -147,6 +136,12 @@ const initialFormData: FormData = {
   communityRulesAccepted: false,
 };
 
+function expandTier(tier: Tier): Tier[] {
+  if (tier === "academy") return ["academy", "club", "community"];
+  if (tier === "club") return ["club", "community"];
+  return ["community"];
+}
+
 function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -157,10 +152,9 @@ function RegisterContent() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [currentTier, setCurrentTier] = useState<Tier | null>(null);
+  const [currentTiers, setCurrentTiers] = useState<Tier[]>([]);
 
   useEffect(() => {
     if (isUpgrade) {
@@ -168,8 +162,17 @@ function RegisterContent() {
       apiGet<any>("/api/v1/members/me", { auth: true })
         .then((profile) => {
           console.log("Fetched profile for upgrade:", profile);
-          const tier = profile.membership_tier || (profile.membership_tiers && profile.membership_tiers[0]);
-          setCurrentTier((tier?.toLowerCase() as Tier) || null);
+          const rawTiers: string[] =
+            (profile.membership_tiers && profile.membership_tiers.length > 0
+              ? profile.membership_tiers
+              : profile.membership_tier
+                ? [profile.membership_tier]
+                : ["community"]).map((t: string) => t.toLowerCase());
+          const normalizedTiers = rawTiers.filter((t) =>
+            ["community", "club", "academy"].includes(t)
+          ) as Tier[];
+          setCurrentTiers(normalizedTiers);
+          setCurrentTier(normalizedTiers[0] || null);
           setFormData((prev) => ({
             ...prev,
             membershipTier: null, // Force selection of new tier
@@ -208,26 +211,30 @@ function RegisterContent() {
     }
   }, [isUpgrade]);
 
-  // Determine which steps to show based on selected tier
+  // Determine which steps to show based on mode and selected tier
   const steps = useMemo<Step[]>(() => {
-    const visibleSteps: Step[] = [
+    if (isUpgrade) {
+      const visibleSteps: Step[] = [
+        { key: "tier", title: "Choose Tier", required: true },
+      ];
+
+      if (formData.membershipTier === "club" || formData.membershipTier === "academy") {
+        visibleSteps.push({ key: "club", title: "Club Readiness", required: true });
+      }
+
+      if (formData.membershipTier === "academy") {
+        visibleSteps.push({ key: "academy", title: "Academy Readiness", required: true });
+      }
+
+      return visibleSteps;
+    }
+
+    return [
       { key: "tier", title: "Choose Tier", required: true },
-      { key: "core", title: "Core Profile", required: true },
+      { key: "essentials", title: "Create Account", required: true },
+      { key: "confirm", title: "Confirm & Finish", required: true },
     ];
-
-    if (formData.membershipTier === "club" || formData.membershipTier === "academy") {
-      visibleSteps.push({ key: "club", title: "Club Details", required: true });
-    }
-
-    if (formData.membershipTier === "academy") {
-      visibleSteps.push({ key: "academy", title: "Academy Details", required: true });
-    }
-
-    visibleSteps.push({ key: "volunteer", title: "Volunteer & Interests", required: false });
-    visibleSteps.push({ key: "review", title: "Review & Confirm", required: true });
-
-    return visibleSteps;
-  }, [formData.membershipTier]);
+  }, [isUpgrade, formData.membershipTier]);
 
   // Clamp the current step if the visible steps shrink (e.g. switching from academy to community)
   useEffect(() => {
@@ -260,20 +267,16 @@ function RegisterContent() {
       case "tier":
         return formData.membershipTier !== null;
 
-      case "core":
+      case "essentials":
         return Boolean(
           formData.firstName &&
           formData.lastName &&
           formData.email &&
           formData.password && formData.password.length >= 8 &&
           formData.phone &&
-          formData.gender &&
-          formData.dateOfBirth &&
           formData.city &&
           formData.country &&
-          formData.swimLevel &&
-          formData.discoverySource &&
-          formData.profilePhotoUrl // Photo is required
+          formData.swimLevel
         );
 
       case "club":
@@ -294,10 +297,7 @@ function RegisterContent() {
 
 
 
-      case "volunteer":
-        return true; // Optional step
-
-      case "review":
+      case "confirm":
         return acceptedTerms;
 
       default:
@@ -326,101 +326,72 @@ function RegisterContent() {
     setSubmitting(true);
 
     try {
-      // Prepare payload for backend
-      const payload = {
-        // Core fields
+      if (isUpgrade) {
+        if (!formData.membershipTier) {
+          throw new Error("Please select a tier to upgrade to.");
+        }
+        const priority: Record<Tier, number> = { academy: 3, club: 2, community: 1 };
+        const requestedTiers = Array.from(
+          new Set([...(currentTiers || []), ...expandTier(formData.membershipTier)])
+        ).sort((a, b) => priority[b as Tier] - priority[a as Tier]);
+
+        const upgradePayload: any = {
+          membership_tiers: requestedTiers,
+          ...(formData.membershipTier === "club" || formData.membershipTier === "academy"
+            ? {
+              emergency_contact_name: formData.emergencyContactName,
+              emergency_contact_relationship: formData.emergencyContactRelationship,
+              emergency_contact_phone: formData.emergencyContactPhone,
+              medical_info: formData.medicalInfo,
+              location_preference: formData.locationPreference,
+              time_of_day_availability: formData.timeOfDayAvailability,
+              consent_photo: formData.consentPhoto,
+              club_notes: formData.clubNotes || undefined,
+            }
+            : {}),
+          ...(formData.membershipTier === "academy"
+            ? {
+              academy_skill_assessment: formData.academySkillAssessment,
+              academy_goals: formData.academyGoals,
+              academy_preferred_coach_gender: formData.academyPreferredCoachGender,
+              academy_lesson_preference: formData.academyLessonPreference,
+            }
+            : {}),
+        };
+
+        await apiPatch("/api/v1/members/me", upgradePayload, { auth: true });
+        router.push("/profile");
+        return;
+      }
+
+      if (!formData.membershipTier) {
+        throw new Error("Please select a membership tier.");
+      }
+
+      const selectedTier = formData.membershipTier;
+      const requestedTiers =
+        selectedTier === "community" ? undefined : expandTier(selectedTier);
+
+      const registrationPayload = {
         email: formData.email,
-        // password: formData.password, // Don't send password on update unless changed (TODO: handle password change separately)
         first_name: formData.firstName,
         last_name: formData.lastName,
+        password: formData.password,
         phone: formData.phone,
         city: formData.city,
         country: formData.country,
-
-        // Tier
-        membership_tier: formData.membershipTier,
-
-        // Profile
-        profile_photo_url: formData.profilePhotoUrl,
-        gender: formData.gender,
-        date_of_birth: formData.dateOfBirth,
+        area_in_lagos: formData.areaInLagos || undefined,
         swim_level: formData.swimLevel,
-        discovery_source: formData.discoverySource,
-
-        // Community
-        show_in_directory: formData.showInDirectory,
-        interest_tags: formData.interestTags,
-        interests: formData.interestTags, // Map tags to main interests field for profile display
-        consent_photo: formData.consentPhoto, // Send for all tiers
-        social_instagram: formData.socialInstagram,
-        social_linkedin: formData.socialLinkedIn,
-        social_other: formData.socialOther,
-        language_preference: formData.languagePreference,
-        comms_preference: formData.commsPreference,
-        payment_readiness: formData.paymentReadiness,
-        currency_preference: formData.currencyPreference,
-        payment_notes: formData.paymentNotes,
-
-        // Club (if applicable)
-        ...(formData.membershipTier === "club" || formData.membershipTier === "academy" ? {
-          emergency_contact_name: formData.emergencyContactName,
-          emergency_contact_relationship: formData.emergencyContactRelationship,
-          emergency_contact_phone: formData.emergencyContactPhone,
-          medical_info: formData.medicalInfo,
-          location_preference: formData.locationPreference,
-          time_of_day_availability: formData.timeOfDayAvailability,
-          club_notes: formData.clubNotes, // Pass club notes
-        } : {}),
-
-        // Academy (if applicable)
-        ...(formData.membershipTier === "academy" ? {
-          academy_skill_assessment: formData.academySkillAssessment,
-          academy_goals: formData.academyGoals,
-          academy_preferred_coach_gender: formData.academyPreferredCoachGender,
-          academy_lesson_preference: formData.academyLessonPreference,
-          // Pass other academy fields if they are used in the future
-          academy_program: formData.academyProgram,
-          academy_level: formData.academyLevel,
-          academy_goal: formData.academyGoal,
-          academy_schedule: formData.academySchedule,
-          academy_notes: formData.academyNotes,
-        } : {}),
-
-        // About You (Vetting)
-        occupation: formData.occupation,
-        area_in_lagos: formData.areaInLagos,
-        how_found_us: formData.discoverySource, // Map discovery source to vetting question
-        previous_communities: formData.previousCommunities,
-        hopes_from_swimbuddz: formData.hopesFromSwimbuddz,
-        community_rules_accepted: true, // Accepted in Review step
-
-        // Volunteer
-        volunteer_interest: formData.volunteerInterest,
+        // Always allow account access after email verification; tier upgrades are handled separately.
+        membership_tier: "community",
+        membership_tiers: ["community"],
+        requested_membership_tiers: requestedTiers,
+        community_rules_accepted: true,
       };
 
-      if (isUpgrade) {
-        // Use PATCH for upgrades
-        await apiPatch("/api/v1/members/me", payload, { auth: true });
-        router.push("/profile");
-      } else {
-        // Use POST for new registrations
-        // Include password for new registrations
-        const registrationPayload = { ...payload, password: formData.password };
+      await createPendingRegistration(registrationPayload as any);
 
-        const response = await fetch(apiEndpoints.pendingRegistrations, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(registrationPayload),
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.detail || "Registration failed");
-        }
-
-        // Success - redirect or show confirmation
-        router.push("/register/success");
-      }
+      router.push("/register/success");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to complete registration.";
       setErrorMessage(message);
@@ -442,25 +413,19 @@ function RegisterContent() {
           />
         );
 
-      case "core":
+      case "essentials":
         return (
-          <CoreProfileStep
+          <RegistrationEssentialsStep
             formData={{
               firstName: formData.firstName,
               lastName: formData.lastName,
               email: formData.email,
               password: formData.password,
               phone: formData.phone,
-              gender: formData.gender,
-              dateOfBirth: formData.dateOfBirth,
+              areaInLagos: formData.areaInLagos,
               city: formData.city,
               country: formData.country,
               swimLevel: formData.swimLevel,
-              discoverySource: formData.discoverySource,
-              profilePhotoUrl: formData.profilePhotoUrl,
-              occupation: formData.occupation,
-              areaInLagos: formData.areaInLagos,
-              previousCommunities: formData.previousCommunities,
             }}
             onUpdate={updateField}
           />
@@ -498,33 +463,13 @@ function RegisterContent() {
           />
         );
 
-      case "volunteer":
+      case "confirm":
         return (
-          <VolunteerInterestsStep
-            formData={{
-              volunteerInterest: formData.volunteerInterest,
-              interestTags: formData.interestTags,
-              showInDirectory: formData.showInDirectory,
-              socialInstagram: formData.socialInstagram || "",
-              socialLinkedIn: formData.socialLinkedIn || "",
-              socialOther: formData.socialOther || "",
-              languagePreference: formData.languagePreference,
-              commsPreference: formData.commsPreference,
-              paymentReadiness: formData.paymentReadiness,
-              currencyPreference: formData.currencyPreference,
-              paymentNotes: formData.paymentNotes || "",
-              consentPhoto: formData.consentPhoto,
-              hopesFromSwimbuddz: formData.hopesFromSwimbuddz,
-            }}
-            onToggleMulti={toggleMultiValue}
-            onUpdate={updateField}
-          />
-        );
-
-      case "review":
-        return (
-          <ReviewConfirmStep
-            formData={formData}
+          <RegistrationConfirmStep
+            selectedTier={formData.membershipTier}
+            firstName={formData.firstName}
+            lastName={formData.lastName}
+            email={formData.email}
             acceptedTerms={acceptedTerms}
             onAcceptTerms={setAcceptedTerms}
           />

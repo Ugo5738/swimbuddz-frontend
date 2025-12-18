@@ -1,10 +1,10 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { WHATSAPP_GROUP_URL } from "@/lib/config";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
 import { Header } from "./Header";
-import { WHATSAPP_GROUP_URL } from "@/lib/config";
 
 type MainLayoutProps = {
   children: ReactNode;
@@ -15,7 +15,18 @@ export function MainLayout({ children }: MainLayoutProps) {
   const year = new Date().getFullYear();
   const isAdminRoute = pathname?.startsWith("/admin");
 
-  if (isAdminRoute) {
+  // Member portal routes should use MemberLayout without the public header/footer
+  const isMemberPortalRoute =
+    pathname?.startsWith("/dashboard") ||
+    pathname?.startsWith("/profile") ||
+    pathname?.startsWith("/community/directory") ||
+    pathname?.startsWith("/community/events") ||
+    pathname?.startsWith("/community/tips") ||
+    pathname?.startsWith("/community/coaches") ||
+    pathname?.startsWith("/community/volunteers") ||
+    pathname?.startsWith("/attendance");
+
+  if (isAdminRoute || isMemberPortalRoute) {
     return <>{children}</>;
   }
 
@@ -31,6 +42,9 @@ export function MainLayout({ children }: MainLayoutProps) {
           <div className="flex gap-4">
             <Link href="/guidelines-and-rules" className="hover:text-cyan-700">
               Guidelines
+            </Link>
+            <Link href="/membership" className="hover:text-cyan-700">
+              Membership
             </Link>
             <Link href="/privacy" className="hover:text-cyan-700">
               Privacy

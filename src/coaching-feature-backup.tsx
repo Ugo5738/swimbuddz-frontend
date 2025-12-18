@@ -1,4 +1,3 @@
-import React from "react";
 
 // Backup of coaching feature code extracted from Profile page
 

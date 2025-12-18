@@ -47,10 +47,16 @@ export default function StudentAcademyPage() {
             // Fetch details for each enrollment
             const detailedEnrollments = await Promise.all(
                 myEnrollments.map(async (enrollment) => {
-                    const cohort = enrollment.cohort || await AcademyApi.getCohort(enrollment.cohort_id);
-                    const program = await AcademyApi.getProgram(cohort.program_id);
+                    const cohort = enrollment.cohort
+                        ? enrollment.cohort
+                        : enrollment.cohort_id
+                            ? await AcademyApi.getCohort(enrollment.cohort_id)
+                            : undefined;
+
+                    const programId = cohort?.program_id || enrollment.program_id;
+                    const program = programId ? await AcademyApi.getProgram(programId) : undefined;
                     const progress = await AcademyApi.getStudentProgress(enrollment.id);
-                    const milestones = await AcademyApi.listMilestones(cohort.program_id);
+                    const milestones = programId ? await AcademyApi.listMilestones(programId) : [];
 
                     return {
                         ...enrollment,
@@ -78,7 +84,7 @@ export default function StudentAcademyPage() {
     const handleEnroll = async (cohortId: string) => {
         setEnrollingId(cohortId);
         try {
-            await AcademyApi.selfEnroll(cohortId);
+            await AcademyApi.selfEnroll({ cohort_id: cohortId });
             toast.success("Successfully enrolled!");
             await loadData();
         } catch (error) {
@@ -279,6 +285,12 @@ export default function StudentAcademyPage() {
                                             <span className="font-medium text-slate-900">{cohort.program?.duration_weeks} weeks</span>
                                         </div>
                                         <div className="flex items-center justify-between">
+                                            <span className="text-slate-500">Price:</span>
+                                            <span className="font-medium text-slate-900">
+                                                {cohort.program?.price ? `$${cohort.program.price}` : 'Free'}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
                                             <span className="text-slate-500">Starts:</span>
                                             <span className="font-medium text-slate-900">{new Date(cohort.start_date).toLocaleDateString()}</span>
                                         </div>
@@ -304,6 +316,29 @@ export default function StudentAcademyPage() {
                         ))}
                     </div>
                 )}
+            </section>
+
+            {/* Additional Options */}
+            <section className="grid gap-6 md:grid-cols-2">
+                <Card className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 border-purple-100">
+                    <h3 className="text-lg font-bold text-purple-900 mb-2">One-on-One Coaching</h3>
+                    <p className="text-purple-700 text-sm mb-4">
+                        Need personalized attention? Book private sessions with our expert coaches to fast-track your progress.
+                    </p>
+                    <Button variant="outline" className="w-full border-purple-200 text-purple-700 hover:bg-purple-100">
+                        Book a Coach (Coming Soon)
+                    </Button>
+                </Card>
+
+                <Card className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-amber-100">
+                    <h3 className="text-lg font-bold text-amber-900 mb-2">Skill Clinics</h3>
+                    <p className="text-amber-700 text-sm mb-4">
+                        Weekend deep-dive sessions focusing on specific techniques like "Perfect Freestyle" or "Flip Turns".
+                    </p>
+                    <Button variant="outline" className="w-full border-amber-200 text-amber-700 hover:bg-amber-100">
+                        View Upcoming Clinics
+                    </Button>
+                </Card>
             </section>
         </div>
     );

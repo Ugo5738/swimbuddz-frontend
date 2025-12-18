@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut, apiDelete } from "./api";
+import { apiDelete, apiGet, apiPost, apiPut } from "./api";
 
 // --- Types ---
 
@@ -18,6 +18,7 @@ export enum CohortStatus {
 }
 
 export enum EnrollmentStatus {
+    PENDING_APPROVAL = "pending_approval",
     ENROLLED = "enrolled",
     WAITLIST = "waitlist",
     DROPPED = "dropped",
@@ -42,6 +43,7 @@ export interface Program {
     description?: string;
     level: ProgramLevel;
     duration_weeks: number;
+    price?: number;
     curriculum_json?: any;
     created_at: string;
     updated_at: string;
@@ -55,19 +57,24 @@ export interface Cohort {
     end_date: string;
     capacity: number;
     status: CohortStatus;
+    coach_id?: string | null;
+    program?: Program;
     created_at: string;
     updated_at: string;
 }
 
 export interface Enrollment {
     id: string;
-    cohort_id: string;
+    program_id?: string | null;
+    cohort_id?: string | null;
     member_id: string;
     status: EnrollmentStatus;
     payment_status: PaymentStatus;
+    preferences?: any;
     created_at: string;
     updated_at: string;
     cohort?: Cohort; // Added for eager loading
+    program?: Program; // Added for eager loading
 }
 
 export interface Milestone {
@@ -122,8 +129,11 @@ export const AcademyApi = {
     createMilestone: (data: Partial<Milestone>) => apiPost<Milestone>("/api/v1/academy/milestones", data, { auth: true }),
 
     // Enrollments
-    enrollStudent: (data: { cohort_id: string; member_id: string }) =>
+    enrollStudent: (data: { cohort_id?: string; program_id: string; member_id: string; preferences?: any }) =>
         apiPost<Enrollment>("/api/v1/academy/enrollments", data, { auth: true }),
+
+    getEnrollment: (id: string) =>
+        apiGet<Enrollment>(`/api/v1/academy/enrollments/${id}`, { auth: true }),
 
     listCohortEnrollments: (cohortId: string) =>
         apiGet<Enrollment[]>(`/api/v1/academy/cohorts/${cohortId}/enrollments`, { auth: true }),
@@ -145,12 +155,21 @@ export const AcademyApi = {
     // New Methods
     getOpenCohorts: () => apiGet<Cohort[]>("/api/v1/academy/cohorts/open"),
 
-    selfEnroll: (cohortId: string) =>
-        apiPost<Enrollment>(`/api/v1/academy/enrollments/me`, { cohort_id: cohortId }, { auth: true }),
+    /**
+     * Request enrollment in a program or specific cohort.
+     */
+    selfEnroll: (data: { program_id?: string; cohort_id?: string; preferences?: any }) =>
+        apiPost<Enrollment>(`/api/v1/academy/enrollments/me`, data, { auth: true }),
 
     listCohortStudents: (cohortId: string) =>
         apiGet<Enrollment[]>(`/api/v1/academy/cohorts/${cohortId}/students`, { auth: true }),
 
     updateEnrollment: (id: string, data: Partial<Enrollment>) =>
         apiPut<Enrollment>(`/api/v1/academy/enrollments/${id}`, data, { auth: true }),
+
+    // Admin List
+    listAllEnrollments: (status?: EnrollmentStatus) => {
+        const query = status ? `?status=${status}` : "";
+        return apiGet<Enrollment[]>(`/api/v1/academy/enrollments${query}`, { auth: true });
+    },
 };

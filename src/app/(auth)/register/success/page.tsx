@@ -1,10 +1,8 @@
 "use client";
 
-import { CheckCircle, ExternalLink, ArrowRight } from "lucide-react";
-import Link from "next/link";
 import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { WHATSAPP_GROUP_URL } from "@/lib/config";
+import { ArrowRight, CheckCircle } from "lucide-react";
+import Link from "next/link";
 
 export default function RegistrationSuccessPage() {
     return (
@@ -50,44 +48,26 @@ export default function RegistrationSuccessPage() {
                             2
                         </div>
                         <div>
-                            <h3 className="font-medium text-slate-900">Join our WhatsApp group</h3>
+                            <h3 className="font-medium text-slate-900">Activate Community (₦5,000 / year)</h3>
                             <p className="mt-1 text-sm text-slate-600">
-                                Stay connected with fellow swimmers, get updates, and participate in community discussions.
-                            </p>
-                            <a
-                                href={WHATSAPP_GROUP_URL}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="mt-3 inline-flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
-                            >
-                                Join WhatsApp Group
-                                <ExternalLink className="h-4 w-4" />
-                            </a>
-                        </div>
-                    </div>
-
-                    <div className="flex gap-4">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-sm font-semibold text-cyan-700">
-                            3
-                        </div>
-                        <div>
-                            <h3 className="font-medium text-slate-900">Team review (Club & Academy)</h3>
-                            <p className="mt-1 text-sm text-slate-600">
-                                For Club and Academy members, our team will review your registration and contact
-                                you within 48 hours with payment details and next steps.
+                                After you confirm your email and log in, you’ll be prompted to activate your annual Community membership to unlock member features.
                             </p>
                         </div>
                     </div>
 
-                    <div className="flex gap-4">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-sm font-semibold text-cyan-700">
-                            4
-                        </div>
+                        <div className="flex gap-4">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-sm font-semibold text-cyan-700">
+                                3
+                            </div>
                         <div>
-                            <h3 className="font-medium text-slate-900">Get started</h3>
+                            <h3 className="font-medium text-slate-900">Next steps (Club & Academy)</h3>
                             <p className="mt-1 text-sm text-slate-600">
-                                Once your email is verified, log in to access your dashboard, view upcoming events,
-                                and connect with the community.
+                                If you selected Club or Academy, you’ll complete onboarding after login and request an upgrade (approval may be required). Club is paid when you activate; Academy is paid when you enroll in a cohort.
+                            </p>
+                            <p className="mt-2 text-sm">
+                                <Link href="/membership" className="font-semibold text-cyan-700 hover:underline">
+                                    How membership works
+                                </Link>
                             </p>
                         </div>
                     </div>

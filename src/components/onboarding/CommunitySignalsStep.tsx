@@ -1,0 +1,43 @@
+"use client";
+
+import { OptionPillGroup } from "@/components/forms/OptionPillGroup";
+import { interestOptions, volunteerInterestOptions } from "@/lib/options";
+
+type CommunitySignalsFormData = {
+  interests: string[];
+  volunteerInterest: string[];
+};
+
+type CommunitySignalsStepProps = {
+  formData: CommunitySignalsFormData;
+  onToggleMulti: (field: keyof CommunitySignalsFormData, value: string) => void;
+};
+
+export function CommunitySignalsStep({ formData, onToggleMulti }: CommunitySignalsStepProps) {
+  return (
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <h3 className="text-lg font-semibold text-slate-900">Community signals (optional)</h3>
+        <p className="text-sm text-slate-600">
+          A few light preferences so we can personalize your experience.
+        </p>
+      </div>
+
+      <OptionPillGroup
+        label="Interests"
+        options={interestOptions}
+        selected={formData.interests}
+        onToggle={(value) => onToggleMulti("interests", value)}
+      />
+
+      <OptionPillGroup
+        label="Volunteer interests"
+        options={volunteerInterestOptions}
+        selected={formData.volunteerInterest}
+        onToggle={(value) => onToggleMulti("volunteerInterest", value)}
+        hint="Optional — you can always opt in later"
+      />
+    </div>
+  );
+}
+

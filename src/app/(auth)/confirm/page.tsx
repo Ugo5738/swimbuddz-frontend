@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/auth";
-import { completePendingRegistrationOnBackend } from "@/lib/registration";
-import { Card } from "@/components/ui/Card";
 import { Alert } from "@/components/ui/Alert";
+import { Card } from "@/components/ui/Card";
+import { supabase } from "@/lib/auth";
+import { completePendingRegistrationOnBackend, getPostAuthRedirectPath } from "@/lib/registration";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 function getParam(name: string) {
   if (typeof window === "undefined") return null;
@@ -17,9 +17,14 @@ function getParam(name: string) {
 export default function ConfirmPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const didRun = useRef(false);
 
   useEffect(() => {
     async function confirm() {
+      if (didRun.current) return;
+      didRun.current = true;
+      setError(null);
+
       const accessToken = getParam("access_token");
       const refreshToken = getParam("refresh_token");
 
@@ -43,7 +48,8 @@ export default function ConfirmPage() {
         return;
       }
 
-      router.replace("/profile");
+      const nextPath = await getPostAuthRedirectPath();
+      router.replace(nextPath);
     }
 
     void confirm();

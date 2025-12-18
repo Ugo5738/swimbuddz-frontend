@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { AcademyApi, CohortStatus, type Cohort, type Program } from "@/lib/academy";
+import { apiGet } from "@/lib/api";
+import { useEffect, useState } from "react";
 
 type CreateCohortModalProps = {
     isOpen: boolean;
@@ -14,9 +15,20 @@ type CreateCohortModalProps = {
     programs: Program[];
 };
 
+type MinimalMember = {
+    id: string;
+    first_name: string;
+    last_name: string;
+    coach_profile?: {
+        id: string;
+    };
+};
+
 export function CreateCohortModal({ isOpen, onClose, onSuccess, programs }: CreateCohortModalProps) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [coaches, setCoaches] = useState<MinimalMember[]>([]);
+
     const [formData, setFormData] = useState({
         program_id: "",
         name: "",
@@ -24,7 +36,20 @@ export function CreateCohortModal({ isOpen, onClose, onSuccess, programs }: Crea
         end_date: "",
         capacity: 10,
         status: CohortStatus.OPEN,
+        coach_id: "",
     });
+
+    // Load coaches on mount
+    useEffect(() => {
+        if (isOpen) {
+            apiGet<MinimalMember[]>("/api/v1/members?limit=1000", { auth: true })
+                .then((members) => {
+                    const coachList = members.filter(m => m.coach_profile);
+                    setCoaches(coachList);
+                })
+                .catch(err => console.error("Failed to load members", err));
+        }
+    }, [isOpen]);
 
     // Set default program_id when programs load
     useEffect(() => {
@@ -39,7 +64,14 @@ export function CreateCohortModal({ isOpen, onClose, onSuccess, programs }: Crea
         setError(null);
 
         try {
-            const newCohort = await AcademyApi.createCohort(formData);
+            // Filter out empty coach_id if not selected (or send null if allowed by backend?)
+            // Backend expects UUID or null. If empty string sent, conversion might fail.
+            const payload = {
+                ...formData,
+                coach_id: formData.coach_id || undefined,
+            };
+
+            const newCohort = await AcademyApi.createCohort(payload);
             onSuccess(newCohort);
             onClose();
             // Reset form
@@ -50,6 +82,7 @@ export function CreateCohortModal({ isOpen, onClose, onSuccess, programs }: Crea
                 end_date: "",
                 capacity: 10,
                 status: CohortStatus.OPEN,
+                coach_id: "",
             });
         } catch (err) {
             console.error(err);
@@ -84,6 +117,19 @@ export function CreateCohortModal({ isOpen, onClose, onSuccess, programs }: Crea
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
                 />
+
+                <Select
+                    label="Assign Coach (Optional)"
+                    value={formData.coach_id}
+                    onChange={(e) => setFormData({ ...formData, coach_id: e.target.value })}
+                >
+                    <option value="">No Coach Assigned</option>
+                    {coaches.map((c) => (
+                        <option key={c.id} value={c.id}>
+                            {c.first_name} {c.last_name}
+                        </option>
+                    ))}
+                </Select>
 
                 <div className="grid grid-cols-2 gap-4">
                     <Input

@@ -1,11 +1,13 @@
 "use client";
 
+import { OptionPillGroup } from "@/components/forms/OptionPillGroup";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
-import { Select } from "@/components/ui/Select";
-import { OptionPillGroup } from "@/components/forms/OptionPillGroup";
+import { locationOptions as areaLocationOptions, timeOfDayOptions } from "@/lib/options";
 
 interface ClubDetailsStepProps {
+    mode?: "club" | "onboarding";
+    includeNotesField?: boolean;
     formData: {
         emergencyContactName: string;
         emergencyContactRelationship: string;
@@ -19,13 +21,13 @@ interface ClubDetailsStepProps {
     onToggleMulti: (field: string, value: string) => void;
 }
 
-const locationOptions = [
+const clubLocationOptions = [
     { value: "rowe_park_yaba", label: "Rowe Park, Yaba" },
     { value: "sunfit_ago", label: "Sunfit, Ago" },
     { value: "federal_palace_vi", label: "Federal Palace Hotel, VI" },
 ];
 
-const timeOptions = [
+const clubTimeOptions = [
     { value: "early_morning", label: "Early Morning (6 AM - 9 AM)" },
     { value: "late_morning", label: "Late Morning (9 AM - 12 Noon)" },
     { value: "early_afternoon", label: "Early Afternoon (12 Noon - 3 PM)" },
@@ -33,18 +35,25 @@ const timeOptions = [
 ];
 
 export function ClubDetailsStep({
+    mode = "club",
+    includeNotesField = true,
     formData,
     onUpdate,
     onToggleMulti,
 }: ClubDetailsStepProps) {
+    const resolvedLocationOptions = mode === "onboarding" ? areaLocationOptions : clubLocationOptions;
+    const resolvedTimeOptions = mode === "onboarding" ? timeOfDayOptions : clubTimeOptions;
+
     return (
         <div className="space-y-6">
             <div className="space-y-2">
                 <h3 className="text-lg font-semibold text-slate-900">
-                    Club member details
+                    {mode === "onboarding" ? "Safety & logistics" : "Club member details"}
                 </h3>
                 <p className="text-sm text-slate-600">
-                    This information helps us keep you safe and schedule sessions effectively.
+                    {mode === "onboarding"
+                        ? "This information helps us keep you safe and plan sessions properly."
+                        : "This information helps us keep you safe and schedule sessions effectively."}
                 </p>
             </div>
 
@@ -96,17 +105,17 @@ export function ClubDetailsStep({
 
             {/* Training Preferences */}
             <OptionPillGroup
-                label="Preferred Training Locations"
-                options={locationOptions}
+                label="Preferred training locations"
+                options={resolvedLocationOptions}
                 selected={formData.locationPreference}
                 onToggle={(value) => onToggleMulti("locationPreference", value)}
                 required
-                hint="Select all locations you're willing to train at"
+                hint={mode === "onboarding" ? "Select all areas you can train in" : "Select all locations you're willing to train at"}
             />
 
             <OptionPillGroup
-                label="Availability / Time of Day"
-                options={timeOptions}
+                label="General availability (time blocks)"
+                options={resolvedTimeOptions}
                 selected={formData.timeOfDayAvailability}
                 onToggle={(value) => onToggleMulti("timeOfDayAvailability", value)}
                 required
@@ -114,12 +123,14 @@ export function ClubDetailsStep({
             />
 
             {/* Additional Notes */}
-            <Textarea
-                label="Additional Notes (Optional)"
-                value={formData.clubNotes}
-                onChange={(e) => onUpdate("clubNotes", e.target.value)}
-                placeholder="Any other details you'd like to share..."
-            />
+            {includeNotesField ? (
+                <Textarea
+                    label="Additional notes (optional)"
+                    value={formData.clubNotes}
+                    onChange={(e) => onUpdate("clubNotes", e.target.value)}
+                    placeholder="Any other details you'd like to share..."
+                />
+            ) : null}
         </div>
     );
 }

@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 // Routes that require an approved membership
 const MEMBER_ROUTES = [
@@ -25,6 +25,14 @@ const TIER_ROUTES: Record<string, string[]> = {
     // Academy tier - requires academy only
     "/academy": ["academy"],
 };
+
+const PUBLIC_LANDING_ROUTES = new Set(["/community", "/club", "/academy"]);
+
+function parseDateMs(value: any): number | null {
+    if (!value) return null;
+    const ms = Date.parse(String(value));
+    return Number.isFinite(ms) ? ms : null;
+}
 
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
@@ -57,6 +65,11 @@ export async function middleware(request: NextRequest) {
     const isAdminRoute = ADMIN_ROUTES.some((route) =>
         pathname.startsWith(route)
     );
+
+    // Allow public marketing landing pages even though they share paths with member routes.
+    if (PUBLIC_LANDING_ROUTES.has(pathname)) {
+        return response;
+    }
 
     // For member routes, check approval status
     if (isMemberRoute || isAdminRoute) {
@@ -116,17 +129,61 @@ export async function middleware(request: NextRequest) {
                     }
                 }
 
+                const now = Date.now();
+                const communityPaidUntilMs = parseDateMs(member.community_paid_until);
+                const communityActive = communityPaidUntilMs !== null && communityPaidUntilMs > now;
+
+                // Community activation paywall: allow dashboard/profile, block other member routes.
+                const paywallAllowed =
+                    pathname.startsWith("/dashboard") ||
+                    pathname.startsWith("/profile");
+
+                if (!communityActive && !paywallAllowed) {
+                    const url = new URL("/dashboard/billing", request.url);
+                    url.searchParams.set("required", "community");
+                    return NextResponse.redirect(url);
+                }
+
                 // For tier-based access control
                 const protectedRoute = Object.keys(TIER_ROUTES).find((route) =>
                     pathname.startsWith(route)
                 );
 
                 if (protectedRoute) {
-                    const userTier = member.membership_tier || "community";
+                    // Determine effective tier based on active payments.
+                    const academyUntilMs = parseDateMs(member.academy_paid_until);
+                    const clubUntilMs = parseDateMs(member.club_paid_until);
+
+                    const approvedTiers: string[] = (member.membership_tiers && member.membership_tiers.length > 0)
+                        ? member.membership_tiers.map((t: string) => String(t).toLowerCase())
+                        : (member.membership_tier ? [String(member.membership_tier).toLowerCase()] : ["community"]);
+
+                    const academyApproved = approvedTiers.includes("academy");
+                    const clubApproved = approvedTiers.includes("club");
+
+                    const academyActive = academyApproved && (academyUntilMs === null || academyUntilMs > now);
+                    const clubActive = clubApproved && clubUntilMs !== null && clubUntilMs > now;
+
+                    const effectiveTier = academyActive ? "academy" : clubActive ? "club" : "community";
                     const allowedTiers = TIER_ROUTES[protectedRoute];
 
-                    if (!allowedTiers.includes(userTier)) {
-                        // Redirect to upgrade page
+                    if (!allowedTiers.includes(effectiveTier)) {
+                        // If an upgrade is already requested, avoid looping users back into upgrade flow.
+                        const requestedTiers: string[] = member.requested_membership_tiers || [];
+                        const requiredTier = allowedTiers.includes("academy") ? "academy" : "club";
+                        if (requestedTiers.includes(requiredTier)) {
+                            return NextResponse.redirect(
+                                new URL("/profile?upgrade=pending", request.url)
+                            );
+                        }
+
+                        // If the user is approved for the tier but inactive (e.g. Club unpaid), send to billing.
+                        if (requiredTier === "club" && approvedTiers.includes("club") && !clubActive) {
+                            const url = new URL("/dashboard/billing", request.url);
+                            url.searchParams.set("required", "club");
+                            return NextResponse.redirect(url);
+                        }
+
                         return NextResponse.redirect(
                             new URL("/register?upgrade=true", request.url)
                         );
@@ -166,4 +223,3 @@ export const config = {
         "/admin/:path*",
     ],
 };
-

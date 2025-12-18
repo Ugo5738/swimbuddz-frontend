@@ -7,6 +7,7 @@ interface EnrollmentStatusBadgeProps {
 
 export function EnrollmentStatusBadge({ status, className = "" }: EnrollmentStatusBadgeProps) {
     const styles = {
+        [EnrollmentStatus.PENDING_APPROVAL]: "bg-amber-100 text-amber-700 border-amber-200",
         [EnrollmentStatus.ENROLLED]: "bg-green-100 text-green-700 border-green-200",
         [EnrollmentStatus.WAITLIST]: "bg-yellow-100 text-yellow-700 border-yellow-200",
         [EnrollmentStatus.DROPPED]: "bg-red-100 text-red-700 border-red-200",

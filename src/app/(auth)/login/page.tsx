@@ -1,16 +1,19 @@
 "use client";
 
-import { useState, FormEvent, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/auth";
-import { completePendingRegistrationOnBackend } from "@/lib/registration";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { PasswordField } from "@/components/ui/PasswordField";
-import { Button } from "@/components/ui/Button";
-import { Alert } from "@/components/ui/Alert";
+import { supabase } from "@/lib/auth";
+import { completePendingRegistrationOnBackend, getPostAuthRedirectPath } from "@/lib/registration";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useState } from "react";
 
-const ADMIN_EMAILS = ["admin@admin.com"];
+const ADMIN_EMAILS = [
+  process.env.NEXT_PUBLIC_ADMIN_EMAIL,
+  "admin@admin.com",
+].filter(Boolean) as string[];
 
 function LoginContent() {
   const router = useRouter();
@@ -36,6 +39,14 @@ function LoginContent() {
       return;
     }
 
+    // Admin users bypass pending-registration completion (they may not have a Member profile).
+    const { data: { user: signedInUser } } = await supabase.auth.getUser();
+    if (signedInUser?.email && ADMIN_EMAILS.includes(signedInUser.email)) {
+      setLoading(false);
+      router.push("/admin/dashboard");
+      return;
+    }
+
     const completion = await completePendingRegistrationOnBackend();
     if (completion.status === "error") {
       setLoading(false);
@@ -45,15 +56,14 @@ function LoginContent() {
 
     setLoading(false);
 
-    // Check if user is admin and redirect accordingly
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user && user.email && ADMIN_EMAILS.includes(user.email)) {
-      router.push("/admin/dashboard");
+    const redirect = searchParams.get("redirect");
+    if (redirect) {
+      router.push(redirect);
       return;
     }
 
-    const redirect = searchParams.get("redirect") || "/profile";
-    router.push(redirect);
+    const nextPath = await getPostAuthRedirectPath();
+    router.push(nextPath);
   }
 
   return (

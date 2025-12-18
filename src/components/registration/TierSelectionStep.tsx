@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, Star, Sparkles, Users } from "lucide-react";
+import { CheckCircle, Sparkles, Star, Users } from "lucide-react";
 
 type Tier = "community" | "club" | "academy";
 
@@ -22,8 +22,8 @@ const tierOptions: TierOption[] = [
         value: "community",
         label: "Community",
         tagline: "Join the SwimBuddz family",
-        price: "Free",
-        priceNote: "Pay per event",
+        price: "₦5,000",
+        priceNote: "per annum",
         icon: <Users className="h-6 w-6" />,
         accentColor: "cyan",
         features: [
@@ -38,7 +38,7 @@ const tierOptions: TierOption[] = [
         value: "club",
         label: "Club",
         tagline: "Swim with us regularly",
-        price: "$10",
+        price: "₦15,000",
         priceNote: "per month",
         icon: <Star className="h-6 w-6" />,
         accentColor: "emerald",
@@ -56,7 +56,7 @@ const tierOptions: TierOption[] = [
         value: "academy",
         label: "Academy",
         tagline: "Structured learning program",
-        price: "$50+",
+        price: "₦50,000+",
         priceNote: "per cohort",
         icon: <Sparkles className="h-6 w-6" />,
         accentColor: "purple",
@@ -244,4 +244,3 @@ export function TierSelectionStep({
         </div>
     );
 }
-

@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { supabase } from "@/lib/auth";
+import { ChevronRight, LayoutDashboard, LogOut, Menu, User, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { supabase } from "@/lib/auth";
-import { Menu, X, ChevronRight, User, LogOut } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const navLinks = [
     { href: "/", label: "Home" },
@@ -120,6 +120,12 @@ export function Header() {
                         {session ? (
                             <>
                                 <Link
+                                    href="/dashboard"
+                                    className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-cyan-600 to-cyan-500 text-white font-medium hover:from-cyan-500 hover:to-cyan-400 transition-all hover:shadow-lg hover:shadow-cyan-500/25"
+                                >
+                                    Dashboard
+                                </Link>
+                                <Link
                                     href="/profile"
                                     className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors ${isActive('/profile')
                                         ? 'text-cyan-700 bg-cyan-50'
@@ -183,6 +189,14 @@ export function Header() {
                         <div className="border-t border-slate-100 mt-2 pt-2">
                             {session ? (
                                 <>
+                                    <Link
+                                        href="/dashboard"
+                                        onClick={closeMobileMenu}
+                                        className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-500 text-white font-semibold mb-2"
+                                    >
+                                        <LayoutDashboard className="h-5 w-5" />
+                                        Go to Dashboard
+                                    </Link>
                                     <Link
                                         href="/profile"
                                         onClick={closeMobileMenu}

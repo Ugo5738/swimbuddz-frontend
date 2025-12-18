@@ -1,38 +1,306 @@
 "use client";
 
-import Link from "next/link";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { LoadingCard } from "@/components/ui/LoadingCard";
+import { apiGet } from "@/lib/api";
+import {
+    ArrowRight,
+    Bell,
+    Calendar,
+    CheckCircle,
+    Circle,
+    Clock,
+    Sparkles,
+    TrendingUp,
+    Users
+} from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export default function MemberDashboardPage() {
+    const [member, setMember] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        apiGet("/api/v1/members/me", { auth: true })
+            .then((data) => setMember(data))
+            .catch((err) => console.error("Failed to load member", err))
+            .finally(() => setLoading(false));
+    }, []);
+
+    if (loading) {
+        return <LoadingCard text="Loading dashboard..." />;
+    }
+
+    const firstName = member?.first_name || "Member";
+    const now = Date.now();
+    const communityPaidUntilMs = member?.community_paid_until ? Date.parse(String(member.community_paid_until)) : NaN;
+    const communityActive = Number.isFinite(communityPaidUntilMs) && communityPaidUntilMs > now;
+
+    const memberTiers = member?.membership_tiers?.map((t: string) => t.toLowerCase()) ||
+        (member?.membership_tier ? [member.membership_tier.toLowerCase()] : ["community"]);
+
+    const requestedTiers: string[] = (member?.requested_membership_tiers || []).map((t: any) => String(t).toLowerCase());
+    const wantsAcademy = requestedTiers.includes("academy");
+    const wantsClub = requestedTiers.includes("club") || wantsAcademy;
+
+    const needsProfileBasics = !member?.profile_photo_url || !member?.gender || !member?.date_of_birth;
+    const needsProfileCore =
+        needsProfileBasics ||
+        !member?.country ||
+        !member?.city ||
+        !member?.time_zone ||
+        !member?.swim_level;
+
+    const needsClubReadiness =
+        (wantsClub || memberTiers.includes("club") || memberTiers.includes("academy")) &&
+        (!member?.emergency_contact_name ||
+            !member?.emergency_contact_relationship ||
+            !member?.emergency_contact_phone ||
+            !(member?.location_preference && member.location_preference.length > 0) ||
+            !(member?.time_of_day_availability && member.time_of_day_availability.length > 0));
+
+    const assessment = member?.academy_skill_assessment;
+    const hasAssessment =
+        assessment &&
+        ["canFloat", "headUnderwater", "deepWaterComfort", "canSwim25m"].some(
+            (k) => Object.prototype.hasOwnProperty.call(assessment, k)
+        );
+    const needsAcademyReadiness =
+        (wantsAcademy || memberTiers.includes("academy")) &&
+        (!hasAssessment ||
+            !member?.academy_goals ||
+            !member?.academy_preferred_coach_gender ||
+            !member?.academy_lesson_preference);
+
+    const needsOnboarding = needsProfileCore || needsClubReadiness || needsAcademyReadiness;
+
+    // Calculate onboarding progress
+    const totalSteps = 3 + (wantsClub || memberTiers.includes("club") || memberTiers.includes("academy") ? 1 : 0) + (wantsAcademy || memberTiers.includes("academy") ? 1 : 0);
+    let completedSteps = 0;
+    if (!needsProfileBasics) completedSteps++;
+    if (!needsProfileCore) completedSteps++;
+    if (communityActive) completedSteps++;
+    if ((wantsClub || memberTiers.includes("club") || memberTiers.includes("academy")) && !needsClubReadiness) completedSteps++;
+    if ((wantsAcademy || memberTiers.includes("academy")) && !needsAcademyReadiness) completedSteps++;
+    const progressPercent = Math.round((completedSteps / totalSteps) * 100);
+
+    const tierLabel = memberTiers.includes("academy") ? "Academy" :
+        memberTiers.includes("club") ? "Club" : "Community";
+
     return (
-        <div className="space-y-6">
-            <header className="space-y-2">
-                <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-                <p className="text-slate-600">Welcome to your SwimBuddz dashboard.</p>
-            </header>
+        <div className="space-y-8">
+            {/* Setup Progress Banner */}
+            {needsOnboarding && (
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-cyan-600 via-cyan-500 to-blue-500 p-6 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+                    <div className="absolute bottom-0 left-0 -mb-8 -ml-8 h-40 w-40 rounded-full bg-blue-400/20 blur-3xl" />
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <Link href="/profile" className="block">
-                    <Card className="h-full transition-shadow hover:shadow-md">
-                        <h2 className="mb-2 text-xl font-semibold text-slate-900">My Profile</h2>
-                        <p className="text-slate-600">Manage your personal information, preferences, and swim profile.</p>
+                    <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Sparkles className="h-5 w-5 text-amber-300" />
+                                <span className="text-sm font-medium text-cyan-100">Complete Your Setup</span>
+                            </div>
+                            <h2 className="text-2xl font-bold mb-2">You're {progressPercent}% there!</h2>
+                            <p className="text-cyan-100 text-sm max-w-md">
+                                Complete a few quick steps to unlock all features and get the most out of SwimBuddz.
+                            </p>
+
+                            {/* Progress bar */}
+                            <div className="mt-4 flex items-center gap-3">
+                                <div className="flex-1 h-2 bg-white/20 rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-white rounded-full transition-all duration-500"
+                                        style={{ width: `${progressPercent}%` }}
+                                    />
+                                </div>
+                                <span className="text-sm font-semibold">{progressPercent}%</span>
+                            </div>
+
+                            {/* Checklist */}
+                            <ul className="mt-4 space-y-2">
+                                <li className="flex items-center gap-2 text-sm">
+                                    {needsProfileBasics ? (
+                                        <Circle className="h-4 w-4 text-cyan-200" />
+                                    ) : (
+                                        <CheckCircle className="h-4 w-4 text-emerald-300" />
+                                    )}
+                                    <span className={needsProfileBasics ? "text-white" : "text-cyan-200 line-through"}>
+                                        Add profile photo & basics
+                                    </span>
+                                </li>
+                                <li className="flex items-center gap-2 text-sm">
+                                    {!communityActive ? (
+                                        <Circle className="h-4 w-4 text-cyan-200" />
+                                    ) : (
+                                        <CheckCircle className="h-4 w-4 text-emerald-300" />
+                                    )}
+                                    <span className={!communityActive ? "text-white" : "text-cyan-200 line-through"}>
+                                        Activate Community membership
+                                    </span>
+                                </li>
+                                {(wantsClub || memberTiers.includes("club") || memberTiers.includes("academy")) && (
+                                    <li className="flex items-center gap-2 text-sm">
+                                        {needsClubReadiness ? (
+                                            <Circle className="h-4 w-4 text-cyan-200" />
+                                        ) : (
+                                            <CheckCircle className="h-4 w-4 text-emerald-300" />
+                                        )}
+                                        <span className={needsClubReadiness ? "text-white" : "text-cyan-200 line-through"}>
+                                            Complete Club readiness
+                                        </span>
+                                    </li>
+                                )}
+                            </ul>
+                        </div>
+
+                        <div className="flex-shrink-0">
+                            <Link href="/dashboard/onboarding">
+                                <Button variant="secondary" className="shadow-lg border-white/20">
+                                    Continue Setup
+                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                </Button>
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Quick Stats */}
+            <div className="grid gap-4 md:grid-cols-3">
+                <Link href="/dashboard/billing">
+                    <Card className="p-5 bg-gradient-to-br from-cyan-50 to-white border-cyan-100 hover:shadow-md transition-shadow cursor-pointer">
+                        <div className="flex items-start justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-cyan-600">Membership Status</p>
+                                <p className="mt-1 text-2xl font-bold text-slate-900">{tierLabel}</p>
+                                <p className="text-sm text-slate-500 mt-1">
+                                    {communityActive ? "Active" : "Pending activation"}
+                                </p>
+                            </div>
+                            <div className="rounded-xl bg-cyan-100 p-3">
+                                <TrendingUp className="h-6 w-6 text-cyan-600" />
+                            </div>
+                        </div>
                     </Card>
                 </Link>
 
-                <Link href="/dashboard/academy" className="block">
-                    <Card className="h-full transition-shadow hover:shadow-md">
-                        <h2 className="mb-2 text-xl font-semibold text-slate-900">Academy</h2>
-                        <p className="text-slate-600">View your enrollments, progress, and milestones.</p>
+                <Link href="/sessions-and-events">
+                    <Card className="p-5 bg-gradient-to-br from-blue-50 to-white border-blue-100 hover:shadow-md transition-shadow cursor-pointer">
+                        <div className="flex items-start justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-blue-600">Upcoming Sessions</p>
+                                <p className="mt-1 text-2xl font-bold text-slate-900">0</p>
+                                <p className="text-sm text-slate-500 mt-1">No sessions scheduled</p>
+                            </div>
+                            <div className="rounded-xl bg-blue-100 p-3">
+                                <Calendar className="h-6 w-6 text-blue-600" />
+                            </div>
+                        </div>
                     </Card>
                 </Link>
 
-                <Link href="/announcements" className="block">
-                    <Card className="h-full transition-shadow hover:shadow-md">
-                        <h2 className="mb-2 text-xl font-semibold text-slate-900">Announcements</h2>
-                        <p className="text-slate-600">Stay updated with the latest news and events.</p>
+                <Link href="/community/directory">
+                    <Card className="p-5 bg-gradient-to-br from-purple-50 to-white border-purple-100 hover:shadow-md transition-shadow cursor-pointer">
+                        <div className="flex items-start justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-purple-600">Community</p>
+                                <p className="mt-1 text-2xl font-bold text-slate-900">Connect</p>
+                                <p className="text-sm text-slate-500 mt-1">Meet other swimmers</p>
+                            </div>
+                            <div className="rounded-xl bg-purple-100 p-3">
+                                <Users className="h-6 w-6 text-purple-600" />
+                            </div>
+                        </div>
                     </Card>
                 </Link>
             </div>
+
+            {/* Community Activation Banner (if not active) */}
+            {!communityActive && (
+                <Card className="p-6 border-amber-200 bg-amber-50">
+                    <div className="flex flex-col md:flex-row md:items-center gap-4">
+                        <div className="flex-shrink-0 rounded-xl bg-amber-100 p-3">
+                            <Clock className="h-6 w-6 text-amber-600" />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="font-semibold text-slate-900">Activate Your Community Membership</h3>
+                            <p className="text-sm text-slate-600 mt-1">
+                                Pay ₦5,000/year to unlock the member directory, events, and community features.
+                            </p>
+                        </div>
+                        <Link href="/dashboard/billing">
+                            <Button>Activate Now</Button>
+                        </Link>
+                    </div>
+                </Card>
+            )}
+
+            {/* Upgrade Request Banner */}
+            {(wantsClub || wantsAcademy) && (
+                <Card className="p-6 border-blue-200 bg-blue-50">
+                    <div className="flex flex-col md:flex-row md:items-center gap-4">
+                        <div className="flex-shrink-0 rounded-xl bg-blue-100 p-3">
+                            <TrendingUp className="h-6 w-6 text-blue-600" />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="font-semibold text-slate-900">
+                                Your {wantsAcademy ? "Academy" : "Club"} Request is Saved
+                            </h3>
+                            <p className="text-sm text-slate-600 mt-1">
+                                Complete your readiness to speed up review. Payments happen when you activate a plan.
+                            </p>
+                        </div>
+                        <Link href="/dashboard/onboarding">
+                            <Button variant="outline">Complete Readiness</Button>
+                        </Link>
+                    </div>
+                </Card>
+            )}
+
+            {/* Recent Announcements */}
+            <div>
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-slate-900">Recent Announcements</h2>
+                    <Link href="/announcements" className="text-sm font-medium text-cyan-600 hover:text-cyan-700 flex items-center gap-1">
+                        View all <ArrowRight className="h-4 w-4" />
+                    </Link>
+                </div>
+                <Card className="p-6">
+                    <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0 rounded-full bg-cyan-100 p-2">
+                            <Bell className="h-5 w-5 text-cyan-600" />
+                        </div>
+                        <div>
+                            <p className="font-medium text-slate-900">Welcome to SwimBuddz!</p>
+                            <p className="text-sm text-slate-600 mt-1">
+                                Complete your profile setup to get started and connect with other swimmers in the community.
+                            </p>
+                            <p className="text-xs text-slate-400 mt-2">Just now</p>
+                        </div>
+                    </div>
+                </Card>
+            </div>
+
+            {/* Coach Card (if applicable) */}
+            {member?.coach_profile && (
+                <Link href="/dashboard/coach" className="block">
+                    <Card className="p-6 border-purple-200 bg-gradient-to-r from-purple-50 to-purple-100/50 hover:shadow-lg transition-shadow">
+                        <div className="flex items-center gap-4">
+                            <div className="rounded-xl bg-purple-200 p-3">
+                                <Sparkles className="h-6 w-6 text-purple-700" />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="font-semibold text-purple-900">Coach Dashboard</h3>
+                                <p className="text-sm text-purple-700">Manage your cohorts and view student progress</p>
+                            </div>
+                            <ArrowRight className="h-5 w-5 text-purple-400" />
+                        </div>
+                    </Card>
+                </Link>
+            )}
         </div>
     );
 }

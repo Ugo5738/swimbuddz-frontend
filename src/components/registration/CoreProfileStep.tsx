@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Camera, Eye, EyeOff, X } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-import { Country, City } from "country-state-city";
-import 'react-phone-number-input/style.css'
-import PhoneInput from 'react-phone-number-input'
+import { City, Country } from "country-state-city";
+import { Camera, Eye, EyeOff, X } from "lucide-react";
+import { useState } from "react";
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 interface CoreProfileStepProps {
     formData: {

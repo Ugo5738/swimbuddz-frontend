@@ -1,7 +1,7 @@
 "use client";
 
-import { CheckCircle, ExternalLink } from "lucide-react";
 import { WHATSAPP_GROUP_URL } from "@/lib/config";
+import { CheckCircle, ExternalLink } from "lucide-react";
 
 interface ReviewConfirmStepProps {
     formData: {

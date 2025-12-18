@@ -1,109 +1,71 @@
-import { supabase, getCurrentAccessToken } from "./auth";
-import { apiPost } from "./api";
-
-export type RegistrationPayload = {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  city: string;
-  country: string;
-  timeZone: string;
-  swimLevel: string;
-  deepWaterComfort: string;
-  strokes: string[];
-  interests: string[];
-  goalsNarrative: string;
-  goalsOther?: string;
-  certifications: string[];
-  coachingExperience?: string;
-  coachingSpecialties: string[];
-  coachingYears?: string;
-  coachingPortfolioLink?: string;
-  coachingDocumentLink?: string;
-  coachingDocumentFileName?: string;
-  availabilitySlots: string[];
-  timeOfDayAvailability: string[];
-  locationPreference: string[];
-  locationPreferenceOther?: string;
-  travelFlexibility: string;
-  facilityAccess?: string[];
-  facilityAccessOther?: string;
-  equipmentNeeds?: string[];
-  equipmentNeedsOther?: string;
-  travelNotes?: string;
-  emergencyContactName: string;
-  emergencyContactRelationship: string;
-  emergencyContactPhone: string;
-  emergencyContactRegion: string;
-  medicalInfo?: string;
-  safetyNotes?: string;
-  volunteerInterest: string[];
-  volunteerRolesDetail?: string;
-  discoverySource: string;
-  socialInstagram?: string;
-  socialLinkedIn?: string;
-  socialOther?: string;
-  languagePreference: string;
-  commsPreference: string;
-  paymentReadiness: string;
-  currencyPreference: string;
-  consentPhoto: string;
-  membershipTiers: string[];
-  academyFocusAreas: string[];
-  academyFocus?: string;
-  paymentNotes?: string;
-};
-
-export type RegistrationResult =
-  | { status: "complete" }
-  | { status: "email_confirmation_required" };
+import { apiGet, apiPost } from "./api";
+import { getCurrentAccessToken } from "./auth";
 
 export type PendingCompletionStatus =
   | { status: "none" }
   | { status: "completed" }
   | { status: "error"; message: string };
 
-export async function registerMember(payload: RegistrationPayload, password: string): Promise<RegistrationResult> {
-  const { data, error: signUpError } = await supabase.auth.signUp({
-    email: payload.email,
-    password,
-    options: {
-      data: {
-        first_name: payload.firstName,
-        last_name: payload.lastName,
-        phone: payload.phone,
-        city: payload.city,
-        country: payload.country
-      },
-      emailRedirectTo: `${window.location.origin}/auth/callback`
-    }
-  });
+type MemberForRedirect = {
+  membership_tier?: string | null;
+  membership_tiers?: string[] | null;
+  requested_membership_tiers?: string[] | null;
+  community_paid_until?: string | null;
+  club_paid_until?: string | null;
+  academy_paid_until?: string | null;
 
-  if (signUpError) {
-    throw new Error(signUpError.message);
-  }
+  profile_photo_url?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  phone?: string | null;
+  gender?: string | null;
+  date_of_birth?: string | null;
+  city?: string | null;
+  country?: string | null;
+  time_zone?: string | null;
+  swim_level?: string | null;
+  deep_water_comfort?: string | null;
+  goals_narrative?: string | null;
 
-  const supabaseUserId = data.user?.id;
+  availability_slots?: string[] | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_relationship?: string | null;
+  emergency_contact_phone?: string | null;
+  location_preference?: string[] | null;
+  time_of_day_availability?: string[] | null;
 
-  if (!supabaseUserId) {
-    throw new Error("Unable to determine Supabase user ID after sign-up.");
-  }
+  academy_skill_assessment?: Record<string, boolean> | null;
+  academy_goals?: string | null;
+  academy_preferred_coach_gender?: string | null;
+  academy_lesson_preference?: string | null;
+};
 
-  await savePendingRegistrationToBackend(supabaseUserId, payload);
+function parseDateMs(value: any): number | null {
+  if (!value) return null;
+  const ms = Date.parse(String(value));
+  return Number.isFinite(ms) ? ms : null;
+}
 
-  const token = await getCurrentAccessToken();
+export type PendingRegistrationPayload = {
+  email: string;
+  first_name: string;
+  last_name: string;
+  password: string;
 
-  if (!token) {
-    return { status: "email_confirmation_required" };
-  }
+  phone?: string;
+  city?: string;
+  country?: string;
+  area_in_lagos?: string;
+  swim_level?: string;
 
-  const completion = await completePendingRegistrationOnBackend();
-  if (completion.status === "error") {
-    throw new Error(completion.message);
-  }
+  membership_tier?: "community";
+  membership_tiers?: string[];
+  requested_membership_tiers?: string[];
+  community_rules_accepted?: boolean;
+};
 
-  return { status: "complete" };
+export async function createPendingRegistration(payload: PendingRegistrationPayload) {
+  await apiPost("/api/v1/pending-registrations/", payload);
 }
 
 export async function completePendingRegistrationOnBackend(): Promise<PendingCompletionStatus> {
@@ -130,16 +92,88 @@ export async function completePendingRegistrationOnBackend(): Promise<PendingCom
   }
 }
 
-async function savePendingRegistrationToBackend(userId: string, payload: RegistrationPayload) {
-  // Backend expects snake_case fields at the top level
-  const backendPayload = {
+export async function getPostAuthRedirectPath(): Promise<string> {
+  try {
+    const member = await apiGet<MemberForRedirect>("/api/v1/members/me", { auth: true });
+    const now = Date.now();
 
-    first_name: payload.firstName,
-    last_name: payload.lastName,
-    // We can pass other fields if the backend schema allows extra fields or if we want to store them in profile_data_json
-    // The backend currently takes the whole body and dumps it to JSON for profile_data
-    ...payload
-  };
+    const communityUntilMs = parseDateMs(member.community_paid_until);
+    const communityActive = communityUntilMs !== null && communityUntilMs > now;
 
-  await apiPost("/api/v1/pending-registrations/", backendPayload);
+    const clubUntilMs = parseDateMs(member.club_paid_until);
+    const clubActive = clubUntilMs !== null && clubUntilMs > now;
+
+    const academyUntilMs = parseDateMs(member.academy_paid_until);
+    const academyActive = academyUntilMs !== null && academyUntilMs > now;
+
+    const approvedTiers = (member.membership_tiers && member.membership_tiers.length > 0)
+      ? member.membership_tiers
+      : member.membership_tier
+        ? [member.membership_tier]
+        : ["community"];
+
+    const requestedTiers = (member.requested_membership_tiers || []).map((t) => String(t).toLowerCase());
+    const wantsAcademy = requestedTiers.includes("academy");
+    const wantsClub = requestedTiers.includes("club") || wantsAcademy;
+
+    const clubContext = wantsClub || approvedTiers.map(String).map((t) => t.toLowerCase()).some((t) => t === "club" || t === "academy");
+    const academyContext = wantsAcademy || approvedTiers.map(String).map((t) => t.toLowerCase()).includes("academy");
+
+    const hasCoreOnboarding = Boolean(
+      member.profile_photo_url &&
+      member.gender &&
+      member.date_of_birth &&
+      member.phone &&
+      member.country &&
+      member.city &&
+      member.time_zone
+    );
+
+    const hasSafetyLogistics = Boolean(
+      member.emergency_contact_name &&
+      member.emergency_contact_relationship &&
+      member.emergency_contact_phone &&
+      member.location_preference && member.location_preference.length > 0 &&
+      member.time_of_day_availability && member.time_of_day_availability.length > 0
+    );
+
+    const hasSwimBackground = Boolean(
+      member.swim_level &&
+      member.deep_water_comfort &&
+      member.goals_narrative &&
+      String(member.goals_narrative).trim()
+    );
+
+    const hasClubReadiness = !clubContext || Boolean(member.availability_slots && member.availability_slots.length > 0);
+
+    const assessment = member.academy_skill_assessment;
+    const hasAssessment =
+      assessment &&
+      ["canFloat", "headUnderwater", "deepWaterComfort", "canSwim25m"].some(
+        (k) => Object.prototype.hasOwnProperty.call(assessment, k)
+      );
+
+    const hasAcademyReadiness = Boolean(
+      hasAssessment &&
+      member.academy_goals &&
+      member.academy_preferred_coach_gender &&
+      member.academy_lesson_preference
+    );
+
+    const onboardingComplete = hasCoreOnboarding && hasSafetyLogistics && hasSwimBackground && hasClubReadiness && (!academyContext || hasAcademyReadiness);
+    if (!onboardingComplete) {
+      return "/dashboard/onboarding";
+    }
+
+    if (!communityActive) {
+      return "/dashboard/billing?required=community";
+    }
+
+    if (academyActive) return "/dashboard/academy";
+    if (clubContext && !clubActive) return "/dashboard/billing?required=club";
+
+    return "/dashboard";
+  } catch {
+    return "/dashboard";
+  }
 }

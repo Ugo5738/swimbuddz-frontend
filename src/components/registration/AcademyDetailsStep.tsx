@@ -1,7 +1,5 @@
-"use client";
-
-import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
+import { Textarea } from "@/components/ui/Textarea";
 import { Info } from "lucide-react";
 
 interface AcademyDetailsStepProps {
@@ -34,10 +32,10 @@ export function AcademyDetailsStep({
         <div className="space-y-6">
             <div className="space-y-2">
                 <h3 className="text-lg font-semibold text-slate-900">
-                    Academy program details
+                    Academy readiness & goals
                 </h3>
                 <p className="text-sm text-slate-600">
-                    Help us tailor your learning experience with personalized coaching and structured curriculum.
+                    Help us understand your current level and what you want to achieve so we can recommend the right Academy cohorts when you're ready.
                 </p>
             </div>
 
@@ -114,9 +112,7 @@ export function AcademyDetailsStep({
 
             <div className="rounded-lg bg-slate-100 p-4">
                 <p className="text-sm text-slate-700">
-                    <strong>Next steps:</strong> After registration, our team will review your skill assessment
-                    and match you with the appropriate program level and coach. You'll receive an email within
-                    48 hours with your personalized learning plan.
+                    <strong>Next steps:</strong> After onboarding, your dashboard will show available Academy programs and cohorts that match your level and goals. You can review details, schedules, and pricing before enrolling.
                 </p>
             </div>
         </div>

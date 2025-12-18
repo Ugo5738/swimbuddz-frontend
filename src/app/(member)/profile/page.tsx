@@ -1,39 +1,38 @@
 "use client";
 
-import { useEffect, useState, type ReactNode, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { Card } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
-import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
-import { Select } from "@/components/ui/Select";
-import { apiPatch, apiGet } from "@/lib/api";
-import { completePendingRegistrationOnBackend } from "@/lib/registration";
-import { LoadingCard } from "@/components/ui/LoadingCard";
 import { OptionPillGroup } from "@/components/forms/OptionPillGroup";
 import { SingleSelectPills } from "@/components/forms/SingleSelectPills";
 import { TimezoneCombobox } from "@/components/forms/TimezoneCombobox";
-import { UpcomingSessions } from "@/components/profile/UpcomingSessions";
 import { MembershipCard } from "@/components/profile/MembershipCard";
+import { UpcomingSessions } from "@/components/profile/UpcomingSessions";
+import { Alert } from "@/components/ui/Alert";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { LoadingCard } from "@/components/ui/LoadingCard";
+import { Select } from "@/components/ui/Select";
+import { Textarea } from "@/components/ui/Textarea";
+import { apiGet, apiPatch } from "@/lib/api";
 import {
-  strokesOptions,
-  interestOptions,
-  membershipTierOptions,
-  paymentReadinessOptions,
-  volunteerInterestOptions,
   academyFocusOptions,
-  facilityAccessOptions,
-  equipmentNeedsOptions,
   availabilityOptions,
-  timeOfDayOptions,
-  locationOptions,
   currencyOptions,
   discoverySourceOptions,
+  equipmentNeedsOptions,
+  facilityAccessOptions,
+  interestOptions,
   languageOptions,
-  travelFlexibilityOptions
+  locationOptions,
+  paymentReadinessOptions,
+  strokesOptions,
+  timeOfDayOptions,
+  travelFlexibilityOptions,
+  volunteerInterestOptions
 } from "@/lib/options";
+import { completePendingRegistrationOnBackend } from "@/lib/registration";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState, type ReactNode } from "react";
 
 const levelLabels: Record<string, string> = {
   beginner: "Beginner",
@@ -88,6 +87,7 @@ type Profile = {
   joinedAt: string;
   email: string;
   phone: string;
+  profilePhotoUrl?: string;
   city: string;
   country: string;
   timeZone: string;
@@ -142,6 +142,7 @@ const mockProfile: Profile = {
   joinedAt: "2024-01-01",
   email: "ada@example.com",
   phone: "+234 801 234 5678",
+  profilePhotoUrl: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=400&q=80",
   city: "Lagos",
   country: "Nigeria",
   timeZone: "Africa/Lagos",
@@ -196,6 +197,7 @@ type MemberResponse = {
   first_name: string;
   last_name: string;
   phone: string;
+  profile_photo_url?: string;
   city: string;
   country: string;
   time_zone: string;
@@ -252,6 +254,7 @@ function mapMemberResponseToProfile(data: MemberResponse): Profile {
     joinedAt: data.created_at,
     email: data.email,
     phone: data.phone || "",
+    profilePhotoUrl: data.profile_photo_url || "",
     city: data.city || "",
     country: data.country || "",
     timeZone: data.time_zone || "",
@@ -351,13 +354,57 @@ function ProfileContent() {
   }, [searchParams, router]);
 
   const headerMarkup = (
-    <header className="space-y-2">
-      <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">My profile</p>
-      <h1 className="text-4xl font-bold text-slate-900">Welcome back, {profile?.name?.split(" ")[0] ?? "Member"}</h1>
-      <p className="text-sm text-slate-600">
-        This page will fetch real member data and persist changes via the backend once APIs are available.
-      </p>
-    </header>
+    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-cyan-600 via-cyan-500 to-blue-500 p-6 text-white shadow-lg mb-6">
+      <div className="absolute top-0 right-0 -mt-8 -mr-8 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
+      <div className="absolute bottom-0 left-0 -mb-8 -ml-8 h-32 w-32 rounded-full bg-blue-400/20 blur-3xl" />
+
+      <div className="relative flex flex-col md:flex-row md:items-center gap-6">
+        {/* Profile Photo */}
+        <div className="flex-shrink-0">
+          {profile?.profilePhotoUrl && profile.profilePhotoUrl.trim() !== "" ? (
+            <img
+              src={profile.profilePhotoUrl}
+              alt={profile?.name || "Profile"}
+              className="h-24 w-24 rounded-full object-cover ring-4 ring-white/30"
+            />
+          ) : (
+            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white/20 text-3xl font-bold text-white ring-4 ring-white/30">
+              {profile?.name?.split(" ").map(n => n[0]).join("") || "M"}
+            </div>
+          )}
+        </div>
+
+        {/* Name and Status */}
+        <div className="flex-1">
+          <p className="text-sm font-medium text-cyan-100 uppercase tracking-wider mb-1">My Profile</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-white">
+            {profile?.name ?? "Member"}
+          </h1>
+          <div className="flex flex-wrap items-center gap-3 mt-2">
+            {profile?.membershipTiers.map((tier: string) => (
+              <span key={tier} className="inline-flex items-center gap-1 rounded-full bg-white/20 px-3 py-1 text-sm font-medium text-white capitalize">
+                {tier} Member
+              </span>
+            ))}
+            <span className={`text-sm ${profile?.status === "Active member" ? "text-emerald-200" : "text-white/70"}`}>
+              {profile?.status}
+            </span>
+          </div>
+        </div>
+
+        {/* View Card Button (only for Club/Academy) */}
+        {(profile?.membershipTiers.includes("club") || profile?.membershipTiers.includes("academy")) && (
+          <div className="flex-shrink-0">
+            <a
+              href="#membership-card"
+              className="inline-flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 text-sm font-medium text-white hover:bg-white/30 transition"
+            >
+              View Member Card
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
   );
 
   if (loading || completingRegistration) {
@@ -394,12 +441,13 @@ function ProfileContent() {
 
             {/* Membership Card */}
             {(profile.membershipTiers.includes("club") || profile.membershipTiers.includes("academy")) && (
-              <div className="mb-4">
+              <div className="mb-4" id="membership-card">
                 <MembershipCard
                   name={profile.name}
                   tier={profile.membershipTiers.includes("academy") ? "academy" : "club"}
                   memberId={profile.id}
                   joinedAt={profile.joinedAt}
+                  photoUrl={profile.profilePhotoUrl}
                 />
               </div>
             )}

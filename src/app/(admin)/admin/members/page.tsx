@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Modal } from "@/components/ui/Modal";
+import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { supabase } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
-import { CheckCircle, XCircle, Clock, Eye, Pencil, Trash2, UserPlus, TrendingUp } from "lucide-react";
+import { CheckCircle, Clock, Eye, Pencil, Trash2, TrendingUp, UserPlus, XCircle } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 // Define Member type based on backend response
 interface Member {
@@ -548,12 +548,20 @@ export default function AdminMembersPage() {
             <Modal
                 isOpen={isApprovalModalOpen}
                 onClose={() => setIsApprovalModalOpen(false)}
-                title={approvalAction === "approve" ? "Approve Member" : "Reject Member"}
+                title={
+                    approvalAction === "upgrade"
+                        ? "Approve Upgrade"
+                        : approvalAction === "approve"
+                        ? "Approve Member"
+                        : "Reject Member"
+                }
             >
                 <div className="space-y-4">
                     <p className="text-slate-600">
                         {approvalAction === "approve"
                             ? `Are you sure you want to approve ${approvingMember?.first_name} ${approvingMember?.last_name}?`
+                            : approvalAction === "upgrade"
+                            ? `Approve ${approvingMember?.first_name} ${approvingMember?.last_name}'s upgrade from ${approvingMember?.membership_tier || "community"} to ${(approvingMember?.requested_membership_tiers || []).join(", ") || "the requested tier"}?`
                             : `Are you sure you want to reject ${approvingMember?.first_name} ${approvingMember?.last_name}?`}
                     </p>
 
@@ -678,14 +686,24 @@ export default function AdminMembersPage() {
 
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">
-                            {approvalAction === "approve" ? "Approval notes (optional)" : "Reason for rejection (optional)"}
+                            {approvalAction === "approve"
+                                ? "Approval notes (optional)"
+                                : approvalAction === "upgrade"
+                                ? "Upgrade notes (optional)"
+                                : "Reason for rejection (optional)"}
                         </label>
                         <textarea
                             value={approvalNotes}
                             onChange={(e) => setApprovalNotes(e.target.value)}
                             className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"
                             rows={3}
-                            placeholder={approvalAction === "approve" ? "Any notes about this approval..." : "Reason for rejection..."}
+                            placeholder={
+                                approvalAction === "approve"
+                                    ? "Any notes about this approval..."
+                                    : approvalAction === "upgrade"
+                                    ? "Any notes about this upgrade..."
+                                    : "Reason for rejection..."
+                            }
                         />
                     </div>
 
@@ -700,11 +718,25 @@ export default function AdminMembersPage() {
                         <Button
                             onClick={handleApprovalAction}
                             disabled={isSubmitting}
-                            className={approvalAction === "approve" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}
+                            className={
+                                approvalAction === "approve"
+                                    ? "bg-green-600 hover:bg-green-700"
+                                    : approvalAction === "upgrade"
+                                    ? "bg-purple-600 hover:bg-purple-700"
+                                    : "bg-red-600 hover:bg-red-700"
+                            }
                         >
                             {isSubmitting
-                                ? (approvalAction === "approve" ? "Approving..." : "Rejecting...")
-                                : (approvalAction === "approve" ? "Approve Member" : "Reject Member")}
+                                ? approvalAction === "approve"
+                                    ? "Approving..."
+                                    : approvalAction === "upgrade"
+                                    ? "Approving upgrade..."
+                                    : "Rejecting..."
+                                : approvalAction === "approve"
+                                ? "Approve Member"
+                                : approvalAction === "upgrade"
+                                ? "Approve Upgrade"
+                                : "Reject Member"}
                         </Button>
                     </div>
                 </div>
