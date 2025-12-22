@@ -92,7 +92,7 @@ export function RegistrationConfirmStep({
                     <li>1) Confirm your email</li>
                     <li>2) Log in (we’ll take you to your next step)</li>
                     <li>3) Activate Community (₦5,000/year) to unlock member features</li>
-                    <li>4) If you chose Club/Academy: complete readiness, request upgrade (may require approval), then pay when you activate Club or enroll in an Academy cohort</li>
+                    <li>4) If you chose Club/Academy: complete readiness, then pay when you activate Club or enroll in an Academy cohort</li>
                 </ul>
                 <p className="mt-2">
                     <a href="/membership" target="_blank" rel="noopener noreferrer" className="font-semibold text-emerald-900 underline">

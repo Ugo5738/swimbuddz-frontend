@@ -75,22 +75,31 @@ export async function middleware(request: NextRequest) {
     if (isMemberRoute || isAdminRoute) {
         try {
             const {
-                data: { session },
-            } = await supabase.auth.getSession();
+                data: { user },
+                error: userError,
+            } = await supabase.auth.getUser();
 
-            if (!session) {
+            if (userError || !user) {
                 // Not logged in, redirect to login
                 return NextResponse.redirect(new URL("/login", request.url));
             }
 
             // Check if user is admin (by email)
-            const userEmail = session.user?.email;
+            const userEmail = user.email;
             const adminEmail = process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL;
             const isAdmin = userEmail && adminEmail && userEmail.toLowerCase() === adminEmail.toLowerCase();
 
             // Admin users bypass all approval checks
             if (isAdmin) {
                 return response;
+            }
+
+            const {
+                data: { session },
+            } = await supabase.auth.getSession();
+
+            if (!session?.access_token) {
+                return NextResponse.redirect(new URL("/login", request.url));
             }
 
             // Fetch member profile to check approval status

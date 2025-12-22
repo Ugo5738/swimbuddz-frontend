@@ -3,7 +3,7 @@
 import { TimezoneCombobox } from "@/components/forms/TimezoneCombobox";
 import { ClubReadinessStep } from "@/components/onboarding/ClubReadinessStep";
 import { CommunitySignalsStep } from "@/components/onboarding/CommunitySignalsStep";
-import { SwimBackgroundStep } from "@/components/onboarding/SwimBackgroundStep";
+import { buildGoalsNarrative, parseGoalsNarrative, SwimBackgroundStep } from "@/components/onboarding/SwimBackgroundStep";
 import { AcademyDetailsStep } from "@/components/registration/AcademyDetailsStep";
 import { ClubDetailsStep } from "@/components/registration/ClubDetailsStep";
 import { RegistrationEssentialsStep } from "@/components/registration/RegistrationEssentialsStep";
@@ -14,12 +14,15 @@ import { Input } from "@/components/ui/Input";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { Select } from "@/components/ui/Select";
 import { apiGet, apiPatch } from "@/lib/api";
+import { Camera, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type Member = {
+    id?: string;
+    email?: string | null;
     membership_tier?: string;
     membership_tiers?: string[];
     requested_membership_tiers?: string[] | null;
@@ -67,8 +70,91 @@ function formatDateForInput(value?: string | null) {
     return new Date(ms).toISOString().split("T")[0] || "";
 }
 
-type StepKey = "welcome" | "core" | "safety" | "swim" | "club" | "academy" | "signals" | "review";
+function readFileAsDataUrl(file: File) {
+    return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(new Error("Failed to read file"));
+        reader.readAsDataURL(file);
+    });
+}
+
+type StepKey = "core" | "safety" | "swim" | "club" | "academy" | "signals" | "review";
 type Step = { key: StepKey; title: string; required: boolean };
+
+const ONBOARDING_DRAFT_VERSION = 2;
+
+type OnboardingDraft = {
+    version: number;
+    updatedAt: number;
+    currentStep: StepKey;
+    coreForm: {
+        firstName: string;
+        lastName: string;
+        phone: string;
+        areaInLagos: string;
+        city: string;
+        country: string;
+        gender: string;
+        dateOfBirth: string;
+        profilePhotoUrl: string;
+        timeZone: string;
+    };
+    clubForm: {
+        emergencyContactName: string;
+        emergencyContactRelationship: string;
+        emergencyContactPhone: string;
+        medicalInfo: string;
+        locationPreference: string[];
+        timeOfDayAvailability: string[];
+        clubNotes: string;
+    };
+    clubReadinessForm: {
+        availabilitySlots: string[];
+        clubNotes: string;
+    };
+    swimForm: {
+        swimLevel: string;
+        deepWaterComfort: string;
+        strokes: string[];
+        goals: string[];
+        otherGoals: string;
+    };
+    academyForm: {
+        academySkillAssessment: {
+            canFloat: boolean;
+            headUnderwater: boolean;
+            deepWaterComfort: boolean;
+            canSwim25m: boolean;
+        };
+        academyGoals: string;
+        academyPreferredCoachGender: string;
+        academyLessonPreference: string;
+    };
+    signalsForm: {
+        interests: string[];
+        volunteerInterest: string[];
+    };
+};
+
+function getDraftKey(member: Member) {
+    const id = member.id ? String(member.id) : "";
+    const email = member.email ? String(member.email) : "";
+    const suffix = id || email || "me";
+    return `swimbuddz:onboarding:draft:v${ONBOARDING_DRAFT_VERSION}:${suffix}`;
+}
+
+function safeParseDraft(raw: string | null): OnboardingDraft | null {
+    if (!raw) return null;
+    try {
+        const parsed = JSON.parse(raw) as Partial<OnboardingDraft>;
+        if (parsed.version !== ONBOARDING_DRAFT_VERSION) return null;
+        if (!parsed.currentStep) return null;
+        return parsed as OnboardingDraft;
+    } catch {
+        return null;
+    }
+}
 
 export default function DashboardOnboardingPage() {
     const router = useRouter();
@@ -76,7 +162,9 @@ export default function DashboardOnboardingPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [currentStep, setCurrentStep] = useState<StepKey>("welcome");
+    const [currentStep, setCurrentStep] = useState<StepKey>("core");
+    const hasInitializedStep = useRef(false);
+    const draftSaveTimer = useRef<number | null>(null);
 
     const loadMember = async (options?: { silent?: boolean }) => {
         if (!options?.silent) setLoading(true);
@@ -103,6 +191,12 @@ export default function DashboardOnboardingPage() {
                 : ["community"];
         return tiers.map((t) => String(t).toLowerCase());
     }, [member]);
+
+    const now = Date.now();
+    const communityActive = useMemo(() => {
+        const until = member?.community_paid_until ? Date.parse(String(member.community_paid_until)) : NaN;
+        return Number.isFinite(until) && until > now;
+    }, [member, now]);
 
     const requestedTiers = useMemo(() => (member?.requested_membership_tiers || []).map((t) => String(t).toLowerCase()), [member]);
     const wantsAcademy = requestedTiers.includes("academy");
@@ -191,7 +285,8 @@ export default function DashboardOnboardingPage() {
         swimLevel: "",
         deepWaterComfort: "",
         strokes: [] as string[],
-        goalsNarrative: "",
+        goals: [] as string[],
+        otherGoals: "",
     });
 
     const [academyForm, setAcademyForm] = useState({
@@ -210,6 +305,17 @@ export default function DashboardOnboardingPage() {
         interests: [] as string[],
         volunteerInterest: [] as string[],
     });
+
+    const draftKey = useMemo(() => (member ? getDraftKey(member) : null), [member?.id, member?.email]);
+
+    const clearDraft = useCallback(() => {
+        if (!draftKey) return;
+        try {
+            localStorage.removeItem(draftKey);
+        } catch {
+            // ignore
+        }
+    }, [draftKey]);
 
     useEffect(() => {
         if (!member) return;
@@ -242,7 +348,7 @@ export default function DashboardOnboardingPage() {
             swimLevel: member.swim_level || "",
             deepWaterComfort: member.deep_water_comfort || "",
             strokes: member.strokes || [],
-            goalsNarrative: member.goals_narrative || "",
+            ...(parseGoalsNarrative(member.goals_narrative)),
         });
         setAcademyForm({
             academySkillAssessment: (member.academy_skill_assessment as any) || {
@@ -292,6 +398,16 @@ export default function DashboardOnboardingPage() {
         });
     };
 
+    const toggleGoal = (goal: string) => {
+        setSwimForm((prev) => {
+            const exists = prev.goals.includes(goal);
+            return {
+                ...prev,
+                goals: exists ? prev.goals.filter((x) => x !== goal) : [...prev.goals, goal],
+            };
+        });
+    };
+
     const toggleSignalsMulti = (field: "interests" | "volunteerInterest", value: string) => {
         setSignalsForm((prev) => {
             const current = prev[field];
@@ -326,7 +442,7 @@ export default function DashboardOnboardingPage() {
     const swimFormValid = Boolean(
         swimForm.swimLevel &&
         swimForm.deepWaterComfort &&
-        swimForm.goalsNarrative && swimForm.goalsNarrative.trim()
+        (swimForm.goals.length > 0 || Boolean(swimForm.otherGoals && swimForm.otherGoals.trim()))
     );
 
     const clubReadinessValid = !clubContext || clubReadinessForm.availabilitySlots.length > 0;
@@ -339,7 +455,6 @@ export default function DashboardOnboardingPage() {
 
     const steps = useMemo<Step[]>(() => {
         const base: Step[] = [
-            { key: "welcome", title: "Welcome", required: false },
             { key: "core", title: "Core profile", required: true },
             { key: "safety", title: "Safety & logistics", required: true },
             { key: "swim", title: "Swimming background", required: true },
@@ -354,16 +469,18 @@ export default function DashboardOnboardingPage() {
     }, [clubContext, academyContext]);
 
     const stepIndex = steps.findIndex((s) => s.key === currentStep);
-    const stepCountExcludingWelcome = Math.max(steps.length - 1, 1);
-    const currentNumber = Math.max(stepIndex, 1);
+    const stepCount = Math.max(steps.length, 1);
+    const currentNumber = stepIndex >= 0 ? stepIndex + 1 : 1;
+    const currentStepTitle = stepIndex >= 0 ? steps[stepIndex].title : "Onboarding";
 
-    const requiredStepCount = steps.filter((s) => s.required && s.key !== "welcome" && s.key !== "review").length;
+    const requiredStepCount = steps.filter((s) => s.required).length;
     const completedRequiredCount = [
         { complete: !needsCoreProfile },
         { complete: !needsSafetyLogistics },
         { complete: !needsSwimBackground },
         ...(clubContext ? [{ complete: !needsClubReadiness }] : []),
         ...(academyContext ? [{ complete: !needsAcademyReadiness }] : []),
+        { complete: currentStep === "review" },
     ].filter((item) => item.complete).length;
     const progressPercent = requiredStepCount > 0 ? Math.round((completedRequiredCount / requiredStepCount) * 100) : 100;
 
@@ -376,9 +493,73 @@ export default function DashboardOnboardingPage() {
         return "review";
     }
 
+    useEffect(() => {
+        if (!member) return;
+        if (hasInitializedStep.current) return;
+        hasInitializedStep.current = true;
+
+        const draft = safeParseDraft(draftKey ? localStorage.getItem(draftKey) : null);
+        if (draft) {
+            setCoreForm((prev) => ({
+                ...prev,
+                ...draft.coreForm,
+                profilePhotoUrl: draft.coreForm.profilePhotoUrl || prev.profilePhotoUrl,
+            }));
+            setClubForm((prev) => ({ ...prev, ...draft.clubForm }));
+            setClubReadinessForm((prev) => ({ ...prev, ...draft.clubReadinessForm }));
+            setSwimForm((prev) => ({ ...prev, ...draft.swimForm }));
+            setAcademyForm((prev) => ({ ...prev, ...draft.academyForm }));
+            setSignalsForm((prev) => ({ ...prev, ...draft.signalsForm }));
+
+            const allowedSteps = new Set(steps.map((s) => s.key));
+            setCurrentStep(allowedSteps.has(draft.currentStep) ? draft.currentStep : firstIncompleteStep());
+            toast.message("Restored your in-progress onboarding");
+            return;
+        }
+
+        setCurrentStep(firstIncompleteStep());
+    }, [member, needsAcademyReadiness, needsClubReadiness, needsCoreProfile, needsSafetyLogistics, needsSwimBackground]);
+
+    useEffect(() => {
+        if (!draftKey) return;
+        if (!hasInitializedStep.current) return;
+
+        if (draftSaveTimer.current) {
+            window.clearTimeout(draftSaveTimer.current);
+        }
+
+        draftSaveTimer.current = window.setTimeout(() => {
+            const profilePhotoUrlToPersist =
+                coreForm.profilePhotoUrl && !coreForm.profilePhotoUrl.startsWith("data:")
+                    ? coreForm.profilePhotoUrl
+                    : "";
+
+            const draft: OnboardingDraft = {
+                version: ONBOARDING_DRAFT_VERSION,
+                updatedAt: Date.now(),
+                currentStep,
+                coreForm: { ...coreForm, profilePhotoUrl: profilePhotoUrlToPersist },
+                clubForm,
+                clubReadinessForm,
+                swimForm,
+                academyForm,
+                signalsForm,
+            };
+
+            try {
+                localStorage.setItem(draftKey, JSON.stringify(draft));
+            } catch {
+                // ignore (e.g., quota exceeded)
+            }
+        }, 250);
+
+        return () => {
+            if (draftSaveTimer.current) window.clearTimeout(draftSaveTimer.current);
+        };
+    }, [academyForm, clubForm, clubReadinessForm, coreForm, currentStep, draftKey, signalsForm, swimForm]);
+
     function isStepSatisfied(step: StepKey, opts?: { assumeSatisfied?: StepKey }) {
         if (opts?.assumeSatisfied && step === opts.assumeSatisfied) return true;
-        if (step === "welcome") return true;
         if (step === "core") return !needsCoreProfile;
         if (step === "safety") return !needsSafetyLogistics;
         if (step === "swim") return !needsSwimBackground;
@@ -399,7 +580,41 @@ export default function DashboardOnboardingPage() {
         return "review";
     }
 
-    const saveCore = async () => {
+    const missingRequiredSteps = useMemo(() => {
+        return steps.filter(
+            (step) => step.required && step.key !== "review" && !isStepSatisfied(step.key)
+        );
+    }, [
+        steps,
+        needsCoreProfile,
+        needsSafetyLogistics,
+        needsSwimBackground,
+        needsClubReadiness,
+        needsAcademyReadiness,
+    ]);
+
+    const hasMissingRequiredSteps = missingRequiredSteps.length > 0;
+    const firstMissingRequiredStep = missingRequiredSteps[0];
+    const showBillingCta = !communityActive || wantsClub || wantsAcademy;
+    const billingHref = communityActive ? "/dashboard/billing" : "/dashboard/billing?required=community";
+    const redirectNote = communityActive ? "" : "Redirecting you to billing...";
+    const reviewDescription = communityActive
+        ? "Your onboarding details are saved. Your dashboard will guide you to activation or Academy programs when you're ready."
+        : "Your onboarding details are saved. Activate Community to unlock member features.";
+
+    useEffect(() => {
+        if (currentStep !== "review") return;
+        if (hasMissingRequiredSteps) return;
+        if (communityActive) return;
+
+        const timer = window.setTimeout(() => {
+            router.push(billingHref);
+        }, 1200);
+
+        return () => window.clearTimeout(timer);
+    }, [billingHref, communityActive, currentStep, hasMissingRequiredSteps, router]);
+
+    const saveCore = async (): Promise<boolean> => {
         setSaving(true);
         try {
             await apiPatch(
@@ -419,15 +634,19 @@ export default function DashboardOnboardingPage() {
                 { auth: true }
             );
             toast.success("Core profile saved");
+            clearDraft();
             await loadMember({ silent: true });
+            return true;
         } catch (e) {
             toast.error("Failed to save core profile");
+            return false;
         } finally {
             setSaving(false);
         }
+        return false;
     };
 
-    const saveSafety = async () => {
+    const saveSafety = async (): Promise<boolean> => {
         setSaving(true);
         try {
             await apiPatch(
@@ -443,15 +662,19 @@ export default function DashboardOnboardingPage() {
                 { auth: true }
             );
             toast.success("Safety & logistics saved");
+            clearDraft();
             await loadMember({ silent: true });
+            return true;
         } catch (e) {
             toast.error("Failed to save safety & logistics");
+            return false;
         } finally {
             setSaving(false);
         }
+        return false;
     };
 
-    const saveSwimBackground = async () => {
+    const saveSwimBackground = async (): Promise<boolean> => {
         setSaving(true);
         try {
             await apiPatch(
@@ -460,21 +683,25 @@ export default function DashboardOnboardingPage() {
                     swim_level: swimForm.swimLevel,
                     deep_water_comfort: swimForm.deepWaterComfort,
                     strokes: swimForm.strokes,
-                    goals_narrative: swimForm.goalsNarrative,
+                    goals_narrative: buildGoalsNarrative(swimForm.goals, swimForm.otherGoals),
                 },
                 { auth: true }
             );
             toast.success("Swimming background saved");
+            clearDraft();
             await loadMember({ silent: true });
+            return true;
         } catch {
             toast.error("Failed to save swimming background");
+            return false;
         } finally {
             setSaving(false);
         }
+        return false;
     };
 
-    const saveClubReadiness = async () => {
-        if (!clubContext) return;
+    const saveClubReadiness = async (): Promise<boolean> => {
+        if (!clubContext) return true;
         setSaving(true);
         try {
             await apiPatch(
@@ -486,16 +713,20 @@ export default function DashboardOnboardingPage() {
                 { auth: true }
             );
             toast.success("Club readiness saved");
+            clearDraft();
             await loadMember({ silent: true });
+            return true;
         } catch {
             toast.error("Failed to save Club readiness");
+            return false;
         } finally {
             setSaving(false);
         }
+        return false;
     };
 
-    const saveAcademy = async () => {
-        if (!academyContext) return;
+    const saveAcademy = async (): Promise<boolean> => {
+        if (!academyContext) return true;
         setSaving(true);
         try {
             await apiPatch(
@@ -509,12 +740,16 @@ export default function DashboardOnboardingPage() {
                 { auth: true }
             );
             toast.success("Academy readiness saved");
+            clearDraft();
             await loadMember({ silent: true });
+            return true;
         } catch (e) {
             toast.error("Failed to save Academy readiness");
+            return false;
         } finally {
             setSaving(false);
         }
+        return false;
     };
 
     const saveSignals = async () => {
@@ -529,6 +764,7 @@ export default function DashboardOnboardingPage() {
                 { auth: true }
             );
             toast.success("Preferences saved");
+            clearDraft();
             await loadMember({ silent: true });
         } catch {
             toast.error("Failed to save preferences");
@@ -567,42 +803,42 @@ export default function DashboardOnboardingPage() {
     };
 
     const handleContinue = async () => {
-        if (currentStep === "welcome") {
-            setCurrentStep(nextStepFrom("welcome"));
-            return;
-        }
-
         if (currentStep === "core") {
             if (!coreFormValid) return;
-            await saveCore();
+            const saved = await saveCore();
+            if (!saved) return;
             setCurrentStep(nextStepFrom("core", { assumeSatisfied: "core" }));
             return;
         }
 
         if (currentStep === "safety") {
             if (!safetyFormValid) return;
-            await saveSafety();
+            const saved = await saveSafety();
+            if (!saved) return;
             setCurrentStep(nextStepFrom("safety", { assumeSatisfied: "safety" }));
             return;
         }
 
         if (currentStep === "swim") {
             if (!swimFormValid) return;
-            await saveSwimBackground();
+            const saved = await saveSwimBackground();
+            if (!saved) return;
             setCurrentStep(nextStepFrom("swim", { assumeSatisfied: "swim" }));
             return;
         }
 
         if (currentStep === "club") {
             if (!clubReadinessValid) return;
-            await saveClubReadiness();
+            const saved = await saveClubReadiness();
+            if (!saved) return;
             setCurrentStep(nextStepFrom("club", { assumeSatisfied: "club" }));
             return;
         }
 
         if (currentStep === "academy") {
             if (!academyFormValid) return;
-            await saveAcademy();
+            const saved = await saveAcademy();
+            if (!saved) return;
             setCurrentStep(nextStepFrom("academy", { assumeSatisfied: "academy" }));
             return;
         }
@@ -617,6 +853,7 @@ export default function DashboardOnboardingPage() {
         }
 
         if (currentStep === "review") {
+            clearDraft();
             router.push("/dashboard");
             return;
         }
@@ -629,17 +866,14 @@ export default function DashboardOnboardingPage() {
             <header className="space-y-2">
                 <h1 className="text-3xl font-bold text-slate-900">Onboarding</h1>
                 <p className="text-slate-600">
-                    Let’s get you set up properly. This takes about 3–5 minutes. You can skip optional items and come back later.
+                    Let’s get you set up properly. This takes about 3–5 minutes.
                 </p>
             </header>
 
             <Card className="p-4 space-y-3">
                 <div className="flex items-center justify-between gap-4">
                     <div className="text-sm text-slate-600">
-                        Step {currentNumber} of {stepCountExcludingWelcome} • {progressPercent}% complete
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" onClick={() => router.push("/dashboard")}>Skip for now</Button>
+                        Step {currentNumber} of {stepCount} • {currentStepTitle} • {progressPercent}% complete
                     </div>
                 </div>
                 <div className="h-2 w-full rounded-full bg-slate-100">
@@ -657,26 +891,6 @@ export default function DashboardOnboardingPage() {
             ) : null}
 
             <Card className="p-6 space-y-6">
-                {currentStep === "welcome" ? (
-                    <div className="space-y-4">
-                        <div className="space-y-1">
-                            <h2 className="text-xl font-semibold text-slate-900">
-                                Welcome{member.first_name ? `, ${member.first_name}` : ""} 👋
-                            </h2>
-                            <p className="text-sm text-slate-600">
-                                We’ll collect: core profile, safety & logistics, swimming background
-                                {clubContext ? ", Club readiness" : ""}{academyContext ? ", Academy readiness" : ""}.
-                            </p>
-                        </div>
-                        <div className="flex flex-wrap gap-3">
-                            <Button onClick={handleContinue}>Start</Button>
-                            <Button variant="outline" onClick={() => setCurrentStep(firstIncompleteStep())}>
-                                Resume
-                            </Button>
-                        </div>
-                    </div>
-                ) : null}
-
                 {currentStep === "core" ? (
                     <div className="space-y-6">
                         <div className="space-y-2">
@@ -684,64 +898,75 @@ export default function DashboardOnboardingPage() {
                             <p className="text-sm text-slate-600">Basic identity and contact details so we can support you safely.</p>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                             <label className="block text-sm font-medium text-slate-700">
                                 Profile photo <span className="text-rose-500">*</span>
                             </label>
-                            {coreForm.profilePhotoUrl ? (
-                                <div className="flex items-center gap-4">
-                                    <img
-                                        src={coreForm.profilePhotoUrl}
-                                        alt="Profile preview"
-                                        className="h-16 w-16 rounded-full object-cover border border-slate-200"
-                                    />
-                                    <div className="flex items-center gap-2">
-                                        <label className="inline-flex">
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                className="hidden"
-                                                onChange={(event) => {
-                                                    const file = event.target.files?.[0];
-                                                    if (!file) return;
-                                                    const reader = new FileReader();
-                                                    reader.onloadend = () => {
-                                                        setCoreForm((prev) => ({ ...prev, profilePhotoUrl: String(reader.result || "") }));
-                                                    };
-                                                    reader.readAsDataURL(file);
-                                                }}
+                            <div className="flex items-center gap-6">
+                                <label className="relative group cursor-pointer">
+                                    <div
+                                        className={[
+                                            "h-24 w-24 overflow-hidden rounded-full transition-all",
+                                            coreForm.profilePhotoUrl
+                                                ? "ring-4 ring-cyan-200"
+                                                : "bg-gradient-to-br from-cyan-100 to-cyan-200 hover:from-cyan-200 hover:to-cyan-300",
+                                        ].join(" ")}
+                                    >
+                                        {coreForm.profilePhotoUrl ? (
+                                            <img
+                                                src={coreForm.profilePhotoUrl}
+                                                alt="Profile preview"
+                                                className="h-full w-full object-cover"
                                             />
-                                            <Button type="button" variant="outline">Change</Button>
-                                        </label>
+                                        ) : (
+                                            <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-cyan-700">
+                                                <Camera className="h-7 w-7" />
+                                                <span className="text-xs font-medium">Add photo</span>
+                                            </div>
+                                        )}
+                                    </div>
+	                                    <input
+	                                        type="file"
+	                                        accept="image/*"
+	                                        className="sr-only"
+	                                        onChange={async (event) => {
+	                                            const input = event.currentTarget;
+	                                            const file = input.files?.[0];
+	                                            if (!file) return;
+	                                            // Clear immediately so selecting the same file again still triggers `onChange`.
+	                                            input.value = "";
+	                                            try {
+	                                                const url = await readFileAsDataUrl(file);
+	                                                setCoreForm((prev) => ({ ...prev, profilePhotoUrl: url }));
+	                                            } catch {
+	                                                toast.error("Failed to read image");
+	                                            }
+	                                        }}
+	                                    />
+                                    {coreForm.profilePhotoUrl ? (
+                                        <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 flex items-center justify-center">
+                                            <Camera className="h-8 w-8 text-white" />
+                                        </div>
+                                    ) : null}
+                                </label>
+                                <div className="flex-1 space-y-2">
+                                    <p className="text-sm text-slate-700 font-medium">
+                                        {coreForm.profilePhotoUrl ? "Tap to change photo" : "Tap the circle to upload"}
+                                    </p>
+                                    <p className="text-xs text-slate-500">JPG/PNG/GIF. This helps members recognize you.</p>
+                                    {coreForm.profilePhotoUrl ? (
                                         <Button
                                             type="button"
                                             variant="outline"
                                             onClick={() => setCoreForm((prev) => ({ ...prev, profilePhotoUrl: "" }))}
+                                            className="gap-2"
                                         >
-                                            Remove
+                                            <X className="h-4 w-4" />
+                                            Remove photo
                                         </Button>
-                                    </div>
+                                    ) : null}
                                 </div>
-                            ) : (
-                                <label className="flex cursor-pointer items-center justify-between rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-3">
-                                    <span className="text-sm text-slate-600">Upload a photo</span>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={(event) => {
-                                            const file = event.target.files?.[0];
-                                            if (!file) return;
-                                            const reader = new FileReader();
-                                            reader.onloadend = () => {
-                                                setCoreForm((prev) => ({ ...prev, profilePhotoUrl: String(reader.result || "") }));
-                                            };
-                                            reader.readAsDataURL(file);
-                                        }}
-                                    />
-                                    <span className="text-sm font-medium text-cyan-700">Choose file</span>
-                                </label>
-                            )}
+                            </div>
                         </div>
 
                         <RegistrationEssentialsStep
@@ -810,6 +1035,7 @@ export default function DashboardOnboardingPage() {
                         formData={swimForm}
                         onUpdate={(field, value) => setSwimForm((prev) => ({ ...prev, [field]: value as any }))}
                         onToggleStroke={toggleStroke}
+                        onToggleGoal={toggleGoal}
                     />
                 ) : null}
 
@@ -829,26 +1055,68 @@ export default function DashboardOnboardingPage() {
                 ) : null}
 
                 {currentStep === "signals" ? (
-                    <CommunitySignalsStep
-                        formData={signalsForm}
-                        onToggleMulti={toggleSignalsMulti}
-                    />
+                    <div className="space-y-6">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                                <h2 className="text-xl font-semibold text-slate-900">Community signals (optional)</h2>
+                                <p className="text-sm text-slate-600">Light preferences so we can personalize your experience.</p>
+                            </div>
+                            <Button variant="outline" type="button" onClick={() => setCurrentStep("review")}>
+                                Skip
+                            </Button>
+                        </div>
+                        <CommunitySignalsStep
+                            showHeader={false}
+                            formData={signalsForm}
+                            onToggleMulti={toggleSignalsMulti}
+                        />
+                    </div>
                 ) : null}
 
                 {currentStep === "review" ? (
                     <div className="space-y-4 text-center">
-                        <h2 className="text-xl font-semibold text-slate-900">You’re all set</h2>
-                        <p className="text-sm text-slate-600">
-                            Your onboarding details are saved. Your dashboard will guide you to activation or Academy programs when you're ready.
-                        </p>
-                        <div className="flex justify-center gap-3">
-                            <Link href="/dashboard">
-                                <Button>Go to Dashboard</Button>
-                            </Link>
-                            <Link href="/profile">
-                                <Button variant="outline">Review Profile</Button>
-                            </Link>
-                        </div>
+                        {hasMissingRequiredSteps ? (
+                            <>
+                                <h2 className="text-xl font-semibold text-slate-900">Almost there</h2>
+                                <p className="text-sm text-slate-600">
+                                    Finish {missingRequiredSteps.map((step) => step.title).join(", ")} to complete setup.
+                                </p>
+                                <div className="flex justify-center gap-3">
+                                    {firstMissingRequiredStep ? (
+                                        <Button onClick={() => setCurrentStep(firstMissingRequiredStep.key)}>
+                                            Continue {firstMissingRequiredStep.title}
+                                        </Button>
+                                    ) : null}
+                                    <Link href="/dashboard">
+                                        <Button variant="outline">Go to Dashboard</Button>
+                                    </Link>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <h2 className="text-xl font-semibold text-slate-900">You’re all set</h2>
+                                <p className="text-sm text-slate-600">
+                                    {reviewDescription}
+                                </p>
+                                {!communityActive ? (
+                                    <p className="text-xs text-slate-500">{redirectNote}</p>
+                                ) : null}
+                                <div className="flex justify-center gap-3">
+                                    {showBillingCta ? (
+                                        <Link href={billingHref}>
+                                            <Button>Go to Billing</Button>
+                                        </Link>
+                                    ) : (
+                                        <Link href="/dashboard">
+                                            <Button>Go to Dashboard</Button>
+                                        </Link>
+                                    )}
+                                    <Link href="/profile">
+                                        <Button variant="outline">Review Profile</Button>
+                                    </Link>
+                                </div>
+                            </>
+                        )}
                     </div>
                 ) : null}
 

@@ -34,24 +34,39 @@ async function request<T>(method: string, path: string, options: RequestOptions 
     body: options.body ? JSON.stringify(options.body) : undefined,
     cache: "no-store"
   });
+  const responseText = await response.text();
+  const contentType = response.headers.get("content-type") || "";
 
   if (!response.ok) {
     // Prefer structured API errors: FastAPI typically returns { detail: "..." }.
-    try {
-      const data = await response.json();
-      const detail = typeof data?.detail === "string" ? data.detail : JSON.stringify(data);
-      throw new Error(detail || `Request failed with status ${response.status}`);
-    } catch {
-      const errorText = await response.text();
-      throw new Error(errorText || `Request failed with status ${response.status}`);
+    if (responseText) {
+      if (contentType.includes("application/json")) {
+        try {
+          const data = JSON.parse(responseText);
+          const detail = typeof data?.detail === "string" ? data.detail : JSON.stringify(data);
+          throw new Error(detail || `Request failed with status ${response.status}`);
+        } catch {
+          // Fall back to raw text when JSON parsing fails.
+        }
+      }
+      throw new Error(responseText);
     }
+    throw new Error(`Request failed with status ${response.status}`);
   }
 
   if (response.status === 204) {
     return null as T;
   }
 
-  return (await response.json()) as T;
+  if (!responseText) {
+    return null as T;
+  }
+
+  if (contentType.includes("application/json")) {
+    return JSON.parse(responseText) as T;
+  }
+
+  return responseText as T;
 }
 
 export function apiGet<T>(path: string, options?: RequestOptions) {

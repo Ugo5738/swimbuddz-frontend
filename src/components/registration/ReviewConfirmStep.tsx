@@ -465,7 +465,7 @@ export function ReviewConfirmStep({
             <div className="rounded-lg bg-emerald-50 p-4">
                 <p className="text-sm text-emerald-900">
                     <strong>What happens next?</strong> After submitting, you'll receive a confirmation email.
-                    Club and Academy members will be contacted within 48 hours with next steps and payment information.
+                    Activate Community to unlock member features, then complete readiness and pay when you're ready to activate Club or join an Academy cohort.
                 </p>
             </div>
         </div>

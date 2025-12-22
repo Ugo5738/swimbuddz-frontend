@@ -73,6 +73,11 @@ export default function AdminMembersPage() {
     const [approvalNotes, setApprovalNotes] = useState("");
     const [approvalAction, setApprovalAction] = useState<"approve" | "reject" | "upgrade">("approve"); // Added upgrade
 
+    // Delete Modal State
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [deletingMember, setDeletingMember] = useState<Member | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Form state
@@ -302,27 +307,42 @@ export default function AdminMembersPage() {
         }
     };
 
-    const handleDeleteMember = async (memberId: string, memberName: string) => {
-        if (!confirm(`Are you sure you want to delete ${memberName}? This action cannot be undone.`)) {
+    const openDeleteModal = (member: Member) => {
+        setDeletingMember(member);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleDeleteMember = async (memberId: string, memberName: string, mode: "soft" | "hard") => {
+        if (mode === "hard" && !confirm(`Hard delete ${memberName}? This cannot be undone.`)) {
             return;
         }
 
+        setIsDeleting(true);
         try {
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token;
 
-            const res = await fetch(`${API_BASE_URL}/api/v1/members/${memberId}`, {
-                method: "DELETE",
-                headers: { "Authorization": `Bearer ${token}` }
+            const res = await fetch(`${API_BASE_URL}/api/v1/admin/cleanup/members/${memberId}`, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ mode })
             });
 
             if (!res.ok) {
-                throw new Error("Failed to delete member");
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(errorData.detail || "Failed to delete member");
             }
 
             await fetchMembers();
+            setIsDeleteModalOpen(false);
+            setDeletingMember(null);
         } catch (err) {
             alert(err instanceof Error ? err.message : "Failed to delete member");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -528,7 +548,7 @@ export default function AdminMembersPage() {
                                                 )}
 
                                                 <button
-                                                    onClick={() => handleDeleteMember(member.id, `${member.first_name} ${member.last_name}`)}
+                                                    onClick={() => openDeleteModal(member)}
                                                     className="p-1.5 rounded hover:bg-red-50 text-slate-400 hover:text-red-600"
                                                     title="Delete"
                                                 >
@@ -739,6 +759,61 @@ export default function AdminMembersPage() {
                                 : "Reject Member"}
                         </Button>
                     </div>
+                </div>
+            </Modal>
+
+            {/* Delete Modal */}
+            <Modal
+                isOpen={isDeleteModalOpen}
+                onClose={() => {
+                    setIsDeleteModalOpen(false);
+                    setDeletingMember(null);
+                }}
+                title="Delete member"
+            >
+                <p className="text-slate-600">
+                    Choose how to remove {deletingMember?.first_name} {deletingMember?.last_name}.
+                    Soft delete deactivates the account, hard delete permanently removes data.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                    <Button
+                        variant="secondary"
+                        onClick={() => {
+                            if (!deletingMember) return;
+                            handleDeleteMember(
+                                deletingMember.id,
+                                `${deletingMember.first_name} ${deletingMember.last_name}`,
+                                "soft"
+                            );
+                        }}
+                        disabled={isDeleting}
+                    >
+                        {isDeleting ? "Working..." : "Soft delete"}
+                    </Button>
+                    <Button
+                        variant="danger"
+                        onClick={() => {
+                            if (!deletingMember) return;
+                            handleDeleteMember(
+                                deletingMember.id,
+                                `${deletingMember.first_name} ${deletingMember.last_name}`,
+                                "hard"
+                            );
+                        }}
+                        disabled={isDeleting}
+                    >
+                        {isDeleting ? "Working..." : "Hard delete"}
+                    </Button>
+                    <Button
+                        variant="outline"
+                        onClick={() => {
+                            setIsDeleteModalOpen(false);
+                            setDeletingMember(null);
+                        }}
+                        disabled={isDeleting}
+                    >
+                        Cancel
+                    </Button>
                 </div>
             </Modal>
 

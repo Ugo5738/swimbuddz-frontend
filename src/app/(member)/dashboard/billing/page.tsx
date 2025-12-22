@@ -16,6 +16,12 @@ type Member = {
     membership_tier?: string | null;
     membership_tiers?: string[] | null;
     requested_membership_tiers?: string[] | null;
+    emergency_contact_name?: string | null;
+    emergency_contact_relationship?: string | null;
+    emergency_contact_phone?: string | null;
+    location_preference?: string[] | null;
+    time_of_day_availability?: string[] | null;
+    availability_slots?: string[] | null;
 };
 
 type PaymentIntent = {
@@ -65,6 +71,7 @@ export default function BillingPage() {
     const [activatingCommunity, setActivatingCommunity] = useState(false);
     const [activatingClub, setActivatingClub] = useState(false);
     const [verifyingPayment, setVerifyingPayment] = useState(false);
+    const [autoVerifyAttempted, setAutoVerifyAttempted] = useState(false);
     const [communityIntent, setCommunityIntent] = useState<PaymentIntent | null>(null);
     const [clubIntent, setClubIntent] = useState<PaymentIntent | null>(null);
     const [clubBillingCycle, setClubBillingCycle] = useState<"monthly" | "quarterly" | "biannual" | "annual">("monthly");
@@ -144,7 +151,43 @@ export default function BillingPage() {
         );
     }, [approvedTiers, requestedTiers]);
 
-    const canActivateClub = communityActive && (approvedTiers.includes("club") || approvedTiers.includes("academy"));
+    const clubReadinessComplete = useMemo(() => {
+        if (!member) return false;
+        const hasSafetyLogistics = Boolean(
+            member.emergency_contact_name &&
+            member.emergency_contact_relationship &&
+            member.emergency_contact_phone &&
+            member.location_preference &&
+            member.location_preference.length > 0 &&
+            member.time_of_day_availability &&
+            member.time_of_day_availability.length > 0
+        );
+        const hasAvailability = Boolean(
+            member.availability_slots && member.availability_slots.length > 0
+        );
+        return hasSafetyLogistics && hasAvailability;
+    }, [member]);
+
+    const missingClubRequirements = useMemo(() => {
+        if (!member) return [];
+        const missing: string[] = [];
+        if (!member.emergency_contact_name || !member.emergency_contact_relationship || !member.emergency_contact_phone) {
+            missing.push("Emergency contact");
+        }
+        if (!member.location_preference || member.location_preference.length === 0) {
+            missing.push("Preferred locations");
+        }
+        if (!member.time_of_day_availability || member.time_of_day_availability.length === 0) {
+            missing.push("Time of day availability");
+        }
+        if (!member.availability_slots || member.availability_slots.length === 0) {
+            missing.push("Weekly availability");
+        }
+        return missing;
+    }, [member]);
+
+    const clubApproved = approvedTiers.includes("club") || approvedTiers.includes("academy");
+    const canActivateClub = communityActive && (clubApproved || clubReadinessComplete);
 
     const verifyPaystackPayment = useCallback(async (reference: string) => {
         setVerifyingPayment(true);
@@ -239,6 +282,18 @@ export default function BillingPage() {
             if (timeoutId) clearTimeout(timeoutId);
         };
     }, [communityActive, provider, providerReference, refreshMember, refreshReturnedPayment, router]);
+
+    useEffect(() => {
+        if (provider !== "paystack" || !providerReference) return;
+        if (communityActive) return;
+        if (autoVerifyAttempted) return;
+
+        setAutoVerifyAttempted(true);
+        const timer = window.setTimeout(() => {
+            verifyPaystackPayment(providerReference);
+        }, 1000);
+        return () => window.clearTimeout(timer);
+    }, [autoVerifyAttempted, communityActive, provider, providerReference, verifyPaystackPayment]);
 
     if (loading) return <LoadingCard text="Loading billing..." />;
 
@@ -412,7 +467,9 @@ export default function BillingPage() {
 
                     {!canActivateClub ? (
                         <Alert variant="info" title="Club not available yet">
-                            Activate Community first, then complete readiness and request an upgrade. Approval may be required before you can activate Club.
+                            {communityActive
+                                ? `Complete onboarding to unlock payment: ${missingClubRequirements.join(", ")}.`
+                                : "Activate Community first, then complete Club readiness in onboarding to unlock payment."}
                         </Alert>
                     ) : (
                         <div className="space-y-3">

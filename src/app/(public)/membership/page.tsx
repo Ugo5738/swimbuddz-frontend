@@ -40,7 +40,7 @@ export default function MembershipPage() {
           <li>2) We’ll take you to your next step on your dashboard</li>
           <li>3) Activate Community (₦5,000/year) to unlock member features</li>
           <li>4) Complete onboarding / readiness checklist</li>
-          <li>5) Request upgrade (approval may be required)</li>
+          <li>5) Request upgrade</li>
           <li>6) Pay when you activate Club or enroll in an Academy cohort</li>
         </ol>
         <p className="text-sm text-slate-600">

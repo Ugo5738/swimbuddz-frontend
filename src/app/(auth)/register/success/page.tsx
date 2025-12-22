@@ -62,7 +62,7 @@ export default function RegistrationSuccessPage() {
                         <div>
                             <h3 className="font-medium text-slate-900">Next steps (Club & Academy)</h3>
                             <p className="mt-1 text-sm text-slate-600">
-                                If you selected Club or Academy, you’ll complete onboarding after login and request an upgrade (approval may be required). Club is paid when you activate; Academy is paid when you enroll in a cohort.
+                                If you selected Club or Academy, you’ll complete onboarding after login and request an upgrade. Club is paid when you activate; Academy is paid when you enroll in a cohort.
                             </p>
                             <p className="mt-2 text-sm">
                                 <Link href="/membership" className="font-semibold text-cyan-700 hover:underline">

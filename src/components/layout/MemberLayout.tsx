@@ -48,6 +48,23 @@ type MemberInfo = {
     membership_tiers?: string[];
     membership_tier?: string;
     email?: string;
+    community_paid_until?: string | null;
+    gender?: string | null;
+    date_of_birth?: string | null;
+    city?: string | null;
+    country?: string | null;
+    time_zone?: string | null;
+    swim_level?: string | null;
+    emergency_contact_name?: string | null;
+    emergency_contact_relationship?: string | null;
+    emergency_contact_phone?: string | null;
+    location_preference?: string[] | null;
+    time_of_day_availability?: string[] | null;
+    requested_membership_tiers?: string[] | null;
+    academy_skill_assessment?: Record<string, boolean> | null;
+    academy_goals?: string | null;
+    academy_preferred_coach_gender?: string | null;
+    academy_lesson_preference?: string | null;
 };
 
 const navSections: NavSection[] = [
@@ -126,7 +143,50 @@ export function MemberLayout({ children }: MemberLayoutProps) {
     const memberTiers = member?.membership_tiers?.map(t => t.toLowerCase()) ||
         (member?.membership_tier ? [member.membership_tier.toLowerCase()] : ["community"]);
 
-    const visibleSections = navSections.filter(section => {
+    const requestedTiers = (member?.requested_membership_tiers || []).map((t) => String(t).toLowerCase());
+    const wantsAcademy = requestedTiers.includes("academy");
+    const wantsClub = requestedTiers.includes("club") || wantsAcademy;
+
+    const needsProfileBasics = !member?.profile_photo_url || !member?.gender || !member?.date_of_birth;
+    const needsProfileCore =
+        needsProfileBasics ||
+        !member?.country ||
+        !member?.city ||
+        !member?.time_zone ||
+        !member?.swim_level;
+
+    const needsClubReadiness =
+        (wantsClub || memberTiers.includes("club") || memberTiers.includes("academy")) &&
+        (!member?.emergency_contact_name ||
+            !member?.emergency_contact_relationship ||
+            !member?.emergency_contact_phone ||
+            !(member?.location_preference && member.location_preference.length > 0) ||
+            !(member?.time_of_day_availability && member.time_of_day_availability.length > 0));
+
+    const assessment = member?.academy_skill_assessment;
+    const hasAssessment =
+        assessment &&
+        ["canFloat", "headUnderwater", "deepWaterComfort", "canSwim25m"].some(
+            (k) => Object.prototype.hasOwnProperty.call(assessment, k)
+        );
+    const needsAcademyReadiness =
+        (wantsAcademy || memberTiers.includes("academy")) &&
+        (!hasAssessment ||
+            !member?.academy_goals ||
+            !member?.academy_preferred_coach_gender ||
+            !member?.academy_lesson_preference);
+
+    const needsOnboarding = !member || needsProfileCore || needsClubReadiness || needsAcademyReadiness;
+
+    const filteredSections = navSections.map((section) => {
+        if (section.title !== "My Account") return section;
+        const items = needsOnboarding
+            ? section.items
+            : section.items.filter((item) => item.href !== "/dashboard/onboarding");
+        return { ...section, items };
+    }).filter((section) => section.items.length > 0);
+
+    const visibleSections = filteredSections.filter(section => {
         if (!section.showFor) return true;
         return section.showFor.some(tier => memberTiers.includes(tier));
     });

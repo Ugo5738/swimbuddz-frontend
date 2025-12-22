@@ -457,7 +457,7 @@ function ProfileContent() {
               <Alert variant="info" title="Upgrade Request Pending">
                 <p>
                   You have requested an upgrade to <strong>{profile.requestedMembershipTiers.join(", ")}</strong>.
-                  This request is pending admin approval. You will retain your current access until then.
+                  Complete readiness and pay to activate the new tier. You will retain your current access until then.
                 </p>
               </Alert>
             )}

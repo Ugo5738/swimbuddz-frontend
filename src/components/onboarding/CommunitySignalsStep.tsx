@@ -9,19 +9,22 @@ type CommunitySignalsFormData = {
 };
 
 type CommunitySignalsStepProps = {
+  showHeader?: boolean;
   formData: CommunitySignalsFormData;
   onToggleMulti: (field: keyof CommunitySignalsFormData, value: string) => void;
 };
 
-export function CommunitySignalsStep({ formData, onToggleMulti }: CommunitySignalsStepProps) {
+export function CommunitySignalsStep({ showHeader = true, formData, onToggleMulti }: CommunitySignalsStepProps) {
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <h3 className="text-lg font-semibold text-slate-900">Community signals (optional)</h3>
-        <p className="text-sm text-slate-600">
-          A few light preferences so we can personalize your experience.
-        </p>
-      </div>
+      {showHeader ? (
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold text-slate-900">Community signals (optional)</h3>
+          <p className="text-sm text-slate-600">
+            A few light preferences so we can personalize your experience.
+          </p>
+        </div>
+      ) : null}
 
       <OptionPillGroup
         label="Interests"
@@ -40,4 +43,3 @@ export function CommunitySignalsStep({ formData, onToggleMulti }: CommunitySigna
     </div>
   );
 }
-

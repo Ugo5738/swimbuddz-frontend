@@ -105,7 +105,7 @@ export function ClubDetailsStep({
 
             {/* Training Preferences */}
             <OptionPillGroup
-                label="Preferred training locations"
+                label="Preferred swimming locations"
                 options={resolvedLocationOptions}
                 selected={formData.locationPreference}
                 onToggle={(value) => onToggleMulti("locationPreference", value)}
