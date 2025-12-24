@@ -1,14 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/Card";
+import { parseBlockContent, serializeBlocks } from "@/components/editor";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
-import { Plus, BookOpen, Edit, Trash2 } from "lucide-react";
-import { format } from "date-fns";
 import { apiEndpoints } from "@/lib/config";
+import { PartialBlock } from "@blocknote/core";
+import { format } from "date-fns";
+import { BookOpen, Eye, EyeOff, Maximize2, Minimize2, Plus, Trash2 } from "lucide-react";
+import dynamic from "next/dynamic";
+import { useCallback, useEffect, useState } from "react";
+
+// Dynamic import to avoid SSR issues with BlockNote
+const BlockEditor = dynamic(
+    () => import("@/components/editor/BlockEditor").then(mod => ({ default: mod.BlockEditor })),
+    { ssr: false, loading: () => <div className="h-96 bg-slate-100 rounded-lg animate-pulse" /> }
+);
+
+const BlockViewer = dynamic(
+    () => import("@/components/editor/BlockViewer").then(mod => ({ default: mod.BlockViewer })),
+    { ssr: false }
+);
 
 interface ContentPost {
     id: string;
@@ -28,10 +41,12 @@ export default function AdminContentPage() {
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editingPost, setEditingPost] = useState<ContentPost | null>(null);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [showPreview, setShowPreview] = useState(false);
+    const [editorContent, setEditorContent] = useState<PartialBlock[]>([]);
     const [formData, setFormData] = useState({
         title: "",
         summary: "",
-        body: "",
         category: "swimming_tips",
         featured_image_url: "",
         tier_access: "community",
@@ -55,6 +70,10 @@ export default function AdminContentPage() {
         }
     };
 
+    const handleEditorChange = useCallback((blocks: PartialBlock[]) => {
+        setEditorContent(blocks);
+    }, []);
+
     const handleCreatePost = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -64,6 +83,7 @@ export default function AdminContentPage() {
 
             const payload = {
                 ...formData,
+                body: serializeBlocks(editorContent),
                 featured_image_url: formData.featured_image_url || null,
             };
 
@@ -117,17 +137,40 @@ export default function AdminContentPage() {
         }
     };
 
+    const handleEditPost = (post: ContentPost) => {
+        setEditingPost(post);
+        setFormData({
+            title: post.title,
+            summary: post.summary,
+            category: post.category,
+            featured_image_url: post.featured_image_url || "",
+            tier_access: post.tier_access,
+        });
+        // Parse existing content
+        const blocks = parseBlockContent(post.body);
+        if (blocks) {
+            setEditorContent(blocks);
+        }
+        setShowCreateModal(true);
+    };
+
     const resetForm = () => {
         setFormData({
             title: "",
             summary: "",
-            body: "",
             category: "swimming_tips",
             featured_image_url: "",
             tier_access: "community",
         });
+        setEditorContent([]);
         setEditingPost(null);
+        setIsFullscreen(false);
+        setShowPreview(false);
     };
+
+    const editorModalClasses = isFullscreen
+        ? "fixed inset-0 z-50 bg-white overflow-auto"
+        : "";
 
     return (
         <div className="mx-auto max-w-6xl space-y-6 py-8">
@@ -135,7 +178,7 @@ export default function AdminContentPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-900">Content Management</h1>
-                    <p className="mt-2 text-slate-600">Create and manage swimming tips & articles</p>
+                    <p className="mt-2 text-slate-600">Create and manage swimming tips & articles with Notion-style editing</p>
                 </div>
                 <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
@@ -145,91 +188,126 @@ export default function AdminContentPage() {
 
             {/* Create/Edit Post Modal */}
             {showCreateModal && (
-                <Card className="p-6">
-                    <form onSubmit={handleCreatePost} className="space-y-4">
-                        <h2 className="text-xl font-semibold text-slate-900">
-                            {editingPost ? "Edit Post" : "Create New Post"}
-                        </h2>
+                <div className={editorModalClasses}>
+                    <Card className={`p-6 ${isFullscreen ? 'min-h-screen rounded-none' : ''}`}>
+                        <form onSubmit={handleCreatePost} className="space-y-4">
+                            {/* Header with title and controls */}
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-xl font-semibold text-slate-900">
+                                    {editingPost ? "Edit Post" : "Create New Post"}
+                                </h2>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPreview(!showPreview)}
+                                        className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                                        title={showPreview ? "Hide Preview" : "Show Preview"}
+                                    >
+                                        {showPreview ? <EyeOff className="h-5 w-5 text-slate-600" /> : <Eye className="h-5 w-5 text-slate-600" />}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsFullscreen(!isFullscreen)}
+                                        className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                                        title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                                    >
+                                        {isFullscreen ? <Minimize2 className="h-5 w-5 text-slate-600" /> : <Maximize2 className="h-5 w-5 text-slate-600" />}
+                                    </button>
+                                </div>
+                            </div>
 
-                        <Input
-                            label="Title"
-                            value={formData.title}
-                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                            required
-                            placeholder="e.g., 5 Tips for Better Breathing Technique"
-                        />
-
-                        <Textarea
-                            label="Summary"
-                            value={formData.summary}
-                            onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-                            required
-                            rows={2}
-                            placeholder="Brief summary shown in the list..."
-                        />
-
-                        <Textarea
-                            label="Body (Markdown supported)"
-                            value={formData.body}
-                            onChange={(e) => setFormData({ ...formData, body: e.target.value })}
-                            required
-                            rows={10}
-                            placeholder="Write your article content here. You can use Markdown formatting..."
-                        />
-
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <Select
-                                label="Category"
-                                value={formData.category}
-                                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                            <Input
+                                label="Title"
+                                value={formData.title}
+                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                                 required
-                            >
-                                <option value="swimming_tips">Swimming Tips</option>
-                                <option value="safety">Safety</option>
-                                <option value="breathing">Breathing Techniques</option>
-                                <option value="technique">Technique</option>
-                                <option value="news">News</option>
-                                <option value="education">Education</option>
-                            </Select>
+                                placeholder="e.g., 5 Tips for Better Breathing Technique"
+                            />
 
-                            <Select
-                                label="Tier Access"
-                                value={formData.tier_access}
-                                onChange={(e) => setFormData({ ...formData, tier_access: e.target.value })}
+                            <Input
+                                label="Summary (shown in article list)"
+                                value={formData.summary}
+                                onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
                                 required
-                            >
-                                <option value="community">Community (All Members)</option>
-                                <option value="club">Club Members Only</option>
-                                <option value="academy">Academy Members Only</option>
-                            </Select>
-                        </div>
+                                placeholder="Brief summary to entice readers..."
+                            />
 
-                        <Input
-                            label="Featured Image URL (Optional)"
-                            value={formData.featured_image_url}
-                            onChange={(e) =>
-                                setFormData({ ...formData, featured_image_url: e.target.value })
-                            }
-                            placeholder="https://example.com/image.jpg"
-                        />
+                            {/* Block Editor / Preview */}
+                            {showPreview ? (
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-slate-700">Preview</label>
+                                    <div className="border border-slate-200 rounded-lg p-6 bg-white min-h-[400px]">
+                                        <h1 className="text-3xl font-bold text-slate-900 mb-4">{formData.title || "Untitled"}</h1>
+                                        <BlockViewer content={serializeBlocks(editorContent)} />
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-slate-700">
+                                        Content <span className="text-slate-400 font-normal">— Type &apos;/&apos; for commands, drag blocks to reorder</span>
+                                    </label>
+                                    <BlockEditor
+                                        initialContent={editorContent.length > 0 ? editorContent : undefined}
+                                        onChange={handleEditorChange}
+                                        placeholder="Start writing your article... Type '/' for block options"
+                                    />
+                                </div>
+                            )}
 
-                        <div className="flex justify-end gap-3">
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                onClick={() => {
-                                    setShowCreateModal(false);
-                                    resetForm();
-                                }}
-                            >
-                                Cancel
-                            </Button>
-                            <Button type="submit">
-                                {editingPost ? "Update Post" : "Create Draft"}
-                            </Button>
-                        </div>
-                    </form>
-                </Card>
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <Select
+                                    label="Category"
+                                    value={formData.category}
+                                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                    required
+                                >
+                                    <option value="swimming_tips">Swimming Tips</option>
+                                    <option value="safety">Safety</option>
+                                    <option value="breathing">Breathing Techniques</option>
+                                    <option value="technique">Technique</option>
+                                    <option value="news">News</option>
+                                    <option value="education">Education</option>
+                                </Select>
+
+                                <Select
+                                    label="Tier Access"
+                                    value={formData.tier_access}
+                                    onChange={(e) => setFormData({ ...formData, tier_access: e.target.value })}
+                                    required
+                                >
+                                    <option value="community">Community (All Members)</option>
+                                    <option value="club">Club Members Only</option>
+                                    <option value="academy">Academy Members Only</option>
+                                </Select>
+                            </div>
+
+                            <Input
+                                label="Featured Image URL (Optional)"
+                                value={formData.featured_image_url}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, featured_image_url: e.target.value })
+                                }
+                                placeholder="https://example.com/image.jpg"
+                            />
+
+                            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={() => {
+                                        setShowCreateModal(false);
+                                        resetForm();
+                                    }}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button type="submit">
+                                    {editingPost ? "Update Post" : "Create Draft"}
+                                </Button>
+                            </div>
+                        </form>
+                    </Card>
+                </div>
             )}
 
             {/* Posts List */}
@@ -280,6 +358,12 @@ export default function AdminContentPage() {
                                 </div>
 
                                 <div className="flex gap-2">
+                                    <Button
+                                        variant="secondary"
+                                        onClick={() => handleEditPost(post)}
+                                    >
+                                        Edit
+                                    </Button>
                                     {post.status === "draft" && (
                                         <Button onClick={() => handlePublishPost(post.id)}>Publish</Button>
                                     )}
