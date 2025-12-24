@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet } from "@/lib/api";
+import { type CachedPaymentIntent, loadPaymentIntentCache } from "@/lib/paymentCache";
 import {
     ArrowRight,
     Bell,
@@ -21,6 +22,7 @@ import { useEffect, useState } from "react";
 export default function MemberDashboardPage() {
     const [member, setMember] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [resumePaymentIntent, setResumePaymentIntent] = useState<CachedPaymentIntent | null>(null);
 
     useEffect(() => {
         apiGet("/api/v1/members/me", { auth: true })
@@ -28,6 +30,17 @@ export default function MemberDashboardPage() {
             .catch((err) => console.error("Failed to load member", err))
             .finally(() => setLoading(false));
     }, []);
+
+    useEffect(() => {
+        if (!member) return;
+        const paymentMemberKey = member?.id ? String(member.id) : member?.email ? String(member.email) : "me";
+        const cached = loadPaymentIntentCache(paymentMemberKey);
+        if (cached?.purpose && cached.purpose !== "community_annual") {
+            setResumePaymentIntent(null);
+            return;
+        }
+        setResumePaymentIntent(cached || null);
+    }, [member]);
 
     if (loading) {
         return <LoadingCard text="Loading dashboard..." />;
@@ -37,6 +50,10 @@ export default function MemberDashboardPage() {
     const now = Date.now();
     const communityPaidUntilMs = member?.community_paid_until ? Date.parse(String(member.community_paid_until)) : NaN;
     const communityActive = Number.isFinite(communityPaidUntilMs) && communityPaidUntilMs > now;
+    const clubPaidUntilMs = member?.club_paid_until ? Date.parse(String(member.club_paid_until)) : NaN;
+    const clubActive = Number.isFinite(clubPaidUntilMs) && clubPaidUntilMs > now;
+    const academyPaidUntilMs = member?.academy_paid_until ? Date.parse(String(member.academy_paid_until)) : NaN;
+    const academyActive = Number.isFinite(academyPaidUntilMs) && academyPaidUntilMs > now;
 
     const memberTiers = member?.membership_tiers?.map((t: string) => t.toLowerCase()) ||
         (member?.membership_tier ? [member.membership_tier.toLowerCase()] : ["community"]);
@@ -45,21 +62,38 @@ export default function MemberDashboardPage() {
     const wantsAcademy = requestedTiers.includes("academy");
     const wantsClub = requestedTiers.includes("club") || wantsAcademy;
 
-    const needsProfileBasics = !member?.profile_photo_url || !member?.gender || !member?.date_of_birth;
+    const clubContext = wantsClub || memberTiers.includes("club") || memberTiers.includes("academy");
+    const academyContext = wantsAcademy || memberTiers.includes("academy");
+
+    const hasProfileBasics = Boolean(member?.profile_photo_url && member?.gender && member?.date_of_birth);
+    const hasCoreProfile = Boolean(member?.phone && member?.country && member?.city && member?.time_zone);
+    const hasSwimBackground = Boolean(
+        member?.swim_level &&
+        member?.deep_water_comfort &&
+        member?.goals_narrative &&
+        String(member?.goals_narrative).trim()
+    );
+    const hasSafetyLogistics = Boolean(
+        member?.emergency_contact_name &&
+        member?.emergency_contact_relationship &&
+        member?.emergency_contact_phone &&
+        member?.location_preference &&
+        member.location_preference.length > 0 &&
+        member?.time_of_day_availability &&
+        member.time_of_day_availability.length > 0
+    );
+    const hasClubAvailability = Boolean(member?.availability_slots && member.availability_slots.length > 0);
+    const hasClubReadiness = !clubContext || hasClubAvailability;
+
     const needsProfileCore =
-        needsProfileBasics ||
+        !hasProfileBasics ||
         !member?.country ||
         !member?.city ||
         !member?.time_zone ||
-        !member?.swim_level;
-
-    const needsClubReadiness =
-        (wantsClub || memberTiers.includes("club") || memberTiers.includes("academy")) &&
-        (!member?.emergency_contact_name ||
-            !member?.emergency_contact_relationship ||
-            !member?.emergency_contact_phone ||
-            !(member?.location_preference && member.location_preference.length > 0) ||
-            !(member?.time_of_day_availability && member.time_of_day_availability.length > 0));
+        !member?.swim_level ||
+        !hasSafetyLogistics ||
+        !hasSwimBackground;
+    const needsClubReadiness = clubContext && !hasClubAvailability;
 
     const assessment = member?.academy_skill_assessment;
     const hasAssessment =
@@ -68,26 +102,43 @@ export default function MemberDashboardPage() {
             (k) => Object.prototype.hasOwnProperty.call(assessment, k)
         );
     const needsAcademyReadiness =
-        (wantsAcademy || memberTiers.includes("academy")) &&
+        academyContext &&
         (!hasAssessment ||
             !member?.academy_goals ||
             !member?.academy_preferred_coach_gender ||
             !member?.academy_lesson_preference);
+    const hasAcademyReadiness = !academyContext || !needsAcademyReadiness;
 
-    const needsOnboarding = needsProfileCore || needsClubReadiness || needsAcademyReadiness;
+    const hasCoreOnboarding = hasProfileBasics && hasCoreProfile;
+    const onboardingReadyForPayment =
+        hasCoreOnboarding &&
+        hasSafetyLogistics &&
+        hasSwimBackground &&
+        hasClubReadiness &&
+        hasAcademyReadiness;
+    const needsOnboarding = !onboardingReadyForPayment;
 
     // Calculate onboarding progress
-    const totalSteps = 3 + (wantsClub || memberTiers.includes("club") || memberTiers.includes("academy") ? 1 : 0) + (wantsAcademy || memberTiers.includes("academy") ? 1 : 0);
+    const totalSteps = 2 + (clubContext ? 1 : 0) + (academyContext ? 1 : 0);
     let completedSteps = 0;
-    if (!needsProfileBasics) completedSteps++;
     if (!needsProfileCore) completedSteps++;
     if (communityActive) completedSteps++;
-    if ((wantsClub || memberTiers.includes("club") || memberTiers.includes("academy")) && !needsClubReadiness) completedSteps++;
-    if ((wantsAcademy || memberTiers.includes("academy")) && !needsAcademyReadiness) completedSteps++;
+    if (clubContext && !needsClubReadiness) completedSteps++;
+    if (academyContext && !needsAcademyReadiness) completedSteps++;
     const progressPercent = Math.round((completedSteps / totalSteps) * 100);
 
-    const tierLabel = memberTiers.includes("academy") ? "Academy" :
-        memberTiers.includes("club") ? "Club" : "Community";
+    const tierLabel = wantsAcademy && !academyActive
+        ? "Academy (Pending)"
+        : wantsClub && !clubActive
+            ? "Club (Pending)"
+            : memberTiers.includes("academy")
+                ? "Academy"
+                : memberTiers.includes("club")
+                    ? "Club"
+                    : "Community";
+    const resumeCheckoutUrl = resumePaymentIntent?.checkout_url || null;
+    const showPaymentRecoveryBanner = !communityActive && onboardingReadyForPayment;
+    const showCommunityActivationBanner = !communityActive && !onboardingReadyForPayment;
 
     return (
         <div className="space-y-8">
@@ -122,13 +173,13 @@ export default function MemberDashboardPage() {
                             {/* Checklist */}
                             <ul className="mt-4 space-y-2">
                                 <li className="flex items-center gap-2 text-sm">
-                                    {needsProfileBasics ? (
+                                    {needsProfileCore ? (
                                         <Circle className="h-4 w-4 text-cyan-200" />
                                     ) : (
                                         <CheckCircle className="h-4 w-4 text-emerald-300" />
                                     )}
-                                    <span className={needsProfileBasics ? "text-white" : "text-cyan-200 line-through"}>
-                                        Add profile photo & basics
+                                    <span className={needsProfileCore ? "text-white" : "text-cyan-200 line-through"}>
+                                        Complete profile, safety, and swim basics
                                     </span>
                                 </li>
                                 <li className="flex items-center gap-2 text-sm">
@@ -166,6 +217,41 @@ export default function MemberDashboardPage() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {showPaymentRecoveryBanner && (
+                <Card className="p-6 border-emerald-200 bg-emerald-50">
+                    <div className="flex flex-col md:flex-row md:items-center gap-4">
+                        <div className="flex-shrink-0 rounded-xl bg-emerald-100 p-3">
+                            <CheckCircle className="h-6 w-6 text-emerald-600" />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="font-semibold text-slate-900">Onboarding complete - payment pending</h3>
+                            <p className="text-sm text-slate-600 mt-1">
+                                Finish payment to activate your Community membership and unlock member features.
+                            </p>
+                            {resumePaymentIntent?.reference ? (
+                                <p className="text-xs text-slate-500 mt-2">
+                                    Last payment reference: <span className="font-mono">{resumePaymentIntent.reference}</span>
+                                </p>
+                            ) : null}
+                        </div>
+                        <div className="flex flex-wrap gap-3">
+                            {resumeCheckoutUrl ? (
+                                <Button
+                                    onClick={() => {
+                                        window.location.href = resumeCheckoutUrl;
+                                    }}
+                                >
+                                    Resume payment
+                                </Button>
+                            ) : null}
+                            <Link href="/dashboard/billing?required=community">
+                                <Button variant={resumeCheckoutUrl ? "outline" : "primary"}>Go to Billing</Button>
+                            </Link>
+                        </div>
+                    </div>
+                </Card>
             )}
 
             {/* Quick Stats */}
@@ -219,7 +305,7 @@ export default function MemberDashboardPage() {
             </div>
 
             {/* Community Activation Banner (if not active) */}
-            {!communityActive && (
+            {showCommunityActivationBanner && (
                 <Card className="p-6 border-amber-200 bg-amber-50">
                     <div className="flex flex-col md:flex-row md:items-center gap-4">
                         <div className="flex-shrink-0 rounded-xl bg-amber-100 p-3">

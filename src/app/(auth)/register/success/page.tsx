@@ -3,8 +3,19 @@
 import { Card } from "@/components/ui/Card";
 import { ArrowRight, CheckCircle } from "lucide-react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
 export default function RegistrationSuccessPage() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
+    useEffect(() => {
+        const reference = searchParams.get("reference") || searchParams.get("trxref");
+        if (!reference) return;
+        router.replace(`/dashboard/billing?provider=paystack&reference=${encodeURIComponent(reference)}`);
+    }, [router, searchParams]);
+
     return (
         <div className="mx-auto max-w-2xl space-y-8 py-12">
             {/* Success Icon */}

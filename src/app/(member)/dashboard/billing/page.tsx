@@ -5,12 +5,15 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet, apiPost } from "@/lib/api";
+import { savePaymentIntentCache } from "@/lib/paymentCache";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 type Member = {
+    id?: string | null;
+    email?: string | null;
     community_paid_until?: string | null;
     club_paid_until?: string | null;
     membership_tier?: string | null;
@@ -60,10 +63,10 @@ function formatDate(value?: string | null) {
 
 export default function BillingPage() {
     const searchParams = useSearchParams();
-    const router = useRouter();
     const required = searchParams.get("required");
     const provider = searchParams.get("provider");
     const providerReference = searchParams.get("reference") || searchParams.get("trxref");
+    const activation = searchParams.get("activation");
 
     const [member, setMember] = useState<Member | null>(null);
     const [loading, setLoading] = useState(true);
@@ -74,8 +77,10 @@ export default function BillingPage() {
     const [autoVerifyAttempted, setAutoVerifyAttempted] = useState(false);
     const [communityIntent, setCommunityIntent] = useState<PaymentIntent | null>(null);
     const [clubIntent, setClubIntent] = useState<PaymentIntent | null>(null);
+    const [clubActivationIntent, setClubActivationIntent] = useState<PaymentIntent | null>(null);
     const [clubBillingCycle, setClubBillingCycle] = useState<"monthly" | "quarterly" | "biannual" | "annual">("monthly");
     const [returnedPayment, setReturnedPayment] = useState<PaymentRecord | null>(null);
+    const [activatingClubBundle, setActivatingClubBundle] = useState(false);
 
     const fetchMember = useCallback(async () => {
         return await apiGet<Member>("/api/v1/members/me", { auth: true });
@@ -141,6 +146,8 @@ export default function BillingPage() {
         () => (member?.requested_membership_tiers || []).map((t) => String(t).toLowerCase()),
         [member]
     );
+    const wantsAcademy = requestedTiers.includes("academy");
+    const wantsClub = requestedTiers.includes("club") || wantsAcademy;
 
     const showClubSection = useMemo(() => {
         return (
@@ -186,8 +193,37 @@ export default function BillingPage() {
         return missing;
     }, [member]);
 
+    const activationMode = activation === "club" ? "club" : activation === "community" ? "community" : null;
     const clubApproved = approvedTiers.includes("club") || approvedTiers.includes("academy");
     const canActivateClub = communityActive && (clubApproved || clubReadinessComplete);
+    const canActivateClubBundle = clubApproved || clubReadinessComplete;
+    const shouldSuggestClubBundle = wantsClub && clubReadinessComplete && !clubActive && !communityActive;
+    const effectiveActivationMode = activationMode ?? (shouldSuggestClubBundle ? "club" : null);
+    const showClubIntentNotice = wantsClub && !clubActive && !effectiveActivationMode;
+    const showClubActivationCheckout = effectiveActivationMode === "club" && canActivateClubBundle && !clubActive;
+    const showCommunityActivationCheckout = effectiveActivationMode === "community" && !communityActive;
+    const showActivationCheckout = showClubActivationCheckout || showCommunityActivationCheckout;
+
+    const communityFee = 5000;
+    const clubPricing: Record<typeof clubBillingCycle, number> = {
+        monthly: 15000,
+        quarterly: 42500,
+        biannual: 80000,
+        annual: 150000,
+    };
+    const clubFee = clubPricing[clubBillingCycle];
+    const totalDueToday = communityActive ? clubFee : communityFee + clubFee;
+
+    const paymentMemberKey = member?.id ? String(member.id) : member?.email ? String(member.email) : "me";
+    const paymentAttemptKey = `swimbuddz:onboarding:payment_attempted:${paymentMemberKey}`;
+
+    const markPaymentAttempted = useCallback(() => {
+        try {
+            window.sessionStorage.setItem(paymentAttemptKey, "1");
+        } catch {
+            // Ignore sessionStorage failures.
+        }
+    }, [paymentAttemptKey]);
 
     const verifyPaystackPayment = useCallback(async (reference: string) => {
         setVerifyingPayment(true);
@@ -204,8 +240,6 @@ export default function BillingPage() {
         }
     }, [refreshMember, refreshReturnedPayment]);
 
-    const allowManualVerify = process.env.NODE_ENV !== "production";
-
     const activateCommunity = async () => {
         setActivatingCommunity(true);
         try {
@@ -215,7 +249,10 @@ export default function BillingPage() {
                 { auth: true }
             );
             setCommunityIntent(intent);
+            const paymentMemberKey = member?.id ? String(member.id) : member?.email ? String(member.email) : "me";
+            savePaymentIntentCache(intent, paymentMemberKey);
             if (intent.checkout_url) {
+                markPaymentAttempted();
                 window.location.href = intent.checkout_url;
                 return;
             }
@@ -237,6 +274,7 @@ export default function BillingPage() {
             );
             setClubIntent(intent);
             if (intent.checkout_url) {
+                markPaymentAttempted();
                 window.location.href = intent.checkout_url;
                 return;
             }
@@ -248,6 +286,30 @@ export default function BillingPage() {
         }
     };
 
+    const activateClubWithCommunity = async () => {
+        setActivatingClubBundle(true);
+        try {
+            const intent = await apiPost<PaymentIntent>(
+                "/api/v1/payments/intents",
+                { purpose: "club_activation", years: 1, club_billing_cycle: clubBillingCycle, months: 1, currency: "NGN" },
+                { auth: true }
+            );
+            setClubActivationIntent(intent);
+            const memberKey = member?.id ? String(member.id) : member?.email ? String(member.email) : "me";
+            savePaymentIntentCache(intent, memberKey);
+            if (intent.checkout_url) {
+                markPaymentAttempted();
+                window.location.href = intent.checkout_url;
+                return;
+            }
+            toast.success(`Payment reference created: ${intent.reference}`);
+        } catch (e) {
+            toast.error("Failed to start Club activation payment");
+        } finally {
+            setActivatingClubBundle(false);
+        }
+    };
+
     useEffect(() => {
         if (provider === "paystack" && providerReference) {
             refreshReturnedPayment(providerReference);
@@ -256,11 +318,6 @@ export default function BillingPage() {
 
     useEffect(() => {
         if (provider !== "paystack" || !providerReference) return;
-        if (communityActive) {
-            router.replace("/dashboard/billing");
-            return;
-        }
-
         let cancelled = false;
         let attempts = 0;
         const maxAttempts = 10;
@@ -281,19 +338,26 @@ export default function BillingPage() {
             cancelled = true;
             if (timeoutId) clearTimeout(timeoutId);
         };
-    }, [communityActive, provider, providerReference, refreshMember, refreshReturnedPayment, router]);
+    }, [provider, providerReference, refreshMember, refreshReturnedPayment]);
 
     useEffect(() => {
         if (provider !== "paystack" || !providerReference) return;
-        if (communityActive) return;
         if (autoVerifyAttempted) return;
+        if (returnedPayment?.status === "paid" && returnedPayment.entitlement_applied_at) return;
 
         setAutoVerifyAttempted(true);
         const timer = window.setTimeout(() => {
             verifyPaystackPayment(providerReference);
         }, 1000);
         return () => window.clearTimeout(timer);
-    }, [autoVerifyAttempted, communityActive, provider, providerReference, verifyPaystackPayment]);
+    }, [
+        autoVerifyAttempted,
+        provider,
+        providerReference,
+        returnedPayment?.entitlement_applied_at,
+        returnedPayment?.status,
+        verifyPaystackPayment,
+    ]);
 
     if (loading) return <LoadingCard text="Loading billing..." />;
 
@@ -307,6 +371,60 @@ export default function BillingPage() {
         );
     }
 
+    const isPaystackReturn = provider === "paystack" && providerReference;
+    const paystackReturnProcessing = Boolean(
+        isPaystackReturn && (
+            !returnedPayment ||
+            returnedPayment.status === "pending" ||
+            (returnedPayment.status === "paid" && !returnedPayment.entitlement_applied_at && !returnedPayment.entitlement_error)
+        )
+    );
+
+    const paystackStatusAlert = isPaystackReturn && (returnedPayment?.status === "failed" || returnedPayment?.entitlement_error) ? (
+        <Alert
+            variant="error"
+            title="Payment issue"
+        >
+            Reference: <span className="font-mono">{providerReference}</span>.{" "}
+            {returnedPayment?.entitlement_error
+                ? `Payment is confirmed, but activation failed: ${returnedPayment.entitlement_error}`
+                : "We couldn’t confirm this payment. Please try again from billing."}
+        </Alert>
+    ) : null;
+
+    if (paystackReturnProcessing) {
+        return (
+            <div className="space-y-6">
+                <header className="space-y-2">
+                    <h1 className="text-3xl font-bold text-slate-900">Confirming your payment</h1>
+                    <p className="text-slate-600">
+                        This usually takes a few seconds.
+                    </p>
+                </header>
+                <LoadingCard
+                    text={returnedPayment?.status === "paid"
+                        ? "Activating your membership..."
+                        : "Confirming your payment..."}
+                />
+            </div>
+        );
+    }
+
+    const clubCycleLabel = clubBillingCycle === "monthly"
+        ? "Monthly"
+        : clubBillingCycle === "quarterly"
+            ? "Quarterly"
+            : clubBillingCycle === "biannual"
+                ? "Bi-annual"
+                : "Annual";
+    const formattedCommunityFee = `₦${communityFee.toLocaleString("en-NG")}`;
+    const formattedClubFee = `₦${clubFee.toLocaleString("en-NG")}`;
+    const formattedTotalDue = `₦${totalDueToday.toLocaleString("en-NG")}`;
+    const clubActivationIntentToShow = communityActive ? clubIntent : clubActivationIntent;
+
+    const showCommunityRequiredAlert = required === "community" && !communityActive && !effectiveActivationMode;
+    const showClubRequiredAlert = required === "club" && !clubActive && !effectiveActivationMode;
+
     return (
         <div className="space-y-6">
             <header className="space-y-2">
@@ -316,212 +434,306 @@ export default function BillingPage() {
                 </p>
             </header>
 
-            {provider === "paystack" && providerReference && !communityActive && (
-                <Alert
-                    variant="info"
-                    title={returnedPayment?.status === "paid" ? "Payment received" : "Waiting for payment confirmation"}
-                >
-                    Reference: <span className="font-mono">{providerReference}</span>.{" "}
-                    {returnedPayment?.status === "paid" ? (
-                        returnedPayment.entitlement_applied_at ? (
-                            <>Membership activation is complete. This page will refresh shortly.</>
-                        ) : returnedPayment.entitlement_error ? (
-                            <>Payment is marked paid, but activation failed: {returnedPayment.entitlement_error}</>
-                        ) : (
-                            <>Payment is confirmed on Paystack. We’re activating your membership now (may take a moment).</>
-                        )
-                    ) : (
-                        <>Paystack will notify SwimBuddz via webhook after a successful payment.</>
-                    )}
-                    <span className="inline-flex items-center">
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            className="ml-2"
-                            onClick={async () => {
-                                await refreshReturnedPayment(providerReference);
-                                await refreshMember();
-                            }}
-                        >
-                            Refresh status
-                        </Button>
-                    </span>
-                    {allowManualVerify ? (
-                        <span className="inline-flex items-center">
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                className="ml-2"
-                                onClick={() => verifyPaystackPayment(providerReference)}
-                                disabled={verifyingPayment}
-                            >
-                                {verifyingPayment ? "Verifying..." : "Verify payment"}
-                            </Button>
-                        </span>
-                    ) : null}
+            {paystackStatusAlert}
+
+            {showClubIntentNotice ? (
+                <Alert variant="info" title="Club activation pending">
+                    {communityActive
+                        ? "You selected Club during signup. Choose a billing plan below to activate Club access."
+                        : clubReadinessComplete
+                            ? "You're ready to activate Club. Community membership is required and will be activated together."
+                            : "You selected Club during signup. Activate Community first, then complete Club readiness to continue."}
                 </Alert>
-            )}
+            ) : null}
 
-            {required === "community" && !communityActive && (
-                <Alert variant="info" title="Community activation required">
-                    Activate your annual Community membership to continue.
-                </Alert>
-            )}
-            {required === "club" && !clubActive && (
-                <Alert variant="info" title="Club activation required">
-                    Your Club access is inactive. Reactivate to continue.
-                </Alert>
-            )}
-
-            <Card className="p-6 space-y-4">
-                <div>
-                    <h2 className="text-lg font-semibold text-slate-900">Community (₦5,000 / year)</h2>
-                    <p className="text-sm text-slate-600 mt-1">
-                        This commitment fee keeps SwimBuddz high-quality and unlocks member features.
-                    </p>
-                </div>
-
-                <dl className="grid gap-2 text-sm">
-                    <div className="grid grid-cols-3 gap-2">
-                        <dt className="text-slate-600">Status:</dt>
-                        <dd className={`col-span-2 font-medium ${communityActive ? "text-emerald-600" : "text-slate-900"}`}>
-                            {communityActive ? "✓ Active" : "Inactive"}
-                        </dd>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                        <dt className="text-slate-600">Valid until:</dt>
-                        <dd className="col-span-2 font-medium text-slate-900">
-                            {communityActive
-                                ? formatDate(member?.community_paid_until || null)
-                                : member?.community_paid_until
-                                    ? formatDate(member?.community_paid_until)
-                                    : "After activation"}
-                        </dd>
-                    </div>
-                </dl>
-
-                {!communityActive && (
-                    <div className="flex flex-wrap gap-3">
-                        <Button onClick={activateCommunity} disabled={activatingCommunity}>
-                            {activatingCommunity ? "Processing..." : "Pay for Community (₦5,000)"}
-                        </Button>
-                    </div>
-                )}
-
-                {communityActive && (
-                    <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-4 text-sm text-emerald-800">
-                        <p className="font-medium">Your Community membership is active!</p>
-                        <p className="mt-1 text-emerald-600">
-                            You have full access to member features. Renewal option will appear when your membership nears expiration.
-                        </p>
-                    </div>
-                )}
-
-                {communityIntent && (
-                    <Alert
-                        variant="info"
-                        title="Payment initiated"
-                    >
-                        Reference: <span className="font-mono">{communityIntent.reference}</span>. Once payment is verified, your Community access will activate.
-                    </Alert>
-                )}
-
-                {!communityActive && (
-                    <div className="rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
-                        <div className="font-semibold text-slate-900 mb-2">Locked until active</div>
-                        <ul className="list-disc pl-5 space-y-1">
-                            <li>Member directory</li>
-                            <li>WhatsApp group access</li>
-                            <li>Event RSVPs and community content</li>
-                            <li>Session booking</li>
-                        </ul>
-                    </div>
-                )}
-            </Card>
-
-            {showClubSection ? (
-                <Card className="p-6 space-y-4">
-                    <div>
-                        <h2 className="text-lg font-semibold text-slate-900">Club</h2>
-                        <p className="text-sm text-slate-600 mt-1">
-                            Club is a recurring membership you can pause anytime. When inactive, you keep Community access (if active).
-                        </p>
-                    </div>
-
-                    <dl className="grid gap-2 text-sm">
-                        <div className="grid grid-cols-3 gap-2">
-                            <dt className="text-slate-600">Status:</dt>
-                            <dd className="col-span-2 font-medium text-slate-900">{clubActive ? "Active" : "Inactive"}</dd>
+            {showActivationCheckout ? (
+                showCommunityActivationCheckout ? (
+                    <Card className="p-6 space-y-5">
+                        <div className="space-y-2">
+                            <h2 className="text-lg font-semibold text-slate-900">Review & activate Community</h2>
+                            <p className="text-sm text-slate-600">
+                                Confirm what you’re paying for before continuing to payment.
+                            </p>
                         </div>
-                        <div className="grid grid-cols-3 gap-2">
-                            <dt className="text-slate-600">Valid until:</dt>
-                            <dd className="col-span-2 font-medium text-slate-900">
-                                {clubActive
-                                    ? formatDate(member?.club_paid_until || null)
-                                    : member?.club_paid_until
-                                        ? formatDate(member?.club_paid_until)
-                                        : "After activation"}
-                            </dd>
-                        </div>
-                    </dl>
 
-                    {!canActivateClub ? (
-                        <Alert variant="info" title="Club not available yet">
-                            {communityActive
-                                ? `Complete onboarding to unlock payment: ${missingClubRequirements.join(", ")}.`
-                                : "Activate Community first, then complete Club readiness in onboarding to unlock payment."}
-                        </Alert>
-                    ) : (
-                        <div className="space-y-3">
-                            <div className="flex flex-wrap gap-2">
-                                {[
-                                    { key: "monthly" as const, label: "Monthly (₦15,000)" },
-                                    { key: "quarterly" as const, label: "Quarterly (₦42,500)" },
-                                    { key: "biannual" as const, label: "Bi-annual (₦80,000)" },
-                                    { key: "annual" as const, label: "Annual (₦150,000)" },
-                                ].map((opt) => (
-                                    <Button
-                                        key={opt.key}
-                                        variant={clubBillingCycle === opt.key ? "primary" : "secondary"}
-                                        onClick={() => setClubBillingCycle(opt.key)}
-                                        type="button"
-                                    >
-                                        {opt.label}
-                                    </Button>
-                                ))}
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                            <div className="flex items-center justify-between py-1">
+                                <span>Community membership (annual)</span>
+                                <span className="font-medium text-slate-900">{formattedCommunityFee}</span>
                             </div>
+                            <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-3 text-base font-semibold text-slate-900">
+                                <span>Total due today</span>
+                                <span>{formattedCommunityFee}</span>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-3">
+                            <Button onClick={activateCommunity} disabled={activatingCommunity}>
+                                {activatingCommunity ? "Processing..." : `Pay ${formattedCommunityFee} & Activate Community`}
+                            </Button>
+                        </div>
+
+                        <p className="text-xs text-slate-500">
+                            Community membership is billed annually.
+                        </p>
+
+                        {communityIntent && (
+                            <Alert variant="info" title="Payment initiated">
+                                Reference: <span className="font-mono">{communityIntent.reference}</span>. Once payment is verified, your Community access will activate.
+                            </Alert>
+                        )}
+                    </Card>
+                ) : (
+                    <Card className="p-6 space-y-5">
+                        <div className="space-y-2">
+                            <h2 className="text-lg font-semibold text-slate-900">Review & activate Club</h2>
+                            <p className="text-sm text-slate-600">
+                                {communityActive
+                                    ? "Confirm what you’re paying for before continuing to payment."
+                                    : "Community membership is required and will be activated together."}
+                            </p>
+                        </div>
+
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                            <div className="flex items-center justify-between py-1">
+                                <span>Community membership (annual)</span>
+                                <span className={communityActive ? "font-medium text-emerald-600" : "font-medium text-slate-900"}>{communityActive ? "✓ Paid" : formattedCommunityFee}</span>
+                            </div>
+                            <div className="flex items-center justify-between py-1">
+                                <span>Club membership ({clubCycleLabel.toLowerCase()})</span>
+                                <span className="font-medium text-slate-900">{formattedClubFee}</span>
+                            </div>
+                            <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-3 text-base font-semibold text-slate-900">
+                                <span>Total due today</span>
+                                <span>{formattedTotalDue}</span>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                            {[
+                                { key: "monthly" as const, label: "Monthly (₦15,000)" },
+                                { key: "quarterly" as const, label: "Quarterly (₦42,500)" },
+                                { key: "biannual" as const, label: "Bi-annual (₦80,000)" },
+                                { key: "annual" as const, label: "Annual (₦150,000)" },
+                            ].map((opt) => (
+                                <button
+                                    key={opt.key}
+                                    type="button"
+                                    onClick={() => setClubBillingCycle(opt.key)}
+                                    className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${clubBillingCycle === opt.key
+                                        ? "bg-cyan-50 border-cyan-500 text-cyan-700"
+                                        : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                                        }`}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="flex flex-wrap gap-3">
+                            <Button
+                                onClick={communityActive ? activateClub : activateClubWithCommunity}
+                                disabled={activatingClubBundle || activatingClub}
+                            >
+                                {activatingClubBundle || activatingClub
+                                    ? "Processing..."
+                                    : `Pay ${formattedTotalDue} & Activate Club`}
+                            </Button>
+                        </div>
+                        {!communityActive ? (
+                            <Link
+                                href="/dashboard/billing?activation=community"
+                                className="text-sm text-slate-500 underline hover:text-slate-900"
+                            >
+                                Activate Community only
+                            </Link>
+                        ) : null}
+
+                        <p className="text-xs text-slate-500">
+                            Community membership is billed annually. Club renews {clubCycleLabel.toLowerCase()}.
+                        </p>
+
+                        {clubActivationIntentToShow && (
+                            <Alert variant="info" title="Payment initiated">
+                                Reference: <span className="font-mono">{clubActivationIntentToShow.reference}</span>. Once payment is verified, your Club access will activate.
+                            </Alert>
+                        )}
+                    </Card>
+                )
+            ) : (
+                <>
+                    {showCommunityRequiredAlert && (
+                        <Alert variant="info" title="Community activation required">
+                            Activate your annual Community membership to continue.
+                        </Alert>
+                    )}
+                    {showClubRequiredAlert && (
+                        <Alert variant="info" title="Club activation required">
+                            Your Club access is inactive. Reactivate to continue.
+                        </Alert>
+                    )}
+
+                    <Card className="p-6 space-y-4">
+                        <div>
+                            <h2 className="text-lg font-semibold text-slate-900">Community (₦5,000 / year)</h2>
+                            <p className="text-sm text-slate-600 mt-1">
+                                This commitment fee keeps SwimBuddz high-quality and unlocks member features.
+                            </p>
+                        </div>
+
+                        <dl className="grid gap-2 text-sm">
+                            <div className="grid grid-cols-3 gap-2">
+                                <dt className="text-slate-600">Status:</dt>
+                                <dd className={`col-span-2 font-medium ${communityActive ? "text-emerald-600" : "text-slate-900"}`}>
+                                    {communityActive ? "✓ Active" : "Inactive"}
+                                </dd>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                                <dt className="text-slate-600">Valid until:</dt>
+                                <dd className="col-span-2 font-medium text-slate-900">
+                                    {communityActive
+                                        ? formatDate(member?.community_paid_until || null)
+                                        : member?.community_paid_until
+                                            ? formatDate(member?.community_paid_until)
+                                            : "After activation"}
+                                </dd>
+                            </div>
+                        </dl>
+
+                        {!communityActive && (
                             <div className="flex flex-wrap gap-3">
-                                <Button onClick={activateClub} disabled={activatingClub}>
-                                    {activatingClub ? "Processing..." : "Pay for Club"}
+                                <Button onClick={activateCommunity} disabled={activatingCommunity}>
+                                    {activatingCommunity ? "Processing..." : "Pay for Community (₦5,000)"}
                                 </Button>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {clubIntent && (
-                        <Alert
-                            variant="info"
-                            title="Payment initiated"
-                        >
-                            Reference: <span className="font-mono">{clubIntent.reference}</span>. Once payment is verified, your Club access will activate.
-                        </Alert>
+                        {communityActive && (
+                            <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-4 text-sm text-emerald-800">
+                                <p className="font-medium">Your Community membership is active!</p>
+                                <p className="mt-1 text-emerald-600">
+                                    You have full access to member features. Renewal option will appear when your membership nears expiration.
+                                </p>
+                            </div>
+                        )}
+
+                        {communityIntent && (
+                            <Alert
+                                variant="info"
+                                title="Payment initiated"
+                            >
+                                Reference: <span className="font-mono">{communityIntent.reference}</span>. Once payment is verified, your Community access will activate.
+                            </Alert>
+                        )}
+
+                        {!communityActive && (
+                            <div className="rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
+                                <div className="font-semibold text-slate-900 mb-2">Locked until active</div>
+                                <ul className="list-disc pl-5 space-y-1">
+                                    <li>Member directory</li>
+                                    <li>WhatsApp group access</li>
+                                    <li>Event RSVPs and community content</li>
+                                    <li>Session booking</li>
+                                </ul>
+                            </div>
+                        )}
+                    </Card>
+
+                    {showClubSection ? (
+                        <Card className="p-6 space-y-4">
+                            <div>
+                                <h2 className="text-lg font-semibold text-slate-900">Club</h2>
+                                <p className="text-sm text-slate-600 mt-1">
+                                    Club is a recurring membership you can pause anytime. When inactive, you keep Community access (if active).
+                                </p>
+                            </div>
+
+                            <dl className="grid gap-2 text-sm">
+                                <div className="grid grid-cols-3 gap-2">
+                                    <dt className="text-slate-600">Status:</dt>
+                                    <dd className={`col-span-2 font-medium ${clubActive ? "text-emerald-600" : "text-slate-900"}`}>{clubActive ? "✓ Active" : "Inactive"}</dd>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2">
+                                    <dt className="text-slate-600">Valid until:</dt>
+                                    <dd className="col-span-2 font-medium text-slate-900">
+                                        {clubActive
+                                            ? formatDate(member?.club_paid_until || null)
+                                            : member?.club_paid_until
+                                                ? formatDate(member?.club_paid_until)
+                                                : "After activation"}
+                                    </dd>
+                                </div>
+                            </dl>
+
+                            {clubActive ? (
+                                <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-4 text-sm text-emerald-800">
+                                    <p className="font-medium">Your Club membership is active!</p>
+                                    <p className="mt-1 text-emerald-600">
+                                        You have full Club access. Renewal options will appear when your membership nears expiration.
+                                    </p>
+                                </div>
+                            ) : !canActivateClub ? (
+                                <Alert variant="info" title="Club not available yet">
+                                    {communityActive
+                                        ? `Club activation is pending. Complete onboarding to unlock payment: ${missingClubRequirements.join(", ")}.`
+                                        : "Club activation is pending. Activate Community first, then complete Club readiness in onboarding to unlock payment."}
+                                </Alert>
+                            ) : (
+                                <div className="space-y-3">
+                                    <div className="flex flex-wrap gap-2">
+                                        {[
+                                            { key: "monthly" as const, label: "Monthly (₦15,000)" },
+                                            { key: "quarterly" as const, label: "Quarterly (₦42,500)" },
+                                            { key: "biannual" as const, label: "Bi-annual (₦80,000)" },
+                                            { key: "annual" as const, label: "Annual (₦150,000)" },
+                                        ].map((opt) => (
+                                            <button
+                                                key={opt.key}
+                                                type="button"
+                                                onClick={() => setClubBillingCycle(opt.key)}
+                                                className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${clubBillingCycle === opt.key
+                                                        ? "bg-cyan-50 border-cyan-500 text-cyan-700"
+                                                        : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                                                    }`}
+                                            >
+                                                {opt.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="flex flex-wrap gap-3">
+                                        <Button onClick={activateClub} disabled={activatingClub}>
+                                            {activatingClub ? "Processing..." : "Pay for Club"}
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {clubIntent && (
+                                <Alert
+                                    variant="info"
+                                    title="Payment initiated"
+                                >
+                                    Reference: <span className="font-mono">{clubIntent.reference}</span>. Once payment is verified, your Club access will activate.
+                                </Alert>
+                            )}
+                        </Card>
+                    ) : (
+                        <Card className="p-6 space-y-3">
+                            <h2 className="text-lg font-semibold text-slate-900">Want to join Club?</h2>
+                            <p className="text-sm text-slate-600">
+                                Club is a recurring membership for swimmers who want regular sessions. You’ll complete readiness first, then activate Club when you’re ready.
+                            </p>
+                            <div className="flex flex-wrap gap-3">
+                                <Link href="/register?upgrade=true">
+                                    <Button>Request Club upgrade</Button>
+                                </Link>
+                                <Link href="/membership">
+                                    <Button variant="secondary">How it works</Button>
+                                </Link>
+                            </div>
+                        </Card>
                     )}
-                </Card>
-            ) : (
-                <Card className="p-6 space-y-3">
-                    <h2 className="text-lg font-semibold text-slate-900">Want to join Club?</h2>
-                    <p className="text-sm text-slate-600">
-                        Club is a recurring membership for swimmers who want regular sessions. You’ll complete readiness first, then activate Club when you’re ready.
-                    </p>
-                    <div className="flex flex-wrap gap-3">
-                        <Link href="/register?upgrade=true">
-                            <Button>Request Club upgrade</Button>
-                        </Link>
-                        <Link href="/membership">
-                            <Button variant="secondary">How it works</Button>
-                        </Link>
-                    </div>
-                </Card>
+                </>
             )}
         </div>
     );

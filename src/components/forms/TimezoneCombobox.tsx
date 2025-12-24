@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState, useEffect, type ChangeEvent } from "react";
-import clsx from "clsx";
 import { timeZones } from "@/lib/timezones";
+import clsx from "clsx";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
 
 type TimezoneComboboxProps = {
   label: string;
@@ -16,6 +16,8 @@ type TimezoneComboboxProps = {
 export function TimezoneCombobox({ label, value, onChange, required, name, placeholder }: TimezoneComboboxProps) {
   const [query, setQuery] = useState(value);
   const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {
     setQuery(value);
@@ -41,6 +43,73 @@ export function TimezoneCombobox({ label, value, onChange, required, name, place
     onChange(option);
     setQuery(option);
     setOpen(false);
+    setActiveIndex(-1);
+  }
+
+  useEffect(() => {
+    if (!open) {
+      setActiveIndex(-1);
+      return;
+    }
+    if (!filteredOptions.length) {
+      setActiveIndex(-1);
+      return;
+    }
+    const currentIndex = filteredOptions.findIndex((option) => option === value);
+    setActiveIndex(currentIndex >= 0 ? currentIndex : 0);
+  }, [open, filteredOptions, value]);
+
+  useEffect(() => {
+    if (!open || activeIndex < 0) return;
+    itemRefs.current[activeIndex]?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex, open]);
+
+  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (!filteredOptions.length && event.key !== "Escape") return;
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      if (!open) {
+        setOpen(true);
+        setActiveIndex(0);
+        return;
+      }
+      setActiveIndex((prev) => {
+        const next = prev < 0 ? 0 : Math.min(prev + 1, filteredOptions.length - 1);
+        return next;
+      });
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!open) {
+        setOpen(true);
+        setActiveIndex(filteredOptions.length - 1);
+        return;
+      }
+      setActiveIndex((prev) => {
+        if (prev <= 0) return filteredOptions.length - 1;
+        return prev - 1;
+      });
+      return;
+    }
+
+    if (event.key === "Enter") {
+      if (!open) return;
+      event.preventDefault();
+      const index = activeIndex >= 0 ? activeIndex : 0;
+      const option = filteredOptions[index];
+      if (option) handleSelect(option);
+      return;
+    }
+
+    if (event.key === "Escape") {
+      if (!open) return;
+      event.preventDefault();
+      setOpen(false);
+      setActiveIndex(-1);
+    }
   }
 
   return (
@@ -61,6 +130,7 @@ export function TimezoneCombobox({ label, value, onChange, required, name, place
           onChange={handleInputChange}
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 100)}
+          onKeyDown={handleKeyDown}
           placeholder={placeholder ?? "Search by city or region (e.g., Africa/Lagos)"}
           required={required}
           className={clsx(
@@ -73,15 +143,21 @@ export function TimezoneCombobox({ label, value, onChange, required, name, place
       {open && filteredOptions.length ? (
         <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg">
           <ul>
-            {filteredOptions.map((option) => (
+            {filteredOptions.map((option, index) => (
               <li key={option}>
                 <button
                   type="button"
                   className={clsx(
                     "flex w-full items-center justify-between px-3 py-2 text-left text-sm text-slate-700",
-                    option === value ? "bg-cyan-50 text-cyan-900" : "hover:bg-slate-50"
+                    option === value || index === activeIndex
+                      ? "bg-cyan-50 text-cyan-900"
+                      : "hover:bg-slate-50"
                   )}
+                  ref={(el) => {
+                    itemRefs.current[index] = el;
+                  }}
                   onMouseDown={(event) => event.preventDefault()}
+                  onMouseEnter={() => setActiveIndex(index)}
                   onClick={() => handleSelect(option)}
                 >
                   <span>{option}</span>

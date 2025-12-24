@@ -1,7 +1,5 @@
 "use client";
 
-import { AcademyDetailsStep } from "@/components/registration/AcademyDetailsStep";
-import { ClubDetailsStep } from "@/components/registration/ClubDetailsStep";
 import { RegistrationConfirmStep } from "@/components/registration/RegistrationConfirmStep";
 import { RegistrationEssentialsStep } from "@/components/registration/RegistrationEssentialsStep";
 import { TierSelectionStep } from "@/components/registration/TierSelectionStep";
@@ -16,7 +14,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
 type Tier = "community" | "club" | "academy";
-type StepKey = "tier" | "essentials" | "club" | "academy" | "confirm";
+type StepKey = "tier" | "essentials" | "confirm";
 
 type Step = {
   key: StepKey;
@@ -51,6 +49,7 @@ interface FormData {
   timeOfDayAvailability: string[];
   consentPhoto: string;
   clubNotes: string;
+  availabilitySlots: string[];
 
   // Academy Readiness
   academySkillAssessment: {
@@ -107,6 +106,7 @@ const initialFormData: FormData = {
   timeOfDayAvailability: [],
   consentPhoto: "yes",
   clubNotes: "",
+  availabilitySlots: [],
   academySkillAssessment: {
     canFloat: false,
     headUnderwater: false,
@@ -201,6 +201,7 @@ function RegisterContent() {
             volunteerInterest: profile.volunteer_interest || [],
             interestTags: profile.interest_tags || [],
             showInDirectory: profile.show_in_directory ?? true,
+            availabilitySlots: profile.availability_slots || [],
           }));
         })
         .catch((err) => {
@@ -214,19 +215,10 @@ function RegisterContent() {
   // Determine which steps to show based on mode and selected tier
   const steps = useMemo<Step[]>(() => {
     if (isUpgrade) {
-      const visibleSteps: Step[] = [
+      // Upgrade mode only needs tier selection - we redirect to onboarding after
+      return [
         { key: "tier", title: "Choose Tier", required: true },
       ];
-
-      if (formData.membershipTier === "club" || formData.membershipTier === "academy") {
-        visibleSteps.push({ key: "club", title: "Club Readiness", required: true });
-      }
-
-      if (formData.membershipTier === "academy") {
-        visibleSteps.push({ key: "academy", title: "Academy Readiness", required: true });
-      }
-
-      return visibleSteps;
     }
 
     return [
@@ -279,24 +271,6 @@ function RegisterContent() {
           formData.swimLevel
         );
 
-      case "club":
-        return Boolean(
-          formData.emergencyContactName &&
-          formData.emergencyContactRelationship &&
-          formData.emergencyContactPhone &&
-          formData.locationPreference.length > 0 &&
-          formData.timeOfDayAvailability.length > 0
-        );
-
-      case "academy":
-        return Boolean(
-          formData.academyGoals &&
-          formData.academyPreferredCoachGender &&
-          formData.academyLessonPreference
-        );
-
-
-
       case "confirm":
         return acceptedTerms;
 
@@ -330,37 +304,17 @@ function RegisterContent() {
         if (!formData.membershipTier) {
           throw new Error("Please select a tier to upgrade to.");
         }
-        const priority: Record<Tier, number> = { academy: 3, club: 2, community: 1 };
-        const requestedTiers = Array.from(
-          new Set([...(currentTiers || []), ...expandTier(formData.membershipTier)])
-        ).sort((a, b) => priority[b as Tier] - priority[a as Tier]);
 
-        const upgradePayload: any = {
-          membership_tiers: requestedTiers,
-          ...(formData.membershipTier === "club" || formData.membershipTier === "academy"
-            ? {
-              emergency_contact_name: formData.emergencyContactName,
-              emergency_contact_relationship: formData.emergencyContactRelationship,
-              emergency_contact_phone: formData.emergencyContactPhone,
-              medical_info: formData.medicalInfo,
-              location_preference: formData.locationPreference,
-              time_of_day_availability: formData.timeOfDayAvailability,
-              consent_photo: formData.consentPhoto,
-              club_notes: formData.clubNotes || undefined,
-            }
-            : {}),
-          ...(formData.membershipTier === "academy"
-            ? {
-              academy_skill_assessment: formData.academySkillAssessment,
-              academy_goals: formData.academyGoals,
-              academy_preferred_coach_gender: formData.academyPreferredCoachGender,
-              academy_lesson_preference: formData.academyLessonPreference,
-            }
-            : {}),
-        };
+        // Save the requested tier to member profile
+        const requestedTiers = expandTier(formData.membershipTier);
 
-        await apiPatch("/api/v1/members/me", upgradePayload, { auth: true });
-        router.push("/profile");
+        await apiPatch("/api/v1/members/me", {
+          requested_membership_tiers: requestedTiers,
+        }, { auth: true });
+
+        // Redirect to onboarding with the appropriate step
+        const step = formData.membershipTier === "academy" ? "academy" : "club";
+        router.push(`/dashboard/onboarding?step=${step}`);
         return;
       }
 
@@ -432,36 +386,6 @@ function RegisterContent() {
         );
 
 
-
-      case "club":
-        return (
-          <ClubDetailsStep
-            formData={{
-              emergencyContactName: formData.emergencyContactName,
-              emergencyContactRelationship: formData.emergencyContactRelationship,
-              emergencyContactPhone: formData.emergencyContactPhone,
-              medicalInfo: formData.medicalInfo,
-              locationPreference: formData.locationPreference,
-              timeOfDayAvailability: formData.timeOfDayAvailability,
-              clubNotes: formData.clubNotes || "",
-            }}
-            onUpdate={updateField}
-            onToggleMulti={toggleMultiValue}
-          />
-        );
-
-      case "academy":
-        return (
-          <AcademyDetailsStep
-            formData={{
-              academySkillAssessment: formData.academySkillAssessment,
-              academyGoals: formData.academyGoals,
-              academyPreferredCoachGender: formData.academyPreferredCoachGender,
-              academyLessonPreference: formData.academyLessonPreference,
-            }}
-            onUpdate={updateField}
-          />
-        );
 
       case "confirm":
         return (

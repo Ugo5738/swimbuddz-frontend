@@ -3,7 +3,7 @@
 import { TimezoneCombobox } from "@/components/forms/TimezoneCombobox";
 import { ClubReadinessStep } from "@/components/onboarding/ClubReadinessStep";
 import { CommunitySignalsStep } from "@/components/onboarding/CommunitySignalsStep";
-import { buildGoalsNarrative, parseGoalsNarrative, SwimBackgroundStep } from "@/components/onboarding/SwimBackgroundStep";
+import { buildGoalsNarrative, OTHER_GOAL_VALUE, parseGoalsNarrative, SwimBackgroundStep } from "@/components/onboarding/SwimBackgroundStep";
 import { AcademyDetailsStep } from "@/components/registration/AcademyDetailsStep";
 import { ClubDetailsStep } from "@/components/registration/ClubDetailsStep";
 import { RegistrationEssentialsStep } from "@/components/registration/RegistrationEssentialsStep";
@@ -16,7 +16,7 @@ import { Select } from "@/components/ui/Select";
 import { apiGet, apiPatch } from "@/lib/api";
 import { Camera, X } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -158,6 +158,7 @@ function safeParseDraft(raw: string | null): OnboardingDraft | null {
 
 export default function DashboardOnboardingPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [member, setMember] = useState<Member | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -401,9 +402,11 @@ export default function DashboardOnboardingPage() {
     const toggleGoal = (goal: string) => {
         setSwimForm((prev) => {
             const exists = prev.goals.includes(goal);
+            const nextGoals = exists ? prev.goals.filter((x) => x !== goal) : [...prev.goals, goal];
             return {
                 ...prev,
-                goals: exists ? prev.goals.filter((x) => x !== goal) : [...prev.goals, goal],
+                goals: nextGoals,
+                otherGoals: exists && goal === OTHER_GOAL_VALUE ? "" : prev.otherGoals,
             };
         });
     };
@@ -442,7 +445,8 @@ export default function DashboardOnboardingPage() {
     const swimFormValid = Boolean(
         swimForm.swimLevel &&
         swimForm.deepWaterComfort &&
-        (swimForm.goals.length > 0 || Boolean(swimForm.otherGoals && swimForm.otherGoals.trim()))
+        swimForm.goals.length > 0 &&
+        (!swimForm.goals.includes(OTHER_GOAL_VALUE) || Boolean(swimForm.otherGoals && swimForm.otherGoals.trim()))
     );
 
     const clubReadinessValid = !clubContext || clubReadinessForm.availabilitySlots.length > 0;
@@ -498,6 +502,10 @@ export default function DashboardOnboardingPage() {
         if (hasInitializedStep.current) return;
         hasInitializedStep.current = true;
 
+        // Check for step query param (e.g., ?step=club from upgrade flow)
+        const requestedStep = searchParams.get("step") as StepKey | null;
+        const allowedSteps = new Set(steps.map((s) => s.key));
+
         const draft = safeParseDraft(draftKey ? localStorage.getItem(draftKey) : null);
         if (draft) {
             setCoreForm((prev) => ({
@@ -511,14 +519,23 @@ export default function DashboardOnboardingPage() {
             setAcademyForm((prev) => ({ ...prev, ...draft.academyForm }));
             setSignalsForm((prev) => ({ ...prev, ...draft.signalsForm }));
 
-            const allowedSteps = new Set(steps.map((s) => s.key));
-            setCurrentStep(allowedSteps.has(draft.currentStep) ? draft.currentStep : firstIncompleteStep());
-            toast.message("Restored your in-progress onboarding");
+            // If step query param is valid and in the allowed steps, use it; otherwise use draft or first incomplete
+            if (requestedStep && allowedSteps.has(requestedStep)) {
+                setCurrentStep(requestedStep);
+            } else {
+                setCurrentStep(allowedSteps.has(draft.currentStep) ? draft.currentStep : firstIncompleteStep());
+                toast.message("Restored your in-progress onboarding");
+            }
             return;
         }
 
-        setCurrentStep(firstIncompleteStep());
-    }, [member, needsAcademyReadiness, needsClubReadiness, needsCoreProfile, needsSafetyLogistics, needsSwimBackground]);
+        // If step query param is valid, jump directly to it
+        if (requestedStep && allowedSteps.has(requestedStep)) {
+            setCurrentStep(requestedStep);
+        } else {
+            setCurrentStep(firstIncompleteStep());
+        }
+    }, [member, needsAcademyReadiness, needsClubReadiness, needsCoreProfile, needsSafetyLogistics, needsSwimBackground, searchParams, steps]);
 
     useEffect(() => {
         if (!draftKey) return;
@@ -595,24 +612,29 @@ export default function DashboardOnboardingPage() {
 
     const hasMissingRequiredSteps = missingRequiredSteps.length > 0;
     const firstMissingRequiredStep = missingRequiredSteps[0];
-    const showBillingCta = !communityActive || wantsClub || wantsAcademy;
-    const billingHref = communityActive ? "/dashboard/billing" : "/dashboard/billing?required=community";
-    const redirectNote = communityActive ? "" : "Redirecting you to billing...";
-    const reviewDescription = communityActive
-        ? "Your onboarding details are saved. Your dashboard will guide you to activation or Academy programs when you're ready."
-        : "Your onboarding details are saved. Activate Community to unlock member features.";
-
-    useEffect(() => {
-        if (currentStep !== "review") return;
-        if (hasMissingRequiredSteps) return;
-        if (communityActive) return;
-
-        const timer = window.setTimeout(() => {
-            router.push(billingHref);
-        }, 1200);
-
-        return () => window.clearTimeout(timer);
-    }, [billingHref, communityActive, currentStep, hasMissingRequiredSteps, router]);
+    const activationTarget = wantsClub || wantsAcademy
+        ? "club"
+        : !communityActive
+            ? "community"
+            : null;
+    const showBillingCta = Boolean(activationTarget);
+    const billingHref = activationTarget === "club"
+        ? "/dashboard/billing?activation=club"
+        : activationTarget === "community"
+            ? "/dashboard/billing?activation=community&required=community"
+            : "/dashboard/billing";
+    const billingCtaLabel = activationTarget === "club"
+        ? "Activate Club Membership"
+        : activationTarget === "community"
+            ? "Activate Community Membership"
+            : "Go to Billing";
+    const reviewDescription = activationTarget === "club"
+        ? communityActive
+            ? "You're almost set. Activate your Club membership to unlock Club benefits."
+            : "You're almost set. Activate Community + Club to unlock full access."
+        : activationTarget === "community"
+            ? "You're almost set. Activate your Community membership to unlock full access."
+            : "Your onboarding details are saved. Your dashboard will guide you to activation or Academy programs when you're ready.";
 
     const saveCore = async (): Promise<boolean> => {
         setSaving(true);
@@ -881,11 +903,11 @@ export default function DashboardOnboardingPage() {
                 </div>
             </Card>
 
-            {(wantsClub || wantsAcademy) && member?.requested_membership_tiers && member.requested_membership_tiers.length > 0 ? (
+            {wantsAcademy && member?.requested_membership_tiers && member.requested_membership_tiers.length > 0 ? (
                 <Card className="p-4 space-y-1">
                     <p className="text-sm font-medium text-slate-900">Your selection is saved</p>
                     <p className="text-sm text-slate-600">
-                        You selected {wantsAcademy ? "Academy" : "Club"} during signup. Completing readiness here helps us support you and speed up the next steps.
+                        You selected Academy during signup. Completing readiness here helps us support you and speed up the next steps.
                     </p>
                 </Card>
             ) : null}
@@ -925,24 +947,24 @@ export default function DashboardOnboardingPage() {
                                             </div>
                                         )}
                                     </div>
-	                                    <input
-	                                        type="file"
-	                                        accept="image/*"
-	                                        className="sr-only"
-	                                        onChange={async (event) => {
-	                                            const input = event.currentTarget;
-	                                            const file = input.files?.[0];
-	                                            if (!file) return;
-	                                            // Clear immediately so selecting the same file again still triggers `onChange`.
-	                                            input.value = "";
-	                                            try {
-	                                                const url = await readFileAsDataUrl(file);
-	                                                setCoreForm((prev) => ({ ...prev, profilePhotoUrl: url }));
-	                                            } catch {
-	                                                toast.error("Failed to read image");
-	                                            }
-	                                        }}
-	                                    />
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="sr-only"
+                                        onChange={async (event) => {
+                                            const input = event.currentTarget;
+                                            const file = input.files?.[0];
+                                            if (!file) return;
+                                            // Clear immediately so selecting the same file again still triggers `onChange`.
+                                            input.value = "";
+                                            try {
+                                                const url = await readFileAsDataUrl(file);
+                                                setCoreForm((prev) => ({ ...prev, profilePhotoUrl: url }));
+                                            } catch {
+                                                toast.error("Failed to read image");
+                                            }
+                                        }}
+                                    />
                                     {coreForm.profilePhotoUrl ? (
                                         <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 flex items-center justify-center">
                                             <Camera className="h-8 w-8 text-white" />
@@ -1094,26 +1116,25 @@ export default function DashboardOnboardingPage() {
                             </>
                         ) : (
                             <>
-                                <h2 className="text-xl font-semibold text-slate-900">You’re all set</h2>
+                                <h2 className="text-xl font-semibold text-slate-900">Onboarding complete</h2>
                                 <p className="text-sm text-slate-600">
                                     {reviewDescription}
                                 </p>
-                                {!communityActive ? (
-                                    <p className="text-xs text-slate-500">{redirectNote}</p>
-                                ) : null}
                                 <div className="flex justify-center gap-3">
                                     {showBillingCta ? (
                                         <Link href={billingHref}>
-                                            <Button>Go to Billing</Button>
+                                            <Button>{billingCtaLabel}</Button>
                                         </Link>
                                     ) : (
                                         <Link href="/dashboard">
                                             <Button>Go to Dashboard</Button>
                                         </Link>
                                     )}
-                                    <Link href="/profile">
-                                        <Button variant="outline">Review Profile</Button>
-                                    </Link>
+                                    {!showBillingCta ? (
+                                        <Link href="/profile">
+                                            <Button variant="outline">Review Profile</Button>
+                                        </Link>
+                                    ) : null}
                                 </div>
                             </>
                         )}

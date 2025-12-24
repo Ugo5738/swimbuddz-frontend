@@ -21,8 +21,8 @@ import {
     X
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { type ReactNode, useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
 
 type MemberLayoutProps = {
     children: ReactNode;
@@ -49,6 +49,8 @@ type MemberInfo = {
     membership_tier?: string;
     email?: string;
     community_paid_until?: string | null;
+    club_paid_until?: string | null;
+    academy_paid_until?: string | null;
     gender?: string | null;
     date_of_birth?: string | null;
     city?: string | null;
@@ -110,23 +112,51 @@ const navSections: NavSection[] = [
 export function MemberLayout({ children }: MemberLayoutProps) {
     const router = useRouter();
     const pathname = usePathname();
+    const searchParams = useSearchParams();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [member, setMember] = useState<MemberInfo | null>(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        async function loadMember() {
-            try {
-                const data = await apiGet<MemberInfo>("/api/v1/members/me", { auth: true });
-                setMember(data);
-            } catch (err) {
-                console.error("Failed to load member info", err);
-            } finally {
-                setLoading(false);
-            }
+    const refreshMember = useCallback(async () => {
+        try {
+            const data = await apiGet<MemberInfo>("/api/v1/members/me", { auth: true });
+            setMember(data);
+        } catch (err) {
+            console.error("Failed to load member info", err);
         }
-        loadMember();
     }, []);
+
+    useEffect(() => {
+        setLoading(true);
+        refreshMember().finally(() => setLoading(false));
+    }, [refreshMember]);
+
+    useEffect(() => {
+        const provider = searchParams.get("provider");
+        const reference = searchParams.get("reference") || searchParams.get("trxref");
+        if (provider !== "paystack" || !reference) return;
+
+        // Poll for member updates after payment callback
+        let cancelled = false;
+        let attempts = 0;
+        const maxAttempts = 8;
+        let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+        const tick = async () => {
+            if (cancelled) return;
+            attempts += 1;
+            await refreshMember();
+            if (attempts >= maxAttempts) return;
+            timeoutId = setTimeout(tick, 2000);
+        };
+
+        // Start polling after a brief delay
+        timeoutId = setTimeout(tick, 1000);
+        return () => {
+            cancelled = true;
+            if (timeoutId) clearTimeout(timeoutId);
+        };
+    }, [refreshMember, searchParams]);
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -140,12 +170,48 @@ export function MemberLayout({ children }: MemberLayoutProps) {
         return pathname?.startsWith(href);
     };
 
-    const memberTiers = member?.membership_tiers?.map(t => t.toLowerCase()) ||
+    const rawTiers = member?.membership_tiers?.map(t => t.toLowerCase()) ||
         (member?.membership_tier ? [member.membership_tier.toLowerCase()] : ["community"]);
 
+    const now = Date.now();
+    const clubActive = Boolean(member?.club_paid_until && Date.parse(String(member.club_paid_until)) > now);
+    const academyActive = Boolean(member?.academy_paid_until && Date.parse(String(member.academy_paid_until)) > now);
+    const communityActive = Boolean(member?.community_paid_until && Date.parse(String(member.community_paid_until)) > now);
+
+    const tierSet = new Set(rawTiers);
+    if (clubActive) {
+        tierSet.add("club");
+        tierSet.add("community");
+    }
+    if (academyActive) {
+        tierSet.add("academy");
+        tierSet.add("club");
+        tierSet.add("community");
+    }
+    if (communityActive) {
+        tierSet.add("community");
+    }
+
+    const memberTiers = Array.from(tierSet);
+
     const requestedTiers = (member?.requested_membership_tiers || []).map((t) => String(t).toLowerCase());
-    const wantsAcademy = requestedTiers.includes("academy");
-    const wantsClub = requestedTiers.includes("club") || wantsAcademy;
+    const filteredRequests = requestedTiers.filter(
+        (tier) => !(memberTiers.includes(tier) || (tier === "club" && clubActive) || (tier === "academy" && academyActive))
+    );
+    const wantsAcademy = filteredRequests.includes("academy");
+    const wantsClub = filteredRequests.includes("club") || wantsAcademy;
+    const clubEntitled = clubActive || memberTiers.includes("club");
+    const academyEntitled = academyActive || memberTiers.includes("academy");
+
+    const membershipLabel = wantsAcademy && !academyActive
+        ? "Academy (Pending)"
+        : wantsClub && !clubEntitled
+            ? "Club (Pending)"
+            : academyEntitled
+                ? "Academy Member"
+                : clubEntitled
+                    ? "Club Member"
+                    : "Community Member";
 
     const needsProfileBasics = !member?.profile_photo_url || !member?.gender || !member?.date_of_birth;
     const needsProfileCore =
@@ -249,8 +315,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
                             <div className="min-w-0 flex-1">
                                 <p className="text-sm font-semibold text-white truncate">{memberName}</p>
                                 <p className="text-xs text-cyan-100 capitalize">
-                                    {memberTiers.includes("academy") ? "Academy" :
-                                        memberTiers.includes("club") ? "Club" : "Community"} Member
+                                    {membershipLabel}
                                 </p>
                             </div>
                         </div>

@@ -34,6 +34,14 @@ function parseDateMs(value: any): number | null {
     return Number.isFinite(ms) ? ms : null;
 }
 
+function redirectToLogin(request: NextRequest, errorCode: string) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("error", errorCode);
+    const redirectPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+    loginUrl.searchParams.set("redirect", redirectPath);
+    return NextResponse.redirect(loginUrl);
+}
+
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const response = NextResponse.next();
@@ -208,12 +216,12 @@ export async function middleware(request: NextRequest) {
                 // If we can't verify the user, redirect to login or error
                 // But if it's a 500, maybe we should let them see a generic error?
                 // For now, redirecting to login is safer than letting them in.
-                return NextResponse.redirect(new URL("/login?error=auth_check_failed", request.url));
+                return redirectToLogin(request, "auth_check_failed");
             }
         } catch (error) {
             console.error("Middleware error:", error);
             // Fail closed: Redirect to login if we can't verify status
-            return NextResponse.redirect(new URL("/login?error=auth_check_error", request.url));
+            return redirectToLogin(request, "auth_check_error");
         }
     }
 

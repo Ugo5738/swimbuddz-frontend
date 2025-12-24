@@ -21,7 +21,7 @@ export function ClubReadinessStep({ formData, onToggleAvailability, onUpdateNote
       <div className="space-y-2">
         <h3 className="text-lg font-semibold text-slate-900">Club readiness</h3>
         <p className="text-sm text-slate-600">
-          Before you activate Club, confirm the windows you can usually train in. This is not scheduling or enrollment.
+          Tell us your usual swimming windows — not scheduling.
         </p>
       </div>
 
@@ -44,4 +44,3 @@ export function ClubReadinessStep({ formData, onToggleAvailability, onUpdateNote
     </div>
   );
 }
-

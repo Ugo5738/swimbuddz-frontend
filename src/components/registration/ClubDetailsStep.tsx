@@ -34,6 +34,8 @@ const clubTimeOptions = [
     { value: "late_afternoon", label: "Late Afternoon (3 PM - 6 PM)" },
 ];
 
+const SELECT_ALL_VALUE = "select_all";
+
 export function ClubDetailsStep({
     mode = "club",
     includeNotesField = true,
@@ -43,6 +45,25 @@ export function ClubDetailsStep({
 }: ClubDetailsStepProps) {
     const resolvedLocationOptions = mode === "onboarding" ? areaLocationOptions : clubLocationOptions;
     const resolvedTimeOptions = mode === "onboarding" ? timeOfDayOptions : clubTimeOptions;
+    const locationValues = resolvedLocationOptions.map((option) => option.value);
+    const allLocationsSelected =
+        locationValues.length > 0 &&
+        locationValues.every((value) => formData.locationPreference.includes(value));
+    const locationOptions =
+        mode === "onboarding"
+            ? [{ value: SELECT_ALL_VALUE, label: "Select all" }, ...resolvedLocationOptions]
+            : resolvedLocationOptions;
+    const locationSelected =
+        mode === "onboarding" && allLocationsSelected
+            ? [...formData.locationPreference, SELECT_ALL_VALUE]
+            : formData.locationPreference;
+    const handleLocationToggle = (value: string) => {
+        if (mode === "onboarding" && value === SELECT_ALL_VALUE) {
+            onUpdate("locationPreference", allLocationsSelected ? [] : locationValues);
+            return;
+        }
+        onToggleMulti("locationPreference", value);
+    };
 
     return (
         <div className="space-y-6">
@@ -106,9 +127,9 @@ export function ClubDetailsStep({
             {/* Training Preferences */}
             <OptionPillGroup
                 label="Preferred swimming locations"
-                options={resolvedLocationOptions}
-                selected={formData.locationPreference}
-                onToggle={(value) => onToggleMulti("locationPreference", value)}
+                options={locationOptions}
+                selected={locationSelected}
+                onToggle={handleLocationToggle}
                 required
                 hint={mode === "onboarding" ? "Select all areas you can train in" : "Select all locations you're willing to train at"}
             />

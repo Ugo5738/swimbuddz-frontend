@@ -10,6 +10,7 @@ import { API_BASE_URL } from "@/lib/config";
 import { CheckCircle, Clock, Eye, Pencil, Trash2, TrendingUp, UserPlus, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 // Define Member type based on backend response
 interface Member {
@@ -76,7 +77,7 @@ export default function AdminMembersPage() {
     // Delete Modal State
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingMember, setDeletingMember] = useState<Member | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
+    const [deletingMemberIds, setDeletingMemberIds] = useState<Set<string>>(new Set());
 
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -317,7 +318,14 @@ export default function AdminMembersPage() {
             return;
         }
 
-        setIsDeleting(true);
+        setDeletingMemberIds((prev) => {
+            const next = new Set(prev);
+            next.add(memberId);
+            return next;
+        });
+        setIsDeleteModalOpen(false);
+        setDeletingMember(null);
+        toast.message(`${mode === "hard" ? "Hard delete" : "Soft delete"} started for ${memberName}.`);
         try {
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token;
@@ -337,12 +345,15 @@ export default function AdminMembersPage() {
             }
 
             await fetchMembers();
-            setIsDeleteModalOpen(false);
-            setDeletingMember(null);
+            toast.success(`${memberName} deleted.`);
         } catch (err) {
-            alert(err instanceof Error ? err.message : "Failed to delete member");
+            toast.error(err instanceof Error ? err.message : "Failed to delete member");
         } finally {
-            setIsDeleting(false);
+            setDeletingMemberIds((prev) => {
+                const next = new Set(prev);
+                next.delete(memberId);
+                return next;
+            });
         }
     };
 
@@ -469,8 +480,13 @@ export default function AdminMembersPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200">
-                                {filteredMembers.map((member) => (
-                                    <tr key={member.id} className="hover:bg-slate-50">
+                                {filteredMembers.map((member) => {
+                                    const isDeletingMember = deletingMemberIds.has(member.id);
+                                    return (
+                                    <tr
+                                        key={member.id}
+                                        className={isDeletingMember ? "bg-slate-50 opacity-60" : "hover:bg-slate-50"}
+                                    >
                                         <td className="px-4 py-3 font-medium text-slate-900">
                                             <Link href={`/admin/members/${member.id}`} className="hover:underline hover:text-cyan-700">
                                                 {member.first_name} {member.last_name}
@@ -478,6 +494,11 @@ export default function AdminMembersPage() {
                                             {member.requested_membership_tiers && member.requested_membership_tiers.length > 0 && (
                                                 <span className="ml-2 inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800">
                                                     Upgrade Requested
+                                                </span>
+                                            )}
+                                            {isDeletingMember && (
+                                                <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                                                    Deleting...
                                                 </span>
                                             )}
                                         </td>
@@ -548,16 +569,21 @@ export default function AdminMembersPage() {
                                                 )}
 
                                                 <button
-                                                    onClick={() => openDeleteModal(member)}
-                                                    className="p-1.5 rounded hover:bg-red-50 text-slate-400 hover:text-red-600"
+                                                    onClick={() => {
+                                                        if (isDeletingMember) return;
+                                                        openDeleteModal(member);
+                                                    }}
+                                                    className="p-1.5 rounded hover:bg-red-50 text-slate-400 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
                                                     title="Delete"
+                                                    disabled={isDeletingMember}
                                                 >
                                                     <Trash2 className="h-4 w-4" />
                                                 </button>
                                             </div>
                                         </td>
                                     </tr>
-                                ))}
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
@@ -786,9 +812,8 @@ export default function AdminMembersPage() {
                                 "soft"
                             );
                         }}
-                        disabled={isDeleting}
                     >
-                        {isDeleting ? "Working..." : "Soft delete"}
+                        Soft delete
                     </Button>
                     <Button
                         variant="danger"
@@ -800,9 +825,8 @@ export default function AdminMembersPage() {
                                 "hard"
                             );
                         }}
-                        disabled={isDeleting}
                     >
-                        {isDeleting ? "Working..." : "Hard delete"}
+                        Hard delete
                     </Button>
                     <Button
                         variant="outline"
@@ -810,7 +834,6 @@ export default function AdminMembersPage() {
                             setIsDeleteModalOpen(false);
                             setDeletingMember(null);
                         }}
-                        disabled={isDeleting}
                     >
                         Cancel
                     </Button>

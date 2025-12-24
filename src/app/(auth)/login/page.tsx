@@ -8,7 +8,7 @@ import { PasswordField } from "@/components/ui/PasswordField";
 import { supabase } from "@/lib/auth";
 import { completePendingRegistrationOnBackend, getPostAuthRedirectPath } from "@/lib/registration";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, Suspense, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 
 const ADMIN_EMAILS = [
   process.env.NEXT_PUBLIC_ADMIN_EMAIL,
@@ -22,6 +22,31 @@ function LoginContent() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const redirectParam = searchParams.get("redirect");
+    const errorParam = searchParams.get("error");
+    const redirectPath = redirectParam && redirectParam.startsWith("/") ? redirectParam : null;
+    if (!redirectPath && !errorParam) return;
+
+    let isMounted = true;
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!isMounted) return;
+      if (!session) return;
+      if (redirectPath) {
+        router.replace(redirectPath);
+        return;
+      }
+      const nextPath = await getPostAuthRedirectPath();
+      if (!isMounted) return;
+      router.replace(nextPath);
+    };
+    checkSession();
+    return () => {
+      isMounted = false;
+    };
+  }, [router, searchParams]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

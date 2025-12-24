@@ -20,6 +20,8 @@ type SwimBackgroundStepProps = {
   onToggleGoal: (goal: string) => void;
 };
 
+export const OTHER_GOAL_VALUE = "Other";
+
 export const swimGoalOptions = [
   { value: "Swim confidently", label: "Swim confidently" },
   { value: "Learn freestyle", label: "Learn freestyle" },
@@ -28,6 +30,7 @@ export const swimGoalOptions = [
   { value: "Learn to breathe better", label: "Breathing" },
   { value: "Prepare for open water", label: "Open water" },
   { value: "Prepare for triathlon", label: "Triathlon" },
+  { value: OTHER_GOAL_VALUE, label: "Other" },
 ];
 
 export function parseGoalsNarrative(text: string | null | undefined) {
@@ -52,8 +55,11 @@ export function parseGoalsNarrative(text: string | null | undefined) {
     else otherParts.push(part);
   }
 
-  const uniqueGoals = Array.from(new Set(goals));
   const otherGoals = otherParts.join("; ");
+  const uniqueGoals = Array.from(new Set(goals));
+  if (otherGoals) {
+    if (!uniqueGoals.includes(OTHER_GOAL_VALUE)) uniqueGoals.push(OTHER_GOAL_VALUE);
+  }
 
   // Back-compat: if we couldn't match any goal option, keep the original text as "Other goals".
   if (!uniqueGoals.length && !otherGoals) {
@@ -65,7 +71,9 @@ export function parseGoalsNarrative(text: string | null | undefined) {
 
 export function buildGoalsNarrative(goals: string[], otherGoals: string) {
   const segments: string[] = [];
-  const uniqueGoals = Array.from(new Set((goals || []).filter(Boolean)));
+  const uniqueGoals = Array.from(
+    new Set((goals || []).filter((goal) => goal && goal !== OTHER_GOAL_VALUE))
+  );
   if (uniqueGoals.length) segments.push(...uniqueGoals);
   const extra = String(otherGoals || "").trim();
   if (extra) segments.push(extra);
@@ -73,11 +81,8 @@ export function buildGoalsNarrative(goals: string[], otherGoals: string) {
 }
 
 export function SwimBackgroundStep({ formData, onUpdate, onToggleStroke, onToggleGoal }: SwimBackgroundStepProps) {
-  const otherGoalsRequired = !formData.goals?.length;
-  const otherGoalsMissing = otherGoalsRequired && !String(formData.otherGoals || "").trim();
-  const otherGoalsLabelHint = otherGoalsRequired
-    ? "Required if you didn’t select a goal above"
-    : "Optional";
+  const otherSelected = formData.goals.includes(OTHER_GOAL_VALUE);
+  const otherGoalsMissing = otherSelected && !String(formData.otherGoals || "").trim();
 
   return (
     <div className="space-y-6">
@@ -130,24 +135,21 @@ export function SwimBackgroundStep({ formData, onUpdate, onToggleStroke, onToggl
         options={swimGoalOptions}
         selected={formData.goals}
         onToggle={onToggleGoal}
-        required={!String(formData.otherGoals || "").trim()}
-        hint="Select at least one (or fill “Other goals” below)."
+        required
+        hint="Select at least one goal. Choose “Other” to add your own."
       />
 
-      <Textarea
-        label="Other goals"
-        name="otherGoals"
-        value={formData.otherGoals}
-        onChange={(e) => onUpdate("otherGoals", e.target.value)}
-        placeholder="Add anything else here…"
-        rows={4}
-        hint={otherGoalsLabelHint}
-        required={otherGoalsRequired}
-      />
-      {otherGoalsMissing ? (
-        <p className="text-sm text-rose-300">
-          Select at least one goal above, or type your goal in “Other goals”.
-        </p>
+      {otherSelected ? (
+        <>
+          <Textarea
+            label="Other goals"
+            name="otherGoals"
+            value={formData.otherGoals}
+            onChange={(e) => onUpdate("otherGoals", e.target.value)}
+            placeholder="Add your custom goal…"
+            rows={4}
+          />
+        </>
       ) : null}
     </div>
   );
