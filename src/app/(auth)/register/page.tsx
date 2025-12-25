@@ -146,6 +146,7 @@ function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isUpgrade = searchParams.get("upgrade") === "true";
+  const isCoachRegistration = searchParams.get("coach") === "true";
 
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>(initialFormData);
@@ -221,12 +222,19 @@ function RegisterContent() {
       ];
     }
 
+    if (isCoachRegistration) {
+      // Coach registration only needs account creation - no tier selection
+      return [
+        { key: "essentials", title: "Create Account", required: true },
+      ];
+    }
+
     return [
       { key: "tier", title: "Choose Tier", required: true },
       { key: "essentials", title: "Create Account", required: true },
       { key: "confirm", title: "Confirm & Finish", required: true },
     ];
-  }, [isUpgrade, formData.membershipTier]);
+  }, [isUpgrade, isCoachRegistration, formData.membershipTier]);
 
   // Clamp the current step if the visible steps shrink (e.g. switching from academy to community)
   useEffect(() => {
@@ -318,11 +326,33 @@ function RegisterContent() {
         return;
       }
 
-      if (!formData.membershipTier) {
+      if (!formData.membershipTier && !isCoachRegistration) {
         throw new Error("Please select a membership tier.");
       }
 
-      const selectedTier = formData.membershipTier;
+      // Coach registration - create minimal account and redirect to /coach/apply
+      if (isCoachRegistration) {
+        const coachRegistrationPayload = {
+          email: formData.email,
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          password: formData.password,
+          phone: formData.phone || undefined,
+          city: formData.city || undefined,
+          country: formData.country || "Nigeria",
+          swim_level: "not_applicable",
+          membership_tier: "community",
+          membership_tiers: ["community"],
+          roles: ["coach"],
+          community_rules_accepted: true,
+        };
+
+        await createPendingRegistration(coachRegistrationPayload as any);
+        router.push("/register/success?redirect=/coach/apply");
+        return;
+      }
+
+      const selectedTier = formData.membershipTier!;
       const requestedTiers =
         selectedTier === "community" ? undefined : expandTier(selectedTier);
 
@@ -421,12 +451,18 @@ function RegisterContent() {
         {/* Header */}
         <div className="text-center">
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-            {isUpgrade ? "Upgrade Membership" : "Join SwimBuddz"}
+            {isCoachRegistration
+              ? "Create Coach Account"
+              : isUpgrade
+                ? "Upgrade Membership"
+                : "Join SwimBuddz"}
           </h1>
           <p className="mt-2 text-sm text-slate-600">
-            {isUpgrade
-              ? "Select a new tier to upgrade your membership."
-              : "Become part of our thriving swimming community."}
+            {isCoachRegistration
+              ? "Create an account to apply as a SwimBuddz coach."
+              : isUpgrade
+                ? "Select a new tier to upgrade your membership."
+                : "Become part of our thriving swimming community."}
           </p>
         </div>
 

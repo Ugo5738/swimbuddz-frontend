@@ -10,6 +10,7 @@ type MemberForRedirect = {
   membership_tier?: string | null;
   membership_tiers?: string[] | null;
   requested_membership_tiers?: string[] | null;
+  roles?: string[] | null;
   community_paid_until?: string | null;
   club_paid_until?: string | null;
   academy_paid_until?: string | null;
@@ -96,6 +97,15 @@ export async function getPostAuthRedirectPath(): Promise<string> {
   try {
     const member = await apiGet<MemberForRedirect>("/api/v1/members/me", { auth: true });
     const now = Date.now();
+
+    // Check if user is a coach - redirect to coach flow instead of member onboarding
+    const roles = (member.roles || []).map(r => String(r).toLowerCase());
+    const isCoach = roles.includes("coach");
+
+    // Coaches should always land in the coach application/status flow first.
+    if (isCoach) {
+      return "/coach/apply";
+    }
 
     const communityUntilMs = parseDateMs(member.community_paid_until);
     const communityActive = communityUntilMs !== null && communityUntilMs > now;

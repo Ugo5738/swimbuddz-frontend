@@ -1,6 +1,5 @@
 "use client";
 
-import { WHATSAPP_GROUP_URL } from "@/lib/config";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -52,14 +51,6 @@ export function MainLayout({ children }: MainLayoutProps) {
             <Link href="/announcements" className="hover:text-cyan-700">
               Announcements
             </Link>
-            <a
-              href={WHATSAPP_GROUP_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-emerald-600 hover:text-emerald-700"
-            >
-              WhatsApp Group
-            </a>
           </div>
         </div>
       </footer>

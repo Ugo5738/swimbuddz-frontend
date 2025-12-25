@@ -146,6 +146,12 @@ export function Header() {
                         ) : (
                             <>
                                 <Link
+                                    href="/coach/apply"
+                                    className="px-3 py-2 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors font-medium"
+                                >
+                                    Become a Coach
+                                </Link>
+                                <Link
                                     href="/login"
                                     className="px-3 py-2 rounded-lg text-cyan-700 hover:bg-cyan-50 transition-colors"
                                 >
@@ -218,6 +224,13 @@ export function Header() {
                                 </>
                             ) : (
                                 <>
+                                    <Link
+                                        href="/coach/apply"
+                                        onClick={closeMobileMenu}
+                                        className="block px-4 py-3 rounded-xl text-emerald-600 hover:bg-emerald-50 transition-colors font-medium"
+                                    >
+                                        🏊‍♂️ Become a Coach
+                                    </Link>
                                     <Link
                                         href="/login"
                                         onClick={closeMobileMenu}

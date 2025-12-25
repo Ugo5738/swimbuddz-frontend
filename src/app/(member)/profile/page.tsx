@@ -14,6 +14,7 @@ import { LoadingCard } from "@/components/ui/LoadingCard";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { apiGet, apiPatch } from "@/lib/api";
+import { WHATSAPP_GROUP_URL } from "@/lib/config";
 import {
   academyFocusOptions,
   availabilityOptions,
@@ -134,6 +135,7 @@ type Profile = {
   academyFocusAreas: string[];
   academyFocus: string;
   paymentNotes: string;
+  communityActive: boolean;
 };
 
 const mockProfile: Profile = {
@@ -186,7 +188,8 @@ const mockProfile: Profile = {
   requestedMembershipTiers: [],
   academyFocusAreas: ["travel_meets"],
   academyFocus: "",
-  paymentNotes: "Needs receipts for corporate reimbursements"
+  paymentNotes: "Needs receipts for corporate reimbursements",
+  communityActive: true
 };
 
 type MemberResponse = {
@@ -245,9 +248,17 @@ type MemberResponse = {
   payment_notes?: string;
   occupation?: string;
   area_in_lagos?: string;
+  community_paid_until?: string | null;
+  club_paid_until?: string | null;
+  academy_paid_until?: string | null;
 };
 
 function mapMemberResponseToProfile(data: MemberResponse): Profile {
+  const now = Date.now();
+  const communityPaid = data.community_paid_until ? Date.parse(String(data.community_paid_until)) > now : false;
+  const clubPaid = data.club_paid_until ? Date.parse(String(data.club_paid_until)) > now : false;
+  const academyPaid = data.academy_paid_until ? Date.parse(String(data.academy_paid_until)) > now : false;
+
   return {
     id: data.id,
     name: `${data.first_name} ${data.last_name}`,
@@ -301,6 +312,7 @@ function mapMemberResponseToProfile(data: MemberResponse): Profile {
     academyFocusAreas: data.academy_focus_areas || [],
     academyFocus: data.academy_focus || "",
     paymentNotes: data.payment_notes || "",
+    communityActive: communityPaid || clubPaid || academyPaid,
     occupation: data.occupation || "",
     areaInLagos: data.area_in_lagos || ""
   };
@@ -473,6 +485,27 @@ function ProfileContent() {
                 <p className="text-sm text-slate-600">No tier selected.</p>
               )}
             </div>
+            {profile.communityActive && (
+              <div className="mt-4 rounded-lg border border-cyan-100 bg-cyan-50 p-4">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-cyan-900">
+                    <span role="img" aria-label="chat">💬</span>
+                    Community WhatsApp Access
+                  </div>
+                  <p className="text-sm text-cyan-900/80">
+                    Thanks for activating your membership. Join the members-only WhatsApp group to stay updated.
+                  </p>
+                  <a
+                    href={WHATSAPP_GROUP_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex w-full sm:w-auto items-center justify-center rounded-md bg-cyan-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-cyan-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2"
+                  >
+                    Open WhatsApp Group
+                  </a>
+                </div>
+              </div>
+            )}
             <div className="pt-2">
               <Button variant="outline" className="w-full" onClick={() => router.push("/register?upgrade=true")}>
                 Upgrade / Change Tier
