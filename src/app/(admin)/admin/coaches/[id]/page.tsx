@@ -38,7 +38,15 @@ export default function AdminCoachDetailPage() {
     const loadApplication = async () => {
         try {
             const data = await CoachesApi.getApplication(coachId);
-            setApplication(data);
+            // Normalize arrays/optionals to avoid undefined/null maps in the UI
+            setApplication({
+                ...data,
+                coaching_specialties: data.coaching_specialties || [],
+                certifications: data.certifications || [],
+                levels_taught: data.levels_taught || [],
+                age_groups_taught: data.age_groups_taught || [],
+                languages_spoken: data.languages_spoken || [],
+            });
             setAdminNotes(data.admin_notes || "");
         } catch (err) {
             setError("Failed to load application");
@@ -292,6 +300,69 @@ export default function AdminCoachDetailPage() {
                                     <p className="mt-1 text-slate-700">{application.background_check_status}</p>
                                 </div>
                             </div>
+                        </div>
+                    </Card>
+
+                    {/* Documents */}
+                    <Card className="p-6">
+                        <h2 className="text-lg font-semibold text-slate-900 mb-4">📄 Documents & Links</h2>
+                        <div className="space-y-4">
+                            {application.coaching_document_link ? (
+                                <div className="p-4 bg-slate-50 rounded-lg">
+                                    <label className="text-sm text-slate-500">Uploaded Document</label>
+                                    <div className="mt-2 flex items-center gap-3">
+                                        <div className="flex-1">
+                                            <p className="font-medium text-slate-900">
+                                                {application.coaching_document_file_name || "Document"}
+                                            </p>
+                                            <a
+                                                href={application.coaching_document_link}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-sm text-cyan-600 hover:underline"
+                                            >
+                                                {application.coaching_document_link}
+                                            </a>
+                                        </div>
+                                        <a
+                                            href={application.coaching_document_link}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-medium hover:bg-cyan-700 transition"
+                                        >
+                                            View Document
+                                        </a>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="p-4 bg-slate-50 rounded-lg text-center">
+                                    <p className="text-slate-400 text-sm">No documents uploaded</p>
+                                </div>
+                            )}
+
+                            {application.coaching_portfolio_link && (
+                                <div className="p-4 bg-slate-50 rounded-lg">
+                                    <label className="text-sm text-slate-500">Portfolio / Website</label>
+                                    <div className="mt-2 flex items-center gap-3">
+                                        <a
+                                            href={application.coaching_portfolio_link}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex-1 text-cyan-600 hover:underline"
+                                        >
+                                            {application.coaching_portfolio_link}
+                                        </a>
+                                        <a
+                                            href={application.coaching_portfolio_link}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-300 transition"
+                                        >
+                                            Visit →
+                                        </a>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </Card>
                 </div>

@@ -4,7 +4,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
-import { supabase } from "@/lib/auth";
+import { getCurrentAccessToken, supabase } from "@/lib/auth";
 import {
     ageGroupOptions,
     certificationOptions,
@@ -13,6 +13,7 @@ import {
     coachSpecialtyOptions,
     levelsTaughtOptions,
 } from "@/lib/coaches";
+import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -46,6 +47,13 @@ export default function CoachApplyPage() {
         coaching_years: 0,
         coaching_specialties: [],
         certifications: [],
+        display_name: "",
+        coaching_document_link: "",
+        coaching_document_file_name: "",
+        coaching_portfolio_link: "",
+        other_certifications_note: "",
+        levels_taught: [],
+        age_groups_taught: [],
     });
 
     useEffect(() => {
@@ -129,23 +137,41 @@ export default function CoachApplyPage() {
         }
     }, [formData]);
 
-    const uploadFileToStorage = async (file: File): Promise<string> => {
-        // Upload to Supabase storage
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error("Not authenticated");
+    const uploadCoachDocument = async (file: File): Promise<string> => {
+        const token = await getCurrentAccessToken();
+        if (!token) throw new Error("Not authenticated");
 
-        const fileExt = file.name.split('.').pop();
-        const fileName = `coach-docs/${user.id}/${Date.now()}.${fileExt}`;
+        const formData = new FormData();
+        formData.append("file", file);
 
-        const { data, error: uploadError } = await supabase.storage
-            .from("documents")
-            .upload(fileName, file, { upsert: true });
+        const response = await fetch(`${API_BASE_URL}/api/v1/media/uploads/coach-documents`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+        });
 
-        if (uploadError) throw new Error("Failed to upload file: " + uploadError.message);
+        if (!response.ok) {
+            let message = `Failed to upload document (status ${response.status})`;
+            try {
+                const errorBody = await response.json();
+                if (errorBody?.detail) {
+                    message = Array.isArray(errorBody.detail)
+                        ? errorBody.detail.map((d: any) => d.msg || d).join(", ")
+                        : errorBody.detail;
+                }
+            } catch {
+                // ignore JSON parse errors
+            }
+            throw new Error(message);
+        }
 
-        // Get public URL
-        const { data: { publicUrl } } = supabase.storage.from("documents").getPublicUrl(data.path);
-        return publicUrl;
+        const mediaItem = await response.json();
+        if (!mediaItem?.file_url) {
+            throw new Error("Upload succeeded but no file URL was returned");
+        }
+        return mediaItem.file_url as string;
     };
 
     const handleSubmit = async () => {
@@ -167,7 +193,7 @@ export default function CoachApplyPage() {
             if (documentMethod === "upload" && uploadedFile) {
                 setUploading(true);
                 try {
-                    const fileUrl = await uploadFileToStorage(uploadedFile);
+                    const fileUrl = await uploadCoachDocument(uploadedFile);
                     finalFormData.coaching_document_link = fileUrl;
                 } catch (err) {
                     throw new Error(err instanceof Error ? err.message : "Failed to upload document");
@@ -613,7 +639,7 @@ export default function CoachApplyPage() {
                         </div>
 
                         {documentMethod === "link" ? (
-                            <div className="space-y-3">
+                            <div key="link" className="space-y-3">
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-1">
                                         Document Link (Google Drive, Dropbox, etc.)
@@ -644,7 +670,7 @@ export default function CoachApplyPage() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="space-y-3">
+                            <div key="upload" className="space-y-3">
                                 <div
                                     onDragOver={(e) => e.preventDefault()}
                                     onDrop={handleFileDrop}
@@ -738,7 +764,7 @@ export default function CoachApplyPage() {
                             onClick={handleSubmit}
                             disabled={submitting || uploading}
                         >
-                            {uploading ? "Uploading document..." : submitting ? "Submitting..." : "Submit Application"}
+                            {uploading || submitting ? "Submitting your application..." : "Submit Application"}
                         </Button>
                         <p className="text-xs text-slate-500 text-center">
                             By submitting, you agree to our coach guidelines and code of conduct.

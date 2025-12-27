@@ -1,27 +1,26 @@
-import { type ReactNode } from "react";
-import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/lib/auth";
-import { useState, useEffect } from "react";
 import {
-  LayoutDashboard,
-  Users,
   Calendar,
-  Megaphone,
-  ClipboardCheck,
-  GraduationCap,
   CalendarDays,
-  HandHeart,
+  Car,
+  ClipboardCheck,
   FileText,
-  Trophy,
+  GraduationCap,
+  HandHeart,
   Image,
+  LayoutDashboard,
   LogOut,
-  Menu,
-  X,
-  ChevronDown,
   Mail,
-  Car
+  Megaphone,
+  Menu,
+  Trophy,
+  UserCheck,
+  Users,
+  X
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState, type ReactNode } from "react";
 
 type AdminLayoutProps = {
   children: ReactNode;
@@ -49,6 +48,7 @@ const navSections: NavSection[] = [
     title: "Core Management",
     items: [
       { href: "/admin/members", label: "Members", icon: Users },
+      { href: "/admin/coaches", label: "Coaches", icon: UserCheck },
       { href: "/admin/sessions", label: "Sessions", icon: Calendar },
       { href: "/admin/transport", label: "Transport", icon: Car },
       { href: "/admin/attendance", label: "Attendance", icon: ClipboardCheck }

@@ -15,7 +15,7 @@ import { useEffect, useState } from "react";
 export default function AdminCoachesPage() {
     const [applications, setApplications] = useState<AdminCoachApplicationListItem[]>([]);
     const [loading, setLoading] = useState(true);
-    const [statusFilter, setStatusFilter] = useState<string>("pending");
+    const [statusFilter, setStatusFilter] = useState<string>("pending_review");
 
     useEffect(() => {
         loadApplications();
@@ -44,7 +44,6 @@ export default function AdminCoachesPage() {
     };
 
     const statusFilters = [
-        { value: "pending", label: "Pending" },
         { value: "pending_review", label: "Pending Review" },
         { value: "more_info_needed", label: "More Info Needed" },
         { value: "approved", label: "Approved" },
@@ -69,8 +68,8 @@ export default function AdminCoachesPage() {
                         key={filter.value}
                         onClick={() => setStatusFilter(filter.value)}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${statusFilter === filter.value
-                                ? "bg-cyan-100 text-cyan-700 border border-cyan-300"
-                                : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300"
+                            ? "bg-cyan-100 text-cyan-700 border border-cyan-300"
+                            : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300"
                             }`}
                     >
                         {filter.label}

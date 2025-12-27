@@ -89,6 +89,11 @@ export interface CoachOnboardingData {
     max_swimmers_per_session?: number;
     max_cohorts_at_once?: number;
     preferred_cohort_types?: string[];
+    currency?: string;
+    one_to_one_rate_per_hour?: number;
+    group_session_rate_per_hour?: number;
+    academy_cohort_stipend?: number;
+    show_in_directory?: boolean;
     coach_profile_photo_url?: string;
 }
 
@@ -177,7 +182,8 @@ export const CoachesApi = {
      * List coach applications (admin only).
      */
     listApplications: (status?: string) => {
-        const params = status ? `?status=${status}` : "";
+        // Backend expects application_status; keep name explicit to match API
+        const params = status ? `?application_status=${status}` : "";
         return apiGet<AdminCoachApplicationListItem[]>(`/api/v1/admin/coaches/applications${params}`, { auth: true });
     },
 
