@@ -1,8 +1,17 @@
 /**
  * Coach API client and types for the coach application, onboarding, and management.
+ * 
+ * Types are generated from backend OpenAPI schema.
+ * Run `npm run generate:types` to update types after backend changes.
  */
 
 import { apiGet, apiPatch, apiPost } from "./api";
+import type { components } from "./api-types";
+
+// Re-export generated types for convenience
+export type AdminCoachApplicationListItemGenerated = components["schemas"]["AdminCoachApplicationListItem"];
+export type AdminCoachApplicationDetailGenerated = components["schemas"]["AdminCoachApplicationDetail"];
+export type CoachProfileResponseGenerated = components["schemas"]["CoachProfileResponse"];
 
 // === Types ===
 

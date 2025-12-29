@@ -1,4 +1,8 @@
 import { apiGet, apiPost } from "./api";
+import type { components } from "./api-types";
+
+// Use generated types from backend
+type SessionResponse = components["schemas"]["SessionResponse"];
 
 export enum RideShareOption {
   NONE = "none",
@@ -92,18 +96,8 @@ export interface Session {
   rideShareAreas?: RideShareArea[];
 }
 
-interface BackendSession {
-  id: string;
-  title: string;
-  description: string | null;
-  location: string;
-  pool_fee: number;
-  ride_share_fee?: number | null;
-  capacity: number;
-  start_time: string;
-  end_time: string;
-  type?: string | null;
-}
+// Re-export the backend session type for direct API access if needed
+export type BackendSession = SessionResponse;
 
 async function getMembership(): Promise<"community" | "club" | "academy"> {
   try {

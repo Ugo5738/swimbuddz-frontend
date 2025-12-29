@@ -1,0 +1,43 @@
+#!/bin/sh
+
+# Pre-commit hook: Regenerate TypeScript types from backend OpenAPI schema
+# This runs automatically before each commit to ensure types are in sync
+
+# Always work from repo root so relative paths are stable
+cd -- "$(dirname "$0")/.." || exit 1
+
+BACKEND_DIR="../swimbuddz-backend"
+
+# Safely detect backend schema changes (unstaged or staged) inside the backend repo
+BACKEND_CHANGED=""
+if [ -d "$BACKEND_DIR/.git" ]; then
+    BACKEND_CHANGED=$(
+        git -C "$BACKEND_DIR" diff --name-only -- 'services/*/schemas.py' 'services/*_schemas.py' 2>/dev/null || true
+    )
+    BACKEND_CHANGED_STAGED=$(
+        git -C "$BACKEND_DIR" diff --cached --name-only -- 'services/*/schemas.py' 'services/*_schemas.py' 2>/dev/null || true
+    )
+    BACKEND_CHANGED="$BACKEND_CHANGED$BACKEND_CHANGED_STAGED"
+else
+    echo "ℹ️ Backend repo not found at $BACKEND_DIR, skipping type generation check."
+fi
+
+if [ -n "$BACKEND_CHANGED" ]; then
+    echo "🔄 Backend schemas changed, regenerating TypeScript types..."
+    
+    if python "$BACKEND_DIR/scripts/generate_openapi.py" > "$BACKEND_DIR/openapi.json" 2>/dev/null; then
+        if npm run generate:types --silent; then
+            echo "✅ TypeScript types regenerated successfully"
+            git add src/lib/api-types.ts
+        else
+            echo "⚠️ Warning: Failed to generate TypeScript types"
+        fi
+    else
+        echo "⚠️ Warning: Failed to generate OpenAPI schema"
+    fi
+fi
+
+# Also regenerate if frontend api-types was explicitly staged (for manual updates)
+if git diff --cached --name-only | grep -q "src/lib/api-types.ts"; then
+    echo "📝 api-types.ts was staged, generation already done or manual update"
+fi
