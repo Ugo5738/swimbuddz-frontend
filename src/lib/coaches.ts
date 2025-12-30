@@ -8,10 +8,11 @@
 import { apiGet, apiPatch, apiPost } from "./api";
 import type { components } from "./api-types";
 
-// Re-export generated types for convenience
-export type AdminCoachApplicationListItemGenerated = components["schemas"]["AdminCoachApplicationListItem"];
-export type AdminCoachApplicationDetailGenerated = components["schemas"]["AdminCoachApplicationDetail"];
+// Re-export generated type that exists
 export type CoachProfileResponseGenerated = components["schemas"]["CoachProfileResponse"];
+
+// Note: AdminCoachApplicationListItem and AdminCoachApplicationDetail are not in gateway OpenAPI spec
+// Admin coach application types are defined locally below
 
 // === Types ===
 

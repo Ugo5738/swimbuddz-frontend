@@ -20,47 +20,67 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-type Member = {
-    id?: string;
-    email?: string | null;
-    membership_tier?: string;
-    membership_tiers?: string[];
-    requested_membership_tiers?: string[] | null;
-    community_paid_until?: string | null;
-    club_paid_until?: string | null;
-    academy_paid_until?: string | null;
-    first_name?: string | null;
-    last_name?: string | null;
+type MemberProfile = {
     phone?: string | null;
     area_in_lagos?: string | null;
-    profile_photo_url?: string | null;
-    gender?: string | null;
-    date_of_birth?: string | null;
     city?: string | null;
     country?: string | null;
     time_zone?: string | null;
+    gender?: string | null;
+    date_of_birth?: string | null;
     swim_level?: string | null;
     deep_water_comfort?: string | null;
     strokes?: string[] | null;
     interests?: string[] | null;
-    goals_narrative?: string | null;
-    comms_preference?: string | null;
-    language_preference?: string | null;
-    volunteer_interest?: string[] | null;
-    availability_slots?: string[] | null;
+    personal_goals?: string | null;
+};
 
-    emergency_contact_name?: string | null;
-    emergency_contact_relationship?: string | null;
-    emergency_contact_phone?: string | null;
+type MemberEmergencyContact = {
+    name?: string | null;
+    contact_relationship?: string | null;
+    phone?: string | null;
     medical_info?: string | null;
-    location_preference?: string[] | null;
-    time_of_day_availability?: string[] | null;
-    club_notes?: string | null;
+};
 
+type MemberAvailability = {
+    available_days?: string[] | null;
+    preferred_times?: string[] | null;
+    preferred_locations?: string[] | null;
+};
+
+type MemberMembership = {
+    primary_tier?: string | null;
+    active_tiers?: string[] | null;
+    requested_tiers?: string[] | null;
+    community_paid_until?: string | null;
+    club_paid_until?: string | null;
+    academy_paid_until?: string | null;
+    club_notes?: string | null;
     academy_skill_assessment?: Record<string, boolean> | null;
     academy_goals?: string | null;
     academy_preferred_coach_gender?: string | null;
     academy_lesson_preference?: string | null;
+};
+
+type MemberPreferences = {
+    comms_preference?: string | null;
+    language_preference?: string | null;
+    volunteer_interest?: string[] | null;
+};
+
+type Member = {
+    id?: string;
+    email?: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
+    profile_photo_url?: string | null;
+
+    // Nested sub-records
+    profile?: MemberProfile | null;
+    emergency_contact?: MemberEmergencyContact | null;
+    availability?: MemberAvailability | null;
+    membership?: MemberMembership | null;
+    preferences?: MemberPreferences | null;
 };
 
 function formatDateForInput(value?: string | null) {
@@ -162,6 +182,7 @@ export default function DashboardOnboardingPage() {
     const [member, setMember] = useState<Member | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [navigatingToBilling, setNavigatingToBilling] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [currentStep, setCurrentStep] = useState<StepKey>("core");
     const hasInitializedStep = useRef(false);
@@ -185,21 +206,22 @@ export default function DashboardOnboardingPage() {
     }, []);
 
     const approvedTiers = useMemo(() => {
-        const tiers = (member?.membership_tiers && member.membership_tiers.length > 0)
-            ? member.membership_tiers
-            : member?.membership_tier
-                ? [member.membership_tier]
+        const membership = member?.membership;
+        const tiers = (membership?.active_tiers && membership.active_tiers.length > 0)
+            ? membership.active_tiers
+            : membership?.primary_tier
+                ? [membership.primary_tier]
                 : ["community"];
-        return tiers.map((t) => String(t).toLowerCase());
+        return tiers.map((t: string) => String(t).toLowerCase());
     }, [member]);
 
     const now = Date.now();
     const communityActive = useMemo(() => {
-        const until = member?.community_paid_until ? Date.parse(String(member.community_paid_until)) : NaN;
+        const until = member?.membership?.community_paid_until ? Date.parse(String(member.membership.community_paid_until)) : NaN;
         return Number.isFinite(until) && until > now;
     }, [member, now]);
 
-    const requestedTiers = useMemo(() => (member?.requested_membership_tiers || []).map((t) => String(t).toLowerCase()), [member]);
+    const requestedTiers = useMemo(() => (member?.membership?.requested_tiers || []).map((t: string) => String(t).toLowerCase()), [member]);
     const wantsAcademy = requestedTiers.includes("academy");
     const wantsClub = requestedTiers.includes("club") || wantsAcademy;
 
@@ -208,50 +230,56 @@ export default function DashboardOnboardingPage() {
 
     const needsCoreProfile = useMemo(() => {
         if (!member) return false;
+        const profile = member.profile;
         return !member.profile_photo_url ||
-            !member.gender ||
-            !member.date_of_birth ||
+            !profile?.gender ||
+            !profile?.date_of_birth ||
             !member.first_name ||
             !member.last_name ||
-            !member.phone ||
-            !member.country ||
-            !member.city ||
-            !member.time_zone;
+            !profile?.phone ||
+            !profile?.country ||
+            !profile?.city ||
+            !profile?.time_zone;
     }, [member]);
 
     const needsSafetyLogistics = useMemo(() => {
         if (!member) return false;
-        return !member.emergency_contact_name ||
-            !member.emergency_contact_relationship ||
-            !member.emergency_contact_phone ||
-            !(member.location_preference && member.location_preference.length > 0) ||
-            !(member.time_of_day_availability && member.time_of_day_availability.length > 0);
+        const emergency = member.emergency_contact;
+        const availability = member.availability;
+        return !emergency?.name ||
+            !emergency?.contact_relationship ||
+            !emergency?.phone ||
+            !(availability?.preferred_locations && availability.preferred_locations.length > 0) ||
+            !(availability?.preferred_times && availability.preferred_times.length > 0);
     }, [member]);
 
     const needsSwimBackground = useMemo(() => {
         if (!member) return false;
-        return !member.swim_level || !member.deep_water_comfort || !member.goals_narrative;
+        const profile = member.profile;
+        return !profile?.swim_level || !profile?.deep_water_comfort || !profile?.personal_goals;
     }, [member]);
 
     const needsClubReadiness = useMemo(() => {
         if (!member) return false;
         if (!clubContext) return false;
-        return !(member.availability_slots && member.availability_slots.length > 0);
+        const availability = member.availability;
+        return !(availability?.available_days && availability.available_days.length > 0);
     }, [member, clubContext]);
 
     const needsAcademyReadiness = useMemo(() => {
         if (!member) return false;
         if (!academyContext) return false;
-        const assessment = member.academy_skill_assessment;
+        const membership = member.membership;
+        const assessment = membership?.academy_skill_assessment;
         const hasAssessment =
             assessment &&
             ["canFloat", "headUnderwater", "deepWaterComfort", "canSwim25m"].some(
                 (k) => Object.prototype.hasOwnProperty.call(assessment, k)
             );
         return !hasAssessment ||
-            !member.academy_goals ||
-            !member.academy_preferred_coach_gender ||
-            !member.academy_lesson_preference;
+            !membership?.academy_goals ||
+            !membership?.academy_preferred_coach_gender ||
+            !membership?.academy_lesson_preference;
     }, [member, academyContext]);
 
     const [coreForm, setCoreForm] = useState({
@@ -320,51 +348,59 @@ export default function DashboardOnboardingPage() {
 
     useEffect(() => {
         if (!member) return;
+
+        // Extract nested records (may be null)
+        const profile = member.profile;
+        const emergency = member.emergency_contact;
+        const availability = member.availability;
+        const membership = member.membership;
+        const prefs = member.preferences;
+
         setCoreForm({
             firstName: member.first_name || "",
             lastName: member.last_name || "",
-            phone: member.phone || "",
-            areaInLagos: member.area_in_lagos || "",
-            city: member.city || "",
-            country: member.country || "",
-            gender: member.gender || "",
-            dateOfBirth: formatDateForInput(member.date_of_birth),
+            phone: profile?.phone || "",
+            areaInLagos: profile?.area_in_lagos || "",
+            city: profile?.city || "",
+            country: profile?.country || "",
+            gender: profile?.gender || "",
+            dateOfBirth: formatDateForInput(profile?.date_of_birth),
             profilePhotoUrl: member.profile_photo_url || "",
-            timeZone: member.time_zone || "",
+            timeZone: profile?.time_zone || "",
         });
         setClubForm({
-            emergencyContactName: member.emergency_contact_name || "",
-            emergencyContactRelationship: member.emergency_contact_relationship || "",
-            emergencyContactPhone: member.emergency_contact_phone || "",
-            medicalInfo: member.medical_info || "",
-            locationPreference: member.location_preference || [],
-            timeOfDayAvailability: member.time_of_day_availability || [],
-            clubNotes: member.club_notes || "",
+            emergencyContactName: emergency?.name || "",
+            emergencyContactRelationship: emergency?.contact_relationship || "",
+            emergencyContactPhone: emergency?.phone || "",
+            medicalInfo: emergency?.medical_info || "",
+            locationPreference: availability?.preferred_locations || [],
+            timeOfDayAvailability: availability?.preferred_times || [],
+            clubNotes: membership?.club_notes || "",
         });
         setClubReadinessForm({
-            availabilitySlots: member.availability_slots || [],
-            clubNotes: member.club_notes || "",
+            availabilitySlots: availability?.available_days || [],
+            clubNotes: membership?.club_notes || "",
         });
         setSwimForm({
-            swimLevel: member.swim_level || "",
-            deepWaterComfort: member.deep_water_comfort || "",
-            strokes: member.strokes || [],
-            ...(parseGoalsNarrative(member.goals_narrative)),
+            swimLevel: profile?.swim_level || "",
+            deepWaterComfort: profile?.deep_water_comfort || "",
+            strokes: profile?.strokes || [],
+            ...(parseGoalsNarrative(profile?.personal_goals)),
         });
         setAcademyForm({
-            academySkillAssessment: (member.academy_skill_assessment as any) || {
+            academySkillAssessment: (membership?.academy_skill_assessment as any) || {
                 canFloat: false,
                 headUnderwater: false,
                 deepWaterComfort: false,
                 canSwim25m: false,
             },
-            academyGoals: member.academy_goals || "",
-            academyPreferredCoachGender: member.academy_preferred_coach_gender || "",
-            academyLessonPreference: member.academy_lesson_preference || "",
+            academyGoals: membership?.academy_goals || "",
+            academyPreferredCoachGender: membership?.academy_preferred_coach_gender || "",
+            academyLessonPreference: membership?.academy_lesson_preference || "",
         });
         setSignalsForm({
-            interests: member.interests || [],
-            volunteerInterest: member.volunteer_interest || [],
+            interests: profile?.interests || [],
+            volunteerInterest: prefs?.volunteer_interest || [],
         });
     }, [member]);
 
@@ -644,14 +680,16 @@ export default function DashboardOnboardingPage() {
                 {
                     first_name: coreForm.firstName,
                     last_name: coreForm.lastName,
-                    phone: coreForm.phone,
-                    area_in_lagos: coreForm.areaInLagos || undefined,
-                    country: coreForm.country,
-                    city: coreForm.city,
-                    gender: coreForm.gender,
-                    date_of_birth: coreForm.dateOfBirth,
                     profile_photo_url: coreForm.profilePhotoUrl,
-                    time_zone: coreForm.timeZone,
+                    profile: {
+                        phone: coreForm.phone,
+                        area_in_lagos: coreForm.areaInLagos || undefined,
+                        country: coreForm.country,
+                        city: coreForm.city,
+                        gender: coreForm.gender,
+                        date_of_birth: coreForm.dateOfBirth,
+                        time_zone: coreForm.timeZone,
+                    },
                 },
                 { auth: true }
             );
@@ -674,12 +712,16 @@ export default function DashboardOnboardingPage() {
             await apiPatch(
                 "/api/v1/members/me",
                 {
-                    emergency_contact_name: clubForm.emergencyContactName,
-                    emergency_contact_relationship: clubForm.emergencyContactRelationship,
-                    emergency_contact_phone: clubForm.emergencyContactPhone,
-                    medical_info: clubForm.medicalInfo,
-                    location_preference: clubForm.locationPreference,
-                    time_of_day_availability: clubForm.timeOfDayAvailability,
+                    emergency_contact: {
+                        name: clubForm.emergencyContactName,
+                        contact_relationship: clubForm.emergencyContactRelationship,
+                        phone: clubForm.emergencyContactPhone,
+                        medical_info: clubForm.medicalInfo,
+                    },
+                    availability: {
+                        preferred_locations: clubForm.locationPreference,
+                        preferred_times: clubForm.timeOfDayAvailability,
+                    },
                 },
                 { auth: true }
             );
@@ -702,10 +744,12 @@ export default function DashboardOnboardingPage() {
             await apiPatch(
                 "/api/v1/members/me",
                 {
-                    swim_level: swimForm.swimLevel,
-                    deep_water_comfort: swimForm.deepWaterComfort,
-                    strokes: swimForm.strokes,
-                    goals_narrative: buildGoalsNarrative(swimForm.goals, swimForm.otherGoals),
+                    profile: {
+                        swim_level: swimForm.swimLevel,
+                        deep_water_comfort: swimForm.deepWaterComfort,
+                        strokes: swimForm.strokes,
+                        personal_goals: buildGoalsNarrative(swimForm.goals, swimForm.otherGoals),
+                    },
                 },
                 { auth: true }
             );
@@ -729,8 +773,12 @@ export default function DashboardOnboardingPage() {
             await apiPatch(
                 "/api/v1/members/me",
                 {
-                    availability_slots: clubReadinessForm.availabilitySlots,
-                    club_notes: clubReadinessForm.clubNotes || undefined,
+                    availability: {
+                        available_days: clubReadinessForm.availabilitySlots,
+                    },
+                    membership: {
+                        club_notes: clubReadinessForm.clubNotes || undefined,
+                    },
                 },
                 { auth: true }
             );
@@ -754,10 +802,11 @@ export default function DashboardOnboardingPage() {
             await apiPatch(
                 "/api/v1/members/me",
                 {
-                    academy_skill_assessment: academyForm.academySkillAssessment,
-                    academy_goals: academyForm.academyGoals,
-                    academy_preferred_coach_gender: academyForm.academyPreferredCoachGender,
-                    academy_lesson_preference: academyForm.academyLessonPreference,
+                    membership: {
+                        academy_goals: academyForm.academyGoals,
+                        academy_preferred_coach_gender: academyForm.academyPreferredCoachGender,
+                        academy_lesson_preference: academyForm.academyLessonPreference,
+                    },
                 },
                 { auth: true }
             );
@@ -780,8 +829,12 @@ export default function DashboardOnboardingPage() {
             await apiPatch(
                 "/api/v1/members/me",
                 {
-                    interests: signalsForm.interests,
-                    volunteer_interest: signalsForm.volunteerInterest,
+                    profile: {
+                        interests: signalsForm.interests,
+                    },
+                    preferences: {
+                        volunteer_interest: signalsForm.volunteerInterest,
+                    },
                 },
                 { auth: true }
             );
@@ -903,7 +956,7 @@ export default function DashboardOnboardingPage() {
                 </div>
             </Card>
 
-            {wantsAcademy && member?.requested_membership_tiers && member.requested_membership_tiers.length > 0 ? (
+            {wantsAcademy && member?.membership?.requested_tiers && member.membership.requested_tiers.length > 0 ? (
                 <Card className="p-4 space-y-1">
                     <p className="text-sm font-medium text-slate-900">Your selection is saved</p>
                     <p className="text-sm text-slate-600">
@@ -1122,9 +1175,15 @@ export default function DashboardOnboardingPage() {
                                 </p>
                                 <div className="flex justify-center gap-3">
                                     {showBillingCta ? (
-                                        <Link href={billingHref}>
-                                            <Button>{billingCtaLabel}</Button>
-                                        </Link>
+                                        <Button
+                                            onClick={() => {
+                                                setNavigatingToBilling(true);
+                                                router.push(billingHref);
+                                            }}
+                                            disabled={navigatingToBilling}
+                                        >
+                                            {navigatingToBilling ? "Loading..." : billingCtaLabel}
+                                        </Button>
                                     ) : (
                                         <Link href="/dashboard">
                                             <Button>Go to Dashboard</Button>

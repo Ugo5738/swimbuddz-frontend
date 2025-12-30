@@ -6,18 +6,8 @@ export type PendingCompletionStatus =
   | { status: "completed" }
   | { status: "error"; message: string };
 
-type MemberForRedirect = {
-  membership_tier?: string | null;
-  membership_tiers?: string[] | null;
-  requested_membership_tiers?: string[] | null;
-  roles?: string[] | null;
-  community_paid_until?: string | null;
-  club_paid_until?: string | null;
-  academy_paid_until?: string | null;
-
-  profile_photo_url?: string | null;
-  first_name?: string | null;
-  last_name?: string | null;
+// Nested types matching new API response structure
+type MemberProfileData = {
   phone?: string | null;
   gender?: string | null;
   date_of_birth?: string | null;
@@ -26,19 +16,45 @@ type MemberForRedirect = {
   time_zone?: string | null;
   swim_level?: string | null;
   deep_water_comfort?: string | null;
-  goals_narrative?: string | null;
+  personal_goals?: string | null;
+};
 
-  availability_slots?: string[] | null;
-  emergency_contact_name?: string | null;
-  emergency_contact_relationship?: string | null;
-  emergency_contact_phone?: string | null;
-  location_preference?: string[] | null;
-  time_of_day_availability?: string[] | null;
+type MemberEmergencyContactData = {
+  name?: string | null;
+  contact_relationship?: string | null;
+  phone?: string | null;
+};
 
+type MemberAvailabilityData = {
+  available_days?: string[] | null;
+  preferred_times?: string[] | null;
+  preferred_locations?: string[] | null;
+};
+
+type MemberMembershipData = {
+  primary_tier?: string | null;
+  active_tiers?: string[] | null;
+  requested_tiers?: string[] | null;
+  community_paid_until?: string | null;
+  club_paid_until?: string | null;
+  academy_paid_until?: string | null;
   academy_skill_assessment?: Record<string, boolean> | null;
   academy_goals?: string | null;
   academy_preferred_coach_gender?: string | null;
   academy_lesson_preference?: string | null;
+};
+
+type MemberForRedirect = {
+  roles?: string[] | null;
+  profile_photo_url?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+
+  // Nested sub-records
+  profile?: MemberProfileData | null;
+  emergency_contact?: MemberEmergencyContactData | null;
+  availability?: MemberAvailabilityData | null;
+  membership?: MemberMembershipData | null;
 };
 
 function parseDateMs(value: any): number | null {
@@ -53,16 +69,22 @@ export type PendingRegistrationPayload = {
   last_name: string;
   password: string;
 
-  phone?: string;
-  city?: string;
-  country?: string;
-  area_in_lagos?: string;
-  swim_level?: string;
-
-  membership_tier?: "community";
-  membership_tiers?: string[];
-  requested_membership_tiers?: string[];
-  community_rules_accepted?: boolean;
+  // Nested profile input
+  profile?: {
+    phone?: string;
+    city?: string;
+    country?: string;
+    area_in_lagos?: string;
+    swim_level?: string;
+  };
+  preferences?: {
+    community_rules_accepted?: boolean;
+  };
+  membership?: {
+    primary_tier?: "community";
+    active_tiers?: string[];
+    requested_tiers?: string[];
+  };
 };
 
 export async function createPendingRegistration(payload: PendingRegistrationPayload) {
@@ -107,22 +129,28 @@ export async function getPostAuthRedirectPath(): Promise<string> {
       return "/coach/apply";
     }
 
-    const communityUntilMs = parseDateMs(member.community_paid_until);
+    // Use nested membership data
+    const membership = member.membership;
+    const profile = member.profile;
+    const emergency = member.emergency_contact;
+    const availability = member.availability;
+
+    const communityUntilMs = parseDateMs(membership?.community_paid_until);
     const communityActive = communityUntilMs !== null && communityUntilMs > now;
 
-    const clubUntilMs = parseDateMs(member.club_paid_until);
+    const clubUntilMs = parseDateMs(membership?.club_paid_until);
     const clubActive = clubUntilMs !== null && clubUntilMs > now;
 
-    const academyUntilMs = parseDateMs(member.academy_paid_until);
+    const academyUntilMs = parseDateMs(membership?.academy_paid_until);
     const academyActive = academyUntilMs !== null && academyUntilMs > now;
 
-    const approvedTiers = (member.membership_tiers && member.membership_tiers.length > 0)
-      ? member.membership_tiers
-      : member.membership_tier
-        ? [member.membership_tier]
+    const approvedTiers = (membership?.active_tiers && membership.active_tiers.length > 0)
+      ? membership.active_tiers
+      : membership?.primary_tier
+        ? [membership.primary_tier]
         : ["community"];
 
-    const requestedTiers = (member.requested_membership_tiers || []).map((t) => String(t).toLowerCase());
+    const requestedTiers = (membership?.requested_tiers || []).map((t) => String(t).toLowerCase());
     const wantsAcademy = requestedTiers.includes("academy");
     const wantsClub = requestedTiers.includes("club") || wantsAcademy;
 
@@ -131,32 +159,32 @@ export async function getPostAuthRedirectPath(): Promise<string> {
 
     const hasCoreOnboarding = Boolean(
       member.profile_photo_url &&
-      member.gender &&
-      member.date_of_birth &&
-      member.phone &&
-      member.country &&
-      member.city &&
-      member.time_zone
+      profile?.gender &&
+      profile?.date_of_birth &&
+      profile?.phone &&
+      profile?.country &&
+      profile?.city &&
+      profile?.time_zone
     );
 
     const hasSafetyLogistics = Boolean(
-      member.emergency_contact_name &&
-      member.emergency_contact_relationship &&
-      member.emergency_contact_phone &&
-      member.location_preference && member.location_preference.length > 0 &&
-      member.time_of_day_availability && member.time_of_day_availability.length > 0
+      emergency?.name &&
+      emergency?.contact_relationship &&
+      emergency?.phone &&
+      availability?.preferred_locations && availability.preferred_locations.length > 0 &&
+      availability?.preferred_times && availability.preferred_times.length > 0
     );
 
     const hasSwimBackground = Boolean(
-      member.swim_level &&
-      member.deep_water_comfort &&
-      member.goals_narrative &&
-      String(member.goals_narrative).trim()
+      profile?.swim_level &&
+      profile?.deep_water_comfort &&
+      profile?.personal_goals &&
+      String(profile.personal_goals).trim()
     );
 
-    const hasClubReadiness = !clubContext || Boolean(member.availability_slots && member.availability_slots.length > 0);
+    const hasClubReadiness = !clubContext || Boolean(availability?.available_days && availability.available_days.length > 0);
 
-    const assessment = member.academy_skill_assessment;
+    const assessment = membership?.academy_skill_assessment;
     const hasAssessment =
       assessment &&
       ["canFloat", "headUnderwater", "deepWaterComfort", "canSwim25m"].some(
@@ -165,9 +193,9 @@ export async function getPostAuthRedirectPath(): Promise<string> {
 
     const hasAcademyReadiness = Boolean(
       hasAssessment &&
-      member.academy_goals &&
-      member.academy_preferred_coach_gender &&
-      member.academy_lesson_preference
+      membership?.academy_goals &&
+      membership?.academy_preferred_coach_gender &&
+      membership?.academy_lesson_preference
     );
 
     const onboardingComplete = hasCoreOnboarding && hasSafetyLogistics && hasSwimBackground && hasClubReadiness && (!academyContext || hasAcademyReadiness);

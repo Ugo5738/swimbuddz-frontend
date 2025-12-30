@@ -45,28 +45,39 @@ type MemberInfo = {
     first_name?: string;
     last_name?: string;
     profile_photo_url?: string;
-    membership_tiers?: string[];
-    membership_tier?: string;
     email?: string;
-    community_paid_until?: string | null;
-    club_paid_until?: string | null;
-    academy_paid_until?: string | null;
-    gender?: string | null;
-    date_of_birth?: string | null;
-    city?: string | null;
-    country?: string | null;
-    time_zone?: string | null;
-    swim_level?: string | null;
-    emergency_contact_name?: string | null;
-    emergency_contact_relationship?: string | null;
-    emergency_contact_phone?: string | null;
-    location_preference?: string[] | null;
-    time_of_day_availability?: string[] | null;
-    requested_membership_tiers?: string[] | null;
-    academy_skill_assessment?: Record<string, boolean> | null;
-    academy_goals?: string | null;
-    academy_preferred_coach_gender?: string | null;
-    academy_lesson_preference?: string | null;
+
+    // Nested sub-records
+    profile?: {
+        gender?: string | null;
+        date_of_birth?: string | null;
+        city?: string | null;
+        country?: string | null;
+        time_zone?: string | null;
+        swim_level?: string | null;
+    };
+    emergency_contact?: {
+        name?: string | null;
+        contact_relationship?: string | null;
+        phone?: string | null;
+    };
+    availability?: {
+        available_days?: string[] | null;
+        preferred_times?: string[] | null;
+        preferred_locations?: string[] | null;
+    };
+    membership?: {
+        primary_tier?: string | null;
+        active_tiers?: string[] | null;
+        requested_tiers?: string[] | null;
+        community_paid_until?: string | null;
+        club_paid_until?: string | null;
+        academy_paid_until?: string | null;
+        academy_skill_assessment?: Record<string, boolean> | null;
+        academy_goals?: string | null;
+        academy_preferred_coach_gender?: string | null;
+        academy_lesson_preference?: string | null;
+    };
 };
 
 const navSections: NavSection[] = [
@@ -170,13 +181,13 @@ export function MemberLayout({ children }: MemberLayoutProps) {
         return pathname?.startsWith(href);
     };
 
-    const rawTiers = member?.membership_tiers?.map(t => t.toLowerCase()) ||
-        (member?.membership_tier ? [member.membership_tier.toLowerCase()] : ["community"]);
+    const rawTiers = member?.membership?.active_tiers?.map(t => t.toLowerCase()) ||
+        (member?.membership?.primary_tier ? [member.membership.primary_tier.toLowerCase()] : ["community"]);
 
     const now = Date.now();
-    const clubActive = Boolean(member?.club_paid_until && Date.parse(String(member.club_paid_until)) > now);
-    const academyActive = Boolean(member?.academy_paid_until && Date.parse(String(member.academy_paid_until)) > now);
-    const communityActive = Boolean(member?.community_paid_until && Date.parse(String(member.community_paid_until)) > now);
+    const clubActive = Boolean(member?.membership?.club_paid_until && Date.parse(String(member.membership.club_paid_until)) > now);
+    const academyActive = Boolean(member?.membership?.academy_paid_until && Date.parse(String(member.membership.academy_paid_until)) > now);
+    const communityActive = Boolean(member?.membership?.community_paid_until && Date.parse(String(member.membership.community_paid_until)) > now);
 
     const tierSet = new Set(rawTiers);
     if (clubActive) {
@@ -194,7 +205,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
 
     const memberTiers = Array.from(tierSet);
 
-    const requestedTiers = (member?.requested_membership_tiers || []).map((t) => String(t).toLowerCase());
+    const requestedTiers = (member?.membership?.requested_tiers || []).map((t) => String(t).toLowerCase());
     const filteredRequests = requestedTiers.filter(
         (tier) => !(memberTiers.includes(tier) || (tier === "club" && clubActive) || (tier === "academy" && academyActive))
     );
@@ -213,23 +224,23 @@ export function MemberLayout({ children }: MemberLayoutProps) {
                     ? "Club Member"
                     : "Community Member";
 
-    const needsProfileBasics = !member?.profile_photo_url || !member?.gender || !member?.date_of_birth;
+    const needsProfileBasics = !member?.profile_photo_url || !member?.profile?.gender || !member?.profile?.date_of_birth;
     const needsProfileCore =
         needsProfileBasics ||
-        !member?.country ||
-        !member?.city ||
-        !member?.time_zone ||
-        !member?.swim_level;
+        !member?.profile?.country ||
+        !member?.profile?.city ||
+        !member?.profile?.time_zone ||
+        !member?.profile?.swim_level;
 
     const needsClubReadiness =
         (wantsClub || memberTiers.includes("club") || memberTiers.includes("academy")) &&
-        (!member?.emergency_contact_name ||
-            !member?.emergency_contact_relationship ||
-            !member?.emergency_contact_phone ||
-            !(member?.location_preference && member.location_preference.length > 0) ||
-            !(member?.time_of_day_availability && member.time_of_day_availability.length > 0));
+        (!member?.emergency_contact?.name ||
+            !member?.emergency_contact?.contact_relationship ||
+            !member?.emergency_contact?.phone ||
+            !(member?.availability?.preferred_locations && member.availability.preferred_locations.length > 0) ||
+            !(member?.availability?.preferred_times && member.availability.preferred_times.length > 0));
 
-    const assessment = member?.academy_skill_assessment;
+    const assessment = member?.membership?.academy_skill_assessment;
     const hasAssessment =
         assessment &&
         ["canFloat", "headUnderwater", "deepWaterComfort", "canSwim25m"].some(
@@ -238,9 +249,9 @@ export function MemberLayout({ children }: MemberLayoutProps) {
     const needsAcademyReadiness =
         (wantsAcademy || memberTiers.includes("academy")) &&
         (!hasAssessment ||
-            !member?.academy_goals ||
-            !member?.academy_preferred_coach_gender ||
-            !member?.academy_lesson_preference);
+            !member?.membership?.academy_goals ||
+            !member?.membership?.academy_preferred_coach_gender ||
+            !member?.membership?.academy_lesson_preference);
 
     const needsOnboarding = !member || needsProfileCore || needsClubReadiness || needsAcademyReadiness;
 

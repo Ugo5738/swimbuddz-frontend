@@ -104,8 +104,8 @@ async function getMembership(): Promise<"community" | "club" | "academy"> {
     const profile = await apiGet<any>("/api/v1/members/me", { auth: true });
     if (profile) {
       const tier =
-        profile.membership_tier ||
-        (profile.membership_tiers && profile.membership_tiers[0]) ||
+        profile.membership?.primary_tier ||
+        (profile.membership?.active_tiers && profile.membership.active_tiers[0]) ||
         "community";
       return (tier as string).toLowerCase() as "community" | "club" | "academy";
     }

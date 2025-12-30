@@ -147,7 +147,7 @@ export async function middleware(request: NextRequest) {
                 }
 
                 const now = Date.now();
-                const communityPaidUntilMs = parseDateMs(member.community_paid_until);
+                const communityPaidUntilMs = parseDateMs(member.membership?.community_paid_until);
                 const communityActive = communityPaidUntilMs !== null && communityPaidUntilMs > now;
 
                 // Community activation paywall: allow dashboard/profile, block other member routes.
@@ -167,13 +167,13 @@ export async function middleware(request: NextRequest) {
                 );
 
                 if (protectedRoute) {
-                    // Determine effective tier based on active payments.
-                    const academyUntilMs = parseDateMs(member.academy_paid_until);
-                    const clubUntilMs = parseDateMs(member.club_paid_until);
+                    // Determine effective tier based on active payments using nested membership structure.
+                    const academyUntilMs = parseDateMs(member.membership?.academy_paid_until);
+                    const clubUntilMs = parseDateMs(member.membership?.club_paid_until);
 
-                    const approvedTiers: string[] = (member.membership_tiers && member.membership_tiers.length > 0)
-                        ? member.membership_tiers.map((t: string) => String(t).toLowerCase())
-                        : (member.membership_tier ? [String(member.membership_tier).toLowerCase()] : ["community"]);
+                    const approvedTiers: string[] = (member.membership?.active_tiers && member.membership.active_tiers.length > 0)
+                        ? member.membership.active_tiers.map((t: string) => String(t).toLowerCase())
+                        : (member.membership?.primary_tier ? [String(member.membership.primary_tier).toLowerCase()] : ["community"]);
 
                     const academyApproved = approvedTiers.includes("academy");
                     const clubApproved = approvedTiers.includes("club");
@@ -186,7 +186,7 @@ export async function middleware(request: NextRequest) {
 
                     if (!allowedTiers.includes(effectiveTier)) {
                         // If an upgrade is already requested, avoid looping users back into upgrade flow.
-                        const requestedTiers: string[] = member.requested_membership_tiers || [];
+                        const requestedTiers: string[] = member.membership?.requested_tiers || [];
                         const requiredTier = allowedTiers.includes("academy") ? "academy" : "club";
                         if (requestedTiers.includes(requiredTier)) {
                             return NextResponse.redirect(

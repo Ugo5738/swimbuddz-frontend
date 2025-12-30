@@ -38,7 +38,7 @@ export default function MembershipPage() {
         <ol className="space-y-2 text-sm text-slate-700">
           <li>1) Confirm email → log in</li>
           <li>2) We’ll take you to your next step on your dashboard</li>
-          <li>3) Activate Community (₦5,000/year) to unlock member features</li>
+          <li>3) Activate Community (₦20,000/year) to unlock member features</li>
           <li>4) Complete onboarding / readiness checklist</li>
           <li>5) Request upgrade</li>
           <li>6) Pay when you activate Club or enroll in an Academy cohort</li>
@@ -52,7 +52,7 @@ export default function MembershipPage() {
         <h2 className="text-lg font-semibold text-slate-900">Payments and tier behavior</h2>
         <div className="space-y-3 text-sm text-slate-700">
           <p>
-            <span className="font-semibold">Community</span> is annual (₦5,000/year) and unlocks member access.
+            <span className="font-semibold">Community</span> is annual (₦20,000/year) and unlocks member access.
           </p>
           <p>
             <span className="font-semibold">Club</span> is subscription-based. If you stop paying, Club access pauses and you fall back to Community (while your Community membership is still active).

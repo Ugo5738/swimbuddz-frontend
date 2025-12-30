@@ -14,17 +14,27 @@ import { toast } from "sonner";
 type Member = {
     id?: string | null;
     email?: string | null;
-    community_paid_until?: string | null;
-    club_paid_until?: string | null;
-    membership_tier?: string | null;
-    membership_tiers?: string[] | null;
-    requested_membership_tiers?: string[] | null;
-    emergency_contact_name?: string | null;
-    emergency_contact_relationship?: string | null;
-    emergency_contact_phone?: string | null;
-    location_preference?: string[] | null;
-    time_of_day_availability?: string[] | null;
-    availability_slots?: string[] | null;
+    // Nested membership data
+    membership?: {
+        community_paid_until?: string | null;
+        club_paid_until?: string | null;
+        active_tiers?: string[] | null;
+        requested_tiers?: string[] | null;
+        primary_tier?: string | null;
+        pending_payment_reference?: string | null;
+    } | null;
+    // Nested emergency contact
+    emergency_contact?: {
+        name?: string | null;
+        contact_relationship?: string | null;
+        phone?: string | null;
+    } | null;
+    // Nested availability
+    availability?: {
+        preferred_locations?: string[] | null;
+        preferred_times?: string[] | null;
+        available_days?: string[] | null;
+    } | null;
 };
 
 type PaymentIntent = {
@@ -46,6 +56,12 @@ type PaymentRecord = {
     paid_at?: string | null;
     entitlement_applied_at?: string | null;
     entitlement_error?: string | null;
+    payment_metadata?: {
+        paystack?: {
+            authorization_url?: string;
+            access_code?: string;
+        };
+    } | null;
 };
 
 function parseDateMs(value: any): number | null {
@@ -78,9 +94,11 @@ export default function BillingPage() {
     const [communityIntent, setCommunityIntent] = useState<PaymentIntent | null>(null);
     const [clubIntent, setClubIntent] = useState<PaymentIntent | null>(null);
     const [clubActivationIntent, setClubActivationIntent] = useState<PaymentIntent | null>(null);
-    const [clubBillingCycle, setClubBillingCycle] = useState<"monthly" | "quarterly" | "biannual" | "annual">("monthly");
+    const [clubBillingCycle, setClubBillingCycle] = useState<"quarterly" | "biannual" | "annual">("quarterly");
     const [returnedPayment, setReturnedPayment] = useState<PaymentRecord | null>(null);
     const [activatingClubBundle, setActivatingClubBundle] = useState(false);
+    const [pendingPayment, setPendingPayment] = useState<PaymentRecord | null>(null);
+    const [discountCode, setDiscountCode] = useState("");
 
     const fetchMember = useCallback(async () => {
         return await apiGet<Member>("/api/v1/members/me", { auth: true });
@@ -122,28 +140,48 @@ export default function BillingPage() {
         load();
     }, [load]);
 
+    // Fetch pending payment if member has one (cross-device resumption)
+    useEffect(() => {
+        const pendingRef = member?.membership?.pending_payment_reference;
+        if (!pendingRef) {
+            setPendingPayment(null);
+            return;
+        }
+        // Fetch payment details
+        const fetchPending = async () => {
+            try {
+                const payments = await apiGet<PaymentRecord[]>("/api/v1/payments/me", { auth: true });
+                const match = payments.find((p) => p.reference === pendingRef && p.status === "pending");
+                setPendingPayment(match || null);
+            } catch {
+                setPendingPayment(null);
+            }
+        };
+        fetchPending();
+    }, [member?.membership?.pending_payment_reference]);
+
     const now = Date.now();
     const communityActive = useMemo(() => {
-        const until = parseDateMs(member?.community_paid_until);
+        const until = parseDateMs(member?.membership?.community_paid_until);
         return until !== null && until > now;
     }, [member, now]);
 
     const clubActive = useMemo(() => {
-        const until = parseDateMs(member?.club_paid_until);
+        const until = parseDateMs(member?.membership?.club_paid_until);
         return until !== null && until > now;
     }, [member, now]);
 
     const approvedTiers = useMemo(() => {
-        const tiers = (member?.membership_tiers && member.membership_tiers.length > 0)
-            ? member.membership_tiers
-            : member?.membership_tier
-                ? [member.membership_tier]
+        const tiers = (member?.membership?.active_tiers && member.membership.active_tiers.length > 0)
+            ? member.membership.active_tiers
+            : member?.membership?.primary_tier
+                ? [member.membership.primary_tier]
                 : ["community"];
         return tiers.map((t) => String(t).toLowerCase());
     }, [member]);
 
     const requestedTiers = useMemo(
-        () => (member?.requested_membership_tiers || []).map((t) => String(t).toLowerCase()),
+        () => (member?.membership?.requested_tiers || []).map((t) => String(t).toLowerCase()),
         [member]
     );
     const wantsAcademy = requestedTiers.includes("academy");
@@ -161,16 +199,16 @@ export default function BillingPage() {
     const clubReadinessComplete = useMemo(() => {
         if (!member) return false;
         const hasSafetyLogistics = Boolean(
-            member.emergency_contact_name &&
-            member.emergency_contact_relationship &&
-            member.emergency_contact_phone &&
-            member.location_preference &&
-            member.location_preference.length > 0 &&
-            member.time_of_day_availability &&
-            member.time_of_day_availability.length > 0
+            member.emergency_contact?.name &&
+            member.emergency_contact?.contact_relationship &&
+            member.emergency_contact?.phone &&
+            member.availability?.preferred_locations &&
+            member.availability.preferred_locations.length > 0 &&
+            member.availability?.preferred_times &&
+            member.availability.preferred_times.length > 0
         );
         const hasAvailability = Boolean(
-            member.availability_slots && member.availability_slots.length > 0
+            member.availability?.available_days && member.availability.available_days.length > 0
         );
         return hasSafetyLogistics && hasAvailability;
     }, [member]);
@@ -178,16 +216,16 @@ export default function BillingPage() {
     const missingClubRequirements = useMemo(() => {
         if (!member) return [];
         const missing: string[] = [];
-        if (!member.emergency_contact_name || !member.emergency_contact_relationship || !member.emergency_contact_phone) {
+        if (!member.emergency_contact?.name || !member.emergency_contact?.contact_relationship || !member.emergency_contact?.phone) {
             missing.push("Emergency contact");
         }
-        if (!member.location_preference || member.location_preference.length === 0) {
+        if (!member.availability?.preferred_locations || member.availability.preferred_locations.length === 0) {
             missing.push("Preferred locations");
         }
-        if (!member.time_of_day_availability || member.time_of_day_availability.length === 0) {
+        if (!member.availability?.preferred_times || member.availability.preferred_times.length === 0) {
             missing.push("Time of day availability");
         }
-        if (!member.availability_slots || member.availability_slots.length === 0) {
+        if (!member.availability?.available_days || member.availability.available_days.length === 0) {
             missing.push("Weekly availability");
         }
         return missing;
@@ -204,9 +242,8 @@ export default function BillingPage() {
     const showCommunityActivationCheckout = effectiveActivationMode === "community" && !communityActive;
     const showActivationCheckout = showClubActivationCheckout || showCommunityActivationCheckout;
 
-    const communityFee = 5000;
+    const communityFee = 20000;
     const clubPricing: Record<typeof clubBillingCycle, number> = {
-        monthly: 15000,
         quarterly: 42500,
         biannual: 80000,
         annual: 150000,
@@ -245,7 +282,7 @@ export default function BillingPage() {
         try {
             const intent = await apiPost<PaymentIntent>(
                 "/api/v1/payments/intents",
-                { purpose: "community_annual", years: 1, currency: "NGN" },
+                { purpose: "community", years: 1, currency: "NGN", discount_code: discountCode || undefined },
                 { auth: true }
             );
             setCommunityIntent(intent);
@@ -269,7 +306,7 @@ export default function BillingPage() {
         try {
             const intent = await apiPost<PaymentIntent>(
                 "/api/v1/payments/intents",
-                { purpose: "club_monthly", club_billing_cycle: clubBillingCycle, months: 1, currency: "NGN" },
+                { purpose: "club", club_billing_cycle: clubBillingCycle, months: 1, currency: "NGN", discount_code: discountCode || undefined },
                 { auth: true }
             );
             setClubIntent(intent);
@@ -291,7 +328,7 @@ export default function BillingPage() {
         try {
             const intent = await apiPost<PaymentIntent>(
                 "/api/v1/payments/intents",
-                { purpose: "club_activation", years: 1, club_billing_cycle: clubBillingCycle, months: 1, currency: "NGN" },
+                { purpose: "club_bundle", years: 1, club_billing_cycle: clubBillingCycle, months: 1, currency: "NGN", discount_code: discountCode || undefined },
                 { auth: true }
             );
             setClubActivationIntent(intent);
@@ -410,13 +447,11 @@ export default function BillingPage() {
         );
     }
 
-    const clubCycleLabel = clubBillingCycle === "monthly"
-        ? "Monthly"
-        : clubBillingCycle === "quarterly"
-            ? "Quarterly"
-            : clubBillingCycle === "biannual"
-                ? "Bi-annual"
-                : "Annual";
+    const clubCycleLabel = clubBillingCycle === "quarterly"
+        ? "Quarterly"
+        : clubBillingCycle === "biannual"
+            ? "Bi-annual"
+            : "Annual";
     const formattedCommunityFee = `₦${communityFee.toLocaleString("en-NG")}`;
     const formattedClubFee = `₦${clubFee.toLocaleString("en-NG")}`;
     const formattedTotalDue = `₦${totalDueToday.toLocaleString("en-NG")}`;
@@ -435,6 +470,43 @@ export default function BillingPage() {
             </header>
 
             {paystackStatusAlert}
+
+            {/* Cross-device pending payment resume */}
+            {pendingPayment && !returnedPayment && (
+                <Card className="p-6 space-y-4 border-amber-200 bg-amber-50">
+                    <div>
+                        <h2 className="text-lg font-semibold text-amber-900">Resume Payment</h2>
+                        <p className="text-sm text-amber-700 mt-1">
+                            You have an incomplete payment from a previous session.
+                        </p>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                        <Button
+                            onClick={() => verifyPaystackPayment(pendingPayment.reference)}
+                            disabled={verifyingPayment}
+                        >
+                            {verifyingPayment ? "Verifying..." : "Check Payment Status"}
+                        </Button>
+                        <Button
+                            variant="secondary"
+                            onClick={() => {
+                                // Try to get checkout URL from payment metadata
+                                const checkoutUrl = pendingPayment.payment_metadata?.paystack?.authorization_url;
+                                if (checkoutUrl) {
+                                    window.location.href = checkoutUrl;
+                                } else {
+                                    toast.error("Unable to resume payment. Please start a new one.");
+                                }
+                            }}
+                        >
+                            Resume Payment
+                        </Button>
+                    </div>
+                    <p className="text-xs text-amber-600">
+                        Reference: <span className="font-mono">{pendingPayment.reference}</span>
+                    </p>
+                </Card>
+            )}
 
             {showClubIntentNotice ? (
                 <Alert variant="info" title="Club activation pending">
@@ -511,7 +583,6 @@ export default function BillingPage() {
 
                         <div className="flex flex-wrap gap-2">
                             {[
-                                { key: "monthly" as const, label: "Monthly (₦15,000)" },
                                 { key: "quarterly" as const, label: "Quarterly (₦42,500)" },
                                 { key: "biannual" as const, label: "Bi-annual (₦80,000)" },
                                 { key: "annual" as const, label: "Annual (₦150,000)" },
@@ -573,9 +644,41 @@ export default function BillingPage() {
                         </Alert>
                     )}
 
+                    {/* Discount Code Input */}
+                    <Card className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-100">
+                        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                            <div className="flex-1">
+                                <label htmlFor="discount-code" className="block text-sm font-medium text-purple-900 mb-1">
+                                    Have a discount code?
+                                </label>
+                                <input
+                                    id="discount-code"
+                                    type="text"
+                                    value={discountCode}
+                                    onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                                    placeholder="Enter code (e.g., SUMMER25)"
+                                    className="w-full px-3 py-2 border border-purple-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent uppercase"
+                                />
+                            </div>
+                            {discountCode && (
+                                <button
+                                    onClick={() => setDiscountCode("")}
+                                    className="text-sm text-purple-600 hover:text-purple-800"
+                                >
+                                    Clear
+                                </button>
+                            )}
+                        </div>
+                        {discountCode && (
+                            <p className="mt-2 text-xs text-purple-700">
+                                Discount code "{discountCode}" will be applied at checkout.
+                            </p>
+                        )}
+                    </Card>
+
                     <Card className="p-6 space-y-4">
                         <div>
-                            <h2 className="text-lg font-semibold text-slate-900">Community (₦5,000 / year)</h2>
+                            <h2 className="text-lg font-semibold text-slate-900">Community (₦20,000 / year)</h2>
                             <p className="text-sm text-slate-600 mt-1">
                                 This commitment fee keeps SwimBuddz high-quality and unlocks member features.
                             </p>
@@ -592,9 +695,9 @@ export default function BillingPage() {
                                 <dt className="text-slate-600">Valid until:</dt>
                                 <dd className="col-span-2 font-medium text-slate-900">
                                     {communityActive
-                                        ? formatDate(member?.community_paid_until || null)
-                                        : member?.community_paid_until
-                                            ? formatDate(member?.community_paid_until)
+                                        ? formatDate(member?.membership?.community_paid_until || null)
+                                        : member?.membership?.community_paid_until
+                                            ? formatDate(member?.membership?.community_paid_until)
                                             : "After activation"}
                                 </dd>
                             </div>
@@ -603,7 +706,7 @@ export default function BillingPage() {
                         {!communityActive && (
                             <div className="flex flex-wrap gap-3">
                                 <Button onClick={activateCommunity} disabled={activatingCommunity}>
-                                    {activatingCommunity ? "Processing..." : "Pay for Community (₦5,000)"}
+                                    {activatingCommunity ? "Processing..." : "Pay for Community (₦20,000)"}
                                 </Button>
                             </div>
                         )}
@@ -657,9 +760,9 @@ export default function BillingPage() {
                                     <dt className="text-slate-600">Valid until:</dt>
                                     <dd className="col-span-2 font-medium text-slate-900">
                                         {clubActive
-                                            ? formatDate(member?.club_paid_until || null)
-                                            : member?.club_paid_until
-                                                ? formatDate(member?.club_paid_until)
+                                            ? formatDate(member?.membership?.club_paid_until || null)
+                                            : member?.membership?.club_paid_until
+                                                ? formatDate(member?.membership?.club_paid_until)
                                                 : "After activation"}
                                     </dd>
                                 </div>
@@ -682,7 +785,6 @@ export default function BillingPage() {
                                 <div className="space-y-3">
                                     <div className="flex flex-wrap gap-2">
                                         {[
-                                            { key: "monthly" as const, label: "Monthly (₦15,000)" },
                                             { key: "quarterly" as const, label: "Quarterly (₦42,500)" },
                                             { key: "biannual" as const, label: "Bi-annual (₦80,000)" },
                                             { key: "annual" as const, label: "Annual (₦150,000)" },
@@ -692,8 +794,8 @@ export default function BillingPage() {
                                                 type="button"
                                                 onClick={() => setClubBillingCycle(opt.key)}
                                                 className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${clubBillingCycle === opt.key
-                                                        ? "bg-cyan-50 border-cyan-500 text-cyan-700"
-                                                        : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                                                    ? "bg-cyan-50 border-cyan-500 text-cyan-700"
+                                                    : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                                                     }`}
                                             >
                                                 {opt.label}

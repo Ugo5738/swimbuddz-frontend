@@ -160,7 +160,7 @@ function RegistrationSuccessContent() {
                             2
                         </div>
                         <div>
-                            <h3 className="font-medium text-slate-900">Activate Community (₦5,000 / year)</h3>
+                            <h3 className="font-medium text-slate-900">Activate Community (₦20,000 / year)</h3>
                             <p className="mt-1 text-sm text-slate-600">
                                 After you confirm your email and log in, you'll be prompted to activate your annual Community membership to unlock member features.
                             </p>

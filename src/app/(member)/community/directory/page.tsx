@@ -35,12 +35,33 @@ export default function MemberDirectoryPage() {
 
     const fetchMembers = async () => {
         try {
-            // TODO: Update API endpoint to filter by show_in_directory=true
-            const response = await fetch(`${apiEndpoints.members}/`);
+            // Fetch members with auth - uses /api/v1/members/ which requires auth
+            const { getCurrentAccessToken } = await import("@/lib/auth");
+            const token = typeof window !== "undefined"
+                ? await getCurrentAccessToken()
+                : null;
+
+            const headers: HeadersInit = token
+                ? { "Authorization": `Bearer ${token}` }
+                : {};
+
+            const response = await fetch(`${apiEndpoints.members}/`, { headers });
             if (response.ok) {
                 const data = await response.json();
                 // Filter only members who opted in to directory
-                const directoryMembers = data.filter((m: any) => m.show_in_directory);
+                // show_in_directory is now in the nested profile object
+                const directoryMembers = data
+                    .filter((m: any) => m.profile?.show_in_directory)
+                    .map((m: any) => ({
+                        id: m.id,
+                        first_name: m.first_name,
+                        last_name: m.last_name,
+                        city: m.profile?.city || "",
+                        country: m.profile?.country || "",
+                        swim_level: m.profile?.swim_level || "",
+                        interest_tags: m.profile?.interest_tags || [],
+                        profile_photo_url: m.profile_photo_url,
+                    }));
                 setMembers(directoryMembers);
             }
         } catch (error) {

@@ -84,8 +84,34 @@ export default function StudentAcademyPage() {
     const handleEnroll = async (cohortId: string) => {
         setEnrollingId(cohortId);
         try {
-            await AcademyApi.selfEnroll({ cohort_id: cohortId });
-            toast.success("Successfully enrolled!");
+            // Step 1: Create enrollment
+            const enrollment = await AcademyApi.selfEnroll({ cohort_id: cohortId });
+
+            // Step 2: Create payment intent for academy cohort
+            const { apiPost } = await import("@/lib/api");
+            const paymentIntent = await apiPost<{
+                reference: string;
+                checkout_url?: string;
+                amount: number;
+            }>(
+                "/api/v1/payments/intents",
+                {
+                    purpose: "academy_cohort",
+                    enrollment_id: enrollment.id,
+                    currency: "NGN"
+                },
+                { auth: true }
+            );
+
+            // Step 3: Redirect to payment if checkout URL exists
+            if (paymentIntent.checkout_url) {
+                toast.success(`Enrollment created! Redirecting to payment (₦${paymentIntent.amount.toLocaleString()})...`);
+                window.location.href = paymentIntent.checkout_url;
+                return;
+            }
+
+            // No checkout URL - show success and reload
+            toast.success("Enrollment request submitted! Payment reference: " + paymentIntent.reference);
             await loadData();
         } catch (error) {
             console.error("Enrollment failed", error);
@@ -287,7 +313,7 @@ export default function StudentAcademyPage() {
                                         <div className="flex items-center justify-between">
                                             <span className="text-slate-500">Price:</span>
                                             <span className="font-medium text-slate-900">
-                                                {cohort.program?.price ? `$${cohort.program.price}` : 'Free'}
+                                                {cohort.program?.price ? `₦${cohort.program.price.toLocaleString()}` : 'Free'}
                                             </span>
                                         </div>
                                         <div className="flex items-center justify-between">

@@ -9,8 +9,8 @@ import type { components } from "./api-types";
 
 // Re-export generated types for convenience
 export type Member = components["schemas"]["MemberResponse"];
-export type MemberListItem = components["schemas"]["MemberListResponse"];
-export type MemberUpdate = components["schemas"]["MemberUpdate"];
+export type MemberListItem = components["schemas"]["MemberResponse"]; // List uses same type
+export type MemberUpdate = Partial<Member>; // Define locally since not in generated types
 export type CoachProfile = components["schemas"]["CoachProfileResponse"];
 
 export const MembersApi = {

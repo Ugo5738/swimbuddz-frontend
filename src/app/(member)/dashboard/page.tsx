@@ -48,54 +48,61 @@ export default function MemberDashboardPage() {
 
     const firstName = member?.first_name || "Member";
     const now = Date.now();
-    const communityPaidUntilMs = member?.community_paid_until ? Date.parse(String(member.community_paid_until)) : NaN;
+
+    // Extract nested data with safe defaults
+    const membership = member?.membership || {};
+    const profile = member?.profile || {};
+    const emergency = member?.emergency_contact || {};
+    const availability = member?.availability || {};
+
+    const communityPaidUntilMs = membership.community_paid_until ? Date.parse(String(membership.community_paid_until)) : NaN;
     const communityActive = Number.isFinite(communityPaidUntilMs) && communityPaidUntilMs > now;
-    const clubPaidUntilMs = member?.club_paid_until ? Date.parse(String(member.club_paid_until)) : NaN;
+    const clubPaidUntilMs = membership.club_paid_until ? Date.parse(String(membership.club_paid_until)) : NaN;
     const clubActive = Number.isFinite(clubPaidUntilMs) && clubPaidUntilMs > now;
-    const academyPaidUntilMs = member?.academy_paid_until ? Date.parse(String(member.academy_paid_until)) : NaN;
+    const academyPaidUntilMs = membership.academy_paid_until ? Date.parse(String(membership.academy_paid_until)) : NaN;
     const academyActive = Number.isFinite(academyPaidUntilMs) && academyPaidUntilMs > now;
 
-    const memberTiers = member?.membership_tiers?.map((t: string) => t.toLowerCase()) ||
-        (member?.membership_tier ? [member.membership_tier.toLowerCase()] : ["community"]);
+    const memberTiers = membership.active_tiers?.map((t: string) => t.toLowerCase()) ||
+        (membership.primary_tier ? [membership.primary_tier.toLowerCase()] : ["community"]);
 
-    const requestedTiers: string[] = (member?.requested_membership_tiers || []).map((t: any) => String(t).toLowerCase());
+    const requestedTiers: string[] = (membership.requested_tiers || []).map((t: any) => String(t).toLowerCase());
     const wantsAcademy = requestedTiers.includes("academy");
     const wantsClub = requestedTiers.includes("club") || wantsAcademy;
 
     const clubContext = wantsClub || memberTiers.includes("club") || memberTiers.includes("academy");
     const academyContext = wantsAcademy || memberTiers.includes("academy");
 
-    const hasProfileBasics = Boolean(member?.profile_photo_url && member?.gender && member?.date_of_birth);
-    const hasCoreProfile = Boolean(member?.phone && member?.country && member?.city && member?.time_zone);
+    const hasProfileBasics = Boolean(member?.profile_photo_url && profile.gender && profile.date_of_birth);
+    const hasCoreProfile = Boolean(profile.phone && profile.country && profile.city && profile.time_zone);
     const hasSwimBackground = Boolean(
-        member?.swim_level &&
-        member?.deep_water_comfort &&
-        member?.goals_narrative &&
-        String(member?.goals_narrative).trim()
+        profile.swim_level &&
+        profile.deep_water_comfort &&
+        profile.personal_goals &&
+        String(profile.personal_goals).trim()
     );
     const hasSafetyLogistics = Boolean(
-        member?.emergency_contact_name &&
-        member?.emergency_contact_relationship &&
-        member?.emergency_contact_phone &&
-        member?.location_preference &&
-        member.location_preference.length > 0 &&
-        member?.time_of_day_availability &&
-        member.time_of_day_availability.length > 0
+        emergency.name &&
+        emergency.contact_relationship &&
+        emergency.phone &&
+        availability.preferred_locations &&
+        availability.preferred_locations.length > 0 &&
+        availability.preferred_times &&
+        availability.preferred_times.length > 0
     );
-    const hasClubAvailability = Boolean(member?.availability_slots && member.availability_slots.length > 0);
+    const hasClubAvailability = Boolean(availability.available_days && availability.available_days.length > 0);
     const hasClubReadiness = !clubContext || hasClubAvailability;
 
     const needsProfileCore =
         !hasProfileBasics ||
-        !member?.country ||
-        !member?.city ||
-        !member?.time_zone ||
-        !member?.swim_level ||
+        !profile.country ||
+        !profile.city ||
+        !profile.time_zone ||
+        !profile.swim_level ||
         !hasSafetyLogistics ||
         !hasSwimBackground;
     const needsClubReadiness = clubContext && !hasClubAvailability;
 
-    const assessment = member?.academy_skill_assessment;
+    const assessment = membership.academy_skill_assessment;
     const hasAssessment =
         assessment &&
         ["canFloat", "headUnderwater", "deepWaterComfort", "canSwim25m"].some(
@@ -104,9 +111,9 @@ export default function MemberDashboardPage() {
     const needsAcademyReadiness =
         academyContext &&
         (!hasAssessment ||
-            !member?.academy_goals ||
-            !member?.academy_preferred_coach_gender ||
-            !member?.academy_lesson_preference);
+            !membership.academy_goals ||
+            !membership.academy_preferred_coach_gender ||
+            !membership.academy_lesson_preference);
     const hasAcademyReadiness = !academyContext || !needsAcademyReadiness;
 
     const hasCoreOnboarding = hasProfileBasics && hasCoreProfile;
@@ -314,7 +321,7 @@ export default function MemberDashboardPage() {
                         <div className="flex-1">
                             <h3 className="font-semibold text-slate-900">Activate Your Community Membership</h3>
                             <p className="text-sm text-slate-600 mt-1">
-                                Pay ₦5,000/year to unlock the member directory, events, and community features.
+                                Pay ₦20,000/year to unlock the member directory, events, and community features.
                             </p>
                         </div>
                         <Link href="/dashboard/billing">

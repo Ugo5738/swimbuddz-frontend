@@ -199,122 +199,146 @@ type MemberResponse = {
   email: string;
   first_name: string;
   last_name: string;
-  phone: string;
-  profile_photo_url?: string;
-  city: string;
-  country: string;
-  time_zone: string;
   is_active: boolean;
   registration_complete: boolean;
-  swim_level: string;
-  deep_water_comfort: string;
-  strokes: string[];
-  interests: string[];
-  goals_narrative: string;
-  goals_other: string;
+  profile_photo_url?: string;
 
-  availability_slots: string[];
-  time_of_day_availability: string[];
-  location_preference: string[];
-  location_preference_other: string;
-  travel_flexibility: string;
-  facility_access: string[];
-  facility_access_other: string;
-  equipment_needs: string[];
-  equipment_needs_other: string;
-  travel_notes: string;
-  emergency_contact_name: string;
-  emergency_contact_relationship: string;
-  emergency_contact_phone: string;
-  emergency_contact_region: string;
-  medical_info: string;
-  safety_notes: string;
-  volunteer_interest: string[];
-  volunteer_roles_detail: string;
-  discovery_source: string;
-  social_instagram: string;
-  social_linkedin: string;
-  social_other: string;
-  language_preference: string;
-  comms_preference: string;
-  payment_readiness: string;
-  currency_preference: string;
-  consent_photo: string;
-  membership_tier?: string; // legacy/single
-  membership_tiers: string[];
-  requested_membership_tiers?: string[];
-  academy_focus_areas?: string[];
-  academy_focus?: string;
-  payment_notes?: string;
-  occupation?: string;
-  area_in_lagos?: string;
-  community_paid_until?: string | null;
-  club_paid_until?: string | null;
-  academy_paid_until?: string | null;
+  // Nested profile data
+  profile?: {
+    phone?: string;
+    city?: string;
+    country?: string;
+    time_zone?: string;
+    gender?: string;
+    occupation?: string;
+    area_in_lagos?: string;
+    swim_level?: string;
+    deep_water_comfort?: string;
+    strokes?: string[];
+    interests?: string[];
+    personal_goals?: string;
+    how_found_us?: string;
+    social_instagram?: string;
+    social_linkedin?: string;
+    social_other?: string;
+    show_in_directory?: boolean;
+    interest_tags?: string[];
+  } | null;
+
+  // Nested emergency contact
+  emergency_contact?: {
+    name?: string;
+    contact_relationship?: string;
+    phone?: string;
+    region?: string;
+    medical_info?: string;
+    safety_notes?: string;
+  } | null;
+
+  // Nested availability
+  availability?: {
+    available_days?: string[];
+    preferred_times?: string[];
+    preferred_locations?: string[];
+    accessible_facilities?: string[];
+    travel_flexibility?: string;
+    equipment_needed?: string[];
+  } | null;
+
+  // Nested membership
+  membership?: {
+    primary_tier?: string;
+    active_tiers?: string[];
+    requested_tiers?: string[];
+    community_paid_until?: string | null;
+    club_paid_until?: string | null;
+    academy_paid_until?: string | null;
+    academy_focus_areas?: string[];
+    academy_goals?: string;
+  } | null;
+
+  // Nested preferences
+  preferences?: {
+    language_preference?: string;
+    comms_preference?: string;
+    payment_readiness?: string;
+    currency_preference?: string;
+    consent_photo?: string;
+    volunteer_interest?: string[];
+    volunteer_roles_detail?: string;
+    discovery_source?: string;
+  } | null;
 };
 
 function mapMemberResponseToProfile(data: MemberResponse): Profile {
   const now = Date.now();
-  const communityPaid = data.community_paid_until ? Date.parse(String(data.community_paid_until)) > now : false;
-  const clubPaid = data.club_paid_until ? Date.parse(String(data.club_paid_until)) > now : false;
-  const academyPaid = data.academy_paid_until ? Date.parse(String(data.academy_paid_until)) > now : false;
+  const communityPaid = data.membership?.community_paid_until ? Date.parse(String(data.membership.community_paid_until)) > now : false;
+  const clubPaid = data.membership?.club_paid_until ? Date.parse(String(data.membership.club_paid_until)) > now : false;
+  const academyPaid = data.membership?.academy_paid_until ? Date.parse(String(data.membership.academy_paid_until)) > now : false;
+
+  // Extract nested data with safe defaults
+  const profile = data.profile || {};
+  const emergency = data.emergency_contact || {};
+  const availability = data.availability || {};
+  const membership = data.membership || {};
+  const preferences = data.preferences || {};
 
   return {
     id: data.id,
     name: `${data.first_name} ${data.last_name}`,
     joinedAt: data.created_at,
     email: data.email,
-    phone: data.phone || "",
+    phone: profile.phone || "",
     profilePhotoUrl: data.profile_photo_url || "",
-    city: data.city || "",
-    country: data.country || "",
-    timeZone: data.time_zone || "",
+    city: profile.city || "",
+    country: profile.country || "",
+    timeZone: profile.time_zone || "",
     status: data.is_active ? "Active member" : "Inactive",
-    role: "Member", // Default role
-    swimLevel: data.swim_level || "",
-    deepWaterComfort: data.deep_water_comfort || "",
-    strokes: data.strokes || [],
-    interests: data.interests || [],
-    goalsNarrative: data.goals_narrative || "",
+    role: "Member",
+    swimLevel: profile.swim_level || "",
+    deepWaterComfort: profile.deep_water_comfort || "",
+    strokes: profile.strokes || [],
+    interests: profile.interests || [],
+    goalsNarrative: profile.personal_goals || "",
 
-    availabilitySlots: data.availability_slots || [],
-    timeOfDayAvailability: data.time_of_day_availability || [],
-    locationPreference: data.location_preference || [],
-    locationPreferenceOther: data.location_preference_other || "",
-    travelFlexibility: data.travel_flexibility || "",
-    facilityAccess: data.facility_access || [],
-    facilityAccessOther: data.facility_access_other || "",
-    equipmentNeeds: data.equipment_needs || [],
-    equipmentNeedsOther: data.equipment_needs_other || "",
-    travelNotes: data.travel_notes || "",
-    emergencyContactName: data.emergency_contact_name || "",
-    emergencyContactRelationship: data.emergency_contact_relationship || "",
-    emergencyContactPhone: data.emergency_contact_phone || "",
-    emergencyContactRegion: data.emergency_contact_region || "",
-    medicalInfo: data.medical_info || "",
-    safetyNotes: data.safety_notes || "",
-    volunteerInterest: data.volunteer_interest || [],
-    volunteerRolesDetail: data.volunteer_roles_detail || "",
-    discoverySource: data.discovery_source || "other",
-    socialInstagram: data.social_instagram || "",
-    socialLinkedIn: data.social_linkedin || "",
-    socialOther: data.social_other || "",
-    languagePreference: data.language_preference || "english",
-    commsPreference: data.comms_preference || "whatsapp",
-    paymentReadiness: data.payment_readiness || "",
-    currencyPreference: data.currency_preference || "NGN",
-    consentPhoto: data.consent_photo || "",
-    membershipTier: data.membership_tier || "community",
-    membershipTiers: data.membership_tiers && data.membership_tiers.length > 0
-      ? data.membership_tiers.map(t => t.toLowerCase())
-      : (data.membership_tier ? [data.membership_tier.toLowerCase()] : []),
-    requestedMembershipTiers: data.requested_membership_tiers || [],
-    academyFocusAreas: data.academy_focus_areas || [],
-    academyFocus: data.academy_focus || "",
-    paymentNotes: data.payment_notes || "",
+    availabilitySlots: availability.available_days || [],
+    timeOfDayAvailability: availability.preferred_times || [],
+    locationPreference: availability.preferred_locations || [],
+    locationPreferenceOther: "",
+    travelFlexibility: availability.travel_flexibility || "",
+    facilityAccess: availability.accessible_facilities || [],
+    facilityAccessOther: "",
+    equipmentNeeds: availability.equipment_needed || [],
+    equipmentNeedsOther: "",
+    travelNotes: "",
+    emergencyContactName: emergency.name || "",
+    emergencyContactRelationship: emergency.contact_relationship || "",
+    emergencyContactPhone: emergency.phone || "",
+    emergencyContactRegion: emergency.region || "",
+    medicalInfo: emergency.medical_info || "",
+    safetyNotes: emergency.safety_notes || "",
+    volunteerInterest: preferences.volunteer_interest || [],
+    volunteerRolesDetail: preferences.volunteer_roles_detail || "",
+    discoverySource: preferences.discovery_source || "other",
+    socialInstagram: profile.social_instagram || "",
+    socialLinkedIn: profile.social_linkedin || "",
+    socialOther: profile.social_other || "",
+    languagePreference: preferences.language_preference || "english",
+    commsPreference: preferences.comms_preference || "whatsapp",
+    paymentReadiness: preferences.payment_readiness || "",
+    currencyPreference: preferences.currency_preference || "NGN",
+    consentPhoto: preferences.consent_photo || "",
+    membershipTier: membership.primary_tier || "community",
+    membershipTiers: membership.active_tiers && membership.active_tiers.length > 0
+      ? membership.active_tiers.map(t => t.toLowerCase())
+      : (membership.primary_tier ? [membership.primary_tier.toLowerCase()] : []),
+    requestedMembershipTiers: membership.requested_tiers || [],
+    academyFocusAreas: membership.academy_focus_areas || [],
+    academyFocus: membership.academy_goals || "",
+    paymentNotes: "",
     communityActive: communityPaid || clubPaid || academyPaid,
-    occupation: data.occupation || "",
-    areaInLagos: data.area_in_lagos || ""
+    occupation: profile.occupation || "",
+    areaInLagos: profile.area_in_lagos || ""
   };
 }
 

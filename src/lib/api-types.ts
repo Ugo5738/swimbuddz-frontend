@@ -65,6 +65,7 @@ export interface paths {
         /**
          * Update Current Member
          * @description Update the currently authenticated member's profile.
+         *     Handles nested updates for profile, membership, preferences, etc.
          */
         patch: operations["update_current_member_members_me_patch"];
         trace?: never;
@@ -1708,7 +1709,10 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** ActivateClubRequest */
+        /**
+         * ActivateClubRequest
+         * @description Request to activate club membership.
+         */
         ActivateClubRequest: {
             /**
              * Months
@@ -1716,7 +1720,10 @@ export interface components {
              */
             months: number;
         };
-        /** ActivateCommunityRequest */
+        /**
+         * ActivateCommunityRequest
+         * @description Request to activate community membership.
+         */
         ActivateCommunityRequest: {
             /**
              * Years
@@ -1902,7 +1909,7 @@ export interface components {
         };
         /**
          * ApprovalAction
-         * @description Schema for approve/reject actions
+         * @description Schema for approve/reject actions.
          */
         ApprovalAction: {
             /** Notes */
@@ -2226,7 +2233,10 @@ export interface components {
             /** Coach Profile Photo Url */
             coach_profile_photo_url?: string | null;
         };
-        /** CoachProfileResponse */
+        /**
+         * CoachProfileResponse
+         * @description Coach-specific profile data.
+         */
         CoachProfileResponse: {
             /**
              * Id
@@ -2254,7 +2264,7 @@ export interface components {
              * Coaching Years
              * @default 0
              */
-            coaching_years: number | null;
+            coaching_years: number;
             /** Coaching Experience Summary */
             coaching_experience_summary?: string | null;
             /** Coaching Specialties */
@@ -2269,11 +2279,15 @@ export interface components {
             languages_spoken?: string[] | null;
             /** Coaching Portfolio Link */
             coaching_portfolio_link?: string | null;
+            /** Coaching Document Link */
+            coaching_document_link?: string | null;
+            /** Coaching Document File Name */
+            coaching_document_file_name?: string | null;
             /**
              * Has Cpr Training
              * @default false
              */
-            has_cpr_training: boolean | null;
+            has_cpr_training: boolean;
             /** Cpr Expiry Date */
             cpr_expiry_date?: string | null;
             /** Lifeguard Expiry Date */
@@ -2288,38 +2302,36 @@ export interface components {
              * Is Verified
              * @default false
              */
-            is_verified: boolean | null;
+            is_verified: boolean;
             /** Pools Supported */
             pools_supported?: string[] | null;
             /**
              * Can Travel Between Pools
              * @default false
              */
-            can_travel_between_pools: boolean | null;
+            can_travel_between_pools: boolean;
             /** Travel Radius Km */
             travel_radius_km?: number | null;
             /**
              * Max Swimmers Per Session
              * @default 10
              */
-            max_swimmers_per_session: number | null;
+            max_swimmers_per_session: number;
             /**
              * Max Cohorts At Once
              * @default 1
              */
-            max_cohorts_at_once: number | null;
+            max_cohorts_at_once: number;
             /**
-             * Accepts One To One
+             * Accepts One On One
              * @default true
              */
-            accepts_one_to_one: boolean | null;
+            accepts_one_on_one: boolean;
             /**
              * Accepts Group Cohorts
              * @default true
              */
-            accepts_group_cohorts: boolean | null;
-            /** Availability Notes */
-            availability_notes?: string | null;
+            accepts_group_cohorts: boolean;
             /** Availability Calendar */
             availability_calendar?: {
                 [key: string]: unknown;
@@ -2328,28 +2340,37 @@ export interface components {
              * Currency
              * @default NGN
              */
-            currency: string | null;
+            currency: string;
             /** One To One Rate Per Hour */
             one_to_one_rate_per_hour?: number | null;
             /** Group Session Rate Per Hour */
             group_session_rate_per_hour?: number | null;
             /** Academy Cohort Stipend */
             academy_cohort_stipend?: number | null;
-            /** Status */
+            /**
+             * Status
+             * @default draft
+             */
             status: string;
             /**
              * Show In Directory
              * @default false
              */
-            show_in_directory: boolean | null;
+            show_in_directory: boolean;
             /**
              * Is Featured
              * @default false
              */
-            is_featured: boolean | null;
-            /** Average Rating */
+            is_featured: boolean;
+            /**
+             * Average Rating
+             * @default 0
+             */
             average_rating: number;
-            /** Rating Count */
+            /**
+             * Rating Count
+             * @default 0
+             */
             rating_count: number;
             /**
              * Created At
@@ -2423,200 +2444,63 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
-        /** MemberCreate */
-        MemberCreate: {
-            /**
-             * Email
-             * Format: email
-             */
-            email: string;
-            /** First Name */
-            first_name: string;
-            /** Last Name */
-            last_name: string;
-            /** Phone */
-            phone?: string | null;
-            /** City */
-            city?: string | null;
-            /** Country */
-            country?: string | null;
-            /** Time Zone */
-            time_zone?: string | null;
-            /** Swim Level */
-            swim_level?: string | null;
-            /** Deep Water Comfort */
-            deep_water_comfort?: string | null;
-            /** Strokes */
-            strokes?: string[] | null;
-            /** Interests */
-            interests?: string[] | null;
-            /** Goals Narrative */
-            goals_narrative?: string | null;
-            /** Goals Other */
-            goals_other?: string | null;
-            /** Certifications */
-            certifications?: string[] | null;
-            /** Coaching Experience */
-            coaching_experience?: string | null;
-            /** Coaching Specialties */
-            coaching_specialties?: string[] | null;
-            /** Coaching Years */
-            coaching_years?: string | null;
-            /** Coaching Portfolio Link */
-            coaching_portfolio_link?: string | null;
-            /** Coaching Document Link */
-            coaching_document_link?: string | null;
-            /** Coaching Document File Name */
-            coaching_document_file_name?: string | null;
-            /** Availability Slots */
-            availability_slots?: string[] | null;
-            /** Time Of Day Availability */
-            time_of_day_availability?: string[] | null;
-            /** Location Preference */
-            location_preference?: string[] | null;
-            /** Location Preference Other */
-            location_preference_other?: string | null;
+        /**
+         * MemberAvailabilityInput
+         * @description Input for creating/updating availability.
+         */
+        MemberAvailabilityInput: {
+            /** Available Days */
+            available_days?: string[] | null;
+            /** Preferred Times */
+            preferred_times?: string[] | null;
+            /** Preferred Locations */
+            preferred_locations?: string[] | null;
+            /** Accessible Facilities */
+            accessible_facilities?: string[] | null;
             /** Travel Flexibility */
             travel_flexibility?: string | null;
-            /** Facility Access */
-            facility_access?: string[] | null;
-            /** Facility Access Other */
-            facility_access_other?: string | null;
-            /** Equipment Needs */
-            equipment_needs?: string[] | null;
-            /** Equipment Needs Other */
-            equipment_needs_other?: string | null;
-            /** Travel Notes */
-            travel_notes?: string | null;
-            /** Club Notes */
-            club_notes?: string | null;
-            /** Emergency Contact Name */
-            emergency_contact_name?: string | null;
-            /** Emergency Contact Relationship */
-            emergency_contact_relationship?: string | null;
-            /** Emergency Contact Phone */
-            emergency_contact_phone?: string | null;
-            /** Emergency Contact Region */
-            emergency_contact_region?: string | null;
-            /** Medical Info */
-            medical_info?: string | null;
-            /** Safety Notes */
-            safety_notes?: string | null;
-            /** Volunteer Interest */
-            volunteer_interest?: string[] | null;
-            /** Volunteer Roles Detail */
-            volunteer_roles_detail?: string | null;
-            /** Discovery Source */
-            discovery_source?: string | null;
-            /** Social Instagram */
-            social_instagram?: string | null;
-            /** Social Linkedin */
-            social_linkedin?: string | null;
-            /** Social Other */
-            social_other?: string | null;
-            /** Language Preference */
-            language_preference?: string | null;
-            /** Comms Preference */
-            comms_preference?: string | null;
-            /** Payment Readiness */
-            payment_readiness?: string | null;
-            /** Currency Preference */
-            currency_preference?: string | null;
-            /** Consent Photo */
-            consent_photo?: string | null;
-            /** Membership Tiers */
-            membership_tiers?: string[] | null;
-            /** Requested Membership Tiers */
-            requested_membership_tiers?: string[] | null;
-            /** Roles */
-            roles?: string[] | null;
-            /** Academy Focus Areas */
-            academy_focus_areas?: string[] | null;
-            /** Academy Focus */
-            academy_focus?: string | null;
-            /** Payment Notes */
-            payment_notes?: string | null;
+            /** Equipment Needed */
+            equipment_needed?: string[] | null;
+        };
+        /**
+         * MemberAvailabilityResponse
+         * @description Scheduling and location preferences.
+         */
+        MemberAvailabilityResponse: {
             /**
-             * Membership Tier
-             * @default community
+             * Id
+             * Format: uuid
              */
-            membership_tier: string | null;
-            /** Profile Photo Url */
-            profile_photo_url?: string | null;
-            /** Occupation */
-            occupation?: string | null;
-            /** Area In Lagos */
-            area_in_lagos?: string | null;
-            /** How Found Us */
-            how_found_us?: string | null;
-            /** Previous Communities */
-            previous_communities?: string | null;
-            /** Hopes From Swimbuddz */
-            hopes_from_swimbuddz?: string | null;
+            id: string;
             /**
-             * Community Rules Accepted
-             * @default false
+             * Member Id
+             * Format: uuid
              */
-            community_rules_accepted: boolean | null;
-            /** Gender */
-            gender?: string | null;
-            /** Date Of Birth */
-            date_of_birth?: string | null;
-            /**
-             * Show In Directory
-             * @default false
-             */
-            show_in_directory: boolean | null;
-            /** Interest Tags */
-            interest_tags?: string[] | null;
-            /** Club Badges Earned */
-            club_badges_earned?: string[] | null;
-            /** Club Challenges Completed */
-            club_challenges_completed?: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * Punctuality Score
-             * @default 0
-             */
-            punctuality_score: number | null;
-            /**
-             * Commitment Score
-             * @default 0
-             */
-            commitment_score: number | null;
-            /** Academy Skill Assessment */
-            academy_skill_assessment?: {
-                [key: string]: unknown;
-            } | null;
-            /** Academy Goals */
-            academy_goals?: string | null;
-            /** Academy Preferred Coach Gender */
-            academy_preferred_coach_gender?: string | null;
-            /** Academy Lesson Preference */
-            academy_lesson_preference?: string | null;
-            /** Academy Certifications */
-            academy_certifications?: string[] | null;
-            /** Academy Graduation Dates */
-            academy_graduation_dates?: {
-                [key: string]: unknown;
-            } | null;
-            /** Academy Paid Until */
-            academy_paid_until?: string | null;
-            /**
-             * Academy Alumni
-             * @default false
-             */
-            academy_alumni: boolean | null;
-            /** Community Paid Until */
-            community_paid_until?: string | null;
-            /** Club Paid Until */
-            club_paid_until?: string | null;
+            member_id: string;
+            /** Available Days */
+            available_days?: string[] | null;
+            /** Preferred Times */
+            preferred_times?: string[] | null;
+            /** Preferred Locations */
+            preferred_locations?: string[] | null;
+            /** Accessible Facilities */
+            accessible_facilities?: string[] | null;
+            /** Travel Flexibility */
+            travel_flexibility?: string | null;
+            /** Equipment Needed */
+            equipment_needed?: string[] | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /**
+         * MemberCreate
+         * @description Input for creating a new member.
+         */
+        MemberCreate: {
             /** Auth Id */
             auth_id: string;
-        };
-        /** MemberListResponse */
-        MemberListResponse: {
             /**
              * Email
              * Format: email
@@ -2626,184 +2510,65 @@ export interface components {
             first_name: string;
             /** Last Name */
             last_name: string;
+            profile?: components["schemas"]["MemberProfileInput"] | null;
+            emergency_contact?: components["schemas"]["MemberEmergencyContactInput"] | null;
+            availability?: components["schemas"]["MemberAvailabilityInput"] | null;
+            membership?: components["schemas"]["MemberMembershipInput"] | null;
+            preferences?: components["schemas"]["MemberPreferencesInput"] | null;
+        };
+        /**
+         * MemberEmergencyContactInput
+         * @description Input for creating/updating emergency contact.
+         */
+        MemberEmergencyContactInput: {
+            /** Name */
+            name?: string | null;
+            /** Contact Relationship */
+            contact_relationship?: string | null;
             /** Phone */
             phone?: string | null;
-            /** City */
-            city?: string | null;
-            /** Country */
-            country?: string | null;
-            /** Time Zone */
-            time_zone?: string | null;
-            /** Swim Level */
-            swim_level?: string | null;
-            /** Deep Water Comfort */
-            deep_water_comfort?: string | null;
-            /** Strokes */
-            strokes?: string[] | null;
-            /** Interests */
-            interests?: string[] | null;
-            /** Goals Narrative */
-            goals_narrative?: string | null;
-            /** Goals Other */
-            goals_other?: string | null;
-            /** Certifications */
-            certifications?: string[] | null;
-            /** Coaching Experience */
-            coaching_experience?: string | null;
-            /** Coaching Specialties */
-            coaching_specialties?: string[] | null;
-            /** Coaching Years */
-            coaching_years?: string | null;
-            /** Coaching Portfolio Link */
-            coaching_portfolio_link?: string | null;
-            /** Coaching Document Link */
-            coaching_document_link?: string | null;
-            /** Coaching Document File Name */
-            coaching_document_file_name?: string | null;
-            /** Availability Slots */
-            availability_slots?: string[] | null;
-            /** Time Of Day Availability */
-            time_of_day_availability?: string[] | null;
-            /** Location Preference */
-            location_preference?: string[] | null;
-            /** Location Preference Other */
-            location_preference_other?: string | null;
-            /** Travel Flexibility */
-            travel_flexibility?: string | null;
-            /** Facility Access */
-            facility_access?: string[] | null;
-            /** Facility Access Other */
-            facility_access_other?: string | null;
-            /** Equipment Needs */
-            equipment_needs?: string[] | null;
-            /** Equipment Needs Other */
-            equipment_needs_other?: string | null;
-            /** Travel Notes */
-            travel_notes?: string | null;
-            /** Club Notes */
-            club_notes?: string | null;
-            /** Emergency Contact Name */
-            emergency_contact_name?: string | null;
-            /** Emergency Contact Relationship */
-            emergency_contact_relationship?: string | null;
-            /** Emergency Contact Phone */
-            emergency_contact_phone?: string | null;
-            /** Emergency Contact Region */
-            emergency_contact_region?: string | null;
+            /** Region */
+            region?: string | null;
             /** Medical Info */
             medical_info?: string | null;
             /** Safety Notes */
             safety_notes?: string | null;
-            /** Volunteer Interest */
-            volunteer_interest?: string[] | null;
-            /** Volunteer Roles Detail */
-            volunteer_roles_detail?: string | null;
-            /** Discovery Source */
-            discovery_source?: string | null;
-            /** Social Instagram */
-            social_instagram?: string | null;
-            /** Social Linkedin */
-            social_linkedin?: string | null;
-            /** Social Other */
-            social_other?: string | null;
-            /** Language Preference */
-            language_preference?: string | null;
-            /** Comms Preference */
-            comms_preference?: string | null;
-            /** Payment Readiness */
-            payment_readiness?: string | null;
-            /** Currency Preference */
-            currency_preference?: string | null;
-            /** Consent Photo */
-            consent_photo?: string | null;
-            /** Membership Tiers */
-            membership_tiers?: string[] | null;
-            /** Requested Membership Tiers */
-            requested_membership_tiers?: string[] | null;
-            /** Roles */
-            roles?: string[] | null;
-            /** Academy Focus Areas */
-            academy_focus_areas?: string[] | null;
-            /** Academy Focus */
-            academy_focus?: string | null;
-            /** Payment Notes */
-            payment_notes?: string | null;
+        };
+        /**
+         * MemberEmergencyContactResponse
+         * @description Emergency contact and medical information.
+         */
+        MemberEmergencyContactResponse: {
             /**
-             * Membership Tier
-             * @default community
+             * Id
+             * Format: uuid
              */
-            membership_tier: string | null;
-            /** Profile Photo Url */
-            profile_photo_url?: string | null;
-            /** Occupation */
-            occupation?: string | null;
-            /** Area In Lagos */
-            area_in_lagos?: string | null;
-            /** How Found Us */
-            how_found_us?: string | null;
-            /** Previous Communities */
-            previous_communities?: string | null;
-            /** Hopes From Swimbuddz */
-            hopes_from_swimbuddz?: string | null;
+            id: string;
             /**
-             * Community Rules Accepted
-             * @default false
+             * Member Id
+             * Format: uuid
              */
-            community_rules_accepted: boolean | null;
-            /** Gender */
-            gender?: string | null;
-            /** Date Of Birth */
-            date_of_birth?: string | null;
-            /**
-             * Show In Directory
-             * @default false
-             */
-            show_in_directory: boolean | null;
-            /** Interest Tags */
-            interest_tags?: string[] | null;
-            /** Club Badges Earned */
-            club_badges_earned?: string[] | null;
-            /** Club Challenges Completed */
-            club_challenges_completed?: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * Punctuality Score
-             * @default 0
-             */
-            punctuality_score: number | null;
-            /**
-             * Commitment Score
-             * @default 0
-             */
-            commitment_score: number | null;
-            /** Academy Skill Assessment */
-            academy_skill_assessment?: {
-                [key: string]: unknown;
-            } | null;
-            /** Academy Goals */
-            academy_goals?: string | null;
-            /** Academy Preferred Coach Gender */
-            academy_preferred_coach_gender?: string | null;
-            /** Academy Lesson Preference */
-            academy_lesson_preference?: string | null;
-            /** Academy Certifications */
-            academy_certifications?: string[] | null;
-            /** Academy Graduation Dates */
-            academy_graduation_dates?: {
-                [key: string]: unknown;
-            } | null;
-            /** Academy Paid Until */
-            academy_paid_until?: string | null;
-            /**
-             * Academy Alumni
-             * @default false
-             */
-            academy_alumni: boolean | null;
-            /** Community Paid Until */
-            community_paid_until?: string | null;
-            /** Club Paid Until */
-            club_paid_until?: string | null;
+            member_id: string;
+            /** Name */
+            name?: string | null;
+            /** Contact Relationship */
+            contact_relationship?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Region */
+            region?: string | null;
+            /** Medical Info */
+            medical_info?: string | null;
+            /** Safety Notes */
+            safety_notes?: string | null;
+            /** Created At */
+            created_at?: string | null;
+        };
+        /**
+         * MemberListResponse
+         * @description Lightweight member response for lists (no nested sub-records).
+         */
+        MemberListResponse: {
             /**
              * Id
              * Format: uuid
@@ -2811,35 +2576,319 @@ export interface components {
             id: string;
             /** Auth Id */
             auth_id: string;
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** First Name */
+            first_name: string;
+            /** Last Name */
+            last_name: string;
             /** Is Active */
             is_active: boolean;
             /** Registration Complete */
             registration_complete: boolean;
+            /** Roles */
+            roles?: string[] | null;
+            /**
+             * Approval Status
+             * @default pending
+             */
+            approval_status: string;
+            /** Profile Photo Url */
+            profile_photo_url?: string | null;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
             /**
-             * Updated At
-             * Format: date-time
+             * Is Coach
+             * @default false
              */
-            updated_at: string;
-            /**
-             * Approval Status
-             * @default pending
-             */
-            approval_status: string | null;
-            /** Approval Notes */
-            approval_notes?: string | null;
-            /** Approved At */
-            approved_at?: string | null;
-            /** Approved By */
-            approved_by?: string | null;
-            /** Is Coach */
             is_coach: boolean;
         };
-        /** MemberPublicResponse */
+        /**
+         * MemberMembershipInput
+         * @description Input for creating/updating membership (admin only for most fields).
+         */
+        MemberMembershipInput: {
+            /** Primary Tier */
+            primary_tier?: string | null;
+            /** Active Tiers */
+            active_tiers?: string[] | null;
+            /** Requested Tiers */
+            requested_tiers?: string[] | null;
+            /** Club Notes */
+            club_notes?: string | null;
+            /** Academy Goals */
+            academy_goals?: string | null;
+            /** Academy Preferred Coach Gender */
+            academy_preferred_coach_gender?: string | null;
+            /** Academy Lesson Preference */
+            academy_lesson_preference?: string | null;
+            /** Academy Focus Areas */
+            academy_focus_areas?: string[] | null;
+        };
+        /**
+         * MemberMembershipResponse
+         * @description Membership tiers, billing, and gamification.
+         */
+        MemberMembershipResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /**
+             * Primary Tier
+             * @default community
+             */
+            primary_tier: string;
+            /** Active Tiers */
+            active_tiers?: string[] | null;
+            /** Requested Tiers */
+            requested_tiers?: string[] | null;
+            /** Community Paid Until */
+            community_paid_until?: string | null;
+            /** Club Paid Until */
+            club_paid_until?: string | null;
+            /** Academy Paid Until */
+            academy_paid_until?: string | null;
+            /** Club Badges Earned */
+            club_badges_earned?: string[] | null;
+            /** Club Challenges Completed */
+            club_challenges_completed?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Punctuality Score
+             * @default 0
+             */
+            punctuality_score: number;
+            /**
+             * Commitment Score
+             * @default 0
+             */
+            commitment_score: number;
+            /** Club Notes */
+            club_notes?: string | null;
+            /** Academy Skill Assessment */
+            academy_skill_assessment?: {
+                [key: string]: unknown;
+            } | null;
+            /** Academy Goals */
+            academy_goals?: string | null;
+            /** Academy Preferred Coach Gender */
+            academy_preferred_coach_gender?: string | null;
+            /** Academy Lesson Preference */
+            academy_lesson_preference?: string | null;
+            /** Academy Certifications */
+            academy_certifications?: string[] | null;
+            /** Academy Graduation Dates */
+            academy_graduation_dates?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Academy Alumni
+             * @default false
+             */
+            academy_alumni: boolean;
+            /** Academy Focus Areas */
+            academy_focus_areas?: string[] | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /**
+         * MemberPreferencesInput
+         * @description Input for creating/updating preferences.
+         */
+        MemberPreferencesInput: {
+            /** Language Preference */
+            language_preference?: string | null;
+            /** Comms Preference */
+            comms_preference?: string | null;
+            /** Payment Readiness */
+            payment_readiness?: string | null;
+            /** Currency Preference */
+            currency_preference?: string | null;
+            /** Consent Photo */
+            consent_photo?: string | null;
+            /** Community Rules Accepted */
+            community_rules_accepted?: boolean | null;
+            /** Volunteer Interest */
+            volunteer_interest?: string[] | null;
+            /** Volunteer Roles Detail */
+            volunteer_roles_detail?: string | null;
+            /** Discovery Source */
+            discovery_source?: string | null;
+        };
+        /**
+         * MemberPreferencesResponse
+         * @description User settings and preferences.
+         */
+        MemberPreferencesResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Language Preference */
+            language_preference?: string | null;
+            /** Comms Preference */
+            comms_preference?: string | null;
+            /** Payment Readiness */
+            payment_readiness?: string | null;
+            /** Currency Preference */
+            currency_preference?: string | null;
+            /** Consent Photo */
+            consent_photo?: string | null;
+            /**
+             * Community Rules Accepted
+             * @default false
+             */
+            community_rules_accepted: boolean;
+            /** Volunteer Interest */
+            volunteer_interest?: string[] | null;
+            /** Volunteer Roles Detail */
+            volunteer_roles_detail?: string | null;
+            /** Discovery Source */
+            discovery_source?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /**
+         * MemberProfileInput
+         * @description Input for creating/updating profile.
+         */
+        MemberProfileInput: {
+            /** Phone */
+            phone?: string | null;
+            /** City */
+            city?: string | null;
+            /** Country */
+            country?: string | null;
+            /** Time Zone */
+            time_zone?: string | null;
+            /** Gender */
+            gender?: string | null;
+            /** Date Of Birth */
+            date_of_birth?: string | null;
+            /** Occupation */
+            occupation?: string | null;
+            /** Area In Lagos */
+            area_in_lagos?: string | null;
+            /** Swim Level */
+            swim_level?: string | null;
+            /** Deep Water Comfort */
+            deep_water_comfort?: string | null;
+            /** Strokes */
+            strokes?: string[] | null;
+            /** Interests */
+            interests?: string[] | null;
+            /** Personal Goals */
+            personal_goals?: string | null;
+            /** How Found Us */
+            how_found_us?: string | null;
+            /** Previous Communities */
+            previous_communities?: string | null;
+            /** Hopes From Swimbuddz */
+            hopes_from_swimbuddz?: string | null;
+            /** Social Instagram */
+            social_instagram?: string | null;
+            /** Social Linkedin */
+            social_linkedin?: string | null;
+            /** Social Other */
+            social_other?: string | null;
+            /** Show In Directory */
+            show_in_directory?: boolean | null;
+            /** Interest Tags */
+            interest_tags?: string[] | null;
+        };
+        /**
+         * MemberProfileResponse
+         * @description Personal info, swim profile, and social links.
+         */
+        MemberProfileResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Phone */
+            phone?: string | null;
+            /** City */
+            city?: string | null;
+            /** Country */
+            country?: string | null;
+            /** Time Zone */
+            time_zone?: string | null;
+            /** Gender */
+            gender?: string | null;
+            /** Date Of Birth */
+            date_of_birth?: string | null;
+            /** Occupation */
+            occupation?: string | null;
+            /** Area In Lagos */
+            area_in_lagos?: string | null;
+            /** Swim Level */
+            swim_level?: string | null;
+            /** Deep Water Comfort */
+            deep_water_comfort?: string | null;
+            /** Strokes */
+            strokes?: string[] | null;
+            /** Interests */
+            interests?: string[] | null;
+            /** Personal Goals */
+            personal_goals?: string | null;
+            /** How Found Us */
+            how_found_us?: string | null;
+            /** Previous Communities */
+            previous_communities?: string | null;
+            /** Hopes From Swimbuddz */
+            hopes_from_swimbuddz?: string | null;
+            /** Social Instagram */
+            social_instagram?: string | null;
+            /** Social Linkedin */
+            social_linkedin?: string | null;
+            /** Social Other */
+            social_other?: string | null;
+            /**
+             * Show In Directory
+             * @default false
+             */
+            show_in_directory: boolean;
+            /** Interest Tags */
+            interest_tags?: string[] | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /**
+         * MemberPublicResponse
+         * @description Public member info (minimal).
+         */
         MemberPublicResponse: {
             /**
              * Id
@@ -2851,8 +2900,18 @@ export interface components {
             /** Last Name */
             last_name?: string | null;
         };
-        /** MemberResponse */
+        /**
+         * MemberResponse
+         * @description Full member response with nested sub-records.
+         */
         MemberResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Auth Id */
+            auth_id: string;
             /**
              * Email
              * Format: email
@@ -2862,195 +2921,25 @@ export interface components {
             first_name: string;
             /** Last Name */
             last_name: string;
-            /** Phone */
-            phone?: string | null;
-            /** City */
-            city?: string | null;
-            /** Country */
-            country?: string | null;
-            /** Time Zone */
-            time_zone?: string | null;
-            /** Swim Level */
-            swim_level?: string | null;
-            /** Deep Water Comfort */
-            deep_water_comfort?: string | null;
-            /** Strokes */
-            strokes?: string[] | null;
-            /** Interests */
-            interests?: string[] | null;
-            /** Goals Narrative */
-            goals_narrative?: string | null;
-            /** Goals Other */
-            goals_other?: string | null;
-            /** Certifications */
-            certifications?: string[] | null;
-            /** Coaching Experience */
-            coaching_experience?: string | null;
-            /** Coaching Specialties */
-            coaching_specialties?: string[] | null;
-            /** Coaching Years */
-            coaching_years?: string | null;
-            /** Coaching Portfolio Link */
-            coaching_portfolio_link?: string | null;
-            /** Coaching Document Link */
-            coaching_document_link?: string | null;
-            /** Coaching Document File Name */
-            coaching_document_file_name?: string | null;
-            /** Availability Slots */
-            availability_slots?: string[] | null;
-            /** Time Of Day Availability */
-            time_of_day_availability?: string[] | null;
-            /** Location Preference */
-            location_preference?: string[] | null;
-            /** Location Preference Other */
-            location_preference_other?: string | null;
-            /** Travel Flexibility */
-            travel_flexibility?: string | null;
-            /** Facility Access */
-            facility_access?: string[] | null;
-            /** Facility Access Other */
-            facility_access_other?: string | null;
-            /** Equipment Needs */
-            equipment_needs?: string[] | null;
-            /** Equipment Needs Other */
-            equipment_needs_other?: string | null;
-            /** Travel Notes */
-            travel_notes?: string | null;
-            /** Club Notes */
-            club_notes?: string | null;
-            /** Emergency Contact Name */
-            emergency_contact_name?: string | null;
-            /** Emergency Contact Relationship */
-            emergency_contact_relationship?: string | null;
-            /** Emergency Contact Phone */
-            emergency_contact_phone?: string | null;
-            /** Emergency Contact Region */
-            emergency_contact_region?: string | null;
-            /** Medical Info */
-            medical_info?: string | null;
-            /** Safety Notes */
-            safety_notes?: string | null;
-            /** Volunteer Interest */
-            volunteer_interest?: string[] | null;
-            /** Volunteer Roles Detail */
-            volunteer_roles_detail?: string | null;
-            /** Discovery Source */
-            discovery_source?: string | null;
-            /** Social Instagram */
-            social_instagram?: string | null;
-            /** Social Linkedin */
-            social_linkedin?: string | null;
-            /** Social Other */
-            social_other?: string | null;
-            /** Language Preference */
-            language_preference?: string | null;
-            /** Comms Preference */
-            comms_preference?: string | null;
-            /** Payment Readiness */
-            payment_readiness?: string | null;
-            /** Currency Preference */
-            currency_preference?: string | null;
-            /** Consent Photo */
-            consent_photo?: string | null;
-            /** Membership Tiers */
-            membership_tiers?: string[] | null;
-            /** Requested Membership Tiers */
-            requested_membership_tiers?: string[] | null;
-            /** Roles */
-            roles?: string[] | null;
-            /** Academy Focus Areas */
-            academy_focus_areas?: string[] | null;
-            /** Academy Focus */
-            academy_focus?: string | null;
-            /** Payment Notes */
-            payment_notes?: string | null;
-            /**
-             * Membership Tier
-             * @default community
-             */
-            membership_tier: string | null;
-            /** Profile Photo Url */
-            profile_photo_url?: string | null;
-            /** Occupation */
-            occupation?: string | null;
-            /** Area In Lagos */
-            area_in_lagos?: string | null;
-            /** How Found Us */
-            how_found_us?: string | null;
-            /** Previous Communities */
-            previous_communities?: string | null;
-            /** Hopes From Swimbuddz */
-            hopes_from_swimbuddz?: string | null;
-            /**
-             * Community Rules Accepted
-             * @default false
-             */
-            community_rules_accepted: boolean | null;
-            /** Gender */
-            gender?: string | null;
-            /** Date Of Birth */
-            date_of_birth?: string | null;
-            /**
-             * Show In Directory
-             * @default false
-             */
-            show_in_directory: boolean | null;
-            /** Interest Tags */
-            interest_tags?: string[] | null;
-            /** Club Badges Earned */
-            club_badges_earned?: string[] | null;
-            /** Club Challenges Completed */
-            club_challenges_completed?: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * Punctuality Score
-             * @default 0
-             */
-            punctuality_score: number | null;
-            /**
-             * Commitment Score
-             * @default 0
-             */
-            commitment_score: number | null;
-            /** Academy Skill Assessment */
-            academy_skill_assessment?: {
-                [key: string]: unknown;
-            } | null;
-            /** Academy Goals */
-            academy_goals?: string | null;
-            /** Academy Preferred Coach Gender */
-            academy_preferred_coach_gender?: string | null;
-            /** Academy Lesson Preference */
-            academy_lesson_preference?: string | null;
-            /** Academy Certifications */
-            academy_certifications?: string[] | null;
-            /** Academy Graduation Dates */
-            academy_graduation_dates?: {
-                [key: string]: unknown;
-            } | null;
-            /** Academy Paid Until */
-            academy_paid_until?: string | null;
-            /**
-             * Academy Alumni
-             * @default false
-             */
-            academy_alumni: boolean | null;
-            /** Community Paid Until */
-            community_paid_until?: string | null;
-            /** Club Paid Until */
-            club_paid_until?: string | null;
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Auth Id */
-            auth_id: string;
             /** Is Active */
             is_active: boolean;
             /** Registration Complete */
             registration_complete: boolean;
+            /** Roles */
+            roles?: string[] | null;
+            /**
+             * Approval Status
+             * @default pending
+             */
+            approval_status: string;
+            /** Approval Notes */
+            approval_notes?: string | null;
+            /** Approved At */
+            approved_at?: string | null;
+            /** Approved By */
+            approved_by?: string | null;
+            /** Profile Photo Url */
+            profile_photo_url?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -3061,213 +2950,46 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
-            /**
-             * Approval Status
-             * @default pending
-             */
-            approval_status: string | null;
-            /** Approval Notes */
-            approval_notes?: string | null;
-            /** Approved At */
-            approved_at?: string | null;
-            /** Approved By */
-            approved_by?: string | null;
+            profile?: components["schemas"]["MemberProfileResponse"] | null;
+            emergency_contact?: components["schemas"]["MemberEmergencyContactResponse"] | null;
+            availability?: components["schemas"]["MemberAvailabilityResponse"] | null;
+            membership?: components["schemas"]["MemberMembershipResponse"] | null;
+            preferences?: components["schemas"]["MemberPreferencesResponse"] | null;
             coach_profile?: components["schemas"]["CoachProfileResponse"] | null;
         };
-        /** MemberUpdate */
+        /**
+         * MemberUpdate
+         * @description Input for updating a member.
+         */
         MemberUpdate: {
-            /** Email */
-            email?: string | null;
             /** First Name */
             first_name?: string | null;
             /** Last Name */
             last_name?: string | null;
-            /** Phone */
-            phone?: string | null;
-            /** City */
-            city?: string | null;
-            /** Country */
-            country?: string | null;
-            /** Time Zone */
-            time_zone?: string | null;
-            /** Swim Level */
-            swim_level?: string | null;
-            /** Deep Water Comfort */
-            deep_water_comfort?: string | null;
-            /** Strokes */
-            strokes?: string[] | null;
-            /** Interests */
-            interests?: string[] | null;
-            /** Goals Narrative */
-            goals_narrative?: string | null;
-            /** Goals Other */
-            goals_other?: string | null;
-            /** Certifications */
-            certifications?: string[] | null;
-            /** Coaching Experience */
-            coaching_experience?: string | null;
-            /** Coaching Specialties */
-            coaching_specialties?: string[] | null;
-            /** Coaching Years */
-            coaching_years?: string | null;
-            /** Coaching Portfolio Link */
-            coaching_portfolio_link?: string | null;
-            /** Coaching Document Link */
-            coaching_document_link?: string | null;
-            /** Coaching Document File Name */
-            coaching_document_file_name?: string | null;
-            /** Availability Slots */
-            availability_slots?: string[] | null;
-            /** Time Of Day Availability */
-            time_of_day_availability?: string[] | null;
-            /** Location Preference */
-            location_preference?: string[] | null;
-            /** Location Preference Other */
-            location_preference_other?: string | null;
-            /** Travel Flexibility */
-            travel_flexibility?: string | null;
-            /** Facility Access */
-            facility_access?: string[] | null;
-            /** Facility Access Other */
-            facility_access_other?: string | null;
-            /** Equipment Needs */
-            equipment_needs?: string[] | null;
-            /** Equipment Needs Other */
-            equipment_needs_other?: string | null;
-            /** Travel Notes */
-            travel_notes?: string | null;
-            /** Club Notes */
-            club_notes?: string | null;
-            /** Emergency Contact Name */
-            emergency_contact_name?: string | null;
-            /** Emergency Contact Relationship */
-            emergency_contact_relationship?: string | null;
-            /** Emergency Contact Phone */
-            emergency_contact_phone?: string | null;
-            /** Emergency Contact Region */
-            emergency_contact_region?: string | null;
-            /** Medical Info */
-            medical_info?: string | null;
-            /** Safety Notes */
-            safety_notes?: string | null;
-            /** Volunteer Interest */
-            volunteer_interest?: string[] | null;
-            /** Volunteer Roles Detail */
-            volunteer_roles_detail?: string | null;
-            /** Discovery Source */
-            discovery_source?: string | null;
-            /** Social Instagram */
-            social_instagram?: string | null;
-            /** Social Linkedin */
-            social_linkedin?: string | null;
-            /** Social Other */
-            social_other?: string | null;
-            /** Language Preference */
-            language_preference?: string | null;
-            /** Comms Preference */
-            comms_preference?: string | null;
-            /** Payment Readiness */
-            payment_readiness?: string | null;
-            /** Currency Preference */
-            currency_preference?: string | null;
-            /** Consent Photo */
-            consent_photo?: string | null;
-            /** Membership Tiers */
-            membership_tiers?: string[] | null;
-            /** Requested Membership Tiers */
-            requested_membership_tiers?: string[] | null;
-            /** Roles */
-            roles?: string[] | null;
-            /** Academy Focus Areas */
-            academy_focus_areas?: string[] | null;
-            /** Academy Focus */
-            academy_focus?: string | null;
-            /** Payment Notes */
-            payment_notes?: string | null;
-            /**
-             * Membership Tier
-             * @default community
-             */
-            membership_tier: string | null;
-            /** Profile Photo Url */
-            profile_photo_url?: string | null;
-            /** Occupation */
-            occupation?: string | null;
-            /** Area In Lagos */
-            area_in_lagos?: string | null;
-            /** How Found Us */
-            how_found_us?: string | null;
-            /** Previous Communities */
-            previous_communities?: string | null;
-            /** Hopes From Swimbuddz */
-            hopes_from_swimbuddz?: string | null;
-            /**
-             * Community Rules Accepted
-             * @default false
-             */
-            community_rules_accepted: boolean | null;
-            /** Gender */
-            gender?: string | null;
-            /** Date Of Birth */
-            date_of_birth?: string | null;
-            /**
-             * Show In Directory
-             * @default false
-             */
-            show_in_directory: boolean | null;
-            /** Interest Tags */
-            interest_tags?: string[] | null;
-            /** Club Badges Earned */
-            club_badges_earned?: string[] | null;
-            /** Club Challenges Completed */
-            club_challenges_completed?: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * Punctuality Score
-             * @default 0
-             */
-            punctuality_score: number | null;
-            /**
-             * Commitment Score
-             * @default 0
-             */
-            commitment_score: number | null;
-            /** Academy Skill Assessment */
-            academy_skill_assessment?: {
-                [key: string]: unknown;
-            } | null;
-            /** Academy Goals */
-            academy_goals?: string | null;
-            /** Academy Preferred Coach Gender */
-            academy_preferred_coach_gender?: string | null;
-            /** Academy Lesson Preference */
-            academy_lesson_preference?: string | null;
-            /** Academy Certifications */
-            academy_certifications?: string[] | null;
-            /** Academy Graduation Dates */
-            academy_graduation_dates?: {
-                [key: string]: unknown;
-            } | null;
-            /** Academy Paid Until */
-            academy_paid_until?: string | null;
-            /**
-             * Academy Alumni
-             * @default false
-             */
-            academy_alumni: boolean | null;
-            /** Community Paid Until */
-            community_paid_until?: string | null;
-            /** Club Paid Until */
-            club_paid_until?: string | null;
+            /** Email */
+            email?: string | null;
             /** Is Active */
             is_active?: boolean | null;
+            /** Profile Photo Url */
+            profile_photo_url?: string | null;
+            profile?: components["schemas"]["MemberProfileInput"] | null;
+            emergency_contact?: components["schemas"]["MemberEmergencyContactInput"] | null;
+            availability?: components["schemas"]["MemberAvailabilityInput"] | null;
+            membership?: components["schemas"]["MemberMembershipInput"] | null;
+            preferences?: components["schemas"]["MemberPreferencesInput"] | null;
         };
         /**
          * PendingMemberResponse
-         * @description Extended response for pending members (admin view)
+         * @description Extended response for pending members (admin view).
          */
         PendingMemberResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Auth Id */
+            auth_id: string;
             /**
              * Email
              * Format: email
@@ -3277,195 +2999,25 @@ export interface components {
             first_name: string;
             /** Last Name */
             last_name: string;
-            /** Phone */
-            phone?: string | null;
-            /** City */
-            city?: string | null;
-            /** Country */
-            country?: string | null;
-            /** Time Zone */
-            time_zone?: string | null;
-            /** Swim Level */
-            swim_level?: string | null;
-            /** Deep Water Comfort */
-            deep_water_comfort?: string | null;
-            /** Strokes */
-            strokes?: string[] | null;
-            /** Interests */
-            interests?: string[] | null;
-            /** Goals Narrative */
-            goals_narrative?: string | null;
-            /** Goals Other */
-            goals_other?: string | null;
-            /** Certifications */
-            certifications?: string[] | null;
-            /** Coaching Experience */
-            coaching_experience?: string | null;
-            /** Coaching Specialties */
-            coaching_specialties?: string[] | null;
-            /** Coaching Years */
-            coaching_years?: string | null;
-            /** Coaching Portfolio Link */
-            coaching_portfolio_link?: string | null;
-            /** Coaching Document Link */
-            coaching_document_link?: string | null;
-            /** Coaching Document File Name */
-            coaching_document_file_name?: string | null;
-            /** Availability Slots */
-            availability_slots?: string[] | null;
-            /** Time Of Day Availability */
-            time_of_day_availability?: string[] | null;
-            /** Location Preference */
-            location_preference?: string[] | null;
-            /** Location Preference Other */
-            location_preference_other?: string | null;
-            /** Travel Flexibility */
-            travel_flexibility?: string | null;
-            /** Facility Access */
-            facility_access?: string[] | null;
-            /** Facility Access Other */
-            facility_access_other?: string | null;
-            /** Equipment Needs */
-            equipment_needs?: string[] | null;
-            /** Equipment Needs Other */
-            equipment_needs_other?: string | null;
-            /** Travel Notes */
-            travel_notes?: string | null;
-            /** Club Notes */
-            club_notes?: string | null;
-            /** Emergency Contact Name */
-            emergency_contact_name?: string | null;
-            /** Emergency Contact Relationship */
-            emergency_contact_relationship?: string | null;
-            /** Emergency Contact Phone */
-            emergency_contact_phone?: string | null;
-            /** Emergency Contact Region */
-            emergency_contact_region?: string | null;
-            /** Medical Info */
-            medical_info?: string | null;
-            /** Safety Notes */
-            safety_notes?: string | null;
-            /** Volunteer Interest */
-            volunteer_interest?: string[] | null;
-            /** Volunteer Roles Detail */
-            volunteer_roles_detail?: string | null;
-            /** Discovery Source */
-            discovery_source?: string | null;
-            /** Social Instagram */
-            social_instagram?: string | null;
-            /** Social Linkedin */
-            social_linkedin?: string | null;
-            /** Social Other */
-            social_other?: string | null;
-            /** Language Preference */
-            language_preference?: string | null;
-            /** Comms Preference */
-            comms_preference?: string | null;
-            /** Payment Readiness */
-            payment_readiness?: string | null;
-            /** Currency Preference */
-            currency_preference?: string | null;
-            /** Consent Photo */
-            consent_photo?: string | null;
-            /** Membership Tiers */
-            membership_tiers?: string[] | null;
-            /** Requested Membership Tiers */
-            requested_membership_tiers?: string[] | null;
-            /** Roles */
-            roles?: string[] | null;
-            /** Academy Focus Areas */
-            academy_focus_areas?: string[] | null;
-            /** Academy Focus */
-            academy_focus?: string | null;
-            /** Payment Notes */
-            payment_notes?: string | null;
-            /**
-             * Membership Tier
-             * @default community
-             */
-            membership_tier: string | null;
-            /** Profile Photo Url */
-            profile_photo_url?: string | null;
-            /** Occupation */
-            occupation?: string | null;
-            /** Area In Lagos */
-            area_in_lagos?: string | null;
-            /** How Found Us */
-            how_found_us?: string | null;
-            /** Previous Communities */
-            previous_communities?: string | null;
-            /** Hopes From Swimbuddz */
-            hopes_from_swimbuddz?: string | null;
-            /**
-             * Community Rules Accepted
-             * @default false
-             */
-            community_rules_accepted: boolean | null;
-            /** Gender */
-            gender?: string | null;
-            /** Date Of Birth */
-            date_of_birth?: string | null;
-            /**
-             * Show In Directory
-             * @default false
-             */
-            show_in_directory: boolean | null;
-            /** Interest Tags */
-            interest_tags?: string[] | null;
-            /** Club Badges Earned */
-            club_badges_earned?: string[] | null;
-            /** Club Challenges Completed */
-            club_challenges_completed?: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * Punctuality Score
-             * @default 0
-             */
-            punctuality_score: number | null;
-            /**
-             * Commitment Score
-             * @default 0
-             */
-            commitment_score: number | null;
-            /** Academy Skill Assessment */
-            academy_skill_assessment?: {
-                [key: string]: unknown;
-            } | null;
-            /** Academy Goals */
-            academy_goals?: string | null;
-            /** Academy Preferred Coach Gender */
-            academy_preferred_coach_gender?: string | null;
-            /** Academy Lesson Preference */
-            academy_lesson_preference?: string | null;
-            /** Academy Certifications */
-            academy_certifications?: string[] | null;
-            /** Academy Graduation Dates */
-            academy_graduation_dates?: {
-                [key: string]: unknown;
-            } | null;
-            /** Academy Paid Until */
-            academy_paid_until?: string | null;
-            /**
-             * Academy Alumni
-             * @default false
-             */
-            academy_alumni: boolean | null;
-            /** Community Paid Until */
-            community_paid_until?: string | null;
-            /** Club Paid Until */
-            club_paid_until?: string | null;
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Auth Id */
-            auth_id: string;
             /** Is Active */
             is_active: boolean;
             /** Registration Complete */
             registration_complete: boolean;
+            /** Roles */
+            roles?: string[] | null;
+            /**
+             * Approval Status
+             * @default pending
+             */
+            approval_status: string;
+            /** Approval Notes */
+            approval_notes?: string | null;
+            /** Approved At */
+            approved_at?: string | null;
+            /** Approved By */
+            approved_by?: string | null;
+            /** Profile Photo Url */
+            profile_photo_url?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -3476,20 +3028,17 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
-            /**
-             * Approval Status
-             * @default pending
-             */
-            approval_status: string | null;
-            /** Approval Notes */
-            approval_notes?: string | null;
-            /** Approved At */
-            approved_at?: string | null;
-            /** Approved By */
-            approved_by?: string | null;
+            profile?: components["schemas"]["MemberProfileResponse"] | null;
+            emergency_contact?: components["schemas"]["MemberEmergencyContactResponse"] | null;
+            availability?: components["schemas"]["MemberAvailabilityResponse"] | null;
+            membership?: components["schemas"]["MemberMembershipResponse"] | null;
+            preferences?: components["schemas"]["MemberPreferencesResponse"] | null;
             coach_profile?: components["schemas"]["CoachProfileResponse"] | null;
         };
-        /** PendingRegistrationCreate */
+        /**
+         * PendingRegistrationCreate
+         * @description Input for creating a pending registration.
+         */
         PendingRegistrationCreate: {
             /**
              * Email
@@ -3502,10 +3051,17 @@ export interface components {
             last_name: string;
             /** Password */
             password?: string | null;
+            profile?: components["schemas"]["MemberProfileInput"] | null;
+            emergency_contact?: components["schemas"]["MemberEmergencyContactInput"] | null;
+            availability?: components["schemas"]["MemberAvailabilityInput"] | null;
+            preferences?: components["schemas"]["MemberPreferencesInput"] | null;
         } & {
             [key: string]: unknown;
         };
-        /** PendingRegistrationResponse */
+        /**
+         * PendingRegistrationResponse
+         * @description Response for pending registration.
+         */
         PendingRegistrationResponse: {
             /**
              * Id

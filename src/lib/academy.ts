@@ -1,10 +1,7 @@
 import { apiDelete, apiGet, apiPost, apiPut } from "./api";
-import type { components } from "./api-types";
 
-// Re-export generated types for convenience
-export type ProgramResponse = components["schemas"]["ProgramResponse"];
-export type CohortResponse = components["schemas"]["CohortResponse"];
-export type EnrollmentResponse = components["schemas"]["EnrollmentResponse"];
+// Note: ProgramResponse, CohortResponse, EnrollmentResponse are not in gateway OpenAPI spec
+// These types are defined locally below as the academy service isn't proxied through gateway
 
 // --- Types ---
 
