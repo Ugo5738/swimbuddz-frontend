@@ -644,37 +644,39 @@ export default function BillingPage() {
                         </Alert>
                     )}
 
-                    {/* Discount Code Input */}
-                    <Card className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-100">
-                        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                            <div className="flex-1">
-                                <label htmlFor="discount-code" className="block text-sm font-medium text-purple-900 mb-1">
-                                    Have a discount code?
-                                </label>
-                                <input
-                                    id="discount-code"
-                                    type="text"
-                                    value={discountCode}
-                                    onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
-                                    placeholder="Enter code (e.g., SUMMER25)"
-                                    className="w-full px-3 py-2 border border-purple-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent uppercase"
-                                />
+                    {/* Discount Code Input - only show if there are pending payments */}
+                    {(!communityActive || (showClubSection && !clubActive)) && (
+                        <Card className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-100">
+                            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                                <div className="flex-1">
+                                    <label htmlFor="discount-code" className="block text-sm font-medium text-purple-900 mb-1">
+                                        Have a discount code?
+                                    </label>
+                                    <input
+                                        id="discount-code"
+                                        type="text"
+                                        value={discountCode}
+                                        onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                                        placeholder="Enter code (e.g., SUMMER25)"
+                                        className="w-full px-3 py-2 border border-purple-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent uppercase"
+                                    />
+                                </div>
+                                {discountCode && (
+                                    <button
+                                        onClick={() => setDiscountCode("")}
+                                        className="text-sm text-purple-600 hover:text-purple-800"
+                                    >
+                                        Clear
+                                    </button>
+                                )}
                             </div>
                             {discountCode && (
-                                <button
-                                    onClick={() => setDiscountCode("")}
-                                    className="text-sm text-purple-600 hover:text-purple-800"
-                                >
-                                    Clear
-                                </button>
+                                <p className="mt-2 text-xs text-purple-700">
+                                    Discount code "{discountCode}" will be applied at checkout.
+                                </p>
                             )}
-                        </div>
-                        {discountCode && (
-                            <p className="mt-2 text-xs text-purple-700">
-                                Discount code "{discountCode}" will be applied at checkout.
-                            </p>
-                        )}
-                    </Card>
+                        </Card>
+                    )}
 
                     <Card className="p-6 space-y-4">
                         <div>

@@ -24,27 +24,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/members/coaches": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Coaches
-         * @description List all active coaches.
-         *     Returns Member objects that have an active CoachProfile.
-         */
-        get: operations["list_coaches_members_coaches_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/members/me": {
         parameters: {
             query?: never;
@@ -130,46 +109,6 @@ export interface paths {
         get: operations["get_member_stats_members_stats_get"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/members/me/community/activate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Activate Community Membership
-         * @description Deprecated: Community activation is owned by payments_service.
-         */
-        post: operations["activate_community_membership_members_me_community_activate_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/members/me/club/activate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Activate Club Membership
-         * @description Deprecated: Club activation is owned by payments_service.
-         */
-        post: operations["activate_club_membership_members_me_club_activate_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -267,26 +206,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/admin/members/by-email/{email}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Member By Email
-         * @description Get a member by email (admin only).
-         */
-        get: operations["get_member_by_email_admin_members_by_email__email__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/admin/members/pending": {
         parameters: {
             query?: never;
@@ -299,6 +218,26 @@ export interface paths {
          * @description List all members with pending approval status (admin only).
          */
         get: operations["list_pending_members_admin_members_pending_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/members/by-email/{email}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Member By Email
+         * @description Get a member by email (admin only).
+         */
+        get: operations["get_member_by_email_admin_members_by_email__email__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -380,7 +319,7 @@ export interface paths {
         put?: never;
         /**
          * Admin Activate Community Membership By Auth
-         * @description Apply Community entitlement for a member (admin/service use, e.g. payment webhook).
+         * @description Apply Community entitlement for a member (admin/service use).
          */
         post: operations["admin_activate_community_membership_by_auth_admin_members_by_auth__auth_id__community_activate_post"];
         delete?: never;
@@ -400,13 +339,33 @@ export interface paths {
         put?: never;
         /**
          * Admin Activate Club Membership By Auth
-         * @description Apply Club entitlement for a member (admin/service use, e.g. payment webhook).
+         * @description Apply Club entitlement for a member (admin/service use).
          */
         post: operations["admin_activate_club_membership_by_auth_admin_members_by_auth__auth_id__club_activate_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/members/by-auth/{auth_id}/membership": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Admin Patch Membership By Auth
+         * @description Partially update membership fields for a member (admin/service use).
+         */
+        patch: operations["admin_patch_membership_by_auth_admin_members_by_auth__auth_id__membership_patch"];
         trace?: never;
     };
     "/api/v1/volunteers/roles": {
@@ -1334,6 +1293,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/academy/admin/enrollments/{enrollment_id}/mark-paid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin Mark Enrollment Paid
+         * @description Mark an enrollment as paid (service-to-service call from payments_service).
+         *     Updates payment_status to PAID and enrollment status to ENROLLED if pending.
+         */
+        post: operations["admin_mark_enrollment_paid_academy_admin_enrollments__enrollment_id__mark_paid_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/academy/progress": {
         parameters: {
             query?: never;
@@ -1523,6 +1503,58 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/discounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Discounts
+         * @description List all discount codes (Admin only).
+         */
+        get: operations["list_discounts_payments_admin_discounts_get"];
+        put?: never;
+        /**
+         * Create Discount
+         * @description Create a new discount code (Admin only).
+         */
+        post: operations["create_discount_payments_admin_discounts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/discounts/{discount_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Discount
+         * @description Get a specific discount code (Admin only).
+         */
+        get: operations["get_discount_payments_admin_discounts__discount_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Discount
+         * @description Delete a discount code (Admin only).
+         */
+        delete: operations["delete_discount_payments_admin_discounts__discount_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Discount
+         * @description Update a discount code (Admin only).
+         */
+        patch: operations["update_discount_payments_admin_discounts__discount_id__patch"];
         trace?: never;
     };
     "/api/v1/announcements/": {
@@ -1719,6 +1751,12 @@ export interface components {
              * @default 1
              */
             months: number;
+            /**
+             * Skip Community Check
+             * @description Skip community active check (for bundle activations where community was just activated)
+             * @default false
+             */
+            skip_community_check: boolean;
         };
         /**
          * ActivateCommunityRequest
@@ -2661,6 +2699,8 @@ export interface components {
             club_paid_until?: string | null;
             /** Academy Paid Until */
             academy_paid_until?: string | null;
+            /** Pending Payment Reference */
+            pending_payment_reference?: string | null;
             /** Club Badges Earned */
             club_badges_earned?: string[] | null;
             /** Club Challenges Completed */
@@ -2977,6 +3017,14 @@ export interface components {
             availability?: components["schemas"]["MemberAvailabilityInput"] | null;
             membership?: components["schemas"]["MemberMembershipInput"] | null;
             preferences?: components["schemas"]["MemberPreferencesInput"] | null;
+        };
+        /**
+         * MembershipPatchRequest
+         * @description Partial update for membership fields.
+         */
+        MembershipPatchRequest: {
+            /** Pending Payment Reference */
+            pending_payment_reference?: string | null;
         };
         /**
          * PendingMemberResponse
@@ -3963,7 +4011,7 @@ export interface components {
          * ClubBillingCycle
          * @enum {string}
          */
-        ClubBillingCycle: "monthly" | "quarterly" | "biannual" | "annual";
+        ClubBillingCycle: "quarterly" | "biannual" | "annual";
         /** CompletePaymentRequest */
         CompletePaymentRequest: {
             /**
@@ -3999,10 +4047,101 @@ export interface components {
             club_billing_cycle?: components["schemas"]["ClubBillingCycle"] | null;
             /** Cohort Id */
             cohort_id?: string | null;
+            /** Enrollment Id */
+            enrollment_id?: string | null;
+            /** Discount Code */
+            discount_code?: string | null;
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /** DiscountCreate */
+        DiscountCreate: {
+            /** Code */
+            code: string;
+            /** Description */
+            description?: string | null;
+            /** Discount Type */
+            discount_type: string;
+            /** Value */
+            value: number;
+            /** Applies To */
+            applies_to?: string[] | null;
+            /** Valid From */
+            valid_from?: string | null;
+            /** Valid Until */
+            valid_until?: string | null;
+            /** Max Uses */
+            max_uses?: number | null;
+            /** Max Uses Per User */
+            max_uses_per_user?: number | null;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+        };
+        /** DiscountResponse */
+        DiscountResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Description */
+            description?: string | null;
+            /** Discount Type */
+            discount_type: string;
+            /** Value */
+            value: number;
+            /** Applies To */
+            applies_to?: string[] | null;
+            /** Valid From */
+            valid_from?: string | null;
+            /** Valid Until */
+            valid_until?: string | null;
+            /** Max Uses */
+            max_uses?: number | null;
+            /** Current Uses */
+            current_uses: number;
+            /** Max Uses Per User */
+            max_uses_per_user?: number | null;
+            /** Is Active */
+            is_active: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** DiscountUpdate */
+        DiscountUpdate: {
+            /** Description */
+            description?: string | null;
+            /** Discount Type */
+            discount_type?: string | null;
+            /** Value */
+            value?: number | null;
+            /** Applies To */
+            applies_to?: string[] | null;
+            /** Valid From */
+            valid_from?: string | null;
+            /** Valid Until */
+            valid_until?: string | null;
+            /** Max Uses */
+            max_uses?: number | null;
+            /** Max Uses Per User */
+            max_uses_per_user?: number | null;
+            /** Is Active */
+            is_active?: boolean | null;
         };
         /** PaymentIntentResponse */
         PaymentIntentResponse: {
@@ -4021,12 +4160,18 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Original Amount */
+            original_amount?: number | null;
+            /** Discount Applied */
+            discount_applied?: number | null;
+            /** Discount Code */
+            discount_code?: string | null;
         };
         /**
          * PaymentPurpose
          * @enum {string}
          */
-        PaymentPurpose: "community_annual" | "community_event" | "club_monthly" | "club_quaterly" | "club_biannually" | "club_annually" | "club_activation" | "academy_cohort" | "pool_fee" | "ride_share";
+        PaymentPurpose: "community" | "club" | "club_bundle" | "academy_cohort" | "session_fee";
         /** PaymentResponse */
         PaymentResponse: {
             /**
@@ -4313,26 +4458,6 @@ export interface operations {
             };
         };
     };
-    list_coaches_members_coaches_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MemberResponse"][];
-                };
-            };
-        };
-    };
     get_current_member_profile_members_me_get: {
         parameters: {
             query?: never;
@@ -4487,72 +4612,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
-                };
-            };
-        };
-    };
-    activate_community_membership_members_me_community_activate_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ActivateCommunityRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MemberResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    activate_club_membership_members_me_club_activate_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ActivateClubRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MemberResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -4734,6 +4793,26 @@ export interface operations {
             };
         };
     };
+    list_pending_members_admin_members_pending_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingMemberResponse"][];
+                };
+            };
+        };
+    };
     get_member_by_email_admin_members_by_email__email__get: {
         parameters: {
             query?: never;
@@ -4761,26 +4840,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_pending_members_admin_members_pending_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PendingMemberResponse"][];
                 };
             };
         };
@@ -4937,6 +4996,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ActivateClubRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_patch_membership_by_auth_admin_members_by_auth__auth_id__membership_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                auth_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MembershipPatchRequest"];
             };
         };
         responses: {
@@ -6970,6 +7064,37 @@ export interface operations {
             };
         };
     };
+    admin_mark_enrollment_paid_academy_admin_enrollments__enrollment_id__mark_paid_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnrollmentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     update_student_progress_academy_progress_post: {
         parameters: {
             query: {
@@ -7243,6 +7368,156 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    list_discounts_payments_admin_discounts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscountResponse"][];
+                };
+            };
+        };
+    };
+    create_discount_payments_admin_discounts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscountCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscountResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_discount_payments_admin_discounts__discount_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                discount_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscountResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_discount_payments_admin_discounts__discount_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                discount_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_discount_payments_admin_discounts__discount_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                discount_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscountUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscountResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
