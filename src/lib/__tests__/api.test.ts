@@ -100,8 +100,8 @@ describe('API Utilities', () => {
         })
 
         it('should handle missing Authorization header', () => {
-            const authHeader: string | undefined = undefined
-            const token = authHeader?.replace('Bearer ', '') ?? null
+            const authHeader = undefined as string | undefined
+            const token = authHeader ? authHeader.replace('Bearer ', '') : null
             expect(token).toBeNull()
         })
     })
