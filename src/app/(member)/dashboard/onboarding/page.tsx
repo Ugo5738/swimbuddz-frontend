@@ -648,7 +648,12 @@ export default function DashboardOnboardingPage() {
 
     const hasMissingRequiredSteps = missingRequiredSteps.length > 0;
     const firstMissingRequiredStep = missingRequiredSteps[0];
-    const activationTarget = wantsClub || wantsAcademy
+
+    // Check for upgrade flow via URL param
+    const upgradeStepFromUrl = searchParams.get("step") as StepKey | null;
+    const isClubUpgradeFlow = upgradeStepFromUrl === "club";
+
+    const activationTarget = wantsClub || wantsAcademy || isClubUpgradeFlow
         ? "club"
         : !communityActive
             ? "community"

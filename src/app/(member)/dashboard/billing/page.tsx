@@ -539,6 +539,37 @@ export default function BillingPage() {
                             </div>
                         </div>
 
+                        {/* Discount Code Input */}
+                        <div className="rounded-lg border border-purple-100 bg-gradient-to-r from-purple-50 to-pink-50 p-4">
+                            <label htmlFor="discount-code-activation" className="block text-sm font-medium text-purple-900 mb-2">
+                                Have a discount code?
+                            </label>
+                            <div className="flex gap-2">
+                                <input
+                                    id="discount-code-activation"
+                                    type="text"
+                                    value={discountCode}
+                                    onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                                    placeholder="Enter code (e.g., SUMMER25)"
+                                    className="flex-1 px-3 py-2 border border-purple-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent uppercase"
+                                />
+                                {discountCode && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setDiscountCode("")}
+                                        className="px-3 text-sm text-purple-600 hover:text-purple-800"
+                                    >
+                                        Clear
+                                    </button>
+                                )}
+                            </div>
+                            {discountCode && (
+                                <p className="mt-2 text-xs text-purple-700">
+                                    Discount code "{discountCode}" will be applied at checkout.
+                                </p>
+                            )}
+                        </div>
+
                         <div className="flex flex-wrap gap-3">
                             <Button onClick={activateCommunity} disabled={activatingCommunity}>
                                 {activatingCommunity ? "Processing..." : `Pay ${formattedCommunityFee} & Activate Community`}
