@@ -660,9 +660,9 @@ export default function DashboardOnboardingPage() {
             : null;
     const showBillingCta = Boolean(activationTarget);
     const billingHref = activationTarget === "club"
-        ? "/dashboard/billing?activation=club"
+        ? "/upgrade/club/plan"
         : activationTarget === "community"
-            ? "/dashboard/billing?activation=community&required=community"
+            ? "/checkout?purpose=community"
             : "/dashboard/billing";
     const billingCtaLabel = activationTarget === "club"
         ? "Activate Club Membership"

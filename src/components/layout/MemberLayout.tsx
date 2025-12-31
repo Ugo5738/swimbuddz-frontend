@@ -214,14 +214,15 @@ export function MemberLayout({ children }: MemberLayoutProps) {
     const clubEntitled = clubActive || memberTiers.includes("club");
     const academyEntitled = academyActive || memberTiers.includes("academy");
 
-    const membershipLabel = wantsAcademy && !academyActive
-        ? "Academy (Pending)"
-        : wantsClub && !clubEntitled
-            ? "Club (Pending)"
-            : academyEntitled
-                ? "Academy Member"
-                : clubEntitled
-                    ? "Club Member"
+    // Determine membership label - prioritize active status over pending
+    const membershipLabel = academyActive || academyEntitled
+        ? "Academy Member"
+        : clubActive || clubEntitled
+            ? "Club Member"
+            : wantsAcademy
+                ? "Academy (Pending)"
+                : wantsClub
+                    ? "Club (Pending)"
                     : "Community Member";
 
     const needsProfileBasics = !member?.profile_photo_url || !member?.profile?.gender || !member?.profile?.date_of_birth;

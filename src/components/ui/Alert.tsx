@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import clsx from "clsx";
-import { ExclamationTriangleIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
+import { CheckCircleIcon, ExclamationTriangleIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
 
 const variants = {
   info: {
@@ -10,6 +10,10 @@ const variants = {
   error: {
     icon: ExclamationTriangleIcon,
     classes: "border-rose-100 bg-rose-50 text-rose-900"
+  },
+  success: {
+    icon: CheckCircleIcon,
+    classes: "border-emerald-100 bg-emerald-50 text-emerald-900"
   }
 } as const;
 

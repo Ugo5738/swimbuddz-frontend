@@ -23,7 +23,9 @@ export function MainLayout({ children }: MainLayoutProps) {
     pathname?.startsWith("/community/tips") ||
     pathname?.startsWith("/community/coaches") ||
     pathname?.startsWith("/community/volunteers") ||
-    pathname?.startsWith("/attendance");
+    pathname?.startsWith("/attendance") ||
+    pathname?.startsWith("/checkout") ||
+    pathname?.startsWith("/upgrade");
 
   if (isAdminRoute || isMemberPortalRoute) {
     return <>{children}</>;

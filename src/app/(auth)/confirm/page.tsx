@@ -56,17 +56,19 @@ export default function ConfirmPage() {
   }, [router]);
 
   return (
-    <div className="mx-auto max-w-lg space-y-6">
-      <Card className="space-y-4" aria-busy={!error}>
-        <h1 className="text-2xl font-semibold text-slate-900">Finishing verification…</h1>
-        {error ? (
-          <Alert variant="error" title="Unable to finish confirmation">
-            {error}
-          </Alert>
-        ) : (
-          <p className="text-sm text-slate-600">Please hold while we verify your email and prepare your SwimBuddz profile.</p>
-        )}
-      </Card>
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="w-full max-w-lg">
+        <Card className="space-y-4 p-6" aria-busy={!error}>
+          <h1 className="text-2xl font-semibold text-slate-900">Finishing verification…</h1>
+          {error ? (
+            <Alert variant="error" title="Unable to finish confirmation">
+              {error}
+            </Alert>
+          ) : (
+            <p className="text-sm text-slate-600">Please hold while we verify your email and prepare your SwimBuddz profile.</p>
+          )}
+        </Card>
+      </div>
     </div>
   );
 }

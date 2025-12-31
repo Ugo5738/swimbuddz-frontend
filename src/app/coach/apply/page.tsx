@@ -230,19 +230,6 @@ export default function CoachApplyPage() {
                         </p>
                     </div>
 
-                    {/* Info strip */}
-                    <div className="flex flex-wrap justify-center gap-4 text-sm text-slate-600">
-                        <span className="flex items-center gap-1.5">
-                            <span className="text-emerald-500">✓</span> Open to non-members
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                            <span className="text-emerald-500">✓</span> No payment required
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                            <span className="text-emerald-500">✓</span> Approval required
-                        </span>
-                    </div>
-
                     <Card className="p-6 space-y-6">
                         <p className="text-center text-slate-600 text-sm">
                             To apply, you'll need to create an account or sign in first.
