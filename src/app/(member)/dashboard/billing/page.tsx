@@ -1,13 +1,15 @@
 "use client";
 
+import { AcademyReadinessModal } from "@/components/billing/AcademyReadinessModal";
+import { ClubReadinessModal } from "@/components/billing/ClubReadinessModal";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiGet, apiPatch, apiPost } from "@/lib/api";
 import { savePaymentIntentCache } from "@/lib/paymentCache";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -22,6 +24,7 @@ type Member = {
         requested_tiers?: string[] | null;
         primary_tier?: string | null;
         pending_payment_reference?: string | null;
+        club_notes?: string | null;
     } | null;
     // Nested emergency contact
     emergency_contact?: {
@@ -37,6 +40,16 @@ type Member = {
     } | null;
 };
 
+type Cohort = {
+    id: string;
+    name: string;
+    program_name?: string;
+    start_date?: string;
+    end_date?: string;
+    price?: number;
+    status?: string;
+};
+
 type PaymentIntent = {
     reference: string;
     amount: number;
@@ -45,6 +58,11 @@ type PaymentIntent = {
     status: string;
     checkout_url?: string | null;
     created_at: string;
+    // Community extension info (for Club payments)
+    requires_community_extension?: boolean;
+    community_extension_months?: number;
+    community_extension_amount?: number;
+    total_with_extension?: number | null;
 };
 
 type PaymentRecord = {
@@ -99,6 +117,18 @@ export default function BillingPage() {
     const [activatingClubBundle, setActivatingClubBundle] = useState(false);
     const [pendingPayment, setPendingPayment] = useState<PaymentRecord | null>(null);
     const [discountCode, setDiscountCode] = useState("");
+    const [showClubReadinessModal, setShowClubReadinessModal] = useState(false);
+    const [showAcademyReadinessModal, setShowAcademyReadinessModal] = useState(false);
+    const [openCohorts, setOpenCohorts] = useState<Cohort[]>([]);
+    const [selectedCohort, setSelectedCohort] = useState<Cohort | null>(null);
+    const [loadingCohorts, setLoadingCohorts] = useState(false);
+    const [includeCommunityExtension, setIncludeCommunityExtension] = useState(true);
+    const [extensionInfo, setExtensionInfo] = useState<{
+        required: boolean;
+        months: number;
+        amount: number;
+    } | null>(null);
+    const router = useRouter();
 
     const fetchMember = useCallback(async () => {
         return await apiGet<Member>("/api/v1/members/me", { auth: true });
@@ -171,6 +201,23 @@ export default function BillingPage() {
         return until !== null && until > now;
     }, [member, now]);
 
+    // Fetch open cohorts for Community/Club members
+    useEffect(() => {
+        if (!communityActive) return;
+        const fetchCohorts = async () => {
+            setLoadingCohorts(true);
+            try {
+                const cohorts = await apiGet<Cohort[]>("/api/v1/academy/cohorts?status=open", { auth: true });
+                setOpenCohorts(cohorts);
+            } catch {
+                setOpenCohorts([]);
+            } finally {
+                setLoadingCohorts(false);
+            }
+        };
+        fetchCohorts();
+    }, [communityActive]);
+
     const approvedTiers = useMemo(() => {
         const tiers = (member?.membership?.active_tiers && member.membership.active_tiers.length > 0)
             ? member.membership.active_tiers
@@ -195,6 +242,45 @@ export default function BillingPage() {
             approvedTiers.includes("academy")
         );
     }, [approvedTiers, requestedTiers]);
+
+    // Check if Club payment would require Community extension
+    useEffect(() => {
+        if (!showClubSection || !communityActive) {
+            setExtensionInfo(null);
+            return;
+        }
+        const checkExtension = async () => {
+            try {
+                // Make a dry-run call to check extension  
+                const intent = await apiPost<PaymentIntent>(
+                    "/api/v1/payments/intents",
+                    {
+                        purpose: "club",
+                        club_billing_cycle: clubBillingCycle,
+                        months: 1,
+                        currency: "NGN",
+                        include_community_extension: false, // Dry run
+                    },
+                    { auth: true }
+                );
+                if (intent.requires_community_extension) {
+                    setExtensionInfo({
+                        required: true,
+                        months: intent.community_extension_months || 0,
+                        amount: intent.community_extension_amount || 0,
+                    });
+                } else {
+                    setExtensionInfo(null);
+                }
+            } catch {
+                setExtensionInfo(null);
+            }
+        };
+        // Don't check on mount - only when billing cycle changes
+        if (clubBillingCycle) {
+            checkExtension();
+        }
+    }, [clubBillingCycle, showClubSection, communityActive]);
 
     const clubReadinessComplete = useMemo(() => {
         if (!member) return false;
@@ -306,7 +392,14 @@ export default function BillingPage() {
         try {
             const intent = await apiPost<PaymentIntent>(
                 "/api/v1/payments/intents",
-                { purpose: "club", club_billing_cycle: clubBillingCycle, months: 1, currency: "NGN", discount_code: discountCode || undefined },
+                {
+                    purpose: "club",
+                    club_billing_cycle: clubBillingCycle,
+                    months: 1,
+                    currency: "NGN",
+                    discount_code: discountCode || undefined,
+                    include_community_extension: extensionInfo?.required && includeCommunityExtension,
+                },
                 { auth: true }
             );
             setClubIntent(intent);
@@ -663,7 +756,7 @@ export default function BillingPage() {
                     </Card>
                 )
             ) : (
-                <>
+                <div className="flex flex-col gap-6">
                     {showCommunityRequiredAlert && (
                         <Alert variant="info" title="Community activation required">
                             Activate your annual Community membership to continue.
@@ -709,7 +802,8 @@ export default function BillingPage() {
                         </Card>
                     )}
 
-                    <Card className="p-6 space-y-4">
+                    {/* Community Card - shows AFTER Club when user is activating Club */}
+                    <Card className={`p-6 space-y-4 ${communityActive && showClubSection && !clubActive ? "order-2" : "order-1"}`}>
                         <div>
                             <h2 className="text-lg font-semibold text-slate-900">Community (₦20,000 / year)</h2>
                             <p className="text-sm text-slate-600 mt-1">
@@ -776,7 +870,7 @@ export default function BillingPage() {
                     </Card>
 
                     {showClubSection ? (
-                        <Card className="p-6 space-y-4">
+                        <Card className={`p-6 space-y-4 ${communityActive && !clubActive ? "order-1" : "order-2"}`}>
                             <div>
                                 <h2 className="text-lg font-semibold text-slate-900">Club</h2>
                                 <p className="text-sm text-slate-600 mt-1">
@@ -835,9 +929,35 @@ export default function BillingPage() {
                                             </button>
                                         ))}
                                     </div>
+
+                                    {/* Community Extension Notice */}
+                                    {extensionInfo?.required && (
+                                        <div className="p-4 rounded-lg bg-amber-50 border border-amber-200">
+                                            <p className="text-sm text-amber-800 mb-2">
+                                                <strong>Community extension needed:</strong> Your Club membership would extend {extensionInfo.months} month(s) beyond your Community expiry.
+                                            </p>
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={includeCommunityExtension}
+                                                    onChange={(e) => setIncludeCommunityExtension(e.target.checked)}
+                                                    className="h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                                                />
+                                                <span className="text-sm text-amber-800">
+                                                    Include Community extension (+₦{extensionInfo.amount.toLocaleString()})
+                                                </span>
+                                            </label>
+                                            {!includeCommunityExtension && (
+                                                <p className="text-xs text-amber-600 mt-2">
+                                                    ⚠️ Without extension, your Club access will end when Community expires.
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+
                                     <div className="flex flex-wrap gap-3">
                                         <Button onClick={activateClub} disabled={activatingClub}>
-                                            {activatingClub ? "Processing..." : "Pay for Club"}
+                                            {activatingClub ? "Processing..." : `Pay for Club${extensionInfo?.required && includeCommunityExtension ? ` + Extension` : ""}`}
                                         </Button>
                                     </div>
                                 </div>
@@ -856,20 +976,154 @@ export default function BillingPage() {
                         <Card className="p-6 space-y-3">
                             <h2 className="text-lg font-semibold text-slate-900">Want to join Club?</h2>
                             <p className="text-sm text-slate-600">
-                                Club is a recurring membership for swimmers who want regular sessions. You’ll complete readiness first, then activate Club when you’re ready.
+                                Club is a recurring membership for swimmers who want regular sessions. Complete your availability, then choose a billing plan.
                             </p>
                             <div className="flex flex-wrap gap-3">
-                                <Link href="/register?upgrade=true">
-                                    <Button>Request Club upgrade</Button>
-                                </Link>
+                                <Button onClick={() => setShowClubReadinessModal(true)}>
+                                    Upgrade to Club
+                                </Button>
                                 <Link href="/membership">
                                     <Button variant="secondary">How it works</Button>
                                 </Link>
                             </div>
                         </Card>
                     )}
-                </>
+
+                    {/* Academy Explore Section - always visible for Community members */}
+                    {communityActive && (
+                        <Card className="p-6 space-y-4 order-3">
+                            <div>
+                                <h2 className="text-lg font-semibold text-slate-900">Academy</h2>
+                                <p className="text-sm text-slate-600 mt-1">
+                                    Structured swimming programs with expert coaches. Complete your goals faster with personalized training.
+                                </p>
+                            </div>
+                            {loadingCohorts ? (
+                                <p className="text-sm text-slate-500">Loading cohorts...</p>
+                            ) : openCohorts.length > 0 ? (
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    {openCohorts.map((cohort) => (
+                                        <div
+                                            key={cohort.id}
+                                            className="p-4 border border-slate-200 rounded-lg hover:border-cyan-300 transition-colors"
+                                        >
+                                            <h3 className="font-medium text-slate-900">{cohort.name}</h3>
+                                            {cohort.program_name && (
+                                                <p className="text-sm text-slate-500">{cohort.program_name}</p>
+                                            )}
+                                            {cohort.start_date && (
+                                                <p className="text-sm text-slate-500">
+                                                    Starts: {formatDate(cohort.start_date)}
+                                                </p>
+                                            )}
+                                            {cohort.price !== undefined && cohort.price > 0 && (
+                                                <p className="text-sm font-medium text-cyan-700 mt-1">
+                                                    ₦{cohort.price.toLocaleString()}
+                                                </p>
+                                            )}
+                                            <Button
+                                                size="sm"
+                                                className="mt-3"
+                                                onClick={() => {
+                                                    setSelectedCohort(cohort);
+                                                    setShowAcademyReadinessModal(true);
+                                                }}
+                                            >
+                                                Enroll
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="rounded-lg bg-slate-50 p-4">
+                                    <p className="text-sm text-slate-600">
+                                        No open cohorts at this time. New cohorts are announced regularly.
+                                    </p>
+                                    <Link href="/academy" className="text-sm text-cyan-600 hover:text-cyan-800 underline">
+                                        Learn more about Academy programs →
+                                    </Link>
+                                </div>
+                            )}
+                        </Card>
+                    )}
+                </div>
             )}
+
+            {/* Club Readiness Modal */}
+            <ClubReadinessModal
+                isOpen={showClubReadinessModal}
+                onClose={() => setShowClubReadinessModal(false)}
+                onComplete={() => {
+                    setShowClubReadinessModal(false);
+                    // Refresh member data and show Club section
+                    load().then(() => {
+                        toast.success("Club readiness complete! Now choose your billing plan.");
+                    });
+                }}
+                initialData={{
+                    availabilitySlots: member?.availability?.available_days || [],
+                    clubNotes: member?.membership?.club_notes || "",
+                }}
+                onSave={async (data) => {
+                    await apiPatch("/api/v1/members/me", {
+                        availability: { available_days: data.available_days },
+                        membership: {
+                            club_notes: data.club_notes,
+                            requested_tiers: [...(member?.membership?.requested_tiers || []), "club"].filter((v, i, a) => a.indexOf(v) === i),
+                        },
+                    }, { auth: true });
+                }}
+            />
+
+
+            {/* Academy Readiness Modal */}
+            <AcademyReadinessModal
+                isOpen={showAcademyReadinessModal}
+                onClose={() => {
+                    setShowAcademyReadinessModal(false);
+                    setSelectedCohort(null);
+                }}
+                onComplete={async () => {
+                    setShowAcademyReadinessModal(false);
+                    if (!selectedCohort) return;
+                    // Create enrollment and payment intent
+                    try {
+                        const enrollment = await apiPost<{ id: string }>(
+                            "/api/v1/academy/enrollments",
+                            { cohort_id: selectedCohort.id },
+                            { auth: true }
+                        );
+                        const intent = await apiPost<PaymentIntent>(
+                            "/api/v1/payments/intents",
+                            {
+                                purpose: "academy_cohort",
+                                enrollment_id: enrollment.id,
+                                discount_code: discountCode || undefined,
+                            },
+                            { auth: true }
+                        );
+                        if (intent.checkout_url) {
+                            savePaymentIntentCache(intent, member?.id || "");
+                            window.location.href = intent.checkout_url;
+                        } else {
+                            toast.success("Enrollment created! Payment pending.");
+                        }
+                    } catch (e) {
+                        toast.error(e instanceof Error ? e.message : "Failed to create enrollment");
+                    }
+                    setSelectedCohort(null);
+                }}
+                onSave={async (data) => {
+                    await apiPatch("/api/v1/members/me", {
+                        membership: {
+                            academy_skill_assessment: data.academy_skill_assessment,
+                            academy_goals: data.academy_goals,
+                            academy_preferred_coach_gender: data.academy_preferred_coach_gender,
+                            academy_lesson_preference: data.academy_lesson_preference,
+                        },
+                    }, { auth: true });
+                }}
+            />
         </div>
     );
 }
