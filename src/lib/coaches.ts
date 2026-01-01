@@ -1,6 +1,6 @@
 /**
  * Coach API client and types for the coach application, onboarding, and management.
- * 
+ *
  * Types are generated from backend OpenAPI schema.
  * Run `npm run generate:types` to update types after backend changes.
  */
@@ -8,77 +8,25 @@
 import { apiGet, apiPatch, apiPost } from "./api";
 import type { components } from "./api-types";
 
-// Re-export generated type that exists
-export type CoachProfileResponseGenerated = components["schemas"]["CoachProfileResponse"];
+// === Generated Types (re-exported from api-types.ts) ===
 
-// Note: AdminCoachApplicationListItem and AdminCoachApplicationDetail are not in gateway OpenAPI spec
-// Admin coach application types are defined locally below
+export type CoachProfileResponse = components["schemas"]["CoachProfileResponse"];
+export type CoachApplicationCreate = components["schemas"]["CoachApplicationCreate"];
+export type CoachApplicationResponse = components["schemas"]["CoachApplicationResponse"];
+export type CoachApplicationStatusResponse = components["schemas"]["CoachApplicationStatusResponse"];
+export type CoachOnboardingUpdate = components["schemas"]["CoachOnboardingUpdate"];
+export type CoachProfileUpdate = components["schemas"]["CoachProfileUpdate"];
+export type AdminCoachApplicationListItem = components["schemas"]["AdminCoachApplicationListItem"];
+export type AdminCoachApplicationDetail = components["schemas"]["AdminCoachApplicationDetail"];
 
-// === Types ===
-
-export interface CoachApplicationData {
-    // Account info (if creating new account)
-    email?: string;
-    password?: string;
-    first_name?: string;
-    last_name?: string;
-
-    // Application fields
-    display_name?: string;
+// Type alias for backwards compatibility (wrapped with Partial for partial initialization)
+export type CoachApplicationData = Partial<CoachApplicationCreate> & {
     short_bio: string;
-    full_bio?: string;
-
     coaching_years: number;
-    coaching_experience_summary?: string;
-    coaching_specialties: string[];
-    certifications: string[];
-    other_certifications_note?: string;
-    coaching_document_link?: string;
-    coaching_document_file_name?: string;
+};
+export type CoachOnboardingData = Partial<CoachOnboardingUpdate>;
 
-    // Optional professional info
-    levels_taught?: string[];
-    age_groups_taught?: string[];
-    languages_spoken?: string[];
-    coaching_portfolio_link?: string;
-
-    // Safety/compliance
-    has_cpr_training?: boolean;
-    cpr_expiry_date?: string;
-}
-
-export interface CoachApplicationResponse {
-    id: string;
-    member_id: string;
-    email: string;
-    first_name: string;
-    last_name: string;
-    display_name?: string;
-
-    status: CoachStatus;
-    short_bio?: string;
-    coaching_years: number;
-    coaching_specialties: string[];
-    certifications: string[];
-    coaching_document_link?: string;
-    coaching_document_file_name?: string;
-
-    application_submitted_at?: string;
-    application_reviewed_at?: string;
-    rejection_reason?: string;
-
-    created_at: string;
-    updated_at: string;
-}
-
-export interface CoachApplicationStatusResponse {
-    status: CoachStatus | "none";
-    application_submitted_at?: string;
-    application_reviewed_at?: string;
-    rejection_reason?: string;
-    can_access_dashboard: boolean;
-}
-
+// CoachStatus type (string union for status field values)
 export type CoachStatus =
     | "draft"
     | "pending_review"
@@ -88,70 +36,6 @@ export type CoachStatus =
     | "active"
     | "inactive"
     | "suspended";
-
-export interface CoachOnboardingData {
-    availability_calendar?: Record<string, unknown>;
-    pools_supported?: string[];
-    can_travel_between_pools?: boolean;
-    travel_radius_km?: number;
-    accepts_one_on_one?: boolean;
-    accepts_group_cohorts?: boolean;
-    max_swimmers_per_session?: number;
-    max_cohorts_at_once?: number;
-    preferred_cohort_types?: string[];
-    currency?: string;
-    one_to_one_rate_per_hour?: number;
-    group_session_rate_per_hour?: number;
-    academy_cohort_stipend?: number;
-    show_in_directory?: boolean;
-    coach_profile_photo_url?: string;
-}
-
-export interface CoachProfileUpdate extends Partial<CoachApplicationData>, Partial<CoachOnboardingData> {
-    coach_profile_photo_url?: string;
-}
-
-// Admin types
-export interface AdminCoachApplicationListItem {
-    id: string;
-    member_id: string;
-    email: string;
-    first_name: string;
-    last_name: string;
-    display_name?: string;
-    status: CoachStatus;
-    coaching_years: number;
-    coaching_specialties: string[];
-    certifications: string[];
-    coaching_document_link?: string;
-    coaching_document_file_name?: string;
-    application_submitted_at?: string;
-    created_at: string;
-}
-
-export interface AdminCoachApplicationDetail extends AdminCoachApplicationListItem {
-    phone?: string;
-    coach_profile_photo_url?: string;
-    short_bio?: string;
-    full_bio?: string;
-    other_certifications_note?: string;
-    coaching_experience_summary?: string;
-    levels_taught: string[];
-    age_groups_taught: string[];
-    languages_spoken: string[];
-    coaching_portfolio_link?: string;
-    coaching_document_link?: string;
-    coaching_document_file_name?: string;
-    has_cpr_training: boolean;
-    cpr_expiry_date?: string;
-    background_check_status: string;
-    background_check_document_url?: string;
-    application_reviewed_at?: string;
-    application_reviewed_by?: string;
-    rejection_reason?: string;
-    admin_notes?: string;
-    updated_at: string;
-}
 
 // === API Client ===
 
@@ -236,7 +120,7 @@ export const CoachesApi = {
 
 // === Helper functions ===
 
-export function getStatusLabel(status: CoachStatus | "none"): string {
+export function getStatusLabel(status: string): string {
     const labels: Record<CoachStatus | "none", string> = {
         none: "Not Applied",
         draft: "Draft",
@@ -248,10 +132,10 @@ export function getStatusLabel(status: CoachStatus | "none"): string {
         inactive: "Inactive",
         suspended: "Suspended",
     };
-    return labels[status] || status;
+    return labels[status as CoachStatus | "none"] || status;
 }
 
-export function getStatusColor(status: CoachStatus | "none"): string {
+export function getStatusColor(status: string): string {
     const colors: Record<CoachStatus | "none", string> = {
         none: "text-slate-500",
         draft: "text-slate-500",
@@ -263,8 +147,9 @@ export function getStatusColor(status: CoachStatus | "none"): string {
         inactive: "text-slate-500",
         suspended: "text-red-600",
     };
-    return colors[status] || "text-slate-500";
+    return colors[status as CoachStatus | "none"] || "text-slate-500";
 }
+
 
 // Options for coach application form
 export const coachSpecialtyOptions = [

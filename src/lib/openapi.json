@@ -818,6 +818,64 @@
         }
       }
     },
+    "/api/v1/admin/members/by-auth/{auth_id}/community/extend": {
+      "post": {
+        "tags": [
+          "admin-members"
+        ],
+        "summary": "Admin Extend Community Membership By Auth",
+        "description": "Extend Community membership by months (for stacking with Club).",
+        "operationId": "admin_extend_community_membership_by_auth_admin_members_by_auth__auth_id__community_extend_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "auth_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Auth Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtendCommunityRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/members/by-auth/{auth_id}/club/activate": {
       "post": {
         "tags": [
@@ -4097,6 +4155,28 @@
         }
       }
     },
+    "/api/v1/payments/pricing": {
+      "get": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Get Pricing Config",
+        "description": "Get public pricing configuration for membership tiers.\nNo authentication required - used by frontend to display prices.",
+        "operationId": "get_pricing_config_payments_pricing_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PricingConfigResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/payments/intents": {
       "post": {
         "tags": [
@@ -6378,6 +6458,87 @@
             ],
             "title": "Coaching Document File Name"
           },
+          "other_certifications_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Other Certifications Note"
+          },
+          "levels_taught": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Levels Taught"
+          },
+          "age_groups_taught": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age Groups Taught"
+          },
+          "languages_spoken": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Languages Spoken"
+          },
+          "coaching_portfolio_link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coaching Portfolio Link"
+          },
+          "has_cpr_training": {
+            "type": "boolean",
+            "title": "Has Cpr Training",
+            "default": false
+          },
+          "cpr_expiry_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpr Expiry Date"
+          },
           "application_submitted_at": {
             "anyOf": [
               {
@@ -7347,6 +7508,20 @@
         "type": "object",
         "title": "CoachProfileUpdate",
         "description": "Schema for updating coach profile."
+      },
+      "ExtendCommunityRequest": {
+        "properties": {
+          "months": {
+            "type": "integer",
+            "maximum": 24.0,
+            "minimum": 1.0,
+            "title": "Months",
+            "default": 1
+          }
+        },
+        "type": "object",
+        "title": "ExtendCommunityRequest",
+        "description": "Request to extend community membership by months."
       },
       "HTTPValidationError": {
         "properties": {
@@ -11927,6 +12102,11 @@
             ],
             "title": "Discount Code"
           },
+          "include_community_extension": {
+            "type": "boolean",
+            "title": "Include Community Extension",
+            "default": false
+          },
           "metadata": {
             "anyOf": [
               {
@@ -12353,6 +12533,32 @@
               }
             ],
             "title": "Discount Code"
+          },
+          "requires_community_extension": {
+            "type": "boolean",
+            "title": "Requires Community Extension",
+            "default": false
+          },
+          "community_extension_months": {
+            "type": "integer",
+            "title": "Community Extension Months",
+            "default": 0
+          },
+          "community_extension_amount": {
+            "type": "number",
+            "title": "Community Extension Amount",
+            "default": 0
+          },
+          "total_with_extension": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total With Extension"
           }
         },
         "type": "object",
@@ -12511,6 +12717,40 @@
           "updated_at"
         ],
         "title": "PaymentResponse"
+      },
+      "PricingConfigResponse": {
+        "properties": {
+          "community_annual": {
+            "type": "integer",
+            "title": "Community Annual"
+          },
+          "club_quarterly": {
+            "type": "integer",
+            "title": "Club Quarterly"
+          },
+          "club_biannual": {
+            "type": "integer",
+            "title": "Club Biannual"
+          },
+          "club_annual": {
+            "type": "integer",
+            "title": "Club Annual"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency",
+            "default": "NGN"
+          }
+        },
+        "type": "object",
+        "required": [
+          "community_annual",
+          "club_quarterly",
+          "club_biannual",
+          "club_annual"
+        ],
+        "title": "PricingConfigResponse",
+        "description": "Public pricing configuration for frontend display."
       },
       "AnnouncementCategory": {
         "type": "string",

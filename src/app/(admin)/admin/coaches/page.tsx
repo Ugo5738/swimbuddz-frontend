@@ -24,7 +24,7 @@ export default function AdminCoachesPage() {
     const loadApplications = async () => {
         setLoading(true);
         try {
-            const status = statusFilter === "all" ? undefined : statusFilter;
+            const status = statusFilter;
             const data = await CoachesApi.listApplications(status);
             setApplications(data);
         } catch (error) {

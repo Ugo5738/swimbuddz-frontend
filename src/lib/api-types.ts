@@ -328,6 +328,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/members/by-auth/{auth_id}/community/extend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin Extend Community Membership By Auth
+         * @description Extend Community membership by months (for stacking with Club).
+         */
+        post: operations["admin_extend_community_membership_by_auth_admin_members_by_auth__auth_id__community_extend_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/members/by-auth/{auth_id}/club/activate": {
         parameters: {
             query?: never;
@@ -1348,6 +1368,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/payments/pricing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Pricing Config
+         * @description Get public pricing configuration for membership tiers.
+         *     No authentication required - used by frontend to display prices.
+         */
+        get: operations["get_pricing_config_payments_pricing_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/payments/intents": {
         parameters: {
             query?: never;
@@ -2182,6 +2223,23 @@ export interface components {
             coaching_document_link?: string | null;
             /** Coaching Document File Name */
             coaching_document_file_name?: string | null;
+            /** Other Certifications Note */
+            other_certifications_note?: string | null;
+            /** Levels Taught */
+            levels_taught?: string[] | null;
+            /** Age Groups Taught */
+            age_groups_taught?: string[] | null;
+            /** Languages Spoken */
+            languages_spoken?: string[] | null;
+            /** Coaching Portfolio Link */
+            coaching_portfolio_link?: string | null;
+            /**
+             * Has Cpr Training
+             * @default false
+             */
+            has_cpr_training: boolean;
+            /** Cpr Expiry Date */
+            cpr_expiry_date?: string | null;
             /** Application Submitted At */
             application_submitted_at?: string | null;
             /** Application Reviewed At */
@@ -2476,6 +2534,17 @@ export interface components {
             max_cohorts_at_once?: number | null;
             /** Preferred Cohort Types */
             preferred_cohort_types?: string[] | null;
+        };
+        /**
+         * ExtendCommunityRequest
+         * @description Request to extend community membership by months.
+         */
+        ExtendCommunityRequest: {
+            /**
+             * Months
+             * @default 1
+             */
+            months: number;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -4051,6 +4120,11 @@ export interface components {
             enrollment_id?: string | null;
             /** Discount Code */
             discount_code?: string | null;
+            /**
+             * Include Community Extension
+             * @default false
+             */
+            include_community_extension: boolean;
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -4166,6 +4240,23 @@ export interface components {
             discount_applied?: number | null;
             /** Discount Code */
             discount_code?: string | null;
+            /**
+             * Requires Community Extension
+             * @default false
+             */
+            requires_community_extension: boolean;
+            /**
+             * Community Extension Months
+             * @default 0
+             */
+            community_extension_months: number;
+            /**
+             * Community Extension Amount
+             * @default 0
+             */
+            community_extension_amount: number;
+            /** Total With Extension */
+            total_with_extension?: number | null;
         };
         /**
          * PaymentPurpose
@@ -4215,6 +4306,25 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /**
+         * PricingConfigResponse
+         * @description Public pricing configuration for frontend display.
+         */
+        PricingConfigResponse: {
+            /** Community Annual */
+            community_annual: number;
+            /** Club Quarterly */
+            club_quarterly: number;
+            /** Club Biannual */
+            club_biannual: number;
+            /** Club Annual */
+            club_annual: number;
+            /**
+             * Currency
+             * @default NGN
+             */
+            currency: string;
         };
         /**
          * AnnouncementCategory
@@ -4961,6 +5071,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ActivateCommunityRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_extend_community_membership_by_auth_admin_members_by_auth__auth_id__community_extend_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                auth_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExtendCommunityRequest"];
             };
         };
         responses: {
@@ -7158,6 +7303,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_pricing_config_payments_pricing_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PricingConfigResponse"];
                 };
             };
         };

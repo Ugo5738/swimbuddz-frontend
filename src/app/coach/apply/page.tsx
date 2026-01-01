@@ -183,7 +183,7 @@ export default function CoachApplyPage() {
             if (!formData.short_bio || formData.short_bio.length < 20) {
                 throw new Error("Please write a bio (at least 20 characters)");
             }
-            if (formData.coaching_specialties.length === 0) {
+            if ((formData.coaching_specialties || []).length === 0) {
                 throw new Error("Please select at least one specialty");
             }
 
@@ -212,12 +212,40 @@ export default function CoachApplyPage() {
         }
     };
 
+    const handleUpdateApplication = async () => {
+        setLoading(true);
+        try {
+            const profile = await CoachesApi.getMe();
+            setFormData({
+                short_bio: profile.short_bio || "",
+                coaching_years: profile.coaching_years || 0,
+                coaching_specialties: profile.coaching_specialties || [],
+                certifications: profile.certifications || [],
+                display_name: profile.display_name || "",
+                coaching_document_link: profile.coaching_document_link || "",
+                coaching_document_file_name: profile.coaching_document_file_name || "",
+                other_certifications_note: profile.other_certifications_note || "",
+                levels_taught: profile.levels_taught || [],
+                age_groups_taught: profile.age_groups_taught || [],
+                coaching_portfolio_link: profile.coaching_portfolio_link || "",
+                has_cpr_training: profile.has_cpr_training || false,
+            });
+            setStep("form");
+        } catch (error) {
+            console.error("Failed to load profile", error);
+            setError("Failed to load your existing application. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     if (loading) {
         return <LoadingCard text="Checking your status..." />;
     }
 
     // Auth required
     if (step === "auth") {
+        // ... (unchanged)
         return (
             <div className="min-h-screen bg-slate-50 px-4 py-12 sm:px-6 lg:px-8">
                 <div className="mx-auto max-w-lg space-y-8">
@@ -321,6 +349,9 @@ export default function CoachApplyPage() {
                                 <Alert variant="info" title="What we need">
                                     {rejectionReason || "Please check your email for details."}
                                 </Alert>
+                                <Button className="w-full" onClick={handleUpdateApplication}>
+                                    Update Application →
+                                </Button>
                             </>
                         )}
 
@@ -366,6 +397,9 @@ export default function CoachApplyPage() {
                                 <Alert variant="error" title="Reason">
                                     {rejectionReason || "Please check your email for details."}
                                 </Alert>
+                                <Button variant="secondary" className="w-full" onClick={handleUpdateApplication}>
+                                    Apply Again
+                                </Button>
                                 <div className="text-center pt-4 border-t border-slate-100">
                                     <Link href="/" className="text-sm text-cyan-600 hover:underline">
                                         Return to homepage
@@ -479,7 +513,7 @@ export default function CoachApplyPage() {
                                         key={opt.value}
                                         type="button"
                                         onClick={() => toggleArrayValue("coaching_specialties", opt.value)}
-                                        className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${formData.coaching_specialties.includes(opt.value)
+                                        className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${(formData.coaching_specialties || []).includes(opt.value)
                                             ? "bg-cyan-100 border-cyan-500 text-cyan-700"
                                             : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
                                             }`}
@@ -549,7 +583,7 @@ export default function CoachApplyPage() {
                                         key={opt.value}
                                         type="button"
                                         onClick={() => toggleArrayValue("certifications", opt.value)}
-                                        className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${formData.certifications.includes(opt.value)
+                                        className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${(formData.certifications || []).includes(opt.value)
                                             ? "bg-emerald-100 border-emerald-500 text-emerald-700"
                                             : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
                                             }`}
