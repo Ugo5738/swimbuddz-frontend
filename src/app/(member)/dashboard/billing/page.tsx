@@ -56,6 +56,21 @@ type Cohort = {
     status?: string;
 };
 
+type Enrollment = {
+    id: string;
+    cohort_id: string;
+    status: string;
+    payment_status: string;
+    cohort?: {
+        name: string;
+        start_date?: string;
+        end_date?: string;
+        program?: {
+            name: string;
+        };
+    };
+};
+
 // ============================================================================
 // Helpers
 // ============================================================================
@@ -88,6 +103,7 @@ export default function BillingPage() {
     const [verificationError, setVerificationError] = useState<string | null>(null);
     const [verificationTimedOut, setVerificationTimedOut] = useState(false);
     const [openCohorts, setOpenCohorts] = useState<Cohort[]>([]);
+    const [myEnrollments, setMyEnrollments] = useState<Enrollment[]>([]);
 
     // Load data
     const load = useCallback(async () => {
@@ -174,6 +190,19 @@ export default function BillingPage() {
             }
         };
         fetchCohorts();
+    }, []);
+
+    // Load my enrollments for Academy section
+    useEffect(() => {
+        const fetchEnrollments = async () => {
+            try {
+                const enrollments = await apiGet<Enrollment[]>("/api/v1/academy/my-enrollments", { auth: true });
+                setMyEnrollments(enrollments);
+            } catch {
+                setMyEnrollments([]);
+            }
+        };
+        fetchEnrollments();
     }, []);
 
     // Computed membership status
@@ -367,26 +396,163 @@ export default function BillingPage() {
             ) : null}
 
             {/* ============================================================ */}
-            {/* ACADEMY CARD */}
+            {/* ACADEMY SECTION */}
             {/* ============================================================ */}
-            {communityActive && (
-                <Card className="p-6 space-y-4">
-                    <div>
-                        <h2 className="text-lg font-semibold text-slate-900">Want to join Academy?</h2>
-                        <p className="text-sm text-slate-600 mt-1">
-                            Structured swimming programs with expert coaches. Complete your goals faster with personalized training.
-                        </p>
-                    </div>
-                    <div className="flex flex-wrap gap-3 items-center">
-                        <Link href="/upgrade/academy/details">
-                            <Button>Enroll in Academy</Button>
-                        </Link>
-                        <Link href="/academy" className="text-sm text-cyan-600 hover:text-cyan-800">
-                            How it works →
-                        </Link>
-                    </div>
-                </Card>
-            )}
+            {(() => {
+                // Separate enrollments by status
+                const paidEnrollments = myEnrollments.filter(e => e.payment_status === "paid" || e.status === "enrolled");
+                const pendingEnrollments = myEnrollments.filter(e => e.payment_status === "pending" && e.status === "pending_approval");
+
+                // Get cohort IDs the member is already enrolled in
+                const enrolledCohortIds = new Set(myEnrollments.map(e => e.cohort_id));
+
+                // Filter available cohorts (exclude ones already enrolled in)
+                const availableCohorts = openCohorts.filter(c => !enrolledCohortIds.has(c.id));
+
+                return (
+                    <>
+                        {/* Show all paid enrollments */}
+                        {paidEnrollments.map((enrollment, index) => (
+                            <Card key={enrollment.id} className="p-6 space-y-4">
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <h2 className="text-lg font-semibold text-slate-900">
+                                            Academy {paidEnrollments.length > 1 ? `(${index + 1})` : ""}
+                                        </h2>
+                                        <p className="text-sm text-slate-600 mt-1">
+                                            {enrollment.cohort?.program?.name || "Swimming Program"}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <dl className="grid gap-2 text-sm">
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <dt className="text-slate-600">Status:</dt>
+                                        <dd className="col-span-2 font-medium text-emerald-600">✓ Enrolled</dd>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <dt className="text-slate-600">Cohort:</dt>
+                                        <dd className="col-span-2 font-medium text-slate-900">
+                                            {enrollment.cohort?.name || "Current Cohort"}
+                                        </dd>
+                                    </div>
+                                    {enrollment.cohort?.start_date && (
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <dt className="text-slate-600">Starts:</dt>
+                                            <dd className="col-span-2 font-medium text-slate-900">
+                                                {formatDate(enrollment.cohort.start_date)}
+                                            </dd>
+                                        </div>
+                                    )}
+                                </dl>
+
+                                <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-4 text-sm text-emerald-800">
+                                    <p className="font-medium">You're enrolled in the Academy!</p>
+                                    <p className="mt-1 text-emerald-600">
+                                        Your sessions will begin on the cohort start date. Check the Sessions page for schedules.
+                                    </p>
+                                </div>
+                            </Card>
+                        ))}
+
+                        {/* Show pending enrollments */}
+                        {pendingEnrollments.map((enrollment) => (
+                            <Card key={enrollment.id} className="p-6 space-y-4">
+                                <div>
+                                    <h2 className="text-lg font-semibold text-slate-900">Academy</h2>
+                                    <p className="text-sm text-slate-600 mt-1">
+                                        {enrollment.cohort?.program?.name || "Swimming Program"}
+                                    </p>
+                                </div>
+
+                                <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
+                                    <p className="font-medium">Payment Pending</p>
+                                    <p className="mt-1 text-amber-600">
+                                        Complete your payment to confirm your enrollment in {enrollment.cohort?.name}.
+                                    </p>
+                                </div>
+
+                                <Link href={`/checkout?purpose=academy_cohort&cohort_id=${enrollment.cohort_id}`}>
+                                    <Button>Complete Payment</Button>
+                                </Link>
+                            </Card>
+                        ))}
+
+                        {/* Show option to enroll in more cohorts */}
+                        {communityActive && availableCohorts.length > 0 && (
+                            <Card className="p-6 space-y-4">
+                                <div>
+                                    <h2 className="text-lg font-semibold text-slate-900">
+                                        {myEnrollments.length > 0 ? "Enroll in Another Cohort" : "Want to join Academy?"}
+                                    </h2>
+                                    <p className="text-sm text-slate-600 mt-1">
+                                        {myEnrollments.length > 0
+                                            ? `${availableCohorts.length} more cohort${availableCohorts.length > 1 ? "s" : ""} available for enrollment.`
+                                            : "Structured swimming programs with expert coaches. Complete your goals faster with personalized training."
+                                        }
+                                    </p>
+                                </div>
+
+                                {/* Show available cohorts preview */}
+                                {availableCohorts.length <= 3 && (
+                                    <div className="space-y-2">
+                                        {availableCohorts.map(cohort => (
+                                            <div key={cohort.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-200">
+                                                <div>
+                                                    <p className="font-medium text-slate-900">{cohort.name}</p>
+                                                    <p className="text-xs text-slate-500">
+                                                        {cohort.start_date ? `Starts ${formatDate(cohort.start_date)}` : "Coming soon"}
+                                                    </p>
+                                                </div>
+                                                <Link href={`/upgrade/academy/cohort?select=${cohort.id}`}>
+                                                    <Button variant="secondary" size="sm">Enroll</Button>
+                                                </Link>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <div className="flex flex-wrap gap-3 items-center">
+                                    <Link href="/upgrade/academy/details">
+                                        <Button>{myEnrollments.length > 0 ? "Browse All Cohorts" : "Enroll in Academy"}</Button>
+                                    </Link>
+                                    <Link href="/academy" className="text-sm text-cyan-600 hover:text-cyan-800">
+                                        How it works →
+                                    </Link>
+                                </div>
+                            </Card>
+                        )}
+
+                        {/* No enrollments and no available cohorts */}
+                        {communityActive && myEnrollments.length === 0 && availableCohorts.length === 0 && (
+                            <Card className="p-6 space-y-4">
+                                <div>
+                                    <h2 className="text-lg font-semibold text-slate-900">Academy</h2>
+                                    <p className="text-sm text-slate-600 mt-1">
+                                        No cohorts are currently open for enrollment. Check back soon!
+                                    </p>
+                                </div>
+                                <Link href="/academy" className="text-sm text-cyan-600 hover:text-cyan-800">
+                                    Learn about Academy programs →
+                                </Link>
+                            </Card>
+                        )}
+
+                        {/* Enrolled in all available cohorts */}
+                        {communityActive && myEnrollments.length > 0 && availableCohorts.length === 0 && (
+                            <Card className="p-6 space-y-3 bg-slate-50 border-dashed">
+                                <p className="text-sm text-slate-600">
+                                    ✨ You're enrolled in all currently available cohorts! Check back later for new programs.
+                                </p>
+                                <Link href="/academy" className="text-sm text-cyan-600 hover:text-cyan-800">
+                                    Browse Academy programs →
+                                </Link>
+                            </Card>
+                        )}
+                    </>
+                );
+            })()}
         </div>
     );
 }
+

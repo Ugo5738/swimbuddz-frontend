@@ -157,13 +157,18 @@ export default function AcademyCohortSelectionPage() {
                                 </div>
 
                                 <div className="text-right">
-                                    {cohort.price !== undefined && cohort.price > 0 ? (
-                                        <div className="text-xl font-bold text-purple-600">
-                                            {formatCurrency(cohort.price)}
-                                        </div>
-                                    ) : (
-                                        <div className="text-sm text-slate-500">Price TBD</div>
-                                    )}
+                                    {(() => {
+                                        // Use price_override if set, otherwise use program.price_amount
+                                        const price = cohort.price_override ?? cohort.program?.price_amount;
+                                        if (price !== undefined && price > 0) {
+                                            return (
+                                                <div className="text-xl font-bold text-purple-600">
+                                                    {formatCurrency(price)}
+                                                </div>
+                                            );
+                                        }
+                                        return <div className="text-sm text-slate-500">Price TBD</div>;
+                                    })()}
                                 </div>
                             </div>
 
@@ -183,9 +188,10 @@ export default function AcademyCohortSelectionPage() {
                 <Card className="p-4 bg-purple-50 border-purple-200">
                     <p className="text-sm text-purple-800">
                         <strong>Selected:</strong> {selectedCohort.name}
-                        {selectedCohort.price !== undefined &&
-                            selectedCohort.price > 0 &&
-                            ` • ${formatCurrency(selectedCohort.price)}`}
+                        {(() => {
+                            const price = selectedCohort.price_override ?? selectedCohort.program?.price_amount;
+                            return price && price > 0 ? ` • ${formatCurrency(price)}` : "";
+                        })()}
                     </p>
                 </Card>
             )}

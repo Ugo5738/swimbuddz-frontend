@@ -5,7 +5,8 @@ import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-import { AcademyApi, CohortStatus, type Cohort } from "@/lib/academy";
+import { Textarea } from "@/components/ui/Textarea";
+import { AcademyApi, CohortStatus, LocationType, type Cohort } from "@/lib/academy";
 
 type EditCohortModalProps = {
     isOpen: boolean;
@@ -23,6 +24,13 @@ export function EditCohortModal({ isOpen, onClose, onSuccess, cohort }: EditCoho
         end_date: cohort.end_date.split('T')[0],
         capacity: cohort.capacity,
         status: cohort.status,
+        // New fields
+        timezone: cohort.timezone || "Africa/Lagos",
+        location_type: cohort.location_type || LocationType.POOL,
+        location_name: cohort.location_name || "",
+        location_address: cohort.location_address || "",
+        notes_internal: cohort.notes_internal || "",
+        allow_mid_entry: cohort.allow_mid_entry || false,
     });
 
     // Update form data when cohort changes
@@ -33,6 +41,12 @@ export function EditCohortModal({ isOpen, onClose, onSuccess, cohort }: EditCoho
             end_date: cohort.end_date.split('T')[0],
             capacity: cohort.capacity,
             status: cohort.status,
+            timezone: cohort.timezone || "Africa/Lagos",
+            location_type: cohort.location_type || LocationType.POOL,
+            location_name: cohort.location_name || "",
+            location_address: cohort.location_address || "",
+            notes_internal: cohort.notes_internal || "",
+            allow_mid_entry: cohort.allow_mid_entry || false,
         });
     }, [cohort]);
 
@@ -55,7 +69,7 @@ export function EditCohortModal({ isOpen, onClose, onSuccess, cohort }: EditCoho
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Edit Cohort">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                 {error && <div className="text-sm text-red-600">{error}</div>}
 
                 <Input
@@ -105,7 +119,69 @@ export function EditCohortModal({ isOpen, onClose, onSuccess, cohort }: EditCoho
                     </Select>
                 </div>
 
-                <div className="flex justify-end gap-2 pt-2">
+                {/* Location Section */}
+                <div className="border-t pt-4 mt-4">
+                    <h4 className="text-sm font-medium text-slate-700 mb-3">Location</h4>
+
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                        <Select
+                            label="Location Type"
+                            value={formData.location_type}
+                            onChange={(e) => setFormData({ ...formData, location_type: e.target.value as LocationType })}
+                        >
+                            <option value={LocationType.POOL}>Pool</option>
+                            <option value={LocationType.OPEN_WATER}>Open Water</option>
+                            <option value={LocationType.REMOTE}>Remote/Online</option>
+                        </Select>
+
+                        <Select
+                            label="Timezone"
+                            value={formData.timezone}
+                            onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
+                        >
+                            <option value="Africa/Lagos">Africa/Lagos (WAT)</option>
+                            <option value="Europe/London">Europe/London (GMT/BST)</option>
+                            <option value="America/New_York">America/New_York (EST)</option>
+                        </Select>
+                    </div>
+
+                    <Input
+                        label="Location Name"
+                        value={formData.location_name}
+                        onChange={(e) => setFormData({ ...formData, location_name: e.target.value })}
+                        placeholder="e.g., SunFit Pool, Ikoyi"
+                    />
+
+                    <Input
+                        label="Location Address"
+                        value={formData.location_address}
+                        onChange={(e) => setFormData({ ...formData, location_address: e.target.value })}
+                        placeholder="Full address"
+                        className="mt-4"
+                    />
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <input
+                        type="checkbox"
+                        id="allow_mid_entry"
+                        checked={formData.allow_mid_entry}
+                        onChange={(e) => setFormData({ ...formData, allow_mid_entry: e.target.checked })}
+                        className="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                    />
+                    <label htmlFor="allow_mid_entry" className="text-sm text-slate-700">
+                        Allow mid-cohort entry
+                    </label>
+                </div>
+
+                <Textarea
+                    label="Internal Notes (staff only)"
+                    value={formData.notes_internal}
+                    onChange={(e) => setFormData({ ...formData, notes_internal: e.target.value })}
+                    placeholder="Notes visible only to staff"
+                />
+
+                <div className="flex justify-end gap-2 pt-2 sticky bottom-0 bg-white">
                     <Button type="button" variant="ghost" onClick={onClose} disabled={loading}>
                         Cancel
                     </Button>

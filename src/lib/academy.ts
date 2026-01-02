@@ -1,9 +1,8 @@
 import { apiDelete, apiGet, apiPost, apiPut } from "./api";
 
-// Note: ProgramResponse, CohortResponse, EnrollmentResponse are not in gateway OpenAPI spec
-// These types are defined locally below as the academy service isn't proxied through gateway
+// Note: These types match the backend academy_service models after the schema redesign
 
-// --- Types ---
+// --- Enums ---
 
 export enum ProgramLevel {
     BEGINNER_1 = "beginner_1",
@@ -13,11 +12,23 @@ export enum ProgramLevel {
     SPECIALTY = "specialty",
 }
 
+export enum BillingType {
+    ONE_TIME = "one_time",
+    SUBSCRIPTION = "subscription",
+    PER_SESSION = "per_session",
+}
+
 export enum CohortStatus {
     OPEN = "open",
     ACTIVE = "active",
     COMPLETED = "completed",
     CANCELLED = "cancelled",
+}
+
+export enum LocationType {
+    POOL = "pool",
+    OPEN_WATER = "open_water",
+    REMOTE = "remote",
 }
 
 export enum EnrollmentStatus {
@@ -28,6 +39,12 @@ export enum EnrollmentStatus {
     GRADUATED = "graduated",
 }
 
+export enum EnrollmentSource {
+    WEB = "web",
+    ADMIN = "admin",
+    PARTNER = "partner",
+}
+
 export enum PaymentStatus {
     PENDING = "pending",
     PAID = "paid",
@@ -35,19 +52,45 @@ export enum PaymentStatus {
     WAIVED = "waived",
 }
 
+export enum MilestoneType {
+    SKILL = "skill",
+    ENDURANCE = "endurance",
+    TECHNIQUE = "technique",
+    ASSESSMENT = "assessment",
+}
+
+export enum RequiredEvidence {
+    NONE = "none",
+    VIDEO = "video",
+    TIME_TRIAL = "time_trial",
+}
+
 export enum ProgressStatus {
     PENDING = "pending",
     ACHIEVED = "achieved",
 }
 
+// --- Types ---
+
 export interface Program {
     id: string;
     name: string;
+    slug?: string;
     description?: string;
+    cover_image_url?: string;
     level: ProgramLevel;
     duration_weeks: number;
-    price?: number;
+    default_capacity?: number;
+    // Pricing
+    currency?: string;
+    price_amount?: number;
+    billing_type?: BillingType;
+    // Content
     curriculum_json?: any;
+    prep_materials?: any;
+    // Status
+    version?: number;
+    is_published?: boolean;
     created_at: string;
     updated_at: string;
 }
@@ -59,8 +102,20 @@ export interface Cohort {
     start_date: string;
     end_date: string;
     capacity: number;
-    status: CohortStatus;
+    // Location
+    timezone?: string;
+    location_type?: LocationType;
+    location_name?: string;
+    location_address?: string;
+    // Coach
     coach_id?: string | null;
+    // Pricing
+    price_override?: number;
+    // Status
+    status: CohortStatus;
+    allow_mid_entry?: boolean;
+    notes_internal?: string;
+    // Relations
     program?: Program;
     created_at: string;
     updated_at: string;
@@ -74,10 +129,19 @@ export interface Enrollment {
     status: EnrollmentStatus;
     payment_status: PaymentStatus;
     preferences?: any;
+    // Payment tracking
+    price_snapshot_amount?: number;
+    currency_snapshot?: string;
+    payment_reference?: string;
+    paid_at?: string;
+    // Enrollment tracking
+    enrolled_at?: string;
+    source?: EnrollmentSource;
     created_at: string;
     updated_at: string;
-    cohort?: Cohort; // Added for eager loading
-    program?: Program; // Added for eager loading
+    // Relations
+    cohort?: Cohort;
+    program?: Program;
 }
 
 export interface Milestone {
@@ -86,6 +150,12 @@ export interface Milestone {
     name: string;
     criteria?: string;
     video_url?: string;
+    // Organization
+    order_index?: number;
+    milestone_type?: MilestoneType;
+    // Assessment
+    rubric_json?: any;
+    required_evidence?: RequiredEvidence;
     created_at: string;
     updated_at: string;
 }
@@ -96,6 +166,12 @@ export interface StudentProgress {
     milestone_id: string;
     status: ProgressStatus;
     achieved_at?: string;
+    // Evidence & Review
+    evidence_url?: string;
+    score?: number;
+    reviewed_by_coach_id?: string;
+    reviewed_at?: string;
+    student_notes?: string;
     coach_notes?: string;
     created_at: string;
     updated_at: string;
@@ -155,7 +231,7 @@ export const AcademyApi = {
     getStudentProgress: (enrollmentId: string) =>
         apiGet<StudentProgress[]>(`/api/v1/academy/enrollments/${enrollmentId}/progress`),
 
-    // New Methods
+    // Open cohorts
     getOpenCohorts: () => apiGet<Cohort[]>("/api/v1/academy/cohorts/open"),
 
     /**

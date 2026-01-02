@@ -31,10 +31,10 @@ export function UpcomingSessions() {
                 }
 
                 const data = await getSessions();
-                // Filter for future sessions only
+                // Filter for future sessions only using starts_at
                 const futureSessions = data
-                    .filter(session => new Date(session.date) >= new Date())
-                    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                    .filter((session: Session) => new Date(session.starts_at) >= new Date())
+                    .sort((a: Session, b: Session) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
                     .slice(0, 3); // Show next 3 sessions
                 setSessions(futureSessions);
             } catch (err) {
@@ -46,6 +46,10 @@ export function UpcomingSessions() {
         }
         load();
     }, []);
+
+    const formatTime = (isoString: string) => {
+        return new Date(isoString).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    };
 
     if (loading) {
         return <div className="text-sm text-slate-500">Loading upcoming sessions...</div>;
@@ -73,10 +77,10 @@ export function UpcomingSessions() {
                     <div>
                         <p className="font-semibold text-slate-900">{session.title}</p>
                         <p className="text-xs text-slate-500">
-                            {new Date(session.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })} • {session.startTime}
+                            {new Date(session.starts_at).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })} • {formatTime(session.starts_at)}
                         </p>
                     </div>
-                    {membership === "community" && (session.type === "club" || session.type === "academy") ? (
+                    {membership === "community" && (session.session_type === "club" || session.session_type === "cohort_class") ? (
                         <span className="text-xs font-medium text-amber-700">Club members only</span>
                     ) : (
                         <Link href={`/sessions/${session.id}/sign-in`}>

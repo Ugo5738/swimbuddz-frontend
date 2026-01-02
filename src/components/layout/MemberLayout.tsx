@@ -80,6 +80,15 @@ type MemberInfo = {
     };
 };
 
+type AcademyEnrollment = {
+    id: string;
+    status: string;
+    payment_status: string;
+    cohort?: {
+        name: string;
+    };
+};
+
 const navSections: NavSection[] = [
     {
         title: "Overview",
@@ -127,6 +136,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [member, setMember] = useState<MemberInfo | null>(null);
     const [loading, setLoading] = useState(true);
+    const [academyEnrollments, setAcademyEnrollments] = useState<AcademyEnrollment[]>([]);
 
     const refreshMember = useCallback(async () => {
         try {
@@ -139,7 +149,12 @@ export function MemberLayout({ children }: MemberLayoutProps) {
 
     useEffect(() => {
         setLoading(true);
-        refreshMember().finally(() => setLoading(false));
+        Promise.all([
+            refreshMember(),
+            apiGet<AcademyEnrollment[]>("/api/v1/academy/my-enrollments", { auth: true })
+                .then(setAcademyEnrollments)
+                .catch(() => setAcademyEnrollments([]))
+        ]).finally(() => setLoading(false));
     }, [refreshMember]);
 
     useEffect(() => {
@@ -214,8 +229,13 @@ export function MemberLayout({ children }: MemberLayoutProps) {
     const clubEntitled = clubActive || memberTiers.includes("club");
     const academyEntitled = academyActive || memberTiers.includes("academy");
 
+    // Check if user has a paid academy enrollment (more reliable than academy_paid_until)
+    const hasPaidAcademyEnrollment = academyEnrollments.some(
+        e => e.payment_status === "paid" || e.status === "enrolled"
+    );
+
     // Determine membership label - prioritize active status over pending
-    const membershipLabel = academyActive || academyEntitled
+    const membershipLabel = hasPaidAcademyEnrollment || academyActive || academyEntitled
         ? "Academy Member"
         : clubActive || clubEntitled
             ? "Club Member"

@@ -7,6 +7,7 @@ import { MilestoneProgressModal } from "@/components/academy/MilestoneProgressMo
 import { EnrollmentStatusBadge } from "@/components/academy/EnrollmentStatusBadge";
 import { PaymentStatusBadge } from "@/components/academy/PaymentStatusBadge";
 import { UpdateEnrollmentModal } from "@/components/academy/UpdateEnrollmentModal";
+import { CohortSessionsSection } from "@/components/sessions/CohortSessionsSection";
 import {
     AcademyApi, Cohort,
     Enrollment,
@@ -238,6 +239,13 @@ export default function CohortDetailsPage() {
                     </div>
                 </Card>
             </div>
+
+            {/* Sessions Section */}
+            <CohortSessionsSection
+                cohortId={cohortId}
+                cohortTimezone={cohort.timezone}
+                cohortLocationName={cohort.location_name}
+            />
 
             {/* Student Progress Table */}
             <Card className="overflow-hidden">

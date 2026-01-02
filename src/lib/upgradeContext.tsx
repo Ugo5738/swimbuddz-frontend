@@ -14,8 +14,14 @@ export type Cohort = {
     program_name?: string;
     start_date?: string;
     end_date?: string;
-    price?: number;
+    price_override?: number; // Cohort-specific price override
     status?: string;
+    program?: {
+        id: string;
+        name: string;
+        price_amount: number;
+        currency?: string;
+    };
 };
 
 export type UpgradeState = {

@@ -129,6 +129,12 @@ function LoginContent() {
         <p className="text-center text-sm text-slate-600">
           New here? <a href="/register" className="font-semibold text-cyan-700 hover:underline">Create an account</a>
         </p>
+        <p className="text-center text-sm text-slate-500">
+          Didn't get the confirmation email?{" "}
+          <a href="/resend-confirmation" className="font-medium text-cyan-600 hover:underline">
+            Resend it
+          </a>
+        </p>
       </Card>
     </div>
   );

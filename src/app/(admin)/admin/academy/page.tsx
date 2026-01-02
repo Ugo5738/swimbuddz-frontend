@@ -5,16 +5,11 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/Card";
 import { AcademyApi, Program, Cohort } from "@/lib/academy";
-import { CreateProgramModal } from "@/components/academy/CreateProgramModal";
-import { CreateCohortModal } from "@/components/academy/CreateCohortModal";
 
 export default function AdminAcademyPage() {
     const [programs, setPrograms] = useState<Program[]>([]);
     const [cohorts, setCohorts] = useState<Cohort[]>([]);
     const [loading, setLoading] = useState(true);
-
-    const [isCreateProgramOpen, setIsCreateProgramOpen] = useState(false);
-    const [isCreateCohortOpen, setIsCreateCohortOpen] = useState(false);
 
     const router = useRouter();
 
@@ -36,14 +31,6 @@ export default function AdminAcademyPage() {
         }
         loadData();
     }, []);
-
-    const handleProgramCreated = (newProgram: Program) => {
-        setPrograms((prev) => [...prev, newProgram]);
-    };
-
-    const handleCohortCreated = (newCohort: Cohort) => {
-        setCohorts((prev) => [newCohort, ...prev]);
-    };
 
     const handleDeleteProgram = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
@@ -84,13 +71,13 @@ export default function AdminAcademyPage() {
                 </div>
                 <div className="flex gap-2">
                     <button
-                        onClick={() => setIsCreateProgramOpen(true)}
+                        onClick={() => router.push("/admin/academy/programs/new")}
                         className="rounded bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700"
                     >
                         Create Program
                     </button>
                     <button
-                        onClick={() => setIsCreateCohortOpen(true)}
+                        onClick={() => router.push("/admin/academy/cohorts/new")}
                         className="rounded bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700"
                     >
                         Create Cohort
@@ -112,7 +99,7 @@ export default function AdminAcademyPage() {
                                 <Card
                                     key={program.id}
                                     className="flex flex-col gap-2 cursor-pointer hover:shadow-md transition-shadow relative group"
-                                    onClick={() => router.push(`/admin/academy/programs/${program.id}`)} // Assuming we will create this page or it exists. Actually user said "manage members and details". Programs define curriculum.
+                                    onClick={() => router.push(`/admin/academy/programs/${program.id}`)}
                                 >
                                     <div className="flex justify-between">
                                         <h3 className="font-medium text-slate-900">{program.name}</h3>
@@ -159,19 +146,6 @@ export default function AdminAcademyPage() {
                     )}
                 </div>
             </div>
-
-            <CreateProgramModal
-                isOpen={isCreateProgramOpen}
-                onClose={() => setIsCreateProgramOpen(false)}
-                onSuccess={handleProgramCreated}
-            />
-
-            <CreateCohortModal
-                isOpen={isCreateCohortOpen}
-                onClose={() => setIsCreateCohortOpen(false)}
-                onSuccess={handleCohortCreated}
-                programs={programs}
-            />
         </div>
     );
 }

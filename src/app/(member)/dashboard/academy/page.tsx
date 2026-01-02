@@ -313,7 +313,7 @@ export default function StudentAcademyPage() {
                                         <div className="flex items-center justify-between">
                                             <span className="text-slate-500">Price:</span>
                                             <span className="font-medium text-slate-900">
-                                                {cohort.program?.price ? `₦${cohort.program.price.toLocaleString()}` : 'Free'}
+                                                {cohort.program?.price_amount ? `₦${cohort.program.price_amount.toLocaleString()}` : 'Free'}
                                             </span>
                                         </div>
                                         <div className="flex items-center justify-between">
