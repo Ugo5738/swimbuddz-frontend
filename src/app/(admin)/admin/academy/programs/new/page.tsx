@@ -41,6 +41,8 @@ export default function NewProgramPage() {
         price_amount: 0,
         billing_type: BillingType.ONE_TIME,
         is_published: false,
+        cover_image_url: "",
+        prep_materials: "",
     });
 
     // Curriculum state
@@ -293,6 +295,25 @@ export default function NewProgramPage() {
                                     ₦{(formData.price_amount / 100).toLocaleString()} (display value)
                                 </p>
                             </div>
+                        </div>
+
+                        <div className="border-t pt-4 mt-4">
+                            <h3 className="font-semibold text-slate-900 mb-3">Additional Details</h3>
+
+                            <Input
+                                label="Cover Image URL"
+                                value={formData.cover_image_url}
+                                onChange={(e) => setFormData({ ...formData, cover_image_url: e.target.value })}
+                                placeholder="https://... (optional banner image)"
+                            />
+
+                            <Textarea
+                                label="Prep Materials"
+                                value={formData.prep_materials}
+                                onChange={(e) => setFormData({ ...formData, prep_materials: e.target.value })}
+                                placeholder="What students should prepare before starting (optional)..."
+                                className="mt-4"
+                            />
                         </div>
                     </div>
                 )}

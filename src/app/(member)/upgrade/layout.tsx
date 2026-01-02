@@ -13,7 +13,7 @@ const STEPS = [
     { path: "/checkout", label: "Checkout", tier: "all" },
 ];
 
-function ProgressIndicator() {
+function StepIndicator() {
     const pathname = usePathname();
 
     // Determine current tier flow based on path
@@ -35,35 +35,22 @@ function ProgressIndicator() {
     const currentIndex = relevantSteps.findIndex((s) => pathname.startsWith(s.path));
 
     return (
-        <div className="flex items-center justify-center gap-2 mb-6">
+        <div className="flex gap-2">
             {relevantSteps.map((step, index) => {
                 const isActive = index === currentIndex;
                 const isCompleted = index < currentIndex;
 
                 return (
-                    <div key={step.path} className="flex items-center gap-2">
-                        <div
-                            className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-colors ${isActive
-                                ? "bg-cyan-500 text-white"
-                                : isCompleted
-                                    ? "bg-emerald-500 text-white"
-                                    : "bg-slate-200 text-slate-500"
-                                }`}
-                        >
-                            {isCompleted ? "✓" : index + 1}
-                        </div>
-                        <span
-                            className={`text-sm hidden sm:inline ${isActive ? "text-slate-900 font-medium" : "text-slate-500"
-                                }`}
-                        >
-                            {step.label}
-                        </span>
-                        {index < relevantSteps.length - 1 && (
-                            <div
-                                className={`w-8 h-0.5 ${isCompleted ? "bg-emerald-500" : "bg-slate-200"
-                                    }`}
-                            />
-                        )}
+                    <div
+                        key={step.path}
+                        className={`flex-1 rounded-lg px-4 py-2 text-center text-sm font-medium transition-colors ${isActive
+                            ? "bg-cyan-600 text-white"
+                            : isCompleted
+                                ? "bg-green-100 text-green-700"
+                                : "bg-slate-100 text-slate-500"
+                            }`}
+                    >
+                        {step.label}
                     </div>
                 );
             })}
@@ -75,19 +62,19 @@ export default function UpgradeLayout({ children }: { children: React.ReactNode 
     return (
         <UpgradeProvider>
             <div className="max-w-2xl mx-auto space-y-6">
-                {/* Progress indicator */}
-                <ProgressIndicator />
-
-                {/* Back link - subtle placement below progress */}
+                {/* Back link - above progress */}
                 <div className="flex justify-start">
                     <Link
                         href="/dashboard/billing"
-                        className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-600 transition-colors"
+                        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 mb-2"
                     >
                         <ArrowLeft className="w-3.5 h-3.5" />
                         <span>Back to Billing</span>
                     </Link>
                 </div>
+
+                {/* Tab-style step indicator */}
+                <StepIndicator />
 
                 {/* Page content */}
                 {children}

@@ -14,6 +14,7 @@ import {
     type Program,
     type Cohort
 } from "@/lib/academy";
+import { SessionsApi, SessionType, SessionLocation } from "@/lib/sessions";
 import { toast } from "sonner";
 
 // Day/time schedule item
@@ -138,10 +139,69 @@ export default function NewCohortPage() {
                 notes_internal: formData.notes_internal || undefined,
             });
 
-            // TODO: Generate sessions based on schedule
-            // This would call SessionsApi.createSession for each week/day
+            // Generate sessions based on schedule
+            const startDate = new Date(formData.start_date);
+            const endDate = new Date(formData.end_date);
+            const dayMap: Record<string, number> = {
+                sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
+                thursday: 4, friday: 5, saturday: 6
+            };
 
-            toast.success("Cohort created successfully!");
+            let weekNumber = 1;
+            let sessionCount = 0;
+            const currentDate = new Date(startDate);
+
+            // Loop through each week of the cohort
+            while (currentDate <= endDate) {
+                // For each schedule item, create a session on the correct day this week
+                for (const item of schedule) {
+                    const targetDay = dayMap[item.day.toLowerCase()];
+                    const sessionDate = new Date(currentDate);
+
+                    // Find the next occurrence of the target day in this week
+                    const currentDay = sessionDate.getDay();
+                    const daysUntilTarget = (targetDay - currentDay + 7) % 7;
+                    sessionDate.setDate(sessionDate.getDate() + daysUntilTarget);
+
+                    // Only create if this date is within cohort range
+                    if (sessionDate >= startDate && sessionDate <= endDate) {
+                        // Parse times
+                        const [startHour, startMin] = item.startTime.split(':').map(Number);
+                        const [endHour, endMin] = item.endTime.split(':').map(Number);
+
+                        const sessionStart = new Date(sessionDate);
+                        sessionStart.setHours(startHour, startMin, 0, 0);
+
+                        const sessionEnd = new Date(sessionDate);
+                        sessionEnd.setHours(endHour, endMin, 0, 0);
+
+                        try {
+                            await SessionsApi.createSession({
+                                title: `Week ${weekNumber} - ${selectedProgram?.name || 'Session'}`,
+                                session_type: SessionType.COHORT_CLASS,
+                                cohort_id: cohort.id,
+                                week_number: weekNumber,
+                                starts_at: sessionStart.toISOString(),
+                                ends_at: sessionEnd.toISOString(),
+                                timezone: formData.timezone,
+                                capacity: formData.capacity,
+                                location: formData.location_type === LocationType.OPEN_WATER ? SessionLocation.OPEN_WATER : SessionLocation.OTHER,
+                                location_name: formData.location_name || undefined,
+                                location_address: formData.location_address || undefined,
+                            });
+                            sessionCount++;
+                        } catch (sessionErr) {
+                            console.error('Failed to create session:', sessionErr);
+                        }
+                    }
+                }
+
+                // Move to next week
+                currentDate.setDate(currentDate.getDate() + 7);
+                weekNumber++;
+            }
+
+            toast.success(`Cohort created with ${sessionCount} sessions!`);
             router.push(`/admin/academy/cohorts/${cohort.id}`);
         } catch (err) {
             console.error(err);
