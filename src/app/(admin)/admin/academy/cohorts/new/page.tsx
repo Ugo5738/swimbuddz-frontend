@@ -45,8 +45,9 @@ export default function NewCohortPage() {
         location_type: LocationType.POOL,
         location_name: "",
         location_address: "",
-        // Notes
+        // Notes & Pricing
         notes_internal: "",
+        price_override: null as number | null, // Override program price for this cohort
     });
 
     // Schedule state (for generating sessions later)
@@ -382,6 +383,23 @@ export default function NewCohortPage() {
                             />
                             <span className="text-sm text-slate-700">Allow mid-cohort enrollment</span>
                         </label>
+
+                        <div className="border-t pt-4 mt-4">
+                            <h3 className="font-semibold text-slate-900 mb-3">Pricing</h3>
+                            <Input
+                                label="Price Override (₦)"
+                                type="number"
+                                value={formData.price_override ?? ""}
+                                onChange={(e) => setFormData({
+                                    ...formData,
+                                    price_override: e.target.value ? parseInt(e.target.value) : null
+                                })}
+                                placeholder={`Leave empty to use program price${selectedProgram?.price_amount ? ` (₦${(selectedProgram.price_amount / 100).toLocaleString()})` : ""}`}
+                            />
+                            <p className="text-xs text-slate-500 mt-1">
+                                Override the program&apos;s default price for this specific cohort
+                            </p>
+                        </div>
                     </div>
                 )}
 

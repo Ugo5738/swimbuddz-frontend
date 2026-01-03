@@ -12,10 +12,10 @@ import { Button } from "@/components/ui/Button";
 interface Session {
     id: string;
     title: string;
-    type?: "club" | "academy" | "community";
+    session_type?: "club" | "academy" | "community" | "cohort_class" | "one_on_one" | "group_booking" | "event";
     location: string;
-    start_time: string;
-    end_time: string;
+    starts_at: string;  // API returns starts_at, not start_time
+    ends_at: string;    // API returns ends_at, not end_time
     pool_fee: number;
     capacity: number;
     description?: string;
@@ -44,10 +44,10 @@ export function EditSessionForm({
 
     const [formData, setFormData] = useState({
         title: session.title,
-        type: session.type || "club",
+        type: session.session_type || "club",  // Map from session_type back to type for form
         location: session.location,
-        start_time: formatDateTimeLocal(session.start_time),
-        end_time: formatDateTimeLocal(session.end_time),
+        start_time: formatDateTimeLocal(session.starts_at),  // Map from starts_at to start_time for form
+        end_time: formatDateTimeLocal(session.ends_at),      // Map from ends_at to end_time for form
         pool_fee: session.pool_fee,
         capacity: session.capacity,
         description: session.description || "",
@@ -136,10 +136,13 @@ export function EditSessionForm({
         e.preventDefault();
 
         // Separate session data from ride configs
+        const { start_time, end_time, type, location, ...restFormData } = formData;
         const sessionData = {
-            ...formData,
-            start_time: new Date(formData.start_time).toISOString(),
-            end_time: new Date(formData.end_time).toISOString(),
+            ...restFormData,
+            session_type: type, // Keep as lowercase (club, academy, community)
+            location: location, // Keep as lowercase snake_case (sunfit_pool, rowe_park_pool)
+            starts_at: new Date(start_time).toISOString(),
+            ends_at: new Date(end_time).toISOString(),
         };
 
         // Process ride configs

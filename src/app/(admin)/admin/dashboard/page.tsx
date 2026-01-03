@@ -31,7 +31,7 @@ interface DashboardStats {
 interface Session {
   id: string;
   title: string;
-  start_time: string;
+  starts_at: string;  // API returns starts_at, not start_time
   location?: { address?: string };
 }
 
@@ -92,8 +92,8 @@ export default function AdminDashboardPage() {
           // Filter for upcoming and take top 5
           const now = new Date();
           const upcoming = sessionsData
-            .filter((s: any) => new Date(s.start_time) > now)
-            .sort((a: any, b: any) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+            .filter((s: any) => new Date(s.starts_at) > now)
+            .sort((a: any, b: any) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
             .slice(0, 5);
           setSessions(upcoming);
         }
@@ -288,13 +288,13 @@ export default function AdminDashboardPage() {
                     </div>
                     <div className="ml-3 text-right">
                       <p className="text-sm font-medium text-slate-900">
-                        {new Date(session.start_time).toLocaleDateString("en-US", {
+                        {new Date(session.starts_at).toLocaleDateString("en-US", {
                           month: "short",
                           day: "numeric"
                         })}
                       </p>
                       <p className="text-xs text-slate-500">
-                        {new Date(session.start_time).toLocaleTimeString("en-US", {
+                        {new Date(session.starts_at).toLocaleTimeString("en-US", {
                           hour: "numeric",
                           minute: "2-digit"
                         })}

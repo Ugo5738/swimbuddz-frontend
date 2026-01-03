@@ -28,12 +28,12 @@ interface Session {
   id: string;
   title: string;
   location: string;
-  start_time: string;
-  end_time: string;
+  starts_at: string;  // API returns starts_at, not start_time
+  ends_at: string;    // API returns ends_at, not end_time
   pool_fee: number;
   ride_share_fee?: number;
   description?: string;
-  type?: "club" | "academy" | "community";
+  session_type?: "club" | "academy" | "community" | "cohort_class" | "one_on_one" | "group_booking" | "event";
   ride_configs?: Array<{
     id: string;
     ride_area_name: string;
@@ -137,10 +137,10 @@ export default function SessionsPage() {
                     <h2 className="text-xl font-semibold text-slate-900">{session.title}</h2>
                     <p className="text-sm text-slate-500">{session.location}</p>
                   </div>
-                  <Badge variant="info">{(session.type || "SESSION").replace("_", " ")}</Badge>
+                  <Badge variant="info">{(session.session_type || "SESSION").replace("_", " ")}</Badge>
                 </div>
                 <p className="text-sm font-semibold text-slate-700">
-                  {formatDate(session.start_time, session.end_time)}
+                  {formatDate(session.starts_at, session.ends_at)}
                 </p>
                 <p className="text-sm text-slate-600">{session.description}</p>
                 <div className="flex flex-wrap gap-4 text-sm">
@@ -167,7 +167,7 @@ export default function SessionsPage() {
                     ))}
                   </div>
                 ) : null}
-                {session.type === "club" && membership === "community" ? (
+                {session.session_type === "club" && membership === "community" ? (
                   <div className="text-sm text-amber-700">
                     Club members only.{" "}
                     <Link href="/club" className="font-semibold underline">

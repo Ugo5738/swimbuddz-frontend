@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/auth";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -13,6 +14,9 @@ interface PickupLocation {
     id: string;
     name: string;
     description?: string;
+    address?: string;  // Exact street address
+    latitude?: number;  // GPS coordinates (optional)
+    longitude?: number;
     is_active: boolean;
 }
 type RouteFormState = {
@@ -162,7 +166,7 @@ export default function AdminTransportPage() {
         }
     };
 
-    const handleAddLocation = async (areaId: string, name: string, description?: string) => {
+    const handleAddLocation = async (areaId: string, name: string, description?: string, address?: string) => {
         try {
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token;
@@ -173,7 +177,7 @@ export default function AdminTransportPage() {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify({ name, description })
+                body: JSON.stringify({ name, description, address })
             });
 
             if (!res.ok) throw new Error("Failed to add location");
@@ -336,9 +340,9 @@ export default function AdminTransportPage() {
                     <h1 className="text-4xl font-bold text-slate-900">Transport Management</h1>
                     <p className="text-slate-600 mt-2">Manage ride share areas and pickup locations</p>
                 </div>
-                <Button onClick={() => setShowCreateArea(true)}>
-                    + Create Ride Area
-                </Button>
+                <Link href="/admin/transport/new">
+                    <Button>+ Create Ride Area</Button>
+                </Link>
             </div>
 
             {error && <Alert variant="error">{error}</Alert>}
@@ -389,7 +393,7 @@ function RideAreaCard({
     onRefresh,
 }: {
     area: RideArea;
-    onAddLocation: (areaId: string, name: string, description?: string) => void;
+    onAddLocation: (areaId: string, name: string, description?: string, address?: string) => void;
     onUpdateArea: (areaId: string, updates: { name?: string; slug?: string }) => void;
     onUpdateLocation: (locationId: string, updates: { name?: string; description?: string; route?: RouteFormState }) => void;
     onDeleteLocation: (locationId: string) => void;
@@ -401,6 +405,7 @@ function RideAreaCard({
     const [showAddLocation, setShowAddLocation] = useState(false);
     const [locationName, setLocationName] = useState("");
     const [locationDesc, setLocationDesc] = useState("");
+    const [locationAddress, setLocationAddress] = useState("");
     const [editingArea, setEditingArea] = useState(false);
     const [areaName, setAreaName] = useState(area.name);
     const [areaSlug, setAreaSlug] = useState(area.slug);
@@ -420,9 +425,10 @@ function RideAreaCard({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onAddLocation(area.id, locationName, locationDesc);
+        onAddLocation(area.id, locationName, locationDesc, locationAddress || undefined);
         setLocationName("");
         setLocationDesc("");
+        setLocationAddress("");
         setShowAddLocation(false);
     };
 
@@ -580,6 +586,11 @@ function RideAreaCard({
                                 placeholder="Description (optional)"
                                 value={locationDesc}
                                 onChange={(e) => setLocationDesc(e.target.value)}
+                            />
+                            <Input
+                                placeholder="Street address (optional)"
+                                value={locationAddress}
+                                onChange={(e) => setLocationAddress(e.target.value)}
                             />
                             <div className="flex gap-2">
                                 <Button type="submit" size="sm">Add</Button>

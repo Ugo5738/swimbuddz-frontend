@@ -5,10 +5,13 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet, apiPost } from "@/lib/api";
+import { supabase } from "@/lib/auth";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 // ============================================================================
 // Types
@@ -31,11 +34,18 @@ type PaymentRecord = {
     id: string;
     reference: string;
     status: string;
+    amount: number;
+    currency: string;
+    purpose?: string;  // Direct field on payment, e.g. "club_bundle", "club", "community"
+    payment_method?: string | null;  // paystack or manual_transfer
+    proof_of_payment_url?: string | null;
+    admin_review_note?: string | null;
     paid_at?: string | null;
     entitlement_applied_at?: string | null;
     entitlement_error?: string | null;
+    created_at: string;
     payment_metadata?: {
-        purpose?: string;
+        purpose?: string;  // Legacy/backup
     } | null;
 };
 
@@ -104,17 +114,28 @@ export default function BillingPage() {
     const [verificationTimedOut, setVerificationTimedOut] = useState(false);
     const [openCohorts, setOpenCohorts] = useState<Cohort[]>([]);
     const [myEnrollments, setMyEnrollments] = useState<Enrollment[]>([]);
+    const [pendingTransfers, setPendingTransfers] = useState<PaymentRecord[]>([]);
+    const [uploadingProof, setUploadingProof] = useState<string | null>(null);
+    const [proofFile, setProofFile] = useState<{ [ref: string]: File | null }>({});
 
     // Load data
     const load = useCallback(async () => {
         setLoading(true);
         try {
-            const [memberData, pricingData] = await Promise.all([
+            const [memberData, pricingData, paymentsData] = await Promise.all([
                 apiGet<Member>("/api/v1/members/me", { auth: true }),
                 apiGet<PricingConfig>("/api/v1/payments/pricing"),
+                apiGet<PaymentRecord[]>("/api/v1/payments/me", { auth: true }),
             ]);
             setMember(memberData);
             setPricing(pricingData);
+
+            // Filter for pending manual transfers (pending or pending_review status with manual_transfer method)
+            const pending = paymentsData.filter(
+                p => p.payment_method === "manual_transfer" &&
+                    (p.status === "pending" || p.status === "pending_review" || p.status === "failed")
+            );
+            setPendingTransfers(pending);
         } catch (e) {
             console.error("Failed to load billing data:", e);
         } finally {
@@ -268,7 +289,8 @@ export default function BillingPage() {
 
             {/* Success Banner */}
             {isPaystackReturn && returnedPayment?.status === "paid" && returnedPayment.entitlement_applied_at && (() => {
-                const purpose = returnedPayment.payment_metadata?.purpose?.toLowerCase() || "";
+                // Use the direct purpose field first, fall back to payment_metadata
+                const purpose = (returnedPayment.purpose || returnedPayment.payment_metadata?.purpose || "").toLowerCase();
                 const isClub = purpose.includes("club");
                 const isAcademy = purpose.includes("academy");
 
@@ -295,6 +317,144 @@ export default function BillingPage() {
                 <Alert variant="error" title="Payment issue">
                     Payment confirmed but activation failed: {returnedPayment.entitlement_error}
                 </Alert>
+            )}
+
+            {/* ============================================================ */}
+            {/* PENDING MANUAL TRANSFERS */}
+            {/* ============================================================ */}
+            {pendingTransfers.length > 0 && (
+                <Card className="p-6 space-y-4 border-amber-200 bg-amber-50">
+                    <div>
+                        <h2 className="text-lg font-semibold text-amber-900">🏦 Pending Bank Transfers</h2>
+                        <p className="text-sm text-amber-700 mt-1">
+                            Complete your payment by uploading proof of transfer.
+                        </p>
+                    </div>
+
+                    <div className="space-y-4">
+                        {pendingTransfers.map((payment) => (
+                            <div key={payment.id} className="bg-white rounded-lg border border-amber-200 p-4 space-y-3">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <p className="font-medium text-slate-900">
+                                            {payment.purpose?.replace(/_/g, " ").toUpperCase() || "Payment"}
+                                        </p>
+                                        <p className="text-xs text-slate-500">Ref: {payment.reference}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-lg font-bold text-slate-900">
+                                            {formatCurrency(payment.amount)}
+                                        </p>
+                                        <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${payment.status === "pending_review"
+                                            ? "bg-blue-100 text-blue-800"
+                                            : payment.status === "failed"
+                                                ? "bg-red-100 text-red-800"
+                                                : "bg-amber-100 text-amber-800"
+                                            }`}>
+                                            {payment.status === "pending_review" ? "Under Review" :
+                                                payment.status === "failed" ? "Rejected" : "Awaiting Proof"}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Rejection Note */}
+                                {payment.status === "failed" && payment.admin_review_note && (
+                                    <Alert variant="error" className="text-sm">
+                                        <strong>Rejection reason:</strong> {payment.admin_review_note}
+                                    </Alert>
+                                )}
+
+                                {/* Upload Section */}
+                                {(payment.status === "pending" || payment.status === "failed") && (
+                                    <div className="space-y-2">
+                                        <p className="text-sm text-slate-600">
+                                            📤 Upload proof of payment (screenshot or receipt)
+                                        </p>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="file"
+                                                accept="image/*,.pdf"
+                                                onChange={(e) => setProofFile({
+                                                    ...proofFile,
+                                                    [payment.reference]: e.target.files?.[0] || null
+                                                })}
+                                                className="flex-1 text-sm text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100"
+                                            />
+                                            <Button
+                                                size="sm"
+                                                disabled={!proofFile[payment.reference] || uploadingProof === payment.reference}
+                                                onClick={async () => {
+                                                    const file = proofFile[payment.reference];
+                                                    if (!file) return;
+
+                                                    setUploadingProof(payment.reference);
+                                                    try {
+                                                        // Upload file to backend media service
+                                                        const { data: { session } } = await supabase.auth.getSession();
+                                                        const formData = new FormData();
+                                                        formData.append("file", file);
+                                                        formData.append("payment_reference", payment.reference);
+
+                                                        const uploadRes = await fetch(
+                                                            `${API_BASE_URL}/api/v1/media/uploads/payment-proofs`,
+                                                            {
+                                                                method: "POST",
+                                                                headers: { Authorization: `Bearer ${session?.access_token}` },
+                                                                body: formData,
+                                                            }
+                                                        );
+
+                                                        if (!uploadRes.ok) {
+                                                            throw new Error("Failed to upload proof");
+                                                        }
+
+                                                        const mediaItem = await uploadRes.json();
+                                                        const proofUrl = mediaItem.file_url;
+
+                                                        await apiPost(
+                                                            `/api/v1/payments/${payment.reference}/proof`,
+                                                            { proof_url: proofUrl },
+                                                            { auth: true }
+                                                        );
+                                                        toast.success("Proof uploaded! Awaiting admin review.");
+                                                        await load();
+                                                    } catch (e) {
+                                                        const msg = e instanceof Error ? e.message : "Upload failed";
+                                                        toast.error(msg);
+                                                    } finally {
+                                                        setUploadingProof(null);
+                                                    }
+                                                }}
+                                            >
+                                                {uploadingProof === payment.reference ? "Uploading..." : "Submit"}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Under Review Message */}
+                                {payment.status === "pending_review" && (
+                                    <div className="flex items-center gap-2 text-sm text-blue-700 bg-blue-50 p-3 rounded-lg">
+                                        <span>⏳</span>
+                                        <span>Your proof is being reviewed by our team. You'll be notified once approved.</span>
+                                    </div>
+                                )}
+
+                                {/* Bank Details Reminder */}
+                                <details className="text-sm">
+                                    <summary className="cursor-pointer text-amber-700 hover:text-amber-800">
+                                        View bank transfer details
+                                    </summary>
+                                    <div className="mt-2 p-3 bg-amber-50 rounded-lg space-y-1 text-amber-800">
+                                        <p><span className="text-amber-600">Bank:</span> <strong>OPay</strong></p>
+                                        <p><span className="text-amber-600">Account Number:</span> <strong>7033588400</strong></p>
+                                        <p><span className="text-amber-600">Account Name:</span> <strong>Ugochukwu Nwachukwu</strong></p>
+                                    </div>
+                                </details>
+                            </div>
+                        ))}
+                    </div>
+                </Card>
             )}
 
             {/* ============================================================ */}

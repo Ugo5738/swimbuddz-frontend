@@ -10,10 +10,10 @@ import { Alert } from "@/components/ui/Alert";
 interface Session {
     id: string;
     title: string;
-    type?: "club" | "academy" | "community";
+    session_type?: "club" | "academy" | "community" | "cohort_class" | "one_on_one" | "group_booking" | "event";
     location: string;
-    start_time: string;
-    end_time: string;
+    starts_at: string;
+    ends_at: string;
     pool_fee: number;
     capacity: number;
     description?: string;
@@ -44,8 +44,8 @@ function SessionDetailsModal({
     const [sessionData, setSessionData] = useState({
         title: session.title,
         location: session.location,
-        start_time: session.start_time,
-        end_time: session.end_time,
+        starts_at: session.starts_at,
+        ends_at: session.ends_at,
         capacity: session.capacity,
         description: session.description || ""
     });
@@ -94,11 +94,11 @@ function SessionDetailsModal({
                         <p className="text-slate-900">{session.title}</p>
                     </div>
                     <div>
-                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${session.type === 'club' ? 'bg-cyan-100 text-cyan-800' :
-                                session.type === 'academy' ? 'bg-purple-100 text-purple-800' :
-                                    'bg-emerald-100 text-emerald-800'
+                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${session.session_type === 'club' ? 'bg-cyan-100 text-cyan-800' :
+                            session.session_type === 'academy' ? 'bg-purple-100 text-purple-800' :
+                                'bg-emerald-100 text-emerald-800'
                             }`}>
-                            {session.type ? session.type.toUpperCase() : 'COMMUNITY'}
+                            {session.session_type ? session.session_type.toUpperCase() : 'COMMUNITY'}
                         </span>
                     </div>
                 </div>
@@ -116,13 +116,13 @@ function SessionDetailsModal({
                     <div>
                         <p className="text-sm font-medium text-slate-700">Start Time</p>
                         <p className="text-slate-900">
-                            {new Date(session.start_time).toLocaleString()}
+                            {new Date(session.starts_at).toLocaleString()}
                         </p>
                     </div>
                     <div>
                         <p className="text-sm font-medium text-slate-700">End Time</p>
                         <p className="text-slate-900">
-                            {new Date(session.end_time).toLocaleString()}
+                            {new Date(session.ends_at).toLocaleString()}
                         </p>
                     </div>
                 </div>

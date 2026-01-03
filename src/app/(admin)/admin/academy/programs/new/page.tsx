@@ -10,9 +10,21 @@ import { Select } from "@/components/ui/Select";
 import { AcademyApi, ProgramLevel, BillingType, MilestoneType, RequiredEvidence, type Milestone } from "@/lib/academy";
 import { toast } from "sonner";
 
+// Curriculum lesson with full details
+interface CurriculumLesson {
+    id: string;
+    title: string;
+    description: string;
+    duration_minutes: number;
+    video_url: string; // Model/instructional video
+}
+
+// Week with theme, objectives, and lessons
 interface CurriculumWeek {
     week: number;
-    topics: string[];
+    theme: string;
+    objectives: string;
+    lessons: CurriculumLesson[];
 }
 
 interface MilestoneFormItem {
@@ -20,6 +32,7 @@ interface MilestoneFormItem {
     name: string;
     description: string;
     criteria: string;
+    video_url: string; // Example/demo video
     order_index: number;
     milestone_type: MilestoneType;
     required_evidence: RequiredEvidence;
@@ -45,9 +58,14 @@ export default function NewProgramPage() {
         prep_materials: "",
     });
 
-    // Curriculum state
+    // Curriculum state - now with theme, objectives, and lessons
     const [curriculum, setCurriculum] = useState<CurriculumWeek[]>([
-        { week: 1, topics: [""] }
+        {
+            week: 1,
+            theme: "",
+            objectives: "",
+            lessons: [{ id: `lesson-${Date.now()}`, title: "", description: "", duration_minutes: 60, video_url: "" }]
+        }
     ]);
 
     // Milestones state
@@ -55,7 +73,15 @@ export default function NewProgramPage() {
 
     // --- Curriculum Helpers ---
     const addWeek = () => {
-        setCurriculum([...curriculum, { week: curriculum.length + 1, topics: [""] }]);
+        setCurriculum([
+            ...curriculum,
+            {
+                week: curriculum.length + 1,
+                theme: "",
+                objectives: "",
+                lessons: [{ id: `lesson-${Date.now()}`, title: "", description: "", duration_minutes: 60, video_url: "" }]
+            }
+        ]);
     };
 
     const removeWeek = (weekIndex: number) => {
@@ -67,22 +93,34 @@ export default function NewProgramPage() {
         }
     };
 
-    const addTopic = (weekIndex: number) => {
+    const updateWeekField = (weekIndex: number, field: "theme" | "objectives", value: string) => {
         const updated = [...curriculum];
-        updated[weekIndex].topics.push("");
+        updated[weekIndex][field] = value;
         setCurriculum(updated);
     };
 
-    const updateTopic = (weekIndex: number, topicIndex: number, value: string) => {
+    const addLesson = (weekIndex: number) => {
         const updated = [...curriculum];
-        updated[weekIndex].topics[topicIndex] = value;
+        updated[weekIndex].lessons.push({
+            id: `lesson-${Date.now()}`,
+            title: "",
+            description: "",
+            duration_minutes: 60,
+            video_url: ""
+        });
         setCurriculum(updated);
     };
 
-    const removeTopic = (weekIndex: number, topicIndex: number) => {
+    const updateLesson = (weekIndex: number, lessonIndex: number, field: keyof CurriculumLesson, value: string | number) => {
         const updated = [...curriculum];
-        if (updated[weekIndex].topics.length > 1) {
-            updated[weekIndex].topics.splice(topicIndex, 1);
+        (updated[weekIndex].lessons[lessonIndex] as any)[field] = value;
+        setCurriculum(updated);
+    };
+
+    const removeLesson = (weekIndex: number, lessonIndex: number) => {
+        const updated = [...curriculum];
+        if (updated[weekIndex].lessons.length > 1) {
+            updated[weekIndex].lessons.splice(lessonIndex, 1);
             setCurriculum(updated);
         }
     };
@@ -96,6 +134,7 @@ export default function NewProgramPage() {
                 name: "",
                 description: "",
                 criteria: "",
+                video_url: "",
                 order_index: milestones.length + 1,
                 milestone_type: MilestoneType.SKILL,
                 required_evidence: RequiredEvidence.NONE,
@@ -116,16 +155,21 @@ export default function NewProgramPage() {
         setMilestones(updated);
     };
 
-    // --- Convert curriculum to JSON ---
+    // --- Convert curriculum to JSON (with full lesson details) ---
     const buildCurriculumJson = () => {
-        const result: Record<string, string[]> = {};
-        curriculum.forEach((week) => {
-            const topics = week.topics.filter(t => t.trim());
-            if (topics.length > 0) {
-                result[`week${week.week}`] = topics;
-            }
-        });
-        return Object.keys(result).length > 0 ? result : null;
+        const weeks = curriculum.map((week) => ({
+            week: week.week,
+            theme: week.theme,
+            objectives: week.objectives,
+            lessons: week.lessons.filter(l => l.title.trim()).map(l => ({
+                title: l.title,
+                description: l.description,
+                duration_minutes: l.duration_minutes,
+                video_url: l.video_url || undefined,
+            }))
+        })).filter(w => w.lessons.length > 0 || w.theme.trim() || w.objectives.trim());
+        // Return as dict with weeks array (backend expects dict, not array)
+        return weeks.length > 0 ? { weeks } : null;
     };
 
     // --- Submit ---
@@ -137,9 +181,11 @@ export default function NewProgramPage() {
 
         setSaving(true);
         try {
-            // 1. Create the program
+            // 1. Create the program (convert price from Naira to kobo)
             const program = await AcademyApi.createProgram({
                 ...formData,
+                price_amount: formData.price_amount * 100, // Convert Naira to kobo
+                prep_materials: formData.prep_materials.trim() ? { content: formData.prep_materials } : null,
                 curriculum_json: buildCurriculumJson(),
             });
 
@@ -277,22 +323,22 @@ export default function NewProgramPage() {
 
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    Price (smallest unit)
+                                    Price (₦)
                                 </label>
                                 <input
                                     type="text"
                                     inputMode="numeric"
                                     pattern="[0-9]*"
-                                    value={formData.price_amount}
+                                    value={formData.price_amount === 0 ? "" : formData.price_amount}
                                     onChange={(e) => {
                                         const value = e.target.value.replace(/\D/g, '');
                                         setFormData({ ...formData, price_amount: value === '' ? 0 : parseInt(value) });
                                     }}
-                                    placeholder="e.g., 5000000 for ₦50,000"
+                                    placeholder="e.g., 50000"
                                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:border-cyan-500"
                                 />
                                 <p className="text-xs text-slate-500 mt-1">
-                                    ₦{(formData.price_amount / 100).toLocaleString()} (display value)
+                                    ₦{formData.price_amount.toLocaleString()} (display value)
                                 </p>
                             </div>
                         </div>
@@ -323,7 +369,7 @@ export default function NewProgramPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <h2 className="text-xl font-semibold text-slate-900">Curriculum</h2>
-                                <p className="text-sm text-slate-600">Define what topics are covered each week</p>
+                                <p className="text-sm text-slate-600">Define weekly themes, objectives, and lessons</p>
                             </div>
                             <Button variant="outline" onClick={addWeek}>
                                 + Add Week
@@ -331,7 +377,7 @@ export default function NewProgramPage() {
                         </div>
 
                         {curriculum.map((week, weekIndex) => (
-                            <div key={week.week} className="border rounded-lg p-4 space-y-3">
+                            <div key={week.week} className="border rounded-lg p-4 space-y-4">
                                 <div className="flex items-center justify-between">
                                     <h3 className="font-semibold text-slate-900">Week {week.week}</h3>
                                     {curriculum.length > 1 && (
@@ -344,32 +390,76 @@ export default function NewProgramPage() {
                                     )}
                                 </div>
 
-                                {week.topics.map((topic, topicIndex) => (
-                                    <div key={topicIndex} className="flex items-center gap-2">
-                                        <input
-                                            type="text"
-                                            value={topic}
-                                            onChange={(e) => updateTopic(weekIndex, topicIndex, e.target.value)}
-                                            placeholder={`Topic ${topicIndex + 1}`}
-                                            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:border-cyan-500"
-                                        />
-                                        {week.topics.length > 1 && (
-                                            <button
-                                                onClick={() => removeTopic(weekIndex, topicIndex)}
-                                                className="text-red-500 hover:text-red-700 text-xl"
-                                            >
-                                                ×
-                                            </button>
-                                        )}
-                                    </div>
-                                ))}
+                                {/* Week Theme & Objectives */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Input
+                                        label="Theme"
+                                        value={week.theme}
+                                        onChange={(e) => updateWeekField(weekIndex, "theme", e.target.value)}
+                                        placeholder="e.g., Water Confidence"
+                                    />
+                                    <Input
+                                        label="Objectives"
+                                        value={week.objectives}
+                                        onChange={(e) => updateWeekField(weekIndex, "objectives", e.target.value)}
+                                        placeholder="e.g., Floating, breathing basics"
+                                    />
+                                </div>
 
-                                <button
-                                    onClick={() => addTopic(weekIndex)}
-                                    className="text-sm text-cyan-600 hover:text-cyan-800"
-                                >
-                                    + Add Topic
-                                </button>
+                                {/* Lessons */}
+                                <div className="border-t pt-3 mt-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h4 className="text-sm font-medium text-slate-700">Lessons</h4>
+                                        <button
+                                            onClick={() => addLesson(weekIndex)}
+                                            className="text-sm text-cyan-600 hover:text-cyan-800"
+                                        >
+                                            + Add Lesson
+                                        </button>
+                                    </div>
+
+                                    {week.lessons.map((lesson, lessonIndex) => (
+                                        <div key={lesson.id} className="bg-slate-50 rounded-lg p-3 mb-2 space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs text-slate-500">Lesson {lessonIndex + 1}</span>
+                                                {week.lessons.length > 1 && (
+                                                    <button
+                                                        onClick={() => removeLesson(weekIndex, lessonIndex)}
+                                                        className="text-red-500 hover:text-red-700 text-sm"
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <Input
+                                                    label="Title *"
+                                                    value={lesson.title}
+                                                    onChange={(e) => updateLesson(weekIndex, lessonIndex, "title", e.target.value)}
+                                                    placeholder="Lesson title"
+                                                />
+                                                <Input
+                                                    label="Duration (min)"
+                                                    type="number"
+                                                    value={lesson.duration_minutes}
+                                                    onChange={(e) => updateLesson(weekIndex, lessonIndex, "duration_minutes", parseInt(e.target.value) || 60)}
+                                                />
+                                            </div>
+                                            <Textarea
+                                                label="Description"
+                                                value={lesson.description}
+                                                onChange={(e) => updateLesson(weekIndex, lessonIndex, "description", e.target.value)}
+                                                placeholder="What will be covered in this lesson..."
+                                            />
+                                            <Input
+                                                label="Model Video URL"
+                                                value={lesson.video_url}
+                                                onChange={(e) => updateLesson(weekIndex, lessonIndex, "video_url", e.target.value)}
+                                                placeholder="https://... (instructional video)"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -431,6 +521,13 @@ export default function NewProgramPage() {
                                         placeholder="What needs to be demonstrated..."
                                     />
 
+                                    <Input
+                                        label="Demo Video URL"
+                                        value={milestone.video_url}
+                                        onChange={(e) => updateMilestone(index, "video_url", e.target.value)}
+                                        placeholder="https://... (example video showing this milestone)"
+                                    />
+
                                     <div className="grid grid-cols-2 gap-4">
                                         <Select
                                             label="Type"
@@ -480,7 +577,7 @@ export default function NewProgramPage() {
                                     {curriculum.map((week) => (
                                         <div key={week.week} className="mb-2">
                                             <span className="font-medium">Week {week.week}:</span>{" "}
-                                            {week.topics.filter(t => t.trim()).join(", ") || "No topics"}
+                                            {week.theme || "No theme"} - {week.lessons.filter(l => l.title.trim()).length} lesson(s)
                                         </div>
                                     ))}
                                 </div>

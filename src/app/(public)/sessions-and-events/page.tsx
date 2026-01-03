@@ -25,8 +25,8 @@ export default function SessionsAndEventsPage() {
                     <button
                         onClick={() => setActiveTab("sessions")}
                         className={`border-b-2 pb-4 px-1 text-sm font-semibold transition ${activeTab === "sessions"
-                                ? "border-cyan-600 text-cyan-700"
-                                : "border-transparent text-slate-600 hover:text-slate-900"
+                            ? "border-cyan-600 text-cyan-700"
+                            : "border-transparent text-slate-600 hover:text-slate-900"
                             }`}
                     >
                         Club Sessions
@@ -34,8 +34,8 @@ export default function SessionsAndEventsPage() {
                     <button
                         onClick={() => setActiveTab("events")}
                         className={`border-b-2 pb-4 px-1 text-sm font-semibold transition ${activeTab === "events"
-                                ? "border-cyan-600 text-cyan-700"
-                                : "border-transparent text-slate-600 hover:text-slate-900"
+                            ? "border-cyan-600 text-cyan-700"
+                            : "border-transparent text-slate-600 hover:text-slate-900"
                             }`}
                     >
                         Community Events
@@ -80,7 +80,7 @@ function ClubSessionsTab() {
                 <Card className="space-y-2">
                     <h3 className="font-semibold text-slate-900">📍 Locations</h3>
                     <p className="text-sm text-slate-600">
-                        Yaba (Rowe Park), Sunfit (Ago), and Victoria Island
+                        Yaba, Festac, and Victoria Island
                     </p>
                 </Card>
                 <Card className="space-y-2">

@@ -1,7 +1,6 @@
 "use client";
 
 import { Card } from "@/components/ui/Card";
-import { EditProgramModal } from "@/components/academy/EditProgramModal";
 import { AddMilestoneModal } from "@/components/academy/AddMilestoneModal";
 import { AcademyApi, Milestone, Program } from "@/lib/academy";
 import { useParams, useRouter } from "next/navigation";
@@ -16,7 +15,7 @@ export default function ProgramDetailsPage() {
     const [program, setProgram] = useState<Program | null>(null);
     const [milestones, setMilestones] = useState<Milestone[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [publishLoading, setPublishLoading] = useState(false);
     const [isAddMilestoneModalOpen, setIsAddMilestoneModalOpen] = useState(false);
 
     useEffect(() => {
@@ -52,6 +51,28 @@ export default function ProgramDetailsPage() {
         }
     };
 
+    const handleTogglePublish = async () => {
+        if (!program) return;
+        const newPublishedState = !program.is_published;
+        const action = newPublishedState ? "publish" : "unpublish";
+
+        if (!newPublishedState && !confirm("Unpublishing will hide this program from members and prevent new enrollments. Continue?")) {
+            return;
+        }
+
+        setPublishLoading(true);
+        try {
+            const updated = await AcademyApi.updateProgram(id, { is_published: newPublishedState });
+            setProgram(updated);
+            toast.success(`Program ${newPublishedState ? "published" : "unpublished"} successfully`);
+        } catch (error) {
+            console.error(`Failed to ${action} program`, error);
+            toast.error(`Failed to ${action} program`);
+        } finally {
+            setPublishLoading(false);
+        }
+    };
+
     if (loading) {
         return <div className="p-6">Loading...</div>;
     }
@@ -75,7 +96,21 @@ export default function ProgramDetailsPage() {
                 </div>
                 <div className="flex gap-2">
                     <button
-                        onClick={() => setIsEditModalOpen(true)}
+                        onClick={handleTogglePublish}
+                        disabled={publishLoading}
+                        className={`rounded px-4 py-2 text-sm font-medium border ${program.is_published
+                            ? "bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100"
+                            : "bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
+                            } disabled:opacity-50`}
+                    >
+                        {publishLoading
+                            ? "Loading..."
+                            : program.is_published
+                                ? "Unpublish"
+                                : "Publish"}
+                    </button>
+                    <button
+                        onClick={() => router.push(`/admin/academy/programs/${id}/edit`)}
                         className="rounded bg-white px-4 py-2 text-sm font-medium text-slate-700 border border-slate-300 hover:bg-slate-50"
                     >
                         Edit
@@ -103,11 +138,68 @@ export default function ProgramDetailsPage() {
                                 <dt className="text-sm font-medium text-slate-500">Duration</dt>
                                 <dd className="mt-1 text-sm text-slate-900">{program.duration_weeks} weeks</dd>
                             </div>
+                            <div>
+                                <dt className="text-sm font-medium text-slate-500">Price</dt>
+                                <dd className="mt-1 text-sm text-slate-900">
+                                    {program.currency} {((program.price_amount || 0) / 100).toLocaleString()}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt className="text-sm font-medium text-slate-500">Capacity</dt>
+                                <dd className="mt-1 text-sm text-slate-900">{program.default_capacity} students</dd>
+                            </div>
                             <div className="sm:col-span-2">
                                 <dt className="text-sm font-medium text-slate-500">Description</dt>
                                 <dd className="mt-1 text-sm text-slate-900">{program.description || "No description provided."}</dd>
                             </div>
                         </dl>
+                    </Card>
+
+                    {/* Curriculum Section - Improved */}
+                    <Card>
+                        <h2 className="text-lg font-semibold text-slate-900 mb-4">Curriculum</h2>
+                        {!program.curriculum_json || !program.curriculum_json.weeks || program.curriculum_json.weeks.length === 0 ? (
+                            <p className="text-sm text-slate-500">No curriculum defined yet.</p>
+                        ) : (
+                            <div className="space-y-4">
+                                {program.curriculum_json.weeks.map((week: any, index: number) => (
+                                    <div key={index} className="border rounded-lg p-4">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h3 className="font-semibold text-slate-900">Week {week.week}</h3>
+                                            {week.theme && (
+                                                <span className="text-sm text-cyan-600 font-medium">{week.theme}</span>
+                                            )}
+                                        </div>
+                                        {week.objectives && (
+                                            <p className="text-sm text-slate-600 mb-3">
+                                                <span className="font-medium">Objectives:</span> {week.objectives}
+                                            </p>
+                                        )}
+                                        {week.lessons && week.lessons.length > 0 && (
+                                            <div className="space-y-2">
+                                                {week.lessons.map((lesson: any, lessonIdx: number) => (
+                                                    <div key={lessonIdx} className="bg-slate-50 rounded-lg p-3">
+                                                        <div className="flex items-center justify-between">
+                                                            <p className="text-sm font-medium text-slate-900">{lesson.title}</p>
+                                                            <span className="text-xs text-slate-500">{lesson.duration_minutes} min</span>
+                                                        </div>
+                                                        {lesson.description && (
+                                                            <p className="text-xs text-slate-600 mt-1">{lesson.description}</p>
+                                                        )}
+                                                        {lesson.video_url && (
+                                                            <a href={lesson.video_url} target="_blank" rel="noopener noreferrer"
+                                                                className="text-xs text-cyan-600 hover:underline mt-1 inline-block">
+                                                                📹 Video
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </Card>
 
                     <Card>
@@ -125,13 +217,20 @@ export default function ProgramDetailsPage() {
                         ) : (
                             <ul className="divide-y divide-slate-100">
                                 {milestones.map((milestone) => (
-                                    <li key={milestone.id} className="py-3 flex justify-between items-center">
-                                        <div>
+                                    <li key={milestone.id} className="py-3">
+                                        <div className="flex items-center justify-between">
                                             <p className="text-sm font-medium text-slate-900">{milestone.name}</p>
-                                            {milestone.criteria && (
-                                                <p className="text-xs text-slate-500">{milestone.criteria}</p>
-                                            )}
+                                            <span className="text-xs text-slate-500 capitalize">{milestone.milestone_type}</span>
                                         </div>
+                                        {milestone.criteria && (
+                                            <p className="text-xs text-slate-600 mt-1">{milestone.criteria}</p>
+                                        )}
+                                        {milestone.video_url && (
+                                            <a href={milestone.video_url} target="_blank" rel="noopener noreferrer"
+                                                className="text-xs text-cyan-600 hover:underline mt-1 inline-block">
+                                                📹 Demo Video
+                                            </a>
+                                        )}
                                     </li>
                                 ))}
                             </ul>
@@ -142,67 +241,60 @@ export default function ProgramDetailsPage() {
                 {/* Sidebar / Stats */}
                 <div className="space-y-6">
                     <Card>
-                        <h2 className="text-lg font-semibold text-slate-900 mb-4">Curriculum</h2>
-                        {!program.curriculum_json || Object.keys(program.curriculum_json).length === 0 ? (
-                            <p className="text-sm text-slate-500">No curriculum defined yet.</p>
-                        ) : (
-                            <div className="space-y-3">
-                                {Array.isArray(program.curriculum_json) ? (
-                                    // Handle array curriculum
-                                    program.curriculum_json.map((item: any, index: number) => (
-                                        <div key={index} className="p-3 bg-slate-50 rounded-lg">
-                                            <p className="text-sm font-medium text-slate-900">{item}</p>
-                                        </div>
-                                    ))
-                                ) : typeof program.curriculum_json === 'object' ? (
-                                    // Handle object curriculum (e.g., weeks)
-                                    Object.entries(program.curriculum_json).map(([key, value]: [string, any]) => (
-                                        <div key={key} className="p-3 bg-slate-50 rounded-lg">
-                                            <p className="text-xs font-semibold text-slate-700 uppercase mb-1">{key}</p>
-                                            {typeof value === 'string' ? (
-                                                <p className="text-sm text-slate-900">{value}</p>
-                                            ) : Array.isArray(value) ? (
-                                                <ul className="text-sm text-slate-900 list-disc list-inside space-y-1">
-                                                    {value.map((item: any, idx: number) => (
-                                                        <li key={idx}>{typeof item === 'string' ? item : JSON.stringify(item)}</li>
-                                                    ))}
-                                                </ul>
-                                            ) : (
-                                                <p className="text-sm text-slate-900">{JSON.stringify(value)}</p>
-                                            )}
-                                        </div>
-                                    ))
-                                ) : (
-                                    // Fallback for primitive types
-                                    <p className="text-sm text-slate-900">{String(program.curriculum_json)}</p>
-                                )}
+                        <h2 className="text-lg font-semibold text-slate-900 mb-4">Quick Stats</h2>
+                        <dl className="space-y-3">
+                            <div className="flex justify-between">
+                                <dt className="text-sm text-slate-500">Status</dt>
+                                <dd className="text-sm font-medium">
+                                    <span className={`px-2 py-0.5 rounded-full text-xs ${program.is_published
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-amber-100 text-amber-700"
+                                        }`}>
+                                        {program.is_published ? "Published" : "Draft"}
+                                    </span>
+                                </dd>
                             </div>
-                        )}
+                            <div className="flex justify-between">
+                                <dt className="text-sm text-slate-500">Weeks</dt>
+                                <dd className="text-sm font-medium text-slate-900">{program.duration_weeks}</dd>
+                            </div>
+                            <div className="flex justify-between">
+                                <dt className="text-sm text-slate-500">Lessons</dt>
+                                <dd className="text-sm font-medium text-slate-900">
+                                    {program.curriculum_json?.weeks?.reduce((acc: number, w: any) =>
+                                        acc + (w.lessons?.length || 0), 0) || 0}
+                                </dd>
+                            </div>
+                            <div className="flex justify-between">
+                                <dt className="text-sm text-slate-500">Milestones</dt>
+                                <dd className="text-sm font-medium text-slate-900">{milestones.length}</dd>
+                            </div>
+                        </dl>
                     </Card>
+
+                    {program.prep_materials && (
+                        <Card>
+                            <h2 className="text-lg font-semibold text-slate-900 mb-2">Prep Materials</h2>
+                            <p className="text-sm text-slate-600">
+                                {typeof program.prep_materials === 'object'
+                                    ? program.prep_materials.content
+                                    : program.prep_materials}
+                            </p>
+                        </Card>
+                    )}
                 </div>
             </div>
 
             {program && (
-                <>
-                    <EditProgramModal
-                        isOpen={isEditModalOpen}
-                        onClose={() => setIsEditModalOpen(false)}
-                        onSuccess={(updatedProgram) => {
-                            setProgram(updatedProgram);
-                            toast.success("Program updated successfully");
-                        }}
-                        program={program}
-                    />
-                    <AddMilestoneModal
-                        isOpen={isAddMilestoneModalOpen}
-                        onClose={() => setIsAddMilestoneModalOpen(false)}
-                        onSuccess={(newMilestone) => {
-                            setMilestones([...milestones, newMilestone]);
-                            toast.success("Milestone added successfully");
-                        }}
-                        programId={program.id}
-                    />
-                </>
+                <AddMilestoneModal
+                    isOpen={isAddMilestoneModalOpen}
+                    onClose={() => setIsAddMilestoneModalOpen(false)}
+                    onSuccess={(newMilestone) => {
+                        setMilestones([...milestones, newMilestone]);
+                        toast.success("Milestone added successfully");
+                    }}
+                    programId={program.id}
+                />
             )}
         </div>
     );

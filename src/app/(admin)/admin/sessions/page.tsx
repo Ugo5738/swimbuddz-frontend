@@ -22,10 +22,10 @@ import type { EventInput, DateSelectArg, EventClickArg } from "@fullcalendar/cor
 interface Session {
   id: string;
   title: string;
-  type?: "club" | "academy" | "community";
+  session_type?: "club" | "academy" | "community" | "cohort_class" | "one_on_one" | "group_booking" | "event";
   location: string;
-  start_time: string;
-  end_time: string;
+  starts_at: string;  // API returns starts_at, not start_time
+  ends_at: string;    // API returns ends_at, not end_time
   pool_fee: number;
   capacity: number;
   description?: string;
@@ -50,7 +50,8 @@ interface Template {
   title: string;
   description?: string;
   location: string;
-  type?: "club" | "academy" | "community";
+  type?: "club" | "academy" | "community";  // Frontend uses 'type'
+  session_type?: "club" | "academy" | "community";  // API returns 'session_type'
   pool_fee: number;
   capacity: number;
   day_of_week: number;
@@ -58,6 +59,11 @@ interface Template {
   duration_minutes: number;
   auto_generate: boolean;
   is_active: boolean;
+  ride_share_config?: Array<{
+    ride_area_id: string;
+    cost: number;
+    capacity: number;
+  }>;
 }
 
 export default function AdminSessionsPage() {
@@ -328,10 +334,10 @@ export default function AdminSessionsPage() {
   const calendarEvents: EventInput[] = sessions.map(session => ({
     id: session.id,
     title: session.title,
-    start: session.start_time,
-    end: session.end_time,
+    start: session.starts_at,
+    end: session.ends_at,
     extendedProps: {
-      session_type: session.type || "club",
+      session_type: session.session_type || "club",
       location: session.location,
       pool_fee: session.pool_fee,
       capacity: session.capacity,
@@ -441,10 +447,10 @@ export default function AdminSessionsPage() {
                       {session.title}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600">
-                      {new Date(session.start_time).toLocaleDateString()}
+                      {new Date(session.starts_at).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600">
-                      {new Date(session.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      {new Date(session.starts_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600">{session.location}</td>
                     <td className="px-4 py-3">
@@ -612,10 +618,14 @@ function SimpleSessionForm({
     e.preventDefault();
 
     // Separate session data from ride configs
+    // Note: API expects starts_at/ends_at and session_type (not type)
+    const { start_time, end_time, type, location, ...restFormData } = formData;
     const sessionData = {
-      ...formData,
-      start_time: new Date(formData.start_time).toISOString(),
-      end_time: new Date(formData.end_time).toISOString(),
+      ...restFormData,
+      session_type: type, // Keep as lowercase (club, academy, community)
+      location: location, // Keep as lowercase snake_case (sunfit_pool, rowe_park_pool)
+      starts_at: new Date(start_time).toISOString(),
+      ends_at: new Date(end_time).toISOString(),
     };
 
     // Process ride configs
@@ -788,7 +798,7 @@ function SimpleTemplateForm({
 }) {
   const [formData, setFormData] = useState({
     title: initialData?.title || "",
-    type: initialData?.type || "club",
+    type: initialData?.type || initialData?.session_type || "club",  // Handle both field names
     location: initialData?.location || "sunfit_pool",
     day_of_week: initialData?.day_of_week ?? 5, // Saturday
     start_time: initialData?.start_time || "09:00",
@@ -808,6 +818,17 @@ function SimpleTemplateForm({
   useEffect(() => {
     fetchAvailableAreas();
   }, []);
+
+  // Load ride share config from existing template when editing
+  useEffect(() => {
+    if (initialData?.ride_share_config && Array.isArray(initialData.ride_share_config)) {
+      setSelectedAreas(initialData.ride_share_config.map((cfg: any) => ({
+        ride_area_id: cfg.ride_area_id || "",
+        cost: cfg.cost || 0,
+        capacity: cfg.capacity || 4,
+      })));
+    }
+  }, [initialData]);
 
   const fetchAvailableAreas = async () => {
     try {
@@ -849,8 +870,12 @@ function SimpleTemplateForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Map 'type' to 'session_type' for the API
+    const { type, ...restFormData } = formData;
+
     const dataToSubmit = {
-      ...formData,
+      ...restFormData,
+      session_type: type,  // API expects session_type, not type
       ride_share_config: selectedAreas
         .filter(config => config.ride_area_id)
         .map(config => ({
@@ -905,6 +930,17 @@ function SimpleTemplateForm({
           onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
           required
         />
+        <Select
+          label="Location (Pool)"
+          value={formData.location}
+          onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+        >
+          <option value="sunfit_pool">Sunfit Pool</option>
+          <option value="rowe_park_pool">Rowe Park Pool</option>
+          <option value="federal_palace_pool">Federal Palace Pool</option>
+          <option value="open_water">Open Water</option>
+          <option value="other">Other</option>
+        </Select>
         <Input
           label="Duration (minutes)"
           type="number"

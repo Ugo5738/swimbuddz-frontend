@@ -59,8 +59,10 @@ function CheckoutContent() {
     const [validatedDiscount, setValidatedDiscount] = useState<{
         code: string;
         amount: number;
+        appliesTo?: string | null;  // Which component the discount applies to
     } | null>(null);
     const [validatingDiscount, setValidatingDiscount] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState<"paystack" | "manual_transfer">("paystack");
 
     // Determine purpose from URL or context
     const urlPurpose = searchParams.get("purpose");
@@ -160,21 +162,59 @@ function CheckoutContent() {
     const discountAmount = validatedDiscount?.amount || 0;
     const total = Math.max(0, subtotal - discountAmount);
 
-    // Validate discount code
+    // Validate discount code against backend
     const handleApplyDiscount = async () => {
         if (!discountInput.trim()) return;
 
         setValidatingDiscount(true);
         try {
-            // For now, we'll validate on submit. Future: Add discount validation endpoint
-            setDiscountCode(discountInput.trim().toUpperCase());
-            setValidatedDiscount({
+            // Determine the payment purpose for discount validation
+            const discountPurpose = purpose === "club" || purpose === "club_bundle"
+                ? (communityActive ? "club" : "club_bundle")
+                : purpose || "community";
+
+            // Build component breakdown for smart discount matching
+            // This allows tier-specific discounts to apply only to their portion
+            let components: Record<string, number> | undefined;
+
+            if (discountPurpose === "club_bundle" && clubBillingCycle) {
+                const clubFee = clubPricing[clubBillingCycle];
+                components = {
+                    community: communityFee,
+                    club: clubFee,
+                };
+            }
+
+            const response = await apiPost<{
+                valid: boolean;
+                code: string;
+                discount_type: string | null;
+                discount_value: number | null;
+                discount_amount: number;
+                final_total: number;
+                applies_to_component: string | null;
+                message: string | null;
+            }>("/api/v1/payments/discounts/preview", {
                 code: discountInput.trim().toUpperCase(),
-                amount: 0, // Will be calculated by backend
-            });
-            toast.success(`Discount code "${discountInput.toUpperCase()}" will be applied`);
+                purpose: discountPurpose,
+                subtotal: subtotal,
+                components: components,
+            }, { auth: true });
+
+            if (response.valid) {
+                setDiscountCode(response.code);
+                setValidatedDiscount({
+                    code: response.code,
+                    amount: response.discount_amount,
+                    appliesTo: response.applies_to_component,
+                });
+                toast.success(response.message || `Discount "${response.code}" applied`);
+            } else {
+                toast.error(response.message || "Invalid discount code");
+            }
         } catch (e) {
-            toast.error("Invalid discount code");
+            const message = e instanceof Error ? e.message : "Failed to validate discount code";
+            toast.error(message);
         } finally {
             setValidatingDiscount(false);
         }
@@ -197,6 +237,7 @@ function CheckoutContent() {
         try {
             let intentPayload: any = {
                 currency: "NGN",
+                payment_method: paymentMethod,
                 discount_code: state.discountCode || undefined,
             };
 
@@ -269,6 +310,11 @@ function CheckoutContent() {
                 clearState();
                 // Redirect to payment provider
                 window.location.href = intent.checkout_url;
+            } else if (paymentMethod === "manual_transfer") {
+                // For manual transfers, go to proof upload page
+                toast.success(`Payment reference created: ${intent.reference}`);
+                clearState();
+                router.push(`/dashboard/billing?pending_transfer=${intent.reference}`);
             } else {
                 toast.success(`Payment reference created: ${intent.reference}`);
                 clearState();
@@ -343,6 +389,11 @@ function CheckoutContent() {
                                 <span className="flex items-center gap-1">
                                     <Tag className="w-3 h-3" />
                                     Discount ({validatedDiscount.code})
+                                    {validatedDiscount.appliesTo && (
+                                        <span className="text-emerald-500 text-xs">
+                                            on {validatedDiscount.appliesTo.replace("_", " ").replace(/^\w/, c => c.toUpperCase())}
+                                        </span>
+                                    )}
                                 </span>
                                 <div className="flex items-center gap-2">
                                     <span>-{discountAmount > 0 ? formatCurrency(discountAmount) : "Applied at payment"}</span>
@@ -386,6 +437,63 @@ function CheckoutContent() {
                 </div>
             </Card>
 
+            {/* Payment Method Selector */}
+            <Card className="p-6">
+                <h2 className="text-lg font-semibold text-slate-900 mb-4">Payment Method</h2>
+                <div className="grid gap-3 sm:grid-cols-2">
+                    <label
+                        className={`relative flex cursor-pointer flex-col rounded-xl border-2 p-4 transition-all ${paymentMethod === "paystack"
+                            ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-500"
+                            : "border-slate-200 bg-white hover:border-slate-300"
+                            }`}
+                    >
+                        <input
+                            type="radio"
+                            name="payment_method"
+                            value="paystack"
+                            checked={paymentMethod === "paystack"}
+                            onChange={() => setPaymentMethod("paystack")}
+                            className="sr-only"
+                        />
+                        <span className="text-lg font-medium text-slate-900">💳 Pay Online</span>
+                        <span className="text-sm text-slate-500">Instant payment via Paystack</span>
+                    </label>
+                    <label
+                        className={`relative flex cursor-pointer flex-col rounded-xl border-2 p-4 transition-all ${paymentMethod === "manual_transfer"
+                            ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-500"
+                            : "border-slate-200 bg-white hover:border-slate-300"
+                            }`}
+                    >
+                        <input
+                            type="radio"
+                            name="payment_method"
+                            value="manual_transfer"
+                            checked={paymentMethod === "manual_transfer"}
+                            onChange={() => setPaymentMethod("manual_transfer")}
+                            className="sr-only"
+                        />
+                        <span className="text-lg font-medium text-slate-900">🏦 Bank Transfer</span>
+                        <span className="text-sm text-slate-500">Manual transfer with proof</span>
+                    </label>
+                </div>
+
+                {/* Bank Transfer Details */}
+                {paymentMethod === "manual_transfer" && (
+                    <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                        <h3 className="font-medium text-amber-900 mb-2">📋 Bank Transfer Details</h3>
+                        <div className="space-y-1 text-sm text-amber-800">
+                            <p><span className="text-amber-600">Bank:</span> <strong>OPay</strong></p>
+                            <p><span className="text-amber-600">Account Number:</span> <strong>7033588400</strong></p>
+                            <p><span className="text-amber-600">Account Name:</span> <strong>Ugochukwu Nwachukwu</strong></p>
+                            <p><span className="text-amber-600">Amount:</span> <strong>{formatCurrency(total)}</strong></p>
+                        </div>
+                        <p className="mt-3 text-xs text-amber-700">
+                            💡 After transfer, you'll be asked to upload proof of payment for verification.
+                        </p>
+                    </div>
+                )}
+            </Card>
+
             {/* Payment Button */}
             <div className="space-y-4">
                 <Button
@@ -394,7 +502,12 @@ function CheckoutContent() {
                     size="lg"
                     className="w-full"
                 >
-                    {processing ? "Processing..." : `Pay ${formatCurrency(total)}`}
+                    {processing
+                        ? "Processing..."
+                        : paymentMethod === "paystack"
+                            ? `Pay ${formatCurrency(total)}`
+                            : `Confirm & Get Reference`
+                    }
                 </Button>
 
                 <Link
@@ -408,8 +521,10 @@ function CheckoutContent() {
 
             {/* Security note */}
             <p className="text-center text-xs text-slate-400">
-                Payments are securely processed by Paystack. Your card details are never stored on
-                our servers.
+                {paymentMethod === "paystack"
+                    ? "Payments are securely processed by Paystack. Your card details are never stored on our servers."
+                    : "After creating your payment reference, upload proof of payment for admin verification."
+                }
             </p>
         </div>
     );

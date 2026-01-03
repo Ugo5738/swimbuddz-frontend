@@ -323,14 +323,14 @@ export default function AdminDiscountsPage() {
             )}
 
             {/* Discounts List */}
-            {discounts.length === 0 ? (
+            {discounts.length === 0 && !showForm ? (
                 <Card className="p-8 text-center">
                     <p className="text-slate-500">No discount codes yet.</p>
                     <Button onClick={() => setShowForm(true)} className="mt-4">
                         Create your first discount
                     </Button>
                 </Card>
-            ) : (
+            ) : discounts.length > 0 ? (
                 <div className="grid gap-4">
                     {discounts.map((discount) => (
                         <Card key={discount.id} className="p-4">
@@ -372,7 +372,7 @@ export default function AdminDiscountsPage() {
                         </Card>
                     ))}
                 </div>
-            )}
+            ) : null}
         </div>
     );
 }

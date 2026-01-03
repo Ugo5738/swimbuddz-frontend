@@ -37,13 +37,18 @@ export function SessionSignIn({ session }: SessionSignInProps) {
   const [loadingMember, setLoadingMember] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  const sessionDate = new Date(session.date);
+  // Parse session times from starts_at/ends_at
+  const startsAt = new Date(session.starts_at);
+  const endsAt = new Date(session.ends_at);
+  const startTime = startsAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  const endTime = endsAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   const hasRideShareAreas = session.rideShareAreas && session.rideShareAreas.length > 0;
 
   // Calculate total cost
   const selectedArea = session.rideShareAreas?.find(a => a.id === selectedRideShareAreaId);
   const rideShareCost = selectedArea ? selectedArea.cost : 0;
-  const totalCost = session.poolFee + rideShareCost;
+  const poolFee = session.pool_fee ?? 0;
+  const totalCost = poolFee + rideShareCost;
 
   useEffect(() => {
     apiGet<any>("/api/v1/members/me", { auth: true })
@@ -103,9 +108,9 @@ export function SessionSignIn({ session }: SessionSignInProps) {
       <Card className="space-y-4">
         <h2 className="text-2xl font-semibold text-emerald-700">You're confirmed for {session.title}</h2>
         <p className="text-sm text-slate-600">
-          {session.location} —{" "}
-          {sessionDate.toLocaleDateString("en-NG", { weekday: "long", month: "short", day: "numeric" })},{" "}
-          {session.startTime}–{session.endTime}
+          {session.location_name ?? session.location} —{" "}
+          {startsAt.toLocaleDateString("en-NG", { weekday: "long", month: "short", day: "numeric" })},{" "}
+          {startTime}–{endTime}
         </p>
         <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm">
           <p className="font-semibold text-emerald-900">✓ Sign-in successful</p>
@@ -117,7 +122,7 @@ export function SessionSignIn({ session }: SessionSignInProps) {
           <div className="mt-2 space-y-2 text-sm text-slate-700">
             <div className="flex justify-between">
               <span>Pool Fee:</span>
-              <span>₦{session.poolFee.toLocaleString()}</span>
+              <span>₦{poolFee.toLocaleString()}</span>
             </div>
             {selectedArea && (
               <div className="flex justify-between">
@@ -179,10 +184,10 @@ export function SessionSignIn({ session }: SessionSignInProps) {
         <div className="space-y-1">
           <p className="text-sm font-semibold text-cyan-600">Session</p>
           <h1 className="text-3xl font-bold text-slate-900">{session.title}</h1>
-          <p className="text-sm text-slate-600">{session.location}</p>
+          <p className="text-sm text-slate-600">{session.location_name ?? session.location}</p>
           <p className="text-sm font-semibold text-slate-700">
-            {sessionDate.toLocaleDateString("en-NG", { weekday: "long", month: "short", day: "numeric" })} •{" "}
-            {session.startTime} – {session.endTime}
+            {startsAt.toLocaleDateString("en-NG", { weekday: "long", month: "short", day: "numeric" })} •{" "}
+            {startTime} – {endTime}
           </p>
         </div>
       </Card>
@@ -452,7 +457,7 @@ export function SessionSignIn({ session }: SessionSignInProps) {
               <div className="mt-2 space-y-2 text-sm text-slate-700">
                 <div className="flex justify-between">
                   <span>Pool Fee:</span>
-                  <span>₦{session.poolFee.toLocaleString()}</span>
+                  <span>₦{poolFee.toLocaleString()}</span>
                 </div>
                 {selectedArea && (
                   <div className="flex justify-between">

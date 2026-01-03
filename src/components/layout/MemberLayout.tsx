@@ -158,11 +158,10 @@ export function MemberLayout({ children }: MemberLayoutProps) {
     }, [refreshMember]);
 
     useEffect(() => {
-        const provider = searchParams.get("provider");
         const reference = searchParams.get("reference") || searchParams.get("trxref");
-        if (provider !== "paystack" || !reference) return;
+        if (!reference) return;
 
-        // Poll for member updates after payment callback
+        // Poll for member updates after payment callback (reference indicates Paystack return)
         let cancelled = false;
         let attempts = 0;
         const maxAttempts = 8;
