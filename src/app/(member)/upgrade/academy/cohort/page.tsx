@@ -159,6 +159,7 @@ export default function AcademyCohortSelectionPage() {
                                 <div className="text-right">
                                     {(() => {
                                         // Use price_override if set, otherwise use program.price_amount
+                                        // Price is stored in naira (major unit)
                                         const price = cohort.price_override ?? cohort.program?.price_amount;
                                         if (price !== undefined && price > 0) {
                                             return (

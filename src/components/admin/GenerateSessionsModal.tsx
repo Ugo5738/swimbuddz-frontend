@@ -5,7 +5,8 @@ import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
-import { Loader2, Calendar, AlertTriangle } from "lucide-react";
+import { Loader2, Calendar, AlertTriangle, CheckCircle } from "lucide-react";
+import { toast } from "sonner";
 
 interface GenerateSessionsModalProps {
     isOpen: boolean;
@@ -52,6 +53,12 @@ export function GenerateSessionsModal({ isOpen, onClose, template, onGenerate }:
 
             const res = await onGenerate(template.id, weeksNum, skipConflicts);
             setResult(res);
+
+            // Auto-close and show toast after success
+            toast.success(`Generated ${res.created} session${res.created !== 1 ? 's' : ''}`);
+            setTimeout(() => {
+                onClose();
+            }, 500);
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to generate sessions");
         } finally {

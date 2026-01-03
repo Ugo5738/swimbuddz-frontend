@@ -141,7 +141,7 @@ export default function ProgramDetailsPage() {
                             <div>
                                 <dt className="text-sm font-medium text-slate-500">Price</dt>
                                 <dd className="mt-1 text-sm text-slate-900">
-                                    {program.currency} {((program.price_amount || 0) / 100).toLocaleString()}
+                                    {program.currency} {(program.price_amount || 0).toLocaleString()}
                                 </dd>
                             </div>
                             <div>

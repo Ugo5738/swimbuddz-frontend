@@ -87,7 +87,7 @@ export default function EditProgramPage() {
                     duration_weeks: program.duration_weeks || 4,
                     default_capacity: program.default_capacity || 10,
                     currency: program.currency || "NGN",
-                    price_amount: (program.price_amount || 0) / 100, // Convert kobo to Naira
+                    price_amount: program.price_amount || 0, // Stored in naira
                     billing_type: program.billing_type || BillingType.ONE_TIME,
                     is_published: program.is_published || false,
                     cover_image_url: program.cover_image_url || "",
@@ -227,7 +227,7 @@ export default function EditProgramPage() {
             // Update the program
             await AcademyApi.updateProgram(id, {
                 ...formData,
-                price_amount: formData.price_amount * 100,
+                price_amount: formData.price_amount, // Stored in naira
                 prep_materials: formData.prep_materials.trim() ? { content: formData.prep_materials } : null,
                 curriculum_json: buildCurriculumJson(),
             });

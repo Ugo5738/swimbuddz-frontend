@@ -394,7 +394,7 @@ export default function NewCohortPage() {
                                     ...formData,
                                     price_override: e.target.value ? parseInt(e.target.value) : null
                                 })}
-                                placeholder={`Leave empty to use program price${selectedProgram?.price_amount ? ` (₦${(selectedProgram.price_amount / 100).toLocaleString()})` : ""}`}
+                                placeholder={`Leave empty to use program price${selectedProgram?.price_amount ? ` (₦${selectedProgram.price_amount.toLocaleString()})` : ""}`}
                             />
                             <p className="text-xs text-slate-500 mt-1">
                                 Override the program&apos;s default price for this specific cohort

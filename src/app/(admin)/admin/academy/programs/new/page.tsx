@@ -184,7 +184,7 @@ export default function NewProgramPage() {
             // 1. Create the program (convert price from Naira to kobo)
             const program = await AcademyApi.createProgram({
                 ...formData,
-                price_amount: formData.price_amount * 100, // Convert Naira to kobo
+                price_amount: formData.price_amount, // Stored in naira
                 prep_materials: formData.prep_materials.trim() ? { content: formData.prep_materials } : null,
                 curriculum_json: buildCurriculumJson(),
             });

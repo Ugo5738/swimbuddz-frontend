@@ -7,6 +7,7 @@ import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet, apiPost } from "@/lib/api";
 import { savePaymentIntentCache } from "@/lib/paymentCache";
 import {
+    Cohort,
     formatCurrency,
     getClubCycleLabel,
     UpgradeProvider,
@@ -72,7 +73,11 @@ function CheckoutContent() {
     const urlPlan = searchParams.get("plan") as "quarterly" | "biannual" | "annual" | null;
     const clubBillingCycle = urlPlan || state.clubBillingCycle;
 
-    // Load member data and pricing
+    // Get cohort_id from URL (for resuming pending payments)
+    const urlCohortId = searchParams.get("cohort_id");
+    const { setSelectedCohort } = useUpgrade();
+
+    // Load member data and pricing (and cohort if needed)
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
@@ -82,12 +87,36 @@ function CheckoutContent() {
             ]);
             setMember(memberData);
             setPricing(pricingData);
+
+            // If we have cohort_id in URL but no selectedCohort in context, fetch it
+            // This allows resuming pending payments from billing page
+            if (urlCohortId && !state.selectedCohort) {
+                try {
+                    const cohortData = await apiGet<Cohort>(
+                        `/api/v1/academy/enrollments/${urlCohortId}`,
+                        { auth: true }
+                    ).catch(() => null);
+
+                    // Try fetching cohort directly if enrollment fetch fails
+                    if (!cohortData) {
+                        const cohortResponse = await apiGet<Cohort>(
+                            `/api/v1/academy/cohorts/${urlCohortId}`,
+                            { auth: true }
+                        );
+                        if (cohortResponse) {
+                            setSelectedCohort(cohortResponse);
+                        }
+                    }
+                } catch (e) {
+                    console.error("Failed to load cohort:", e);
+                }
+            }
         } catch (e) {
             console.error("Failed to load data:", e);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [urlCohortId, state.selectedCohort, setSelectedCohort]);
 
     useEffect(() => {
         loadData();
@@ -141,6 +170,7 @@ function CheckoutContent() {
         }
     } else if (purpose === "academy_cohort") {
         // Academy enrollment - use price_override or program.price_amount
+        // Price is stored in naira (major unit)
         const cohortPrice = state.selectedCohort?.price_override ?? state.selectedCohort?.program?.price_amount;
         if (cohortPrice) {
             lineItems.push({
@@ -437,62 +467,64 @@ function CheckoutContent() {
                 </div>
             </Card>
 
-            {/* Payment Method Selector */}
-            <Card className="p-6">
-                <h2 className="text-lg font-semibold text-slate-900 mb-4">Payment Method</h2>
-                <div className="grid gap-3 sm:grid-cols-2">
-                    <label
-                        className={`relative flex cursor-pointer flex-col rounded-xl border-2 p-4 transition-all ${paymentMethod === "paystack"
-                            ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-500"
-                            : "border-slate-200 bg-white hover:border-slate-300"
-                            }`}
-                    >
-                        <input
-                            type="radio"
-                            name="payment_method"
-                            value="paystack"
-                            checked={paymentMethod === "paystack"}
-                            onChange={() => setPaymentMethod("paystack")}
-                            className="sr-only"
-                        />
-                        <span className="text-lg font-medium text-slate-900">💳 Pay Online</span>
-                        <span className="text-sm text-slate-500">Instant payment via Paystack</span>
-                    </label>
-                    <label
-                        className={`relative flex cursor-pointer flex-col rounded-xl border-2 p-4 transition-all ${paymentMethod === "manual_transfer"
-                            ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-500"
-                            : "border-slate-200 bg-white hover:border-slate-300"
-                            }`}
-                    >
-                        <input
-                            type="radio"
-                            name="payment_method"
-                            value="manual_transfer"
-                            checked={paymentMethod === "manual_transfer"}
-                            onChange={() => setPaymentMethod("manual_transfer")}
-                            className="sr-only"
-                        />
-                        <span className="text-lg font-medium text-slate-900">🏦 Bank Transfer</span>
-                        <span className="text-sm text-slate-500">Manual transfer with proof</span>
-                    </label>
-                </div>
-
-                {/* Bank Transfer Details */}
-                {paymentMethod === "manual_transfer" && (
-                    <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
-                        <h3 className="font-medium text-amber-900 mb-2">📋 Bank Transfer Details</h3>
-                        <div className="space-y-1 text-sm text-amber-800">
-                            <p><span className="text-amber-600">Bank:</span> <strong>OPay</strong></p>
-                            <p><span className="text-amber-600">Account Number:</span> <strong>7033588400</strong></p>
-                            <p><span className="text-amber-600">Account Name:</span> <strong>Ugochukwu Nwachukwu</strong></p>
-                            <p><span className="text-amber-600">Amount:</span> <strong>{formatCurrency(total)}</strong></p>
-                        </div>
-                        <p className="mt-3 text-xs text-amber-700">
-                            💡 After transfer, you'll be asked to upload proof of payment for verification.
-                        </p>
+            {/* Payment Method Selector - Only show for session payments, not membership */}
+            {purpose === "session" && (
+                <Card className="p-6">
+                    <h2 className="text-lg font-semibold text-slate-900 mb-4">Payment Method</h2>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <label
+                            className={`relative flex cursor-pointer flex-col rounded-xl border-2 p-4 transition-all ${paymentMethod === "paystack"
+                                ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-500"
+                                : "border-slate-200 bg-white hover:border-slate-300"
+                                }`}
+                        >
+                            <input
+                                type="radio"
+                                name="payment_method"
+                                value="paystack"
+                                checked={paymentMethod === "paystack"}
+                                onChange={() => setPaymentMethod("paystack")}
+                                className="sr-only"
+                            />
+                            <span className="text-lg font-medium text-slate-900">💳 Pay Online</span>
+                            <span className="text-sm text-slate-500">Instant payment via Paystack</span>
+                        </label>
+                        <label
+                            className={`relative flex cursor-pointer flex-col rounded-xl border-2 p-4 transition-all ${paymentMethod === "manual_transfer"
+                                ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-500"
+                                : "border-slate-200 bg-white hover:border-slate-300"
+                                }`}
+                        >
+                            <input
+                                type="radio"
+                                name="payment_method"
+                                value="manual_transfer"
+                                checked={paymentMethod === "manual_transfer"}
+                                onChange={() => setPaymentMethod("manual_transfer")}
+                                className="sr-only"
+                            />
+                            <span className="text-lg font-medium text-slate-900">🏦 Bank Transfer</span>
+                            <span className="text-sm text-slate-500">Manual transfer with proof</span>
+                        </label>
                     </div>
-                )}
-            </Card>
+
+                    {/* Bank Transfer Details */}
+                    {paymentMethod === "manual_transfer" && (
+                        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                            <h3 className="font-medium text-amber-900 mb-2">📋 Bank Transfer Details</h3>
+                            <div className="space-y-1 text-sm text-amber-800">
+                                <p><span className="text-amber-600">Bank:</span> <strong>OPay</strong></p>
+                                <p><span className="text-amber-600">Account Number:</span> <strong>7033588400</strong></p>
+                                <p><span className="text-amber-600">Account Name:</span> <strong>Ugochukwu Nwachukwu</strong></p>
+                                <p><span className="text-amber-600">Amount:</span> <strong>{formatCurrency(total)}</strong></p>
+                            </div>
+                            <p className="mt-3 text-xs text-amber-700">
+                                💡 After transfer, you'll be asked to upload proof of payment for verification.
+                            </p>
+                        </div>
+                    )}
+                </Card>
+            )}
 
             {/* Payment Button */}
             <div className="space-y-4">

@@ -73,10 +73,20 @@ export function UpcomingCohorts() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {cohorts.map((cohort) => (
                 <Card key={cohort.id} className="flex flex-col overflow-hidden hover:shadow-lg transition-shadow">
-                    <div className="bg-gradient-to-br from-slate-700 to-slate-900 p-5 text-white">
+                    {/* Card Header - Image or Gradient */}
+                    <div
+                        className="relative p-5 text-white min-h-[140px]"
+                        style={{
+                            backgroundImage: cohort.program?.cover_image_url
+                                ? `linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.7)), url(${cohort.program.cover_image_url})`
+                                : 'linear-gradient(to bottom right, rgb(51, 65, 85), rgb(15, 23, 42))',
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                        }}
+                    >
                         {cohort.program && (
                             <div className="mb-2">
-                                <span className="inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-xs font-semibold capitalize">
+                                <span className="inline-flex items-center rounded-full bg-white/20 backdrop-blur-sm px-3 py-1 text-xs font-semibold capitalize">
                                     {cohort.program.level.replace("_", " ")}
                                 </span>
                             </div>
@@ -124,7 +134,7 @@ export function UpcomingCohorts() {
                         </div>
 
                         <div className="mt-auto pt-4">
-                            <Link href="/dashboard/academy" className="block w-full">
+                            <Link href="/dashboard/academy/browse" className="block w-full">
                                 <Button className="w-full">Enroll Now</Button>
                             </Link>
                             <p className="mt-2 text-center text-xs text-slate-500">

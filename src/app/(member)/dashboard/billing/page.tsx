@@ -704,7 +704,7 @@ export default function BillingPage() {
                                 <p className="text-sm text-slate-600">
                                     ✨ You're enrolled in all currently available cohorts! Check back later for new programs.
                                 </p>
-                                <Link href="/academy" className="text-sm text-cyan-600 hover:text-cyan-800">
+                                <Link href="/dashboard/academy/browse" className="text-sm text-cyan-600 hover:text-cyan-800">
                                     Browse Academy programs →
                                 </Link>
                             </Card>
