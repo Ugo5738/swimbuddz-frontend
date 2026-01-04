@@ -177,6 +177,69 @@ export interface StudentProgress {
     updated_at: string;
 }
 
+// --- Curriculum Types ---
+
+export interface Skill {
+    id: string;
+    name: string;
+    category: string; // "water_confidence", "stroke", "safety", "technique"
+    description?: string;
+    created_at: string;
+}
+
+export interface CurriculumLesson {
+    id: string;
+    week_id: string;
+    title: string;
+    description?: string;
+    duration_minutes?: number;
+    video_url?: string;
+    order_index: number;
+    skills: Skill[];
+    created_at: string;
+}
+
+export interface CurriculumWeek {
+    id: string;
+    curriculum_id: string;
+    week_number: number;
+    theme: string;
+    objectives?: string;
+    order_index: number;
+    lessons: CurriculumLesson[];
+    created_at: string;
+}
+
+export interface ProgramCurriculum {
+    id: string;
+    program_id: string;
+    version: number;
+    is_active: boolean;
+    weeks: CurriculumWeek[];
+    created_at: string;
+    updated_at: string;
+}
+
+export interface SkillCreate {
+    name: string;
+    category: string;
+    description?: string;
+}
+
+export interface CurriculumWeekCreate {
+    week_number: number;
+    theme: string;
+    objectives?: string;
+}
+
+export interface CurriculumLessonCreate {
+    title: string;
+    description?: string;
+    duration_minutes?: number;
+    video_url?: string;
+    skill_ids?: string[];
+}
+
 export interface MemberBasicInfo {
     id: string;
     first_name?: string;
@@ -251,4 +314,44 @@ export const AcademyApi = {
         const query = status ? `?status=${status}` : "";
         return apiGet<Enrollment[]>(`/api/v1/academy/enrollments${query}`, { auth: true });
     },
+
+    // --- Skills Library ---
+    listSkills: (category?: string) => {
+        const query = category ? `?category=${category}` : "";
+        return apiGet<Skill[]>(`/api/v1/academy/skills${query}`);
+    },
+    createSkill: (data: SkillCreate) =>
+        apiPost<Skill>("/api/v1/academy/skills", data, { auth: true }),
+    updateSkill: (skillId: string, data: Partial<Skill>) =>
+        apiPut<Skill>(`/api/v1/academy/skills/${skillId}`, data, { auth: true }),
+    deleteSkill: (skillId: string) =>
+        apiDelete<void>(`/api/v1/academy/skills/${skillId}`, { auth: true }),
+
+    // --- Curriculum ---
+    getCurriculum: (programId: string) =>
+        apiGet<ProgramCurriculum>(`/api/v1/academy/programs/${programId}/curriculum`),
+    createCurriculum: (programId: string) =>
+        apiPost<ProgramCurriculum>(`/api/v1/academy/programs/${programId}/curriculum`, {}, { auth: true }),
+
+    // --- Curriculum Weeks ---
+    addWeek: (curriculumId: string, data: CurriculumWeekCreate) =>
+        apiPost<CurriculumWeek>(`/api/v1/academy/curricula/${curriculumId}/weeks`, data, { auth: true }),
+    updateWeek: (weekId: string, data: Partial<CurriculumWeek>) =>
+        apiPut<CurriculumWeek>(`/api/v1/academy/curriculum-weeks/${weekId}`, data, { auth: true }),
+    deleteWeek: (weekId: string) =>
+        apiDelete<void>(`/api/v1/academy/curriculum-weeks/${weekId}`, { auth: true }),
+
+    // --- Curriculum Lessons ---
+    addLesson: (weekId: string, data: CurriculumLessonCreate) =>
+        apiPost<CurriculumLesson>(`/api/v1/academy/curriculum-weeks/${weekId}/lessons`, data, { auth: true }),
+    updateLesson: (lessonId: string, data: Partial<CurriculumLesson> & { skill_ids?: string[] }) =>
+        apiPut<CurriculumLesson>(`/api/v1/academy/curriculum-lessons/${lessonId}`, data, { auth: true }),
+    deleteLesson: (lessonId: string) =>
+        apiDelete<void>(`/api/v1/academy/curriculum-lessons/${lessonId}`, { auth: true }),
+
+    // --- Reordering ---
+    reorderWeeks: (curriculumId: string, weekIds: string[]) =>
+        apiPut<{ message: string }>(`/api/v1/academy/curricula/${curriculumId}/weeks/reorder`, weekIds, { auth: true }),
+    reorderLessons: (weekId: string, lessonIds: string[]) =>
+        apiPut<{ message: string }>(`/api/v1/academy/curriculum-weeks/${weekId}/lessons/reorder`, lessonIds, { auth: true }),
 };

@@ -1,22 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
-import { AcademyApi, ProgramLevel, BillingType, MilestoneType, RequiredEvidence, type Milestone } from "@/lib/academy";
+import { AcademyApi, ProgramLevel, BillingType, MilestoneType, RequiredEvidence, type Milestone, type Skill } from "@/lib/academy";
 import { toast } from "sonner";
 
-// Curriculum lesson with full details
+// Curriculum lesson with full details including skills
 interface CurriculumLesson {
     id: string;
     title: string;
     description: string;
     duration_minutes: number;
-    video_url: string; // Model/instructional video
+    video_url: string;
+    skill_ids: string[]; // Now includes skills!
 }
 
 // Week with theme, objectives, and lessons
@@ -32,7 +33,7 @@ interface MilestoneFormItem {
     name: string;
     description: string;
     criteria: string;
-    video_url: string; // Example/demo video
+    video_url: string;
     order_index: number;
     milestone_type: MilestoneType;
     required_evidence: RequiredEvidence;
@@ -42,6 +43,10 @@ export default function NewProgramPage() {
     const router = useRouter();
     const [step, setStep] = useState<"basics" | "curriculum" | "milestones" | "review">("basics");
     const [saving, setSaving] = useState(false);
+
+    // Skills library - loaded from backend
+    const [skills, setSkills] = useState<Skill[]>([]);
+    const [loadingSkills, setLoadingSkills] = useState(true);
 
     // Basic info state
     const [formData, setFormData] = useState({
@@ -58,18 +63,33 @@ export default function NewProgramPage() {
         prep_materials: "",
     });
 
-    // Curriculum state - now with theme, objectives, and lessons
+    // Curriculum state - now with skill_ids
     const [curriculum, setCurriculum] = useState<CurriculumWeek[]>([
         {
             week: 1,
             theme: "",
             objectives: "",
-            lessons: [{ id: `lesson-${Date.now()}`, title: "", description: "", duration_minutes: 60, video_url: "" }]
+            lessons: [{ id: `lesson-${Date.now()}`, title: "", description: "", duration_minutes: 60, video_url: "", skill_ids: [] }]
         }
     ]);
 
     // Milestones state
     const [milestones, setMilestones] = useState<MilestoneFormItem[]>([]);
+
+    // Load skills on mount
+    useEffect(() => {
+        async function loadSkills() {
+            try {
+                const skillsData = await AcademyApi.listSkills();
+                setSkills(skillsData);
+            } catch (error) {
+                console.error("Failed to load skills", error);
+            } finally {
+                setLoadingSkills(false);
+            }
+        }
+        loadSkills();
+    }, []);
 
     // --- Curriculum Helpers ---
     const addWeek = () => {
@@ -79,7 +99,7 @@ export default function NewProgramPage() {
                 week: curriculum.length + 1,
                 theme: "",
                 objectives: "",
-                lessons: [{ id: `lesson-${Date.now()}`, title: "", description: "", duration_minutes: 60, video_url: "" }]
+                lessons: [{ id: `lesson-${Date.now()}`, title: "", description: "", duration_minutes: 60, video_url: "", skill_ids: [] }]
             }
         ]);
     };
@@ -87,7 +107,6 @@ export default function NewProgramPage() {
     const removeWeek = (weekIndex: number) => {
         if (curriculum.length > 1) {
             const updated = curriculum.filter((_, i) => i !== weekIndex);
-            // Re-number weeks
             updated.forEach((w, i) => w.week = i + 1);
             setCurriculum(updated);
         }
@@ -106,14 +125,26 @@ export default function NewProgramPage() {
             title: "",
             description: "",
             duration_minutes: 60,
-            video_url: ""
+            video_url: "",
+            skill_ids: []
         });
         setCurriculum(updated);
     };
 
-    const updateLesson = (weekIndex: number, lessonIndex: number, field: keyof CurriculumLesson, value: string | number) => {
+    const updateLesson = (weekIndex: number, lessonIndex: number, field: keyof CurriculumLesson, value: string | number | string[]) => {
         const updated = [...curriculum];
         (updated[weekIndex].lessons[lessonIndex] as any)[field] = value;
+        setCurriculum(updated);
+    };
+
+    const toggleLessonSkill = (weekIndex: number, lessonIndex: number, skillId: string) => {
+        const updated = [...curriculum];
+        const lesson = updated[weekIndex].lessons[lessonIndex];
+        if (lesson.skill_ids.includes(skillId)) {
+            lesson.skill_ids = lesson.skill_ids.filter(id => id !== skillId);
+        } else {
+            lesson.skill_ids = [...lesson.skill_ids, skillId];
+        }
         setCurriculum(updated);
     };
 
@@ -150,29 +181,11 @@ export default function NewProgramPage() {
 
     const removeMilestone = (index: number) => {
         const updated = milestones.filter((_, i) => i !== index);
-        // Re-order
         updated.forEach((m, i) => m.order_index = i + 1);
         setMilestones(updated);
     };
 
-    // --- Convert curriculum to JSON (with full lesson details) ---
-    const buildCurriculumJson = () => {
-        const weeks = curriculum.map((week) => ({
-            week: week.week,
-            theme: week.theme,
-            objectives: week.objectives,
-            lessons: week.lessons.filter(l => l.title.trim()).map(l => ({
-                title: l.title,
-                description: l.description,
-                duration_minutes: l.duration_minutes,
-                video_url: l.video_url || undefined,
-            }))
-        })).filter(w => w.lessons.length > 0 || w.theme.trim() || w.objectives.trim());
-        // Return as dict with weeks array (backend expects dict, not array)
-        return weeks.length > 0 ? { weeks } : null;
-    };
-
-    // --- Submit ---
+    // --- Submit (Now uses curriculum API for dual storage) ---
     const handleSubmit = async () => {
         if (!formData.name.trim()) {
             toast.error("Program name is required");
@@ -181,15 +194,45 @@ export default function NewProgramPage() {
 
         setSaving(true);
         try {
-            // 1. Create the program (convert price from Naira to kobo)
+            // 1. Create the program (no curriculum_json initially)
             const program = await AcademyApi.createProgram({
                 ...formData,
-                price_amount: formData.price_amount, // Stored in naira
+                price_amount: formData.price_amount,
                 prep_materials: formData.prep_materials.trim() ? { content: formData.prep_materials } : null,
-                curriculum_json: buildCurriculumJson(),
+                curriculum_json: null, // Will be populated by curriculum API
             });
 
-            // 2. Create milestones
+            // 2. Create curriculum using the new API (dual storage)
+            const validWeeks = curriculum.filter(w => w.theme.trim() || w.lessons.some(l => l.title.trim()));
+
+            if (validWeeks.length > 0) {
+                // Create curriculum version
+                const curriculumData = await AcademyApi.createCurriculum(program.id);
+
+                // Add each week and its lessons
+                for (const weekData of validWeeks) {
+                    const week = await AcademyApi.addWeek(curriculumData.id, {
+                        week_number: weekData.week,
+                        theme: weekData.theme,
+                        objectives: weekData.objectives,
+                    });
+
+                    // Add lessons to this week
+                    for (const lessonData of weekData.lessons) {
+                        if (!lessonData.title.trim()) continue;
+
+                        await AcademyApi.addLesson(week.id, {
+                            title: lessonData.title,
+                            description: lessonData.description || undefined,
+                            duration_minutes: lessonData.duration_minutes || undefined,
+                            video_url: lessonData.video_url || undefined,
+                            skill_ids: lessonData.skill_ids.length > 0 ? lessonData.skill_ids : undefined,
+                        });
+                    }
+                }
+            }
+
+            // 3. Create milestones
             for (const milestone of milestones) {
                 if (!milestone.name.trim()) continue;
                 await AcademyApi.createMilestone({
@@ -214,6 +257,13 @@ export default function NewProgramPage() {
 
     const stepLabels = ["Basic Info", "Curriculum", "Milestones", "Review"];
     const currentStepIndex = ["basics", "curriculum", "milestones", "review"].indexOf(step);
+
+    // Group skills by category for display
+    const skillsByCategory = skills.reduce((acc, skill) => {
+        if (!acc[skill.category]) acc[skill.category] = [];
+        acc[skill.category].push(skill);
+        return acc;
+    }, {} as Record<string, Skill[]>);
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
@@ -369,12 +419,21 @@ export default function NewProgramPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <h2 className="text-xl font-semibold text-slate-900">Curriculum</h2>
-                                <p className="text-sm text-slate-600">Define weekly themes, objectives, and lessons</p>
+                                <p className="text-sm text-slate-600">Define weekly themes, objectives, lessons, and skills</p>
                             </div>
                             <Button variant="outline" onClick={addWeek}>
                                 + Add Week
                             </Button>
                         </div>
+
+                        {/* Skills info banner */}
+                        {skills.length > 0 && (
+                            <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-3">
+                                <p className="text-sm text-cyan-800">
+                                    <strong>Skills Library:</strong> {skills.length} skills available. Tag lessons with skills to track student progress.
+                                </p>
+                            </div>
+                        )}
 
                         {curriculum.map((week, weekIndex) => (
                             <div key={week.week} className="border rounded-lg p-4 space-y-4">
@@ -390,7 +449,6 @@ export default function NewProgramPage() {
                                     )}
                                 </div>
 
-                                {/* Week Theme & Objectives */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <Input
                                         label="Theme"
@@ -457,6 +515,39 @@ export default function NewProgramPage() {
                                                 onChange={(e) => updateLesson(weekIndex, lessonIndex, "video_url", e.target.value)}
                                                 placeholder="https://... (instructional video)"
                                             />
+
+                                            {/* Skills Selection */}
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-700 mb-1">
+                                                    Skills (click to tag)
+                                                </label>
+                                                {loadingSkills ? (
+                                                    <p className="text-xs text-slate-500">Loading skills...</p>
+                                                ) : skills.length === 0 ? (
+                                                    <p className="text-xs text-slate-500">
+                                                        No skills in library yet.
+                                                        <a href="/admin/academy/programs/new" className="text-cyan-600 ml-1">
+                                                            Add skills in Curriculum Builder
+                                                        </a>
+                                                    </p>
+                                                ) : (
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {skills.map(skill => (
+                                                            <button
+                                                                key={skill.id}
+                                                                type="button"
+                                                                onClick={() => toggleLessonSkill(weekIndex, lessonIndex, skill.id)}
+                                                                className={`px-2 py-1 rounded text-xs transition-colors ${lesson.skill_ids.includes(skill.id)
+                                                                    ? "bg-cyan-600 text-white"
+                                                                    : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                                                    }`}
+                                                            >
+                                                                {skill.name}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -574,13 +665,21 @@ export default function NewProgramPage() {
                             <div className="border rounded-lg p-4">
                                 <h3 className="font-semibold text-slate-900 mb-2">Curriculum</h3>
                                 <div className="text-sm">
-                                    {curriculum.map((week) => (
-                                        <div key={week.week} className="mb-2">
-                                            <span className="font-medium">Week {week.week}:</span>{" "}
-                                            {week.theme || "No theme"} - {week.lessons.filter(l => l.title.trim()).length} lesson(s)
-                                        </div>
-                                    ))}
+                                    {curriculum.map((week) => {
+                                        const lessonCount = week.lessons.filter(l => l.title.trim()).length;
+                                        const skillCount = week.lessons.reduce((sum, l) => sum + l.skill_ids.length, 0);
+                                        return (
+                                            <div key={week.week} className="mb-2">
+                                                <span className="font-medium">Week {week.week}:</span>{" "}
+                                                {week.theme || "No theme"} - {lessonCount} lesson(s)
+                                                {skillCount > 0 && <span className="text-cyan-600 ml-1">({skillCount} skills tagged)</span>}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
+                                <p className="text-xs text-cyan-600 mt-2">
+                                    ✓ Curriculum will be saved to both normalized tables and JSON (dual storage)
+                                </p>
                             </div>
 
                             <div className="border rounded-lg p-4">

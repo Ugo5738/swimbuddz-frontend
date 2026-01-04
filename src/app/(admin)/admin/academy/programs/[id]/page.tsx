@@ -157,7 +157,15 @@ export default function ProgramDetailsPage() {
 
                     {/* Curriculum Section - Improved */}
                     <Card>
-                        <h2 className="text-lg font-semibold text-slate-900 mb-4">Curriculum</h2>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-semibold text-slate-900">Curriculum</h2>
+                            <button
+                                onClick={() => router.push(`/admin/academy/programs/${id}/curriculum`)}
+                                className="text-sm text-cyan-600 hover:text-cyan-700 font-medium"
+                            >
+                                Manage Curriculum →
+                            </button>
+                        </div>
                         {!program.curriculum_json || !program.curriculum_json.weeks || program.curriculum_json.weeks.length === 0 ? (
                             <p className="text-sm text-slate-500">No curriculum defined yet.</p>
                         ) : (
