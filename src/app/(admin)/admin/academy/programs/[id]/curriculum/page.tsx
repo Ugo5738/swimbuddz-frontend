@@ -661,11 +661,15 @@ export default function CurriculumBuilderPage() {
                                         onDragEnd={handleWeekDragEnd}
                                     >
                                         <SortableContext
-                                            items={curriculum.weeks.map(w => w.id)}
+                                            items={curriculum.weeks
+                                                .slice()
+                                                .sort((a, b) => a.order_index - b.order_index)
+                                                .map(w => w.id)}
                                             strategy={verticalListSortingStrategy}
                                         >
                                             <div className="space-y-4">
                                                 {curriculum.weeks
+                                                    .slice()
                                                     .sort((a, b) => a.order_index - b.order_index)
                                                     .map((week) => (
                                                         <SortableWeekCard
@@ -687,11 +691,15 @@ export default function CurriculumBuilderPage() {
                                                                         onDragEnd={(e) => handleLessonDragEnd(week.id, e)}
                                                                     >
                                                                         <SortableContext
-                                                                            items={week.lessons.map(l => l.id)}
+                                                                            items={week.lessons
+                                                                                .slice()
+                                                                                .sort((a, b) => a.order_index - b.order_index)
+                                                                                .map(l => l.id)}
                                                                             strategy={verticalListSortingStrategy}
                                                                         >
                                                                             <div className="space-y-2 mb-4">
                                                                                 {week.lessons
+                                                                                    .slice()
                                                                                     .sort((a, b) => a.order_index - b.order_index)
                                                                                     .map((lesson) => (
                                                                                         <SortableLessonItem

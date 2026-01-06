@@ -1,16 +1,50 @@
 "use client";
 
 import { Card } from "@/components/ui/Card";
-import { ArrowRight, CheckCircle } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { ArrowRight, CheckCircle, Mail, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { supabase } from "@/lib/auth";
 
 function RegistrationSuccessContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const redirectPath = searchParams.get("redirect");
+    const registeredEmail = searchParams.get("email"); // Get email from URL params
     const isCoachRegistration = redirectPath === "/coach/apply";
+
+    const [email, setEmail] = useState(registeredEmail || "");
+    const [resending, setResending] = useState(false);
+    const [resendMessage, setResendMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+    const handleResendEmail = async () => {
+        if (!email.trim()) {
+            setResendMessage({ type: "error", text: "Please enter your email address" });
+            return;
+        }
+
+        setResending(true);
+        setResendMessage(null);
+
+        try {
+            const { error } = await supabase.auth.resend({
+                type: "signup",
+                email: email.trim(),
+            });
+
+            if (error) {
+                setResendMessage({ type: "error", text: error.message });
+            } else {
+                setResendMessage({ type: "success", text: "Confirmation email sent! Please check your inbox and spam folder." });
+            }
+        } catch {
+            setResendMessage({ type: "error", text: "Failed to resend email. Please try again." });
+        } finally {
+            setResending(false);
+        }
+    };
 
     useEffect(() => {
         const reference = searchParams.get("reference") || searchParams.get("trxref");
@@ -48,11 +82,39 @@ function RegistrationSuccessContent() {
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-sm font-semibold text-cyan-700">
                                 1
                             </div>
-                            <div>
+                            <div className="flex-1">
                                 <h3 className="font-medium text-slate-900">Check your email</h3>
                                 <p className="mt-1 text-sm text-slate-600">
                                     We've sent a confirmation email to verify your account. Please click the link to activate.
                                 </p>
+
+                                {/* Resend Email Section */}
+                                <div className="mt-3 p-3 bg-slate-50 rounded-lg">
+                                    <p className="text-xs text-slate-500 mb-2">Didn't receive the email?</p>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            placeholder="Enter your email"
+                                            className="flex-1 rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:border-cyan-500"
+                                        />
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={handleResendEmail}
+                                            disabled={resending}
+                                        >
+                                            {resending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                                            <span className="ml-1">{resending ? "Sending..." : "Resend"}</span>
+                                        </Button>
+                                    </div>
+                                    {resendMessage && (
+                                        <p className={`mt-2 text-xs ${resendMessage.type === "success" ? "text-green-600" : "text-red-600"}`}>
+                                            {resendMessage.text}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -146,12 +208,40 @@ function RegistrationSuccessContent() {
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-sm font-semibold text-cyan-700">
                             1
                         </div>
-                        <div>
+                        <div className="flex-1">
                             <h3 className="font-medium text-slate-900">Check your email</h3>
                             <p className="mt-1 text-sm text-slate-600">
                                 We've sent a confirmation email to verify your account. Please click the link
                                 to activate your membership.
                             </p>
+
+                            {/* Resend Email Section */}
+                            <div className="mt-3 p-3 bg-slate-50 rounded-lg">
+                                <p className="text-xs text-slate-500 mb-2">Didn't receive the email?</p>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="Enter your email"
+                                        className="flex-1 rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:border-cyan-500"
+                                    />
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={handleResendEmail}
+                                        disabled={resending}
+                                    >
+                                        {resending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                                        <span className="ml-1">{resending ? "Sending..." : "Resend"}</span>
+                                    </Button>
+                                </div>
+                                {resendMessage && (
+                                    <p className={`mt-2 text-xs ${resendMessage.type === "success" ? "text-green-600" : "text-red-600"}`}>
+                                        {resendMessage.text}
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     </div>
 

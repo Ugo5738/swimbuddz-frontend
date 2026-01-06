@@ -7,9 +7,25 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Input } from "@/components/ui/Input";
 import { Alert } from "@/components/ui/Alert";
-import { signInToSession, RideShareOption } from "@/lib/sessions";
 import type { Session } from "@/lib/sessions";
-import { apiGet } from "@/lib/api";
+import { apiGet, apiPost } from "@/lib/api";
+
+// Helper to format currency
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-NG', {
+    style: 'currency',
+    currency: 'NGN',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
+// Payment intent response type
+type PaymentIntentResponse = {
+  reference: string;
+  amount: number;
+  checkout_url: string | null;
+};
 
 const steps = [
   { title: "Identity", description: "Confirm who's attending." },
@@ -75,8 +91,6 @@ export function SessionSignIn({ session }: SessionSignInProps) {
   function nextStep() {
     if (step < steps.length - 1) {
       setStep((current) => current + 1);
-    } else {
-      void handleSubmit();
     }
   }
 
@@ -86,20 +100,39 @@ export function SessionSignIn({ session }: SessionSignInProps) {
     }
   }
 
-  async function handleSubmit() {
+  async function handlePayment() {
+    if (totalCost <= 0) {
+      setError("No payment required for this session.");
+      return;
+    }
+
     setSaving(true);
     setError(null);
     try {
-      await signInToSession({
-        sessionId: session.id,
-        status,
-        notes: note || undefined,
-        ride_config_id: selectedRideShareAreaId || undefined,
-        pickup_location_id: selectedRideShareLocation || undefined,
-      });
-      setConfirmation(true);
+      // Create payment intent
+      const intent = await apiPost<PaymentIntentResponse>(
+        "/api/v1/payments/intents",
+        {
+          purpose: "session_fee",
+          currency: "NGN",
+          payment_method: "paystack",
+          session_id: session.id,
+          direct_amount: totalCost,
+          ride_config_id: selectedRideShareAreaId || undefined,
+          pickup_location_id: selectedRideShareLocation || undefined,
+          attendance_status: status,
+        },
+        { auth: true }
+      );
+
+      if (intent.checkout_url) {
+        // Redirect to Paystack checkout
+        window.location.href = intent.checkout_url;
+      } else {
+        setError("Unable to initialize payment. Please try again.");
+      }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to sign in. Please try again.";
+      const message = error instanceof Error ? error.message : "Unable to process payment. Please try again.";
       setError(message);
     } finally {
       setSaving(false);
@@ -332,7 +365,7 @@ export function SessionSignIn({ session }: SessionSignInProps) {
                         const isFull = loc.current_bookings >= loc.max_capacity;
 
                         return (
-                          <label
+                          <div
                             key={loc.id}
                             className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border-2 transition-all ${!loc.is_available
                               ? 'cursor-not-allowed border-slate-200 bg-slate-50 opacity-60'
@@ -355,9 +388,9 @@ export function SessionSignIn({ session }: SessionSignInProps) {
                                     name="pickup_location"
                                     value={loc.id}
                                     checked={isSelected}
-                                    onChange={(e) => setSelectedRideShareLocation(e.target.value)}
+                                    readOnly
                                     disabled={!loc.is_available}
-                                    className="h-5 w-5 border-slate-300 text-cyan-600 focus:ring-2 focus:ring-cyan-500 focus:ring-offset-1 disabled:cursor-not-allowed"
+                                    className="h-5 w-5 border-slate-300 text-cyan-600 focus:ring-2 focus:ring-cyan-500 focus:ring-offset-1 disabled:cursor-not-allowed pointer-events-none"
                                   />
                                 </div>
                                 <div className="flex-1">
@@ -441,7 +474,7 @@ export function SessionSignIn({ session }: SessionSignInProps) {
                                 </div>
                               </div>
                             )}
-                          </label>
+                          </div>
                         );
                       })}
                     </div>
@@ -570,8 +603,8 @@ export function SessionSignIn({ session }: SessionSignInProps) {
           <Button type="button" variant="secondary" onClick={previousStep} disabled={step === 0 || saving}>
             Back
           </Button>
-          <Button type="button" onClick={nextStep} disabled={saving || (!!authError && step === 0)}>
-            {step === steps.length - 1 ? (saving ? "Submitting..." : "Submit sign-in") : "Next"}
+          <Button type="button" onClick={step === steps.length - 1 ? handlePayment : nextStep} disabled={saving || (!!authError && step === 0)}>
+            {step === steps.length - 1 ? (saving ? "Processing..." : `Pay ${formatCurrency(totalCost)}`) : "Next"}
           </Button>
         </div>
       </Card>

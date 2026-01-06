@@ -126,6 +126,7 @@ const navSections: NavSection[] = [
         title: "Academy",
         showFor: ["academy"],
         items: [
+            { href: "/dashboard/academy/browse", label: "Academy Programs", icon: BookOpen },
             { href: "/dashboard/academy", label: "My Progress", icon: GraduationCap }
         ]
     }
@@ -216,6 +217,17 @@ export function MemberLayout({ children }: MemberLayoutProps) {
         tierSet.add("community");
     }
     if (communityActive) {
+        tierSet.add("community");
+    }
+
+    // Also add academy tier if user has paid academy enrollment
+    // (This handles cases where academy_paid_until isn't set but enrollment exists)
+    const hasPaidEnrollment = academyEnrollments.some(
+        e => e.payment_status === "paid" || e.status === "enrolled"
+    );
+    if (hasPaidEnrollment) {
+        tierSet.add("academy");
+        tierSet.add("club");
         tierSet.add("community");
     }
 
