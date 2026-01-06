@@ -404,6 +404,39 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* SHOP SECTION */}
+      <section className="space-y-6 rounded-2xl bg-gradient-to-br from-cyan-50 to-white border border-cyan-100 p-8 md:p-10">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">SwimBuddz Gear</h2>
+            <p className="text-slate-600 mt-2">
+              Browse our collection of swim essentials — goggles, caps, training equipment and more.
+            </p>
+          </div>
+          <Link
+            href="/store"
+            className="inline-flex items-center gap-2 rounded-full bg-cyan-600 px-6 py-3 font-semibold text-white hover:bg-cyan-500 transition-all hover:scale-105 hover:shadow-lg hover:shadow-cyan-500/25 self-start"
+          >
+            Visit Shop
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {["🥽 Goggles", "🏊 Caps", "🎽 Swimwear", "🏋️ Training"].map((item, idx) => (
+            <Link
+              key={idx}
+              href="/store"
+              className="group bg-white rounded-xl p-6 text-center border border-slate-100 hover:border-cyan-200 hover:shadow-md transition-all"
+            >
+              <span className="text-3xl block mb-2">{item.split(" ")[0]}</span>
+              <span className="text-sm font-medium text-slate-700 group-hover:text-cyan-700">{item.split(" ").slice(1).join(" ")}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {/* 4. SESSIONS & EVENTS PREVIEW */}
       <section className="space-y-6 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 p-8 md:p-10">
         <div>

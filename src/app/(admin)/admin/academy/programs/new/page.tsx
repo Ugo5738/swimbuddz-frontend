@@ -525,10 +525,9 @@ export default function NewProgramPage() {
                                                     <p className="text-xs text-slate-500">Loading skills...</p>
                                                 ) : skills.length === 0 ? (
                                                     <p className="text-xs text-slate-500">
-                                                        No skills in library yet.
-                                                        <a href="/admin/academy/programs/new" className="text-cyan-600 ml-1">
-                                                            Add skills in Curriculum Builder
-                                                        </a>
+                                                        No skills in library yet. Create skills in any program&apos;s{" "}
+                                                        <span className="text-cyan-600 font-medium">Curriculum Builder → Skills Library</span>{" "}
+                                                        sidebar after creating this program.
                                                     </p>
                                                 ) : (
                                                     <div className="flex flex-wrap gap-1">

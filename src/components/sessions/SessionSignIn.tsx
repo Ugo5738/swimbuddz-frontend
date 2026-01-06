@@ -30,6 +30,9 @@ export function SessionSignIn({ session }: SessionSignInProps) {
   const [selectedRideShareAreaId, setSelectedRideShareAreaId] = useState<string | null>(null);
   const [selectedRideShareLocation, setSelectedRideShareLocation] = useState<string | null>(null);
 
+  // Payment option state - defaults to Paystack (online) for session payments
+  const [showManualPayment, setShowManualPayment] = useState(false);
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<boolean>(false);
@@ -137,41 +140,64 @@ export function SessionSignIn({ session }: SessionSignInProps) {
           </div>
 
           <div className="mt-4 space-y-3">
-            <div className="rounded-lg border border-slate-200 bg-white p-4">
-              <p className="font-semibold text-slate-900">💳 Bank Transfer</p>
-              <div className="mt-2 space-y-1 text-sm text-slate-700">
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Bank:</span>
-                  <span className="font-medium">OPay</span>
+            {!showManualPayment ? (
+              <>
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                  <p className="font-semibold text-emerald-900">💳 Pay Online with Paystack</p>
+                  <p className="mt-1 text-sm text-emerald-700">
+                    Secure payment via card, bank transfer, or USSD.
+                  </p>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Account Number:</span>
-                  <span className="font-medium">7033588400</span>
+                <button
+                  type="button"
+                  className="text-sm text-slate-500 underline hover:text-slate-700"
+                  onClick={() => setShowManualPayment(true)}
+                >
+                  Prefer manual bank transfer?
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="rounded-lg border border-slate-200 bg-white p-4">
+                  <p className="font-semibold text-slate-900">💳 Bank Transfer</p>
+                  <div className="mt-2 space-y-1 text-sm text-slate-700">
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">Bank:</span>
+                      <span className="font-medium">OPay</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">Account Number:</span>
+                      <span className="font-medium">7033588400</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">Account Name:</span>
+                      <span className="font-medium">Ugochukwu Nwachukwu</span>
+                    </div>
+                  </div>
+                  <div className="mt-3 rounded bg-cyan-50 p-3 text-sm">
+                    <p className="font-medium text-cyan-900">📱 Send Receipt via WhatsApp</p>
+                    <p className="mt-1 text-cyan-800">
+                      After payment, please send your receipt to:{" "}
+                      <a
+                        href="https://wa.me/2347033588400"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold underline hover:text-cyan-600"
+                      >
+                        +234 703 358 8400
+                      </a>
+                    </p>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Account Name:</span>
-                  <span className="font-medium">Ugochukwu Nwachukwu</span>
-                </div>
-              </div>
-              <div className="mt-3 rounded bg-cyan-50 p-3 text-sm">
-                <p className="font-medium text-cyan-900">📱 Send Receipt via WhatsApp</p>
-                <p className="mt-1 text-cyan-800">
-                  After payment, please send your receipt to:{" "}
-                  <a
-                    href="https://wa.me/2347033588400"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold underline hover:text-cyan-600"
-                  >
-                    +234 703 358 8400
-                  </a>
-                </p>
-              </div>
-            </div>
-
-            <Button className="w-full" variant="secondary" disabled>
-              💳 Pay Online (Coming Soon)
-            </Button>
+                <button
+                  type="button"
+                  className="text-sm text-slate-500 underline hover:text-slate-700"
+                  onClick={() => setShowManualPayment(false)}
+                >
+                  ← Use online payment instead
+                </button>
+              </>
+            )}
           </div>
         </div>
       </Card>
@@ -314,6 +340,11 @@ export function SessionSignIn({ session }: SessionSignInProps) {
                                 ? 'border-cyan-500 bg-gradient-to-br from-cyan-50 to-white shadow-lg shadow-cyan-100 ring-2 ring-cyan-200'
                                 : 'border-slate-200 bg-white hover:border-cyan-300 hover:shadow-md'
                               }`}
+                            onClick={() => {
+                              if (loc.is_available) {
+                                setSelectedRideShareLocation(loc.id);
+                              }
+                            }}
                           >
                             {/* Header Section */}
                             <div className="flex items-start justify-between gap-4 p-4 pb-3">
@@ -473,41 +504,64 @@ export function SessionSignIn({ session }: SessionSignInProps) {
             </div>
 
             <div className="space-y-3 pt-2">
-              <div className="rounded-lg border border-slate-200 bg-white p-4">
-                <p className="font-semibold text-slate-900">💳 Bank Transfer Details</p>
-                <div className="mt-2 space-y-1 text-sm text-slate-700">
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">Bank:</span>
-                    <span className="font-medium">OPay</span>
+              {!showManualPayment ? (
+                <>
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                    <p className="font-semibold text-emerald-900">💳 Pay Online with Paystack</p>
+                    <p className="mt-1 text-sm text-emerald-700">
+                      Secure payment via card, bank transfer, or USSD.
+                    </p>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">Account Number:</span>
-                    <span className="font-medium">7033588400</span>
+                  <button
+                    type="button"
+                    className="text-sm text-slate-500 underline hover:text-slate-700"
+                    onClick={() => setShowManualPayment(true)}
+                  >
+                    Prefer manual bank transfer?
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="rounded-lg border border-slate-200 bg-white p-4">
+                    <p className="font-semibold text-slate-900">💳 Bank Transfer Details</p>
+                    <div className="mt-2 space-y-1 text-sm text-slate-700">
+                      <div className="flex justify-between">
+                        <span className="text-slate-600">Bank:</span>
+                        <span className="font-medium">OPay</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-600">Account Number:</span>
+                        <span className="font-medium">7033588400</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-600">Account Name:</span>
+                        <span className="font-medium">Ugochukwu Nwachukwu</span>
+                      </div>
+                    </div>
+                    <div className="mt-3 rounded bg-cyan-50 p-3 text-sm">
+                      <p className="font-medium text-cyan-900">📱 Send Receipt via WhatsApp</p>
+                      <p className="mt-1 text-cyan-800">
+                        After payment, please send your receipt to:{" "}
+                        <a
+                          href="https://wa.me/2347033588400"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold underline hover:text-cyan-600"
+                        >
+                          +234 703 358 8400
+                        </a>
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">Account Name:</span>
-                    <span className="font-medium">Ugochukwu Nwachukwu</span>
-                  </div>
-                </div>
-                <div className="mt-3 rounded bg-cyan-50 p-3 text-sm">
-                  <p className="font-medium text-cyan-900">📱 Send Receipt via WhatsApp</p>
-                  <p className="mt-1 text-cyan-800">
-                    After payment, please send your receipt to:{" "}
-                    <a
-                      href="https://wa.me/2347033588400"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-semibold underline hover:text-cyan-600"
-                    >
-                      +234 703 358 8400
-                    </a>
-                  </p>
-                </div>
-              </div>
-
-              <Button className="w-full" variant="secondary" disabled>
-                💳 Pay Online (Coming Soon)
-              </Button>
+                  <button
+                    type="button"
+                    className="text-sm text-slate-500 underline hover:text-slate-700"
+                    onClick={() => setShowManualPayment(false)}
+                  >
+                    ← 💳 Pay Online instead
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}

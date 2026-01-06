@@ -16,6 +16,7 @@ import {
     LayoutDashboard,
     LogOut,
     Menu,
+    ShoppingBag,
     User,
     Users,
     X
@@ -109,7 +110,8 @@ const navSections: NavSection[] = [
         items: [
             { href: "/community/directory", label: "Members", icon: Users },
             { href: "/community/events", label: "Events", icon: CalendarDays },
-            { href: "/community/tips", label: "Tips & Articles", icon: BookOpen }
+            { href: "/community/tips", label: "Tips & Articles", icon: BookOpen },
+            { href: "/store", label: "Shop", icon: ShoppingBag }
         ]
     },
     {

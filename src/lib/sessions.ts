@@ -219,13 +219,13 @@ export const signInToSession = async (
   }
 
   if (params.ride_config_id) {
-    payload.ride_share_option = "NEED_RIDE";
+    payload.ride_share_option = "join";
     payload.needs_ride = true;
     payload.pickup_location = params.pickup_location_id;
   }
 
   try {
-    await apiPost(`/api/v1/sessions/${params.sessionId}/sign-in`, payload, { auth: true });
+    await apiPost(`/api/v1/attendance/sessions/${params.sessionId}/sign-in`, payload, { auth: true });
     return { success: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to sign in to session";

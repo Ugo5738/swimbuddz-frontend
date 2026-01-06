@@ -40,6 +40,49 @@ const SKILL_CATEGORIES = [
     { value: "technique", label: "General Technique" },
 ];
 
+// Custom Confirm Modal (replaces native window.confirm which has issues)
+function ConfirmModal({
+    isOpen,
+    title,
+    message,
+    onConfirm,
+    onCancel,
+}: {
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    onCancel: () => void;
+}) {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="fixed inset-0 bg-black/50" onClick={onCancel} />
+            <div className="relative bg-white rounded-lg shadow-xl p-6 max-w-sm mx-4">
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">{title}</h3>
+                <p className="text-slate-600 mb-6">{message}</p>
+                <div className="flex gap-3 justify-end">
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        className="px-4 py-2 rounded text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onConfirm}
+                        className="px-4 py-2 rounded text-sm font-medium text-white bg-red-600 hover:bg-red-700"
+                    >
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // Sortable Week Card Component
 function SortableWeekCard({
     week,
@@ -107,7 +150,12 @@ function SortableWeekCard({
                         </button>
                     </div>
                     <button
-                        onClick={onDeleteWeek}
+                        type="button"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onDeleteWeek();
+                        }}
                         className="text-red-500 hover:text-red-700 text-sm"
                     >
                         Delete
@@ -178,7 +226,12 @@ function SortableLessonItem({
                 </div>
             </div>
             <button
-                onClick={onDelete}
+                type="button"
+                onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onDelete();
+                }}
                 className="text-red-500 hover:text-red-700 text-xs"
             >
                 Delete
@@ -211,6 +264,27 @@ export default function CurriculumBuilderPage() {
 
     // Skill form
     const [newSkill, setNewSkill] = useState<SkillCreate>({ name: "", category: "technique", description: "" });
+
+    // Confirm modal state
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+    }>({
+        isOpen: false,
+        title: "",
+        message: "",
+        onConfirm: () => { },
+    });
+
+    const showConfirm = (title: string, message: string, onConfirm: () => void) => {
+        setConfirmModal({ isOpen: true, title, message, onConfirm });
+    };
+
+    const closeConfirm = () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    };
 
     // DnD sensors
     const sensors = useSensors(
@@ -276,16 +350,22 @@ export default function CurriculumBuilderPage() {
         }
     }
 
-    async function handleDeleteWeek(weekId: string) {
-        if (!confirm("Delete this week and all its lessons?")) return;
-        try {
-            await AcademyApi.deleteWeek(weekId);
-            await loadData();
-            toast.success("Week deleted");
-        } catch (error) {
-            console.error("Failed to delete week", error);
-            toast.error("Failed to delete week");
-        }
+    function handleDeleteWeek(weekId: string) {
+        showConfirm(
+            "Delete Week",
+            "Delete this week and all its lessons?",
+            async () => {
+                closeConfirm();
+                try {
+                    await AcademyApi.deleteWeek(weekId);
+                    await loadData();
+                    toast.success("Week deleted");
+                } catch (error) {
+                    console.error("Failed to delete week", error);
+                    toast.error("Failed to delete week");
+                }
+            }
+        );
     }
 
     async function handleAddLesson(weekId: string) {
@@ -302,16 +382,22 @@ export default function CurriculumBuilderPage() {
         }
     }
 
-    async function handleDeleteLesson(lessonId: string) {
-        if (!confirm("Delete this lesson?")) return;
-        try {
-            await AcademyApi.deleteLesson(lessonId);
-            await loadData();
-            toast.success("Lesson deleted");
-        } catch (error) {
-            console.error("Failed to delete lesson", error);
-            toast.error("Failed to delete lesson");
-        }
+    function handleDeleteLesson(lessonId: string) {
+        showConfirm(
+            "Delete Lesson",
+            "Delete this lesson?",
+            async () => {
+                closeConfirm();
+                try {
+                    await AcademyApi.deleteLesson(lessonId);
+                    await loadData();
+                    toast.success("Lesson deleted");
+                } catch (error) {
+                    console.error("Failed to delete lesson", error);
+                    toast.error("Failed to delete lesson");
+                }
+            }
+        );
     }
 
     async function handleAddSkill() {
@@ -329,17 +415,23 @@ export default function CurriculumBuilderPage() {
         }
     }
 
-    async function handleDeleteSkill(skillId: string) {
-        if (!confirm("Delete this skill?")) return;
-        try {
-            await AcademyApi.deleteSkill(skillId);
-            const updatedSkills = await AcademyApi.listSkills();
-            setSkills(updatedSkills);
-            toast.success("Skill deleted");
-        } catch (error) {
-            console.error("Failed to delete skill", error);
-            toast.error("Failed to delete skill");
-        }
+    function handleDeleteSkill(skillId: string) {
+        showConfirm(
+            "Delete Skill",
+            "Delete this skill? It will be removed from all lessons.",
+            async () => {
+                closeConfirm();
+                try {
+                    await AcademyApi.deleteSkill(skillId);
+                    const updatedSkills = await AcademyApi.listSkills();
+                    setSkills(updatedSkills);
+                    toast.success("Skill deleted");
+                } catch (error) {
+                    console.error("Failed to delete skill", error);
+                    toast.error("Failed to delete skill");
+                }
+            }
+        );
     }
 
     function toggleWeekExpansion(weekId: string) {
@@ -431,361 +523,376 @@ export default function CurriculumBuilderPage() {
     }
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <header className="flex items-center justify-between">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm text-slate-500">
-                        <button onClick={() => router.push("/admin/academy")} className="hover:text-slate-900">
-                            Academy
-                        </button>
-                        <span>/</span>
-                        <button onClick={() => router.push(`/admin/academy/programs/${programId}`)} className="hover:text-slate-900">
-                            {program.name}
-                        </button>
-                        <span>/</span>
-                        <span>Curriculum</span>
-                    </div>
-                    <h1 className="text-3xl font-bold text-slate-900">Curriculum Builder</h1>
-                </div>
-                <button
-                    onClick={() => router.push(`/admin/academy/programs/${programId}`)}
-                    className="rounded bg-white px-4 py-2 text-sm font-medium text-slate-700 border border-slate-300 hover:bg-slate-50"
-                >
-                    Back to Program
-                </button>
-            </header>
+        <>
+            {/* Confirm Modal */}
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                onConfirm={confirmModal.onConfirm}
+                onCancel={closeConfirm}
+            />
 
-            <div className="grid gap-6 md:grid-cols-4">
-                {/* Main Curriculum Section (3 cols) */}
-                <div className="md:col-span-3 space-y-4">
-                    {!curriculum ? (
-                        <Card>
-                            <div className="text-center py-8">
-                                <p className="text-slate-600 mb-4">No curriculum has been created for this program yet.</p>
-                                <button
-                                    onClick={handleCreateCurriculum}
-                                    className="rounded bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700"
-                                >
-                                    Create Curriculum
-                                </button>
-                            </div>
-                        </Card>
-                    ) : (
-                        <>
-                            {/* Curriculum Info */}
+            <div className="space-y-6">
+                {/* Header */}
+                <header className="flex items-center justify-between">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-sm text-slate-500">
+                            <button onClick={() => router.push("/admin/academy")} className="hover:text-slate-900">
+                                Academy
+                            </button>
+                            <span>/</span>
+                            <button onClick={() => router.push(`/admin/academy/programs/${programId}`)} className="hover:text-slate-900">
+                                {program.name}
+                            </button>
+                            <span>/</span>
+                            <span>Curriculum</span>
+                        </div>
+                        <h1 className="text-3xl font-bold text-slate-900">Curriculum Builder</h1>
+                    </div>
+                    <button
+                        onClick={() => router.push(`/admin/academy/programs/${programId}`)}
+                        className="rounded bg-white px-4 py-2 text-sm font-medium text-slate-700 border border-slate-300 hover:bg-slate-50"
+                    >
+                        Back to Program
+                    </button>
+                </header>
+
+                <div className="grid gap-6 md:grid-cols-4">
+                    {/* Main Curriculum Section (3 cols) */}
+                    <div className="md:col-span-3 space-y-4">
+                        {!curriculum ? (
                             <Card>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h2 className="text-lg font-semibold text-slate-900">Version {curriculum.version}</h2>
-                                        <p className="text-sm text-slate-500">
-                                            {curriculum.weeks.length} weeks, {curriculum.weeks.reduce((sum, w) => sum + w.lessons.length, 0)} lessons
-                                        </p>
-                                    </div>
+                                <div className="text-center py-8">
+                                    <p className="text-slate-600 mb-4">No curriculum has been created for this program yet.</p>
                                     <button
-                                        onClick={() => {
-                                            setNewWeek({ week_number: curriculum.weeks.length + 1, theme: "", objectives: "" });
-                                            setShowAddWeek(true);
-                                        }}
+                                        onClick={handleCreateCurriculum}
                                         className="rounded bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700"
                                     >
-                                        + Add Week
+                                        Create Curriculum
                                     </button>
                                 </div>
                             </Card>
-
-                            {/* Add Week Form */}
-                            {showAddWeek && (
-                                <Card className="border-cyan-200 bg-cyan-50">
-                                    <h3 className="font-semibold text-slate-900 mb-4">Add New Week</h3>
-                                    <div className="grid gap-4 md:grid-cols-3">
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-1">Week Number</label>
-                                            <input
-                                                type="number"
-                                                value={newWeek.week_number}
-                                                onChange={(e) => setNewWeek({ ...newWeek, week_number: parseInt(e.target.value) || 1 })}
-                                                className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-1">Theme*</label>
-                                            <input
-                                                type="text"
-                                                value={newWeek.theme}
-                                                onChange={(e) => setNewWeek({ ...newWeek, theme: e.target.value })}
-                                                placeholder="e.g., Water Comfort"
-                                                className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-1">Objectives</label>
-                                            <input
-                                                type="text"
-                                                value={newWeek.objectives || ""}
-                                                onChange={(e) => setNewWeek({ ...newWeek, objectives: e.target.value })}
-                                                placeholder="Learning objectives"
-                                                className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-2 mt-4">
-                                        <button
-                                            onClick={handleAddWeek}
-                                            disabled={!newWeek.theme}
-                                            className="rounded bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700 disabled:opacity-50"
-                                        >
-                                            Save Week
-                                        </button>
-                                        <button
-                                            onClick={() => setShowAddWeek(false)}
-                                            className="rounded bg-white px-4 py-2 text-sm font-medium text-slate-700 border border-slate-300 hover:bg-slate-50"
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                </Card>
-                            )}
-
-                            {/* Week Cards with drag-and-drop */}
-                            {curriculum.weeks.length === 0 ? (
+                        ) : (
+                            <>
+                                {/* Curriculum Info */}
                                 <Card>
-                                    <p className="text-center text-slate-500 py-4">No weeks added yet. Click "Add Week" to get started.</p>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h2 className="text-lg font-semibold text-slate-900">Version {curriculum.version}</h2>
+                                            <p className="text-sm text-slate-500">
+                                                {curriculum.weeks.length} weeks, {curriculum.weeks.reduce((sum, w) => sum + w.lessons.length, 0)} lessons
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                setNewWeek({ week_number: curriculum.weeks.length + 1, theme: "", objectives: "" });
+                                                setShowAddWeek(true);
+                                            }}
+                                            className="rounded bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700"
+                                        >
+                                            + Add Week
+                                        </button>
+                                    </div>
                                 </Card>
-                            ) : (
-                                <DndContext
-                                    sensors={sensors}
-                                    collisionDetection={closestCenter}
-                                    onDragEnd={handleWeekDragEnd}
-                                >
-                                    <SortableContext
-                                        items={curriculum.weeks.map(w => w.id)}
-                                        strategy={verticalListSortingStrategy}
-                                    >
-                                        <div className="space-y-4">
-                                            {curriculum.weeks
-                                                .sort((a, b) => a.order_index - b.order_index)
-                                                .map((week) => (
-                                                    <SortableWeekCard
-                                                        key={week.id}
-                                                        week={week}
-                                                        isExpanded={expandedWeekIds.has(week.id)}
-                                                        onToggleExpand={() => toggleWeekExpansion(week.id)}
-                                                        onDeleteWeek={() => handleDeleteWeek(week.id)}
-                                                    >
-                                                        {/* Expanded Week Content */}
-                                                        <div className="mt-4 pt-4 border-t border-slate-200">
-                                                            {/* Lessons with drag-and-drop */}
-                                                            {week.lessons.length === 0 ? (
-                                                                <p className="text-slate-500 text-sm mb-4">No lessons in this week.</p>
-                                                            ) : (
-                                                                <DndContext
-                                                                    sensors={sensors}
-                                                                    collisionDetection={closestCenter}
-                                                                    onDragEnd={(e) => handleLessonDragEnd(week.id, e)}
-                                                                >
-                                                                    <SortableContext
-                                                                        items={week.lessons.map(l => l.id)}
-                                                                        strategy={verticalListSortingStrategy}
-                                                                    >
-                                                                        <div className="space-y-2 mb-4">
-                                                                            {week.lessons
-                                                                                .sort((a, b) => a.order_index - b.order_index)
-                                                                                .map((lesson) => (
-                                                                                    <SortableLessonItem
-                                                                                        key={lesson.id}
-                                                                                        lesson={lesson}
-                                                                                        onDelete={() => handleDeleteLesson(lesson.id)}
-                                                                                    />
-                                                                                ))}
-                                                                        </div>
-                                                                    </SortableContext>
-                                                                </DndContext>
-                                                            )}
 
-                                                            {/* Add Lesson Form */}
-                                                            {addingLessonToWeekId === week.id ? (
-                                                                <div className="bg-slate-100 rounded p-4">
-                                                                    <h4 className="font-medium text-slate-900 mb-3">Add Lesson</h4>
-                                                                    <div className="grid gap-3 md:grid-cols-2">
-                                                                        <div>
-                                                                            <label className="block text-xs font-medium text-slate-700 mb-1">Title*</label>
-                                                                            <input
-                                                                                type="text"
-                                                                                value={newLesson.title}
-                                                                                onChange={(e) => setNewLesson({ ...newLesson, title: e.target.value })}
-                                                                                className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm"
-                                                                            />
-                                                                        </div>
-                                                                        <div>
-                                                                            <label className="block text-xs font-medium text-slate-700 mb-1">Duration (min)</label>
-                                                                            <input
-                                                                                type="number"
-                                                                                value={newLesson.duration_minutes || ""}
-                                                                                onChange={(e) => setNewLesson({ ...newLesson, duration_minutes: parseInt(e.target.value) || undefined })}
-                                                                                className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm"
-                                                                            />
-                                                                        </div>
-                                                                        <div className="md:col-span-2">
-                                                                            <label className="block text-xs font-medium text-slate-700 mb-1">Description</label>
-                                                                            <textarea
-                                                                                value={newLesson.description || ""}
-                                                                                onChange={(e) => setNewLesson({ ...newLesson, description: e.target.value })}
-                                                                                className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm"
-                                                                                rows={2}
-                                                                            />
-                                                                        </div>
-                                                                        <div className="md:col-span-2">
-                                                                            <label className="block text-xs font-medium text-slate-700 mb-1">Video URL</label>
-                                                                            <input
-                                                                                type="text"
-                                                                                value={newLesson.video_url || ""}
-                                                                                onChange={(e) => setNewLesson({ ...newLesson, video_url: e.target.value })}
-                                                                                placeholder="https://... (instructional video)"
-                                                                                className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm"
-                                                                            />
-                                                                        </div>
-                                                                        <div className="md:col-span-2">
-                                                                            <label className="block text-xs font-medium text-slate-700 mb-1">Skills (click to select)</label>
-                                                                            <div className="flex flex-wrap gap-1">
-                                                                                {skills.map(skill => (
-                                                                                    <button
-                                                                                        key={skill.id}
-                                                                                        onClick={() => toggleLessonSkill(skill.id)}
-                                                                                        className={`px-2 py-1 rounded text-xs ${(newLesson.skill_ids || []).includes(skill.id)
-                                                                                            ? "bg-cyan-600 text-white"
-                                                                                            : "bg-slate-200 text-slate-700 hover:bg-slate-300"
-                                                                                            }`}
-                                                                                    >
-                                                                                        {skill.name}
-                                                                                    </button>
-                                                                                ))}
-                                                                                {skills.length === 0 && (
-                                                                                    <span className="text-xs text-slate-500">No skills yet. Add skills in the sidebar.</span>
-                                                                                )}
+                                {/* Add Week Form */}
+                                {showAddWeek && (
+                                    <Card className="border-cyan-200 bg-cyan-50">
+                                        <h3 className="font-semibold text-slate-900 mb-4">Add New Week</h3>
+                                        <div className="grid gap-4 md:grid-cols-3">
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-700 mb-1">Week Number</label>
+                                                <input
+                                                    type="number"
+                                                    value={newWeek.week_number}
+                                                    onChange={(e) => setNewWeek({ ...newWeek, week_number: parseInt(e.target.value) || 1 })}
+                                                    className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-700 mb-1">Theme*</label>
+                                                <input
+                                                    type="text"
+                                                    value={newWeek.theme}
+                                                    onChange={(e) => setNewWeek({ ...newWeek, theme: e.target.value })}
+                                                    placeholder="e.g., Water Comfort"
+                                                    className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-700 mb-1">Objectives</label>
+                                                <input
+                                                    type="text"
+                                                    value={newWeek.objectives || ""}
+                                                    onChange={(e) => setNewWeek({ ...newWeek, objectives: e.target.value })}
+                                                    placeholder="Learning objectives"
+                                                    className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2 mt-4">
+                                            <button
+                                                onClick={handleAddWeek}
+                                                disabled={!newWeek.theme}
+                                                className="rounded bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700 disabled:opacity-50"
+                                            >
+                                                Save Week
+                                            </button>
+                                            <button
+                                                onClick={() => setShowAddWeek(false)}
+                                                className="rounded bg-white px-4 py-2 text-sm font-medium text-slate-700 border border-slate-300 hover:bg-slate-50"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </Card>
+                                )}
+
+                                {/* Week Cards with drag-and-drop */}
+                                {curriculum.weeks.length === 0 ? (
+                                    <Card>
+                                        <p className="text-center text-slate-500 py-4">No weeks added yet. Click "Add Week" to get started.</p>
+                                    </Card>
+                                ) : (
+                                    <DndContext
+                                        sensors={sensors}
+                                        collisionDetection={closestCenter}
+                                        onDragEnd={handleWeekDragEnd}
+                                    >
+                                        <SortableContext
+                                            items={curriculum.weeks.map(w => w.id)}
+                                            strategy={verticalListSortingStrategy}
+                                        >
+                                            <div className="space-y-4">
+                                                {curriculum.weeks
+                                                    .sort((a, b) => a.order_index - b.order_index)
+                                                    .map((week) => (
+                                                        <SortableWeekCard
+                                                            key={week.id}
+                                                            week={week}
+                                                            isExpanded={expandedWeekIds.has(week.id)}
+                                                            onToggleExpand={() => toggleWeekExpansion(week.id)}
+                                                            onDeleteWeek={() => handleDeleteWeek(week.id)}
+                                                        >
+                                                            {/* Expanded Week Content */}
+                                                            <div className="mt-4 pt-4 border-t border-slate-200">
+                                                                {/* Lessons with drag-and-drop */}
+                                                                {week.lessons.length === 0 ? (
+                                                                    <p className="text-slate-500 text-sm mb-4">No lessons in this week.</p>
+                                                                ) : (
+                                                                    <DndContext
+                                                                        sensors={sensors}
+                                                                        collisionDetection={closestCenter}
+                                                                        onDragEnd={(e) => handleLessonDragEnd(week.id, e)}
+                                                                    >
+                                                                        <SortableContext
+                                                                            items={week.lessons.map(l => l.id)}
+                                                                            strategy={verticalListSortingStrategy}
+                                                                        >
+                                                                            <div className="space-y-2 mb-4">
+                                                                                {week.lessons
+                                                                                    .sort((a, b) => a.order_index - b.order_index)
+                                                                                    .map((lesson) => (
+                                                                                        <SortableLessonItem
+                                                                                            key={lesson.id}
+                                                                                            lesson={lesson}
+                                                                                            onDelete={() => handleDeleteLesson(lesson.id)}
+                                                                                        />
+                                                                                    ))}
+                                                                            </div>
+                                                                        </SortableContext>
+                                                                    </DndContext>
+                                                                )}
+
+                                                                {/* Add Lesson Form */}
+                                                                {addingLessonToWeekId === week.id ? (
+                                                                    <div className="bg-slate-100 rounded p-4">
+                                                                        <h4 className="font-medium text-slate-900 mb-3">Add Lesson</h4>
+                                                                        <div className="grid gap-3 md:grid-cols-2">
+                                                                            <div>
+                                                                                <label className="block text-xs font-medium text-slate-700 mb-1">Title*</label>
+                                                                                <input
+                                                                                    type="text"
+                                                                                    value={newLesson.title}
+                                                                                    onChange={(e) => setNewLesson({ ...newLesson, title: e.target.value })}
+                                                                                    className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm"
+                                                                                />
+                                                                            </div>
+                                                                            <div>
+                                                                                <label className="block text-xs font-medium text-slate-700 mb-1">Duration (min)</label>
+                                                                                <input
+                                                                                    type="number"
+                                                                                    value={newLesson.duration_minutes || ""}
+                                                                                    onChange={(e) => setNewLesson({ ...newLesson, duration_minutes: parseInt(e.target.value) || undefined })}
+                                                                                    className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm"
+                                                                                />
+                                                                            </div>
+                                                                            <div className="md:col-span-2">
+                                                                                <label className="block text-xs font-medium text-slate-700 mb-1">Description</label>
+                                                                                <textarea
+                                                                                    value={newLesson.description || ""}
+                                                                                    onChange={(e) => setNewLesson({ ...newLesson, description: e.target.value })}
+                                                                                    className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm"
+                                                                                    rows={2}
+                                                                                />
+                                                                            </div>
+                                                                            <div className="md:col-span-2">
+                                                                                <label className="block text-xs font-medium text-slate-700 mb-1">Video URL</label>
+                                                                                <input
+                                                                                    type="text"
+                                                                                    value={newLesson.video_url || ""}
+                                                                                    onChange={(e) => setNewLesson({ ...newLesson, video_url: e.target.value })}
+                                                                                    placeholder="https://... (instructional video)"
+                                                                                    className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm"
+                                                                                />
+                                                                            </div>
+                                                                            <div className="md:col-span-2">
+                                                                                <label className="block text-xs font-medium text-slate-700 mb-1">Skills (click to select)</label>
+                                                                                <div className="flex flex-wrap gap-1">
+                                                                                    {skills.map(skill => (
+                                                                                        <button
+                                                                                            key={skill.id}
+                                                                                            onClick={() => toggleLessonSkill(skill.id)}
+                                                                                            className={`px-2 py-1 rounded text-xs ${(newLesson.skill_ids || []).includes(skill.id)
+                                                                                                ? "bg-cyan-600 text-white"
+                                                                                                : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                                                                                }`}
+                                                                                        >
+                                                                                            {skill.name}
+                                                                                        </button>
+                                                                                    ))}
+                                                                                    {skills.length === 0 && (
+                                                                                        <span className="text-xs text-slate-500">No skills yet. Add skills in the sidebar.</span>
+                                                                                    )}
+                                                                                </div>
                                                                             </div>
                                                                         </div>
+                                                                        <div className="flex gap-2 mt-3">
+                                                                            <button
+                                                                                onClick={() => handleAddLesson(week.id)}
+                                                                                disabled={!newLesson.title}
+                                                                                className="rounded bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-700 disabled:opacity-50"
+                                                                            >
+                                                                                Save Lesson
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    setAddingLessonToWeekId(null);
+                                                                                    setNewLesson({ title: "", description: "", duration_minutes: 30, video_url: "", skill_ids: [] });
+                                                                                }}
+                                                                                className="rounded bg-white px-3 py-1.5 text-xs font-medium text-slate-700 border border-slate-300 hover:bg-slate-50"
+                                                                            >
+                                                                                Cancel
+                                                                            </button>
+                                                                        </div>
                                                                     </div>
-                                                                    <div className="flex gap-2 mt-3">
-                                                                        <button
-                                                                            onClick={() => handleAddLesson(week.id)}
-                                                                            disabled={!newLesson.title}
-                                                                            className="rounded bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-700 disabled:opacity-50"
-                                                                        >
-                                                                            Save Lesson
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                setAddingLessonToWeekId(null);
-                                                                                setNewLesson({ title: "", description: "", duration_minutes: 30, video_url: "", skill_ids: [] });
-                                                                            }}
-                                                                            className="rounded bg-white px-3 py-1.5 text-xs font-medium text-slate-700 border border-slate-300 hover:bg-slate-50"
-                                                                        >
-                                                                            Cancel
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            ) : (
-                                                                <button
-                                                                    onClick={() => setAddingLessonToWeekId(week.id)}
-                                                                    className="text-cyan-600 hover:text-cyan-700 text-sm font-medium"
-                                                                >
-                                                                    + Add Lesson
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    </SortableWeekCard>
-                                                ))}
+                                                                ) : (
+                                                                    <button
+                                                                        onClick={() => setAddingLessonToWeekId(week.id)}
+                                                                        className="text-cyan-600 hover:text-cyan-700 text-sm font-medium"
+                                                                    >
+                                                                        + Add Lesson
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </SortableWeekCard>
+                                                    ))}
+                                            </div>
+                                        </SortableContext>
+                                    </DndContext>
+                                )}
+                            </>
+                        )}
+                    </div>
+
+                    {/* Skills Sidebar (1 col) */}
+                    <div className="space-y-4">
+                        <Card>
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-lg font-semibold text-slate-900">Skills Library</h2>
+                                <button
+                                    onClick={() => setShowAddSkill(true)}
+                                    className="text-cyan-600 hover:text-cyan-700 text-sm font-medium"
+                                >
+                                    + Add
+                                </button>
+                            </div>
+
+                            {/* Add Skill Form */}
+                            {showAddSkill && (
+                                <div className="border-b border-slate-200 pb-4 mb-4">
+                                    <div className="space-y-2">
+                                        <input
+                                            type="text"
+                                            value={newSkill.name}
+                                            onChange={(e) => setNewSkill({ ...newSkill, name: e.target.value })}
+                                            placeholder="Skill name"
+                                            className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm"
+                                        />
+                                        <select
+                                            value={newSkill.category}
+                                            onChange={(e) => setNewSkill({ ...newSkill, category: e.target.value })}
+                                            className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm"
+                                        >
+                                            {SKILL_CATEGORIES.map(cat => (
+                                                <option key={cat.value} value={cat.value}>{cat.label}</option>
+                                            ))}
+                                        </select>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={handleAddSkill}
+                                                disabled={!newSkill.name}
+                                                className="rounded bg-cyan-600 px-3 py-1 text-xs font-medium text-white hover:bg-cyan-700 disabled:opacity-50"
+                                            >
+                                                Save
+                                            </button>
+                                            <button
+                                                onClick={() => setShowAddSkill(false)}
+                                                className="text-slate-500 hover:text-slate-700 text-xs"
+                                            >
+                                                Cancel
+                                            </button>
                                         </div>
-                                    </SortableContext>
-                                </DndContext>
-                            )}
-                        </>
-                    )}
-                </div>
-
-                {/* Skills Sidebar (1 col) */}
-                <div className="space-y-4">
-                    <Card>
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-semibold text-slate-900">Skills Library</h2>
-                            <button
-                                onClick={() => setShowAddSkill(true)}
-                                className="text-cyan-600 hover:text-cyan-700 text-sm font-medium"
-                            >
-                                + Add
-                            </button>
-                        </div>
-
-                        {/* Add Skill Form */}
-                        {showAddSkill && (
-                            <div className="border-b border-slate-200 pb-4 mb-4">
-                                <div className="space-y-2">
-                                    <input
-                                        type="text"
-                                        value={newSkill.name}
-                                        onChange={(e) => setNewSkill({ ...newSkill, name: e.target.value })}
-                                        placeholder="Skill name"
-                                        className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm"
-                                    />
-                                    <select
-                                        value={newSkill.category}
-                                        onChange={(e) => setNewSkill({ ...newSkill, category: e.target.value })}
-                                        className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm"
-                                    >
-                                        {SKILL_CATEGORIES.map(cat => (
-                                            <option key={cat.value} value={cat.value}>{cat.label}</option>
-                                        ))}
-                                    </select>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={handleAddSkill}
-                                            disabled={!newSkill.name}
-                                            className="rounded bg-cyan-600 px-3 py-1 text-xs font-medium text-white hover:bg-cyan-700 disabled:opacity-50"
-                                        >
-                                            Save
-                                        </button>
-                                        <button
-                                            onClick={() => setShowAddSkill(false)}
-                                            className="text-slate-500 hover:text-slate-700 text-xs"
-                                        >
-                                            Cancel
-                                        </button>
                                     </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
 
-                        {/* Skills List */}
-                        {skills.length === 0 ? (
-                            <p className="text-sm text-slate-500">No skills yet.</p>
-                        ) : (
-                            <div className="space-y-2">
-                                {SKILL_CATEGORIES.map(cat => {
-                                    const catSkills = skills.filter(s => s.category === cat.value);
-                                    if (catSkills.length === 0) return null;
-                                    return (
-                                        <div key={cat.value}>
-                                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">{cat.label}</p>
-                                            {catSkills.map(skill => (
-                                                <div key={skill.id} className="flex items-center justify-between py-1">
-                                                    <span className="text-sm text-slate-700">{skill.name}</span>
-                                                    <button
-                                                        onClick={() => handleDeleteSkill(skill.id)}
-                                                        className="text-red-400 hover:text-red-600 text-xs"
-                                                    >
-                                                        ×
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </Card>
+                            {/* Skills List */}
+                            {skills.length === 0 ? (
+                                <p className="text-sm text-slate-500">No skills yet.</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {SKILL_CATEGORIES.map(cat => {
+                                        const catSkills = skills.filter(s => s.category === cat.value);
+                                        if (catSkills.length === 0) return null;
+                                        return (
+                                            <div key={cat.value}>
+                                                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">{cat.label}</p>
+                                                {catSkills.map(skill => (
+                                                    <div key={skill.id} className="flex items-center justify-between py-1">
+                                                        <span className="text-sm text-slate-700">{skill.name}</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeleteSkill(skill.id);
+                                                            }}
+                                                            className="text-red-400 hover:text-red-600 text-xs"
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </Card>
+                    </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 }

@@ -13,6 +13,7 @@ const navLinks = [
     { href: "/club", label: "Club" },
     { href: "/academy", label: "Academy" },
     { href: "/sessions-and-events", label: "Sessions & Events" },
+    { href: "/store", label: "Shop" },
     { href: "/gallery", label: "Gallery" },
 ];
 
