@@ -116,14 +116,11 @@ export function StoreCartProvider({ children }: { children: ReactNode }) {
     const refreshCart = useCallback(async () => {
         try {
             const sessionId = getSessionId();
-            const headers: Record<string, string> = {};
-            if (!user && sessionId) {
-                headers["x-store-session"] = sessionId;
-            }
+            // Always send session_id so backend can merge guest cart on login
+            const sessionParam = sessionId ? `?session_id=${sessionId}` : "";
 
-            const cartData = await apiGet<Cart>("/api/v1/store/cart", {
+            const cartData = await apiGet<Cart>(`/api/v1/store/cart${sessionParam}`, {
                 auth: !!user,
-                headers,
             }).catch(() => null);
 
             setCart(cartData);
@@ -145,15 +142,12 @@ export function StoreCartProvider({ children }: { children: ReactNode }) {
     const addItem = useCallback(
         async (variantId: string, quantity: number = 1) => {
             const sessionId = getSessionId();
-            const headers: Record<string, string> = {};
-            if (!user && sessionId) {
-                headers["x-store-session"] = sessionId;
-            }
+            const sessionParam = sessionId ? `?session_id=${sessionId}` : "";
 
             await apiPost(
-                "/api/v1/store/cart/items",
+                `/api/v1/store/cart/items${sessionParam}`,
                 { variant_id: variantId, quantity },
-                { auth: !!user, headers }
+                { auth: !!user }
             );
             await refreshCart();
         },
@@ -163,15 +157,12 @@ export function StoreCartProvider({ children }: { children: ReactNode }) {
     const updateItem = useCallback(
         async (itemId: string, quantity: number) => {
             const sessionId = getSessionId();
-            const headers: Record<string, string> = {};
-            if (!user && sessionId) {
-                headers["x-store-session"] = sessionId;
-            }
+            const sessionParam = sessionId ? `?session_id=${sessionId}` : "";
 
             await apiPatch(
-                `/api/v1/store/cart/items/${itemId}`,
+                `/api/v1/store/cart/items/${itemId}${sessionParam}`,
                 { quantity },
-                { auth: !!user, headers }
+                { auth: !!user }
             );
             await refreshCart();
         },
@@ -181,14 +172,10 @@ export function StoreCartProvider({ children }: { children: ReactNode }) {
     const removeItem = useCallback(
         async (itemId: string) => {
             const sessionId = getSessionId();
-            const headers: Record<string, string> = {};
-            if (!user && sessionId) {
-                headers["x-store-session"] = sessionId;
-            }
+            const sessionParam = sessionId ? `?session_id=${sessionId}` : "";
 
-            await apiDelete(`/api/v1/store/cart/items/${itemId}`, {
+            await apiDelete(`/api/v1/store/cart/items/${itemId}${sessionParam}`, {
                 auth: !!user,
-                headers,
             });
             await refreshCart();
         },
@@ -198,16 +185,13 @@ export function StoreCartProvider({ children }: { children: ReactNode }) {
     const applyDiscount = useCallback(
         async (code: string): Promise<{ success: boolean; message?: string }> => {
             const sessionId = getSessionId();
-            const headers: Record<string, string> = {};
-            if (!user && sessionId) {
-                headers["x-store-session"] = sessionId;
-            }
+            const sessionParam = sessionId ? `?session_id=${sessionId}` : "";
 
             try {
                 await apiPost(
-                    "/api/v1/store/cart/discount",
+                    `/api/v1/store/cart/discount${sessionParam}`,
                     { code },
-                    { auth: !!user, headers }
+                    { auth: !!user }
                 );
                 await refreshCart();
                 return { success: true, message: `Discount "${code}" applied` };
@@ -221,14 +205,10 @@ export function StoreCartProvider({ children }: { children: ReactNode }) {
 
     const removeDiscount = useCallback(async () => {
         const sessionId = getSessionId();
-        const headers: Record<string, string> = {};
-        if (!user && sessionId) {
-            headers["x-store-session"] = sessionId;
-        }
+        const sessionParam = sessionId ? `?session_id=${sessionId}` : "";
 
-        await apiDelete("/api/v1/store/cart/discount", {
+        await apiDelete(`/api/v1/store/cart/discount${sessionParam}`, {
             auth: !!user,
-            headers,
         });
         await refreshCart();
     }, [user, refreshCart]);
