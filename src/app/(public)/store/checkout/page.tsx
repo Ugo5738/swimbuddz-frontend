@@ -143,7 +143,7 @@ export default function StoreCheckoutPage() {
             // Order created but no payment needed (e.g., full store credit covered it)
             toast.success(`Order ${orderResult.order_number} created!`);
             clearCart();
-            router.push(`/dashboard/orders/${orderResult.order_number}`);
+            router.push(`/account/orders/${orderResult.order_number}`);
         } catch (e) {
             const message = e instanceof Error ? e.message : "Checkout failed";
             toast.error(message);

@@ -98,6 +98,86 @@ export function MilestoneProgressModal({
                     </div>
                 </div>
 
+                {/* Student's Evidence Section */}
+                {currentProgress?.status === ProgressStatus.ACHIEVED && !currentProgress?.reviewed_at && (
+                    <div className="mb-4 rounded-lg border-2 border-amber-200 bg-amber-50 p-4">
+                        <div className="text-sm font-medium text-amber-800 mb-2">
+                            📝 Student has claimed this milestone
+                        </div>
+                        {currentProgress?.student_notes && (
+                            <div className="text-sm text-amber-700 mb-2">
+                                <span className="font-medium">Student note:</span> {currentProgress.student_notes}
+                            </div>
+                        )}
+                        {currentProgress?.evidence_media_id && (
+                            <div className="text-sm">
+                                <span className="font-medium text-amber-700">Evidence: </span>
+                                <span className="text-cyan-600">
+                                    Media uploaded (ID: {currentProgress.evidence_media_id.slice(0, 8)}...)
+                                </span>
+                            </div>
+                        )}
+                        <div className="mt-3 flex gap-2">
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    setIsSubmitting(true);
+                                    try {
+                                        await AcademyApi.updateProgress(enrollmentId, milestone.id, {
+                                            status: ProgressStatus.ACHIEVED,
+                                            reviewed_at: new Date().toISOString(),
+                                            coach_notes: coachNotes || "Verified",
+                                        });
+                                        toast.success("Milestone verified!");
+                                        onSuccess();
+                                        onClose();
+                                    } catch (error) {
+                                        toast.error("Failed to verify");
+                                    } finally {
+                                        setIsSubmitting(false);
+                                    }
+                                }}
+                                disabled={isSubmitting}
+                                className="flex-1 rounded bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                            >
+                                ✓ Verify
+                            </button>
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    setIsSubmitting(true);
+                                    try {
+                                        await AcademyApi.updateProgress(enrollmentId, milestone.id, {
+                                            status: ProgressStatus.PENDING,
+                                            coach_notes: coachNotes || "Re-demo requested",
+                                        });
+                                        toast.success("Re-demo requested");
+                                        onSuccess();
+                                        onClose();
+                                    } catch (error) {
+                                        toast.error("Failed to request re-demo");
+                                    } finally {
+                                        setIsSubmitting(false);
+                                    }
+                                }}
+                                disabled={isSubmitting}
+                                className="flex-1 rounded bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+                            >
+                                ↺ Request Re-demo
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Already Verified Banner */}
+                {currentProgress?.reviewed_at && (
+                    <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-4">
+                        <div className="text-sm font-medium text-green-800">
+                            ✓ Verified on {new Date(currentProgress.reviewed_at).toLocaleDateString()}
+                        </div>
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -108,8 +188,8 @@ export function MilestoneProgressModal({
                                 type="button"
                                 onClick={() => setStatus(ProgressStatus.ACHIEVED)}
                                 className={`flex-1 rounded-lg border-2 px-4 py-3 text-sm font-medium transition-colors ${status === ProgressStatus.ACHIEVED
-                                        ? "border-green-500 bg-green-50 text-green-700"
-                                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                                    ? "border-green-500 bg-green-50 text-green-700"
+                                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
                                     }`}
                             >
                                 <div className="flex items-center justify-center gap-2">
@@ -124,8 +204,8 @@ export function MilestoneProgressModal({
                                 type="button"
                                 onClick={() => setStatus(ProgressStatus.PENDING)}
                                 className={`flex-1 rounded-lg border-2 px-4 py-3 text-sm font-medium transition-colors ${status === ProgressStatus.PENDING
-                                        ? "border-slate-500 bg-slate-50 text-slate-700"
-                                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                                    ? "border-slate-500 bg-slate-50 text-slate-700"
+                                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
                                     }`}
                             >
                                 <div className="flex items-center justify-center gap-2">

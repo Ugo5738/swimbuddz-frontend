@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 const MEMBER_ROUTES = [
     "/sessions",
     "/profile",
-    "/dashboard",
+    "/account",
     "/attendance",
 ];
 
@@ -150,13 +150,13 @@ export async function middleware(request: NextRequest) {
                 const communityPaidUntilMs = parseDateMs(member.membership?.community_paid_until);
                 const communityActive = communityPaidUntilMs !== null && communityPaidUntilMs > now;
 
-                // Community activation paywall: allow dashboard/profile, block other member routes.
+                // Community activation paywall: allow account/profile, block other member routes.
                 const paywallAllowed =
-                    pathname.startsWith("/dashboard") ||
+                    pathname.startsWith("/account") ||
                     pathname.startsWith("/profile");
 
                 if (!communityActive && !paywallAllowed) {
-                    const url = new URL("/dashboard/billing", request.url);
+                    const url = new URL("/account/billing", request.url);
                     url.searchParams.set("required", "community");
                     return NextResponse.redirect(url);
                 }
@@ -196,7 +196,7 @@ export async function middleware(request: NextRequest) {
 
                         // If the user is approved for the tier but inactive (e.g. Club unpaid), send to billing.
                         if (requiredTier === "club" && approvedTiers.includes("club") && !clubActive) {
-                            const url = new URL("/dashboard/billing", request.url);
+                            const url = new URL("/account/billing", request.url);
                             url.searchParams.set("required", "club");
                             return NextResponse.redirect(url);
                         }
@@ -235,7 +235,7 @@ export const config = {
         "/academy/:path*",
         "/sessions/:path*",
         "/profile/:path*",
-        "/dashboard/:path*",
+        "/account/:path*",
         "/attendance/:path*",
         "/admin/:path*",
     ],

@@ -40,6 +40,7 @@ export default function NewCohortPage() {
         capacity: 10,
         status: CohortStatus.OPEN,
         allow_mid_entry: false,
+        require_approval: false, // If true, enrollment needs admin approval even after payment
         // Location
         timezone: "Africa/Lagos",
         location_type: LocationType.POOL,
@@ -138,6 +139,7 @@ export default function NewCohortPage() {
                 location_name: formData.location_name || undefined,
                 location_address: formData.location_address || undefined,
                 notes_internal: formData.notes_internal || undefined,
+                require_approval: formData.require_approval,
             });
 
             // Generate sessions based on schedule
@@ -382,6 +384,19 @@ export default function NewCohortPage() {
                                 className="rounded border-slate-300"
                             />
                             <span className="text-sm text-slate-700">Allow mid-cohort enrollment</span>
+                        </label>
+
+                        <label className="flex items-center gap-2 mt-2">
+                            <input
+                                type="checkbox"
+                                checked={formData.require_approval}
+                                onChange={(e) => setFormData({ ...formData, require_approval: e.target.checked })}
+                                className="rounded border-slate-300"
+                            />
+                            <div>
+                                <span className="text-sm text-slate-700">Require admin approval</span>
+                                <p className="text-xs text-slate-500">If enabled, enrollments stay pending even after payment until manually approved</p>
+                            </div>
                         </label>
 
                         <div className="border-t pt-4 mt-4">

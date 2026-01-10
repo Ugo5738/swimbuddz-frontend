@@ -228,6 +228,48 @@
         }
       }
     },
+    "/api/v1/members/public/{member_id}": {
+      "get": {
+        "tags": [
+          "members"
+        ],
+        "summary": "Get Member For Verification",
+        "description": "Get member data for public verification (e.g., pool staff scanning QR code).\nReturns limited info for verification purposes only.\nNo authentication required.",
+        "operationId": "get_member_for_verification_members_public__member_id__get",
+        "parameters": [
+          {
+            "name": "member_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Member Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/members/stats": {
       "get": {
         "tags": [
@@ -242,6 +284,49 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/members/by-auth/{auth_id}": {
+      "get": {
+        "tags": [
+          "members"
+        ],
+        "summary": "Get Member By Auth Id",
+        "description": "Get a member by their Supabase auth_id.\nUsed for service-to-service lookups (e.g., payments service).",
+        "operationId": "get_member_by_auth_id_members_by_auth__auth_id__get",
+        "parameters": [
+          {
+            "name": "auth_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Auth Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -2430,7 +2515,7 @@
           "sessions"
         ],
         "summary": "List Sessions",
-        "description": "List all upcoming sessions. Optional `types` filter is a comma-separated list\nof SessionType values (e.g., \"club,community\").",
+        "description": "List all upcoming sessions. Optional `types` filter is a comma-separated list\nof SessionType values (e.g., \"club,community\"). Optional `cohort_id` filter\nreturns only sessions for that cohort.",
         "operationId": "list_sessions_sessions__get",
         "parameters": [
           {
@@ -2447,6 +2532,23 @@
                 }
               ],
               "title": "Types"
+            }
+          },
+          {
+            "name": "cohort_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cohort Id"
             }
           }
         ],
@@ -2966,44 +3068,26 @@
       }
     },
     "/api/v1/academy/programs": {
-      "get": {
-        "tags": [
-          "academy"
-        ],
-        "summary": "List Programs",
-        "operationId": "list_programs_academy_programs_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/ProgramResponse"
-                  },
-                  "type": "array",
-                  "title": "Response List Programs Academy Programs Get"
-                }
-              }
-            }
-          }
-        }
-      },
       "post": {
         "tags": [
           "academy"
         ],
         "summary": "Create Program",
         "operationId": "create_program_academy_programs_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ProgramCreate"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -3026,12 +3110,53 @@
               }
             }
           }
-        },
-        "security": [
+        }
+      },
+      "get": {
+        "tags": [
+          "academy"
+        ],
+        "summary": "List Programs",
+        "description": "List all programs. Use published_only=true for member-facing views.",
+        "operationId": "list_programs_academy_programs_get",
+        "parameters": [
           {
-            "HTTPBearer": []
+            "name": "published_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Published Only"
+            }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProgramResponse"
+                  },
+                  "title": "Response List Programs Academy Programs Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/academy/admin/members/{member_id}": {
@@ -3074,6 +3199,32 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/programs/published": {
+      "get": {
+        "tags": [
+          "academy"
+        ],
+        "summary": "List Published Programs",
+        "description": "List only published programs (for member-facing pages).",
+        "operationId": "list_published_programs_academy_programs_published_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProgramResponse"
+                  },
+                  "type": "array",
+                  "title": "Response List Published Programs Academy Programs Published Get"
                 }
               }
             }
@@ -3454,7 +3605,7 @@
           "academy"
         ],
         "summary": "List Open Cohorts",
-        "description": "List all cohorts with status OPEN.",
+        "description": "List all cohorts with status OPEN, only from published programs.",
         "operationId": "list_open_cohorts_academy_cohorts_open_get",
         "responses": {
           "200": {
@@ -3915,6 +4066,7 @@
           "academy"
         ],
         "summary": "Get My Enrollments",
+        "description": "Get all enrollments for the current user.",
         "operationId": "get_my_enrollments_academy_my_enrollments_get",
         "responses": {
           "200": {
@@ -3937,6 +4089,99 @@
             "HTTPBearer": []
           }
         ]
+      }
+    },
+    "/api/v1/academy/my-enrollments/{enrollment_id}": {
+      "get": {
+        "tags": [
+          "academy"
+        ],
+        "summary": "Get My Enrollment",
+        "description": "Get a specific enrollment for the current member.",
+        "operationId": "get_my_enrollment_academy_my_enrollments__enrollment_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "enrollment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Enrollment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrollmentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/internal/enrollments/{enrollment_id}": {
+      "get": {
+        "tags": [
+          "academy"
+        ],
+        "summary": "Get Enrollment Internal",
+        "description": "Get a single enrollment by ID (internal service-to-service call).\nUsed by payments service to lookup enrollment details.\nNo auth required as this is called with service role token.",
+        "operationId": "get_enrollment_internal_academy_internal_enrollments__enrollment_id__get",
+        "parameters": [
+          {
+            "name": "enrollment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Enrollment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrollmentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/academy/cohorts/{cohort_id}/enrollments": {
@@ -4046,6 +4291,7 @@
           "academy"
         ],
         "summary": "Update Student Progress",
+        "description": "Update or create student progress (Coach/Admin only).",
         "operationId": "update_student_progress_academy_progress_post",
         "security": [
           {
@@ -4139,6 +4385,804 @@
                   },
                   "title": "Response Get Student Progress Academy Enrollments  Enrollment Id  Progress Get"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/enrollments/{enrollment_id}/progress/{milestone_id}/claim": {
+      "post": {
+        "tags": [
+          "academy"
+        ],
+        "summary": "Claim Milestone",
+        "description": "Allow a member to claim completion of a milestone.\n\nThe member must own the enrollment. Creates or updates a StudentProgress\nrecord with ACHIEVED status and optional evidence.",
+        "operationId": "claim_milestone_academy_enrollments__enrollment_id__progress__milestone_id__claim_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "enrollment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Enrollment Id"
+            }
+          },
+          {
+            "name": "milestone_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Milestone Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberMilestoneClaimRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentProgressResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/skills": {
+      "get": {
+        "tags": [
+          "curriculum"
+        ],
+        "summary": "List Skills",
+        "description": "List all skills, optionally filtered by category.",
+        "operationId": "list_skills_academy_skills_get",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SkillResponse"
+                  },
+                  "title": "Response List Skills Academy Skills Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "curriculum"
+        ],
+        "summary": "Create Skill",
+        "description": "Create a new skill in the global library.",
+        "operationId": "create_skill_academy_skills_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SkillCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/skills/{skill_id}": {
+      "put": {
+        "tags": [
+          "curriculum"
+        ],
+        "summary": "Update Skill",
+        "description": "Update an existing skill.",
+        "operationId": "update_skill_academy_skills__skill_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "skill_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Skill Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SkillUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "curriculum"
+        ],
+        "summary": "Delete Skill",
+        "description": "Delete a skill from the library.",
+        "operationId": "delete_skill_academy_skills__skill_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "skill_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Skill Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/programs/{program_id}/curriculum": {
+      "get": {
+        "tags": [
+          "curriculum"
+        ],
+        "summary": "Get Program Curriculum",
+        "description": "Get the active curriculum for a program with all weeks, lessons, and skills.",
+        "operationId": "get_program_curriculum_academy_programs__program_id__curriculum_get",
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Program Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgramCurriculumResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "curriculum"
+        ],
+        "summary": "Create Program Curriculum",
+        "description": "Create a new curriculum version for a program. Deactivates previous versions.",
+        "operationId": "create_program_curriculum_academy_programs__program_id__curriculum_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Program Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgramCurriculumResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/curricula/{curriculum_id}/weeks": {
+      "post": {
+        "tags": [
+          "curriculum"
+        ],
+        "summary": "Add Week",
+        "description": "Add a week to a curriculum.",
+        "operationId": "add_week_academy_curricula__curriculum_id__weeks_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "curriculum_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Curriculum Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CurriculumWeekCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurriculumWeekResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/curriculum-weeks/{week_id}": {
+      "put": {
+        "tags": [
+          "curriculum"
+        ],
+        "summary": "Update Week",
+        "description": "Update a curriculum week.",
+        "operationId": "update_week_academy_curriculum_weeks__week_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "week_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Week Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CurriculumWeekUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurriculumWeekResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "curriculum"
+        ],
+        "summary": "Delete Week",
+        "description": "Delete a curriculum week and all its lessons.",
+        "operationId": "delete_week_academy_curriculum_weeks__week_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "week_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Week Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/curriculum-weeks/{week_id}/lessons": {
+      "post": {
+        "tags": [
+          "curriculum"
+        ],
+        "summary": "Add Lesson",
+        "description": "Add a lesson to a week.",
+        "operationId": "add_lesson_academy_curriculum_weeks__week_id__lessons_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "week_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Week Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CurriculumLessonCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurriculumLessonResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/curriculum-lessons/{lesson_id}": {
+      "put": {
+        "tags": [
+          "curriculum"
+        ],
+        "summary": "Update Lesson",
+        "description": "Update a curriculum lesson.",
+        "operationId": "update_lesson_academy_curriculum_lessons__lesson_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "lesson_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Lesson Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CurriculumLessonUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurriculumLessonResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "curriculum"
+        ],
+        "summary": "Delete Lesson",
+        "description": "Delete a curriculum lesson.",
+        "operationId": "delete_lesson_academy_curriculum_lessons__lesson_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "lesson_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Lesson Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/curricula/{curriculum_id}/weeks/reorder": {
+      "put": {
+        "tags": [
+          "curriculum"
+        ],
+        "summary": "Reorder Weeks",
+        "description": "Reorder weeks by providing the week IDs in the desired order.",
+        "operationId": "reorder_weeks_academy_curricula__curriculum_id__weeks_reorder_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "curriculum_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Curriculum Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "title": "Week Ids"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/curriculum-weeks/{week_id}/lessons/reorder": {
+      "put": {
+        "tags": [
+          "curriculum"
+        ],
+        "summary": "Reorder Lessons",
+        "description": "Reorder lessons within a week by providing the lesson IDs in the desired order.",
+        "operationId": "reorder_lessons_academy_curriculum_weeks__week_id__lessons_reorder_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "week_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Week Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "title": "Lesson Ids"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -4475,6 +5519,53 @@
         ]
       }
     },
+    "/api/v1/payments/discounts/preview": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Preview Discount",
+        "description": "Preview a discount code without creating a payment.\nReturns the calculated discount amount for display before checkout.\nDoes NOT increment usage count.\n\nSmart Component Matching:\n- If discount applies to COMMUNITY and payment is CLUB_BUNDLE,\n  discount only applies to the COMMUNITY portion.",
+        "operationId": "preview_discount_payments_discounts_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscountPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscountPreviewResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/payments/admin/discounts": {
       "get": {
         "tags": [
@@ -4683,6 +5774,211 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/payments/{reference}/proof": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Submit Proof Of Payment",
+        "description": "Submit proof of payment for a manual transfer payment.\nThis updates the payment status to PENDING_REVIEW for admin approval.",
+        "operationId": "submit_proof_of_payment_payments__reference__proof_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "reference",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Reference"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitProofRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/payments/admin/pending-reviews": {
+      "get": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "List Pending Review Payments",
+        "description": "List all payments awaiting admin review (manual transfers with proof).\nAdmin only.",
+        "operationId": "list_pending_review_payments_payments_admin_pending_reviews_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PaymentResponse"
+                  },
+                  "type": "array",
+                  "title": "Response List Pending Review Payments Payments Admin Pending Reviews Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/payments/admin/{reference}/approve": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Approve Manual Payment",
+        "description": "Approve a manual transfer payment after reviewing proof.\nThis marks the payment as PAID and applies entitlements.\nAdmin only.",
+        "operationId": "approve_manual_payment_payments_admin__reference__approve_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "reference",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Reference"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminReviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/payments/admin/{reference}/reject": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Reject Manual Payment",
+        "description": "Reject a manual transfer payment (invalid proof).\nUser can re-upload proof to try again.\nAdmin only.",
+        "operationId": "reject_manual_payment_payments_admin__reference__reject_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "reference",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Reference"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminReviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentResponse"
+                }
               }
             }
           },
@@ -6825,6 +8121,18 @@
             ],
             "title": "Display Name"
           },
+          "coach_profile_photo_media_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coach Profile Photo Media Id"
+          },
           "coach_profile_photo_url": {
             "anyOf": [
               {
@@ -7041,6 +8349,18 @@
               }
             ],
             "title": "Background Check Status"
+          },
+          "background_check_document_media_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Background Check Document Media Id"
           },
           "background_check_document_url": {
             "anyOf": [
@@ -8052,6 +9372,18 @@
             "type": "string",
             "title": "Approval Status",
             "default": "pending"
+          },
+          "profile_photo_media_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Photo Media Id"
           },
           "profile_photo_url": {
             "anyOf": [
@@ -9355,6 +10687,18 @@
             ],
             "title": "Approved By"
           },
+          "profile_photo_media_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Photo Media Id"
+          },
           "profile_photo_url": {
             "anyOf": [
               {
@@ -9499,16 +10843,17 @@
             ],
             "title": "Is Active"
           },
-          "profile_photo_url": {
+          "profile_photo_media_id": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Profile Photo Url"
+            "title": "Profile Photo Media Id"
           },
           "profile": {
             "anyOf": [
@@ -9667,6 +11012,18 @@
               }
             ],
             "title": "Approved By"
+          },
+          "profile_photo_media_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Photo Media Id"
           },
           "profile_photo_url": {
             "anyOf": [
@@ -10206,12 +11563,76 @@
             ],
             "title": "Description"
           },
-          "location": {
-            "$ref": "#/components/schemas/SessionLocation"
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
           },
-          "type": {
+          "session_type": {
             "$ref": "#/components/schemas/SessionType",
             "default": "club"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SessionStatus",
+            "default": "scheduled"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionLocation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "location_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Name"
+          },
+          "location_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Address"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Starts At"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ends At"
+          },
+          "timezone": {
+            "type": "string",
+            "title": "Timezone",
+            "default": "Africa/Lagos"
+          },
+          "capacity": {
+            "type": "integer",
+            "title": "Capacity",
+            "default": 20
           },
           "pool_fee": {
             "type": "number",
@@ -10222,21 +11643,6 @@
             "type": "number",
             "title": "Ride Share Fee",
             "default": 0.0
-          },
-          "capacity": {
-            "type": "integer",
-            "title": "Capacity",
-            "default": 20
-          },
-          "start_time": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Start Time"
-          },
-          "end_time": {
-            "type": "string",
-            "format": "date-time",
-            "title": "End Time"
           },
           "cohort_id": {
             "anyOf": [
@@ -10249,14 +11655,59 @@
               }
             ],
             "title": "Cohort Id"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          },
+          "booking_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Booking Id"
+          },
+          "week_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week Number"
+          },
+          "lesson_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lesson Title"
           }
         },
         "type": "object",
         "required": [
           "title",
-          "location",
-          "start_time",
-          "end_time"
+          "starts_at",
+          "ends_at"
         ],
         "title": "SessionCreate"
       },
@@ -10266,9 +11717,11 @@
           "sunfit_pool",
           "rowe_park_pool",
           "federal_palace_pool",
-          "open_water"
+          "open_water",
+          "other"
         ],
-        "title": "SessionLocation"
+        "title": "SessionLocation",
+        "description": "Predefined pool locations."
       },
       "SessionResponse": {
         "properties": {
@@ -10287,12 +11740,76 @@
             ],
             "title": "Description"
           },
-          "location": {
-            "$ref": "#/components/schemas/SessionLocation"
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
           },
-          "type": {
+          "session_type": {
             "$ref": "#/components/schemas/SessionType",
             "default": "club"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SessionStatus",
+            "default": "scheduled"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionLocation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "location_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Name"
+          },
+          "location_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Address"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Starts At"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ends At"
+          },
+          "timezone": {
+            "type": "string",
+            "title": "Timezone",
+            "default": "Africa/Lagos"
+          },
+          "capacity": {
+            "type": "integer",
+            "title": "Capacity",
+            "default": 20
           },
           "pool_fee": {
             "type": "number",
@@ -10303,21 +11820,6 @@
             "type": "number",
             "title": "Ride Share Fee",
             "default": 0.0
-          },
-          "capacity": {
-            "type": "integer",
-            "title": "Capacity",
-            "default": 20
-          },
-          "start_time": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Start Time"
-          },
-          "end_time": {
-            "type": "string",
-            "format": "date-time",
-            "title": "End Time"
           },
           "cohort_id": {
             "anyOf": [
@@ -10330,6 +11832,52 @@
               }
             ],
             "title": "Cohort Id"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          },
+          "booking_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Booking Id"
+          },
+          "week_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week Number"
+          },
+          "lesson_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lesson Title"
           },
           "id": {
             "type": "string",
@@ -10367,14 +11915,24 @@
         "type": "object",
         "required": [
           "title",
-          "location",
-          "start_time",
-          "end_time",
+          "starts_at",
+          "ends_at",
           "id",
           "created_at",
           "updated_at"
         ],
         "title": "SessionResponse"
+      },
+      "SessionStatus": {
+        "type": "string",
+        "enum": [
+          "scheduled",
+          "in_progress",
+          "completed",
+          "cancelled"
+        ],
+        "title": "SessionStatus",
+        "description": "Session lifecycle status."
       },
       "SessionTemplateCreate": {
         "properties": {
@@ -10397,7 +11955,7 @@
             "type": "string",
             "title": "Location"
           },
-          "type": {
+          "session_type": {
             "$ref": "#/components/schemas/SessionType",
             "default": "community"
           },
@@ -10484,7 +12042,7 @@
             "type": "string",
             "title": "Location"
           },
-          "type": {
+          "session_type": {
             "$ref": "#/components/schemas/SessionType",
             "default": "community"
           },
@@ -10728,11 +12286,15 @@
       "SessionType": {
         "type": "string",
         "enum": [
+          "cohort_class",
+          "one_on_one",
+          "group_booking",
           "club",
-          "academy",
-          "community"
+          "community",
+          "event"
         ],
-        "title": "SessionType"
+        "title": "SessionType",
+        "description": "Type of session - determines which fields are relevant."
       },
       "SessionUpdate": {
         "properties": {
@@ -10758,6 +12320,37 @@
             ],
             "title": "Description"
           },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "session_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "location": {
             "anyOf": [
               {
@@ -10768,15 +12361,73 @@
               }
             ]
           },
-          "type": {
+          "location_name": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/SessionType"
+                "type": "string"
               },
               {
                 "type": "null"
               }
-            ]
+            ],
+            "title": "Location Name"
+          },
+          "location_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Address"
+          },
+          "starts_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starts At"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone"
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity"
           },
           "pool_fee": {
             "anyOf": [
@@ -10800,41 +12451,6 @@
             ],
             "title": "Ride Share Fee"
           },
-          "capacity": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Capacity"
-          },
-          "start_time": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Start Time"
-          },
-          "end_time": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "End Time"
-          },
           "cohort_id": {
             "anyOf": [
               {
@@ -10846,6 +12462,52 @@
               }
             ],
             "title": "Cohort Id"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          },
+          "booking_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Booking Id"
+          },
+          "week_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week Number"
+          },
+          "lesson_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lesson Title"
           }
         },
         "type": "object",
@@ -11078,6 +12740,15 @@
         ],
         "title": "RideShareOption"
       },
+      "BillingType": {
+        "type": "string",
+        "enum": [
+          "one_time",
+          "subscription",
+          "per_session"
+        ],
+        "title": "BillingType"
+      },
       "CohortCreate": {
         "properties": {
           "name": {
@@ -11106,6 +12777,76 @@
             "type": "boolean",
             "title": "Allow Mid Entry",
             "default": false
+          },
+          "require_approval": {
+            "type": "boolean",
+            "title": "Require Approval",
+            "default": false
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone"
+          },
+          "location_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "location_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Name"
+          },
+          "location_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Address"
+          },
+          "price_override": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Override"
+          },
+          "notes_internal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes Internal"
           },
           "program_id": {
             "type": "string",
@@ -11163,6 +12904,76 @@
             "type": "boolean",
             "title": "Allow Mid Entry",
             "default": false
+          },
+          "require_approval": {
+            "type": "boolean",
+            "title": "Require Approval",
+            "default": false
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone"
+          },
+          "location_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "location_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Name"
+          },
+          "location_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Address"
+          },
+          "price_override": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Override"
+          },
+          "notes_internal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes Internal"
           },
           "id": {
             "type": "string",
@@ -11310,10 +13121,449 @@
               }
             ],
             "title": "Allow Mid Entry"
+          },
+          "require_approval": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Require Approval"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone"
+          },
+          "location_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "location_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Name"
+          },
+          "location_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Address"
+          },
+          "price_override": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Override"
+          },
+          "notes_internal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes Internal"
           }
         },
         "type": "object",
         "title": "CohortUpdate"
+      },
+      "CurriculumLessonCreate": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "duration_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Minutes"
+          },
+          "video_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Video Url"
+          },
+          "skill_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skill Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "title": "CurriculumLessonCreate",
+        "description": "Create a lesson within a week."
+      },
+      "CurriculumLessonResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "week_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Week Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "duration_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Minutes"
+          },
+          "video_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Video Url"
+          },
+          "order_index": {
+            "type": "integer",
+            "title": "Order Index"
+          },
+          "skills": {
+            "items": {
+              "$ref": "#/components/schemas/SkillResponse"
+            },
+            "type": "array",
+            "title": "Skills",
+            "default": []
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "week_id",
+          "title",
+          "description",
+          "duration_minutes",
+          "video_url",
+          "order_index",
+          "created_at"
+        ],
+        "title": "CurriculumLessonResponse",
+        "description": "Lesson response with skills."
+      },
+      "CurriculumLessonUpdate": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "duration_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Minutes"
+          },
+          "video_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Video Url"
+          },
+          "order_index": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Index"
+          },
+          "skill_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skill Ids"
+          }
+        },
+        "type": "object",
+        "title": "CurriculumLessonUpdate",
+        "description": "Update a lesson."
+      },
+      "CurriculumWeekCreate": {
+        "properties": {
+          "week_number": {
+            "type": "integer",
+            "title": "Week Number"
+          },
+          "theme": {
+            "type": "string",
+            "title": "Theme"
+          },
+          "objectives": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objectives"
+          }
+        },
+        "type": "object",
+        "required": [
+          "week_number",
+          "theme"
+        ],
+        "title": "CurriculumWeekCreate",
+        "description": "Create a week within a curriculum."
+      },
+      "CurriculumWeekResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "curriculum_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Curriculum Id"
+          },
+          "week_number": {
+            "type": "integer",
+            "title": "Week Number"
+          },
+          "theme": {
+            "type": "string",
+            "title": "Theme"
+          },
+          "objectives": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objectives"
+          },
+          "order_index": {
+            "type": "integer",
+            "title": "Order Index"
+          },
+          "lessons": {
+            "items": {
+              "$ref": "#/components/schemas/CurriculumLessonResponse"
+            },
+            "type": "array",
+            "title": "Lessons",
+            "default": []
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "curriculum_id",
+          "week_number",
+          "theme",
+          "objectives",
+          "order_index",
+          "created_at"
+        ],
+        "title": "CurriculumWeekResponse",
+        "description": "Week response with lessons."
+      },
+      "CurriculumWeekUpdate": {
+        "properties": {
+          "week_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week Number"
+          },
+          "theme": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Theme"
+          },
+          "objectives": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objectives"
+          },
+          "order_index": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Index"
+          }
+        },
+        "type": "object",
+        "title": "CurriculumWeekUpdate",
+        "description": "Update a week."
       },
       "EnrollmentCreate": {
         "properties": {
@@ -11504,6 +13754,45 @@
         "type": "object",
         "title": "EnrollmentUpdate"
       },
+      "LocationType": {
+        "type": "string",
+        "enum": [
+          "pool",
+          "open_water",
+          "remote"
+        ],
+        "title": "LocationType"
+      },
+      "MemberMilestoneClaimRequest": {
+        "properties": {
+          "evidence_media_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Media Id"
+          },
+          "student_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Student Notes"
+          }
+        },
+        "type": "object",
+        "title": "MemberMilestoneClaimRequest",
+        "description": "Member self-claim for a milestone - includes optional evidence via media service."
+      },
       "MilestoneCreate": {
         "properties": {
           "name": {
@@ -11521,16 +13810,17 @@
             ],
             "title": "Criteria"
           },
-          "video_url": {
+          "video_media_id": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Video Url"
+            "title": "Video Media Id"
           },
           "program_id": {
             "type": "string",
@@ -11562,16 +13852,17 @@
             ],
             "title": "Criteria"
           },
-          "video_url": {
+          "video_media_id": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Video Url"
+            "title": "Video Media Id"
           },
           "id": {
             "type": "string",
@@ -11631,6 +13922,18 @@
             ],
             "title": "Description"
           },
+          "cover_image_media_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Image Media Id"
+          },
           "level": {
             "$ref": "#/components/schemas/ProgramLevel"
           },
@@ -11638,17 +13941,24 @@
             "type": "integer",
             "title": "Duration Weeks"
           },
-          "price": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Price",
+          "default_capacity": {
+            "type": "integer",
+            "title": "Default Capacity",
+            "default": 10
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency",
+            "default": "NGN"
+          },
+          "price_amount": {
+            "type": "integer",
+            "title": "Price Amount",
             "default": 0
+          },
+          "billing_type": {
+            "$ref": "#/components/schemas/BillingType",
+            "default": "one_time"
           },
           "curriculum_json": {
             "anyOf": [
@@ -11673,6 +13983,11 @@
               }
             ],
             "title": "Prep Materials"
+          },
+          "is_published": {
+            "type": "boolean",
+            "title": "Is Published",
+            "default": false
           }
         },
         "type": "object",
@@ -11682,6 +13997,57 @@
           "duration_weeks"
         ],
         "title": "ProgramCreate"
+      },
+      "ProgramCurriculumResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "program_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Program Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "weeks": {
+            "items": {
+              "$ref": "#/components/schemas/CurriculumWeekResponse"
+            },
+            "type": "array",
+            "title": "Weeks",
+            "default": []
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "program_id",
+          "version",
+          "is_active",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ProgramCurriculumResponse",
+        "description": "Full curriculum response with weeks and lessons."
       },
       "ProgramLevel": {
         "type": "string",
@@ -11711,6 +14077,18 @@
             ],
             "title": "Description"
           },
+          "cover_image_media_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Image Media Id"
+          },
           "level": {
             "$ref": "#/components/schemas/ProgramLevel"
           },
@@ -11718,17 +14096,24 @@
             "type": "integer",
             "title": "Duration Weeks"
           },
-          "price": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Price",
+          "default_capacity": {
+            "type": "integer",
+            "title": "Default Capacity",
+            "default": 10
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency",
+            "default": "NGN"
+          },
+          "price_amount": {
+            "type": "integer",
+            "title": "Price Amount",
             "default": 0
+          },
+          "billing_type": {
+            "$ref": "#/components/schemas/BillingType",
+            "default": "one_time"
           },
           "curriculum_json": {
             "anyOf": [
@@ -11754,10 +14139,31 @@
             ],
             "title": "Prep Materials"
           },
+          "is_published": {
+            "type": "boolean",
+            "title": "Is Published",
+            "default": false
+          },
           "id": {
             "type": "string",
             "format": "uuid",
             "title": "Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version",
+            "default": 1
+          },
+          "cover_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Image Url"
           },
           "created_at": {
             "type": "string",
@@ -11805,6 +14211,18 @@
             ],
             "title": "Description"
           },
+          "cover_image_media_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Image Media Id"
+          },
           "level": {
             "anyOf": [
               {
@@ -11826,7 +14244,7 @@
             ],
             "title": "Duration Weeks"
           },
-          "price": {
+          "default_capacity": {
             "anyOf": [
               {
                 "type": "integer"
@@ -11835,7 +14253,39 @@
                 "type": "null"
               }
             ],
-            "title": "Price"
+            "title": "Default Capacity"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "price_amount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Amount"
+          },
+          "billing_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BillingType"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "curriculum_json": {
             "anyOf": [
@@ -11860,6 +14310,17 @@
               }
             ],
             "title": "Prep Materials"
+          },
+          "is_published": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Published"
           }
         },
         "type": "object",
@@ -11872,6 +14333,119 @@
           "achieved"
         ],
         "title": "ProgressStatus"
+      },
+      "SkillCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "category"
+        ],
+        "title": "SkillCreate",
+        "description": "Create a new skill in the global skills library."
+      },
+      "SkillResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "category",
+          "description",
+          "created_at"
+        ],
+        "title": "SkillResponse",
+        "description": "Skill response with all fields."
+      },
+      "SkillUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "title": "SkillUpdate",
+        "description": "Update an existing skill."
       },
       "StudentProgressResponse": {
         "properties": {
@@ -11916,6 +14490,64 @@
               }
             ],
             "title": "Achieved At"
+          },
+          "evidence_media_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Media Id"
+          },
+          "student_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Student Notes"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "reviewed_by_coach_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed By Coach Id"
+          },
+          "reviewed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed At"
           },
           "created_at": {
             "type": "string",
@@ -11965,13 +14597,57 @@
               }
             ],
             "title": "Coach Notes"
+          },
+          "reviewed_by_coach_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed By Coach Id"
+          },
+          "reviewed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed At"
           }
         },
         "type": "object",
         "required": [
           "status"
         ],
-        "title": "StudentProgressUpdate"
+        "title": "StudentProgressUpdate",
+        "description": "Admin/Coach update - can set status, achievement time, and notes."
+      },
+      "AdminReviewRequest": {
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "title": "AdminReviewRequest",
+        "description": "Admin review action for a manual payment."
       },
       "ClubBillingCycle": {
         "type": "string",
@@ -11989,7 +14665,7 @@
             "maxLength": 32,
             "minLength": 2,
             "title": "Provider",
-            "default": "manual"
+            "default": "paystack"
           },
           "provider_reference": {
             "anyOf": [
@@ -12043,6 +14719,11 @@
             "title": "Currency",
             "default": "NGN"
           },
+          "payment_method": {
+            "type": "string",
+            "title": "Payment Method",
+            "default": "paystack"
+          },
           "years": {
             "type": "integer",
             "maximum": 5.0,
@@ -12091,6 +14772,18 @@
             ],
             "title": "Enrollment Id"
           },
+          "order_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id"
+          },
           "discount_code": {
             "anyOf": [
               {
@@ -12106,6 +14799,58 @@
             "type": "boolean",
             "title": "Include Community Extension",
             "default": false
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "ride_config_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ride Config Id"
+          },
+          "pickup_location_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Location Id"
+          },
+          "attendance_status": {
+            "type": "string",
+            "title": "Attendance Status",
+            "default": "PRESENT"
+          },
+          "direct_amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Direct Amount"
           },
           "metadata": {
             "anyOf": [
@@ -12230,6 +14975,115 @@
           "value"
         ],
         "title": "DiscountCreate"
+      },
+      "DiscountPreviewRequest": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose"
+          },
+          "subtotal": {
+            "type": "number",
+            "title": "Subtotal"
+          },
+          "components": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Components"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "purpose",
+          "subtotal"
+        ],
+        "title": "DiscountPreviewRequest"
+      },
+      "DiscountPreviewResponse": {
+        "properties": {
+          "valid": {
+            "type": "boolean",
+            "title": "Valid"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "discount_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discount Type"
+          },
+          "discount_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discount Value"
+          },
+          "discount_amount": {
+            "type": "number",
+            "title": "Discount Amount",
+            "default": 0
+          },
+          "final_total": {
+            "type": "number",
+            "title": "Final Total"
+          },
+          "applies_to_component": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applies To Component"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "valid",
+          "code",
+          "final_total"
+        ],
+        "title": "DiscountPreviewResponse"
       },
       "DiscountResponse": {
         "properties": {
@@ -12579,7 +15433,8 @@
           "club",
           "club_bundle",
           "academy_cohort",
-          "session_fee"
+          "session_fee",
+          "store_order"
         ],
         "title": "PaymentPurpose"
       },
@@ -12645,6 +15500,39 @@
               }
             ],
             "title": "Provider Reference"
+          },
+          "payment_method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Method"
+          },
+          "proof_of_payment_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proof Of Payment Url"
+          },
+          "admin_review_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Review Note"
           },
           "paid_at": {
             "anyOf": [
@@ -12751,6 +15639,21 @@
         ],
         "title": "PricingConfigResponse",
         "description": "Public pricing configuration for frontend display."
+      },
+      "SubmitProofRequest": {
+        "properties": {
+          "proof_url": {
+            "type": "string",
+            "maxLength": 512,
+            "title": "Proof Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "proof_url"
+        ],
+        "title": "SubmitProofRequest",
+        "description": "Submit proof of payment for manual transfer."
       },
       "AnnouncementCategory": {
         "type": "string",
@@ -12952,16 +15855,17 @@
             "type": "string",
             "title": "Category"
           },
-          "featured_image_url": {
+          "featured_image_media_id": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Featured Image Url"
+            "title": "Featured Image Media Id"
           },
           "tier_access": {
             "type": "string",
@@ -13008,16 +15912,17 @@
             "type": "string",
             "title": "Category"
           },
-          "featured_image_url": {
+          "featured_image_media_id": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Featured Image Url"
+            "title": "Featured Image Media Id"
           },
           "tier_access": {
             "type": "string",
@@ -13071,6 +15976,17 @@
             ],
             "title": "Comment Count",
             "default": 0
+          },
+          "featured_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Featured Image Url"
           }
         },
         "type": "object",
@@ -13133,16 +16049,17 @@
             ],
             "title": "Category"
           },
-          "featured_image_url": {
+          "featured_image_media_id": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Featured Image Url"
+            "title": "Featured Image Media Id"
           },
           "tier_access": {
             "anyOf": [

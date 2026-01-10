@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { apiGet, apiPost, apiPatch } from "@/lib/api";
+import { MediaInput } from "@/components/ui/MediaInput";
 
 interface Category {
     id: string;
@@ -26,6 +27,7 @@ interface ProductFormData {
     has_variants: boolean;
     requires_size_chart_ack: boolean;
     size_chart_url: string;
+    size_chart_media_id: string;
 }
 
 const initialFormData: ProductFormData = {
@@ -43,6 +45,7 @@ const initialFormData: ProductFormData = {
     has_variants: false,
     requires_size_chart_ack: false,
     size_chart_url: "",
+    size_chart_media_id: "",
 };
 
 export default function NewProductPage() {
@@ -339,6 +342,22 @@ export default function NewProductPage() {
                             <span className="text-sm text-slate-700">Require size chart acknowledgment</span>
                         </label>
                     </div>
+
+                    {formData.requires_size_chart_ack && (
+                        <div className="mt-4">
+                            <MediaInput
+                                label="Size Chart"
+                                purpose="size_chart"
+                                mode="both"
+                                value={formData.size_chart_media_id || null}
+                                onChange={(mediaId, fileUrl) => setFormData(prev => ({
+                                    ...prev,
+                                    size_chart_media_id: mediaId || "",
+                                    size_chart_url: fileUrl || ""
+                                }))}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {/* Actions */}

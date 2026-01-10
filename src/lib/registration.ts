@@ -47,6 +47,7 @@ type MemberMembershipData = {
 type MemberForRedirect = {
   roles?: string[] | null;
   profile_photo_url?: string | null;
+  profile_photo_media_id?: string | null;
   first_name?: string | null;
   last_name?: string | null;
 
@@ -157,8 +158,9 @@ export async function getPostAuthRedirectPath(): Promise<string> {
     const clubContext = wantsClub || approvedTiers.map(String).map((t) => t.toLowerCase()).some((t) => t === "club" || t === "academy");
     const academyContext = wantsAcademy || approvedTiers.map(String).map((t) => t.toLowerCase()).includes("academy");
 
+    // Use profile_photo_media_id (source of truth) not profile_photo_url
     const hasCoreOnboarding = Boolean(
-      member.profile_photo_url &&
+      member.profile_photo_media_id &&
       profile?.gender &&
       profile?.date_of_birth &&
       profile?.phone &&
@@ -200,18 +202,18 @@ export async function getPostAuthRedirectPath(): Promise<string> {
 
     const onboardingComplete = hasCoreOnboarding && hasSafetyLogistics && hasSwimBackground && hasClubReadiness && (!academyContext || hasAcademyReadiness);
     if (!onboardingComplete) {
-      return "/dashboard/onboarding";
+      return "/account/onboarding";
     }
 
     if (!communityActive) {
-      return "/dashboard/billing?required=community";
+      return "/account/billing?required=community";
     }
 
-    if (academyActive) return "/dashboard/academy";
-    if (clubContext && !clubActive) return "/dashboard/billing?required=club";
+    if (academyActive) return "/account/academy";
+    if (clubContext && !clubActive) return "/account/billing?required=club";
 
-    return "/dashboard";
+    return "/account";
   } catch {
-    return "/dashboard";
+    return "/account";
   }
 }

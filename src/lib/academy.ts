@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPost, apiPut } from "./api";
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./api";
 
 // Note: These types match the backend academy_service models after the schema redesign
 
@@ -78,6 +78,7 @@ export interface Program {
     slug?: string;
     description?: string;
     cover_image_url?: string;
+    cover_image_media_id?: string;
     level: ProgramLevel;
     duration_weeks: number;
     default_capacity?: number;
@@ -114,6 +115,7 @@ export interface Cohort {
     // Status
     status: CohortStatus;
     allow_mid_entry?: boolean;
+    require_approval?: boolean; // If true, enrollment needs admin approval even after payment
     notes_internal?: string;
     // Relations
     program?: Program;
@@ -167,7 +169,7 @@ export interface StudentProgress {
     status: ProgressStatus;
     achieved_at?: string;
     // Evidence & Review
-    evidence_url?: string;
+    evidence_media_id?: string;  // Links to media service - can be file or external URL
     score?: number;
     reviewed_by_coach_id?: string;
     reviewed_at?: string;
@@ -175,6 +177,11 @@ export interface StudentProgress {
     coach_notes?: string;
     created_at: string;
     updated_at: string;
+}
+
+export interface MilestoneClaimRequest {
+    evidence_media_id?: string;  // Upload file or external URL via media service
+    student_notes?: string;
 }
 
 // --- Curriculum Types ---
@@ -275,7 +282,7 @@ export const AcademyApi = {
         apiPost<Enrollment>("/api/v1/academy/enrollments", data, { auth: true }),
 
     getEnrollment: (id: string) =>
-        apiGet<Enrollment>(`/api/v1/academy/enrollments/${id}`, { auth: true }),
+        apiGet<Enrollment>(`/api/v1/academy/my-enrollments/${id}`, { auth: true }),
 
     listCohortEnrollments: (cohortId: string) =>
         apiGet<Enrollment[]>(`/api/v1/academy/cohorts/${cohortId}/enrollments`, { auth: true }),
@@ -294,6 +301,13 @@ export const AcademyApi = {
     getStudentProgress: (enrollmentId: string) =>
         apiGet<StudentProgress[]>(`/api/v1/academy/enrollments/${enrollmentId}/progress`),
 
+    claimMilestone: (enrollmentId: string, milestoneId: string, data: MilestoneClaimRequest) =>
+        apiPost<StudentProgress>(
+            `/api/v1/academy/enrollments/${enrollmentId}/progress/${milestoneId}/claim`,
+            data,
+            { auth: true }
+        ),
+
     // Open cohorts
     getOpenCohorts: () => apiGet<Cohort[]>("/api/v1/academy/cohorts/open"),
 
@@ -307,7 +321,7 @@ export const AcademyApi = {
         apiGet<Enrollment[]>(`/api/v1/academy/cohorts/${cohortId}/students`, { auth: true }),
 
     updateEnrollment: (id: string, data: Partial<Enrollment>) =>
-        apiPut<Enrollment>(`/api/v1/academy/enrollments/${id}`, data, { auth: true }),
+        apiPatch<Enrollment>(`/api/v1/academy/enrollments/${id}`, data, { auth: true }),
 
     // Admin List
     listAllEnrollments: (status?: EnrollmentStatus) => {

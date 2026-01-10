@@ -134,7 +134,7 @@ export function UpcomingCohorts() {
                         </div>
 
                         <div className="mt-auto pt-4">
-                            <Link href="/dashboard/academy/browse" className="block w-full">
+                            <Link href="/account/academy/browse" className="block w-full">
                                 <Button className="w-full">Enroll Now</Button>
                             </Link>
                             <p className="mt-2 text-center text-xs text-slate-500">

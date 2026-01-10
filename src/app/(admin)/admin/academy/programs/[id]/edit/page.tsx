@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
 import { AcademyApi, ProgramLevel, BillingType, MilestoneType, RequiredEvidence, type Program, type Milestone } from "@/lib/academy";
+import { MediaInput } from "@/components/ui/MediaInput";
 import { toast } from "sonner";
 
 // Curriculum lesson with full details
@@ -59,6 +60,7 @@ export default function EditProgramPage() {
         billing_type: BillingType.ONE_TIME,
         is_published: false,
         cover_image_url: "",
+        cover_image_media_id: "",
         prep_materials: "",
     });
 
@@ -91,6 +93,7 @@ export default function EditProgramPage() {
                     billing_type: program.billing_type || BillingType.ONE_TIME,
                     is_published: program.is_published || false,
                     cover_image_url: program.cover_image_url || "",
+                    cover_image_media_id: program.cover_image_media_id || "",
                     prep_materials: typeof program.prep_materials === 'object'
                         ? program.prep_materials?.content || ""
                         : program.prep_materials || "",
@@ -224,9 +227,12 @@ export default function EditProgramPage() {
 
         setSaving(true);
         try {
+            // Exclude cover_image_url (read-only field, resolved from media_id)
+            const { cover_image_url, ...updateData } = formData;
+
             // Update the program
             await AcademyApi.updateProgram(id, {
-                ...formData,
+                ...updateData,
                 price_amount: formData.price_amount, // Stored in naira
                 prep_materials: formData.prep_materials.trim() ? { content: formData.prep_materials } : null,
                 curriculum_json: buildCurriculumJson(),
@@ -327,7 +333,17 @@ export default function EditProgramPage() {
 
                         <div className="border-t pt-4 mt-4">
                             <h3 className="font-semibold text-slate-900 mb-3">Additional Details</h3>
-                            <Input label="Cover Image URL" value={formData.cover_image_url} onChange={(e) => setFormData({ ...formData, cover_image_url: e.target.value })} placeholder="https://..." />
+                            <MediaInput
+                                label="Cover Image"
+                                purpose="cover_image"
+                                mode="both"
+                                value={formData.cover_image_media_id || null}
+                                onChange={(mediaId, fileUrl) => setFormData({
+                                    ...formData,
+                                    cover_image_media_id: mediaId || "",
+                                    cover_image_url: fileUrl || ""
+                                })}
+                            />
                             <Textarea label="Prep Materials" value={formData.prep_materials} onChange={(e) => setFormData({ ...formData, prep_materials: e.target.value })} placeholder="What students should prepare..." className="mt-4" />
                         </div>
                     </div>

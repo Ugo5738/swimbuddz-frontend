@@ -36,6 +36,7 @@ export default function CohortDetailsPage() {
     const [cohort, setCohort] = useState<Cohort | null>(null);
     const [milestones, setMilestones] = useState<Milestone[]>([]);
     const [students, setStudents] = useState<Enrollment[]>([]);
+    const [studentProgress, setStudentProgress] = useState<Record<string, StudentProgress[]>>({});
     const [memberLookup, setMemberLookup] = useState<Record<string, MemberBasicInfo>>({});
     const [loading, setLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -64,6 +65,20 @@ export default function CohortDetailsPage() {
             // 3. Get Students (enrollments) and hydrate member info via members service
             const studentsData = await AcademyApi.listCohortStudents(cohortId);
             setStudents(studentsData);
+
+            // 4. Get progress for each student
+            const progressLookup: Record<string, StudentProgress[]> = {};
+            await Promise.all(
+                studentsData.map(async (student) => {
+                    try {
+                        const progress = await AcademyApi.getStudentProgress(student.id);
+                        progressLookup[student.id] = progress;
+                    } catch (e) {
+                        progressLookup[student.id] = [];
+                    }
+                })
+            );
+            setStudentProgress(progressLookup);
 
             const memberIds = Array.from(new Set(studentsData.map((s) => s.member_id)));
             if (memberIds.length) {
@@ -128,8 +143,9 @@ export default function CohortDetailsPage() {
 
     const calculateCompletion = (student: Enrollment): number => {
         if (milestones.length === 0) return 0;
-        // Progress records no longer embedded; placeholder 0 until progress API supplies them
-        return 0;
+        const progress = studentProgress[student.id] || [];
+        const achieved = progress.filter(p => p.status === ProgressStatus.ACHIEVED).length;
+        return Math.round((achieved / milestones.length) * 100);
     };
 
     const calculateAverageCompletion = (): number => {
@@ -309,8 +325,27 @@ export default function CohortDetailsPage() {
                                                 </div>
                                             </td>
                                             {milestones.map((milestone) => {
-                                                // Progress records are no longer embedded; prompt modal for updates.
-                                                const isAchieved = false;
+                                                // Get actual progress for this milestone
+                                                const progress = (studentProgress[student.id] || []).find(
+                                                    p => p.milestone_id === milestone.id
+                                                );
+                                                const isAchieved = progress?.status === ProgressStatus.ACHIEVED;
+                                                const isVerified = !!progress?.reviewed_at;
+
+                                                // Determine status label and styling
+                                                let statusLabel = 'Pending';
+                                                let badgeClass = 'bg-slate-100 text-slate-600 hover:bg-slate-200';
+                                                let dotClass = 'bg-slate-400';
+
+                                                if (isVerified) {
+                                                    statusLabel = '✓ Verified';
+                                                    badgeClass = 'bg-green-100 text-green-700 hover:bg-green-200';
+                                                    dotClass = 'bg-green-500';
+                                                } else if (isAchieved) {
+                                                    statusLabel = 'Claimed';
+                                                    badgeClass = 'bg-amber-100 text-amber-700 hover:bg-amber-200';
+                                                    dotClass = 'bg-amber-500';
+                                                }
 
                                                 return (
                                                     <td key={milestone.id} className="p-4">
@@ -319,16 +354,12 @@ export default function CohortDetailsPage() {
                                                                 milestone,
                                                                 student.id,
                                                                 formatStudentName(student),
-                                                                undefined
+                                                                progress
                                                             )}
-                                                            className={`flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium transition-colors ${isAchieved
-                                                                ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                                                }`}
+                                                            className={`flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium transition-colors ${badgeClass}`}
                                                         >
-                                                            <div className={`h-2 w-2 rounded-full ${isAchieved ? 'bg-green-500' : 'bg-slate-400'
-                                                                }`} />
-                                                            {isAchieved ? 'Achieved' : 'Pending'}
+                                                            <div className={`h-2 w-2 rounded-full ${dotClass}`} />
+                                                            {statusLabel}
                                                         </button>
                                                     </td>
                                                 );

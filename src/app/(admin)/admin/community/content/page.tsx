@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
+import { MediaInput } from "@/components/ui/MediaInput";
 import { apiEndpoints } from "@/lib/config";
 import { PartialBlock } from "@blocknote/core";
 import { format } from "date-fns";
@@ -30,6 +31,7 @@ interface ContentPost {
     body: string;
     category: string;
     featured_image_url: string | null;
+    featured_image_media_id: string | null;
     status: string;
     tier_access: string;
     published_at: string | null;
@@ -49,6 +51,7 @@ export default function AdminContentPage() {
         summary: "",
         category: "swimming_tips",
         featured_image_url: "",
+        featured_image_media_id: "",
         tier_access: "community",
     });
 
@@ -85,6 +88,7 @@ export default function AdminContentPage() {
                 ...formData,
                 body: serializeBlocks(editorContent),
                 featured_image_url: formData.featured_image_url || null,
+                featured_image_media_id: formData.featured_image_media_id || null,
             };
 
             const response = await fetch(
@@ -144,6 +148,7 @@ export default function AdminContentPage() {
             summary: post.summary,
             category: post.category,
             featured_image_url: post.featured_image_url || "",
+            featured_image_media_id: post.featured_image_media_id || "",
             tier_access: post.tier_access,
         });
         // Parse existing content
@@ -160,6 +165,7 @@ export default function AdminContentPage() {
             summary: "",
             category: "swimming_tips",
             featured_image_url: "",
+            featured_image_media_id: "",
             tier_access: "community",
         });
         setEditorContent([]);
@@ -281,13 +287,16 @@ export default function AdminContentPage() {
                                 </Select>
                             </div>
 
-                            <Input
-                                label="Featured Image URL (Optional)"
-                                value={formData.featured_image_url}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, featured_image_url: e.target.value })
-                                }
-                                placeholder="https://example.com/image.jpg"
+                            <MediaInput
+                                label="Featured Image"
+                                purpose="content_image"
+                                mode="both"
+                                value={formData.featured_image_media_id || null}
+                                onChange={(mediaId, fileUrl) => setFormData({
+                                    ...formData,
+                                    featured_image_media_id: mediaId || "",
+                                    featured_image_url: fileUrl || ""
+                                })}
                             />
 
                             <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">

@@ -49,7 +49,7 @@ function RegistrationSuccessContent() {
     useEffect(() => {
         const reference = searchParams.get("reference") || searchParams.get("trxref");
         if (!reference) return;
-        router.replace(`/dashboard/billing?provider=paystack&reference=${encodeURIComponent(reference)}`);
+        router.replace(`/account/billing?provider=paystack&reference=${encodeURIComponent(reference)}`);
     }, [router, searchParams]);
 
     if (isCoachRegistration) {

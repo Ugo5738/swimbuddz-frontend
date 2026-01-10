@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
 import { AcademyApi, ProgramLevel, BillingType, MilestoneType, RequiredEvidence, type Milestone, type Skill } from "@/lib/academy";
+import { MediaInput } from "@/components/ui/MediaInput";
 import { toast } from "sonner";
 
 // Curriculum lesson with full details including skills
@@ -60,6 +61,7 @@ export default function NewProgramPage() {
         billing_type: BillingType.ONE_TIME,
         is_published: false,
         cover_image_url: "",
+        cover_image_media_id: "",
         prep_materials: "",
     });
 
@@ -195,8 +197,11 @@ export default function NewProgramPage() {
         setSaving(true);
         try {
             // 1. Create the program (no curriculum_json initially)
+            // Exclude cover_image_url (read-only field, resolved from media_id)
+            const { cover_image_url, ...createData } = formData;
+
             const program = await AcademyApi.createProgram({
-                ...formData,
+                ...createData,
                 price_amount: formData.price_amount,
                 prep_materials: formData.prep_materials.trim() ? { content: formData.prep_materials } : null,
                 curriculum_json: null, // Will be populated by curriculum API
@@ -396,11 +401,16 @@ export default function NewProgramPage() {
                         <div className="border-t pt-4 mt-4">
                             <h3 className="font-semibold text-slate-900 mb-3">Additional Details</h3>
 
-                            <Input
-                                label="Cover Image URL"
-                                value={formData.cover_image_url}
-                                onChange={(e) => setFormData({ ...formData, cover_image_url: e.target.value })}
-                                placeholder="https://... (optional banner image)"
+                            <MediaInput
+                                label="Cover Image"
+                                purpose="cover_image"
+                                mode="both"
+                                value={formData.cover_image_media_id || null}
+                                onChange={(mediaId, fileUrl) => setFormData({
+                                    ...formData,
+                                    cover_image_media_id: mediaId || "",
+                                    cover_image_url: fileUrl || ""
+                                })}
                             />
 
                             <Textarea

@@ -150,7 +150,7 @@ const defaultState: UpgradeState = {
     discountCode: "",
     includeCommunityExtension: true,
     extensionInfo: null,
-    returnTo: "/dashboard/billing",
+    returnTo: "/account/billing",
 };
 
 // ============================================================================

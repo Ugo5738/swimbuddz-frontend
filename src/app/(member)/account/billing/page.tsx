@@ -293,11 +293,15 @@ export default function BillingPage() {
                 const purpose = (returnedPayment.purpose || returnedPayment.payment_metadata?.purpose || "").toLowerCase();
                 const isClub = purpose.includes("club");
                 const isAcademy = purpose.includes("academy");
+                const isSession = purpose.includes("session");
 
                 let title = "Welcome to Community! 🎉";
                 let description = "Your membership has been activated. You now have full access to member features.";
 
-                if (isClub) {
+                if (isSession) {
+                    title = "Session Confirmed! ✓";
+                    description = "Your attendance has been recorded. You'll receive a confirmation email with session details and your e-card.";
+                } else if (isClub) {
                     title = "Club is now active! 🎉";
                     description = "You can now book sessions and access all Club features.";
                 } else if (isAcademy) {
@@ -409,11 +413,12 @@ export default function BillingPage() {
                                                         }
 
                                                         const mediaItem = await uploadRes.json();
-                                                        const proofUrl = mediaItem.file_url;
+                                                        // Send the media_id, not the URL
+                                                        const proofMediaId = mediaItem.id;
 
                                                         await apiPost(
                                                             `/api/v1/payments/${payment.reference}/proof`,
-                                                            { proof_url: proofUrl },
+                                                            { proof_media_id: proofMediaId },
                                                             { auth: true }
                                                         );
                                                         toast.success("Proof uploaded! Awaiting admin review.");
@@ -571,49 +576,40 @@ export default function BillingPage() {
 
                 return (
                     <>
-                        {/* Show all paid enrollments */}
-                        {paidEnrollments.map((enrollment, index) => (
-                            <Card key={enrollment.id} className="p-6 space-y-4">
+                        {/* Academy Enrollments Summary */}
+                        {paidEnrollments.length > 0 && (
+                            <Card className="p-6 space-y-4">
                                 <div className="flex items-start justify-between">
                                     <div>
                                         <h2 className="text-lg font-semibold text-slate-900">
-                                            Academy {paidEnrollments.length > 1 ? `(${index + 1})` : ""}
+                                            Academy
                                         </h2>
                                         <p className="text-sm text-slate-600 mt-1">
-                                            {enrollment.cohort?.program?.name || "Swimming Program"}
+                                            {paidEnrollments.length} active enrollment{paidEnrollments.length > 1 ? "s" : ""}
                                         </p>
                                     </div>
+                                    <div className="flex items-center gap-2 text-emerald-600">
+                                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <span className="font-medium">Active</span>
+                                    </div>
                                 </div>
-
-                                <dl className="grid gap-2 text-sm">
-                                    <div className="grid grid-cols-3 gap-2">
-                                        <dt className="text-slate-600">Status:</dt>
-                                        <dd className="col-span-2 font-medium text-emerald-600">✓ Enrolled</dd>
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        <dt className="text-slate-600">Cohort:</dt>
-                                        <dd className="col-span-2 font-medium text-slate-900">
-                                            {enrollment.cohort?.name || "Current Cohort"}
-                                        </dd>
-                                    </div>
-                                    {enrollment.cohort?.start_date && (
-                                        <div className="grid grid-cols-3 gap-2">
-                                            <dt className="text-slate-600">Starts:</dt>
-                                            <dd className="col-span-2 font-medium text-slate-900">
-                                                {formatDate(enrollment.cohort.start_date)}
-                                            </dd>
-                                        </div>
-                                    )}
-                                </dl>
 
                                 <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-4 text-sm text-emerald-800">
                                     <p className="font-medium">You're enrolled in the Academy!</p>
                                     <p className="mt-1 text-emerald-600">
-                                        Your sessions will begin on the cohort start date. Check the Sessions page for schedules.
+                                        Track your progress and milestones on the My Academy page.
                                     </p>
                                 </div>
+
+                                <Link href="/account/academy">
+                                    <Button variant="outline" className="w-full">
+                                        View My Academy →
+                                    </Button>
+                                </Link>
                             </Card>
-                        ))}
+                        )}
 
                         {/* Show pending enrollments */}
                         {pendingEnrollments.map((enrollment) => (
@@ -704,7 +700,7 @@ export default function BillingPage() {
                                 <p className="text-sm text-slate-600">
                                     ✨ You're enrolled in all currently available cohorts! Check back later for new programs.
                                 </p>
-                                <Link href="/dashboard/academy/browse" className="text-sm text-cyan-600 hover:text-cyan-800">
+                                <Link href="/account/academy/browse" className="text-sm text-cyan-600 hover:text-cyan-800">
                                     Browse Academy programs →
                                 </Link>
                             </Card>

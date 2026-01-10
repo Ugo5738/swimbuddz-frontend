@@ -88,7 +88,7 @@ export default function CoachDashboardPage() {
         <div className="space-y-8">
             <header className="space-y-2">
                 <div className="flex items-center gap-2">
-                    <Link href="/dashboard" className="text-slate-500 hover:text-slate-700">
+                    <Link href="/account" className="text-slate-500 hover:text-slate-700">
                         ← Back
                     </Link>
                 </div>
@@ -190,7 +190,7 @@ export default function CoachDashboardPage() {
                         ) : (
                             <div className="grid gap-4 md:grid-cols-2">
                                 {cohorts.map((cohort) => (
-                                    <Link key={cohort.id} href={`/dashboard/academy/cohorts/${cohort.id}`} className="block">
+                                    <Link key={cohort.id} href={`/account/academy/cohorts/${cohort.id}`} className="block">
                                         <div className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
                                             <div className="flex justify-between items-start mb-2">
                                                 <Badge variant={cohort.status === "active" ? "success" : "default"}>
@@ -235,7 +235,7 @@ export default function CoachDashboardPage() {
                             <Link href="/coach/apply" className="text-cyan-700 hover:underline block">
                                 Edit coaching profile
                             </Link>
-                            <Link href="/dashboard/members" className="text-cyan-700 hover:underline block">
+                            <Link href="/account/members" className="text-cyan-700 hover:underline block">
                                 View assigned swimmers
                             </Link>
                             <span className="text-slate-400 block">Session notes (enable when sessions exist)</span>

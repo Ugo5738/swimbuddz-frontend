@@ -34,6 +34,8 @@ export function ProductCard({ product, memberDiscountPercent = 0 }: ProductCardP
 
     const images = product.images || [];
     const primaryImage = images.find((img) => img.is_primary) || images[0];
+    // Validate image URL - must start with http/https and be a valid URL
+    const hasValidImage = primaryImage?.url && primaryImage.url.startsWith('http');
     const hasDiscount = product.compare_at_price_ngn && product.compare_at_price_ngn > product.base_price_ngn;
     const isPreorder = product.sourcing_type === "preorder";
 
@@ -68,11 +70,12 @@ export function ProductCard({ product, memberDiscountPercent = 0 }: ProductCardP
         >
             {/* Image */}
             <div className="relative aspect-square bg-slate-100 overflow-hidden">
-                {primaryImage ? (
+                {hasValidImage ? (
                     <Image
                         src={primaryImage.url}
                         alt={product.name}
                         fill
+                        unoptimized // Bypass Next.js image optimization for external URLs
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                 ) : (

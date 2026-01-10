@@ -75,6 +75,7 @@ function CheckoutContent() {
 
     // Get cohort_id from URL (for resuming pending payments)
     const urlCohortId = searchParams.get("cohort_id");
+    const urlEnrollmentId = searchParams.get("enrollment_id");
     const { setSelectedCohort } = useUpgrade();
 
     // Load member data and pricing (and cohort if needed)
@@ -89,20 +90,27 @@ function CheckoutContent() {
             setPricing(pricingData);
 
             // If we have cohort_id in URL but no selectedCohort in context, fetch it
-            // This allows resuming pending payments from billing page
+            // This allows resuming pending payments from billing page or deep link
             if (urlCohortId && !state.selectedCohort) {
                 try {
-                    const cohortData = await apiGet<Cohort>(
-                        `/api/v1/academy/enrollments/${urlCohortId}`,
-                        { auth: true }
-                    ).catch(() => null);
+                    // Prefer enrollment lookup if provided
+                    if (urlEnrollmentId) {
+                        const enrollment = await apiGet<{
+                            id: string;
+                            cohort_id: string;
+                            cohort?: Cohort;
+                            program?: Cohort["program"];
+                        }>(`/api/v1/academy/enrollments/${urlEnrollmentId}`, { auth: true }).catch(() => null);
+                        if (enrollment?.cohort) {
+                            setSelectedCohort(enrollment.cohort);
+                        }
+                    }
 
-                    // Try fetching cohort directly if enrollment fetch fails
-                    if (!cohortData) {
+                    if (!state.selectedCohort) {
                         const cohortResponse = await apiGet<Cohort>(
                             `/api/v1/academy/cohorts/${urlCohortId}`,
                             { auth: true }
-                        );
+                        ).catch(() => null);
                         if (cohortResponse) {
                             setSelectedCohort(cohortResponse);
                         }
@@ -344,11 +352,11 @@ function CheckoutContent() {
                 // For manual transfers, go to proof upload page
                 toast.success(`Payment reference created: ${intent.reference}`);
                 clearState();
-                router.push(`/dashboard/billing?pending_transfer=${intent.reference}`);
+                router.push(`/account/billing?pending_transfer=${intent.reference}`);
             } else {
                 toast.success(`Payment reference created: ${intent.reference}`);
                 clearState();
-                router.push("/dashboard/billing");
+                router.push("/account/billing");
             }
         } catch (e) {
             const message = e instanceof Error ? e.message : "Payment failed";
@@ -366,7 +374,7 @@ function CheckoutContent() {
         if (purpose === "academy_cohort") {
             return "/upgrade/academy/details";
         }
-        return "/dashboard/billing";
+        return "/account/billing";
     };
 
     if (loading) {
@@ -380,7 +388,7 @@ function CheckoutContent() {
                 <Alert variant="error" title="Checkout Error">
                     Missing checkout information. Please start the upgrade process again.
                 </Alert>
-                <Button onClick={() => router.push("/dashboard/billing")}>Back to Billing</Button>
+                <Button onClick={() => router.push("/account/billing")}>Back to Billing</Button>
             </div>
         );
     }

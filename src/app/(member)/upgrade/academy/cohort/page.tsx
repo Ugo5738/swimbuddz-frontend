@@ -91,7 +91,7 @@ export default function AcademyCohortSelectionPage() {
                     There are no Academy cohorts accepting enrollments right now. New cohorts are
                     announced regularly — check back soon!
                 </p>
-                <Button variant="secondary" onClick={() => router.push("/dashboard/billing")}>
+                <Button variant="secondary" onClick={() => router.push("/account/billing")}>
                     Back to Billing
                 </Button>
             </div>

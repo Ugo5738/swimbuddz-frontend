@@ -14,7 +14,8 @@ import { Input } from "@/components/ui/Input";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { Select } from "@/components/ui/Select";
 import { apiGet, apiPatch } from "@/lib/api";
-import { Camera, X } from "lucide-react";
+import { uploadMedia } from "@/lib/media";
+import { Camera, Loader2, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -74,6 +75,7 @@ type Member = {
     first_name?: string | null;
     last_name?: string | null;
     profile_photo_url?: string | null;
+    profile_photo_media_id?: string | null;
 
     // Nested sub-records
     profile?: MemberProfile | null;
@@ -88,15 +90,6 @@ function formatDateForInput(value?: string | null) {
     const ms = Date.parse(String(value));
     if (!Number.isFinite(ms)) return "";
     return new Date(ms).toISOString().split("T")[0] || "";
-}
-
-function readFileAsDataUrl(file: File) {
-    return new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(String(reader.result || ""));
-        reader.onerror = () => reject(new Error("Failed to read file"));
-        reader.readAsDataURL(file);
-    });
 }
 
 type StepKey = "core" | "safety" | "swim" | "club" | "academy" | "signals" | "review";
@@ -231,7 +224,8 @@ export default function DashboardOnboardingPage() {
     const needsCoreProfile = useMemo(() => {
         if (!member) return false;
         const profile = member.profile;
-        return !member.profile_photo_url ||
+        // Check profile_photo_media_id - the source of truth (URL is just computed for display)
+        return !member.profile_photo_media_id ||
             !profile?.gender ||
             !profile?.date_of_birth ||
             !member.first_name ||
@@ -292,6 +286,7 @@ export default function DashboardOnboardingPage() {
         gender: "",
         dateOfBirth: "",
         profilePhotoUrl: "",
+        profilePhotoMediaId: "",
         timeZone: "",
     });
 
@@ -366,6 +361,7 @@ export default function DashboardOnboardingPage() {
             gender: profile?.gender || "",
             dateOfBirth: formatDateForInput(profile?.date_of_birth),
             profilePhotoUrl: member.profile_photo_url || "",
+            profilePhotoMediaId: member.profile_photo_media_id || "",
             timeZone: profile?.time_zone || "",
         });
         setClubForm({
@@ -466,7 +462,7 @@ export default function DashboardOnboardingPage() {
         coreForm.city &&
         coreForm.gender &&
         coreForm.dateOfBirth &&
-        coreForm.profilePhotoUrl &&
+        (coreForm.profilePhotoMediaId || coreForm.profilePhotoUrl) &&
         coreForm.timeZone
     );
 
@@ -663,7 +659,7 @@ export default function DashboardOnboardingPage() {
         ? "/upgrade/club/plan"
         : activationTarget === "community"
             ? "/checkout?purpose=community"
-            : "/dashboard/billing";
+            : "/account/billing";
     const billingCtaLabel = activationTarget === "club"
         ? "Activate Club Membership"
         : activationTarget === "community"
@@ -685,7 +681,7 @@ export default function DashboardOnboardingPage() {
                 {
                     first_name: coreForm.firstName,
                     last_name: coreForm.lastName,
-                    profile_photo_url: coreForm.profilePhotoUrl,
+                    profile_photo_media_id: coreForm.profilePhotoMediaId || null,
                     profile: {
                         phone: coreForm.phone,
                         area_in_lagos: coreForm.areaInLagos || undefined,
@@ -934,7 +930,7 @@ export default function DashboardOnboardingPage() {
 
         if (currentStep === "review") {
             clearDraft();
-            router.push("/dashboard");
+            router.push("/account");
             return;
         }
 
@@ -1000,8 +996,14 @@ export default function DashboardOnboardingPage() {
                                             />
                                         ) : (
                                             <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-cyan-700">
-                                                <Camera className="h-7 w-7" />
-                                                <span className="text-xs font-medium">Add photo</span>
+                                                {saving ? (
+                                                    <Loader2 className="h-7 w-7 animate-spin" />
+                                                ) : (
+                                                    <>
+                                                        <Camera className="h-7 w-7" />
+                                                        <span className="text-xs font-medium">Add photo</span>
+                                                    </>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -1009,21 +1011,30 @@ export default function DashboardOnboardingPage() {
                                         type="file"
                                         accept="image/*"
                                         className="sr-only"
+                                        disabled={saving}
                                         onChange={async (event) => {
                                             const input = event.currentTarget;
                                             const file = input.files?.[0];
                                             if (!file) return;
-                                            // Clear immediately so selecting the same file again still triggers `onChange`.
                                             input.value = "";
+
+                                            setSaving(true);
                                             try {
-                                                const url = await readFileAsDataUrl(file);
-                                                setCoreForm((prev) => ({ ...prev, profilePhotoUrl: url }));
-                                            } catch {
-                                                toast.error("Failed to read image");
+                                                const mediaItem = await uploadMedia(file, "profile_photo");
+                                                setCoreForm((prev) => ({
+                                                    ...prev,
+                                                    profilePhotoMediaId: mediaItem.id,
+                                                    profilePhotoUrl: mediaItem.file_url,
+                                                }));
+                                                toast.success("Photo uploaded!");
+                                            } catch (err) {
+                                                toast.error(err instanceof Error ? err.message : "Failed to upload photo");
+                                            } finally {
+                                                setSaving(false);
                                             }
                                         }}
                                     />
-                                    {coreForm.profilePhotoUrl ? (
+                                    {coreForm.profilePhotoUrl && !saving ? (
                                         <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 flex items-center justify-center">
                                             <Camera className="h-8 w-8 text-white" />
                                         </div>
@@ -1038,7 +1049,12 @@ export default function DashboardOnboardingPage() {
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            onClick={() => setCoreForm((prev) => ({ ...prev, profilePhotoUrl: "" }))}
+                                            size="sm"
+                                            onClick={() => setCoreForm((prev) => ({
+                                                ...prev,
+                                                profilePhotoMediaId: "",
+                                                profilePhotoUrl: "",
+                                            }))}
                                             className="gap-2"
                                         >
                                             <X className="h-4 w-4" />
@@ -1167,7 +1183,7 @@ export default function DashboardOnboardingPage() {
                                             Continue {firstMissingRequiredStep.title}
                                         </Button>
                                     ) : null}
-                                    <Link href="/dashboard">
+                                    <Link href="/account">
                                         <Button variant="outline">Go to Dashboard</Button>
                                     </Link>
                                 </div>
@@ -1190,12 +1206,12 @@ export default function DashboardOnboardingPage() {
                                             {navigatingToBilling ? "Loading..." : billingCtaLabel}
                                         </Button>
                                     ) : (
-                                        <Link href="/dashboard">
+                                        <Link href="/account">
                                             <Button>Go to Dashboard</Button>
                                         </Link>
                                     )}
                                     {!showBillingCta ? (
-                                        <Link href="/profile">
+                                        <Link href="/account/profile">
                                             <Button variant="outline">Review Profile</Button>
                                         </Link>
                                     ) : null}

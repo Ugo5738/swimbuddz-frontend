@@ -65,7 +65,7 @@ export default function UpgradeLayout({ children }: { children: React.ReactNode 
                 {/* Back link - above progress */}
                 <div className="flex justify-start">
                     <Link
-                        href="/dashboard/billing"
+                        href="/account/billing"
                         className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 mb-2"
                     >
                         <ArrowLeft className="w-3.5 h-3.5" />

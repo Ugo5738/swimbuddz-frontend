@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { toast } from "sonner";
 import { apiGet, apiPatch, apiPost, apiDelete } from "@/lib/api";
 import { LoadingCard } from "@/components/ui/LoadingCard";
+import { MediaInput } from "@/components/ui/MediaInput";
 
 interface Category {
     id: string;
@@ -39,6 +40,7 @@ interface Product {
     has_variants: boolean;
     requires_size_chart_ack: boolean;
     size_chart_url: string | null;
+    size_chart_media_id: string | null;
     variants: Variant[];
 }
 
@@ -57,6 +59,7 @@ interface ProductFormData {
     has_variants: boolean;
     requires_size_chart_ack: boolean;
     size_chart_url: string;
+    size_chart_media_id: string;
 }
 
 export default function EditProductPage() {
@@ -96,6 +99,7 @@ export default function EditProductPage() {
                     has_variants: prod.has_variants,
                     requires_size_chart_ack: prod.requires_size_chart_ack,
                     size_chart_url: prod.size_chart_url || "",
+                    size_chart_media_id: prod.size_chart_media_id || "",
                 });
             } catch {
                 toast.error("Failed to load product");
@@ -353,6 +357,22 @@ export default function EditProductPage() {
                                     <span className="text-sm text-slate-700">Require size chart acknowledgment</span>
                                 </label>
                             </div>
+
+                            {formData.requires_size_chart_ack && (
+                                <div className="mt-4">
+                                    <MediaInput
+                                        label="Size Chart"
+                                        purpose="size_chart"
+                                        mode="both"
+                                        value={formData.size_chart_media_id || null}
+                                        onChange={(mediaId, fileUrl) => setFormData(prev => prev ? {
+                                            ...prev,
+                                            size_chart_media_id: mediaId || "",
+                                            size_chart_url: fileUrl || ""
+                                        } : null)}
+                                    />
+                                </div>
+                            )}
                         </div>
 
                         {/* Actions */}

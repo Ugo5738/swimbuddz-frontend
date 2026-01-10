@@ -170,7 +170,7 @@ export default function SessionSignInPage({ params }: { params: { id: string } }
                     </div>
 
                     <div className="flex flex-col gap-3">
-                        <Link href="/dashboard">
+                        <Link href="/account">
                             <Button className="w-full">Go to Dashboard</Button>
                         </Link>
                         <Link href="/sessions">
@@ -199,7 +199,7 @@ export default function SessionSignInPage({ params }: { params: { id: string } }
                         <Link href={`/sessions/${params.id}/sign-in`}>
                             <Button className="w-full">Try Again</Button>
                         </Link>
-                        <Link href="/dashboard/billing">
+                        <Link href="/account/billing">
                             <Button variant="secondary" className="w-full">Check Billing</Button>
                         </Link>
                     </div>

@@ -72,7 +72,8 @@ export default function MemberDashboardPage() {
     const clubContext = wantsClub || memberTiers.includes("club") || memberTiers.includes("academy");
     const academyContext = wantsAcademy || memberTiers.includes("academy");
 
-    const hasProfileBasics = Boolean(member?.profile_photo_url && profile.gender && profile.date_of_birth);
+    // Use profile_photo_media_id (source of truth) not profile_photo_url
+    const hasProfileBasics = Boolean(member?.profile_photo_media_id && profile.gender && profile.date_of_birth);
     const hasCoreProfile = Boolean(profile.phone && profile.country && profile.city && profile.time_zone);
     const hasSwimBackground = Boolean(
         profile.swim_level &&
@@ -215,7 +216,7 @@ export default function MemberDashboardPage() {
                         </div>
 
                         <div className="flex-shrink-0">
-                            <Link href="/dashboard/onboarding">
+                            <Link href="/account/onboarding">
                                 <Button variant="secondary" className="shadow-lg border-white/20">
                                     Continue Setup
                                     <ArrowRight className="ml-2 h-4 w-4" />
@@ -253,7 +254,7 @@ export default function MemberDashboardPage() {
                                     Resume payment
                                 </Button>
                             ) : null}
-                            <Link href="/dashboard/billing?required=community">
+                            <Link href="/account/billing?required=community">
                                 <Button variant={resumeCheckoutUrl ? "outline" : "primary"}>Go to Billing</Button>
                             </Link>
                         </div>
@@ -263,7 +264,7 @@ export default function MemberDashboardPage() {
 
             {/* Quick Stats */}
             <div className="grid gap-4 md:grid-cols-3">
-                <Link href="/dashboard/billing">
+                <Link href="/account/billing">
                     <Card className="p-5 bg-gradient-to-br from-cyan-50 to-white border-cyan-100 hover:shadow-md transition-shadow cursor-pointer">
                         <div className="flex items-start justify-between">
                             <div>
@@ -324,7 +325,7 @@ export default function MemberDashboardPage() {
                                 Pay ₦20,000/year to unlock the member directory, events, and community features.
                             </p>
                         </div>
-                        <Link href="/dashboard/billing">
+                        <Link href="/account/billing">
                             <Button>Activate Now</Button>
                         </Link>
                     </div>
@@ -346,7 +347,7 @@ export default function MemberDashboardPage() {
                                 Complete your readiness to speed up review. Payments happen when you activate a plan.
                             </p>
                         </div>
-                        <Link href="/dashboard/onboarding">
+                        <Link href="/account/onboarding">
                             <Button variant="outline">Complete Readiness</Button>
                         </Link>
                     </div>
@@ -379,7 +380,7 @@ export default function MemberDashboardPage() {
 
             {/* Coach Card (if applicable) */}
             {member?.coach_profile && (
-                <Link href="/dashboard/coach" className="block">
+                <Link href="/account/coach" className="block">
                     <Card className="p-6 border-purple-200 bg-gradient-to-r from-purple-50 to-purple-100/50 hover:shadow-lg transition-shadow">
                         <div className="flex items-center gap-4">
                             <div className="rounded-xl bg-purple-200 p-3">

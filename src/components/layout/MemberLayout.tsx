@@ -46,6 +46,7 @@ type MemberInfo = {
     first_name?: string;
     last_name?: string;
     profile_photo_url?: string;
+    profile_photo_media_id?: string;
     email?: string;
 
     // Nested sub-records
@@ -94,15 +95,15 @@ const navSections: NavSection[] = [
     {
         title: "Overview",
         items: [
-            { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }
+            { href: "/account", label: "Dashboard", icon: LayoutDashboard }
         ]
     },
     {
         title: "My Account",
         items: [
-            { href: "/profile", label: "My Profile", icon: User },
-            { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
-            { href: "/dashboard/onboarding", label: "Complete Setup", icon: CheckCircle }
+            { href: "/account/profile", label: "My Profile", icon: User },
+            { href: "/account/billing", label: "Billing", icon: CreditCard },
+            { href: "/account/onboarding", label: "Complete Setup", icon: CheckCircle }
         ]
     },
     {
@@ -116,18 +117,18 @@ const navSections: NavSection[] = [
     },
     {
         title: "Sessions",
-        showFor: ["club", "academy"],
         items: [
-            { href: "/sessions-and-events", label: "Browse Sessions", icon: Calendar },
-            { href: "/attendance", label: "My Attendance", icon: ClipboardCheck }
+            { href: "/account/sessions", label: "Browse Sessions", icon: Calendar },
+            { href: "/account/attendance", label: "My Attendance", icon: ClipboardCheck }
         ]
     },
     {
         title: "Academy",
-        showFor: ["academy"],
+        // Allow all members to view programs and enroll (even before academy is active)
+        showFor: ["community", "club", "academy"],
         items: [
-            { href: "/dashboard/academy/browse", label: "Academy Programs", icon: BookOpen },
-            { href: "/dashboard/academy", label: "My Progress", icon: GraduationCap }
+            { href: "/account/academy/browse", label: "Academy Programs", icon: BookOpen },
+            { href: "/account/academy", label: "My Progress", icon: GraduationCap }
         ]
     }
 ];
@@ -192,9 +193,22 @@ export function MemberLayout({ children }: MemberLayoutProps) {
     };
 
     const isActive = (href: string) => {
-        if (href === "/dashboard") {
+        if (href === "/account") {
             return pathname === href;
         }
+
+        // Avoid overlapping matches between academy browse vs. progress
+        if (href === "/account/academy") {
+            return (
+                pathname === href ||
+                (pathname?.startsWith("/account/academy/") &&
+                    !pathname?.startsWith("/account/academy/browse"))
+            );
+        }
+        if (href === "/account/academy/browse") {
+            return pathname === href || pathname?.startsWith("/account/academy/browse");
+        }
+
         return pathname?.startsWith(href);
     };
 
@@ -258,7 +272,8 @@ export function MemberLayout({ children }: MemberLayoutProps) {
                     ? "Club (Pending)"
                     : "Community Member";
 
-    const needsProfileBasics = !member?.profile_photo_url || !member?.profile?.gender || !member?.profile?.date_of_birth;
+    // Check profile_photo_media_id (source of truth) for validation, URL is just for display
+    const needsProfileBasics = !member?.profile_photo_media_id || !member?.profile?.gender || !member?.profile?.date_of_birth;
     const needsProfileCore =
         needsProfileBasics ||
         !member?.profile?.country ||
@@ -293,14 +308,28 @@ export function MemberLayout({ children }: MemberLayoutProps) {
         if (section.title !== "My Account") return section;
         const items = needsOnboarding
             ? section.items
-            : section.items.filter((item) => item.href !== "/dashboard/onboarding");
+            : section.items.filter((item) => item.href !== "/account/onboarding");
         return { ...section, items };
     }).filter((section) => section.items.length > 0);
 
-    const visibleSections = filteredSections.filter(section => {
-        if (!section.showFor) return true;
-        return section.showFor.some(tier => memberTiers.includes(tier));
-    });
+    const visibleSections = filteredSections
+        .map((section) => {
+            if (section.title === "Academy") {
+                const items = section.items.filter((item) => {
+                    if (item.href === "/account/academy") {
+                        return hasPaidAcademyEnrollment;
+                    }
+                    return true; // Keep browse visible for all eligible members
+                });
+                return { ...section, items };
+            }
+            return section;
+        })
+        .filter(section => {
+            if (!section.showFor) return true;
+            return section.showFor.some(tier => memberTiers.includes(tier));
+        })
+        .filter(section => section.items.length > 0);
 
     const memberName = member?.first_name
         ? `${member.first_name}${member.last_name ? ` ${member.last_name}` : ""}`
@@ -328,7 +357,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
                 <div className="flex h-full flex-col">
                     {/* Header with Logo */}
                     <div className="flex items-center justify-between border-b border-white/10 p-6">
-                        <Link href="/dashboard" className="flex items-center gap-3">
+                        <Link href="/account" className="flex items-center gap-3">
                             <img src="/logo.png" alt="SwimBuddz Logo" className="h-10 w-auto" />
                             <div className="flex flex-col">
                                 <span className="text-xl font-bold text-white">SwimBuddz</span>
@@ -459,7 +488,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
                             <Bell className="h-5 w-5" />
                             <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-rose-500" />
                         </Link>
-                        <Link href="/profile" className="flex items-center gap-2">
+                        <Link href="/account/profile" className="flex items-center gap-2">
                             {member?.profile_photo_url ? (
                                 <img
                                     src={member.profile_photo_url}

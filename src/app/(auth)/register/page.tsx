@@ -322,7 +322,7 @@ function RegisterContent() {
 
         // Redirect to onboarding with the appropriate step
         const step = formData.membershipTier === "academy" ? "academy" : "club";
-        router.push(`/dashboard/onboarding?step=${step}`);
+        router.push(`/account/onboarding?step=${step}`);
         return;
       }
 

@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/Input";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
+import { MediaInput } from "@/components/ui/MediaInput";
 import { apiGet, apiPatch } from "@/lib/api";
 import { WHATSAPP_GROUP_URL } from "@/lib/config";
 import {
@@ -89,6 +90,7 @@ type Profile = {
   email: string;
   phone: string;
   profilePhotoUrl?: string;
+  profilePhotoMediaId?: string;
   city: string;
   country: string;
   timeZone: string;
@@ -136,6 +138,9 @@ type Profile = {
   academyFocus: string;
   paymentNotes: string;
   communityActive: boolean;
+  communityPaidUntil?: string | null;
+  clubPaidUntil?: string | null;
+  academyPaidUntil?: string | null;
 };
 
 const mockProfile: Profile = {
@@ -202,6 +207,7 @@ type MemberResponse = {
   is_active: boolean;
   registration_complete: boolean;
   profile_photo_url?: string;
+  profile_photo_media_id?: string;
 
   // Nested profile data
   profile?: {
@@ -290,6 +296,7 @@ function mapMemberResponseToProfile(data: MemberResponse): Profile {
     email: data.email,
     phone: profile.phone || "",
     profilePhotoUrl: data.profile_photo_url || "",
+    profilePhotoMediaId: data.profile_photo_media_id || "",
     city: profile.city || "",
     country: profile.country || "",
     timeZone: profile.time_zone || "",
@@ -338,7 +345,10 @@ function mapMemberResponseToProfile(data: MemberResponse): Profile {
     paymentNotes: "",
     communityActive: communityPaid || clubPaid || academyPaid,
     occupation: profile.occupation || "",
-    areaInLagos: profile.area_in_lagos || ""
+    areaInLagos: profile.area_in_lagos || "",
+    communityPaidUntil: data.membership?.community_paid_until || null,
+    clubPaidUntil: data.membership?.club_paid_until || null,
+    academyPaidUntil: data.membership?.academy_paid_until || null
   };
 }
 
@@ -484,6 +494,10 @@ function ProfileContent() {
                   memberId={profile.id}
                   joinedAt={profile.joinedAt}
                   photoUrl={profile.profilePhotoUrl}
+                  validUntil={profile.membershipTiers.includes("academy")
+                    ? profile.academyPaidUntil ?? undefined
+                    : profile.clubPaidUntil ?? undefined
+                  }
                 />
               </div>
             )}
@@ -736,6 +750,8 @@ type FormState = {
   timeZone: string;
   occupation: string;
   areaInLagos: string;
+  profilePhotoUrl: string;
+  profilePhotoMediaId: string;
   swimLevel: string;
   deepWaterComfort: string;
   strokes: string[];
@@ -787,6 +803,8 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
     goalsNarrative: profile.goalsNarrative,
     occupation: profile.occupation || "",
     areaInLagos: profile.areaInLagos || "",
+    profilePhotoUrl: profile.profilePhotoUrl || "",
+    profilePhotoMediaId: profile.profilePhotoMediaId || "",
 
     availabilitySlots: profile.availabilitySlots,
     timeOfDayAvailability: profile.timeOfDayAvailability,
@@ -837,6 +855,8 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
       timeZone: formState.timeZone,
       occupation: formState.occupation,
       areaInLagos: formState.areaInLagos,
+      profilePhotoUrl: formState.profilePhotoUrl,
+      profilePhotoMediaId: formState.profilePhotoMediaId || profile.profilePhotoMediaId || "",
       swimLevel: formState.swimLevel,
       deepWaterComfort: formState.deepWaterComfort,
       strokes: formState.strokes,
@@ -880,6 +900,7 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
       await apiPatch(
         "/api/v1/members/me",
         {
+          profile_photo_media_id: formState.profilePhotoMediaId || null,
           city: formState.city,
           country: formState.country,
           time_zone: formState.timeZone,
@@ -942,6 +963,20 @@ function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps)
         </Alert>
       ) : null}
       <div className="grid gap-6 md:grid-cols-2">
+        {/* Profile Photo */}
+        <div className="md:col-span-2">
+          <MediaInput
+            label="Profile Photo"
+            purpose="profile_photo"
+            mode="upload-only"
+            value={formState.profilePhotoMediaId || null}
+            onChange={(mediaId, fileUrl) => setFormState({
+              ...formState,
+              profilePhotoMediaId: mediaId || "",
+              profilePhotoUrl: fileUrl || ""
+            })}
+          />
+        </div>
         {/* Contact & Location */}
         <div className="md:col-span-2 space-y-4">
           <h3 className="font-medium text-slate-900">Contact & Location</h3>

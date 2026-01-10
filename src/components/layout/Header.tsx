@@ -121,13 +121,13 @@ export function Header() {
                         {session ? (
                             <>
                                 <Link
-                                    href="/dashboard"
+                                    href="/account"
                                     className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-cyan-600 to-cyan-500 text-white font-medium hover:from-cyan-500 hover:to-cyan-400 transition-all hover:shadow-lg hover:shadow-cyan-500/25"
                                 >
                                     Dashboard
                                 </Link>
                                 <Link
-                                    href="/profile"
+                                    href="/account/profile"
                                     className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors ${isActive('/profile')
                                         ? 'text-cyan-700 bg-cyan-50'
                                         : 'text-slate-600 hover:text-cyan-700 hover:bg-slate-50'
@@ -197,7 +197,7 @@ export function Header() {
                             {session ? (
                                 <>
                                     <Link
-                                        href="/dashboard"
+                                        href="/account"
                                         onClick={closeMobileMenu}
                                         className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-500 text-white font-semibold mb-2"
                                     >
@@ -205,7 +205,7 @@ export function Header() {
                                         Go to Dashboard
                                     </Link>
                                     <Link
-                                        href="/profile"
+                                        href="/account/profile"
                                         onClick={closeMobileMenu}
                                         className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${isActive('/profile')
                                             ? 'text-cyan-700 bg-cyan-50 font-semibold'

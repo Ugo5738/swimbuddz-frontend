@@ -98,7 +98,7 @@ export default function OrderDetailPage() {
             <div className="text-center py-12">
                 <h2 className="text-xl font-semibold text-slate-900 mb-2">Order not found</h2>
                 <p className="text-slate-500 mb-4">{error}</p>
-                <Link href="/dashboard/orders">
+                <Link href="/account/orders">
                     <Button variant="secondary">Back to Orders</Button>
                 </Link>
             </div>
@@ -109,7 +109,7 @@ export default function OrderDetailPage() {
         <div className="max-w-4xl mx-auto space-y-6">
             {/* Back Link */}
             <Link
-                href="/dashboard/orders"
+                href="/account/orders"
                 className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-cyan-600 transition-colors"
             >
                 <ArrowLeft className="w-4 h-4" />

@@ -3,7 +3,8 @@
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { AcademyApi, Cohort, Enrollment, Milestone, Program, StudentProgress } from "@/lib/academy";
+import { AcademyApi, Cohort, Enrollment, EnrollmentStatus, Milestone, PaymentStatus, Program, StudentProgress } from "@/lib/academy";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -123,8 +124,9 @@ export default function StudentAcademyPage() {
 
     const calculateProgress = (enrollment: EnrollmentWithDetails) => {
         if (!enrollment.milestones || enrollment.milestones.length === 0) return 0;
-        const achieved = enrollment.progress?.filter(p => p.status === 'achieved').length || 0;
-        return Math.round((achieved / enrollment.milestones.length) * 100);
+        // Count only reviewed/approved milestones as complete; treat unreviewed claims as pending
+        const approved = enrollment.progress?.filter(p => p.status === 'achieved' && p.reviewed_at).length || 0;
+        return Math.round((approved / enrollment.milestones.length) * 100);
     };
 
     const getLevelBadgeColor = (level: string) => {
@@ -166,109 +168,148 @@ export default function StudentAcademyPage() {
                     <div className="space-y-6">
                         {enrollments.map((enrollment) => {
                             const progress = calculateProgress(enrollment);
-                            const achievedCount = enrollment.progress?.filter(p => p.status === 'achieved').length || 0;
+                            const approvedCount = enrollment.progress?.filter(p => p.status === 'achieved' && p.reviewed_at).length || 0;
                             const totalMilestones = enrollment.milestones?.length || 0;
+                            const isPaid = enrollment.payment_status === PaymentStatus.PAID;
+                            const isPendingApproval = enrollment.status === EnrollmentStatus.PENDING_APPROVAL;
+                            const showApprovalBanner = isPaid && isPendingApproval;
 
                             return (
-                                <Card key={enrollment.id} className="overflow-hidden">
-                                    {/* Header with gradient */}
-                                    <div className="bg-gradient-to-r from-cyan-500 to-blue-500 p-6 text-white">
-                                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                                            <div>
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    {enrollment.program && (
-                                                        <span className="inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">
-                                                            {formatLevel(enrollment.program.level)}
-                                                        </span>
-                                                    )}
-                                                    <Badge variant={enrollment.payment_status === 'paid' ? 'success' : 'warning'}>
-                                                        {enrollment.payment_status}
-                                                    </Badge>
-                                                </div>
-                                                <h2 className="text-2xl font-bold">{enrollment.program?.name}</h2>
-                                                <p className="text-cyan-50 mt-1">
-                                                    {enrollment.cohort?.name} • {new Date(enrollment.cohort?.start_date || "").toLocaleDateString()} - {new Date(enrollment.cohort?.end_date || "").toLocaleDateString()}
+                                <Link
+                                    key={enrollment.id}
+                                    href={`/account/academy/enrollments/${enrollment.id}`}
+                                    className="block"
+                                >
+                                    <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                                        {/* Pending Approval Banner */}
+                                        {showApprovalBanner && (
+                                            <div className="bg-amber-50 border-b border-amber-200 px-6 py-3">
+                                                <p className="text-amber-800 text-sm flex items-center gap-2">
+                                                    <span className="text-lg">⏳</span>
+                                                    <span>
+                                                        <strong>Payment received!</strong> Your enrollment is being reviewed by our team.
+                                                    </span>
                                                 </p>
                                             </div>
-                                            <div className="flex flex-col items-end">
-                                                <div className="text-4xl font-bold">{progress}%</div>
-                                                <div className="text-sm text-cyan-50">Complete</div>
+                                        )}
+                                        {/* Header with gradient */}
+                                        <div className="bg-gradient-to-r from-cyan-500 to-blue-500 p-6 text-white">
+                                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                                <div>
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        {enrollment.program && (
+                                                            <span className="inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">
+                                                                {formatLevel(enrollment.program.level)}
+                                                            </span>
+                                                        )}
+                                                        <Badge variant={enrollment.payment_status === 'paid' ? 'success' : 'warning'}>
+                                                            {enrollment.payment_status}
+                                                        </Badge>
+                                                    </div>
+                                                    <h2 className="text-2xl font-bold">{enrollment.program?.name}</h2>
+                                                    <p className="text-cyan-50 mt-1">
+                                                        {enrollment.cohort?.name} • {new Date(enrollment.cohort?.start_date || "").toLocaleDateString()} - {new Date(enrollment.cohort?.end_date || "").toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                                <div className="flex flex-col items-end">
+                                                    <div className="text-4xl font-bold">{progress}%</div>
+                                                    <div className="text-sm text-cyan-50">Complete</div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    {/* Program Description */}
-                                    {enrollment.program?.description && (
-                                        <div className="px-6 pt-4 pb-2 border-b">
-                                            <p className="text-sm text-slate-600">{enrollment.program.description}</p>
+                                        {/* Program Description */}
+                                        {enrollment.program?.description && (
+                                            <div className="px-6 pt-4 pb-2 border-b">
+                                                <p className="text-sm text-slate-600">{enrollment.program.description}</p>
+                                            </div>
+                                        )}
+
+                                        {/* Progress Overview */}
+                                        <div className="px-6 py-4 bg-slate-50 border-b">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-sm font-medium text-slate-700">Overall Progress</span>
+                                                <span className="text-sm text-slate-600">{approvedCount} of {totalMilestones} milestones</span>
+                                            </div>
+                                            <div className="w-full bg-slate-200 rounded-full h-2">
+                                                <div
+                                                    className="bg-gradient-to-r from-cyan-500 to-blue-500 h-2 rounded-full transition-all duration-500"
+                                                    style={{ width: `${progress}%` }}
+                                                />
+                                            </div>
                                         </div>
-                                    )}
 
-                                    {/* Progress Overview */}
-                                    <div className="px-6 py-4 bg-slate-50 border-b">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="text-sm font-medium text-slate-700">Overall Progress</span>
-                                            <span className="text-sm text-slate-600">{achievedCount} of {totalMilestones} milestones</span>
-                                        </div>
-                                        <div className="w-full bg-slate-200 rounded-full h-2">
-                                            <div
-                                                className="bg-gradient-to-r from-cyan-500 to-blue-500 h-2 rounded-full transition-all duration-500"
-                                                style={{ width: `${progress}%` }}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Milestones */}
-                                    <div className="p-6">
-                                        <h3 className="mb-4 font-semibold text-slate-900">Milestones</h3>
-                                        <div className="space-y-3">
-                                            {enrollment.milestones?.map((milestone) => {
-                                                const milestoneProgress = enrollment.progress?.find(p => p.milestone_id === milestone.id);
-                                                const isAchieved = milestoneProgress?.status === 'achieved';
-
-                                                return (
-                                                    <div key={milestone.id} className={`flex items-start gap-4 rounded-lg border-2 p-4 transition-all ${isAchieved
-                                                        ? 'border-green-200 bg-green-50'
-                                                        : 'border-slate-200 bg-white hover:border-slate-300'
-                                                        }`}>
-                                                        <div className="flex-shrink-0 mt-1">
-                                                            {isAchieved ? (
-                                                                <div className="h-6 w-6 rounded-full bg-green-500 flex items-center justify-center">
-                                                                    <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                                    </svg>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="h-6 w-6 rounded-full border-2 border-slate-300" />
-                                                            )}
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-start justify-between gap-2">
-                                                                <h4 className={`font-semibold ${isAchieved ? 'text-green-900' : 'text-slate-900'}`}>
-                                                                    {milestone.name}
-                                                                </h4>
-                                                                {isAchieved && milestoneProgress?.achieved_at && (
-                                                                    <span className="flex-shrink-0 text-xs font-medium text-green-600">
-                                                                        ✓ {new Date(milestoneProgress.achieved_at).toLocaleDateString()}
-                                                                    </span>
+                                        {/* Milestones */}
+                                        <div className="p-6">
+                                            <h3 className="mb-4 font-semibold text-slate-900">Milestones</h3>
+                                            <div className="space-y-3">
+                                                {enrollment.milestones?.map((milestone) => {
+                                                    const milestoneProgress = enrollment.progress?.find(p => p.milestone_id === milestone.id);
+                                                    const isApproved = milestoneProgress?.status === 'achieved' && milestoneProgress.reviewed_at;
+                                                    const isPendingReview = milestoneProgress?.status === 'achieved' && !milestoneProgress.reviewed_at;
+                                                    return (
+                                                        <div
+                                                            key={milestone.id}
+                                                            className={`flex items-start gap-4 rounded-lg border-2 p-4 transition-all ${isApproved
+                                                                    ? 'border-green-200 bg-green-50'
+                                                                    : isPendingReview
+                                                                        ? 'border-amber-200 bg-amber-50'
+                                                                        : 'border-slate-200 bg-white hover:border-slate-300'
+                                                                }`}
+                                                        >
+                                                            <div className="flex-shrink-0 mt-1">
+                                                                {isApproved ? (
+                                                                    <div className="h-6 w-6 rounded-full bg-green-500 flex items-center justify-center">
+                                                                        <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                                        </svg>
+                                                                    </div>
+                                                                ) : isPendingReview ? (
+                                                                    <div className="h-6 w-6 rounded-full border-2 border-amber-400 bg-amber-50 flex items-center justify-center text-amber-500 text-xs font-semibold">
+                                                                        …
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="h-6 w-6 rounded-full border-2 border-slate-300" />
                                                                 )}
                                                             </div>
-                                                            {milestone.criteria && (
-                                                                <p className="text-sm text-slate-600 mt-1">{milestone.criteria}</p>
-                                                            )}
-                                                            {milestoneProgress?.coach_notes && (
-                                                                <div className="mt-2 rounded bg-white p-3 text-sm border border-slate-200">
-                                                                    <span className="font-medium text-slate-900">Coach Note: </span>
-                                                                    <span className="text-slate-600">{milestoneProgress.coach_notes}</span>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-start justify-between gap-2">
+                                                                    <h4 className={`font-semibold ${isApproved
+                                                                            ? 'text-green-900'
+                                                                            : isPendingReview
+                                                                                ? 'text-amber-900'
+                                                                                : 'text-slate-900'
+                                                                        }`}>
+                                                                        {milestone.name}
+                                                                    </h4>
+                                                                    {isApproved && milestoneProgress?.achieved_at && (
+                                                                        <span className="flex-shrink-0 text-xs font-medium text-green-600">
+                                                                            ✓ {new Date(milestoneProgress.achieved_at).toLocaleDateString()}
+                                                                        </span>
+                                                                    )}
+                                                                    {isPendingReview && (
+                                                                        <span className="flex-shrink-0 text-xs font-medium text-amber-600">
+                                                                            Pending review
+                                                                        </span>
+                                                                    )}
                                                                 </div>
-                                                            )}
+                                                                {milestone.criteria && (
+                                                                    <p className="text-sm text-slate-600 mt-1">{milestone.criteria}</p>
+                                                                )}
+                                                                {milestoneProgress?.coach_notes && (
+                                                                    <div className="mt-2 rounded bg-white p-3 text-sm border border-slate-200">
+                                                                        <span className="font-medium text-slate-900">Coach Note: </span>
+                                                                        <span className="text-slate-600">{milestoneProgress.coach_notes}</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                );
-                                            })}
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
-                                    </div>
-                                </Card>
+                                    </Card>
+                                </Link>
                             );
                         })}
                     </div>

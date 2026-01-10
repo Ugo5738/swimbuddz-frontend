@@ -16,7 +16,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   // Member portal routes should use MemberLayout without the public header/footer
   const isMemberPortalRoute =
-    pathname?.startsWith("/dashboard") ||
+    pathname?.startsWith("/account") ||
     pathname?.startsWith("/profile") ||
     pathname?.startsWith("/community/directory") ||
     pathname?.startsWith("/community/events") ||
