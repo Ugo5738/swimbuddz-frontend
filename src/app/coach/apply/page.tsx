@@ -1,9 +1,14 @@
 "use client";
 
+import { OptionPillGroup } from "@/components/forms/OptionPillGroup";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Input } from "@/components/ui/Input";
 import { LoadingCard } from "@/components/ui/LoadingCard";
+import { Select } from "@/components/ui/Select";
+import { Textarea } from "@/components/ui/Textarea";
 import { getCurrentAccessToken, supabase } from "@/lib/auth";
 import {
     ageGroupOptions,
@@ -100,12 +105,10 @@ export default function CoachApplyPage() {
     const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            // Validate file size (10MB max)
             if (file.size > 10 * 1024 * 1024) {
                 setError("File size must be less than 10MB");
                 return;
             }
-            // Validate file type
             const validTypes = ["application/pdf", "image/jpeg", "image/png", "image/jpg"];
             if (!validTypes.includes(file.type)) {
                 setError("Only PDF, JPG, and PNG files are accepted");
@@ -121,7 +124,6 @@ export default function CoachApplyPage() {
         e.preventDefault();
         const file = e.dataTransfer.files?.[0];
         if (file) {
-            // Same validation
             if (file.size > 10 * 1024 * 1024) {
                 setError("File size must be less than 10MB");
                 return;
@@ -141,15 +143,15 @@ export default function CoachApplyPage() {
         const token = await getCurrentAccessToken();
         if (!token) throw new Error("Not authenticated");
 
-        const formData = new FormData();
-        formData.append("file", file);
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", file);
 
         const response = await fetch(`${API_BASE_URL}/api/v1/media/uploads/coach-documents`, {
             method: "POST",
             headers: {
                 Authorization: `Bearer ${token}`,
             },
-            body: formData,
+            body: uploadFormData,
         });
 
         if (!response.ok) {
@@ -179,7 +181,6 @@ export default function CoachApplyPage() {
         setSubmitting(true);
 
         try {
-            // Validate required fields
             if (!formData.short_bio || formData.short_bio.length < 20) {
                 throw new Error("Please write a bio (at least 20 characters)");
             }
@@ -189,7 +190,6 @@ export default function CoachApplyPage() {
 
             let finalFormData = { ...formData };
 
-            // Handle file upload if using upload method
             if (documentMethod === "upload" && uploadedFile) {
                 setUploading(true);
                 try {
@@ -245,7 +245,6 @@ export default function CoachApplyPage() {
 
     // Auth required
     if (step === "auth") {
-        // ... (unchanged)
         return (
             <div className="min-h-screen bg-slate-50 px-4 py-12 sm:px-6 lg:px-8">
                 <div className="mx-auto max-w-lg space-y-8">
@@ -379,7 +378,7 @@ export default function CoachApplyPage() {
                                         Head to your dashboard to manage sessions and swimmers.
                                     </p>
                                 </div>
-                                <Button className="w-full" onClick={() => router.push("/coach/dashboard")}>
+                                <Button className="w-full" onClick={() => router.push("/account/coach")}>
                                     Go to Dashboard →
                                 </Button>
                             </>
@@ -448,33 +447,21 @@ export default function CoachApplyPage() {
                     <div className="space-y-4">
                         <h2 className="text-lg font-semibold text-slate-900">About You</h2>
 
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
-                                Public Coach Name
-                            </label>
-                            <p className="text-xs text-slate-500 mb-2">
-                                This is how swimmers will see you (e.g., "Coach Tobi")
-                            </p>
-                            <input
-                                type="text"
-                                placeholder="e.g., Coach Tobi"
-                                className="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-cyan-500 focus:outline-none"
-                                value={formData.display_name || ""}
-                                onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
-                            />
-                        </div>
+                        <Input
+                            label="Public Coach Name"
+                            hint="This is how swimmers will see you (e.g., 'Coach Tobi')"
+                            placeholder="e.g., Coach Tobi"
+                            value={formData.display_name || ""}
+                            onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
+                        />
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
-                                Short Bio <span className="text-red-500">*</span>
-                            </label>
-                            <p className="text-xs text-slate-500 mb-2">
-                                Tell swimmers about yourself and your coaching philosophy
-                            </p>
-                            <textarea
+                            <Textarea
+                                label="Short Bio"
+                                required
+                                hint="Tell swimmers about yourself and your coaching philosophy"
                                 placeholder="Share your background, coaching style, and what drives you..."
                                 rows={4}
-                                className="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-cyan-500 focus:outline-none"
                                 value={formData.short_bio}
                                 onChange={(e) => setFormData({ ...formData, short_bio: e.target.value })}
                             />
@@ -486,85 +473,41 @@ export default function CoachApplyPage() {
                     <div className="space-y-4">
                         <h2 className="text-lg font-semibold text-slate-900">Experience</h2>
 
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
-                                Years of Coaching Experience <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                                className="w-full sm:w-48 rounded-lg border border-slate-300 px-4 py-2 focus:border-cyan-500 focus:outline-none bg-white"
-                                value={formData.coaching_years}
-                                onChange={(e) => setFormData({ ...formData, coaching_years: parseInt(e.target.value) || 0 })}
-                            >
-                                {experienceRanges.map((range) => (
-                                    <option key={range.value} value={range.value}>
-                                        {range.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                        <Select
+                            label="Years of Coaching Experience"
+                            required
+                            value={String(formData.coaching_years)}
+                            onChange={(e) => setFormData({ ...formData, coaching_years: parseInt(e.target.value) || 0 })}
+                            className="w-full sm:w-48"
+                        >
+                            {experienceRanges.map((range) => (
+                                <option key={range.value} value={range.value}>
+                                    {range.label}
+                                </option>
+                            ))}
+                        </Select>
 
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">
-                                Coaching Specialties <span className="text-red-500">*</span>
-                            </label>
-                            <div className="flex flex-wrap gap-2">
-                                {coachSpecialtyOptions.map((opt) => (
-                                    <button
-                                        key={opt.value}
-                                        type="button"
-                                        onClick={() => toggleArrayValue("coaching_specialties", opt.value)}
-                                        className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${(formData.coaching_specialties || []).includes(opt.value)
-                                            ? "bg-cyan-100 border-cyan-500 text-cyan-700"
-                                            : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
-                                            }`}
-                                    >
-                                        {opt.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+                        <OptionPillGroup
+                            label="Coaching Specialties"
+                            required
+                            options={coachSpecialtyOptions}
+                            selected={formData.coaching_specialties || []}
+                            onToggle={(value) => toggleArrayValue("coaching_specialties", value)}
+                        />
 
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">
-                                Levels You Teach
-                            </label>
-                            <div className="flex flex-wrap gap-2">
-                                {levelsTaughtOptions.map((opt) => (
-                                    <button
-                                        key={opt.value}
-                                        type="button"
-                                        onClick={() => toggleArrayValue("levels_taught", opt.value)}
-                                        className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${(formData.levels_taught || []).includes(opt.value)
-                                            ? "bg-cyan-100 border-cyan-500 text-cyan-700"
-                                            : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
-                                            }`}
-                                    >
-                                        {opt.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+                        <OptionPillGroup
+                            label="Levels You Teach"
+                            options={levelsTaughtOptions}
+                            selected={formData.levels_taught || []}
+                            onToggle={(value) => toggleArrayValue("levels_taught", value)}
+                        />
 
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">
-                                Age Groups You Teach
-                            </label>
-                            <div className="flex flex-wrap gap-2">
-                                {ageGroupOptions.map((opt) => (
-                                    <button
-                                        key={opt.value}
-                                        type="button"
-                                        onClick={() => toggleArrayValue("age_groups_taught", opt.value)}
-                                        className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${(formData.age_groups_taught || []).includes(opt.value)
-                                            ? "bg-cyan-100 border-cyan-500 text-cyan-700"
-                                            : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
-                                            }`}
-                                    >
-                                        {opt.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+                        <OptionPillGroup
+                            label="Age Groups You Teach"
+                            options={ageGroupOptions}
+                            selected={formData.age_groups_taught || []}
+                            onToggle={(value) => toggleArrayValue("age_groups_taught", value)}
+                        />
                     </div>
 
                     {/* Certifications Section */}
@@ -576,49 +519,25 @@ export default function CoachApplyPage() {
                             </p>
                         </div>
 
-                        <div>
-                            <div className="flex flex-wrap gap-2">
-                                {certificationOptions.map((opt) => (
-                                    <button
-                                        key={opt.value}
-                                        type="button"
-                                        onClick={() => toggleArrayValue("certifications", opt.value)}
-                                        className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${(formData.certifications || []).includes(opt.value)
-                                            ? "bg-emerald-100 border-emerald-500 text-emerald-700"
-                                            : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
-                                            }`}
-                                    >
-                                        {opt.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+                        <OptionPillGroup
+                            label="Certifications"
+                            options={certificationOptions}
+                            selected={formData.certifications || []}
+                            onToggle={(value) => toggleArrayValue("certifications", value)}
+                        />
 
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
-                                Other Certifications
-                            </label>
-                            <input
-                                type="text"
-                                placeholder="List any other certifications not shown above..."
-                                className="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-cyan-500 focus:outline-none"
-                                value={formData.other_certifications_note || ""}
-                                onChange={(e) => setFormData({ ...formData, other_certifications_note: e.target.value })}
-                            />
-                        </div>
+                        <Input
+                            label="Other Certifications"
+                            placeholder="List any other certifications not shown above..."
+                            value={formData.other_certifications_note || ""}
+                            onChange={(e) => setFormData({ ...formData, other_certifications_note: e.target.value })}
+                        />
 
-                        <div className="flex items-center gap-3">
-                            <input
-                                type="checkbox"
-                                id="cpr"
-                                checked={formData.has_cpr_training || false}
-                                onChange={(e) => setFormData({ ...formData, has_cpr_training: e.target.checked })}
-                                className="rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
-                            />
-                            <label htmlFor="cpr" className="text-sm text-slate-700">
-                                I have current CPR/First Aid training
-                            </label>
-                        </div>
+                        <Checkbox
+                            label="I have current CPR/First Aid training"
+                            checked={formData.has_cpr_training || false}
+                            onChange={(e) => setFormData({ ...formData, has_cpr_training: e.target.checked })}
+                        />
                     </div>
 
                     {/* Documents Section - Upload OR Link */}
@@ -661,34 +580,21 @@ export default function CoachApplyPage() {
 
                         {documentMethod === "link" ? (
                             <div key="link" className="space-y-3">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                                        Document Link (Google Drive, Dropbox, etc.)
-                                    </label>
-                                    <input
-                                        type="url"
-                                        placeholder="https://drive.google.com/..."
-                                        className="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-cyan-500 focus:outline-none"
-                                        value={formData.coaching_document_link || ""}
-                                        onChange={(e) => setFormData({ ...formData, coaching_document_link: e.target.value })}
-                                    />
-                                    <p className="text-xs text-slate-500 mt-1">
-                                        Make sure access is set to "Anyone with the link can view"
-                                    </p>
-                                </div>
+                                <Input
+                                    label="Document Link (Google Drive, Dropbox, etc.)"
+                                    type="url"
+                                    placeholder="https://drive.google.com/..."
+                                    hint="Make sure access is set to 'Anyone with the link can view'"
+                                    value={formData.coaching_document_link || ""}
+                                    onChange={(e) => setFormData({ ...formData, coaching_document_link: e.target.value })}
+                                />
 
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                                        Document Name
-                                    </label>
-                                    <input
-                                        type="text"
-                                        placeholder="e.g., ASCA Level 2 Certificate"
-                                        className="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-cyan-500 focus:outline-none"
-                                        value={formData.coaching_document_file_name || ""}
-                                        onChange={(e) => setFormData({ ...formData, coaching_document_file_name: e.target.value })}
-                                    />
-                                </div>
+                                <Input
+                                    label="Document Name"
+                                    placeholder="e.g., ASCA Level 2 Certificate"
+                                    value={formData.coaching_document_file_name || ""}
+                                    onChange={(e) => setFormData({ ...formData, coaching_document_file_name: e.target.value })}
+                                />
                             </div>
                         ) : (
                             <div key="upload" className="space-y-3">
@@ -738,18 +644,12 @@ export default function CoachApplyPage() {
                                 </div>
 
                                 {uploadedFile && (
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">
-                                            Document Name
-                                        </label>
-                                        <input
-                                            type="text"
-                                            placeholder="e.g., ASCA Level 2 Certificate"
-                                            className="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-cyan-500 focus:outline-none"
-                                            value={formData.coaching_document_file_name || ""}
-                                            onChange={(e) => setFormData({ ...formData, coaching_document_file_name: e.target.value })}
-                                        />
-                                    </div>
+                                    <Input
+                                        label="Document Name"
+                                        placeholder="e.g., ASCA Level 2 Certificate"
+                                        value={formData.coaching_document_file_name || ""}
+                                        onChange={(e) => setFormData({ ...formData, coaching_document_file_name: e.target.value })}
+                                    />
                                 )}
                             </div>
                         )}
@@ -764,18 +664,13 @@ export default function CoachApplyPage() {
                     <div className="space-y-4">
                         <h2 className="text-lg font-semibold text-slate-900">Portfolio (optional)</h2>
 
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
-                                Website or Social Profile
-                            </label>
-                            <input
-                                type="url"
-                                placeholder="https://..."
-                                className="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-cyan-500 focus:outline-none"
-                                value={formData.coaching_portfolio_link || ""}
-                                onChange={(e) => setFormData({ ...formData, coaching_portfolio_link: e.target.value })}
-                            />
-                        </div>
+                        <Input
+                            label="Website or Social Profile"
+                            type="url"
+                            placeholder="https://..."
+                            value={formData.coaching_portfolio_link || ""}
+                            onChange={(e) => setFormData({ ...formData, coaching_portfolio_link: e.target.value })}
+                        />
                     </div>
 
                     {/* Submit */}

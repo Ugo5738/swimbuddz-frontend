@@ -1,21 +1,30 @@
 "use client";
 
+import { CoachStatus, CoachStatusBadge } from "@/components/coaches/CoachStatusBadge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { FilterTabs } from "@/components/ui/FilterTabs";
 import { LoadingCard } from "@/components/ui/LoadingCard";
-import {
-    AdminCoachApplicationListItem,
-    CoachesApi,
-    getStatusColor,
-    getStatusLabel,
-} from "@/lib/coaches";
+import { TagList } from "@/components/ui/TagList";
+import { AdminCoachApplicationListItem, CoachesApi } from "@/lib/coaches";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+
+type StatusFilter = CoachStatus | "all";
+
+const statusFilters: { value: StatusFilter; label: string }[] = [
+    { value: "pending_review", label: "Pending Review" },
+    { value: "more_info_needed", label: "More Info Needed" },
+    { value: "approved", label: "Approved" },
+    { value: "active", label: "Active" },
+    { value: "rejected", label: "Rejected" },
+    { value: "all", label: "All" },
+];
 
 export default function AdminCoachesPage() {
     const [applications, setApplications] = useState<AdminCoachApplicationListItem[]>([]);
     const [loading, setLoading] = useState(true);
-    const [statusFilter, setStatusFilter] = useState<string>("pending_review");
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>("pending_review");
 
     useEffect(() => {
         loadApplications();
@@ -24,8 +33,7 @@ export default function AdminCoachesPage() {
     const loadApplications = async () => {
         setLoading(true);
         try {
-            const status = statusFilter;
-            const data = await CoachesApi.listApplications(status);
+            const data = await CoachesApi.listApplications(statusFilter);
             setApplications(data);
         } catch (error) {
             console.error("Failed to load applications:", error);
@@ -43,15 +51,6 @@ export default function AdminCoachesPage() {
         }
     };
 
-    const statusFilters = [
-        { value: "pending_review", label: "Pending Review" },
-        { value: "more_info_needed", label: "More Info Needed" },
-        { value: "approved", label: "Approved" },
-        { value: "active", label: "Active" },
-        { value: "rejected", label: "Rejected" },
-        { value: "all", label: "All" },
-    ];
-
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -61,23 +60,12 @@ export default function AdminCoachesPage() {
                 </div>
             </div>
 
-            {/* Filters */}
-            <div className="flex flex-wrap gap-2">
-                {statusFilters.map((filter) => (
-                    <button
-                        key={filter.value}
-                        onClick={() => setStatusFilter(filter.value)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${statusFilter === filter.value
-                            ? "bg-cyan-100 text-cyan-700 border border-cyan-300"
-                            : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300"
-                            }`}
-                    >
-                        {filter.label}
-                    </button>
-                ))}
-            </div>
+            <FilterTabs
+                options={statusFilters}
+                value={statusFilter}
+                onChange={setStatusFilter}
+            />
 
-            {/* Applications List */}
             {loading ? (
                 <LoadingCard text="Loading applications..." />
             ) : applications.length === 0 ? (
@@ -95,23 +83,7 @@ export default function AdminCoachesPage() {
                                         <h3 className="text-lg font-semibold text-slate-900">
                                             {app.display_name || `${app.first_name} ${app.last_name}`}
                                         </h3>
-                                        <span
-                                            className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                                                app.status
-                                            )} bg-opacity-10`}
-                                            style={{
-                                                backgroundColor:
-                                                    app.status === "pending_review"
-                                                        ? "#fef3c7"
-                                                        : app.status === "approved" || app.status === "active"
-                                                            ? "#d1fae5"
-                                                            : app.status === "rejected"
-                                                                ? "#fee2e2"
-                                                                : "#f1f5f9",
-                                            }}
-                                        >
-                                            {getStatusLabel(app.status)}
-                                        </span>
+                                        <CoachStatusBadge status={app.status} />
                                     </div>
                                     <p className="text-sm text-slate-500 mt-1">{app.email}</p>
 
@@ -131,38 +103,22 @@ export default function AdminCoachesPage() {
                                     </div>
 
                                     {app.coaching_specialties.length > 0 && (
-                                        <div className="mt-3 flex flex-wrap gap-1">
-                                            {app.coaching_specialties.slice(0, 5).map((s) => (
-                                                <span
-                                                    key={s}
-                                                    className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-xs"
-                                                >
-                                                    {s}
-                                                </span>
-                                            ))}
-                                            {app.coaching_specialties.length > 5 && (
-                                                <span className="px-2 py-0.5 text-slate-400 text-xs">
-                                                    +{app.coaching_specialties.length - 5} more
-                                                </span>
-                                            )}
+                                        <div className="mt-3">
+                                            <TagList
+                                                items={app.coaching_specialties}
+                                                maxItems={5}
+                                                variant="slate"
+                                            />
                                         </div>
                                     )}
 
                                     {app.certifications.length > 0 && (
-                                        <div className="mt-2 flex flex-wrap gap-1">
-                                            {app.certifications.slice(0, 4).map((c) => (
-                                                <span
-                                                    key={c}
-                                                    className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full text-xs"
-                                                >
-                                                    {c}
-                                                </span>
-                                            ))}
-                                            {app.certifications.length > 4 && (
-                                                <span className="px-2 py-0.5 text-slate-400 text-xs">
-                                                    +{app.certifications.length - 4} more
-                                                </span>
-                                            )}
+                                        <div className="mt-2">
+                                            <TagList
+                                                items={app.certifications}
+                                                maxItems={4}
+                                                variant="emerald"
+                                            />
                                         </div>
                                     )}
                                 </div>

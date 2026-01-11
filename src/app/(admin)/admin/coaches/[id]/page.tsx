@@ -1,15 +1,15 @@
 "use client";
 
+import { CoachStatusBadge } from "@/components/coaches/CoachStatusBadge";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
-import {
-    AdminCoachApplicationDetail,
-    CoachesApi,
-    getStatusColor,
-    getStatusLabel,
-} from "@/lib/coaches";
+import { Modal } from "@/components/ui/Modal";
+import { TagList } from "@/components/ui/TagList";
+import { Textarea } from "@/components/ui/Textarea";
+import { AdminCoachApplicationDetail, CoachesApi } from "@/lib/coaches";
+import { formatDate } from "@/lib/format";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -38,7 +38,6 @@ export default function AdminCoachDetailPage() {
     const loadApplication = async () => {
         try {
             const data = await CoachesApi.getApplication(coachId);
-            // Normalize arrays/optionals to avoid undefined/null maps in the UI
             setApplication({
                 ...data,
                 coaching_specialties: data.coaching_specialties || [],
@@ -134,23 +133,7 @@ export default function AdminCoachDetailPage() {
                     </h1>
                     <div className="flex items-center gap-3 mt-1">
                         <span className="text-slate-500">{application.email}</span>
-                        <span
-                            className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                                application.status
-                            )}`}
-                            style={{
-                                backgroundColor:
-                                    application.status === "pending_review"
-                                        ? "#fef3c7"
-                                        : application.status === "approved" || application.status === "active"
-                                            ? "#d1fae5"
-                                            : application.status === "rejected"
-                                                ? "#fee2e2"
-                                                : "#f1f5f9",
-                            }}
-                        >
-                            {getStatusLabel(application.status)}
-                        </span>
+                        <CoachStatusBadge status={application.status} />
                     </div>
                 </div>
 
@@ -210,45 +193,33 @@ export default function AdminCoachDetailPage() {
                         </div>
 
                         <div className="mt-6">
-                            <label className="text-sm text-slate-500">Specialties</label>
-                            <div className="flex flex-wrap gap-2 mt-2">
-                                {application.coaching_specialties.map((s) => (
-                                    <span key={s} className="px-3 py-1 bg-cyan-100 text-cyan-700 rounded-full text-sm">
-                                        {s}
-                                    </span>
-                                ))}
-                                {application.coaching_specialties.length === 0 && (
-                                    <span className="text-slate-400">None specified</span>
-                                )}
-                            </div>
+                            <label className="text-sm text-slate-500 block mb-2">Specialties</label>
+                            <TagList
+                                items={application.coaching_specialties}
+                                variant="cyan"
+                                size="md"
+                                emptyText="None specified"
+                            />
                         </div>
 
                         <div className="mt-6">
-                            <label className="text-sm text-slate-500">Levels Taught</label>
-                            <div className="flex flex-wrap gap-2 mt-2">
-                                {application.levels_taught.map((l) => (
-                                    <span key={l} className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm">
-                                        {l}
-                                    </span>
-                                ))}
-                                {application.levels_taught.length === 0 && (
-                                    <span className="text-slate-400">None specified</span>
-                                )}
-                            </div>
+                            <label className="text-sm text-slate-500 block mb-2">Levels Taught</label>
+                            <TagList
+                                items={application.levels_taught}
+                                variant="slate"
+                                size="md"
+                                emptyText="None specified"
+                            />
                         </div>
 
                         <div className="mt-6">
-                            <label className="text-sm text-slate-500">Age Groups</label>
-                            <div className="flex flex-wrap gap-2 mt-2">
-                                {application.age_groups_taught.map((a) => (
-                                    <span key={a} className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm">
-                                        {a}
-                                    </span>
-                                ))}
-                                {application.age_groups_taught.length === 0 && (
-                                    <span className="text-slate-400">None specified</span>
-                                )}
-                            </div>
+                            <label className="text-sm text-slate-500 block mb-2">Age Groups</label>
+                            <TagList
+                                items={application.age_groups_taught}
+                                variant="slate"
+                                size="md"
+                                emptyText="None specified"
+                            />
                         </div>
                     </Card>
 
@@ -257,17 +228,13 @@ export default function AdminCoachDetailPage() {
                         <h2 className="text-lg font-semibold text-slate-900 mb-4">Certifications & Safety</h2>
                         <div className="space-y-4">
                             <div>
-                                <label className="text-sm text-slate-500">Certifications</label>
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                    {application.certifications.map((c) => (
-                                        <span key={c} className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm">
-                                            {c}
-                                        </span>
-                                    ))}
-                                    {application.certifications.length === 0 && (
-                                        <span className="text-slate-400">None specified</span>
-                                    )}
-                                </div>
+                                <label className="text-sm text-slate-500 block mb-2">Certifications</label>
+                                <TagList
+                                    items={application.certifications}
+                                    variant="emerald"
+                                    size="md"
+                                    emptyText="None specified"
+                                />
                             </div>
 
                             {application.other_certifications_note && (
@@ -288,7 +255,7 @@ export default function AdminCoachDetailPage() {
                                     <div>
                                         <label className="text-sm text-slate-500">CPR Expiry</label>
                                         <p className="mt-1 text-slate-700">
-                                            {new Date(application.cpr_expiry_date).toLocaleDateString()}
+                                            {formatDate(application.cpr_expiry_date)}
                                         </p>
                                     </div>
                                 )}
@@ -305,7 +272,7 @@ export default function AdminCoachDetailPage() {
 
                     {/* Documents */}
                     <Card className="p-6">
-                        <h2 className="text-lg font-semibold text-slate-900 mb-4">📄 Documents & Links</h2>
+                        <h2 className="text-lg font-semibold text-slate-900 mb-4">Documents & Links</h2>
                         <div className="space-y-4">
                             {application.coaching_document_link ? (
                                 <div className="p-4 bg-slate-50 rounded-lg">
@@ -328,9 +295,8 @@ export default function AdminCoachDetailPage() {
                                             href={application.coaching_document_link}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-medium hover:bg-cyan-700 transition"
                                         >
-                                            View Document
+                                            <Button size="sm">View Document</Button>
                                         </a>
                                     </div>
                                 </div>
@@ -356,9 +322,8 @@ export default function AdminCoachDetailPage() {
                                             href={application.coaching_portfolio_link}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-300 transition"
                                         >
-                                            Visit →
+                                            <Button variant="secondary" size="sm">Visit →</Button>
                                         </a>
                                     </div>
                                 </div>
@@ -407,7 +372,7 @@ export default function AdminCoachDetailPage() {
                                 <label className="text-slate-500">Applied</label>
                                 <p className="font-medium">
                                     {application.application_submitted_at
-                                        ? new Date(application.application_submitted_at).toLocaleString()
+                                        ? formatDate(application.application_submitted_at, { includeTime: true })
                                         : "Not submitted"}
                                 </p>
                             </div>
@@ -415,7 +380,7 @@ export default function AdminCoachDetailPage() {
                                 <div>
                                     <label className="text-slate-500">Reviewed</label>
                                     <p className="font-medium">
-                                        {new Date(application.application_reviewed_at).toLocaleString()}
+                                        {formatDate(application.application_reviewed_at, { includeTime: true })}
                                     </p>
                                     {application.application_reviewed_by && (
                                         <p className="text-slate-400 text-xs">by {application.application_reviewed_by}</p>
@@ -424,7 +389,7 @@ export default function AdminCoachDetailPage() {
                             )}
                             <div>
                                 <label className="text-slate-500">Last Updated</label>
-                                <p className="font-medium">{new Date(application.updated_at).toLocaleString()}</p>
+                                <p className="font-medium">{formatDate(application.updated_at, { includeTime: true })}</p>
                             </div>
                         </div>
                     </Card>
@@ -432,8 +397,9 @@ export default function AdminCoachDetailPage() {
                     {/* Admin Notes */}
                     <Card className="p-6">
                         <h2 className="text-lg font-semibold text-slate-900 mb-4">Admin Notes</h2>
-                        <textarea
-                            className="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-cyan-500 focus:outline-none text-sm"
+                        <Textarea
+                            hideLabel
+                            label="Admin Notes"
                             rows={4}
                             placeholder="Internal notes (not visible to applicant)..."
                             value={adminNotes}
@@ -454,58 +420,58 @@ export default function AdminCoachDetailPage() {
             </div>
 
             {/* Reject Modal */}
-            {showRejectModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <Card className="w-full max-w-md p-6 m-4">
-                        <h2 className="text-lg font-semibold text-slate-900 mb-4">Reject Application</h2>
-                        <p className="text-sm text-slate-600 mb-4">
-                            This reason will be sent to the applicant via email.
-                        </p>
-                        <textarea
-                            className="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-cyan-500 focus:outline-none"
-                            rows={4}
-                            placeholder="Reason for rejection..."
-                            value={rejectReason}
-                            onChange={(e) => setRejectReason(e.target.value)}
-                        />
-                        <div className="flex gap-2 mt-4">
-                            <Button variant="outline" className="flex-1" onClick={() => setShowRejectModal(false)}>
-                                Cancel
-                            </Button>
-                            <Button className="flex-1 bg-red-600 hover:bg-red-700" onClick={handleReject} disabled={actionLoading}>
-                                {actionLoading ? "..." : "Reject"}
-                            </Button>
-                        </div>
-                    </Card>
+            <Modal
+                isOpen={showRejectModal}
+                onClose={() => setShowRejectModal(false)}
+                title="Reject Application"
+            >
+                <p className="text-sm text-slate-600 mb-4">
+                    This reason will be sent to the applicant via email.
+                </p>
+                <Textarea
+                    hideLabel
+                    label="Rejection Reason"
+                    rows={4}
+                    placeholder="Reason for rejection..."
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                />
+                <div className="flex gap-2 mt-4">
+                    <Button variant="outline" className="flex-1" onClick={() => setShowRejectModal(false)}>
+                        Cancel
+                    </Button>
+                    <Button variant="danger" className="flex-1" onClick={handleReject} disabled={actionLoading}>
+                        {actionLoading ? "..." : "Reject"}
+                    </Button>
                 </div>
-            )}
+            </Modal>
 
             {/* Request Info Modal */}
-            {showInfoModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <Card className="w-full max-w-md p-6 m-4">
-                        <h2 className="text-lg font-semibold text-slate-900 mb-4">Request More Information</h2>
-                        <p className="text-sm text-slate-600 mb-4">
-                            Explain what additional information is needed from the applicant.
-                        </p>
-                        <textarea
-                            className="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-cyan-500 focus:outline-none"
-                            rows={4}
-                            placeholder="What information is needed..."
-                            value={infoMessage}
-                            onChange={(e) => setInfoMessage(e.target.value)}
-                        />
-                        <div className="flex gap-2 mt-4">
-                            <Button variant="outline" className="flex-1" onClick={() => setShowInfoModal(false)}>
-                                Cancel
-                            </Button>
-                            <Button className="flex-1" onClick={handleRequestInfo} disabled={actionLoading}>
-                                {actionLoading ? "..." : "Send Request"}
-                            </Button>
-                        </div>
-                    </Card>
+            <Modal
+                isOpen={showInfoModal}
+                onClose={() => setShowInfoModal(false)}
+                title="Request More Information"
+            >
+                <p className="text-sm text-slate-600 mb-4">
+                    Explain what additional information is needed from the applicant.
+                </p>
+                <Textarea
+                    hideLabel
+                    label="Information Request"
+                    rows={4}
+                    placeholder="What information is needed..."
+                    value={infoMessage}
+                    onChange={(e) => setInfoMessage(e.target.value)}
+                />
+                <div className="flex gap-2 mt-4">
+                    <Button variant="outline" className="flex-1" onClick={() => setShowInfoModal(false)}>
+                        Cancel
+                    </Button>
+                    <Button className="flex-1" onClick={handleRequestInfo} disabled={actionLoading}>
+                        {actionLoading ? "..." : "Send Request"}
+                    </Button>
                 </div>
-            )}
+            </Modal>
         </div>
     );
 }

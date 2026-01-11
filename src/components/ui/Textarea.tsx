@@ -1,18 +1,19 @@
-import type { TextareaHTMLAttributes } from "react";
 import clsx from "clsx";
+import type { TextareaHTMLAttributes } from "react";
 
 type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   label?: string;
   hint?: string;
   error?: string;
+  hideLabel?: boolean;
 };
 
-export function Textarea({ label, hint, error, className, id, required, ...props }: TextareaProps) {
+export function Textarea({ label, hint, error, className, id, required, hideLabel, ...props }: TextareaProps) {
   const textareaId = id || props.name;
 
   return (
     <label className="flex flex-col gap-1 text-sm font-medium text-slate-700" htmlFor={textareaId}>
-      {label ? (
+      {label && !hideLabel ? (
         <span className="flex items-center gap-1">
           {label}
           {required ? (
@@ -22,6 +23,7 @@ export function Textarea({ label, hint, error, className, id, required, ...props
           ) : null}
         </span>
       ) : null}
+      {label && hideLabel ? <span className="sr-only">{label}</span> : null}
       <textarea
         id={textareaId}
         required={required}
