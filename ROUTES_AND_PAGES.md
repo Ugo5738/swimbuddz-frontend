@@ -1,364 +1,365 @@
-# SwimBuddz Frontend – Routes & Pages
+# Frontend Routes & Pages
 
-This file defines which pages exist, what URLs they map to, and what each page is responsible for.
+Complete reference for all routes in the SwimBuddz Next.js application.
 
-Implement pages in `src/app/` using the Next.js App Router.
-
----
-
-## 1. Public Routes
-
-### `/` – Home
-
-**Goal:** Explain SwimBuddz and drive sign-ups.
-
-**Responsibilities:**
-
-- Show hero section:
-  - “SwimBuddz – community, club, and academy for swimmers in Lagos.”
-  - Short explanation and primary CTA: “Join SwimBuddz”.
-- Summarise:
-  - Community (vibe, meetups).
-  - Club (structured training).
-  - Academy (programs, future).
-- Show link to session info and announcements.
-
-**File:** `src/app/page.tsx`
+**Total Pages:** 103
 
 ---
 
-### `/about`
+## Route Groups
 
-**Goal:** Share the story and values.
-
-**Responsibilities:**
-
-- Show:
-  - How SwimBuddz started.
-  - Mission and goals.
-  - Values (respect, safety, inclusiveness, fun, progress).
-
-**File:** `src/app/(public)/about/page.tsx`
+| Group | Pages | Description |
+|-------|-------|-------------|
+| [Public Routes](#public-routes) | 19 | Accessible without authentication |
+| [Auth Routes](#auth-routes) | 7 | Authentication flows (login, register, confirm) |
+| [Member Routes](#member-routes) | 26 | Authenticated member dashboards and features |
+| [Coach Routes](#coach-routes) | 2 | Coach application and onboarding |
+| [Sessions Routes](#sessions-routes) | 1 | Public sessions list |
+| [Admin Routes](#admin-routes) | 48 | Administrative tools and management |
 
 ---
 
-### `/guidelines`
+## Public Routes
 
-**Goal:** Present community rules and safety guidelines.
+**19 pages** - Accessible to all visitors
 
-**Responsibilities:**
+### Landing & Info Pages
 
-- Render friendly presentation of:
-  - Community Rules & Safety Guidelines (from backend docs).
-- Link to the full Google Doc as “Latest version”.
+| Route | File | Purpose |
+|-------|------|---------|
+| `/` | `src/app/page.tsx` | Landing page - Explain SwimBuddz and drive sign-ups |
+| `/about` | `src/app/(public)/about/page.tsx` | About page - SwimBuddz story and values |
+| `/academy` | `src/app/(public)/academy/page.tsx` | Academy landing - Program information and benefits |
+| `/club` | `src/app/(public)/club/page.tsx` | Club landing - Training information |
+| `/community` | `src/app/(public)/community/page.tsx` | Community landing - Social swimming information |
+| `/guidelines-and-rules` | `src/app/(public)/guidelines-and-rules/page.tsx` | Community rules and safety guidelines |
+| `/membership` | `src/app/(public)/membership/page.tsx` | Membership information and tiers |
+| `/privacy` | `src/app/(public)/privacy/page.tsx` | Privacy policy |
+| `/sessions-and-events` | `src/app/(public)/sessions-and-events/page.tsx` | Sessions and events information |
 
-**File:** `src/app/(public)/guidelines/page.tsx`
+### Announcements
 
----
+| Route | File | Purpose |
+|-------|------|---------|
+| `/announcements` | `src/app/(public)/announcements/page.tsx` | List of announcements |
+| `/announcements/[id]` | `src/app/(public)/announcements/[id]/page.tsx` | Single announcement detail |
 
-### `/privacy`
+### Gallery
 
-**Goal:** Present the SwimBuddz privacy policy.
+| Route | File | Purpose |
+|-------|------|---------|
+| `/gallery` | `src/app/(public)/gallery/page.tsx` | Photo/video galleries list |
+| `/gallery/[id]` | `src/app/(public)/gallery/[id]/page.tsx` | Single gallery detail |
 
-**Responsibilities:**
+### Store (Public)
 
-- Summarise the privacy policy.
-- Link to full Google Doc.
+| Route | File | Purpose |
+|-------|------|---------|
+| `/store` | `src/app/(public)/store/page.tsx` | Store home - Browse products |
+| `/store/cart` | `src/app/(public)/store/cart/page.tsx` | Shopping cart |
+| `/store/checkout` | `src/app/(public)/store/checkout/page.tsx` | Checkout flow |
+| `/store/product/[slug]` | `src/app/(public)/store/product/[slug]/page.tsx` | Product detail page |
 
-**File:** `src/app/(public)/privacy/page.tsx`
+### Verification
 
----
-
-### `/announcements`
-
-**Goal:** Show official updates and announcements.
-
-**Responsibilities:**
-
-- Fetch list of announcements from backend.
-- Show:
-  - Title.
-  - Date.
-  - Short summary or first lines.
-- Link each item to its detail page.
-
-**File:** `src/app/(public)/announcements/page.tsx`
-
----
-
-### `/announcements/[id]`
-
-**Goal:** Show a single announcement.
-
-**Responsibilities:**
-
-- Display:
-  - Title.
-  - Date.
-  - Full content.
-- Provide a button:
-  - “Copy as WhatsApp message” (client-side helper).
-  - “Copy as email text” (optional).
-
-**File:** `src/app/(public)/announcements/[id]/page.tsx`
+| Route | File | Purpose |
+|-------|------|---------|
+| `/verify/[id]` | `src/app/(public)/verify/[id]/page.tsx` | Email verification handler |
 
 ---
 
-## 2. Auth Routes
+## Auth Routes
 
-### `/login`
+**7 pages** - Authentication and registration flows
 
-**Goal:** Log in existing members via Supabase Auth.
+### Login & Registration
 
-**Responsibilities:**
+| Route | File | Purpose |
+|-------|------|---------|
+| `/login` | `src/app/(auth)/login/page.tsx` | Login with Supabase Auth |
+| `/register` | `src/app/(auth)/register/page.tsx` | Multi-step registration form |
+| `/register/pending` | `src/app/(auth)/register/pending/page.tsx` | "Check your email" message after registration |
+| `/register/success` | `src/app/(auth)/register/success/page.tsx` | Registration success confirmation |
 
-- Show login form:
-  - Email.
-  - Password (or later magic link variant).
-- On success:
-  - Store session.
-  - Redirect:
-    - To requested page, OR
-    - To `/member/profile` as default.
+### Email & Confirmation
 
-**File:** `src/app/(auth)/login/page.tsx`
-
----
-
-### `/register`
-
-**Goal:** Register new members and collect full profile info.
-
-**Responsibilities:**
-
-- Multi-step form:
-
-  1. Basic info – full name, email, global phone capture (country code selector), city, country, and time zone.
-  2. Swimming experience & goals – level, deep-water comfort, preferred strokes (multi-select), interests/goals, and any certifications (coach, lifeguard, CPR, first aid).
-  3. Logistics & availability – preferred locations worldwide, ability to travel/relocate, local facility access, time-of-day availability, and equipment needs.
-  4. Safety & medical info – emergency contact (name, relationship, phone, region) and optional safety/medical notes.
-  5. Community engagement & consents – discovery source, social handles, volunteer interest, language preference, communication preference, payment readiness + currency preference, photo/video consent, and membership tier selection that supports choosing Community, Club, Academy in any combination.
-  6. Agreement to guidelines & privacy (include any regional addenda if required).
-- Show conditional fields only when relevant (e.g., additional info when “Coach” certification or “Academy” tier is selected).
-
-- On completion:
-  - Call backend `POST /api/v1/pending-registrations` with full profile data.
-  - Create Supabase user (sign-up) which triggers email confirmation.
-  - Redirect to a “Check your email” page.
-
-**File:** `src/app/(auth)/register/page.tsx`
+| Route | File | Purpose |
+|-------|------|---------|
+| `/resend-confirmation` | `src/app/(auth)/resend-confirmation/page.tsx` | Resend confirmation email |
+| `/confirm` | `src/app/(auth)/confirm/page.tsx` | Email confirmation page |
+| `/auth/callback` | `src/app/auth/callback/route.ts` | Supabase auth callback handler (Route Handler) |
 
 ---
 
-### `/auth/callback`
+## Member Routes
 
-**Goal:** Handle Supabase Auth redirects (e.g., email confirmation).
+**26 pages** - Authenticated member features
 
-**Responsibilities:**
+### Dashboards
 
-- Exchange code for session.
-- If confirming registration:
-  - Call `POST /api/v1/pending-registrations/complete` to finalize member creation.
-  - Redirect to `/member/profile`.
+| Route | File | Purpose |
+|-------|------|---------|
+| `/account` | `src/app/(member)/account/page.tsx` | Main member dashboard |
+| `/account/profile` | `src/app/(member)/account/profile/page.tsx` | View/edit member profile |
+| `/account/coach` | `src/app/(member)/account/coach/page.tsx` | Coach dashboard (for members who are coaches) |
 
-**File:** `src/app/auth/callback/route.ts`
+### Onboarding
 
-**File:** `src/app/(auth)/register/page.tsx`
+| Route | File | Purpose |
+|-------|------|---------|
+| `/account/onboarding` | `src/app/(member)/account/onboarding/page.tsx` | Member onboarding flow after registration |
 
----
+### Sessions & Attendance
 
-## 3. Member Routes
+| Route | File | Purpose |
+|-------|------|---------|
+| `/account/sessions` | `src/app/(member)/account/sessions/page.tsx` | Member's upcoming sessions |
+| `/sessions/[id]/sign-in` | `src/app/(member)/sessions/[id]/sign-in/page.tsx` | Three-step session sign-in flow |
+| `/account/attendance/history` | `src/app/(member)/account/attendance/history/page.tsx` | Attendance history and stats |
 
-### `/member/profile`
+### Academy (Member)
 
-**Goal:** Let members view and update their profile.
+| Route | File | Purpose |
+|-------|------|---------|
+| `/account/academy` | `src/app/(member)/account/academy/page.tsx` | Academy dashboard - Member's enrollments |
+| `/account/academy/browse` | `src/app/(member)/account/academy/browse/page.tsx` | Browse available programs |
+| `/account/academy/programs/[id]` | `src/app/(member)/account/academy/programs/[id]/page.tsx` | Program detail page |
+| `/account/academy/cohorts/[id]` | `src/app/(member)/account/academy/cohorts/[id]/page.tsx` | Cohort detail page |
+| `/account/academy/enrollments/[id]` | `src/app/(member)/account/academy/enrollments/[id]/page.tsx` | Enrollment detail and progress |
+| `/account/academy/enrollment-success` | `src/app/(member)/account/academy/enrollment-success/page.tsx` | Post-enrollment confirmation |
 
-**Responsibilities:**
+### Billing & Orders
 
-- Display fields from member profile.
-- Allow editing of:
-  - Contact info.
-  - Swimming level.
-  - Availability.
-  - Consents (subject to backend rules).
-- Show:
-  - Membership status.
-  - Role (member, volunteer, etc.).
+| Route | File | Purpose |
+|-------|------|---------|
+| `/account/billing` | `src/app/(member)/account/billing/page.tsx` | Payment history and billing info |
+| `/account/orders` | `src/app/(member)/account/orders/page.tsx` | Store orders list |
+| `/account/orders/[id]` | `src/app/(member)/account/orders/[id]/page.tsx` | Order detail page |
+| `/checkout` | `src/app/(member)/checkout/page.tsx` | General checkout flow |
 
-**File:** `src/app/(member)/profile/page.tsx`
+### Community Features
 
----
+| Route | File | Purpose |
+|-------|------|---------|
+| `/community/coaches` | `src/app/(member)/community/coaches/page.tsx` | Browse coaches directory |
+| `/community/directory` | `src/app/(member)/community/directory/page.tsx` | Member directory |
+| `/community/events` | `src/app/(member)/community/events/page.tsx` | Community events list |
+| `/community/events/[id]` | `src/app/(member)/community/events/[id]/page.tsx` | Event detail and RSVP |
+| `/community/tips` | `src/app/(member)/community/tips/page.tsx` | Swimming tips library |
+| `/community/tips/[id]` | `src/app/(member)/community/tips/[id]/page.tsx` | Single tip detail |
+| `/community/volunteers` | `src/app/(member)/community/volunteers/page.tsx` | Volunteer opportunities |
 
-### `/member/attendance`
+### Upgrade Flows
 
-**Goal:** Show member’s attendance history and summary.
-
-**Responsibilities:**
-
-- Fetch from backend:
-  - Summary: e.g. “You’ve attended 7 sessions in the last 2 months.”
-  - List of sessions attended with:
-    - Date.
-    - Location.
-    - Status (registered, confirmed_paid, no_show).
-- Present in a simple list or table.
-
-**File:** `src/app/(member)/attendance/page.tsx`
-
----
-
-## 4. Sessions & Sign-in
-
-### `/sessions`
-
-**Goal:** Show list of upcoming sessions relevant to members.
-
-**Responsibilities:**
-
-- Fetch upcoming sessions:
-  - Title.
-  - Type (club_training, meetup, etc.).
-  - Location.
-  - Date/time.
-  - Fees (pool + optional ride-share).
-- Provide:
-  - “View details” button → `/sessions/[id]`.
-  - “Sign in” button → `/sessions/[id]/sign-in`.
-
-**File:** `src/app/(sessions)/sessions/page.tsx`
-
-_(If you want a separate details page, you may add `/sessions/[id]/page.tsx` later.)_
+| Route | File | Purpose |
+|-------|------|---------|
+| `/upgrade/academy/cohort` | `src/app/(member)/upgrade/academy/cohort/page.tsx` | Upgrade to academy - Select cohort |
+| `/upgrade/academy/details` | `src/app/(member)/upgrade/academy/details/page.tsx` | Academy upgrade - Program details |
+| `/upgrade/club/plan` | `src/app/(member)/upgrade/club/plan/page.tsx` | Upgrade to club - Select plan |
+| `/upgrade/club/readiness` | `src/app/(member)/upgrade/club/readiness/page.tsx` | Club upgrade - Readiness assessment |
 
 ---
 
-### `/sessions/[id]/sign-in`
+## Coach Routes
 
-**Goal:** Implement 3-step sign-in flow started from a WhatsApp link.
+**2 pages** - Coach-specific features
 
-**Responsibilities:**
-
-- Step 1:
-  - Fetch session details.
-  - Show summary: date, time, location, fees.
-- Step 2:
-  - If logged in:
-    - Show “Signing in as [Name]”.
-  - If not logged in:
-    - Prompt login.
-- Step 3:
-
-  - Show default options:
-    - Attend full session.
-    - No ride-share.
-  - Optional “More options” to:
-    - Adjust time (arrive late / leave early).
-    - Set ride-share role and seats.
-  - On submit, call `POST /api/v1/sessions/{id}/sign-in`.
-
-- Confirmation:
-  - Show:
-    - Status (“Registered – awaiting payment” or similar).
-    - Payment breakdown and reference.
-
-**File:** `src/app/(sessions)/sessions/[id]/sign-in/page.tsx`
+| Route | File | Purpose |
+|-------|------|---------|
+| `/coach/apply` | `src/app/(coach)/coach/apply/page.tsx` | Coach application form |
+| `/coach/onboarding` | `src/app/(coach)/coach/onboarding/page.tsx` | Coach onboarding flow |
 
 ---
 
-## 5. Admin Routes
+## Sessions Routes
 
-All admin pages live under `(admin)` and require admin role.
+**1 page** - Public sessions
 
-### `/admin/dashboard`
-
-**Goal:** High-level admin overview.
-
-**Responsibilities:**
-
-- Show:
-  - Total members (active/inactive).
-  - Upcoming sessions with sign-in counts.
-  - Recent announcements.
-
-**File:** `src/app/(admin)/dashboard/page.tsx`
+| Route | File | Purpose |
+|-------|------|---------|
+| `/sessions` | `src/app/(sessions)/sessions/page.tsx` | List of all upcoming sessions |
 
 ---
 
-### `/admin/members`
+## Admin Routes
 
-**Goal:** Admin view/control of members.
+**48 pages** - Administrative tools (requires admin role)
 
-**Responsibilities:**
+### Admin Dashboard
 
-- Table with:
-  - Name, email, phone.
-  - Swimming level.
-  - Location preference.
-  - Membership status.
-- Filters by:
-  - Level.
-  - Location.
-  - Status.
-  - Volunteer interest.
-- Action:
-  - Change membership status (active/inactive/banned).
+| Route | File | Purpose |
+|-------|------|---------|
+| `/admin/dashboard` | `src/app/(admin)/admin/dashboard/page.tsx` | Main admin dashboard with statistics |
 
-**File:** `src/app/(admin)/members/page.tsx`
+### Members Management
+
+| Route | File | Purpose |
+|-------|------|---------|
+| `/admin/members` | `src/app/(admin)/admin/members/page.tsx` | List all members with filters |
+| `/admin/members/[id]` | `src/app/(admin)/admin/members/[id]/page.tsx` | Single member detail and management |
+| `/admin/members/pending` | `src/app/(admin)/admin/members/pending/page.tsx` | Pending member registrations |
+
+### Sessions Management
+
+| Route | File | Purpose |
+|-------|------|---------|
+| `/admin/sessions` | `src/app/(admin)/admin/sessions/page.tsx` | List/manage all sessions |
+| `/admin/sessions/[id]/attendance` | `src/app/(admin)/admin/sessions/[id]/attendance/page.tsx` | Session attendance list and pool list export |
+
+### Attendance Management
+
+| Route | File | Purpose |
+|-------|------|---------|
+| `/admin/attendance` | `src/app/(admin)/admin/attendance/page.tsx` | Global attendance management |
+
+### Announcements Management
+
+| Route | File | Purpose |
+|-------|------|---------|
+| `/admin/announcements` | `src/app/(admin)/admin/announcements/page.tsx` | Create/edit announcements |
+
+### Payments Management
+
+| Route | File | Purpose |
+|-------|------|---------|
+| `/admin/payments` | `src/app/(admin)/admin/payments/page.tsx` | Payment records and verification |
+
+### Discounts Management
+
+| Route | File | Purpose |
+|-------|------|---------|
+| `/admin/discounts` | `src/app/(admin)/admin/discounts/page.tsx` | Manage discount codes |
+
+### Coaches Management
+
+| Route | File | Purpose |
+|-------|------|---------|
+| `/admin/coaches` | `src/app/(admin)/admin/coaches/page.tsx` | List all coaches |
+| `/admin/coaches/[id]` | `src/app/(admin)/admin/coaches/[id]/page.tsx` | Coach detail and management |
+
+### Academy Management (Admin)
+
+| Route | File | Purpose |
+|-------|------|---------|
+| `/admin/academy` | `src/app/(admin)/admin/academy/page.tsx` | Academy overview dashboard |
+| `/admin/academy/page` | `src/app/(admin)/admin/academy/page/page.tsx` | Academy landing page editor |
+| `/admin/academy/programs/new` | `src/app/(admin)/admin/academy/programs/new/page.tsx` | Create new program |
+| `/admin/academy/programs/[id]` | `src/app/(admin)/admin/academy/programs/[id]/page.tsx` | Program management |
+| `/admin/academy/programs/[id]/edit` | `src/app/(admin)/admin/academy/programs/[id]/edit/page.tsx` | Edit program details |
+| `/admin/academy/programs/[id]/curriculum` | `src/app/(admin)/admin/academy/programs/[id]/curriculum/page.tsx` | Curriculum builder/editor |
+| `/admin/academy/cohorts/new` | `src/app/(admin)/admin/academy/cohorts/new/page.tsx` | Create new cohort |
+| `/admin/academy/cohorts/[id]` | `src/app/(admin)/admin/academy/cohorts/[id]/page.tsx` | Cohort management |
+| `/admin/academy/enrollments` | `src/app/(admin)/admin/academy/enrollments/page.tsx` | All enrollments list |
+| `/admin/academy/enrollments/[id]` | `src/app/(admin)/admin/academy/enrollments/[id]/page.tsx` | Single enrollment management |
+
+### Gallery Management
+
+| Route | File | Purpose |
+|-------|------|---------|
+| `/admin/gallery` | `src/app/(admin)/admin/gallery/page.tsx` | Manage photo/video galleries |
+| `/admin/gallery/create` | `src/app/(admin)/admin/gallery/create/page.tsx` | Create new gallery |
+| `/admin/gallery/[id]/upload` | `src/app/(admin)/admin/gallery/[id]/upload/page.tsx` | Upload media to gallery |
+
+### Homepage Media Management
+
+| Route | File | Purpose |
+|-------|------|---------|
+| `/admin/homepage-media` | `src/app/(admin)/admin/homepage-media/page.tsx` | Manage homepage banners and media |
+
+### Store Management (Admin)
+
+| Route | File | Purpose |
+|-------|------|---------|
+| `/admin/store` | `src/app/(admin)/admin/store/page.tsx` | Store overview dashboard |
+| `/admin/store/products` | `src/app/(admin)/admin/store/products/page.tsx` | All products list |
+| `/admin/store/products/new` | `src/app/(admin)/admin/store/products/new/page.tsx` | Create new product |
+| `/admin/store/products/[id]/edit` | `src/app/(admin)/admin/store/products/[id]/edit/page.tsx` | Edit product |
+| `/admin/store/inventory` | `src/app/(admin)/admin/store/inventory/page.tsx` | Inventory management |
+| `/admin/store/orders` | `src/app/(admin)/admin/store/orders/page.tsx` | All orders list |
+| `/admin/store/orders/[id]` | `src/app/(admin)/admin/store/orders/[id]/page.tsx` | Order detail and fulfillment |
+
+### Transport Management
+
+| Route | File | Purpose |
+|-------|------|---------|
+| `/admin/transport` | `src/app/(admin)/admin/transport/page.tsx` | Transport/ride-share management |
+| `/admin/transport/new` | `src/app/(admin)/admin/transport/new/page.tsx` | Create new ride route |
+
+### Community Content Management
+
+| Route | File | Purpose |
+|-------|------|---------|
+| `/admin/community/challenges` | `src/app/(admin)/admin/community/challenges/page.tsx` | Manage community challenges |
+| `/admin/community/content` | `src/app/(admin)/admin/community/content/page.tsx` | Manage community content (tips, articles) |
+| `/admin/community/events` | `src/app/(admin)/admin/community/events/page.tsx` | Manage community events |
+| `/admin/community/volunteers` | `src/app/(admin)/admin/community/volunteers/page.tsx` | Manage volunteer opportunities |
 
 ---
 
-### `/admin/sessions`
+## Route Protection
 
-**Goal:** Admin management of sessions.
+### Public Routes
+- No authentication required
+- Accessible to all visitors
 
-**Responsibilities:**
+### Auth Routes
+- Mixed protection:
+  - Login/Register: Public (redirect if already logged in)
+  - Callbacks: Public (handle Supabase auth flow)
 
-- List upcoming sessions with:
-  - Title, type, location.
-  - Date/time.
-  - Sign-in count (if available).
-- Actions:
-  - Create new session.
-  - Edit existing session.
-  - Link to attendance view for each session.
+### Member Routes
+- Require authentication
+- Use `@supabase/ssr` for session validation
+- Redirect to `/login` if not authenticated
 
-**File:** `src/app/(admin)/sessions/page.tsx`
-
----
-
-### `/admin/sessions/[id]/attendance`
-
-**Goal:** Admin attendance and pool-list view for a session.
-
-**Responsibilities:**
-
-- Table of attendees:
-  - Member name.
-  - Level.
-  - Ride-share role.
-  - Payment status.
-- Controls:
-  - Mark payment as confirmed.
-  - Mark no-show after session.
-- Button:
-  - “Download pool list” (calls backend export endpoint).
-
-**File:** `src/app/(admin)/sessions/[id]/attendance/page.tsx`
+### Admin Routes
+- Require authentication AND admin role
+- Role check via Supabase JWT claims or member record
+- Redirect to `/account` if not admin
 
 ---
 
-### `/admin/announcements`
+## Layout Structure
 
-**Goal:** Admin management of announcements.
-
-**Responsibilities:**
-
-- List all announcements.
-- Form to create new or edit existing announcement.
-- Show “Copy to WhatsApp” preview text for each announcement.
-
-**File:** `src/app/(admin)/announcements/page.tsx`
+```
+src/app/
+├── layout.tsx                    # Root layout
+├── (public)/                     # Public pages group
+│   └── layout.tsx               # Public layout (header/footer)
+├── (auth)/                      # Auth pages group
+│   └── layout.tsx              # Auth layout (centered forms)
+├── (member)/                    # Member pages group
+│   └── layout.tsx              # Member layout (sidebar nav)
+├── (admin)/                     # Admin pages group
+│   └── layout.tsx              # Admin layout (admin sidebar)
+├── (coach)/                     # Coach pages group
+│   └── layout.tsx              # Coach layout
+└── (sessions)/                  # Sessions pages group
+    └── layout.tsx              # Sessions layout
+```
 
 ---
 
-This file is the **single source of truth** for what pages exist and what they should do.  
-Any new route must be added here with its responsibilities before implementation.
+## API Integration
+
+All pages interact with the backend via the gateway at `http://localhost:8000` (dev) or `https://api.swimbuddz.com` (prod).
+
+**Type Safety:** TypeScript types are generated from backend OpenAPI spec using `npm run generate:types`.
+
+**API Client:** Centralized in `src/lib/api-client.ts` with typed methods for each service.
+
+---
+
+## Adding New Routes
+
+When adding a new route:
+
+1. Create the page file in the appropriate route group directory
+2. Add the route to this document under the correct section
+3. Update `UI_FLOWS.md` if it affects user journeys
+4. Ensure proper authentication/authorization is implemented
+5. Add to the relevant layout's navigation if needed
+
+---
+
+*Last updated: January 2026*
