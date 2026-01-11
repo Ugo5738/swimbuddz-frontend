@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { Card } from "@/components/ui/Card";
-import { AcademyApi, Program, Cohort } from "@/lib/academy";
+import { AcademyApi, Cohort, Program } from "@/lib/academy";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export default function AdminAcademyPage() {
     const [programs, setPrograms] = useState<Program[]>([]);
     const [cohorts, setCohorts] = useState<Cohort[]>([]);
     const [loading, setLoading] = useState(true);
+    const [transitioningStatuses, setTransitioningStatuses] = useState(false);
 
     const router = useRouter();
 
@@ -58,6 +59,22 @@ export default function AdminAcademyPage() {
         }
     };
 
+    const handleTransitionCohortStatuses = async () => {
+        setTransitioningStatuses(true);
+        try {
+            await AcademyApi.triggerCohortStatusTransitions();
+            toast.success("Cohort statuses updated successfully");
+            // Reload cohorts to reflect changes
+            const cohortsData = await AcademyApi.listCohorts();
+            setCohorts(cohortsData);
+        } catch (error) {
+            console.error("Failed to transition cohort statuses", error);
+            toast.error("Failed to update cohort statuses");
+        } finally {
+            setTransitioningStatuses(false);
+        }
+    };
+
     if (loading) {
         return <div>Loading...</div>;
     }
@@ -70,6 +87,14 @@ export default function AdminAcademyPage() {
                     <p className="text-slate-600">Manage programs, cohorts, and enrollments.</p>
                 </div>
                 <div className="flex gap-2">
+                    <button
+                        onClick={handleTransitionCohortStatuses}
+                        disabled={transitioningStatuses}
+                        className="rounded bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Update cohort statuses (OPEN→ACTIVE, ACTIVE→COMPLETED) based on dates"
+                    >
+                        {transitioningStatuses ? "Updating..." : "⚡ Update Cohort Statuses"}
+                    </button>
                     <button
                         onClick={() => router.push("/admin/academy/programs/new")}
                         className="rounded bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700"

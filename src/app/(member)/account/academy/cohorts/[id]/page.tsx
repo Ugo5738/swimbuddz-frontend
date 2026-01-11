@@ -9,11 +9,12 @@ import {
     CohortStatus,
     Enrollment,
     Milestone,
-    Program,
-    ProgramLevel,
-    ProgramCurriculum,
     PaymentStatus,
+    Program,
+    ProgramCurriculum,
+    ProgramLevel,
 } from "@/lib/academy";
+import { Member, MembersApi } from "@/lib/members";
 import { UpgradeProvider, useUpgrade } from "@/lib/upgradeContext";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -38,6 +39,7 @@ function CohortDetailPageInner() {
     const [milestones, setMilestones] = useState<Milestone[]>([]);
     const [curriculum, setCurriculum] = useState<ProgramCurriculum | null>(null);
     const [myEnrollment, setMyEnrollment] = useState<Enrollment | null>(null);
+    const [coach, setCoach] = useState<Member | null>(null);
     const [loading, setLoading] = useState(true);
     const [enrolling, setEnrolling] = useState(false);
     const { setSelectedCohort, setTargetTier, clearState } = useUpgrade();
@@ -75,6 +77,16 @@ function CohortDetailPageInner() {
                     (e) => e.cohort_id === cohortId
                 );
                 setMyEnrollment(enrollment || null);
+
+                // Fetch coach details if coach_id is set
+                if (cohortData.coach_id) {
+                    try {
+                        const coachData = await MembersApi.getMember(cohortData.coach_id);
+                        setCoach(coachData);
+                    } catch (error) {
+                        console.error("Failed to load coach:", error);
+                    }
+                }
             }
         } catch (error) {
             console.error("Failed to load cohort:", error);
@@ -413,6 +425,54 @@ function CohortDetailPageInner() {
 
                 {/* Sidebar */}
                 <div className="space-y-6">
+                    {/* Coach Info */}
+                    {coach && (
+                        <Card className="p-6 border-2 border-cyan-100">
+                            <h3 className="font-semibold text-slate-900 mb-3">
+                                👤 Your Coach
+                            </h3>
+                            <div className="space-y-3">
+                                <div className="flex items-start gap-3">
+                                    <div className="flex-shrink-0">
+                                        {coach.profile_photo_url ? (
+                                            <img
+                                                src={coach.profile_photo_url}
+                                                alt={`${coach.first_name} ${coach.last_name}`}
+                                                className="w-16 h-16 rounded-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="w-16 h-16 rounded-full bg-cyan-100 flex items-center justify-center text-cyan-600 text-xl font-bold">
+                                                {coach.first_name?.[0]}{coach.last_name?.[0]}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className="font-semibold text-slate-900">
+                                            {coach.first_name} {coach.last_name}
+                                        </h4>
+                                        {(coach.coach_profile?.short_bio || coach.coach_profile?.full_bio) && (
+                                            <p className="text-sm text-slate-600 mt-1">
+                                                {coach.coach_profile.short_bio || coach.coach_profile.full_bio}
+                                            </p>
+                                        )}
+                                        {coach.coach_profile?.certifications && coach.coach_profile.certifications.length > 0 && (
+                                            <div className="mt-2">
+                                                <p className="text-xs text-slate-500 font-medium mb-1">Certifications:</p>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {coach.coach_profile.certifications.map((cert, idx) => (
+                                                        <Badge key={idx} variant="info" className="text-xs">
+                                                            {cert}
+                                                        </Badge>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </Card>
+                    )}
+
                     {/* Location Details */}
                     {cohort.location_name && (
                         <Card className="p-6">

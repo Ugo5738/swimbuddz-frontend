@@ -254,6 +254,28 @@ export interface MemberBasicInfo {
     email?: string;
 }
 
+export interface NextSessionInfo {
+    date?: string;
+    location?: string;
+    notes?: string;
+}
+
+export interface OnboardingInfo {
+    enrollment_id: string;
+    program_name: string;
+    cohort_name: string;
+    start_date: string;
+    end_date: string;
+    location?: string;
+    next_session?: NextSessionInfo;
+    prep_materials?: any;
+    dashboard_link: string;
+    resources_link: string;
+    sessions_link: string;
+    coach_name?: string;
+    total_milestones: number;
+}
+
 // --- API Functions ---
 export const AcademyApi = {
     // Programs
@@ -284,6 +306,9 @@ export const AcademyApi = {
     getEnrollment: (id: string) =>
         apiGet<Enrollment>(`/api/v1/academy/my-enrollments/${id}`, { auth: true }),
 
+    getEnrollmentOnboarding: (id: string) =>
+        apiGet<OnboardingInfo>(`/api/v1/academy/my-enrollments/${id}/onboarding`, { auth: true }),
+
     listCohortEnrollments: (cohortId: string) =>
         apiGet<Enrollment[]>(`/api/v1/academy/cohorts/${cohortId}/enrollments`, { auth: true }),
 
@@ -310,6 +335,10 @@ export const AcademyApi = {
 
     // Open cohorts
     getOpenCohorts: () => apiGet<Cohort[]>("/api/v1/academy/cohorts/open"),
+
+    // Admin tasks
+    triggerCohortStatusTransitions: () =>
+        apiPost<{ message: string }>("/api/v1/academy/admin/tasks/transition-cohort-statuses", {}, { auth: true }),
 
     /**
      * Request enrollment in a program or specific cohort.
