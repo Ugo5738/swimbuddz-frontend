@@ -1,7 +1,10 @@
 # SwimBuddz Frontend – UI Flows
 
-This document describes the key **user flows** in the SwimBuddz frontend.  
+This document describes the key **user flows** in the SwimBuddz frontend.
 The implementation of pages should follow these flows closely.
+
+**Last Updated:** January 2026
+**Total Routes:** 103 pages across Community, Club, Academy, Store, Events, and Admin domains
 
 ---
 
@@ -211,5 +214,282 @@ The implementation of pages should follow these flows closely.
 
 ---
 
-The components and pages you build should follow these flows closely.  
+## 7. Member → Browse & Purchase Store Items
+
+### Flow: Store → Product → Cart → Checkout
+
+1. Member navigates to `/store`.
+
+   - Sees featured products and categories.
+   - Can filter by category, price, availability.
+
+2. Member clicks on a product.
+
+   - Navigates to `/store/products/[slug]`.
+   - Sees product details, images, sizes, price.
+   - Can add to cart with size/quantity selection.
+
+3. Member clicks "View Cart".
+
+   - Navigates to `/store/cart`.
+   - Reviews items, quantities, subtotal.
+   - Can update quantities or remove items.
+   - Clicks "Proceed to Checkout".
+
+4. On `/store/checkout`:
+
+   - **Step 1: Delivery Info**
+     - Name, phone, address fields.
+   - **Step 2: Payment**
+     - Payment instructions or Paystack integration.
+   - Submit order.
+
+5. After successful order:
+
+   - Navigates to `/store/orders/[id]`.
+   - Shows order confirmation with order number.
+   - Member can track order status.
+
+---
+
+## 8. Member → Enroll in Academy Program
+
+### Flow: Academy → Program → Enrollment → Cohort
+
+1. Member navigates to `/academy`.
+
+   - Sees list of available programs (e.g., "Learn to Swim", "Advanced Techniques").
+   - Each program shows duration, price, description.
+
+2. Member clicks on a program.
+
+   - Navigates to `/academy/programs/[id]`.
+   - Sees detailed program info:
+     - Curriculum modules.
+     - Prerequisites.
+     - Upcoming cohorts with start dates.
+   - Clicks "Enroll" button.
+
+3. On enrollment flow (could be modal or separate page):
+
+   - If authenticated:
+     - Select cohort (if multiple available).
+     - Confirm enrollment details.
+     - Submit: Calls `POST /api/v1/academy/enrollments`.
+   - If not authenticated:
+     - Redirect to login/register, then return to enrollment.
+
+4. After successful enrollment:
+
+   - Navigates to `/account/academy/enrollments`.
+   - Shows enrolled programs with cohort info.
+   - Member can access:
+     - Program dashboard `/account/academy/programs/[id]`.
+     - View curriculum and progress.
+     - See cohort members (if enabled).
+
+5. Member tracks progress:
+
+   - On `/account/academy/programs/[id]`:
+     - Sees curriculum modules with completion status.
+     - Can mark modules complete (if self-paced).
+     - View assessments and certificates.
+
+---
+
+## 9. Admin → Manage Academy Programs & Cohorts
+
+### Flow: Admin Dashboard → Academy → Create Cohort
+
+1. Admin navigates to `/admin/academy/programs`.
+
+   - Sees list of all programs.
+   - Can create new program or edit existing.
+
+2. Admin clicks on a program.
+
+   - Navigates to `/admin/academy/programs/[id]`.
+   - Sees program details and existing cohorts.
+
+3. Admin clicks "Create Cohort".
+
+   - Modal or form appears:
+     - Name (e.g., "Batch 5").
+     - Start date and end date.
+     - Capacity (max students).
+     - Enrollment period (open/closed dates).
+   - Submit: Calls `POST /api/v1/academy/programs/{id}/cohorts`.
+
+4. Admin manages enrollments:
+
+   - Navigates to `/admin/academy/cohorts/[id]`.
+   - Sees enrolled students list.
+   - Can manually enroll/unenroll students.
+   - Can track progress for each student.
+
+5. Admin reviews progress:
+
+   - On `/admin/academy/cohorts/[id]/progress`:
+     - Table showing each student's completion status.
+     - Can export data or view detailed reports.
+
+---
+
+## 10. Member → View & RSVP to Community Events
+
+### Flow: Events → Event Detail → RSVP
+
+1. Member navigates to `/events`.
+
+   - Sees list of upcoming community events.
+   - Events show: title, date, location, type (meetup, social, trip).
+
+2. Member clicks on an event.
+
+   - Navigates to `/events/[id]`.
+   - Sees full event details:
+     - Description, organizer.
+     - Date, time, location.
+     - RSVP count and attendee list (if public).
+   - Clicks "RSVP" button.
+
+3. RSVP confirmation:
+
+   - If authenticated:
+     - Calls `POST /api/v1/events/{id}/rsvp`.
+     - Shows "You're registered!" message.
+   - If not authenticated:
+     - Redirect to login, then return to RSVP.
+
+4. Member views their RSVPs:
+
+   - On `/account/events`:
+     - List of all events they've RSVP'd to.
+     - Can cancel RSVP if needed.
+
+---
+
+## 11. Member → Browse Media Galleries
+
+### Flow: Media → Gallery → Photos
+
+1. Member navigates to `/media`.
+
+   - Sees list of media galleries.
+   - Galleries organized by: session, event, trip.
+
+2. Member clicks on a gallery.
+
+   - Navigates to `/media/galleries/[id]`.
+   - Sees grid of photos/videos from that event.
+   - Can click to view full-size images.
+   - Can download images (if enabled).
+
+3. Admin uploads media:
+
+   - On `/admin/media/galleries/[id]`:
+     - Upload form for photos/videos.
+     - Calls `POST /api/v1/media/galleries/{id}/upload`.
+     - Can organize, tag, or delete media.
+
+---
+
+## 12. Admin → Manage Payments & Verify Records
+
+### Flow: Admin Dashboard → Payments → Verify
+
+1. Admin navigates to `/admin/payments`.
+
+   - Sees list of recent payment records.
+   - Can filter by: status, member, date range.
+
+2. Admin clicks on a payment record.
+
+   - Navigates to `/admin/payments/[id]`.
+   - Sees payment details:
+     - Member name, amount, reference.
+     - Session/program linked to payment.
+     - Status (pending, confirmed, failed).
+
+3. Admin verifies payment:
+
+   - Checks bank statement or Paystack dashboard.
+   - Clicks "Mark as Verified".
+   - Calls `PATCH /api/v1/payments/{id}` to update status.
+
+4. Admin views payment dashboard:
+
+   - On `/admin/payments/dashboard`:
+     - Summary metrics: total collected, pending verification.
+     - Charts by month, payment method.
+     - Export functionality for accounting.
+
+---
+
+## 13. Member → Manage Transport/Ride-Share
+
+### Flow: Session Sign-in → Select Ride-Share
+
+1. Member signs in for a session (see Flow #2).
+
+2. In "Step 3: Options & Submit" section:
+
+   - Expands "Ride-share" options:
+     - **I need a ride (passenger)**:
+       - Select pickup location from available areas.
+       - See estimated cost.
+     - **I can drive (lead)**:
+       - Select pickup location.
+       - Specify number of seats offered.
+       - Set transport fee (defaults to suggested).
+     - **No ride-share**:
+       - Default option.
+
+3. After sign-in confirmation:
+
+   - On confirmation page, shows ride-share details:
+     - If passenger: "You'll be picked up at [Location]".
+     - If driver: "You're offering [X] seats from [Location]".
+
+4. Admin coordinates rides:
+
+   - On `/admin/sessions/[id]/attendance`:
+     - See ride-share column showing:
+       - Drivers with available seats.
+       - Passengers looking for rides.
+       - Matches passengers to drivers at same pickup location.
+
+---
+
+## Flow Summary
+
+The SwimBuddz platform supports these primary user journeys:
+
+### Public Flows
+- Home → Register → Profile
+- Home → Announcements
+- Home → Events → RSVP
+
+### Member Flows
+- Session Sign-in (3-step: overview → identity → options)
+- View Attendance History
+- Browse Store → Purchase
+- Enroll in Academy Program → Track Progress
+- RSVP to Events
+- Browse Media Galleries
+- Manage Transport/Ride-Share
+
+### Admin Flows
+- Manage Sessions & Attendance
+- Create Announcements
+- Manage Academy Programs & Cohorts
+- Manage Store Orders
+- Verify Payments
+- Coordinate Ride-Sharing
+
+---
+
+The components and pages you build should follow these flows closely.
 If UI complexity is added, keep the underlying flow and endpoints the same.
+
+For complete route reference, see [ROUTES_AND_PAGES.md](./ROUTES_AND_PAGES.md).
