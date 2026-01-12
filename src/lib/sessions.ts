@@ -86,7 +86,8 @@ export interface PickupLocation {
 }
 
 export interface RideShareArea {
-  id: string;
+  id: string; // Session ride config ID (used for booking)
+  ride_area_id?: string;
   ride_area_name: string;
   cost: number;
   capacity: number;

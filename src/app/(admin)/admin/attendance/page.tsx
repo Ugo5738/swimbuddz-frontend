@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { apiGet } from "@/lib/api";
-import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
+import { apiGet } from "@/lib/api";
 import { format } from "date-fns";
+import type { jsPDF as JsPDFType } from "jspdf";
+import { useEffect, useState } from "react";
 
 type Session = {
     id: string;
-    start_time: string;
-    location: string;
+    starts_at: string;
+    location: string | null;
+    location_name: string | null;
 };
 
 type Attendance = {
@@ -20,10 +22,14 @@ type Attendance = {
     role: string;
     notes: string;
     member_id: string; // Needed for merging
+    ride_share_option?: string;
+    needs_ride?: boolean;
+    can_offer_ride?: boolean;
+    pickup_location?: string | null;
     ride_info?: {
         pickup_location: string;
-        ride_number: number;
-        area_name: string;
+        ride_number?: number | null;
+        area_name?: string | null;
     };
 };
 
@@ -34,11 +40,24 @@ type RideBooking = {
     ride_area_name: string;
 };
 
+type RideConfig = {
+    id: string;
+    ride_area_id: string;
+    ride_area_name: string;
+    pickup_locations: Array<{
+        id: string;
+        name: string;
+        description?: string | null;
+    }>;
+};
+
 export default function AdminAttendancePage() {
     const [sessions, setSessions] = useState<Session[]>([]);
     const [attendanceList, setAttendanceList] = useState<Attendance[]>([]);
     const [loadingSessions, setLoadingSessions] = useState(true);
     const [loadingAttendance, setLoadingAttendance] = useState(false);
+    const [downloading, setDownloading] = useState(false);
+    const [downloadingPdf, setDownloadingPdf] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const [selectedSessionId, setSelectedSessionId] = useState("");
@@ -68,23 +87,66 @@ export default function AdminAttendancePage() {
             setLoadingAttendance(true);
             setError(null); // Clear previous errors
             try {
-                const [attendanceData, bookingsData] = await Promise.all([
-                    apiGet<Attendance[]>(`/api/v1/sessions/${selectedSessionId}/attendance`, { auth: true }),
-                    apiGet<RideBooking[]>(`/api/v1/transport/sessions/${selectedSessionId}/bookings`, { auth: true }).catch(() => []) // Fail gracefully if transport service is down or no bookings
+                const [attendanceData, bookingsData, rideConfigs] = await Promise.all([
+                    apiGet<Attendance[]>(`/api/v1/attendance/sessions/${selectedSessionId}/attendance`, { auth: true }),
+                    apiGet<RideBooking[]>(`/api/v1/transport/sessions/${selectedSessionId}/bookings`, { auth: true })
+                        .catch((err) => {
+                            console.warn("Failed to fetch ride bookings", err);
+                            return [];
+                        }), // Fail gracefully if transport service is down or no bookings
+                    apiGet<RideConfig[]>(`/api/v1/transport/sessions/${selectedSessionId}/ride-configs`, { auth: true })
+                        .catch((err) => {
+                            console.warn("Failed to fetch ride configs", err);
+                            return [];
+                        })
                 ]);
 
-                // Merge bookings into attendance
-                const bookingsMap = new Map(bookingsData.map(b => [b.member_id, b]));
+                // Build lookup maps
+                const normalizeId = (id?: string | null) => (id ? id.toString().trim().toLowerCase() : "");
+                const bookingsMap = new Map(
+                    bookingsData
+                        .map(b => [normalizeId((b as any).member_id ?? (b as any).memberId), b] as const)
+                        .filter(([key]) => Boolean(key))
+                );
+                const pickupLocationsMap = new Map<string, { name: string; area_name: string }>();
+                rideConfigs.forEach((config) => {
+                    config.pickup_locations.forEach((loc) => {
+                        pickupLocationsMap.set(loc.id, {
+                            name: loc.name,
+                            area_name: config.ride_area_name
+                        });
+                    });
+                });
 
                 const mergedAttendance = attendanceData.map(record => {
-                    const booking = bookingsMap.get(record.member_id);
+                    const recordMemberId = normalizeId((record as any).member_id ?? (record as any).memberId);
+                    const booking = recordMemberId ? bookingsMap.get(recordMemberId) : undefined;
+
+                    let rideInfo: Attendance["ride_info"] = booking ? {
+                        pickup_location: booking.pickup_location_name,
+                        ride_number: booking.assigned_ride_number,
+                        area_name: booking.ride_area_name
+                    } : undefined;
+
+                    // Fallback to attendance record data when booking is missing
+                    if (!rideInfo && record.pickup_location) {
+                        const locationMeta = pickupLocationsMap.get(record.pickup_location);
+                        rideInfo = {
+                            pickup_location: locationMeta?.name || record.pickup_location,
+                            ride_number: null,
+                            area_name: locationMeta?.area_name
+                        };
+                    } else if (!rideInfo && (record.needs_ride || record.ride_share_option === "join")) {
+                        rideInfo = {
+                            pickup_location: "Ride requested",
+                            ride_number: null,
+                            area_name: undefined
+                        };
+                    }
+
                     return {
                         ...record,
-                        ride_info: booking ? {
-                            pickup_location: booking.pickup_location_name,
-                            ride_number: booking.assigned_ride_number,
-                            area_name: booking.ride_area_name
-                        } : undefined
+                        ride_info: rideInfo
                     };
                 });
 
@@ -103,10 +165,136 @@ export default function AdminAttendancePage() {
         window.print();
     };
 
-    const handleDownload = () => {
-        if (!selectedSessionId) return;
-        // Direct link to the CSV endpoint
-        window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/sessions/${selectedSessionId}/pool-list`;
+    const handleDownload = async () => {
+        if (!selectedSessionId || attendanceList.length === 0) return;
+
+        setError(null);
+        setDownloading(true);
+        try {
+            const selectedSession = sessions.find(s => s.id === selectedSessionId);
+            const startDate = selectedSession?.starts_at ? new Date(selectedSession.starts_at) : null;
+            const dateLabel = startDate && !isNaN(startDate.getTime())
+                ? format(startDate, "yyyy-MM-dd")
+                : "session";
+
+            const headers = ["Name", "Ride Info", "Notes"];
+            const rows = attendanceList.map((item) => {
+                const rideLine = item.ride_info
+                    ? [item.ride_info.pickup_location, [item.ride_info.area_name, item.ride_info.ride_number ? `Ride #${item.ride_info.ride_number}` : null].filter(Boolean).join(" • ")].filter(Boolean).join(" — ")
+                    : "--";
+                const notes = item.notes || "";
+                return [item.member_name, rideLine, notes];
+            });
+
+            const escapeCell = (cell: string) => {
+                const needsQuotes = /[",\n]/.test(cell);
+                const escaped = cell.replace(/"/g, '""');
+                return needsQuotes ? `"${escaped}"` : escaped;
+            };
+
+            const csvContent = [headers, ...rows]
+                .map(row => row.map(cell => escapeCell(cell || "")).join(","))
+                .join("\n");
+
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `attendance-${dateLabel}.csv`;
+            link.click();
+            URL.revokeObjectURL(url);
+        } catch (err: any) {
+            console.error("Failed to download pool list", err);
+            setError("Failed to download attendance CSV. Please try again.");
+        } finally {
+            setDownloading(false);
+        }
+    };
+
+    const handleDownloadPdf = async () => {
+        if (!selectedSessionId || attendanceList.length === 0) return;
+        setError(null);
+        setDownloadingPdf(true);
+        try {
+            const { jsPDF } = await import("jspdf");
+            const doc: JsPDFType = new jsPDF();
+
+            const selectedSession = sessions.find(s => s.id === selectedSessionId);
+            const startDate = selectedSession?.starts_at ? new Date(selectedSession.starts_at) : null;
+            const dateLabel = startDate && !isNaN(startDate.getTime())
+                ? format(startDate, "PPPp")
+                : "Session";
+            const locationLabel = selectedSession?.location_name || selectedSession?.location || "";
+
+            doc.setFontSize(14);
+            doc.text("Attendance Report", 14, 16);
+            doc.setFontSize(10);
+            doc.text(`${dateLabel}${locationLabel ? ` - ${locationLabel}` : ""}`, 14, 22);
+
+            const columns = [
+                { key: "name", label: "Name", width: 60, getText: (item: Attendance) => item.member_name },
+                {
+                    key: "ride",
+                    label: "Ride",
+                    width: 70,
+                    getText: (item: Attendance) => item.ride_info
+                        ? [item.ride_info.pickup_location, [item.ride_info.area_name, item.ride_info.ride_number ? `Ride #${item.ride_info.ride_number}` : null].filter(Boolean).join(" • ")].filter(Boolean).join(" — ")
+                        : "--"
+                },
+                { key: "notes", label: "Notes", width: 60, getText: (item: Attendance) => item.notes || "" },
+            ];
+
+            let y = 32;
+            const lineHeight = 6;
+            doc.setFontSize(9);
+
+            const colPositions: number[] = [];
+            let currentX = 14;
+            columns.forEach((col) => {
+                colPositions.push(currentX);
+                doc.text(col.label, currentX, y);
+                currentX += col.width;
+            });
+
+            y += 4;
+            doc.line(14, y, 14 + columns.reduce((sum, col) => sum + col.width, 0), y);
+            y += 6;
+
+            const drawRow = (item: Attendance) => {
+                if (y > 280) {
+                    doc.addPage();
+                    y = 20;
+                }
+                const wrappedTexts = columns.map((col) =>
+                    doc.splitTextToSize(col.getText(item) || "", col.width - 4) as string[]
+                );
+                const maxLines = Math.max(...wrappedTexts.map(lines => lines.length || 1));
+                const rowHeight = maxLines * lineHeight;
+
+                wrappedTexts.forEach((lines: string[], idx) => {
+                    const x = colPositions[idx];
+                    lines.forEach((line: string, lineIdx: number) => {
+                        doc.text(line, x, y + lineIdx * lineHeight);
+                    });
+                });
+
+                y += rowHeight + 2;
+                doc.line(14, y - 2, 14 + columns.reduce((sum, col) => sum + col.width, 0), y - 2);
+            };
+
+            attendanceList.forEach(drawRow);
+
+            const fileDate = startDate && !isNaN(startDate.getTime())
+                ? format(startDate, "yyyy-MM-dd")
+                : "session";
+            doc.save(`attendance-${fileDate}.pdf`);
+        } catch (err: any) {
+            console.error("Failed to generate PDF", err);
+            setError("Failed to generate PDF. Please try again.");
+        } finally {
+            setDownloadingPdf(false);
+        }
     };
 
     if (loadingSessions) {
@@ -124,7 +312,12 @@ export default function AdminAttendancePage() {
                     <Button variant="secondary" onClick={handlePrint}>
                         Print List
                     </Button>
-                    <Button onClick={handleDownload}>Download CSV</Button>
+                    <Button variant="secondary" onClick={handleDownloadPdf} disabled={downloadingPdf || attendanceList.length === 0}>
+                        {downloadingPdf ? "Preparing PDF..." : "Download PDF"}
+                    </Button>
+                    <Button onClick={handleDownload} disabled={downloading}>
+                        {downloading ? "Preparing..." : "Download CSV"}
+                    </Button>
                 </div>
             </div>
 
@@ -142,22 +335,36 @@ export default function AdminAttendancePage() {
                         value={selectedSessionId}
                         onChange={(e) => setSelectedSessionId(e.target.value)}
                     >
-                        {sessions.map((s) => (
-                            <option key={s.id} value={s.id}>
-                                {format(new Date(s.start_time), "MMM d, yyyy h:mm a")} - {s.location}
-                            </option>
-                        ))}
+                        {sessions.map((s) => {
+                            const startDate = s.starts_at ? new Date(s.starts_at) : null;
+                            const dateLabel = startDate && !isNaN(startDate.getTime())
+                                ? format(startDate, "MMM d, yyyy h:mm a")
+                                : "Date TBD";
+                            return (
+                                <option key={s.id} value={s.id}>
+                                    {dateLabel} - {s.location_name || s.location || "Location TBD"}
+                                </option>
+                            );
+                        })}
                     </select>
                 </div>
 
                 {/* Print-only header */}
                 <div className="hidden print:block">
                     <h2 className="text-xl font-bold">Attendance List</h2>
-                    {selectedSessionId && sessions.find(s => s.id === selectedSessionId) && (
-                        <p className="text-sm text-slate-600">
-                            {format(new Date(sessions.find(s => s.id === selectedSessionId)!.start_time), "MMMM d, yyyy h:mm a")} - {sessions.find(s => s.id === selectedSessionId)!.location}
-                        </p>
-                    )}
+                    {selectedSessionId && (() => {
+                        const selectedSession = sessions.find(s => s.id === selectedSessionId);
+                        if (!selectedSession) return null;
+                        const startDate = selectedSession.starts_at ? new Date(selectedSession.starts_at) : null;
+                        const dateLabel = startDate && !isNaN(startDate.getTime())
+                            ? format(startDate, "MMMM d, yyyy h:mm a")
+                            : "Date TBD";
+                        return (
+                            <p className="text-sm text-slate-600">
+                                {dateLabel} - {selectedSession.location_name || selectedSession.location || "Location TBD"}
+                            </p>
+                        );
+                    })()}
                 </div>
 
                 {loadingAttendance ? (
@@ -204,9 +411,13 @@ export default function AdminAttendancePage() {
                                             {attendance.ride_info ? (
                                                 <div className="text-sm text-slate-700">
                                                     <div className="font-medium">{attendance.ride_info.pickup_location}</div>
-                                                    <div className="text-xs text-slate-500">
-                                                        {attendance.ride_info.area_name} • Ride #{attendance.ride_info.ride_number}
-                                                    </div>
+                                                    {(attendance.ride_info.area_name || attendance.ride_info.ride_number) && (
+                                                        <div className="text-xs text-slate-500">
+                                                            {[attendance.ride_info.area_name, attendance.ride_info.ride_number ? `Ride #${attendance.ride_info.ride_number}` : null]
+                                                                .filter(Boolean)
+                                                                .join(" • ")}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ) : (
                                                 <span className="text-sm text-slate-400">--</span>

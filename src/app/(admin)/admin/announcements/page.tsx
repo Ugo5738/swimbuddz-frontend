@@ -1,47 +1,78 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Card } from "@/components/ui/Card";
-import { Table, TableHead, TableRow, TableHeaderCell, TableBody, TableCell } from "@/components/ui/Table";
-import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
-import { Select } from "@/components/ui/Select";
-import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
 import { LoadingCard } from "@/components/ui/LoadingCard";
+import { Select } from "@/components/ui/Select";
+import { Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/components/ui/Table";
+import { Textarea } from "@/components/ui/Textarea";
+import { Announcement, AnnouncementCategory, AnnouncementCreate, CommunicationsApi } from "@/lib/communications";
+import { useEffect, useState } from "react";
 
-const mockAnnouncements = [
-  { id: "1", title: "Yaba rain update", date: "2024-06-14", category: "weather", content: "Session shifted to 9 am." },
-  { id: "2", title: "Academy trials open", date: "2024-06-10", category: "academy", content: "Sign-ups open for July cohort." }
-];
-
-const initialFormState = { id: "", title: "", category: "general", content: "" };
+const initialFormState: AnnouncementCreate = {
+  title: "",
+  category: AnnouncementCategory.GENERAL,
+  body: "",
+  published_at: new Date().toISOString()
+};
 
 export default function AdminAnnouncementsPage() {
-  const [announcements, setAnnouncements] = useState(mockAnnouncements);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
-  const [formState, setFormState] = useState(initialFormState);
+  const [formState, setFormState] = useState<AnnouncementCreate>(initialFormState);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const id = setTimeout(() => setLoading(false), 400);
-    return () => clearTimeout(id);
+    loadAnnouncements();
   }, []);
+
+  async function loadAnnouncements() {
+    try {
+      const data = await CommunicationsApi.listAnnouncements();
+      setAnnouncements(data || []);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load announcements");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   function startEdit(id: string) {
     const announcement = announcements.find((item) => item.id === id);
     if (!announcement) return;
-    setFormState({ id: announcement.id, title: announcement.title, category: announcement.category, content: announcement.content });
+    setFormState({
+      title: announcement.title,
+      category: announcement.category,
+      body: announcement.body,
+      published_at: announcement.published_at
+    });
     setEditingId(id);
   }
 
   function resetForm() {
-    setFormState(initialFormState);
+    setFormState({ ...initialFormState, published_at: new Date().toISOString() });
     setEditingId(null);
+  }
+
+  async function handleDelete(id: string) {
+    if (!window.confirm("Are you sure you want to delete this announcement?")) return;
+
+    try {
+      await CommunicationsApi.deleteAnnouncement(id);
+      setAnnouncements(prev => prev.filter(a => a.id !== id));
+      setMessage("Announcement deleted");
+    } catch (err) {
+      console.error("Failed to delete announcement", err);
+      const errMsg = err instanceof Error ? err.message : "Unable to delete announcement.";
+      setError(errMsg);
+    }
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -51,18 +82,16 @@ export default function AdminAnnouncementsPage() {
     setError(null);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
       if (editingId) {
+        const updated = await CommunicationsApi.updateAnnouncement(editingId, formState);
         setAnnouncements((prev) =>
-          prev.map((item) => (item.id === editingId ? { ...item, title: formState.title, category: formState.category, content: formState.content } : item))
+          prev.map((item) => (item.id === editingId ? updated : item))
         );
-        setMessage("Announcement updated (mock)");
+        setMessage("Announcement updated");
       } else {
-        setAnnouncements((prev) => [
-          ...prev,
-          { id: `${Date.now()}`, title: formState.title, category: formState.category, content: formState.content, date: new Date().toISOString().slice(0, 10) }
-        ]);
-        setMessage("Announcement created (mock)");
+        const created = await CommunicationsApi.createAnnouncement(formState);
+        setAnnouncements((prev) => [created, ...prev]);
+        setMessage("Announcement created");
       }
       resetForm();
     } catch (error) {
@@ -78,7 +107,6 @@ export default function AdminAnnouncementsPage() {
       <header className="space-y-2">
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">Admin · Announcements</p>
         <h1 className="text-4xl font-bold text-slate-900">Manage announcements</h1>
-        <p className="text-sm text-slate-600">This interface uses mock data until the admin announcements API is ready.</p>
       </header>
 
       {loading ? (
@@ -95,17 +123,23 @@ export default function AdminAnnouncementsPage() {
             ) : null}
             <form className="space-y-4" onSubmit={handleSubmit}>
               <Input label="Title" value={formState.title} onChange={(event) => setFormState((prev) => ({ ...prev, title: event.target.value }))} required />
-              <Select label="Category" value={formState.category} onChange={(event) => setFormState((prev) => ({ ...prev, category: event.target.value }))}>
-                <option value="general">General</option>
-                <option value="weather">Weather</option>
-                <option value="academy">Academy</option>
-                <option value="event">Event</option>
+              <Select
+                label="Category"
+                value={formState.category}
+                onChange={(event) => setFormState((prev) => ({ ...prev, category: event.target.value as AnnouncementCategory }))}
+              >
+                <option value={AnnouncementCategory.GENERAL}>General</option>
+                <option value={AnnouncementCategory.RAIN_UPDATE}>Rain Update</option>
+                <option value={AnnouncementCategory.SCHEDULE_CHANGE}>Schedule Change</option>
+                <option value={AnnouncementCategory.ACADEMY}>Academy</option>
+                <option value={AnnouncementCategory.EVENT}>Event</option>
+                <option value={AnnouncementCategory.COMPETITION}>Competition</option>
               </Select>
               <Textarea
                 label="Content"
                 rows={4}
-                value={formState.content}
-                onChange={(event) => setFormState((prev) => ({ ...prev, content: event.target.value }))}
+                value={formState.body}
+                onChange={(event) => setFormState((prev) => ({ ...prev, body: event.target.value }))}
                 required
               />
               <div className="flex flex-wrap gap-3">
@@ -134,14 +168,19 @@ export default function AdminAnnouncementsPage() {
               {announcements.map((announcement) => (
                 <TableRow key={announcement.id}>
                   <TableCell>{announcement.title}</TableCell>
-                  <TableCell>{announcement.date}</TableCell>
+                  <TableCell>{new Date(announcement.published_at).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <Badge variant="info">{announcement.category}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Button variant="secondary" onClick={() => startEdit(announcement.id)}>
-                      Edit
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="secondary" onClick={() => startEdit(announcement.id)}>
+                        Edit
+                      </Button>
+                      <Button variant="danger" onClick={() => handleDelete(announcement.id)}>
+                        Delete
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

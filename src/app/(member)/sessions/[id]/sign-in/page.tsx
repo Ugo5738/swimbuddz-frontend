@@ -1,17 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { notFound, useSearchParams } from "next/navigation";
 import { SessionSignIn } from "@/components/sessions/SessionSignIn";
-import { getSession, Session, RideShareArea } from "@/lib/sessions";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet, apiPost } from "@/lib/api";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
+import { getSession, RideShareArea, Session } from "@/lib/sessions";
 import Link from "next/link";
+import { notFound, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 // Type for transport service ride config response
 interface RideConfig {
+    id: string;
     ride_area_id: string;
     ride_area_name: string;
     cost: number;
@@ -95,7 +96,8 @@ export default function SessionSignInPage({ params }: { params: { id: string } }
 
                     if (rideConfigs && rideConfigs.length > 0) {
                         sessionData.rideShareAreas = rideConfigs.map((config): RideShareArea => ({
-                            id: config.ride_area_id,
+                            id: config.id, // session ride config id
+                            ride_area_id: config.ride_area_id,
                             ride_area_name: config.ride_area_name,
                             cost: config.cost,
                             capacity: config.capacity,
