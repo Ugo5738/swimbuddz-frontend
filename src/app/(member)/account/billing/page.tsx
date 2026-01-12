@@ -5,13 +5,11 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet, apiPost } from "@/lib/api";
-import { supabase } from "@/lib/auth";
+import { uploadMedia } from "@/lib/media";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 // ============================================================================
 // Types
@@ -394,25 +392,12 @@ export default function BillingPage() {
                                                     setUploadingProof(payment.reference);
                                                     try {
                                                         // Upload file to backend media service
-                                                        const { data: { session } } = await supabase.auth.getSession();
-                                                        const formData = new FormData();
-                                                        formData.append("file", file);
-                                                        formData.append("payment_reference", payment.reference);
-
-                                                        const uploadRes = await fetch(
-                                                            `${API_BASE_URL}/api/v1/media/uploads/payment-proofs`,
-                                                            {
-                                                                method: "POST",
-                                                                headers: { Authorization: `Bearer ${session?.access_token}` },
-                                                                body: formData,
-                                                            }
+                                                        const mediaItem = await uploadMedia(
+                                                            file,
+                                                            "payment_proof",
+                                                            payment.reference,
+                                                            `Payment proof ${payment.reference}`
                                                         );
-
-                                                        if (!uploadRes.ok) {
-                                                            throw new Error("Failed to upload proof");
-                                                        }
-
-                                                        const mediaItem = await uploadRes.json();
                                                         // Send the media_id, not the URL
                                                         const proofMediaId = mediaItem.id;
 
@@ -711,4 +696,3 @@ export default function BillingPage() {
         </div>
     );
 }
-

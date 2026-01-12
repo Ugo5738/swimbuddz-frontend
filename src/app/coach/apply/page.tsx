@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/Input";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import { getCurrentAccessToken, supabase } from "@/lib/auth";
+import { supabase } from "@/lib/auth";
 import {
     ageGroupOptions,
     certificationOptions,
@@ -18,7 +18,7 @@ import {
     coachSpecialtyOptions,
     levelsTaughtOptions,
 } from "@/lib/coaches";
-import { API_BASE_URL } from "@/lib/config";
+import { uploadMedia } from "@/lib/media";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -140,40 +140,24 @@ export default function CoachApplyPage() {
     }, [formData]);
 
     const uploadCoachDocument = async (file: File): Promise<string> => {
-        const token = await getCurrentAccessToken();
-        if (!token) throw new Error("Not authenticated");
+        try {
+            const mediaItem = await uploadMedia(
+                file,
+                "coach_document",
+                undefined,
+                file.name,
+                "Coach application document"
+            );
 
-        const uploadFormData = new FormData();
-        uploadFormData.append("file", file);
-
-        const response = await fetch(`${API_BASE_URL}/api/v1/media/uploads/coach-documents`, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-            body: uploadFormData,
-        });
-
-        if (!response.ok) {
-            let message = `Failed to upload document (status ${response.status})`;
-            try {
-                const errorBody = await response.json();
-                if (errorBody?.detail) {
-                    message = Array.isArray(errorBody.detail)
-                        ? errorBody.detail.map((d: any) => d.msg || d).join(", ")
-                        : errorBody.detail;
-                }
-            } catch {
-                // ignore JSON parse errors
+            if (!mediaItem?.file_url) {
+                throw new Error("Upload succeeded but no file URL was returned");
             }
+
+            return mediaItem.file_url as string;
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Failed to upload document";
             throw new Error(message);
         }
-
-        const mediaItem = await response.json();
-        if (!mediaItem?.file_url) {
-            throw new Error("Upload succeeded but no file URL was returned");
-        }
-        return mediaItem.file_url as string;
     };
 
     const handleSubmit = async () => {
