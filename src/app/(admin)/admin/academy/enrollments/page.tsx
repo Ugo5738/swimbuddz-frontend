@@ -1,29 +1,24 @@
 "use client";
 
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
-import { AcademyApi, Enrollment, EnrollmentStatus } from "@/lib/academy";
+import { AcademyApi, Enrollment, EnrollmentStatus, PaymentStatus } from "@/lib/academy";
 import { apiGet } from "@/lib/api";
+import { formatDate } from "@/lib/format";
+import { CheckCircle, Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-
-// Helper to fetch member details if not included in enrollment (though eager loading helps, member details might be separate)
-// Actually, EnrollmentResponse in backend usually includes member_id.
-// If we want member NAME, we need to fetch member profile or have the backend include it.
-// The backend `list_enrollments` eager loads `program` and `cohort`, but maybe not `member` details from `members_service`?
-// The `members_service` is separate.
-// So we probably have `member_id` only.
-// We need to fetch member names. We can use `apiGet("/api/v1/members/" + member_id)` for each, or a bulk fetch if available.
-// For now, let's show Email (if available) or ID. Wait, Member ID is UUID. User needs Name.
-// I'll assume we can fetch member details.
+import { toast } from "sonner";
 
 export default function AdminEnrollmentsPage() {
     const router = useRouter();
     const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<EnrollmentStatus | "all">("all");
-    const [members, setMembers] = useState<Record<string, any>>({}); // Cache member details
+    const [members, setMembers] = useState<Record<string, any>>({});
+    const [approvingId, setApprovingId] = useState<string | null>(null);
 
     useEffect(() => {
         fetchEnrollments();
@@ -37,18 +32,13 @@ export default function AdminEnrollmentsPage() {
             setEnrollments(data);
 
             // Fetch member details for these enrollments
-            // This is N+1 but for admin page it's okay for now.
-            // A better way is a bulk endpoint.
             const uniqueMemberIds = Array.from(new Set(data.map(e => e.member_id)));
             const newMembers: Record<string, any> = { ...members };
 
             await Promise.all(uniqueMemberIds.map(async (id) => {
                 if (!newMembers[id]) {
                     try {
-                        const member = await apiGet<any>(`/api/v1/members/${id}`, { auth: true }); // specific member endpoint?
-                        // Or we might need an admin endpoint to get ANY member by ID.
-                        // /api/v1/members/me is for self.
-                        // /api/v1/members/{id} (admin) usually exists.
+                        const member = await apiGet<any>(`/api/v1/members/${id}`, { auth: true });
                         newMembers[id] = member;
                     } catch (e) {
                         console.error("Failed to fetch member", id);
@@ -60,26 +50,67 @@ export default function AdminEnrollmentsPage() {
 
         } catch (error) {
             console.error("Failed to fetch enrollments", error);
+            toast.error("Failed to load enrollments");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleApprove = async (enrollment: Enrollment) => {
-        // Approval means setting status to ENROLLED.
-        // If it's a Program request (no cohort), we might need to assign a cohort.
-        // For now, let's just allow setting status if cohort is present, or prompt to select cohort?
-        // Simpler: Just generic update for now, or "Edit" button.
-        router.push(`/admin/academy/enrollments/${enrollment.id}`);
+    const handleQuickApprove = async (enrollment: Enrollment) => {
+        setApprovingId(enrollment.id);
+        try {
+            await AcademyApi.updateEnrollment(enrollment.id, {
+                status: EnrollmentStatus.ENROLLED,
+            });
+            toast.success("Enrollment approved!");
+            await fetchEnrollments();
+        } catch (e) {
+            toast.error("Failed to approve enrollment");
+        } finally {
+            setApprovingId(null);
+        }
     };
+
+    const getStatusBadgeVariant = (status: EnrollmentStatus) => {
+        switch (status) {
+            case EnrollmentStatus.ENROLLED: return "success";
+            case EnrollmentStatus.PENDING_APPROVAL: return "warning";
+            case EnrollmentStatus.WAITLIST: return "info";
+            case EnrollmentStatus.GRADUATED: return "default";
+            case EnrollmentStatus.DROPPED: return "danger";
+            default: return "default";
+        }
+    };
+
+    const getPaymentBadgeVariant = (status: PaymentStatus) => {
+        switch (status) {
+            case PaymentStatus.PAID: return "success";
+            case PaymentStatus.PENDING: return "warning";
+            case PaymentStatus.FAILED: return "danger";
+            case PaymentStatus.WAIVED: return "info";
+            default: return "default";
+        }
+    };
+
+    // Count pending approvals with paid status for the header
+    const pendingPaidCount = enrollments.filter(
+        e => e.status === EnrollmentStatus.PENDING_APPROVAL && e.payment_status === PaymentStatus.PAID
+    ).length;
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-slate-900">Enrollment Requests</h1>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-900">Enrollment Requests</h1>
+                    {pendingPaidCount > 0 && (
+                        <p className="text-sm text-amber-600 mt-1">
+                            {pendingPaidCount} enrollment{pendingPaidCount !== 1 ? "s" : ""} ready for approval
+                        </p>
+                    )}
+                </div>
                 <div className="flex gap-2">
                     <select
-                        className="rounded border p-2"
+                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value as EnrollmentStatus | "all")}
                     >
@@ -97,66 +128,91 @@ export default function AdminEnrollmentsPage() {
                 <LoadingCard text="Loading enrollments..." />
             ) : (
                 <Card className="overflow-hidden">
-                    <table className="min-w-full divide-y divide-slate-200">
-                        <thead className="bg-slate-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Member</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Program / Cohort</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Status</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Date</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-500">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-200 bg-white">
-                            {enrollments.length === 0 ? (
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-slate-200">
+                            <thead className="bg-slate-50">
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-slate-500">
-                                        No enrollments found.
-                                    </td>
+                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Member</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Program / Cohort</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Status</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Payment</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Date</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-500">Actions</th>
                                 </tr>
-                            ) : (
-                                enrollments.map((enrollment) => {
-                                    const member = members[enrollment.member_id];
-                                    const name = member ? `${member.first_name} ${member.last_name}` : "Loading...";
-                                    const programName = enrollment.program?.name || "Unknown Program";
-                                    const cohortName = enrollment.cohort?.name || (enrollment.cohort_id ? "Cohort " + enrollment.cohort_id : "No Cohort Assigned");
+                            </thead>
+                            <tbody className="divide-y divide-slate-200 bg-white">
+                                {enrollments.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-8 text-center text-sm text-slate-500">
+                                            No enrollments found.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    enrollments.map((enrollment) => {
+                                        const member = members[enrollment.member_id];
+                                        const name = member ? `${member.first_name} ${member.last_name}` : "Loading...";
+                                        const programName = enrollment.program?.name || "Unknown Program";
+                                        const cohortName = enrollment.cohort?.name || (enrollment.cohort_id ? "Cohort assigned" : "No cohort");
+                                        const canQuickApprove = enrollment.status === EnrollmentStatus.PENDING_APPROVAL &&
+                                            enrollment.payment_status === PaymentStatus.PAID;
 
-                                    return (
-                                        <tr key={enrollment.id}>
-                                            <td className="px-6 py-4 text-sm font-medium text-slate-900">
-                                                {name}
-                                                <div className="text-xs text-slate-500">{member?.email}</div>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-slate-500">
-                                                <div className="font-medium">{programName}</div>
-                                                <div className="text-xs">{cohortName}</div>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-slate-500">
-                                                <span className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${enrollment.status === EnrollmentStatus.PENDING_APPROVAL ? "bg-yellow-100 text-yellow-800" :
-                                                        enrollment.status === EnrollmentStatus.ENROLLED ? "bg-green-100 text-green-800" :
-                                                            "bg-slate-100 text-slate-800"
-                                                    }`}>
-                                                    {enrollment.status.replace("_", " ")}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-slate-500">
-                                                {new Date(enrollment.created_at).toLocaleDateString()}
-                                            </td>
-                                            <td className="px-6 py-4 text-right text-sm font-medium">
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => router.push(`/admin/academy/enrollments/${enrollment.id}`)}
-                                                >
-                                                    Manage
-                                                </Button>
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
+                                        return (
+                                            <tr key={enrollment.id} className={canQuickApprove ? "bg-amber-50" : ""}>
+                                                <td className="px-6 py-4">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-slate-900">{name}</p>
+                                                        <p className="text-xs text-slate-500">{member?.email}</p>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-slate-900">{programName}</p>
+                                                        <p className="text-xs text-slate-500">{cohortName}</p>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <Badge variant={getStatusBadgeVariant(enrollment.status)}>
+                                                        {enrollment.status.replace("_", " ")}
+                                                    </Badge>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <Badge variant={getPaymentBadgeVariant(enrollment.payment_status)}>
+                                                        {enrollment.payment_status}
+                                                    </Badge>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-slate-500">
+                                                    {formatDate(enrollment.created_at)}
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        {canQuickApprove && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="primary"
+                                                                onClick={() => handleQuickApprove(enrollment)}
+                                                                disabled={approvingId === enrollment.id}
+                                                            >
+                                                                <CheckCircle className="h-4 w-4 mr-1" />
+                                                                {approvingId === enrollment.id ? "..." : "Approve"}
+                                                            </Button>
+                                                        )}
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() => router.push(`/admin/academy/enrollments/${enrollment.id}`)}
+                                                        >
+                                                            <Eye className="h-4 w-4 mr-1" />
+                                                            View
+                                                        </Button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </Card>
             )}
         </div>

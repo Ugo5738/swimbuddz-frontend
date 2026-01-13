@@ -4,7 +4,9 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { AcademyApi, Cohort, Enrollment, EnrollmentStatus, Milestone, PaymentStatus, Program, StudentProgress } from "@/lib/academy";
+import { apiGet, apiPost } from "@/lib/api";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -13,10 +15,21 @@ type EnrollmentWithDetails = Enrollment & {
     program?: Program;
     progress?: StudentProgress[];
     milestones?: Milestone[];
+    waitlistPosition?: number | null;
+};
+
+type CohortEnrollmentStats = {
+    cohort_id: string;
+    capacity: number;
+    enrolled_count: number;
+    waitlist_count: number;
+    spots_remaining: number;
+    is_at_capacity: boolean;
 };
 
 type CohortWithProgram = Cohort & {
     program?: Program;
+    enrollmentStats?: CohortEnrollmentStats;
 };
 
 export default function StudentAcademyPage() {
@@ -24,6 +37,31 @@ export default function StudentAcademyPage() {
     const [openCohorts, setOpenCohorts] = useState<CohortWithProgram[]>([]);
     const [loading, setLoading] = useState(true);
     const [enrollingId, setEnrollingId] = useState<string | null>(null);
+    const [verifyingId, setVerifyingId] = useState<string | null>(null);
+    const searchParams = useSearchParams();
+
+    // Check if we just returned from Paystack (reference in URL)
+    const returnedFromPaystack = searchParams.get("reference") || searchParams.get("trxref");
+    const [autoVerifyAttempted, setAutoVerifyAttempted] = useState(false);
+    const [showVerifyHint, setShowVerifyHint] = useState(false);
+
+    const handleVerifyPayment = async (paymentReference: string, enrollmentId?: string) => {
+        setVerifyingId(enrollmentId || paymentReference);
+        try {
+            await apiPost(`/api/v1/payments/verify/${paymentReference}`, {}, { auth: true });
+            toast.success("Payment verified successfully!");
+            await loadData();
+        } catch (error: unknown) {
+            const err = error as { status?: number };
+            if (err.status === 404) {
+                toast.error("Payment not found. Please check the reference and try again.");
+            } else {
+                toast.error("Payment still processing. Please try again in a few minutes.");
+            }
+        } finally {
+            setVerifyingId(null);
+        }
+    };
 
     const loadData = async () => {
         try {
@@ -36,11 +74,17 @@ export default function StudentAcademyPage() {
             const enrolledCohortIds = new Set(myEnrollments.map(e => e.cohort_id));
             const filteredCohorts = availableCohorts.filter(c => !enrolledCohortIds.has(c.id));
 
-            // Fetch program details for open cohorts
+            // Fetch program details and enrollment stats for open cohorts
             const cohortsWithPrograms = await Promise.all(
                 filteredCohorts.map(async (cohort) => {
-                    const program = await AcademyApi.getProgram(cohort.program_id);
-                    return { ...cohort, program };
+                    const [program, enrollmentStats] = await Promise.all([
+                        AcademyApi.getProgram(cohort.program_id),
+                        apiGet<CohortEnrollmentStats>(
+                            `/api/v1/academy/cohorts/${cohort.id}/enrollment-stats`,
+                            { auth: true }
+                        ).catch(() => null)
+                    ]);
+                    return { ...cohort, program, enrollmentStats: enrollmentStats || undefined };
                 })
             );
             setOpenCohorts(cohortsWithPrograms);
@@ -59,12 +103,27 @@ export default function StudentAcademyPage() {
                     const progress = await AcademyApi.getStudentProgress(enrollment.id);
                     const milestones = programId ? await AcademyApi.listMilestones(programId) : [];
 
+                    // Fetch waitlist position if on waitlist
+                    let waitlistPosition: number | null = null;
+                    if (enrollment.status === EnrollmentStatus.WAITLIST) {
+                        try {
+                            const positionData = await apiGet<{ position: number | null }>(
+                                `/api/v1/academy/my-enrollments/${enrollment.id}/waitlist-position`,
+                                { auth: true }
+                            );
+                            waitlistPosition = positionData.position;
+                        } catch {
+                            // Ignore errors fetching waitlist position
+                        }
+                    }
+
                     return {
                         ...enrollment,
                         cohort,
                         program,
                         progress,
-                        milestones
+                        milestones,
+                        waitlistPosition
                     };
                 })
             );
@@ -82,11 +141,40 @@ export default function StudentAcademyPage() {
         loadData();
     }, []);
 
-    const handleEnroll = async (cohortId: string) => {
+    // Auto-verify payment when returning from Paystack
+    useEffect(() => {
+        if (returnedFromPaystack && !autoVerifyAttempted && !loading) {
+            setAutoVerifyAttempted(true);
+            // Give it a moment for webhook to process first
+            const timer = setTimeout(async () => {
+                try {
+                    await apiPost(`/api/v1/payments/verify/${returnedFromPaystack}`, {}, { auth: true });
+                    toast.success("Payment verified successfully!");
+                    await loadData();
+                    // Clean URL params
+                    window.history.replaceState({}, '', window.location.pathname);
+                } catch {
+                    // If verification fails, show hint to manually verify after a delay
+                    setShowVerifyHint(true);
+                    toast.info("Payment is being processed. You can verify it manually below.");
+                }
+            }, 2000); // Wait 2 seconds for webhook to potentially process
+            return () => clearTimeout(timer);
+        }
+    }, [returnedFromPaystack, autoVerifyAttempted, loading]);
+
+    const handleEnroll = async (cohortId: string, isWaitlist: boolean = false) => {
         setEnrollingId(cohortId);
         try {
-            // Step 1: Create enrollment
+            // Step 1: Create enrollment (will be WAITLIST if at capacity)
             const enrollment = await AcademyApi.selfEnroll({ cohort_id: cohortId });
+
+            // If enrollment is waitlisted, don't create payment - just show success
+            if (enrollment.status === EnrollmentStatus.WAITLIST || isWaitlist) {
+                toast.success("You've been added to the waitlist! We'll notify you when a spot opens.");
+                await loadData();
+                return;
+            }
 
             // Step 2: Create payment intent for academy cohort
             const { apiPost } = await import("@/lib/api");
@@ -171,8 +259,11 @@ export default function StudentAcademyPage() {
                             const approvedCount = enrollment.progress?.filter(p => p.status === 'achieved' && p.reviewed_at).length || 0;
                             const totalMilestones = enrollment.milestones?.length || 0;
                             const isPaid = enrollment.payment_status === PaymentStatus.PAID;
+                            const isPendingPayment = enrollment.payment_status === PaymentStatus.PENDING;
                             const isPendingApproval = enrollment.status === EnrollmentStatus.PENDING_APPROVAL;
+                            const isWaitlisted = enrollment.status === EnrollmentStatus.WAITLIST;
                             const showApprovalBanner = isPaid && isPendingApproval;
+                            const showPaymentVerifyOption = isPendingPayment && (showVerifyHint || !returnedFromPaystack);
 
                             return (
                                 <Link
@@ -181,6 +272,20 @@ export default function StudentAcademyPage() {
                                     className="block"
                                 >
                                     <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                                        {/* Waitlist Banner */}
+                                        {isWaitlisted && (
+                                            <div className="bg-purple-50 border-b border-purple-200 px-6 py-3">
+                                                <p className="text-purple-800 text-sm flex items-center gap-2">
+                                                    <span className="text-lg">📋</span>
+                                                    <span>
+                                                        <strong>You're on the waitlist!</strong>
+                                                        {enrollment.waitlistPosition
+                                                            ? ` Position #${enrollment.waitlistPosition}. We'll notify you when a spot opens.`
+                                                            : " We'll notify you when a spot opens."}
+                                                    </span>
+                                                </p>
+                                            </div>
+                                        )}
                                         {/* Pending Approval Banner */}
                                         {showApprovalBanner && (
                                             <div className="bg-amber-50 border-b border-amber-200 px-6 py-3">
@@ -190,6 +295,32 @@ export default function StudentAcademyPage() {
                                                         <strong>Payment received!</strong> Your enrollment is being reviewed by our team.
                                                     </span>
                                                 </p>
+                                            </div>
+                                        )}
+                                        {/* Pending Payment Banner with Verify Button */}
+                                        {showPaymentVerifyOption && enrollment.payment_reference && (
+                                            <div className="bg-blue-50 border-b border-blue-200 px-6 py-3">
+                                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                                    <p className="text-blue-800 text-sm flex items-center gap-2">
+                                                        <span className="text-lg">💳</span>
+                                                        <span>
+                                                            <strong>Payment pending.</strong> If you've already paid, click verify to confirm.
+                                                        </span>
+                                                    </p>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="secondary"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            handleVerifyPayment(enrollment.payment_reference!, enrollment.id);
+                                                        }}
+                                                        disabled={verifyingId === enrollment.id}
+                                                        className="shrink-0"
+                                                    >
+                                                        {verifyingId === enrollment.id ? "Verifying..." : "Verify Payment"}
+                                                    </Button>
+                                                </div>
                                             </div>
                                         )}
                                         {/* Header with gradient */}
@@ -325,17 +456,28 @@ export default function StudentAcademyPage() {
                     </Card>
                 ) : (
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {openCohorts.map((cohort) => (
+                        {openCohorts.map((cohort) => {
+                            const stats = cohort.enrollmentStats;
+                            const isAtCapacity = stats?.is_at_capacity ?? false;
+                            const spotsRemaining = stats?.spots_remaining ?? cohort.capacity;
+                            const waitlistCount = stats?.waitlist_count ?? 0;
+
+                            return (
                             <Card key={cohort.id} className="flex flex-col overflow-hidden hover:shadow-lg transition-shadow">
                                 {/* Card Header with gradient */}
-                                <div className="bg-gradient-to-br from-slate-700 to-slate-900 p-5 text-white">
-                                    {cohort.program && (
-                                        <div className="mb-2">
+                                <div className={`p-5 text-white ${isAtCapacity ? 'bg-gradient-to-br from-purple-700 to-purple-900' : 'bg-gradient-to-br from-slate-700 to-slate-900'}`}>
+                                    <div className="flex items-center justify-between mb-2">
+                                        {cohort.program && (
                                             <span className="inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">
                                                 {formatLevel(cohort.program.level)}
                                             </span>
-                                        </div>
-                                    )}
+                                        )}
+                                        {isAtCapacity && (
+                                            <span className="inline-flex items-center rounded-full bg-amber-400 text-amber-900 px-3 py-1 text-xs font-semibold">
+                                                Full
+                                            </span>
+                                        )}
+                                    </div>
                                     <h3 className="text-xl font-bold mb-1">{cohort.program?.name || 'Program'}</h3>
                                     <p className="text-sm text-slate-200">{cohort.name}</p>
                                 </div>
@@ -366,21 +508,29 @@ export default function StudentAcademyPage() {
                                             <span className="font-medium text-slate-900">{new Date(cohort.end_date).toLocaleDateString()}</span>
                                         </div>
                                         <div className="flex items-center justify-between">
-                                            <span className="text-slate-500">Capacity:</span>
-                                            <span className="font-medium text-slate-900">{cohort.capacity} students</span>
+                                            <span className="text-slate-500">Spots:</span>
+                                            <span className={`font-medium ${isAtCapacity ? 'text-red-600' : spotsRemaining <= 3 ? 'text-amber-600' : 'text-slate-900'}`}>
+                                                {isAtCapacity
+                                                    ? `Full (${waitlistCount} on waitlist)`
+                                                    : `${spotsRemaining} of ${cohort.capacity} remaining`}
+                                            </span>
                                         </div>
                                     </div>
 
                                     <Button
-                                        onClick={() => handleEnroll(cohort.id)}
+                                        onClick={() => handleEnroll(cohort.id, isAtCapacity)}
                                         disabled={enrollingId === cohort.id}
+                                        variant={isAtCapacity ? "secondary" : "primary"}
                                         className="w-full mt-auto"
                                     >
-                                        {enrollingId === cohort.id ? "Enrolling..." : "Enroll Now"}
+                                        {enrollingId === cohort.id
+                                            ? (isAtCapacity ? "Joining waitlist..." : "Enrolling...")
+                                            : (isAtCapacity ? "Join Waitlist" : "Enroll Now")}
                                     </Button>
                                 </div>
                             </Card>
-                        ))}
+                        );
+                        })}
                     </div>
                 )}
             </section>

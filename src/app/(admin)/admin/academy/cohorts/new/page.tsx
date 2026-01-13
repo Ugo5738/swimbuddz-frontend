@@ -1,20 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Card } from "@/components/ui/Card";
+import { CoachPicker } from "@/components/admin/CoachPicker";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
+import { Textarea } from "@/components/ui/Textarea";
 import {
     AcademyApi,
     CohortStatus,
     LocationType,
     type Program,
-    type Cohort
 } from "@/lib/academy";
-import { SessionsApi, SessionType, SessionLocation } from "@/lib/sessions";
+import { SessionLocation, SessionsApi, SessionType } from "@/lib/sessions";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 // Day/time schedule item
@@ -41,6 +41,8 @@ export default function NewCohortPage() {
         status: CohortStatus.OPEN,
         allow_mid_entry: false,
         require_approval: false, // If true, enrollment needs admin approval even after payment
+        // Coach (coach_id is the member_id of the assigned coach)
+        coach_id: null as string | null,
         // Location
         timezone: "Africa/Lagos",
         location_type: LocationType.POOL,
@@ -134,6 +136,7 @@ export default function NewCohortPage() {
                 capacity: formData.capacity,
                 status: formData.status,
                 allow_mid_entry: formData.allow_mid_entry,
+                coach_id: formData.coach_id || undefined,
                 timezone: formData.timezone,
                 location_type: formData.location_type,
                 location_name: formData.location_name || undefined,
@@ -346,6 +349,16 @@ export default function NewCohortPage() {
                                 <option value={CohortStatus.OPEN}>Open for Enrollment</option>
                                 <option value={CohortStatus.ACTIVE}>Active (In Progress)</option>
                             </Select>
+                        </div>
+
+                        <div className="border-t pt-4 mt-4">
+                            <h3 className="font-semibold text-slate-900 mb-3">Coach Assignment</h3>
+                            <CoachPicker
+                                value={formData.coach_id}
+                                onChange={(memberId) => setFormData({ ...formData, coach_id: memberId })}
+                                label="Assign Coach"
+                                hint="Optionally assign a coach to this cohort"
+                            />
                         </div>
 
                         <div className="border-t pt-4 mt-4">
