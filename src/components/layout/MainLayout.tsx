@@ -13,8 +13,9 @@ export function MainLayout({ children }: MainLayoutProps) {
   const pathname = usePathname();
   const year = new Date().getFullYear();
   const isAdminRoute = pathname?.startsWith("/admin");
+  const isCoachRoute = pathname?.startsWith("/coach");
 
-  // Member portal routes should use MemberLayout without the public header/footer
+  // Member/coach portal routes should use their own layouts without the public chrome
   const isMemberPortalRoute =
     pathname?.startsWith("/account") ||
     pathname?.startsWith("/profile") ||
@@ -28,7 +29,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     pathname?.startsWith("/upgrade") ||
     pathname?.startsWith("/sessions/");
 
-  if (isAdminRoute || isMemberPortalRoute) {
+  if (isAdminRoute || isMemberPortalRoute || isCoachRoute) {
     return <>{children}</>;
   }
 

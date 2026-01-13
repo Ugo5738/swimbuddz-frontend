@@ -5,6 +5,7 @@ import { supabase } from "@/lib/auth";
 import {
     Bell,
     BookOpen,
+    Briefcase,
     Calendar,
     CalendarDays,
     CheckCircle,
@@ -141,6 +142,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
     const [member, setMember] = useState<MemberInfo | null>(null);
     const [loading, setLoading] = useState(true);
     const [academyEnrollments, setAcademyEnrollments] = useState<AcademyEnrollment[]>([]);
+    const [isCoach, setIsCoach] = useState(false);
 
     const refreshMember = useCallback(async () => {
         try {
@@ -157,7 +159,12 @@ export function MemberLayout({ children }: MemberLayoutProps) {
             refreshMember(),
             apiGet<AcademyEnrollment[]>("/api/v1/academy/my-enrollments", { auth: true })
                 .then(setAcademyEnrollments)
-                .catch(() => setAcademyEnrollments([]))
+                .catch(() => setAcademyEnrollments([])),
+            // Check if user has coach role
+            supabase.auth.getUser().then(({ data }) => {
+                const roles = data.user?.app_metadata?.roles || [];
+                setIsCoach(Array.isArray(roles) && roles.includes("coach"));
+            }).catch(() => setIsCoach(false))
         ]).finally(() => setLoading(false));
     }, [refreshMember]);
 
@@ -435,6 +442,15 @@ export function MemberLayout({ children }: MemberLayoutProps) {
 
                     {/* Footer Actions */}
                     <div className="border-t border-white/10 p-4 space-y-2">
+                        {isCoach && (
+                            <Link
+                                href="/coach/dashboard"
+                                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 transition-all hover:bg-white/10 hover:text-white bg-emerald-600/30"
+                            >
+                                <Briefcase className="h-5 w-5 shrink-0" />
+                                <span>Coach Portal</span>
+                            </Link>
+                        )}
                         <Link
                             href="/"
                             className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 transition-all hover:bg-white/10 hover:text-white"

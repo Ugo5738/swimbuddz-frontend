@@ -362,7 +362,7 @@ export default function CoachApplyPage() {
                                         Head to your dashboard to manage sessions and swimmers.
                                     </p>
                                 </div>
-                                <Button className="w-full" onClick={() => router.push("/account/coach")}>
+                                <Button className="w-full" onClick={() => router.push("/coach/dashboard")}>
                                     Go to Dashboard →
                                 </Button>
                             </>

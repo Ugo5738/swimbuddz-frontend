@@ -9,24 +9,33 @@ import { StatsCard } from "@/components/ui/StatsCard";
 import {
     calculateCohortStats,
     getMyCoachCohorts,
+    getMyCoachEarnings,
+    type CoachEarnings,
     type Cohort,
 } from "@/lib/coach";
-import { formatDate } from "@/lib/format";
-import { Calendar, GraduationCap, Users } from "lucide-react";
+import { formatDate, formatNaira } from "@/lib/format";
+import { Calendar, DollarSign, GraduationCap, Users } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 export default function CoachDashboardPage() {
     const [cohorts, setCohorts] = useState<Cohort[]>([]);
+    const [earnings, setEarnings] = useState<CoachEarnings | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        getMyCoachCohorts()
-            .then(setCohorts)
+        Promise.all([
+            getMyCoachCohorts(),
+            getMyCoachEarnings().catch(() => null),
+        ])
+            .then(([cohortsData, earningsData]) => {
+                setCohorts(cohortsData);
+                setEarnings(earningsData);
+            })
             .catch((err) => {
-                console.error("Failed to load cohorts", err);
-                setError("Failed to load your cohorts. Please try again.");
+                console.error("Failed to load dashboard data", err);
+                setError("Failed to load your dashboard. Please try again.");
             })
             .finally(() => setLoading(false));
     }, []);
@@ -209,23 +218,89 @@ export default function CoachDashboardPage() {
                                     View Schedule
                                 </Button>
                             </Link>
+                            <Link href="/coach/payouts" className="block">
+                                <Button variant="secondary" className="w-full justify-start">
+                                    <DollarSign className="h-4 w-4 mr-2" />
+                                    View Payouts
+                                </Button>
+                            </Link>
+                            <Link href="/coach/bank-account" className="block">
+                                <Button variant="secondary" className="w-full justify-start">
+                                    <DollarSign className="h-4 w-4 mr-2" />
+                                    Bank Account
+                                </Button>
+                            </Link>
                         </div>
                     </Card>
 
-                    {/* Recent Activity Placeholder */}
+                    {/* Earnings Card */}
                     <Card className="p-6">
-                        <h2 className="text-lg font-semibold text-slate-900 mb-4">
-                            Recent Activity
-                        </h2>
-                        <div className="space-y-3 text-sm">
-                            <p className="text-slate-500 italic">
-                                Activity feed coming soon...
-                            </p>
-                            <p className="text-slate-400 text-xs">
-                                You'll see student progress updates, new enrollments, and session
-                                completions here.
-                            </p>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-semibold text-slate-900">
+                                Earnings
+                            </h2>
+                            <DollarSign className="h-5 w-5 text-emerald-600" />
                         </div>
+                        {earnings ? (
+                            <div className="space-y-4">
+                                <div>
+                                    <p className="text-sm text-slate-500">Total Earnings</p>
+                                    <p className="text-2xl font-bold text-emerald-600">
+                                        {formatNaira(earnings.summary.total_earnings)}
+                                    </p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                    <div className="bg-slate-50 rounded-lg p-2">
+                                        <p className="text-slate-500 text-xs">Active</p>
+                                        <p className="font-semibold text-slate-900">
+                                            {earnings.summary.active_cohorts} cohorts
+                                        </p>
+                                    </div>
+                                    <div className="bg-slate-50 rounded-lg p-2">
+                                        <p className="text-slate-500 text-xs">Completed</p>
+                                        <p className="font-semibold text-slate-900">
+                                            {earnings.summary.completed_cohorts} cohorts
+                                        </p>
+                                    </div>
+                                </div>
+                                {earnings.rates.academy_cohort_stipend > 0 && (
+                                    <div className="pt-3 border-t border-slate-100">
+                                        <p className="text-xs text-slate-500">
+                                            Cohort Stipend Rate
+                                        </p>
+                                        <p className="text-sm font-medium text-slate-700">
+                                            {formatNaira(earnings.rates.academy_cohort_stipend)} / cohort
+                                        </p>
+                                    </div>
+                                )}
+                                {earnings.cohort_earnings.length > 0 && (
+                                    <div className="pt-3 border-t border-slate-100">
+                                        <p className="text-xs text-slate-500 mb-2">
+                                            Earnings by Cohort
+                                        </p>
+                                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                                            {earnings.cohort_earnings.slice(0, 3).map((ce) => (
+                                                <div
+                                                    key={ce.cohort_id}
+                                                    className="flex justify-between text-sm"
+                                                >
+                                                    <span className="text-slate-600 truncate mr-2">
+                                                        {ce.cohort_name}
+                                                    </span>
+                                                    <span className="font-medium text-emerald-600">
+                                                        {formatNaira(ce.earnings)}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="text-sm text-slate-500">
+                                <p>Earnings will appear once you have active or completed cohorts.</p>
+                            </div>
+                        )}
                     </Card>
 
                     {/* Profile Card */}
@@ -260,10 +335,10 @@ function CohortCard({ cohort }: { cohort: Cohort }) {
         cohort.status === "active"
             ? "success"
             : cohort.status === "open"
-              ? "info"
-              : cohort.status === "completed"
-                ? "default"
-                : "warning";
+                ? "info"
+                : cohort.status === "completed"
+                    ? "default"
+                    : "warning";
 
     const startDate = formatDate(cohort.start_date, { includeYear: false });
     const endDate = formatDate(cohort.end_date, { includeYear: false });

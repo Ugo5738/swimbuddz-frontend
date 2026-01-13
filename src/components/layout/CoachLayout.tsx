@@ -139,9 +139,8 @@ export function CoachLayout({ children }: CoachLayoutProps) {
 
             {/* Sidebar */}
             <aside
-                className={`fixed inset-y-0 left-0 z-50 w-72 transform bg-gradient-to-b from-emerald-700 via-emerald-600 to-teal-600 text-white transition-transform duration-300 ease-in-out lg:translate-x-0 ${
-                    sidebarOpen ? "translate-x-0" : "-translate-x-full"
-                }`}
+                className={`fixed inset-y-0 left-0 z-50 w-72 transform bg-gradient-to-b from-emerald-700 via-emerald-600 to-teal-600 text-white transition-transform duration-300 ease-in-out lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+                    }`}
             >
                 <div className="flex h-full flex-col">
                     {/* Header with Logo */}
@@ -198,11 +197,10 @@ export function CoachLayout({ children }: CoachLayoutProps) {
                                                 <Link
                                                     href={item.href}
                                                     onClick={() => setSidebarOpen(false)}
-                                                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
-                                                        active
+                                                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${active
                                                             ? "bg-white text-emerald-700 shadow-lg"
                                                             : "text-white/90 hover:bg-white/10 hover:text-white"
-                                                    }`}
+                                                        }`}
                                                 >
                                                     <Icon className="h-5 w-5 shrink-0" />
                                                     <span className="flex-1">{item.label}</span>

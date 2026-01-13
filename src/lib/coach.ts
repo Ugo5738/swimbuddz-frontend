@@ -139,6 +139,113 @@ export async function getCohortStudents(cohortId: string): Promise<Enrollment[]>
 }
 
 /**
+ * Get all students across all cohorts assigned to the current coach.
+ * Returns enrollments with cohort and progress data.
+ */
+export async function getMyCoachStudents(): Promise<Enrollment[]> {
+    return apiGet<Enrollment[]>("/api/v1/academy/coach/me/students", {
+        auth: true,
+    });
+}
+
+// --- Session Types ---
+
+export type SessionLocation =
+    | "sunfit_pool"
+    | "rowe_park_pool"
+    | "federal_palace_pool"
+    | "open_water"
+    | "other";
+
+export type SessionType =
+    | "cohort_class"
+    | "one_on_one"
+    | "group_booking"
+    | "club"
+    | "community"
+    | "event";
+
+export type SessionStatus = "scheduled" | "in_progress" | "completed" | "cancelled";
+
+export type CoachSession = {
+    id: string;
+    title: string;
+    description: string | null;
+    session_type: SessionType;
+    status: SessionStatus;
+    starts_at: string;
+    ends_at: string;
+    timezone: string;
+    location: SessionLocation | null;
+    location_name: string | null;
+    location_address: string | null;
+    capacity: number;
+    cohort_id: string | null;
+    week_number: number | null;
+    lesson_title: string | null;
+    created_at: string;
+    updated_at: string;
+};
+
+/**
+ * Get sessions for the current coach.
+ * Includes sessions from assigned cohorts and direct assignments.
+ */
+export async function getMyCoachSessions(options?: {
+    fromDate?: string;
+    toDate?: string;
+}): Promise<CoachSession[]> {
+    const params = new URLSearchParams();
+    if (options?.fromDate) params.set("from_date", options.fromDate);
+    if (options?.toDate) params.set("to_date", options.toDate);
+
+    const queryString = params.toString();
+    const url = `/api/v1/sessions/coach/me${queryString ? `?${queryString}` : ""}`;
+
+    return apiGet<CoachSession[]>(url, { auth: true });
+}
+
+// --- Resource Types ---
+
+export type ResourceSourceType = "url" | "upload";
+export type ResourceVisibility = "enrolled_only" | "public" | "coach_only";
+
+export type CohortResource = {
+    id: string;
+    cohort_id: string;
+    title: string;
+    resource_type: string; // 'note', 'drill', 'assignment'
+    description: string | null;
+    source_type: ResourceSourceType;
+    content_media_id: string | null;
+    storage_path: string | null;
+    mime_type: string | null;
+    file_size_bytes: number | null;
+    visibility: ResourceVisibility;
+    week_number: number | null;
+    created_at: string;
+    cohort?: Cohort;
+};
+
+/**
+ * Get all resources across all cohorts assigned to the current coach.
+ */
+export async function getMyCoachResources(): Promise<CohortResource[]> {
+    return apiGet<CohortResource[]>("/api/v1/academy/coach/me/resources", {
+        auth: true,
+    });
+}
+
+/**
+ * Get resources for a specific cohort.
+ */
+export async function getCohortResources(cohortId: string): Promise<CohortResource[]> {
+    return apiGet<CohortResource[]>(`/api/v1/academy/cohorts/${cohortId}/resources`, {
+        auth: true,
+    });
+}
+
+/**
  * Get milestones for a program.
  */
 export async function getProgramMilestones(programId: string): Promise<Milestone[]> {
@@ -200,6 +307,42 @@ export async function getCoachApplicationStatus(): Promise<{
     rejection_reason: string | null;
 }> {
     return apiGet("/api/v1/members/coaches/application-status", { auth: true });
+}
+
+// --- Earnings Types ---
+
+export type CohortEarning = {
+    cohort_id: string;
+    cohort_name: string;
+    program_name: string | null;
+    status: string;
+    start_date: string | null;
+    end_date: string | null;
+    earnings: number;
+};
+
+export type CoachEarnings = {
+    summary: {
+        total_earnings: number;
+        active_cohorts: number;
+        completed_cohorts: number;
+        pending_payout: number;
+    };
+    rates: {
+        academy_cohort_stipend: number;
+        one_to_one_rate_per_hour: number;
+        group_session_rate_per_hour: number;
+    };
+    cohort_earnings: CohortEarning[];
+};
+
+/**
+ * Get earnings summary for the current coach.
+ */
+export async function getMyCoachEarnings(): Promise<CoachEarnings> {
+    return apiGet<CoachEarnings>("/api/v1/academy/coach/me/earnings", {
+        auth: true,
+    });
 }
 
 // --- Helper Functions ---

@@ -48,7 +48,7 @@ export default function CoachOnboardingPage() {
                 setCoachStatus(status.status);
 
                 if (status.status === "active") {
-                    router.push("/account/coach");
+                    router.push("/coach/dashboard");
                     return;
                 }
 
@@ -132,7 +132,7 @@ export default function CoachOnboardingPage() {
             };
 
             await CoachesApi.completeOnboarding(payload);
-            router.push("/account/coach");
+            router.push("/coach/dashboard");
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to complete onboarding");
         } finally {

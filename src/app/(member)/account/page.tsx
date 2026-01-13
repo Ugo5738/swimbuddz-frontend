@@ -380,7 +380,7 @@ export default function MemberDashboardPage() {
 
             {/* Coach Card (if applicable) */}
             {member?.coach_profile && (
-                <Link href="/account/coach" className="block">
+                <Link href="/coach/dashboard" className="block">
                     <Card className="p-6 border-purple-200 bg-gradient-to-r from-purple-50 to-purple-100/50 hover:shadow-lg transition-shadow">
                         <div className="flex items-center gap-4">
                             <div className="rounded-xl bg-purple-200 p-3">
