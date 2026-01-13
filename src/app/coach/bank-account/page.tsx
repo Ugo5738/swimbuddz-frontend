@@ -14,7 +14,6 @@ import {
     type BankAccount,
 } from "@/lib/payouts";
 import { Ban, Building2, CheckCircle, CreditCard, Loader2 } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -22,6 +21,7 @@ export default function BankAccountPage() {
     const [bankAccount, setBankAccount] = useState<BankAccount | null>(null);
     const [banks, setBanks] = useState<Bank[]>([]);
     const [loading, setLoading] = useState(true);
+    const [banksError, setBanksError] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [verifying, setVerifying] = useState(false);
     const [deleting, setDeleting] = useState(false);
@@ -32,23 +32,79 @@ export default function BankAccountPage() {
     const [verifiedName, setVerifiedName] = useState<string | null>(null);
     const [verificationError, setVerificationError] = useState<string | null>(null);
 
-    // Load bank account and bank list
+    const FALLBACK_BANKS: Bank[] = [
+        { name: "Access Bank", code: "044", slug: "access-bank" },
+        { name: "Access Bank (Diamond)", code: "063", slug: "diamond-bank" },
+        { name: "Citibank", code: "023", slug: "citibank" },
+        { name: "Ecobank", code: "050", slug: "ecobank" },
+        { name: "Fidelity Bank", code: "070", slug: "fidelity-bank" },
+        { name: "First Bank of Nigeria", code: "011", slug: "first-bank-of-nigeria" },
+        { name: "First City Monument Bank", code: "214", slug: "first-city-monument-bank" },
+        { name: "Guaranty Trust Bank", code: "058", slug: "guaranty-trust-bank" },
+        { name: "Heritage Bank", code: "030", slug: "heritage-bank" },
+        { name: "Keystone Bank", code: "082", slug: "keystone-bank" },
+        { name: "Polaris Bank", code: "076", slug: "polaris-bank" },
+        { name: "Stanbic IBTC Bank", code: "221", slug: "stanbic-ibtc-bank" },
+        { name: "Standard Chartered Bank", code: "068", slug: "standard-chartered-bank" },
+        { name: "Sterling Bank", code: "232", slug: "sterling-bank" },
+        { name: "Union Bank of Nigeria", code: "032", slug: "union-bank-of-nigeria" },
+        { name: "United Bank For Africa", code: "033", slug: "united-bank-for-africa" },
+        { name: "Unity Bank", code: "215", slug: "unity-bank" },
+        { name: "Wema Bank", code: "035", slug: "wema-bank" },
+        { name: "Zenith Bank", code: "057", slug: "zenith-bank" },
+    ];
+
+    async function fetchBanks(): Promise<Bank[]> {
+        try {
+            const bankList = await listBanks();
+            if (bankList && bankList.length > 0) {
+                console.info(`Loaded ${bankList.length} banks from API`);
+                setBanksError(null);
+                return bankList;
+            }
+            setBanksError("No banks returned from server. Showing fallback list.");
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Unable to load banks from server.";
+            setBanksError(`${message} Showing fallback list.`);
+        }
+        console.info(`Loaded ${FALLBACK_BANKS.length} banks from fallback list`);
+        return FALLBACK_BANKS;
+    }
+
+    // Load bank list first, then bank account (404 tolerated)
     useEffect(() => {
-        Promise.all([getMyBankAccount(), listBanks()])
-            .then(([account, bankList]) => {
-                setBankAccount(account);
+        let isMounted = true;
+        const load = async () => {
+            try {
+                const bankList = await fetchBanks();
+                if (!isMounted) return;
                 setBanks(bankList);
-                if (account) {
-                    setBankCode(account.bank_code);
-                    setAccountNumber(account.account_number);
-                    setVerifiedName(account.account_name);
+
+                try {
+                    const account = await getMyBankAccount();
+                    if (!isMounted) return;
+                    setBankAccount(account);
+                    if (account) {
+                        setBankCode(account.bank_code);
+                        setAccountNumber(account.account_number);
+                        setVerifiedName(account.account_name);
+                    }
+                } catch (err) {
+                    console.info("No existing bank account; continuing", err);
+                    setBankAccount(null);
                 }
-            })
-            .catch((err) => {
-                console.error("Failed to load bank account data", err);
-                toast.error("Failed to load bank account information");
-            })
-            .finally(() => setLoading(false));
+            } catch (err) {
+                console.error("Failed to load bank data", err);
+                toast.error("Failed to load bank information");
+            } finally {
+                if (isMounted) setLoading(false);
+            }
+        };
+
+        load();
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     // Verify account when user enters 10+ digits and selects a bank
@@ -94,7 +150,13 @@ export default function BankAccountPage() {
                 bank_name: selectedBank.name,
                 account_number: accountNumber,
             });
-            setBankAccount(saved);
+            // Re-fetch to ensure we have the latest from the API
+            const refreshed = await getMyBankAccount().catch(() => saved);
+            const nextAccount = refreshed || saved;
+            setBankAccount(nextAccount);
+            setVerifiedName(nextAccount.account_name);
+            setBankCode(nextAccount.bank_code);
+            setAccountNumber(nextAccount.account_number);
             toast.success("Bank account saved successfully!");
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "Failed to save";
@@ -131,20 +193,13 @@ export default function BankAccountPage() {
     }
 
     return (
-        <div className="space-y-6 max-w-2xl">
+        <div className="space-y-6 max-w-2xl mx-auto">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Bank Account</h1>
-                    <p className="text-slate-600 mt-1">
-                        Add your bank account details to receive payouts.
-                    </p>
-                </div>
-                <Link href="/coach/dashboard">
-                    <Button variant="outline" size="sm">
-                        Back to Dashboard
-                    </Button>
-                </Link>
+            <div>
+                <h1 className="text-2xl font-bold text-slate-900">Bank Account</h1>
+                <p className="text-slate-600 mt-1">
+                    Add your bank account details to receive payouts.
+                </p>
             </div>
 
             {/* Current Account Display */}
@@ -190,6 +245,12 @@ export default function BankAccountPage() {
                 </div>
 
                 <div className="space-y-4">
+                    {banksError && (
+                        <Alert variant="info" title="Banks list">
+                            {banksError}
+                        </Alert>
+                    )}
+
                     {/* Bank Selection */}
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">

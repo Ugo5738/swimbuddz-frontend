@@ -13,7 +13,8 @@ export function MainLayout({ children }: MainLayoutProps) {
   const pathname = usePathname();
   const year = new Date().getFullYear();
   const isAdminRoute = pathname?.startsWith("/admin");
-  const isCoachRoute = pathname?.startsWith("/coach");
+  const isCoachRoute =
+    pathname?.startsWith("/coach") && !pathname?.startsWith("/coach/apply");
 
   // Member/coach portal routes should use their own layouts without the public chrome
   const isMemberPortalRoute =

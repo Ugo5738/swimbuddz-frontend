@@ -293,7 +293,25 @@ export async function updateStudentProgress(
  * Get the current coach's profile and application status.
  */
 export async function getMyCoachProfile(): Promise<CoachProfile> {
-    return apiGet<CoachProfile>("/api/v1/members/coaches/me", { auth: true });
+    return apiGet<CoachProfile>("/api/v1/coaches/me", { auth: true });
+}
+
+/** Alias for getMyCoachProfile for backwards compatibility. */
+export const getCoachProfile = getMyCoachProfile;
+
+/**
+ * Update the current coach's preferences/availability.
+ */
+export async function updateCoachPreferences(data: {
+    pools_supported?: string[];
+    can_travel_between_pools?: boolean;
+    travel_radius_km?: number;
+    preferred_cohort_types?: string[];
+    max_swimmers_per_session?: number;
+}): Promise<CoachProfile> {
+    return apiPost<CoachProfile>("/api/v1/coaches/me/preferences", data, {
+        auth: true,
+    });
 }
 
 /**
@@ -306,7 +324,7 @@ export async function getCoachApplicationStatus(): Promise<{
     application_reviewed_at: string | null;
     rejection_reason: string | null;
 }> {
-    return apiGet("/api/v1/members/coaches/application-status", { auth: true });
+    return apiGet("/api/v1/coaches/application-status", { auth: true });
 }
 
 // --- Earnings Types ---

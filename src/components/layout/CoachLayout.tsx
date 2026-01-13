@@ -7,13 +7,16 @@ import {
     BookOpen,
     Calendar,
     ChevronRight,
+    CreditCard,
     GraduationCap,
     Home,
     LayoutDashboard,
     LogOut,
     Menu,
     Settings,
+    User,
     Users,
+    Wallet,
     X,
 } from "lucide-react";
 import Link from "next/link";
@@ -58,10 +61,17 @@ const navSections: NavSection[] = [
         ],
     },
     {
+        title: "Payments",
+        items: [
+            { href: "/coach/payouts", label: "Payout History", icon: Wallet },
+            { href: "/coach/bank-account", label: "Bank Account", icon: CreditCard },
+        ],
+    },
+    {
         title: "Settings",
         items: [
-            { href: "/coach/onboarding", label: "Availability", icon: Settings },
-            { href: "/coach/apply", label: "Edit Profile", icon: Settings },
+            { href: "/coach/profile", label: "My Profile", icon: User },
+            { href: "/coach/preferences", label: "Preferences", icon: Settings },
         ],
     },
 ];
@@ -198,8 +208,8 @@ export function CoachLayout({ children }: CoachLayoutProps) {
                                                     href={item.href}
                                                     onClick={() => setSidebarOpen(false)}
                                                     className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${active
-                                                            ? "bg-white text-emerald-700 shadow-lg"
-                                                            : "text-white/90 hover:bg-white/10 hover:text-white"
+                                                        ? "bg-white text-emerald-700 shadow-lg"
+                                                        : "text-white/90 hover:bg-white/10 hover:text-white"
                                                         }`}
                                                 >
                                                     <Icon className="h-5 w-5 shrink-0" />

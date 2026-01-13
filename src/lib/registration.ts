@@ -44,6 +44,10 @@ type MemberMembershipData = {
   academy_lesson_preference?: string | null;
 };
 
+type CoachProfileData = {
+  status?: string | null;
+};
+
 type MemberForRedirect = {
   roles?: string[] | null;
   profile_photo_url?: string | null;
@@ -56,6 +60,7 @@ type MemberForRedirect = {
   emergency_contact?: MemberEmergencyContactData | null;
   availability?: MemberAvailabilityData | null;
   membership?: MemberMembershipData | null;
+  coach_profile?: CoachProfileData | null;
 };
 
 function parseDateMs(value: any): number | null {
@@ -123,11 +128,30 @@ export async function getPostAuthRedirectPath(): Promise<string> {
 
     // Check if user is a coach - redirect to coach flow instead of member onboarding
     const roles = (member.roles || []).map(r => String(r).toLowerCase());
-    const isCoach = roles.includes("coach");
+    const hasCoachRole = roles.includes("coach");
+    const coachStatus = member.coach_profile?.status
+      ? String(member.coach_profile.status).toLowerCase()
+      : null;
 
-    // Coaches should always land in the coach application/status flow first.
-    if (isCoach) {
-      return "/coach/apply";
+    // Coaches in application or review states should stay in the coach flow.
+    if (hasCoachRole) {
+      if (coachStatus === "approved") {
+        return "/coach/onboarding";
+      }
+
+      const needsCoachFlow = !coachStatus || [
+        "draft",
+        "pending_review",
+        "more_info_needed",
+        "rejected",
+        "inactive",
+        "suspended",
+      ].includes(coachStatus);
+
+      if (needsCoachFlow) {
+        return "/coach/apply";
+      }
+      // Active coaches fall through to member onboarding/dashboard logic below.
     }
 
     // Use nested membership data
