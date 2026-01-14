@@ -1,18 +1,12 @@
 "use client";
 
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { Member, MembersApi } from "@/lib/members";
+import Link from "next/link";
 import { useEffect, useState } from "react";
-// import { Badge } from "@/components/ui/Badge";
-// import { Avatar } from "@/components/ui/Avatar";
-
-
-// Assuming we have these components. If Badge/Avatar are missing, I'll use basic HTML.
-// I'll check imports later or implement simple versions.
-// Avatar usually exists in UI lib.
-// Badge might need to be imported from ui/Badge or similar.
 
 export default function CoachDirectoryPage() {
     const [coaches, setCoaches] = useState<Member[]>([]);
@@ -88,24 +82,25 @@ export default function CoachDirectoryPage() {
                                         {coach.coaching_specialties && coach.coaching_specialties.length > 0 && (
                                             <div className="flex flex-wrap gap-2 pt-2">
                                                 {coach.coaching_specialties.slice(0, 3).map((spec, i) => (
-                                                    <span key={i} className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800">
+                                                    <Badge key={i} variant="default" className="text-xs">
                                                         {spec}
-                                                    </span>
+                                                    </Badge>
                                                 ))}
                                                 {coach.coaching_specialties.length > 3 && (
-                                                    <span className="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-xs text-slate-500">
+                                                    <Badge variant="secondary" className="text-xs">
                                                         +{coach.coaching_specialties.length - 3}
-                                                    </span>
+                                                    </Badge>
                                                 )}
                                             </div>
                                         )}
                                     </div>
 
                                     <div className="mt-auto pt-4">
-                                        {/* Actions? View Profile? */}
-                                        <Button variant="outline" className="w-full">
-                                            View Profile
-                                        </Button>
+                                        <Link href={`/coaches/${member.id}`}>
+                                            <Button variant="outline" className="w-full">
+                                                View Profile
+                                            </Button>
+                                        </Link>
                                     </div>
                                 </div>
                             </Card>

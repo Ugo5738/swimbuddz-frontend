@@ -16,7 +16,9 @@ export type CoachProfile = components["schemas"]["CoachProfileResponse"];
 export const MembersApi = {
     getMe: () => apiGet<Member>("/api/v1/members/me", { auth: true }),
 
-    listCoaches: () => apiGet<Member[]>("/api/v1/members/coaches", { auth: true }),
+    listCoaches: () => apiGet<Member[]>("/api/v1/members/coaches"),
+
+    getCoach: (id: string) => apiGet<Member>(`/api/v1/members/coaches/${id}`),
 
     // Admin
     listMembers: (skip = 0, limit = 100) =>

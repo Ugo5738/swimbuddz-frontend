@@ -294,6 +294,7 @@ export const AcademyApi = {
     getCohort: (id: string) => apiGet<Cohort>(`/api/v1/academy/cohorts/${id}`),
     updateCohort: (id: string, data: Partial<Cohort>) => apiPut<Cohort>(`/api/v1/academy/cohorts/${id}`, data, { auth: true }),
     deleteCohort: (id: string) => apiDelete<void>(`/api/v1/academy/cohorts/${id}`, { auth: true }),
+    listCohortsByCoach: (coachId: string) => apiGet<Cohort[]>(`/api/v1/academy/cohorts/by-coach/${coachId}`),
 
     // Milestones
     listMilestones: (programId: string) => apiGet<Milestone[]>(`/api/v1/academy/programs/${programId}/milestones`),

@@ -1,21 +1,32 @@
 "use client";
 
 import { supabase } from "@/lib/auth";
-import { ChevronRight, LayoutDashboard, LogOut, Menu, User, X } from "lucide-react";
+import { ChevronDown, ChevronRight, LayoutDashboard, LogOut, Menu, User, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-const navLinks = [
-    { href: "/", label: "Home" },
-    { href: "/about", label: "About" },
-    { href: "/community", label: "Community" },
-    { href: "/club", label: "Club" },
-    { href: "/academy", label: "Academy" },
-    { href: "/sessions-and-events", label: "Sessions & Events" },
-    { href: "/store", label: "Shop" },
-    { href: "/gallery", label: "Gallery" },
+// Grouped navigation structure
+const navGroups = [
+    { href: "/", label: "Home", type: "link" as const },
+    { href: "/about", label: "About", type: "link" as const },
+    {
+        label: "Programs",
+        type: "dropdown" as const,
+        items: [
+            { href: "/community", label: "Community", description: "Join the network, connect with swimmers" },
+            { href: "/club", label: "Club", description: "Structured training sessions & tracking" },
+            { href: "/academy", label: "Academy", description: "Learn to swim with certified coaches" },
+            { href: "/coaches", label: "Meet Our Coaches", description: "View coach profiles & expertise" },
+        ]
+    },
+    { href: "/sessions-and-events", label: "Sessions", type: "link" as const },
+    { href: "/store", label: "Shop", type: "link" as const },
+    { href: "/gallery", label: "Gallery", type: "link" as const },
 ];
+
+type NavItem = typeof navGroups[number];
+type DropdownItem = { href: string; label: string; description: string };
 
 export function Header() {
     const router = useRouter();
@@ -23,6 +34,8 @@ export function Header() {
     const [session, setSession] = useState<any>(null);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
+    const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         // Get initial session
@@ -52,7 +65,19 @@ export function Header() {
     // Close mobile menu on route change
     useEffect(() => {
         setMobileMenuOpen(false);
+        setActiveDropdown(null);
     }, [pathname]);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setActiveDropdown(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -66,6 +91,126 @@ export function Header() {
     const isActive = (href: string) => {
         if (href === "/") return pathname === "/";
         return pathname?.startsWith(href);
+    };
+
+    const isDropdownActive = (items: DropdownItem[]) => {
+        return items.some(item => isActive(item.href));
+    };
+
+    const toggleDropdown = (label: string) => {
+        setActiveDropdown(activeDropdown === label ? null : label);
+    };
+
+    const renderNavItem = (item: NavItem, isMobile: boolean = false) => {
+        if (item.type === 'link') {
+            return (
+                <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={isMobile ? closeMobileMenu : undefined}
+                    className={`${isMobile
+                        ? `flex items-center justify-between px-4 py-3 rounded-xl transition-colors ${isActive(item.href)
+                            ? 'text-cyan-700 bg-cyan-50 font-semibold'
+                            : 'text-slate-600 hover:text-cyan-700 hover:bg-slate-50'
+                        }`
+                        : `relative px-3 py-2 rounded-lg transition-colors ${isActive(item.href)
+                            ? 'text-cyan-700 bg-cyan-50'
+                            : 'text-slate-600 hover:text-cyan-700 hover:bg-slate-50'
+                        }`
+                        }`}
+                >
+                    {item.label}
+                    {isMobile && <ChevronRight className="h-4 w-4 opacity-50" />}
+                    {!isMobile && isActive(item.href) && (
+                        <span className="absolute bottom-1 left-3 right-3 h-0.5 bg-cyan-500 rounded-full" />
+                    )}
+                </Link>
+            );
+        }
+
+        // Dropdown
+        if (item.type === 'dropdown') {
+            const dropdownActive = isDropdownActive(item.items);
+
+            if (isMobile) {
+                return (
+                    <div key={item.label} className="space-y-1">
+                        <button
+                            onClick={() => toggleDropdown(item.label)}
+                            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors ${dropdownActive
+                                    ? 'text-cyan-700 bg-cyan-50 font-semibold'
+                                    : 'text-slate-600 hover:text-cyan-700 hover:bg-slate-50'
+                                }`}
+                        >
+                            {item.label}
+                            <ChevronDown className={`h-4 w-4 transition-transform ${activeDropdown === item.label ? 'rotate-180' : ''
+                                }`} />
+                        </button>
+                        {activeDropdown === item.label && (
+                            <div className="pl-4 space-y-1">
+                                {item.items.map((subItem) => (
+                                    <Link
+                                        key={subItem.href}
+                                        href={subItem.href}
+                                        onClick={closeMobileMenu}
+                                        className={`block px-4 py-2.5 rounded-lg transition-colors ${isActive(subItem.href)
+                                                ? 'text-cyan-700 bg-cyan-50 font-medium'
+                                                : 'text-slate-600 hover:text-cyan-700 hover:bg-slate-50'
+                                            }`}
+                                    >
+                                        {subItem.label}
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+
+            // Desktop dropdown
+            return (
+                <div key={item.label} className="relative" ref={dropdownRef}>
+                    <button
+                        onClick={() => toggleDropdown(item.label)}
+                        onMouseEnter={() => setActiveDropdown(item.label)}
+                        className={`flex items-center gap-1 px-3 py-2 rounded-lg transition-colors ${dropdownActive || activeDropdown === item.label
+                                ? 'text-cyan-700 bg-cyan-50'
+                                : 'text-slate-600 hover:text-cyan-700 hover:bg-slate-50'
+                            }`}
+                    >
+                        {item.label}
+                        <ChevronDown className={`h-4 w-4 transition-transform ${activeDropdown === item.label ? 'rotate-180' : ''
+                            }`} />
+                    </button>
+
+                    {activeDropdown === item.label && (
+                        <div
+                            className="absolute top-full left-0 mt-1 w-64 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50"
+                            onMouseLeave={() => setActiveDropdown(null)}
+                        >
+                            {item.items.map((subItem) => (
+                                <Link
+                                    key={subItem.href}
+                                    href={subItem.href}
+                                    className={`block px-4 py-3 transition-colors ${isActive(subItem.href)
+                                            ? 'bg-cyan-50'
+                                            : 'hover:bg-slate-50'
+                                        }`}
+                                >
+                                    <span className={`font-medium ${isActive(subItem.href) ? 'text-cyan-700' : 'text-slate-900'
+                                        }`}>
+                                        {subItem.label}
+                                    </span>
+                                    <p className="text-xs text-slate-500 mt-0.5">
+                                        {subItem.description}
+                                    </p>
+                                </Link>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        }
     };
 
     return (
@@ -100,21 +245,7 @@ export function Header() {
 
                 {/* Desktop Navigation */}
                 <nav className="hidden md:flex items-center gap-1 text-sm font-medium">
-                    {navLinks.map((link) => (
-                        <Link
-                            key={link.href}
-                            href={link.href}
-                            className={`relative px-3 py-2 rounded-lg transition-colors ${isActive(link.href)
-                                ? 'text-cyan-700 bg-cyan-50'
-                                : 'text-slate-600 hover:text-cyan-700 hover:bg-slate-50'
-                                }`}
-                        >
-                            {link.label}
-                            {isActive(link.href) && (
-                                <span className="absolute bottom-1 left-3 right-3 h-0.5 bg-cyan-500 rounded-full" />
-                            )}
-                        </Link>
-                    ))}
+                    {navGroups.map((item) => renderNavItem(item))}
 
                     {/* Auth Actions */}
                     <div className="flex items-center gap-2 ml-2 pl-2 border-l border-slate-200">
@@ -172,25 +303,12 @@ export function Header() {
 
             {/* Mobile Navigation - Slide down */}
             <div
-                className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileMenuOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+                className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileMenuOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
                     }`}
             >
                 <nav className="border-t bg-white px-4 py-4">
                     <div className="flex flex-col gap-1">
-                        {navLinks.map((link) => (
-                            <Link
-                                key={link.href}
-                                href={link.href}
-                                onClick={closeMobileMenu}
-                                className={`flex items-center justify-between px-4 py-3 rounded-xl transition-colors ${isActive(link.href)
-                                    ? 'text-cyan-700 bg-cyan-50 font-semibold'
-                                    : 'text-slate-600 hover:text-cyan-700 hover:bg-slate-50'
-                                    }`}
-                            >
-                                {link.label}
-                                <ChevronRight className="h-4 w-4 opacity-50" />
-                            </Link>
-                        ))}
+                        {navGroups.map((item) => renderNavItem(item, true))}
 
                         {/* Auth Actions */}
                         <div className="border-t border-slate-100 mt-2 pt-2">

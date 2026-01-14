@@ -427,50 +427,55 @@ function CohortDetailPageInner() {
                 <div className="space-y-6">
                     {/* Coach Info */}
                     {coach && (
-                        <Card className="p-6 border-2 border-cyan-100">
-                            <h3 className="font-semibold text-slate-900 mb-3">
-                                👤 Your Coach
-                            </h3>
-                            <div className="space-y-3">
-                                <div className="flex items-start gap-3">
-                                    <div className="flex-shrink-0">
-                                        {coach.profile_photo_url ? (
-                                            <img
-                                                src={coach.profile_photo_url}
-                                                alt={`${coach.first_name} ${coach.last_name}`}
-                                                className="w-16 h-16 rounded-full object-cover"
-                                            />
-                                        ) : (
-                                            <div className="w-16 h-16 rounded-full bg-cyan-100 flex items-center justify-center text-cyan-600 text-xl font-bold">
-                                                {coach.first_name?.[0]}{coach.last_name?.[0]}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="flex-1">
-                                        <h4 className="font-semibold text-slate-900">
-                                            {coach.first_name} {coach.last_name}
-                                        </h4>
-                                        {(coach.coach_profile?.short_bio || coach.coach_profile?.full_bio) && (
-                                            <p className="text-sm text-slate-600 mt-1">
-                                                {coach.coach_profile.short_bio || coach.coach_profile.full_bio}
-                                            </p>
-                                        )}
-                                        {coach.coach_profile?.certifications && coach.coach_profile.certifications.length > 0 && (
-                                            <div className="mt-2">
-                                                <p className="text-xs text-slate-500 font-medium mb-1">Certifications:</p>
-                                                <div className="flex flex-wrap gap-1">
-                                                    {coach.coach_profile.certifications.map((cert, idx) => (
-                                                        <Badge key={idx} variant="info" className="text-xs">
-                                                            {cert}
-                                                        </Badge>
-                                                    ))}
+                        <Link href={`/coaches/${coach.id}`}>
+                            <Card className="p-6 border-2 border-cyan-100 hover:shadow-md hover:border-cyan-300 transition-all cursor-pointer">
+                                <h3 className="font-semibold text-slate-900 mb-3">
+                                    👤 Your Coach
+                                </h3>
+                                <div className="space-y-3">
+                                    <div className="flex items-start gap-3">
+                                        <div className="flex-shrink-0">
+                                            {coach.profile_photo_url ? (
+                                                <img
+                                                    src={coach.profile_photo_url}
+                                                    alt={`${coach.first_name} ${coach.last_name}`}
+                                                    className="w-16 h-16 rounded-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-16 h-16 rounded-full bg-cyan-100 flex items-center justify-center text-cyan-600 text-xl font-bold">
+                                                    {coach.first_name?.[0]}{coach.last_name?.[0]}
                                                 </div>
-                                            </div>
-                                        )}
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <h4 className="font-semibold text-slate-900">
+                                                {coach.first_name} {coach.last_name}
+                                            </h4>
+                                            {(coach.coach_profile?.short_bio || coach.coach_profile?.full_bio) && (
+                                                <p className="text-sm text-slate-600 mt-1 line-clamp-2">
+                                                    {coach.coach_profile.short_bio || coach.coach_profile.full_bio}
+                                                </p>
+                                            )}
+                                            {coach.coach_profile?.certifications && coach.coach_profile.certifications.length > 0 && (
+                                                <div className="mt-2">
+                                                    <p className="text-xs text-slate-500 font-medium mb-1">Certifications:</p>
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {coach.coach_profile.certifications.map((cert, idx) => (
+                                                            <Badge key={idx} variant="info" className="text-xs">
+                                                                {cert}
+                                                            </Badge>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
+                                    <p className="text-xs text-cyan-600 text-center mt-2">
+                                        View full profile →
+                                    </p>
                                 </div>
-                            </div>
-                        </Card>
+                            </Card>
+                        </Link>
                     )}
 
                     {/* Location Details */}

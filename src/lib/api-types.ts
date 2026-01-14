@@ -702,6 +702,101 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/coaches/me/bank-account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get My Bank Account
+         * @description Get the current coach's bank account.
+         */
+        get: operations["get_my_bank_account_coaches_me_bank_account_get"];
+        put?: never;
+        /**
+         * Create Or Update Bank Account
+         * @description Create or update coach's bank account.
+         *
+         *     Auto-verifies via Paystack Resolve Account API and creates
+         *     a transfer recipient for automated payouts.
+         */
+        post: operations["create_or_update_bank_account_coaches_me_bank_account_post"];
+        /**
+         * Delete Bank Account
+         * @description Delete coach's bank account.
+         */
+        delete: operations["delete_bank_account_coaches_me_bank_account_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/coaches/banks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Banks
+         * @description Get list of Nigerian banks for dropdown.
+         *     Cached via Paystack API.
+         */
+        get: operations["list_banks_coaches_banks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/coaches/resolve-account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve Bank Account
+         * @description Verify a bank account and get the account holder name.
+         *     Free Paystack API, used for validation before saving.
+         */
+        post: operations["resolve_bank_account_coaches_resolve_account_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/coaches/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Coaches For Admin
+         * @description List coaches for admin use (e.g., coach picker in cohort forms).
+         *     Default filters to approved and active coaches only.
+         *     Use status=all to get all coaches regardless of status.
+         */
+        get: operations["list_coaches_for_admin_admin_coaches__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/coaches/applications": {
         parameters: {
             query?: never;
@@ -920,6 +1015,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sessions/coach/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List My Coach Sessions
+         * @description List sessions for the current coach. Includes:
+         *     - Sessions linked to cohorts where the coach is assigned
+         *     - Sessions where the coach is listed in session_coaches
+         *
+         *     Optional date range filters (ISO format: YYYY-MM-DD).
+         */
+        get: operations["list_my_coach_sessions_sessions_coach_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sessions/{session_id}": {
         parameters: {
             query?: never;
@@ -1068,6 +1187,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/academy/admin/tasks/transition-cohort-statuses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger Cohort Status Transitions
+         * @description Manually trigger cohort status transitions (OPEN→ACTIVE, ACTIVE→COMPLETED).
+         *     Useful for testing or manual corrections.
+         */
+        post: operations["trigger_cohort_status_transitions_academy_admin_tasks_transition_cohort_statuses_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/academy/programs": {
         parameters: {
             query?: never;
@@ -1205,6 +1345,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/academy/cohorts/by-coach/{coach_member_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Cohorts By Coach
+         * @description Get all cohorts (current and past) taught by a specific coach.
+         *     Public endpoint - no authentication required.
+         *     Returns cohorts with program details.
+         */
+        get: operations["list_cohorts_by_coach_academy_cohorts_by_coach__coach_member_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/academy/cohorts/coach/me": {
         parameters: {
             query?: never;
@@ -1225,6 +1387,112 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/academy/coach/me/students": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List My Coach Students
+         * @description List all students across all cohorts where the current user is the assigned coach.
+         *
+         *     Returns enrollments with cohort, program, and progress data.
+         */
+        get: operations["list_my_coach_students_academy_coach_me_students_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/coach/me/earnings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get My Coach Earnings
+         * @description Get earnings summary for the current coach.
+         *
+         *     Calculates earnings based on:
+         *     - academy_cohort_stipend from CoachProfile
+         *     - Number of active/completed cohorts
+         */
+        get: operations["get_my_coach_earnings_academy_coach_me_earnings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/coach/me/resources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List My Coach Resources
+         * @description List all resources across all cohorts where the current user is the assigned coach.
+         */
+        get: operations["list_my_coach_resources_academy_coach_me_resources_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/cohorts/{cohort_id}/resources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Cohort Resources
+         * @description List resources for a specific cohort. Accessible by coach or admin.
+         */
+        get: operations["list_cohort_resources_academy_cohorts__cohort_id__resources_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/cohorts/{cohort_id}/enrollment-stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Cohort Enrollment Stats
+         * @description Get enrollment statistics for a cohort (capacity, enrolled, waitlist).
+         */
+        get: operations["get_cohort_enrollment_stats_academy_cohorts__cohort_id__enrollment_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/academy/cohorts/{cohort_id}/students": {
         parameters: {
             query?: never;
@@ -1235,6 +1503,10 @@ export interface paths {
         /**
          * List Cohort Students
          * @description List all students enrolled in a cohort with their progress.
+         *
+         *     Accessible by:
+         *     - Admins (can view any cohort)
+         *     - Coaches (can only view their assigned cohorts)
          */
         get: operations["list_cohort_students_academy_cohorts__cohort_id__students_get"];
         put?: never;
@@ -1366,6 +1638,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/academy/my-enrollments/{enrollment_id}/waitlist-position": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get My Waitlist Position
+         * @description Get waitlist position for a waitlisted enrollment.
+         */
+        get: operations["get_my_waitlist_position_academy_my_enrollments__enrollment_id__waitlist_position_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/academy/my-enrollments/{enrollment_id}": {
         parameters: {
             query?: never;
@@ -1400,6 +1692,27 @@ export interface paths {
          *     No auth required as this is called with service role token.
          */
         get: operations["get_enrollment_internal_academy_internal_enrollments__enrollment_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/my-enrollments/{enrollment_id}/onboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Enrollment Onboarding
+         * @description Get structured onboarding information for a new enrollment.
+         *     Returns next session, prep materials, and dashboard links.
+         */
+        get: operations["get_enrollment_onboarding_academy_my_enrollments__enrollment_id__onboarding_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1458,6 +1771,10 @@ export interface paths {
         /**
          * Update Student Progress
          * @description Update or create student progress (Coach/Admin only).
+         *
+         *     Accessible by:
+         *     - Admins (can update any enrollment)
+         *     - Coaches (can only update enrollments in their assigned cohorts)
          */
         post: operations["update_student_progress_academy_progress_post"];
         delete?: never;
@@ -2048,6 +2365,192 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/payouts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Payouts
+         * @description List all payouts with optional filters.
+         */
+        get: operations["list_payouts_admin_payouts__get"];
+        put?: never;
+        /**
+         * Create Payout
+         * @description Create a new payout for a coach.
+         */
+        post: operations["create_payout_admin_payouts__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/payouts/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Payout Summary
+         * @description Get summary stats for all payouts.
+         */
+        get: operations["get_payout_summary_admin_payouts_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/payouts/{payout_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Payout
+         * @description Get a single payout by ID.
+         */
+        get: operations["get_payout_admin_payouts__payout_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/payouts/{payout_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Approve Payout
+         * @description Approve a pending payout.
+         */
+        put: operations["approve_payout_admin_payouts__payout_id__approve_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/payouts/{payout_id}/initiate-transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Initiate Transfer
+         * @description Initiate a Paystack transfer for an approved payout.
+         *
+         *     Requires the coach to have a verified bank account with Paystack recipient code.
+         */
+        post: operations["initiate_transfer_admin_payouts__payout_id__initiate_transfer_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/payouts/{payout_id}/complete-manual": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Complete Manual Payout
+         * @description Mark a payout as completed via manual bank transfer or other method.
+         */
+        put: operations["complete_manual_payout_admin_payouts__payout_id__complete_manual_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/payouts/{payout_id}/fail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Fail Payout
+         * @description Mark a payout as failed.
+         */
+        put: operations["fail_payout_admin_payouts__payout_id__fail_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/coach/me/payouts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get My Payouts
+         * @description Get current coach's payouts.
+         */
+        get: operations["get_my_payouts_coach_me_payouts__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/coach/me/payouts/{payout_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get My Payout
+         * @description Get a specific payout for the current coach.
+         */
+        get: operations["get_my_payout_coach_me_payouts__payout_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/announcements/": {
         parameters: {
             query?: never;
@@ -2061,7 +2564,11 @@ export interface paths {
          */
         get: operations["list_announcements_announcements__get"];
         put?: never;
-        post?: never;
+        /**
+         * Create Announcement
+         * @description Create a new announcement (Admin only).
+         */
+        post: operations["create_announcement_announcements__post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2102,10 +2609,18 @@ export interface paths {
         get: operations["get_announcement_announcements__announcement_id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete Announcement
+         * @description Delete an announcement (Admin only).
+         */
+        delete: operations["delete_announcement_announcements__announcement_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update Announcement
+         * @description Update an announcement (Admin only).
+         */
+        patch: operations["update_announcement_announcements__announcement_id__patch"];
         trace?: never;
     };
     "/api/v1/announcements/{announcement_id}/comments": {
@@ -2445,6 +2960,18 @@ export interface components {
             notes?: string | null;
         };
         /**
+         * BankAccountCreate
+         * @description Schema for creating/updating coach bank account.
+         */
+        BankAccountCreate: {
+            /** Bank Code */
+            bank_code: string;
+            /** Bank Name */
+            bank_name: string;
+            /** Account Number */
+            account_number: string;
+        };
+        /**
          * ChallengeCompletionCreate
          * @description Schema for marking a challenge as complete.
          */
@@ -2776,8 +3303,8 @@ export interface components {
             academy_cohort_stipend?: number | null;
             /** Show In Directory */
             show_in_directory?: boolean | null;
-            /** Coach Profile Photo Url */
-            coach_profile_photo_url?: string | null;
+            /** Coach Profile Photo Media Id */
+            coach_profile_photo_media_id?: string | null;
         };
         /**
          * CoachProfileResponse
@@ -2944,8 +3471,8 @@ export interface components {
             short_bio?: string | null;
             /** Full Bio */
             full_bio?: string | null;
-            /** Coach Profile Photo Url */
-            coach_profile_photo_url?: string | null;
+            /** Coach Profile Photo Media Id */
+            coach_profile_photo_media_id?: string | null;
             /** Coaching Years */
             coaching_years?: number | null;
             /** Coaching Experience Summary */
@@ -3656,6 +4183,16 @@ export interface components {
              */
             created_at: string;
         };
+        /**
+         * ResolveAccountRequest
+         * @description Request to resolve/verify a bank account.
+         */
+        ResolveAccountRequest: {
+            /** Bank Code */
+            bank_code: string;
+            /** Account Number */
+            account_number: string;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -4307,6 +4844,32 @@ export interface components {
             /** Coach Id */
             coach_id?: string | null;
         };
+        /** CohortResourceResponse */
+        CohortResourceResponse: {
+            /** Title */
+            title: string;
+            /** Resource Type */
+            resource_type: string;
+            /** Content Media Id */
+            content_media_id?: string | null;
+            /** Description */
+            description?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Cohort Id
+             * Format: uuid
+             */
+            cohort_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** CohortResponse */
         CohortResponse: {
             /** Name */
@@ -4659,6 +5222,60 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /**
+         * NextSessionInfo
+         * @description Information about the next scheduled session.
+         */
+        NextSessionInfo: {
+            /** Date */
+            date?: string | null;
+            /** Location */
+            location?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /**
+         * OnboardingResponse
+         * @description Structured onboarding information for a new enrollment.
+         */
+        OnboardingResponse: {
+            /**
+             * Enrollment Id
+             * Format: uuid
+             */
+            enrollment_id: string;
+            /** Program Name */
+            program_name: string;
+            /** Cohort Name */
+            cohort_name: string;
+            /**
+             * Start Date
+             * Format: date-time
+             */
+            start_date: string;
+            /**
+             * End Date
+             * Format: date-time
+             */
+            end_date: string;
+            /** Location */
+            location?: string | null;
+            next_session?: components["schemas"]["NextSessionInfo"] | null;
+            /** Prep Materials */
+            prep_materials?: {
+                [key: string]: unknown;
+            } | null;
+            /** Dashboard Link */
+            dashboard_link: string;
+            /** Resources Link */
+            resources_link: string;
+            /** Sessions Link */
+            sessions_link: string;
+            /** Coach Name */
+            coach_name?: string | null;
+            /** Total Milestones */
+            total_milestones: number;
         };
         /**
          * PaymentStatus
@@ -5225,6 +5842,8 @@ export interface components {
             provider_reference?: string | null;
             /** Payment Method */
             payment_method?: string | null;
+            /** Proof Of Payment Media Id */
+            proof_of_payment_media_id?: string | null;
             /** Proof Of Payment Url */
             proof_of_payment_url?: string | null;
             /** Admin Review Note */
@@ -5251,6 +5870,180 @@ export interface components {
             updated_at: string;
         };
         /**
+         * PayoutApprove
+         * @description Schema for approving a payout.
+         */
+        PayoutApprove: {
+            /** Admin Notes */
+            admin_notes?: string | null;
+        };
+        /**
+         * PayoutCompleteManual
+         * @description Schema for marking a payout as manually paid.
+         */
+        PayoutCompleteManual: {
+            /** @default bank_transfer */
+            payout_method: components["schemas"]["PayoutMethod"];
+            /** Payment Reference */
+            payment_reference: string;
+            /** Admin Notes */
+            admin_notes?: string | null;
+        };
+        /**
+         * PayoutCreate
+         * @description Schema for creating a coach payout.
+         */
+        PayoutCreate: {
+            /**
+             * Coach Member Id
+             * Format: uuid
+             */
+            coach_member_id: string;
+            /**
+             * Period Start
+             * Format: date-time
+             */
+            period_start: string;
+            /**
+             * Period End
+             * Format: date-time
+             */
+            period_end: string;
+            /** Period Label */
+            period_label: string;
+            /**
+             * Academy Earnings
+             * @default 0
+             */
+            academy_earnings: number;
+            /**
+             * Session Earnings
+             * @default 0
+             */
+            session_earnings: number;
+            /**
+             * Other Earnings
+             * @default 0
+             */
+            other_earnings: number;
+            /** Admin Notes */
+            admin_notes?: string | null;
+        };
+        /**
+         * PayoutFail
+         * @description Schema for marking a payout as failed.
+         */
+        PayoutFail: {
+            /** Failure Reason */
+            failure_reason: string;
+            /** Admin Notes */
+            admin_notes?: string | null;
+        };
+        /**
+         * PayoutListResponse
+         * @description Paginated list of payouts.
+         */
+        PayoutListResponse: {
+            /** Items */
+            items: components["schemas"]["PayoutResponse"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /**
+         * PayoutMethod
+         * @description Method used for coach payout.
+         * @enum {string}
+         */
+        PayoutMethod: "paystack_transfer" | "bank_transfer" | "other";
+        /**
+         * PayoutResponse
+         * @description Response for a coach payout.
+         */
+        PayoutResponse: {
+            /** Id */
+            id: string;
+            /** Coach Member Id */
+            coach_member_id: string;
+            /**
+             * Period Start
+             * Format: date-time
+             */
+            period_start: string;
+            /**
+             * Period End
+             * Format: date-time
+             */
+            period_end: string;
+            /** Period Label */
+            period_label: string;
+            /** Academy Earnings */
+            academy_earnings: number;
+            /** Session Earnings */
+            session_earnings: number;
+            /** Other Earnings */
+            other_earnings: number;
+            /** Total Amount */
+            total_amount: number;
+            /** Currency */
+            currency: string;
+            status: components["schemas"]["PayoutStatus"];
+            payout_method?: components["schemas"]["PayoutMethod"] | null;
+            /** Approved By */
+            approved_by?: string | null;
+            /** Approved At */
+            approved_at?: string | null;
+            /** Paid At */
+            paid_at?: string | null;
+            /** Payment Reference */
+            payment_reference?: string | null;
+            /** Paystack Transfer Code */
+            paystack_transfer_code?: string | null;
+            /** Paystack Transfer Status */
+            paystack_transfer_status?: string | null;
+            /** Admin Notes */
+            admin_notes?: string | null;
+            /** Failure Reason */
+            failure_reason?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * PayoutStatus
+         * @description Status of a coach payout.
+         * @enum {string}
+         */
+        PayoutStatus: "pending" | "approved" | "processing" | "paid" | "failed";
+        /**
+         * PayoutSummary
+         * @description Summary stats for payouts.
+         */
+        PayoutSummary: {
+            /** Total Pending */
+            total_pending: number;
+            /** Total Approved */
+            total_approved: number;
+            /** Total Paid */
+            total_paid: number;
+            /** Total Failed */
+            total_failed: number;
+            /** Pending Amount */
+            pending_amount: number;
+            /** Paid Amount */
+            paid_amount: number;
+        };
+        /**
          * PricingConfigResponse
          * @description Public pricing configuration for frontend display.
          */
@@ -5274,8 +6067,8 @@ export interface components {
          * @description Submit proof of payment for manual transfer.
          */
         SubmitProofRequest: {
-            /** Proof Url */
-            proof_url: string;
+            /** Proof Media Id */
+            proof_media_id: string;
         };
         /**
          * AnnouncementCategory
@@ -5315,6 +6108,27 @@ export interface components {
              */
             updated_at: string;
         };
+        /** AnnouncementCreate */
+        AnnouncementCreate: {
+            /** Title */
+            title: string;
+            /** Summary */
+            summary?: string | null;
+            /** Body */
+            body: string;
+            /** @default general */
+            category: components["schemas"]["AnnouncementCategory"];
+            /**
+             * Is Pinned
+             * @default false
+             */
+            is_pinned: boolean;
+            /**
+             * Published At
+             * Format: date-time
+             */
+            published_at: string;
+        };
         /** AnnouncementResponse */
         AnnouncementResponse: {
             /** Title */
@@ -5350,6 +6164,20 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /** AnnouncementUpdate */
+        AnnouncementUpdate: {
+            /** Title */
+            title?: string | null;
+            /** Summary */
+            summary?: string | null;
+            /** Body */
+            body?: string | null;
+            category?: components["schemas"]["AnnouncementCategory"] | null;
+            /** Is Pinned */
+            is_pinned?: boolean | null;
+            /** Published At */
+            published_at?: string | null;
         };
         /**
          * CommentCreate
@@ -6812,6 +7640,163 @@ export interface operations {
             };
         };
     };
+    get_my_bank_account_coaches_me_bank_account_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    create_or_update_bank_account_coaches_me_bank_account_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BankAccountCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_bank_account_coaches_me_bank_account_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    list_banks_coaches_banks_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    resolve_bank_account_coaches_resolve_account_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_coaches_for_admin_admin_coaches__get: {
+        parameters: {
+            query?: {
+                status?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCoachApplicationListItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_coach_applications_admin_coaches_applications_get: {
         parameters: {
             query?: {
@@ -7258,6 +8243,38 @@ export interface operations {
             };
         };
     };
+    list_my_coach_sessions_sessions_coach_me_get: {
+        parameters: {
+            query?: {
+                from_date?: string | null;
+                to_date?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_session_sessions__session_id__get: {
         parameters: {
             query?: never;
@@ -7532,6 +8549,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trigger_cohort_status_transitions_academy_admin_tasks_transition_cohort_statuses_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };
@@ -7925,6 +8962,37 @@ export interface operations {
             };
         };
     };
+    list_cohorts_by_coach_academy_cohorts_by_coach__coach_member_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                coach_member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CohortResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_my_coach_cohorts_academy_cohorts_coach_me_get: {
         parameters: {
             query?: never;
@@ -7941,6 +9009,128 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CohortResponse"][];
+                };
+            };
+        };
+    };
+    list_my_coach_students_academy_coach_me_students_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnrollmentResponse"][];
+                };
+            };
+        };
+    };
+    get_my_coach_earnings_academy_coach_me_earnings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    list_my_coach_resources_academy_coach_me_resources_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CohortResourceResponse"][];
+                };
+            };
+        };
+    };
+    list_cohort_resources_academy_cohorts__cohort_id__resources_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cohort_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CohortResourceResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_cohort_enrollment_stats_academy_cohorts__cohort_id__enrollment_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cohort_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -8225,6 +9415,37 @@ export interface operations {
             };
         };
     };
+    get_my_waitlist_position_academy_my_enrollments__enrollment_id__waitlist_position_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_my_enrollment_academy_my_enrollments__enrollment_id__get: {
         parameters: {
             query?: never;
@@ -8274,6 +9495,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EnrollmentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_enrollment_onboarding_academy_my_enrollments__enrollment_id__onboarding_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9448,6 +10700,324 @@ export interface operations {
             };
         };
     };
+    list_payouts_admin_payouts__get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["PayoutStatus"] | null;
+                coach_member_id?: string | null;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayoutListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_payout_admin_payouts__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayoutCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayoutResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_payout_summary_admin_payouts_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayoutSummary"];
+                };
+            };
+        };
+    };
+    get_payout_admin_payouts__payout_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payout_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayoutResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_payout_admin_payouts__payout_id__approve_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payout_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayoutApprove"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayoutResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    initiate_transfer_admin_payouts__payout_id__initiate_transfer_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payout_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayoutResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_manual_payout_admin_payouts__payout_id__complete_manual_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payout_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayoutCompleteManual"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayoutResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fail_payout_admin_payouts__payout_id__fail_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payout_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayoutFail"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayoutResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_payouts_coach_me_payouts__get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["PayoutStatus"] | null;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayoutListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_payout_coach_me_payouts__payout_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payout_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayoutResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_announcements_announcements__get: {
         parameters: {
             query?: never;
@@ -9464,6 +11034,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AnnouncementResponse"][];
+                };
+            };
+        };
+    };
+    create_announcement_announcements__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnnouncementCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnnouncementResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -9498,6 +11101,70 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnnouncementResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_announcement_announcements__announcement_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                announcement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_announcement_announcements__announcement_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                announcement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnnouncementUpdate"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

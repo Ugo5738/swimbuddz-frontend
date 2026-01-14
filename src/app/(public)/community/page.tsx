@@ -1,7 +1,12 @@
-import Link from "next/link";
 import { Card } from "@/components/ui/Card";
+import Link from "next/link";
 
 const communityFeatures = [
+    {
+        title: "Meet Our Coaches",
+        description: "Discover our certified swimming coaches, their expertise, and the programs they teach.",
+        link: "/coaches"
+    },
     {
         title: "Events Calendar",
         description: "Enjoy occasional social swims, casual meetups, beach hangouts, socials, watch parties and community-led activities.",
