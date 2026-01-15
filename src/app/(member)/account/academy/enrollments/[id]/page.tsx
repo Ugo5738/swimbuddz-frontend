@@ -482,6 +482,32 @@ export default function EnrollmentDetailPage() {
                         </Card>
                     )}
 
+                    {/* Certificate Section - Show when 100% complete */}
+                    {progressPercent === 100 && (
+                        <Card className="p-6 bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200">
+                            <div className="text-center">
+                                <div className="text-4xl mb-2">🎓</div>
+                                <h3 className="font-semibold text-slate-900 mb-2">
+                                    Congratulations!
+                                </h3>
+                                <p className="text-sm text-slate-600 mb-4">
+                                    You&apos;ve completed all milestones! Your certificate is ready.
+                                </p>
+                                <Button
+                                    className="w-full bg-amber-500 hover:bg-amber-600 text-white"
+                                    onClick={() => {
+                                        window.open(
+                                            `/api/v1/academy/enrollments/${enrollmentId}/certificate.pdf`,
+                                            "_blank"
+                                        );
+                                    }}
+                                >
+                                    📄 Download Certificate
+                                </Button>
+                            </div>
+                        </Card>
+                    )}
+
                     {/* Quick Links */}
                     <Card className="p-6">
                         <h3 className="font-semibold text-slate-900 mb-3">
