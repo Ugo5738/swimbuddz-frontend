@@ -39,7 +39,7 @@ const tiers = [
       "Volunteer opportunities (media, logistics, etc.)",
       "Access to SwimBuddz merchandise",
     ],
-    pricing: "Free",
+    pricing: "Paid - Annually",
     link: "/community",
     accent: "cyan"
   },
@@ -55,7 +55,7 @@ const tiers = [
       "Exclusive club events",
       "Monthly subscription"
     ],
-    pricing: "Paid Monthly",
+    pricing: "Paid - Monthly",
     link: "/club",
     accent: "blue",
     featured: true
@@ -71,7 +71,7 @@ const tiers = [
       "Higher-value, deeper experience",
       "Everything in Community & Club"
     ],
-    pricing: "Paid — Cohort Based",
+    pricing: "Paid - Cohort Based",
     link: "/academy",
     accent: "purple"
   }

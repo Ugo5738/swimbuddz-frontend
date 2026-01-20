@@ -57,9 +57,20 @@ const approach = [
 ];
 
 const locations = [
-  { name: "Yaba / Rowe Park", purpose: "for structured training sessions" },
-  { name: "Sunfit (Ago)", purpose: "for selected Club sessions" },
-  { name: "Victoria Island (e.g. Federal Palace area)", purpose: "often for community events and relaxed meets" }
+  { name: "Yaba / Rowe Park", purpose: "for structured training sessions (Club & Academy)" },
+  { name: "Ago Palace / Sunfit", purpose: "for specific Academy sessions" },
+  { name: "Victoria Island / Federal Palace", purpose: "often for community events and relaxed meets" }
+];
+
+const facilities = [
+  {
+    type: "Olympic-Sized (50m)",
+    description: "We train in full-length 50m pools for Club sessions. This builds true endurance and prepares you for real-world swimming conditions."
+  },
+  {
+    type: "Intimate Learning Pools",
+    description: "For Academy beginners, we use smaller, calmer pools. This reduces anxiety and lets you focus 100% on technique without distractions."
+  }
 ];
 
 const getInvolved = [
@@ -209,6 +220,24 @@ export default function AboutPage() {
         <p className="text-slate-600 italic">
           As we grow, we'll expand and adjust locations to serve more members and different parts of the city (and beyond).
         </p>
+      </section>
+
+      {/* OUR FACILITIES STRATEGY */}
+      <section className="space-y-6">
+        <div>
+          <h2 className="text-3xl font-bold text-slate-900">Our Facilities</h2>
+          <p className="text-lg text-slate-600 mt-2">
+            The right environment matters. We purposefully use two types of pools depending on your level:
+          </p>
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          {facilities.map((facility) => (
+            <Card key={facility.type} className="space-y-3 bg-gradient-to-br from-slate-50 to-white">
+              <h3 className="text-xl font-bold text-cyan-700">{facility.type}</h3>
+              <p className="text-slate-700">{facility.description}</p>
+            </Card>
+          ))}
+        </div>
       </section>
 
       {/* WHO RUNS SWIMBUDDZ */}
