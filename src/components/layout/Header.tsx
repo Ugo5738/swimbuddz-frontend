@@ -36,6 +36,7 @@ export function Header() {
     const [scrolled, setScrolled] = useState(false);
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const mobileNavRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
         // Get initial session
@@ -71,9 +72,10 @@ export function Header() {
     // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setActiveDropdown(null);
-            }
+            const target = event.target as Node;
+            if (dropdownRef.current?.contains(target)) return;
+            if (mobileNavRef.current?.contains(target)) return;
+            setActiveDropdown(null);
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -138,8 +140,8 @@ export function Header() {
                         <button
                             onClick={() => toggleDropdown(item.label)}
                             className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors ${dropdownActive
-                                    ? 'text-cyan-700 bg-cyan-50 font-semibold'
-                                    : 'text-slate-600 hover:text-cyan-700 hover:bg-slate-50'
+                                ? 'text-cyan-700 bg-cyan-50 font-semibold'
+                                : 'text-slate-600 hover:text-cyan-700 hover:bg-slate-50'
                                 }`}
                         >
                             {item.label}
@@ -152,10 +154,16 @@ export function Header() {
                                     <Link
                                         key={subItem.href}
                                         href={subItem.href}
-                                        onClick={closeMobileMenu}
-                                        className={`block px-4 py-2.5 rounded-lg transition-colors ${isActive(subItem.href)
-                                                ? 'text-cyan-700 bg-cyan-50 font-medium'
-                                                : 'text-slate-600 hover:text-cyan-700 hover:bg-slate-50'
+                                        onClick={(e) => {
+                                            // Let the link navigate naturally, delay menu close
+                                            setTimeout(() => {
+                                                setMobileMenuOpen(false);
+                                                setActiveDropdown(null);
+                                            }, 100);
+                                        }}
+                                        className={`block w-full text-left px-4 py-2.5 rounded-lg transition-colors ${isActive(subItem.href)
+                                            ? 'text-cyan-700 bg-cyan-50 font-medium'
+                                            : 'text-slate-600 hover:text-cyan-700 hover:bg-slate-50'
                                             }`}
                                     >
                                         {subItem.label}
@@ -174,8 +182,8 @@ export function Header() {
                         onClick={() => toggleDropdown(item.label)}
                         onMouseEnter={() => setActiveDropdown(item.label)}
                         className={`flex items-center gap-1 px-3 py-2 rounded-lg transition-colors ${dropdownActive || activeDropdown === item.label
-                                ? 'text-cyan-700 bg-cyan-50'
-                                : 'text-slate-600 hover:text-cyan-700 hover:bg-slate-50'
+                            ? 'text-cyan-700 bg-cyan-50'
+                            : 'text-slate-600 hover:text-cyan-700 hover:bg-slate-50'
                             }`}
                     >
                         {item.label}
@@ -193,8 +201,8 @@ export function Header() {
                                     key={subItem.href}
                                     href={subItem.href}
                                     className={`block px-4 py-3 transition-colors ${isActive(subItem.href)
-                                            ? 'bg-cyan-50'
-                                            : 'hover:bg-slate-50'
+                                        ? 'bg-cyan-50'
+                                        : 'hover:bg-slate-50'
                                         }`}
                                 >
                                     <span className={`font-medium ${isActive(subItem.href) ? 'text-cyan-700' : 'text-slate-900'
@@ -306,7 +314,7 @@ export function Header() {
                 className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileMenuOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
                     }`}
             >
-                <nav className="border-t bg-white px-4 py-4">
+                <nav ref={mobileNavRef} className="border-t bg-white px-4 py-4">
                     <div className="flex flex-col gap-1">
                         {navGroups.map((item) => renderNavItem(item, true))}
 
@@ -348,7 +356,7 @@ export function Header() {
                                         onClick={closeMobileMenu}
                                         className="block px-4 py-3 rounded-xl text-emerald-600 hover:bg-emerald-50 transition-colors font-medium"
                                     >
-                                        🏊‍♂️ Become a Coach
+                                        Become a Coach
                                     </Link>
                                     <Link
                                         href="/login"
