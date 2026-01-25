@@ -155,11 +155,8 @@ export function Header() {
                                         key={subItem.href}
                                         href={subItem.href}
                                         onClick={(e) => {
-                                            // Let the link navigate naturally, delay menu close
-                                            setTimeout(() => {
-                                                setMobileMenuOpen(false);
-                                                setActiveDropdown(null);
-                                            }, 100);
+                                            setMobileMenuOpen(false);
+                                            setActiveDropdown(null);
                                         }}
                                         className={`block w-full text-left px-4 py-2.5 rounded-lg transition-colors ${isActive(subItem.href)
                                             ? 'text-cyan-700 bg-cyan-50 font-medium'
