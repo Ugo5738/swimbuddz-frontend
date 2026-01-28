@@ -4,7 +4,9 @@ import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
 import { LoadingCard } from "@/components/ui/LoadingCard";
+import { Textarea } from "@/components/ui/Textarea";
 import {
     calculateProgressPercentage,
     getCohort,
@@ -14,11 +16,25 @@ import {
     type Enrollment,
     type Milestone,
 } from "@/lib/coach";
+import { apiEndpoints } from "@/lib/config";
 import { formatDate } from "@/lib/format";
-import { Calendar, MapPin, Users } from "lucide-react";
+import { Calendar, CheckCircle, Mail, MapPin, Send, Users, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+
+interface AttendanceSummary {
+    cohort_id: string;
+    total_sessions: number;
+    students: {
+        member_id: string;
+        member_name: string;
+        member_email: string;
+        sessions_attended: number;
+        sessions_total: number;
+        attendance_rate: number;
+    }[];
+}
 
 export default function CoachCohortDetailPage() {
     const params = useParams();
@@ -27,8 +43,16 @@ export default function CoachCohortDetailPage() {
     const [cohort, setCohort] = useState<Cohort | null>(null);
     const [students, setStudents] = useState<Enrollment[]>([]);
     const [milestones, setMilestones] = useState<Milestone[]>([]);
+    const [attendanceSummary, setAttendanceSummary] = useState<AttendanceSummary | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Messaging state
+    const [showMessageModal, setShowMessageModal] = useState(false);
+    const [messageSubject, setMessageSubject] = useState("");
+    const [messageBody, setMessageBody] = useState("");
+    const [sendingMessage, setSendingMessage] = useState(false);
+    const [messageSuccess, setMessageSuccess] = useState<string | null>(null);
 
     useEffect(() => {
         async function loadData() {
@@ -36,16 +60,20 @@ export default function CoachCohortDetailPage() {
                 const cohortData = await getCohort(cohortId);
                 setCohort(cohortData);
 
-                // Load students and milestones in parallel
-                const [studentsData, milestonesData] = await Promise.all([
+                // Load students, milestones, and attendance in parallel
+                const [studentsData, milestonesData, attendanceData] = await Promise.all([
                     getCohortStudents(cohortId).catch(() => []),
                     cohortData.program_id
                         ? getProgramMilestones(cohortData.program_id).catch(() => [])
                         : Promise.resolve([]),
+                    fetch(`${apiEndpoints.attendance}/cohorts/${cohortId}/summary`)
+                        .then(res => res.ok ? res.json() : null)
+                        .catch(() => null),
                 ]);
 
                 setStudents(studentsData);
                 setMilestones(milestonesData);
+                setAttendanceSummary(attendanceData);
             } catch (err) {
                 console.error("Failed to load cohort", err);
                 setError("Failed to load cohort details. Please try again.");
@@ -56,6 +84,42 @@ export default function CoachCohortDetailPage() {
 
         loadData();
     }, [cohortId]);
+
+    const handleSendMessage = async () => {
+        if (!messageSubject.trim() || !messageBody.trim()) return;
+
+        setSendingMessage(true);
+        setMessageSuccess(null);
+
+        try {
+            const response = await fetch(`${apiEndpoints.messages}/cohorts/${cohortId}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    subject: messageSubject,
+                    body: messageBody,
+                }),
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                setMessageSuccess(result.message);
+                setMessageSubject("");
+                setMessageBody("");
+                setTimeout(() => {
+                    setShowMessageModal(false);
+                    setMessageSuccess(null);
+                }, 2000);
+            } else {
+                setMessageSuccess("Failed to send message. Please try again.");
+            }
+        } catch (err) {
+            console.error("Failed to send message", err);
+            setMessageSuccess("Failed to send message. Please try again.");
+        } finally {
+            setSendingMessage(false);
+        }
+    };
 
     if (loading) {
         return <LoadingCard text="Loading cohort details..." />;
@@ -108,8 +172,74 @@ export default function CoachCohortDetailPage() {
                             </p>
                         )}
                     </div>
+                    <Button
+                        onClick={() => setShowMessageModal(true)}
+                        className="flex items-center gap-2"
+                    >
+                        <Mail className="h-4 w-4" />
+                        Message Students
+                    </Button>
                 </div>
             </header>
+
+            {/* Message Modal */}
+            {showMessageModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <Card className="w-full max-w-lg p-6">
+                        <h2 className="text-xl font-semibold text-slate-900 mb-4">
+                            Message All Students
+                        </h2>
+                        <div className="space-y-4">
+                            <Input
+                                label="Subject"
+                                value={messageSubject}
+                                onChange={(e) => setMessageSubject(e.target.value)}
+                                placeholder="e.g., Important: Session time change"
+                            />
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">
+                                    Message
+                                </label>
+                                <Textarea
+                                    value={messageBody}
+                                    onChange={(e) => setMessageBody(e.target.value)}
+                                    placeholder="Write your message to all students in this cohort..."
+                                    rows={5}
+                                />
+                            </div>
+
+                            {messageSuccess && (
+                                <Alert
+                                    variant={messageSuccess.includes("Failed") ? "error" : "success"}
+                                >
+                                    {messageSuccess}
+                                </Alert>
+                            )}
+
+                            <div className="flex justify-end gap-3 pt-2">
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => {
+                                        setShowMessageModal(false);
+                                        setMessageSubject("");
+                                        setMessageBody("");
+                                    }}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    onClick={handleSendMessage}
+                                    disabled={sendingMessage || !messageSubject.trim() || !messageBody.trim()}
+                                    className="flex items-center gap-2"
+                                >
+                                    <Send className="h-4 w-4" />
+                                    {sendingMessage ? "Sending..." : "Send Message"}
+                                </Button>
+                            </div>
+                        </div>
+                    </Card>
+                </div>
+            )}
 
             {/* Cohort Info */}
             <div className="grid gap-4 sm:grid-cols-3">
@@ -205,6 +335,88 @@ export default function CoachCohortDetailPage() {
                     </div>
                 )}
             </Card>
+
+            {/* Attendance Summary */}
+            {attendanceSummary && attendanceSummary.total_sessions > 0 && (
+                <Card className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 className="text-xl font-semibold text-slate-900">Attendance</h2>
+                            <p className="text-sm text-slate-600">
+                                {attendanceSummary.total_sessions} session{attendanceSummary.total_sessions !== 1 ? "s" : ""} held
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-slate-200">
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-slate-500">
+                                        Student
+                                    </th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-slate-500">
+                                        Attended
+                                    </th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-slate-500">
+                                        Rate
+                                    </th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-slate-500">
+                                        Status
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {attendanceSummary.students.map((student) => {
+                                    const ratePercent = Math.round(student.attendance_rate * 100);
+                                    const isAtRisk = ratePercent < 70;
+                                    const isGood = ratePercent >= 80;
+
+                                    return (
+                                        <tr key={student.member_id} className="border-b border-slate-100">
+                                            <td className="py-3 px-4">
+                                                <p className="font-medium text-slate-900">{student.member_name}</p>
+                                                <p className="text-sm text-slate-500">{student.member_email}</p>
+                                            </td>
+                                            <td className="py-3 px-4 text-sm text-slate-600">
+                                                {student.sessions_attended} / {student.sessions_total}
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden max-w-[80px]">
+                                                        <div
+                                                            className={`h-full rounded-full ${
+                                                                isAtRisk ? "bg-red-500" : isGood ? "bg-emerald-500" : "bg-amber-500"
+                                                            }`}
+                                                            style={{ width: `${ratePercent}%` }}
+                                                        />
+                                                    </div>
+                                                    <span className="text-sm font-medium">{ratePercent}%</span>
+                                                </div>
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                {isAtRisk ? (
+                                                    <span className="inline-flex items-center gap-1 text-sm text-red-600">
+                                                        <XCircle className="h-4 w-4" />
+                                                        At Risk
+                                                    </span>
+                                                ) : isGood ? (
+                                                    <span className="inline-flex items-center gap-1 text-sm text-emerald-600">
+                                                        <CheckCircle className="h-4 w-4" />
+                                                        Good
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-sm text-amber-600">Needs Attention</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </Card>
+            )}
 
             {/* Program Milestones */}
             {milestones.length > 0 && (

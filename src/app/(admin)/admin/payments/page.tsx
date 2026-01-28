@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { supabase } from "@/lib/auth";
+import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Alert } from "@/components/ui/Alert";
 import { Input } from "@/components/ui/Input";
+import { supabase } from "@/lib/auth";
+import { API_BASE_URL } from "@/lib/config";
 import { formatDistance } from "date-fns";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+import { useEffect, useState } from "react";
 
 interface Payment {
     id: string;

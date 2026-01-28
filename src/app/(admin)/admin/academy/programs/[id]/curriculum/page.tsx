@@ -1,6 +1,7 @@
 "use client";
 
 import { Card } from "@/components/ui/Card";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import {
     AcademyApi,
     CurriculumLessonCreate,
@@ -515,7 +516,7 @@ export default function CurriculumBuilderPage() {
     }
 
     if (loading) {
-        return <div className="p-6">Loading...</div>;
+        return <div className="flex justify-center p-6"><LoadingSpinner text="Loading curriculum..." /></div>;
     }
 
     if (!program) {

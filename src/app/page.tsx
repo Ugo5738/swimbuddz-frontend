@@ -236,7 +236,7 @@ export default function HomePage() {
   return (
     <div className="space-y-20">
       {/* 1. HERO SECTION - Full screen height, full width */}
-      <section className="relative overflow-hidden min-h-[85vh] flex items-center -mx-4 md:-mx-[calc(50vw-50%)] w-[calc(100%+2rem)] md:w-screen" style={{ marginTop: '-2rem' }}>
+      <section className="relative overflow-hidden min-h-[70vh] sm:min-h-[85vh] flex items-center -mx-4 md:-mx-[calc(50vw-50%)] w-[calc(100%+2rem)] md:w-screen" style={{ marginTop: '-2rem' }}>
         {/* Background Image Slideshow */}
         <div className="absolute inset-0">
           {heroImages.map((img, idx) => (
@@ -249,18 +249,19 @@ export default function HomePage() {
                 src={img}
                 alt=""
                 className="w-full h-full object-cover"
+                loading={idx === 0 ? "eager" : "lazy"}
               />
             </div>
           ))}
           {/* Dark overlay for text readability */}
           <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 via-cyan-900/70 to-blue-900/80" />
 
-          {/* Animated gradient orbs */}
-          <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-cyan-500/20 blur-3xl animate-pulse" />
-          <div className="absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-blue-500/20 blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+          {/* Animated gradient orbs - hidden on mobile for performance */}
+          <div className="hidden sm:block absolute -top-24 -right-24 h-96 w-96 rounded-full bg-cyan-500/20 blur-3xl animate-pulse" />
+          <div className="hidden sm:block absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-blue-500/20 blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
 
           {/* Wave pattern at bottom */}
-          <div className="absolute bottom-0 left-0 right-0 text-slate-900/50 h-24">
+          <div className="absolute bottom-0 left-0 right-0 text-slate-900/50 h-16 sm:h-24">
             <WaveDecoration className="h-full" />
           </div>
         </div>
@@ -413,7 +414,7 @@ export default function HomePage() {
               Browse our collection of swim essentials — goggles, caps, training equipment and more.
             </p>
           </div>
-          <Link
+          {/* <Link
             href="/store"
             className="inline-flex items-center gap-2 rounded-full bg-cyan-600 px-6 py-3 font-semibold text-white hover:bg-cyan-500 transition-all hover:scale-105 hover:shadow-lg hover:shadow-cyan-500/25 self-start"
           >
@@ -421,7 +422,7 @@ export default function HomePage() {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-          </Link>
+          </Link> */}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {["🥽 Goggles", "🏊 Caps", "🎽 Swimwear", "🏋️ Training"].map((item, idx) => (

@@ -5,7 +5,10 @@
 
 // API Base URL - changes between dev/prod.
 const envApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-export const API_BASE_URL = envApiBaseUrl || 'http://localhost:8000';
+const fallbackApiBaseUrl =
+    typeof window === 'undefined' ? 'http://localhost:8000' : '';
+export const API_BASE_URL =
+    envApiBaseUrl !== undefined ? envApiBaseUrl : fallbackApiBaseUrl;
 
 // External Links
 export const WHATSAPP_GROUP_URL = process.env.NEXT_PUBLIC_WHATSAPP_URL || 'https://chat.whatsapp.com/BVtV5iKH9LhCBphqXqDVYv';
@@ -16,6 +19,9 @@ export const ENABLE_GALLERY = process.env.NEXT_PUBLIC_ENABLE_GALLERY !== 'false'
 
 // API Endpoints Builder
 export const apiEndpoints = {
+    // Base URL for direct access
+    baseUrl: API_BASE_URL,
+
     // Members
     members: `${API_BASE_URL}/api/v1/members`,
     pendingRegistrations: `${API_BASE_URL}/api/v1/pending-registrations`,
@@ -38,6 +44,7 @@ export const apiEndpoints = {
     // Communications
     announcements: `${API_BASE_URL}/api/v1/communications/announcements`,
     content: `${API_BASE_URL}/api/v1/content`,
+    messages: `${API_BASE_URL}/api/v1/messages`,
 
     // Academy
     academy: `${API_BASE_URL}/api/v1/academy`,

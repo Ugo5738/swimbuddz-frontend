@@ -120,7 +120,7 @@ const navSections: NavSection[] = [
         title: "Sessions",
         items: [
             { href: "/account/sessions", label: "Browse Sessions", icon: Calendar },
-            { href: "/account/attendance", label: "My Attendance", icon: ClipboardCheck }
+            { href: "/account/attendance/history", label: "My Attendance", icon: ClipboardCheck }
         ]
     },
     {
@@ -351,14 +351,14 @@ export function MemberLayout({ children }: MemberLayoutProps) {
             {/* Mobile Overlay */}
             {sidebarOpen && (
                 <div
-                    className="fixed inset-0 z-40 bg-slate-900/50 lg:hidden"
+                    className="fixed inset-0 z-40 bg-slate-900/50 md:hidden"
                     onClick={() => setSidebarOpen(false)}
                 />
             )}
 
             {/* Sidebar */}
             <aside
-                className={`fixed inset-y-0 left-0 z-50 w-72 transform bg-gradient-to-b from-cyan-700 via-cyan-600 to-blue-600 text-white transition-transform duration-300 ease-in-out lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+                className={`fixed inset-y-0 left-0 z-50 w-72 md:w-64 lg:w-72 transform bg-gradient-to-b from-cyan-700 via-cyan-600 to-blue-600 text-white transition-transform duration-300 ease-in-out md:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
                     }`}
             >
                 <div className="flex h-full flex-col">
@@ -373,7 +373,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
                         </Link>
                         <button
                             onClick={() => setSidebarOpen(false)}
-                            className="lg:hidden text-white/70 hover:text-white transition"
+                            className="md:hidden text-white/70 hover:text-white transition min-w-[44px] min-h-[44px] flex items-center justify-center -m-2"
                         >
                             <X className="h-6 w-6" />
                         </button>
@@ -470,13 +470,13 @@ export function MemberLayout({ children }: MemberLayoutProps) {
             </aside>
 
             {/* Main Content */}
-            <div className="flex-1 lg:ml-72">
+            <div className="flex-1 md:ml-64 lg:ml-72">
                 {/* Mobile Header */}
-                <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur-sm lg:hidden">
-                    <div className="flex items-center justify-between px-4 py-4">
+                <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur-sm md:hidden">
+                    <div className="flex items-center justify-between px-4 py-3">
                         <button
                             onClick={() => setSidebarOpen(true)}
-                            className="text-slate-600 hover:text-cyan-700 transition"
+                            className="text-slate-600 hover:text-cyan-700 transition min-w-[44px] min-h-[44px] flex items-center justify-center -ml-2"
                         >
                             <Menu className="h-6 w-6" />
                         </button>
@@ -484,14 +484,14 @@ export function MemberLayout({ children }: MemberLayoutProps) {
                             <img src="/logo.png" alt="SwimBuddz Logo" className="h-8 w-auto" />
                             <span className="text-lg font-semibold text-cyan-700">SwimBuddz</span>
                         </div>
-                        <Link href="/announcements" className="text-slate-600 hover:text-cyan-700 transition">
+                        <Link href="/announcements" className="text-slate-600 hover:text-cyan-700 transition min-w-[44px] min-h-[44px] flex items-center justify-center -mr-2">
                             <Bell className="h-6 w-6" />
                         </Link>
                     </div>
                 </header>
 
                 {/* Desktop Top Bar (optional - for notifications/search) */}
-                <header className="hidden lg:flex sticky top-0 z-30 items-center justify-between border-b border-slate-200 bg-white/95 backdrop-blur-sm px-8 py-4">
+                <header className="hidden md:flex sticky top-0 z-30 items-center justify-between border-b border-slate-200 bg-white/95 backdrop-blur-sm px-6 lg:px-8 py-4">
                     <div>
                         <p className="text-sm text-slate-500">Welcome back,</p>
                         <h1 className="text-lg font-semibold text-slate-900">{memberName}</h1>

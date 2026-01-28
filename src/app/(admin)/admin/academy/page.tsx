@@ -1,6 +1,7 @@
 "use client";
 
 import { Card } from "@/components/ui/Card";
+import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { AcademyApi, Cohort, Program } from "@/lib/academy";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -76,7 +77,7 @@ export default function AdminAcademyPage() {
     };
 
     if (loading) {
-        return <div>Loading...</div>;
+        return <LoadingPage text="Loading academy data..." />;
     }
 
     return (

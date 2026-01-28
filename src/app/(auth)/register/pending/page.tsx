@@ -65,7 +65,7 @@ export default function RegistrationPendingPage() {
             <Card className="max-w-lg w-full p-8 text-center">
                 {status === "loading" && (
                     <>
-                        <div className="animate-spin h-12 w-12 border-4 border-cyan-500 border-t-transparent rounded-full mx-auto mb-6" />
+                        <div className="h-12 w-12 animate-spin rounded-full border-4 border-cyan-200 border-t-cyan-600 mx-auto mb-6" />
                         <h1 className="text-xl font-bold text-slate-900 mb-2">
                             Checking your status...
                         </h1>

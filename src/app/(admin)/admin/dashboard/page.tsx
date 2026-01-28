@@ -1,23 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { supabase } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
-import Link from "next/link";
 import {
-  Users,
-  UserCheck,
-  Calendar,
-  TrendingUp,
-  Megaphone,
-  GraduationCap,
-  CalendarDays,
   AlertCircle,
   ArrowRight,
-  Activity,
-  Clock
+  Calendar,
+  CalendarDays,
+  Clock,
+  GraduationCap,
+  Megaphone,
+  TrendingUp,
+  UserCheck,
+  Users
 } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 interface DashboardStats {
   total_members: number;
@@ -125,10 +125,9 @@ export default function AdminDashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <div className="flex items-center gap-3 text-slate-500">
-          <Activity className="h-5 w-5 animate-spin" />
-          <span>Loading dashboard...</span>
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <LoadingSpinner size="lg" text="Loading dashboard..." />
         </div>
       </div>
     );

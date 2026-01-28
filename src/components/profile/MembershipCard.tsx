@@ -75,7 +75,7 @@ export function MembershipCard({ name, tier, memberId, joinedAt, photoUrl, valid
         setMounted(true);
     }, []);
 
-    const renderCard = (showExpand: boolean, qrSize = 100) => (
+    const renderCard = (showExpand: boolean, qrSize = 80) => (
         <Card className={`relative overflow-hidden border-none text-white shadow-2xl ring-1 ring-white/10 ${config.glow} bg-gradient-to-br ${config.gradient}`}>
             {/* Background Pattern */}
             <div className="absolute inset-0 opacity-10">
@@ -179,7 +179,7 @@ export function MembershipCard({ name, tier, memberId, joinedAt, photoUrl, valid
 
     return (
         <>
-            {renderCard(true, 100)}
+            {renderCard(true, 80)}
             {mounted && isExpanded
                 ? createPortal(
                     <div

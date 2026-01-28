@@ -21,7 +21,7 @@ const navGroups = [
         ]
     },
     { href: "/sessions-and-events", label: "Sessions", type: "link" as const },
-    { href: "/store", label: "Shop", type: "link" as const },
+    // { href: "/store", label: "Shop", type: "link" as const },
     { href: "/gallery", label: "Gallery", type: "link" as const },
 ];
 
@@ -115,7 +115,7 @@ export function Header() {
                             ? 'text-cyan-700 bg-cyan-50 font-semibold'
                             : 'text-slate-600 hover:text-cyan-700 hover:bg-slate-50'
                         }`
-                        : `relative px-3 py-2 rounded-lg transition-colors ${isActive(item.href)
+                        : `relative px-3 py-2.5 rounded-lg transition-colors min-h-[44px] flex items-center ${isActive(item.href)
                             ? 'text-cyan-700 bg-cyan-50'
                             : 'text-slate-600 hover:text-cyan-700 hover:bg-slate-50'
                         }`
@@ -178,7 +178,7 @@ export function Header() {
                     <button
                         onClick={() => toggleDropdown(item.label)}
                         onMouseEnter={() => setActiveDropdown(item.label)}
-                        className={`flex items-center gap-1 px-3 py-2 rounded-lg transition-colors ${dropdownActive || activeDropdown === item.label
+                        className={`flex items-center gap-1 px-3 py-2.5 rounded-lg transition-colors min-h-[44px] ${dropdownActive || activeDropdown === item.label
                             ? 'text-cyan-700 bg-cyan-50'
                             : 'text-slate-600 hover:text-cyan-700 hover:bg-slate-50'
                             }`}
@@ -242,7 +242,7 @@ export function Header() {
                 {/* Mobile menu button */}
                 <button
                     onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                    className="md:hidden p-2.5 rounded-xl text-slate-600 hover:text-cyan-700 hover:bg-slate-100 transition-colors"
+                    className="md:hidden p-2 rounded-xl text-slate-600 hover:text-cyan-700 hover:bg-slate-100 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
                     aria-label="Toggle menu"
                 >
                     {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -308,10 +308,10 @@ export function Header() {
 
             {/* Mobile Navigation - Slide down */}
             <div
-                className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileMenuOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
+                className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileMenuOpen ? 'max-h-[80vh] opacity-100' : 'max-h-0 opacity-0'
                     }`}
             >
-                <nav ref={mobileNavRef} className="border-t bg-white px-4 py-4">
+                <nav ref={mobileNavRef} className="border-t bg-white px-4 py-4 max-h-[calc(80vh-1rem)] overflow-y-auto">
                     <div className="flex flex-col gap-1">
                         {navGroups.map((item) => renderNavItem(item, true))}
 

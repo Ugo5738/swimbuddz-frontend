@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { ProgramCard } from "@/components/academy/ProgramCard";
 import { AcademyApi, Enrollment, Program, ProgramLevel } from "@/lib/academy";
 import Link from "next/link";
@@ -61,10 +62,7 @@ export default function AcademyBrowsePage() {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
-                <div className="text-center space-y-4">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-600 mx-auto" />
-                    <p className="text-slate-500">Loading programs...</p>
-                </div>
+                <LoadingSpinner text="Loading programs..." />
             </div>
         );
     }

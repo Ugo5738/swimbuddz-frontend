@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/api";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
+import { Pencil, Plus, Trash2, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, X } from "lucide-react";
 
 interface Discount {
     id: string;
@@ -165,7 +166,15 @@ export default function AdminDiscountsPage() {
     };
 
     if (loading) {
-        return <div className="p-8 text-center">Loading discounts...</div>;
+        if (loading) {
+            return (
+                <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
+                    <div className="flex flex-col items-center gap-4">
+                        <LoadingSpinner size="lg" text="Loading discounts..." />
+                    </div>
+                </div>
+            );
+        }
     }
 
     return (

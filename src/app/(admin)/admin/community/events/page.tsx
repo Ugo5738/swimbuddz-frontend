@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
+import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { Select } from "@/components/ui/Select";
-import { Plus, Calendar, Users, Trash2 } from "lucide-react";
-import { format } from "date-fns";
+import { Textarea } from "@/components/ui/Textarea";
 import { apiEndpoints } from "@/lib/config";
+import { format } from "date-fns";
+import { Calendar, Plus, Trash2, Users } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface Event {
     id: string;
@@ -243,7 +244,7 @@ export default function AdminEventsPage() {
 
             {/* Events List */}
             {loading ? (
-                <div className="py-12 text-center text-slate-600">Loading events...</div>
+                <LoadingPage text="Loading events..." />
             ) : events.length === 0 ? (
                 <Card className="p-12 text-center">
                     <Calendar className="mx-auto h-12 w-12 text-slate-400" />

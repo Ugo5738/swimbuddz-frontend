@@ -108,6 +108,7 @@ export type CoachProfile = {
     certifications: string[];
     pools_supported: string[];
     preferred_cohort_types: string[];
+    show_in_directory?: boolean;
     created_at: string;
     updated_at: string;
 };
@@ -308,6 +309,7 @@ export async function updateCoachPreferences(data: {
     travel_radius_km?: number;
     preferred_cohort_types?: string[];
     max_swimmers_per_session?: number;
+    show_in_directory?: boolean;
 }): Promise<CoachProfile> {
     return apiPost<CoachProfile>("/api/v1/coaches/me/preferences", data, {
         auth: true,

@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
-import { Select } from "@/components/ui/Select";
-import { AcademyApi, ProgramLevel, BillingType, MilestoneType, RequiredEvidence, type Program, type Milestone } from "@/lib/academy";
 import { MediaInput } from "@/components/ui/MediaInput";
+import { Select } from "@/components/ui/Select";
+import { Textarea } from "@/components/ui/Textarea";
+import { AcademyApi, BillingType, MilestoneType, ProgramLevel, RequiredEvidence } from "@/lib/academy";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 // Curriculum lesson with full details
@@ -33,7 +33,7 @@ interface MilestoneFormItem {
     name: string;
     description: string;
     criteria: string;
-    video_url: string;
+    video_media_id: string;
     order_index: number;
     milestone_type: MilestoneType;
     required_evidence: RequiredEvidence;
@@ -94,9 +94,9 @@ export default function EditProgramPage() {
                     is_published: program.is_published || false,
                     cover_image_url: program.cover_image_url || "",
                     cover_image_media_id: program.cover_image_media_id || "",
-                    prep_materials: typeof program.prep_materials === 'object'
-                        ? program.prep_materials?.content || ""
-                        : program.prep_materials || "",
+                    prep_materials: program.prep_materials
+                        ? JSON.stringify(program.prep_materials, null, 2)
+                        : "",
                 });
 
                 // Populate curriculum from curriculum_json
@@ -123,7 +123,7 @@ export default function EditProgramPage() {
                         name: m.name,
                         description: "",
                         criteria: m.criteria || "",
-                        video_url: m.video_url || "",
+                        video_media_id: m.video_media_id || "",
                         order_index: m.order_index || 0,
                         milestone_type: m.milestone_type || MilestoneType.SKILL,
                         required_evidence: m.required_evidence || RequiredEvidence.NONE,
@@ -183,7 +183,7 @@ export default function EditProgramPage() {
     const addMilestone = () => {
         setMilestones([...milestones, {
             id: `temp-${Date.now()}`,
-            name: "", description: "", criteria: "", video_url: "",
+            name: "", description: "", criteria: "", video_media_id: "",
             order_index: milestones.length + 1,
             milestone_type: MilestoneType.SKILL,
             required_evidence: RequiredEvidence.NONE,
@@ -230,11 +230,23 @@ export default function EditProgramPage() {
             // Exclude cover_image_url (read-only field, resolved from media_id)
             const { cover_image_url, ...updateData } = formData;
 
+            // Parse prep_materials JSON
+            let prepMaterialsData = null;
+            if (formData.prep_materials.trim()) {
+                try {
+                    prepMaterialsData = JSON.parse(formData.prep_materials);
+                } catch (e) {
+                    toast.error("Invalid JSON in Prep Materials. Please fix syntax to save.");
+                    setSaving(false);
+                    return;
+                }
+            }
+
             // Update the program
             await AcademyApi.updateProgram(id, {
                 ...updateData,
                 price_amount: formData.price_amount, // Stored in naira
-                prep_materials: formData.prep_materials.trim() ? { content: formData.prep_materials } : null,
+                prep_materials: prepMaterialsData,
                 curriculum_json: buildCurriculumJson(),
             });
 
@@ -418,8 +430,14 @@ export default function EditProgramPage() {
                                     </div>
                                     <Input label="Name *" value={milestone.name} onChange={(e) => updateMilestone(index, "name", e.target.value)} />
                                     <Textarea label="Criteria" value={milestone.criteria} onChange={(e) => updateMilestone(index, "criteria", e.target.value)} />
-                                    <Input label="Demo Video URL" value={milestone.video_url} onChange={(e) => updateMilestone(index, "video_url", e.target.value)} />
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <MediaInput
+                                        label="Demo Video"
+                                        purpose="milestone_video"
+                                        mode="both"
+                                        value={milestone.video_media_id || null}
+                                        onChange={(mediaId) => updateMilestone(index, "video_media_id", mediaId || "")}
+                                    />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <Select label="Type" value={milestone.milestone_type} onChange={(e) => updateMilestone(index, "milestone_type", e.target.value)}>
                                             {Object.values(MilestoneType).map(type => (
                                                 <option key={type} value={type}>{type}</option>

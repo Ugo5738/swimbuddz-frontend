@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
-import { Badge } from "@/components/ui/Badge";
-import { CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { API_BASE_URL } from "@/lib/config";
+import { AlertCircle, CheckCircle, XCircle } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const QRCode = dynamic(
     () => import("qrcode.react").then((mod) => mod.QRCodeCanvas),
@@ -48,8 +49,7 @@ export default function VerifyMemberPage() {
 
         const fetchMember = async () => {
             try {
-                const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-                const res = await fetch(`${API_BASE}/api/v1/members/public/${memberId}`);
+                const res = await fetch(`${API_BASE_URL}/api/v1/members/public/${memberId}`);
 
                 if (!res.ok) {
                     if (res.status === 404) {

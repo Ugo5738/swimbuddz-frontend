@@ -70,6 +70,7 @@ export function CoachPicker({
     }, [coaches, searchQuery]);
 
     const handleSelect = (coach: Coach) => {
+        if (coach.status !== "active") return;
         onChange(coach.member_id, coach);
         setIsOpen(false);
         setSearchQuery("");
@@ -155,13 +156,20 @@ export function CoachPicker({
                                     {searchQuery ? "No coaches found matching your search" : "No approved coaches available"}
                                 </div>
                             ) : (
-                                filteredCoaches.map((coach) => (
-                                    <button
-                                        key={coach.id}
-                                        type="button"
-                                        onClick={() => handleSelect(coach)}
-                                        className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50"
-                                    >
+                                filteredCoaches.map((coach) => {
+                                    const isSelectable = coach.status === "active";
+                                    return (
+                                        <button
+                                            key={coach.id}
+                                            type="button"
+                                            onClick={() => handleSelect(coach)}
+                                            disabled={!isSelectable}
+                                            className={`flex w-full items-center gap-3 px-4 py-3 text-left ${
+                                                isSelectable
+                                                    ? "hover:bg-slate-50"
+                                                    : "cursor-not-allowed opacity-60"
+                                            }`}
+                                        >
                                         <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100">
                                             <User className="h-5 w-5 text-emerald-600" />
                                         </div>
@@ -189,13 +197,20 @@ export function CoachPicker({
                                             )}
                                         </div>
                                         <div className="flex-shrink-0 text-right">
-                                            <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                                                coach.status === "active"
-                                                    ? "bg-emerald-100 text-emerald-700"
-                                                    : "bg-blue-100 text-blue-700"
-                                            }`}>
+                                            <span
+                                                className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                                                    coach.status === "active"
+                                                        ? "bg-emerald-100 text-emerald-700"
+                                                        : "bg-blue-100 text-blue-700"
+                                                }`}
+                                            >
                                                 {coach.status}
                                             </span>
+                                            {!isSelectable && (
+                                                <p className="mt-1 text-xs text-slate-400">
+                                                    Complete onboarding
+                                                </p>
+                                            )}
                                             {coach.coaching_years > 0 && (
                                                 <p className="mt-1 text-xs text-slate-500">
                                                     {coach.coaching_years} yr{coach.coaching_years !== 1 ? "s" : ""} exp
@@ -203,7 +218,8 @@ export function CoachPicker({
                                             )}
                                         </div>
                                     </button>
-                                ))
+                                    );
+                                })
                             )}
                         </div>
 

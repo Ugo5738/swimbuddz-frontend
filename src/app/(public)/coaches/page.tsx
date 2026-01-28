@@ -3,12 +3,14 @@
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { LoadingCard } from "@/components/ui/LoadingCard";
+import { LoadingPage } from "@/components/ui/LoadingCard";
 import { Member, MembersApi } from "@/lib/members";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function PublicCoachesPage() {
+    const router = useRouter();
     const [coaches, setCoaches] = useState<Member[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -28,38 +30,34 @@ export default function PublicCoachesPage() {
     }, []);
 
     if (loading) {
-        return (
-            <div className="container mx-auto px-4 py-8 max-w-6xl">
-                <LoadingCard text="Loading coaches..." />
-            </div>
-        );
+        return <LoadingPage text="Loading coaches..." />;
     }
 
     return (
-        <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <div className="space-y-6 md:space-y-8">
             {/* Header */}
-            <div className="space-y-4 mb-8">
-                <Link
-                    href="/community"
-                    className="inline-flex items-center gap-1 text-sm text-cyan-600 hover:text-cyan-700"
+            <header className="space-y-1">
+                <button
+                    onClick={() => router.back()}
+                    className="inline-flex items-center gap-1 text-sm text-cyan-600 hover:text-cyan-700 mb-2"
                 >
-                    ← Back to Community
-                </Link>
-                <h1 className="text-4xl font-bold tracking-tight text-slate-900">
+                    ← Back
+                </button>
+                <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
                     Meet Our Coaches
                 </h1>
-                <p className="text-lg text-slate-600 max-w-3xl">
+                <p className="text-sm md:text-base text-slate-600">
                     Expert guidance from certified professionals to help you reach your swimming goals.
                 </p>
-            </div>
+            </header>
 
             {coaches.length === 0 ? (
-                <Card className="p-12 text-center text-slate-500">
-                    <p className="text-xl mb-2">No active coaches found at the moment.</p>
+                <Card className="p-8 md:p-12 text-center text-slate-500">
+                    <p className="text-lg md:text-xl mb-2">No active coaches found at the moment.</p>
                     <p>Check back soon!</p>
                 </Card>
             ) : (
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                     {coaches.map((member) => {
                         const coach = member.coach_profile!;
                         const photoUrl = coach.coach_profile_photo_url || member.profile_photo_url;
@@ -67,9 +65,9 @@ export default function PublicCoachesPage() {
 
                         return (
                             <Link key={member.id} href={`/coaches/${member.id}`}>
-                                <Card className="flex flex-col overflow-hidden transition-all hover:shadow-lg hover:border-cyan-200 cursor-pointer h-full">
-                                    {/* Coach Photo */}
-                                    <div className="aspect-[4/3] w-full bg-slate-100 relative">
+                                <Card className="overflow-hidden transition-all hover:shadow-lg hover:border-cyan-200 cursor-pointer h-full bg-gradient-to-br from-slate-800 via-slate-900 to-cyan-900">
+                                    {/* Coach Photo - Smaller on mobile */}
+                                    <div className="aspect-square sm:aspect-[4/3] w-full relative">
                                         {photoUrl ? (
                                             <img
                                                 src={photoUrl}
@@ -77,50 +75,48 @@ export default function PublicCoachesPage() {
                                                 className="h-full w-full object-cover"
                                             />
                                         ) : (
-                                            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-cyan-100 to-blue-100 text-cyan-600">
-                                                <span className="text-5xl font-bold">
+                                            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-cyan-500/20 to-blue-600/20">
+                                                <span className="text-6xl sm:text-5xl font-bold text-cyan-300/80">
                                                     {member.first_name?.[0]}{member.last_name?.[0]}
                                                 </span>
                                             </div>
                                         )}
                                     </div>
 
-                                    <div className="flex flex-1 flex-col p-6">
-                                        <div className="mb-4">
-                                            <h3 className="text-xl font-bold text-slate-900">
+                                    <div className="p-4 md:p-5 space-y-3">
+                                        <div>
+                                            <h3 className="text-lg md:text-xl font-bold text-white">
                                                 {displayName}
                                             </h3>
                                             {coach.coaching_years && (
-                                                <p className="text-sm font-medium text-cyan-600">
+                                                <p className="text-sm font-medium text-cyan-400">
                                                     {coach.coaching_years}+ Years Experience
                                                 </p>
                                             )}
                                         </div>
 
-                                        <div className="mb-4 flex-1 space-y-2">
-                                            <p className="line-clamp-3 text-sm text-slate-600">
-                                                {coach.short_bio || (coach.full_bio ? coach.full_bio.substring(0, 120) + "..." : "Certified swimming coach ready to help you achieve your goals.")}
-                                            </p>
+                                        <p className="line-clamp-2 text-sm text-slate-300">
+                                            {coach.short_bio || (coach.full_bio ? coach.full_bio.substring(0, 100) + "..." : "Certified swimming coach ready to help you achieve your goals.")}
+                                        </p>
 
-                                            {/* Specialties */}
-                                            {coach.coaching_specialties && coach.coaching_specialties.length > 0 && (
-                                                <div className="flex flex-wrap gap-2 pt-2">
-                                                    {coach.coaching_specialties.slice(0, 3).map((spec, i) => (
-                                                        <Badge key={i} variant="info" className="text-xs">
-                                                            {spec}
-                                                        </Badge>
-                                                    ))}
-                                                    {coach.coaching_specialties.length > 3 && (
-                                                        <Badge variant="secondary" className="text-xs">
-                                                            +{coach.coaching_specialties.length - 3}
-                                                        </Badge>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
+                                        {/* Specialties */}
+                                        {coach.coaching_specialties && coach.coaching_specialties.length > 0 && (
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {coach.coaching_specialties.slice(0, 3).map((spec, i) => (
+                                                    <Badge key={i} className="text-xs bg-white/10 text-white border-white/20">
+                                                        {spec}
+                                                    </Badge>
+                                                ))}
+                                                {coach.coaching_specialties.length > 3 && (
+                                                    <Badge className="text-xs bg-white/10 text-white border-white/20">
+                                                        +{coach.coaching_specialties.length - 3}
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        )}
 
-                                        <div className="mt-auto pt-4 border-t border-slate-100">
-                                            <span className="text-sm font-medium text-cyan-600 flex items-center justify-center gap-1">
+                                        <div className="pt-2 border-t border-white/10">
+                                            <span className="text-sm font-medium text-cyan-400 flex items-center justify-center gap-1">
                                                 View Profile →
                                             </span>
                                         </div>
@@ -133,9 +129,9 @@ export default function PublicCoachesPage() {
             )}
 
             {/* CTA Section */}
-            <div className="mt-12 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 p-8 text-center text-white">
-                <h2 className="text-2xl font-bold mb-3">Want to Join Our Coaching Team?</h2>
-                <p className="text-emerald-50 mb-6 max-w-xl mx-auto">
+            <div className="rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 p-6 md:p-8 text-center text-white">
+                <h2 className="text-xl md:text-2xl font-bold mb-2 md:mb-3">Want to Join Our Coaching Team?</h2>
+                <p className="text-emerald-50 mb-4 md:mb-6 max-w-xl mx-auto text-sm md:text-base">
                     Share your expertise and help others learn to swim. Apply to become a SwimBuddz coach today.
                 </p>
                 <Link href="/coach/apply">

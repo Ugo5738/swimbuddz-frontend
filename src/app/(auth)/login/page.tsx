@@ -4,6 +4,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { PasswordField } from "@/components/ui/PasswordField";
 import { supabase } from "@/lib/auth";
 import { completePendingRegistrationOnBackend, getPostAuthRedirectPath } from "@/lib/registration";
@@ -142,7 +143,7 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div className="flex justify-center p-8"><LoadingSpinner /></div>}>
       <LoginContent />
     </Suspense>
   );

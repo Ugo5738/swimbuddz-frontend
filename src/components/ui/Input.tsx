@@ -1,5 +1,5 @@
-import type { InputHTMLAttributes } from "react";
 import clsx from "clsx";
+import type { InputHTMLAttributes } from "react";
 
 type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   label?: string;
@@ -29,14 +29,14 @@ export function Input({ label, hint, error, className, id, required, hideLabel, 
         id={inputId}
         required={required}
         className={clsx(
-          "rounded-md border px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50",
+          "rounded-md border px-3 py-3 text-base sm:text-sm text-slate-900 shadow-sm transition focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 min-h-[44px]",
           error ? "border-rose-400" : "border-slate-200",
           className
         )}
         {...props}
       />
-      {hint && !error ? <span className="text-xs font-normal text-slate-500">{hint}</span> : null}
-      {error ? <span className="text-xs font-normal text-rose-600">{error}</span> : null}
+      {hint && !error ? <span className="text-sm sm:text-xs font-normal text-slate-500">{hint}</span> : null}
+      {error ? <span className="text-sm sm:text-xs font-normal text-rose-600">{error}</span> : null}
     </label>
   );
 }

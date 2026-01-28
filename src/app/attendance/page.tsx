@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { apiGet, apiPost } from "@/lib/api";
 import { Combobox, type ComboboxOption } from "@/components/forms/Combobox";
 import { OptionPillGroup } from "@/components/forms/OptionPillGroup";
-import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { apiGet, apiPost } from "@/lib/api";
 import { format } from "date-fns";
+import { useEffect, useState } from "react";
 
 type Member = {
     id: string;
@@ -228,7 +229,7 @@ export default function AttendancePage() {
     }
 
     if (loading) {
-        return <div className="p-8 text-center">Loading...</div>;
+        return <div className="flex justify-center p-8"><LoadingSpinner /></div>;
     }
 
     if (success) {

@@ -151,7 +151,7 @@ export interface Milestone {
     program_id: string;
     name: string;
     criteria?: string;
-    video_url?: string;
+    video_media_id?: string;
     // Organization
     order_index?: number;
     milestone_type?: MilestoneType;

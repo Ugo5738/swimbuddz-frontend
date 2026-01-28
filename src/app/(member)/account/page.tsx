@@ -228,35 +228,72 @@ export default function MemberDashboardPage() {
             )}
 
             {showPaymentRecoveryBanner && (
-                <Card className="p-6 border-emerald-200 bg-emerald-50">
-                    <div className="flex flex-col md:flex-row md:items-center gap-4">
-                        <div className="flex-shrink-0 rounded-xl bg-emerald-100 p-3">
-                            <CheckCircle className="h-6 w-6 text-emerald-600" />
+                <Card className="overflow-hidden border-emerald-200 bg-emerald-50">
+                    {/* Mobile: Stacked layout with full-width button */}
+                    <div className="md:hidden">
+                        <div className="p-4 pb-3">
+                            <div className="flex items-start gap-3">
+                                <div className="flex-shrink-0 rounded-lg bg-emerald-100 p-2">
+                                    <CheckCircle className="h-5 w-5 text-emerald-600" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="font-semibold text-slate-900 text-sm">Onboarding complete</h3>
+                                    <p className="text-xs text-slate-600 mt-0.5">
+                                        Complete payment to activate your membership
+                                    </p>
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex-1">
-                            <h3 className="font-semibold text-slate-900">Onboarding complete - payment pending</h3>
-                            <p className="text-sm text-slate-600 mt-1">
-                                Finish payment to activate your Community membership and unlock member features.
-                            </p>
-                            {resumePaymentIntent?.reference ? (
-                                <p className="text-xs text-slate-500 mt-2">
-                                    Last payment reference: <span className="font-mono">{resumePaymentIntent.reference}</span>
-                                </p>
-                            ) : null}
-                        </div>
-                        <div className="flex flex-wrap gap-3">
+                        <div className="px-4 pb-4 space-y-2">
                             {resumeCheckoutUrl ? (
                                 <Button
+                                    className="w-full"
                                     onClick={() => {
                                         window.location.href = resumeCheckoutUrl;
                                     }}
                                 >
-                                    Resume payment
+                                    Resume Payment
                                 </Button>
                             ) : null}
-                            <Link href="/account/billing?required=community">
-                                <Button variant={resumeCheckoutUrl ? "outline" : "primary"}>Go to Billing</Button>
+                            <Link href="/account/billing?required=community" className="block">
+                                <Button variant={resumeCheckoutUrl ? "outline" : "primary"} className="w-full">
+                                    Go to Billing
+                                </Button>
                             </Link>
+                        </div>
+                    </div>
+
+                    {/* Desktop: Horizontal layout */}
+                    <div className="hidden md:block p-6">
+                        <div className="flex items-center gap-4">
+                            <div className="flex-shrink-0 rounded-xl bg-emerald-100 p-3">
+                                <CheckCircle className="h-6 w-6 text-emerald-600" />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="font-semibold text-slate-900">Onboarding complete - payment pending</h3>
+                                <p className="text-sm text-slate-600 mt-1">
+                                    Finish payment to activate your Community membership and unlock member features.
+                                </p>
+                                {resumePaymentIntent?.reference ? (
+                                    <p className="text-xs text-slate-500 mt-2">
+                                        Last payment reference: <span className="font-mono">{resumePaymentIntent.reference}</span>
+                                    </p>
+                                ) : null}
+                            </div>
+                            <div className="flex flex-wrap gap-3">
+                                {resumeCheckoutUrl ? (
+                                    <Button
+                                        onClick={() => {
+                                            window.location.href = resumeCheckoutUrl;
+                                        }}
+                                    >
+                                        Resume payment
+                                    </Button>
+                                ) : null}
+                                <Link href="/account/billing?required=community">
+                                    <Button variant={resumeCheckoutUrl ? "outline" : "primary"}>Go to Billing</Button>
+                                </Link>
+                            </div>
                         </div>
                     </div>
                 </Card>

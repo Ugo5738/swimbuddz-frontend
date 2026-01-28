@@ -10,7 +10,6 @@ import { LoadingCard } from "@/components/ui/LoadingCard";
 import { supabase } from "@/lib/auth";
 import { CoachesApi, CoachOnboardingData } from "@/lib/coaches";
 import { locationOptions } from "@/lib/options";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -158,25 +157,13 @@ export default function CoachOnboardingPage() {
     const showTravelRadius = formData.can_travel_between_pools && hasPhysicalLocation;
 
     return (
-        <div className="min-h-screen bg-slate-50 px-4 py-12 sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-2xl space-y-8">
-                <div>
-                    <Link
-                        href="/coach/apply"
-                        className="text-sm text-slate-500 hover:text-slate-700 mb-4 inline-block"
-                    >
-                        ← Back to application
-                    </Link>
-                    <div className="text-center">
-                        <div className="text-4xl mb-2">🎉</div>
-                        <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-                            Welcome to SwimBuddz Coaching!
-                        </h1>
-                        <p className="mt-2 text-sm text-slate-600">
-                            Let's set up your coaching preferences so we can match you with swimmers.
-                        </p>
-                    </div>
-                </div>
+        <div className="mx-auto max-w-2xl space-y-8">
+            <header className="space-y-2">
+                <h1 className="text-3xl font-bold text-slate-900">Complete Your Setup</h1>
+                <p className="text-slate-600">
+                    Let's set up your coaching preferences so we can match you with swimmers.
+                </p>
+            </header>
 
                 {error && <Alert variant="error">{error}</Alert>}
 
@@ -289,7 +276,6 @@ export default function CoachOnboardingPage() {
                         </p>
                     </div>
                 </Card>
-            </div>
         </div>
     );
 }

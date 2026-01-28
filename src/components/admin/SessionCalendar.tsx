@@ -1,10 +1,11 @@
 "use client";
 
-import FullCalendar from "@fullcalendar/react";
+import { type DateSelectArg, type EventClickArg, type EventInput } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
-import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import { type EventInput, type DateSelectArg, type EventClickArg } from "@fullcalendar/core";
+import FullCalendar from "@fullcalendar/react";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import { useEffect, useState } from "react";
 
 interface SessionCalendarProps {
     events: EventInput[];
@@ -14,12 +15,25 @@ interface SessionCalendarProps {
 }
 
 export function SessionCalendar({ events, onDateSelect, onEventClick, onEventDrop }: SessionCalendarProps) {
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 640);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
     return (
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-2 sm:p-4">
             <FullCalendar
                 plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                initialView="dayGridMonth"
-                headerToolbar={{
+                initialView={isMobile ? "timeGridDay" : "dayGridMonth"}
+                headerToolbar={isMobile ? {
+                    left: "prev,next",
+                    center: "title",
+                    right: "today"
+                } : {
                     left: "prev,next today",
                     center: "title",
                     right: "dayGridMonth,timeGridWeek,timeGridDay"
@@ -28,7 +42,7 @@ export function SessionCalendar({ events, onDateSelect, onEventClick, onEventDro
                 editable={true}
                 selectable={true}
                 selectMirror={true}
-                dayMaxEvents={true}
+                dayMaxEvents={isMobile ? 2 : true}
                 weekends={true}
                 select={onDateSelect}
                 eventClick={onEventClick}
@@ -70,6 +84,9 @@ export function SessionCalendar({ events, onDateSelect, onEventClick, onEventDro
         .fc-button {
           background-color: #0891b2 !important;
           border-color: #0891b2 !important;
+          padding: 0.5rem 0.75rem !important;
+          min-height: 44px !important;
+          font-size: 0.875rem !important;
         }
         .fc-button:hover {
           background-color: #0e7490 !important;
@@ -83,6 +100,28 @@ export function SessionCalendar({ events, onDateSelect, onEventClick, onEventDro
         .fc-col-header-cell-cushion {
           color: #475569;
           font-weight: 600;
+        }
+        /* Mobile optimizations */
+        @media (max-width: 640px) {
+          .fc-toolbar {
+            flex-direction: column;
+            gap: 0.5rem;
+          }
+          .fc-toolbar-chunk {
+            display: flex;
+            justify-content: center;
+          }
+          .fc-toolbar-title {
+            font-size: 1rem !important;
+          }
+          .fc-button {
+            padding: 0.375rem 0.5rem !important;
+            font-size: 0.75rem !important;
+          }
+          .fc-daygrid-day-number {
+            font-size: 0.875rem;
+            padding: 4px !important;
+          }
         }
       `}</style>
         </div>

@@ -3,15 +3,16 @@
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { LoadingCard } from "@/components/ui/LoadingCard";
+import { LoadingPage } from "@/components/ui/LoadingCard";
 import { AcademyApi, Cohort, CohortStatus } from "@/lib/academy";
 import { Member, MembersApi } from "@/lib/members";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function CoachProfilePage() {
     const params = useParams();
+    const router = useRouter();
     const coachId = params.id as string;
 
     const [coach, setCoach] = useState<Member | null>(null);
@@ -46,24 +47,20 @@ export default function CoachProfilePage() {
     };
 
     if (loading) {
-        return (
-            <div className="container mx-auto px-4 py-8 max-w-4xl">
-                <LoadingCard text="Loading coach profile..." />
-            </div>
-        );
+        return <LoadingPage text="Loading coach profile..." />;
     }
 
     if (error || !coach) {
         return (
-            <div className="container mx-auto px-4 py-8 max-w-4xl">
+            <div className="max-w-4xl mx-auto">
                 <Card className="p-12 text-center">
                     <h2 className="text-2xl font-bold text-slate-900 mb-2">Coach Not Found</h2>
                     <p className="text-slate-600 mb-4">
                         {error || "The coach you're looking for doesn't exist or is not currently active."}
                     </p>
-                    <Link href="/community/coaches">
-                        <Button variant="outline">← Back to Coaches</Button>
-                    </Link>
+                    <Button variant="outline" onClick={() => router.back()}>
+                        ← Back to Coaches
+                    </Button>
                 </Card>
             </div>
         );
@@ -82,62 +79,60 @@ export default function CoachProfilePage() {
     );
 
     return (
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="max-w-4xl mx-auto space-y-6">
             {/* Back Link */}
-            <Link
-                href="/community/coaches"
-                className="inline-flex items-center gap-1 text-sm text-cyan-600 hover:text-cyan-700 mb-6"
+            <button
+                onClick={() => router.back()}
+                className="inline-flex items-center gap-1 text-sm text-cyan-600 hover:text-cyan-700"
             >
                 ← Back to Coaches
-            </Link>
+            </button>
 
             {/* Hero Section */}
-            <Card className="overflow-hidden mb-8">
-                <div className="bg-gradient-to-r from-cyan-600 to-blue-600 p-8">
-                    <div className="flex flex-col md:flex-row items-center gap-6">
+            <Card className="overflow-hidden">
+                <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-cyan-900 p-6 md:p-8">
+                    <div className="flex flex-col items-center text-center">
                         {/* Photo */}
-                        <div className="flex-shrink-0">
+                        <div className="mb-4">
                             {photoUrl ? (
                                 <img
                                     src={photoUrl}
                                     alt={displayName}
-                                    className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
+                                    className="w-28 h-28 md:w-32 md:h-32 rounded-full object-cover border-4 border-cyan-400/30 shadow-xl"
                                 />
                             ) : (
-                                <div className="w-32 h-32 rounded-full bg-white/20 flex items-center justify-center text-white text-4xl font-bold">
+                                <div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-3xl md:text-4xl font-bold shadow-xl">
                                     {coach.first_name?.[0]}{coach.last_name?.[0]}
                                 </div>
                             )}
                         </div>
 
                         {/* Info */}
-                        <div className="text-center md:text-left flex-1">
-                            <h1 className="text-3xl font-bold text-white mb-2">{displayName}</h1>
-                            {coachProfile?.coaching_years && (
-                                <p className="text-cyan-100 text-lg mb-3">
-                                    {coachProfile.coaching_years}+ Years of Coaching Experience
-                                </p>
-                            )}
+                        <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">{displayName}</h1>
+                        {coachProfile?.coaching_years && (
+                            <p className="text-cyan-300 text-base md:text-lg mb-4">
+                                {coachProfile.coaching_years}+ Years of Coaching Experience
+                            </p>
+                        )}
 
-                            {/* Specialties */}
-                            {coachProfile?.coaching_specialties && coachProfile.coaching_specialties.length > 0 && (
-                                <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                                    {coachProfile.coaching_specialties.map((spec, i) => (
-                                        <Badge
-                                            key={i}
-                                            className="bg-white/20 text-white border-0"
-                                        >
-                                            {spec}
-                                        </Badge>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                        {/* Specialties */}
+                        {coachProfile?.coaching_specialties && coachProfile.coaching_specialties.length > 0 && (
+                            <div className="flex flex-wrap gap-2 justify-center max-w-md">
+                                {coachProfile.coaching_specialties.map((spec, i) => (
+                                    <Badge
+                                        key={i}
+                                        className="bg-white/10 text-white border-white/20 text-xs"
+                                    >
+                                        {spec}
+                                    </Badge>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             </Card>
 
-            <div className="grid gap-8 lg:grid-cols-3">
+            <div className="grid gap-6 lg:grid-cols-3">
                 {/* Main Content */}
                 <div className="lg:col-span-2 space-y-6">
                     {/* Bio */}

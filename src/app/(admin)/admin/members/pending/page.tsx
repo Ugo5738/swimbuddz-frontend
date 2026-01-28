@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { CheckCircle, XCircle, Clock, Eye, User, MapPin, Briefcase, MessageSquare } from "lucide-react";
 import { Card } from "@/components/ui/Card";
-import { API_BASE_URL } from "@/lib/config";
 import { getCurrentAccessToken } from "@/lib/auth";
+import { API_BASE_URL } from "@/lib/config";
+import { Briefcase, CheckCircle, Clock, Eye, MapPin, MessageSquare, User, XCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface PendingMember {
     id: string;
@@ -138,8 +138,9 @@ export default function PendingMembersPage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-96">
-                <div className="animate-spin h-8 w-8 border-4 border-cyan-500 border-t-transparent rounded-full" />
+            <div className="flex min-h-96 flex-col items-center justify-center gap-4">
+                <div className="h-12 w-12 animate-spin rounded-full border-4 border-cyan-200 border-t-cyan-600" />
+                <p className="text-lg font-medium text-slate-600">Loading pending members...</p>
             </div>
         );
     }

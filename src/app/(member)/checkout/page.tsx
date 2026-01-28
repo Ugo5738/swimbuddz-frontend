@@ -420,45 +420,56 @@ function CheckoutContent() {
                         </div>
                     ))}
 
-                    {/* Discount section - subtle, secondary importance */}
+                    {/* Discount section */}
                     <div className="pt-3 border-t border-slate-100">
                         {validatedDiscount ? (
-                            <div className="flex justify-between text-sm text-emerald-600">
-                                <span className="flex items-center gap-1">
-                                    <Tag className="w-3 h-3" />
-                                    Discount ({validatedDiscount.code})
-                                    {validatedDiscount.appliesTo && (
-                                        <span className="text-emerald-500 text-xs">
-                                            on {validatedDiscount.appliesTo.replace("_", " ").replace(/^\w/, c => c.toUpperCase())}
+                            <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex items-start gap-2 min-w-0">
+                                        <Tag className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-medium text-emerald-700">
+                                                {validatedDiscount.code}
+                                            </p>
+                                            {validatedDiscount.appliesTo && (
+                                                <p className="text-xs text-emerald-600">
+                                                    Applied to {validatedDiscount.appliesTo.replace("_", " ")}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                        <span className="text-sm font-semibold text-emerald-700">
+                                            -{discountAmount > 0 ? formatCurrency(discountAmount) : "Applied"}
                                         </span>
-                                    )}
-                                </span>
-                                <div className="flex items-center gap-2">
-                                    <span>-{discountAmount > 0 ? formatCurrency(discountAmount) : "Applied at payment"}</span>
-                                    <button
-                                        onClick={handleClearDiscount}
-                                        className="text-xs text-slate-400 hover:text-slate-600"
-                                    >
-                                        ✕
-                                    </button>
+                                        <button
+                                            onClick={handleClearDiscount}
+                                            className="p-1 rounded-full text-emerald-400 hover:text-emerald-600 hover:bg-emerald-100 transition-colors"
+                                            aria-label="Remove discount"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ) : (
                             <div className="flex items-center gap-2">
-                                <Tag className="w-3 h-3 text-slate-400" />
+                                <Tag className="w-4 h-4 text-slate-400 flex-shrink-0" />
                                 <input
                                     type="text"
                                     value={discountInput}
                                     onChange={(e) => setDiscountInput(e.target.value.toUpperCase())}
                                     placeholder="Discount code"
-                                    className="flex-1 px-2 py-1.5 text-xs border border-slate-200 rounded text-slate-600 focus:ring-1 focus:ring-cyan-400 focus:border-transparent uppercase placeholder:text-slate-400"
+                                    className="flex-1 min-w-0 px-3 py-2 text-sm border border-slate-200 rounded-lg text-slate-700 focus:ring-2 focus:ring-cyan-400 focus:border-transparent uppercase placeholder:text-slate-400"
                                 />
                                 <Button
                                     variant="secondary"
                                     size="sm"
                                     onClick={handleApplyDiscount}
                                     disabled={!discountInput.trim() || validatingDiscount}
-                                    className="text-xs py-1.5"
+                                    className="flex-shrink-0"
                                 >
                                     {validatingDiscount ? "..." : "Apply"}
                                 </Button>

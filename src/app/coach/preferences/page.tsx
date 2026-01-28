@@ -29,6 +29,7 @@ export default function CoachPreferencesPage() {
     const [travelRadius, setTravelRadius] = useState<number | undefined>();
     const [preferredCohortTypes, setPreferredCohortTypes] = useState<string[]>([]);
     const [maxSwimmers, setMaxSwimmers] = useState(10);
+    const [showInDirectory, setShowInDirectory] = useState(true);
 
     useEffect(() => {
         async function loadPreferences() {
@@ -37,6 +38,7 @@ export default function CoachPreferencesPage() {
                 if (profile) {
                     setPoolsSupported(profile.pools_supported || []);
                     setPreferredCohortTypes(profile.preferred_cohort_types || []);
+                    setShowInDirectory(profile.show_in_directory ?? true);
                 }
             } catch (err) {
                 console.error("Failed to load preferences", err);
@@ -99,6 +101,7 @@ export default function CoachPreferencesPage() {
                 )
                     ? maxSwimmers
                     : undefined,
+                show_in_directory: showInDirectory,
             });
 
             toast.success("Preferences saved successfully!");
@@ -134,6 +137,16 @@ export default function CoachPreferencesPage() {
             {error && <Alert variant="error">{error}</Alert>}
 
             <Card className="p-6 space-y-6">
+                {/* Visibility */}
+                <div className="space-y-4">
+                    <h2 className="text-lg font-semibold text-slate-900">Visibility</h2>
+                    <Checkbox
+                        label="Show my profile in the public coach directory"
+                        checked={showInDirectory}
+                        onChange={(e) => setShowInDirectory(e.target.checked)}
+                    />
+                </div>
+
                 {/* Locations */}
                 <div className="space-y-4">
                     <h2 className="text-lg font-semibold text-slate-900">Locations</h2>

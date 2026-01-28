@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useState } from "react";
 
 // Pages that should NOT use the coach layout (have special flows)
-const EXCLUDED_PATHS = ["/coach/apply", "/coach/onboarding"];
+const EXCLUDED_PATHS = ["/coach/apply"];
 
 export default function CoachRouteLayout({
     children,

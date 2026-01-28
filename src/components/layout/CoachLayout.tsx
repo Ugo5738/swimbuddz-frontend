@@ -6,6 +6,7 @@ import {
     Bell,
     BookOpen,
     Calendar,
+    CheckCircle,
     ChevronRight,
     CreditCard,
     GraduationCap,
@@ -39,11 +40,12 @@ type NavSection = {
     items: NavItem[];
 };
 
-const navSections: NavSection[] = [
+const baseNavSections: NavSection[] = [
     {
         title: "Overview",
         items: [
             { href: "/coach/dashboard", label: "Dashboard", icon: LayoutDashboard },
+            { href: "/coach/onboarding", label: "Complete Setup", icon: CheckCircle },
         ],
     },
     {
@@ -82,6 +84,7 @@ export function CoachLayout({ children }: CoachLayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [coachName, setCoachName] = useState("Coach");
     const [loading, setLoading] = useState(true);
+    const [coachStatus, setCoachStatus] = useState<string | null>(null);
 
     useEffect(() => {
         async function loadCoachData() {
@@ -95,6 +98,7 @@ export function CoachLayout({ children }: CoachLayoutProps) {
 
                 // Check if user has coach access
                 const status = await getCoachApplicationStatus();
+                setCoachStatus(status.status);
                 if (!status.can_access_dashboard) {
                     // Redirect to apply page if not approved
                     router.push("/coach/apply");
@@ -108,7 +112,7 @@ export function CoachLayout({ children }: CoachLayoutProps) {
         }
 
         loadCoachData();
-    }, [router]);
+    }, [router, pathname]);
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -121,6 +125,18 @@ export function CoachLayout({ children }: CoachLayoutProps) {
         }
         return pathname?.startsWith(href);
     };
+
+    // Coach needs onboarding if status is "approved" (not yet "active")
+    const needsCoachOnboarding = coachStatus === "approved";
+
+    // Filter nav sections to show/hide "Complete Setup" based on coach onboarding status
+    const navSections = baseNavSections.map((section) => {
+        if (section.title !== "Overview") return section;
+        const items = needsCoachOnboarding
+            ? section.items
+            : section.items.filter((item) => item.href !== "/coach/onboarding");
+        return { ...section, items };
+    });
 
     const initials = coachName.slice(0, 2).toUpperCase();
 

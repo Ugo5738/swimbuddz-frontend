@@ -2,6 +2,7 @@
 
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { ArrowRight, CheckCircle, Mail, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -313,7 +314,7 @@ function RegistrationSuccessContent() {
 
 export default function RegistrationSuccessPage() {
     return (
-        <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading...</div>}>
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><LoadingSpinner /></div>}>
             <RegistrationSuccessContent />
         </Suspense>
     );

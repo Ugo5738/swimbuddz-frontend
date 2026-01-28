@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import { LoadingCard } from "@/components/ui/LoadingCard";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Select } from "@/components/ui/Select";
 import { Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/components/ui/Table";
 import { Textarea } from "@/components/ui/Textarea";
@@ -110,7 +110,9 @@ export default function AdminAnnouncementsPage() {
       </header>
 
       {loading ? (
-        <LoadingCard text="Loading announcements..." />
+        <div className="flex h-[calc(100vh-12rem)] items-center justify-center">
+          <LoadingSpinner size="lg" text="Loading announcements..." />
+        </div>
       ) : (
         <>
           <Card className="space-y-4">

@@ -1,23 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/auth";
-import { API_BASE_URL } from "@/lib/config";
+import { EditSessionForm } from "@/components/admin/EditSessionForm";
+import { GenerateSessionsModal } from "@/components/admin/GenerateSessionsModal";
 import { SessionCalendar } from "@/components/admin/SessionCalendar";
 import { SessionDetailsModal } from "@/components/admin/SessionDetailsModal";
-import { EditSessionForm } from "@/components/admin/EditSessionForm";
 import { TemplatesSidebar } from "@/components/admin/TemplatesSidebar";
-import { GenerateSessionsModal } from "@/components/admin/GenerateSessionsModal";
-import { Modal } from "@/components/ui/Modal";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import { Button } from "@/components/ui/Button";
-import { Alert } from "@/components/ui/Alert";
-import { LoadingCard } from "@/components/ui/LoadingCard";
-import { OptionPillGroup } from "@/components/forms/OptionPillGroup";
+import { supabase } from "@/lib/auth";
+import { API_BASE_URL } from "@/lib/config";
+import type { DateSelectArg, EventClickArg, EventInput } from "@fullcalendar/core";
 import { Calendar, List, Plus } from "lucide-react";
-import type { EventInput, DateSelectArg, EventClickArg } from "@fullcalendar/core";
+import { useEffect, useState } from "react";
 
 interface Session {
   id: string;
@@ -357,7 +356,13 @@ export default function AdminSessionsPage() {
     }
   };
 
-  if (loading) return <LoadingCard text="Loading sessions..." />;
+  if (loading) {
+    return (
+      <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
+        <LoadingSpinner size="lg" text="Loading sessions..." />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -373,28 +378,29 @@ export default function AdminSessionsPage() {
       <div className="flex items-center gap-2">
         <button
           onClick={() => setView("calendar")}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${view === "calendar"
+          className={`flex items-center gap-2 rounded-lg px-3 sm:px-4 py-2.5 text-sm font-medium transition min-h-[44px] ${view === "calendar"
             ? "bg-cyan-600 text-white"
             : "bg-white text-slate-600 hover:bg-slate-50"
             }`}
         >
-          <Calendar className="h-4 w-4" />
-          <span>Calendar View</span>
+          <Calendar className="h-5 w-5 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">Calendar View</span>
         </button>
         <button
           onClick={() => setView("list")}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${view === "list"
+          className={`flex items-center gap-2 rounded-lg px-3 sm:px-4 py-2.5 text-sm font-medium transition min-h-[44px] ${view === "list"
             ? "bg-cyan-600 text-white"
             : "bg-white text-slate-600 hover:bg-slate-50"
             }`}
         >
-          <List className="h-4 w-4" />
-          <span>List View</span>
+          <List className="h-5 w-5 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">List View</span>
         </button>
         <div className="ml-auto">
           <Button onClick={() => setShowCreateSession(true)}>
             <Plus className="h-4 w-4" />
-            <span>Create Session</span>
+            <span className="hidden sm:inline">Create Session</span>
+            <span className="sm:hidden">Add</span>
           </Button>
         </div>
       </div>
@@ -427,48 +433,79 @@ export default function AdminSessionsPage() {
           />
         </div>
       ) : (
-        <div className="rounded-lg border border-slate-200 bg-white">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="border-b border-slate-200 bg-slate-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Title</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Date</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Time</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Location</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {sessions.map((session) => (
-                  <tr key={session.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 text-sm">
+        <>
+          {/* Mobile Card View */}
+          <div className="sm:hidden space-y-3">
+            {sessions.map((session) => (
+              <div key={session.id} className="rounded-lg border border-slate-200 bg-white p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-medium text-slate-900 truncate">
                       {session.is_recurring_instance && <span className="mr-1">🔁</span>}
                       {session.title}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-600">
-                      {new Date(session.starts_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-600">
-                      {new Date(session.starts_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{session.location}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => setSelectedSession(session)}>
-                          View
-                        </Button>
-                        <Button size="sm" variant="danger" onClick={() => handleDeleteSession(session.id)}>
-                          Delete
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </h3>
+                    <div className="mt-1 space-y-1 text-sm text-slate-600">
+                      <p>{new Date(session.starts_at).toLocaleDateString()} at {new Date(session.starts_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
+                      <p className="truncate">{session.location}</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Button size="sm" variant="outline" onClick={() => setSelectedSession(session)}>
+                      View
+                    </Button>
+                    <Button size="sm" variant="danger" onClick={() => handleDeleteSession(session.id)}>
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden sm:block rounded-lg border border-slate-200 bg-white">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="border-b border-slate-200 bg-slate-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Title</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Date</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Time</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 hidden md:table-cell">Location</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {sessions.map((session) => (
+                    <tr key={session.id} className="hover:bg-slate-50">
+                      <td className="px-4 py-3 text-sm">
+                        {session.is_recurring_instance && <span className="mr-1">🔁</span>}
+                        {session.title}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-600">
+                        {new Date(session.starts_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-600">
+                        {new Date(session.starts_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-600 hidden md:table-cell">{session.location}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => setSelectedSession(session)}>
+                            View
+                          </Button>
+                          <Button size="sm" variant="danger" onClick={() => handleDeleteSession(session.id)}>
+                            Delete
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Generate Sessions Modal */}
@@ -654,7 +691,7 @@ function SimpleSessionForm({
           onChange={(e) => setFormData({ ...formData, title: e.target.value })}
           required
         />
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Select
             label="Session type"
             value={formData.type}
@@ -675,7 +712,7 @@ function SimpleSessionForm({
             <option value="open_water">Open Water</option>
           </Select>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Start Time"
             type="datetime-local"
@@ -691,7 +728,7 @@ function SimpleSessionForm({
             required
           />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Pool Fee (cents)"
             type="number"
@@ -737,7 +774,7 @@ function SimpleSessionForm({
                   Remove
                 </button>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Select
                   label="Select Area"
                   value={config.ride_area_id}
@@ -974,7 +1011,7 @@ function SimpleTemplateForm({
                   Remove
                 </button>
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <Select
                   label="Select Area"
                   value={config.ride_area_id}

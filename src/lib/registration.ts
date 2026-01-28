@@ -151,7 +151,10 @@ export async function getPostAuthRedirectPath(): Promise<string> {
       if (needsCoachFlow) {
         return "/coach/apply";
       }
-      // Active coaches fall through to member onboarding/dashboard logic below.
+
+      if (coachStatus === "active") {
+        return "/coach/dashboard";
+      }
     }
 
     // Use nested membership data

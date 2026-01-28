@@ -32,13 +32,13 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
     if (!mounted || !isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-            <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-                <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-2 sm:p-4">
+            <div className="w-full max-w-[calc(100vw-1rem)] sm:max-w-lg rounded-lg bg-white p-4 sm:p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+                <div className="mb-4 flex items-center justify-between gap-4">
+                    <h2 className="text-lg sm:text-xl font-semibold text-slate-900">{title}</h2>
                     <button
                         onClick={onClose}
-                        className="text-slate-500 hover:text-slate-700"
+                        className="flex-shrink-0 p-2 -m-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full transition min-w-[44px] min-h-[44px] flex items-center justify-center"
                         aria-label="Close"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

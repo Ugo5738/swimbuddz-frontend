@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
+import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
-import { SessionsApi, SessionType, SessionLocation, type Session } from "@/lib/sessions";
+import { Textarea } from "@/components/ui/Textarea";
+import { SessionLocation, SessionsApi, SessionType, type Session } from "@/lib/sessions";
+import { useState } from "react";
 
 type AddSessionModalProps = {
     isOpen: boolean;
@@ -106,7 +106,7 @@ export function AddSessionModal({
             <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                 {error && <div className="text-sm text-red-600">{error}</div>}
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Input
                         label="Week Number"
                         type="number"
@@ -145,7 +145,7 @@ export function AddSessionModal({
                     required
                 />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Input
                         label="Start Time"
                         type="time"
@@ -162,7 +162,7 @@ export function AddSessionModal({
                     />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Select
                         label="Location"
                         value={formData.location}
@@ -182,7 +182,7 @@ export function AddSessionModal({
                     />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Input
                         label="Capacity"
                         type="number"

@@ -2,6 +2,7 @@
 
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
+import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { apiGet } from "@/lib/api";
 import { format } from "date-fns";
 import type { jsPDF as JsPDFType } from "jspdf";
@@ -298,7 +299,7 @@ export default function AdminAttendancePage() {
     };
 
     if (loadingSessions) {
-        return <div className="p-8 text-center">Loading sessions...</div>;
+        return <LoadingPage text="Loading sessions..." />;
     }
 
     return (
@@ -368,7 +369,7 @@ export default function AdminAttendancePage() {
                 </div>
 
                 {loadingAttendance ? (
-                    <div className="py-8 text-center text-slate-500">Loading attendance...</div>
+                    <LoadingPage text="Loading attendance..." />
                 ) : attendanceList.length === 0 ? (
                     <div className="rounded-lg border border-dashed border-slate-300 py-12 text-center text-slate-500">
                         No attendees found for this session.

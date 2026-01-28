@@ -195,8 +195,9 @@ function CohortDetailPageInner() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-600" />
+            <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
+                <div className="h-12 w-12 animate-spin rounded-full border-4 border-cyan-200 border-t-cyan-600" />
+                <p className="text-lg font-medium text-slate-600">Loading cohort...</p>
             </div>
         );
     }

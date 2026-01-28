@@ -220,8 +220,9 @@ export default function AdminHomepageMediaPage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-96">
-                <div className="animate-spin h-8 w-8 border-4 border-cyan-500 border-t-transparent rounded-full" />
+            <div className="flex min-h-96 flex-col items-center justify-center gap-4">
+                <div className="h-12 w-12 animate-spin rounded-full border-4 border-cyan-200 border-t-cyan-600" />
+                <p className="text-lg font-medium text-slate-600">Loading media...</p>
             </div>
         );
     }
@@ -434,7 +435,7 @@ export default function AdminHomepageMediaPage() {
                                                 className="w-full h-full flex flex-col items-center justify-center gap-3 text-slate-400 hover:text-cyan-600 hover:bg-slate-50 transition-colors"
                                             >
                                                 {isUploading ? (
-                                                    <div className="animate-spin h-8 w-8 border-4 border-cyan-500 border-t-transparent rounded-full" />
+                                                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-cyan-200 border-t-cyan-600" />
                                                 ) : (
                                                     <>
                                                         <Plus className="h-12 w-12" />
@@ -450,7 +451,7 @@ export default function AdminHomepageMediaPage() {
 
                                         {isUploading && photo?.file_url && (
                                             <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-                                                <div className="animate-spin h-8 w-8 border-4 border-cyan-500 border-t-transparent rounded-full" />
+                                                <div className="h-8 w-8 animate-spin rounded-full border-4 border-cyan-200 border-t-cyan-600" />
                                             </div>
                                         )}
                                     </div>
