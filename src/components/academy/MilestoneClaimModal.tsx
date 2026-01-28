@@ -1,9 +1,10 @@
 "use client";
 
+import { MediaInput } from "@/components/ui/MediaInput";
+import { useMediaUrl } from "@/hooks/useMediaUrl";
+import { AcademyApi, Milestone, MilestoneClaimRequest } from "@/lib/academy";
 import { useState } from "react";
 import { toast } from "sonner";
-import { AcademyApi, Milestone, MilestoneClaimRequest } from "@/lib/academy";
-import { MediaInput } from "@/components/ui/MediaInput";
 
 interface MilestoneClaimModalProps {
     isOpen: boolean;
@@ -23,6 +24,7 @@ export function MilestoneClaimModal({
     const [evidenceMediaId, setEvidenceMediaId] = useState<string | null>(null);
     const [studentNotes, setStudentNotes] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [milestoneVideoUrl] = useMediaUrl(milestone.video_media_id);
 
     if (!isOpen) return null;
 
@@ -83,9 +85,9 @@ export function MilestoneClaimModal({
                     {milestone.criteria && (
                         <p className="mt-1 text-sm text-cyan-700">{milestone.criteria}</p>
                     )}
-                    {milestone.video_url && (
+                    {milestoneVideoUrl && (
                         <a
-                            href={milestone.video_url}
+                            href={milestoneVideoUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="mt-2 inline-flex items-center text-xs text-cyan-600 hover:text-cyan-700"

@@ -1,7 +1,9 @@
 "use client";
 
-import { Card } from "@/components/ui/Card";
 import { AddMilestoneModal } from "@/components/academy/AddMilestoneModal";
+import { Card } from "@/components/ui/Card";
+import { LoadingPage } from "@/components/ui/LoadingSpinner";
+import { useMediaUrls } from "@/hooks/useMediaUrl";
 import { AcademyApi, Milestone, Program } from "@/lib/academy";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -17,6 +19,7 @@ export default function ProgramDetailsPage() {
     const [loading, setLoading] = useState(true);
     const [publishLoading, setPublishLoading] = useState(false);
     const [isAddMilestoneModalOpen, setIsAddMilestoneModalOpen] = useState(false);
+    const milestoneVideoUrls = useMediaUrls(milestones.map((milestone) => milestone.video_media_id || null));
 
     useEffect(() => {
         async function loadData() {
@@ -74,7 +77,7 @@ export default function ProgramDetailsPage() {
     };
 
     if (loading) {
-        return <div className="p-6">Loading...</div>;
+        return <LoadingPage text="Loading program..." />;
     }
 
     if (!program) {
@@ -224,23 +227,28 @@ export default function ProgramDetailsPage() {
                             <p className="text-slate-500 text-sm">No milestones defined for this program.</p>
                         ) : (
                             <ul className="divide-y divide-slate-100">
-                                {milestones.map((milestone) => (
-                                    <li key={milestone.id} className="py-3">
-                                        <div className="flex items-center justify-between">
-                                            <p className="text-sm font-medium text-slate-900">{milestone.name}</p>
-                                            <span className="text-xs text-slate-500 capitalize">{milestone.milestone_type}</span>
-                                        </div>
-                                        {milestone.criteria && (
-                                            <p className="text-xs text-slate-600 mt-1">{milestone.criteria}</p>
-                                        )}
-                                        {milestone.video_url && (
-                                            <a href={milestone.video_url} target="_blank" rel="noopener noreferrer"
-                                                className="text-xs text-cyan-600 hover:underline mt-1 inline-block">
-                                                📹 Demo Video
-                                            </a>
-                                        )}
-                                    </li>
-                                ))}
+                                {milestones.map((milestone) => {
+                                    const videoUrl = milestone.video_media_id
+                                        ? milestoneVideoUrls.get(milestone.video_media_id)
+                                        : null;
+                                    return (
+                                        <li key={milestone.id} className="py-3">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-sm font-medium text-slate-900">{milestone.name}</p>
+                                                <span className="text-xs text-slate-500 capitalize">{milestone.milestone_type}</span>
+                                            </div>
+                                            {milestone.criteria && (
+                                                <p className="text-xs text-slate-600 mt-1">{milestone.criteria}</p>
+                                            )}
+                                            {videoUrl && (
+                                                <a href={videoUrl} target="_blank" rel="noopener noreferrer"
+                                                    className="text-xs text-cyan-600 hover:underline mt-1 inline-block">
+                                                    📹 Demo Video
+                                                </a>
+                                            )}
+                                        </li>
+                                    );
+                                })}
                             </ul>
                         )}
                     </Card>
@@ -282,12 +290,85 @@ export default function ProgramDetailsPage() {
 
                     {program.prep_materials && (
                         <Card>
-                            <h2 className="text-lg font-semibold text-slate-900 mb-2">Prep Materials</h2>
-                            <p className="text-sm text-slate-600">
-                                {typeof program.prep_materials === 'object'
-                                    ? program.prep_materials.content
-                                    : program.prep_materials}
-                            </p>
+                            <h2 className="text-lg font-semibold text-slate-900 mb-4">Prep Materials</h2>
+                            <div className="text-sm text-slate-600 space-y-6">
+                                {program.prep_materials && typeof program.prep_materials === 'object' ? (
+                                    <>
+                                        {program.prep_materials.safety_briefing && (
+                                            <div>
+                                                <h3 className="font-medium text-slate-900 mb-2">⚠️ Safety Briefing</h3>
+                                                <p className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-amber-900">
+                                                    {program.prep_materials.safety_briefing}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {program.prep_materials.required_equipment && Array.isArray(program.prep_materials.required_equipment) && (
+                                                <div>
+                                                    <h3 className="font-medium text-slate-900 mb-2">Required Equipment</h3>
+                                                    <ul className="list-disc pl-5 space-y-1">
+                                                        {program.prep_materials.required_equipment.map((item: string, idx: number) => (
+                                                            <li key={idx}>{item}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+
+                                            {program.prep_materials.optional_equipment && Array.isArray(program.prep_materials.optional_equipment) && (
+                                                <div>
+                                                    <h3 className="font-medium text-slate-900 mb-2">Optional / Recommended</h3>
+                                                    <ul className="list-disc pl-5 space-y-1 text-slate-500">
+                                                        {program.prep_materials.optional_equipment.map((item: string, idx: number) => (
+                                                            <li key={idx}>{item}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {program.prep_materials.pre_program_reading && Array.isArray(program.prep_materials.pre_program_reading) && (
+                                            <div>
+                                                <h3 className="font-medium text-slate-900 mb-2">Pre-program Reading</h3>
+                                                <div className="space-y-3">
+                                                    {program.prep_materials.pre_program_reading.map((item: any, idx: number) => (
+                                                        <div key={idx} className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                                            <p className="font-medium text-slate-900">
+                                                                {typeof item === 'string' ? item : item.title}
+                                                            </p>
+                                                            {typeof item !== 'string' && (
+                                                                <>
+                                                                    {item.description && (
+                                                                        <p className="text-slate-600 mt-1">{item.description}</p>
+                                                                    )}
+                                                                    {item.url && (
+                                                                        <a href={item.url} target="_blank" rel="noopener noreferrer"
+                                                                            className="text-xs text-cyan-600 hover:underline mt-2 inline-block">
+                                                                            Read Article →
+                                                                        </a>
+                                                                    )}
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Fallback for completely unrecognizable structures */}
+                                        {!program.prep_materials.required_equipment &&
+                                            !program.prep_materials.pre_program_reading &&
+                                            !program.prep_materials.safety_briefing &&
+                                            !program.prep_materials.optional_equipment && (
+                                                <pre className="whitespace-pre-wrap font-sans text-sm text-slate-600 bg-slate-50 p-2 rounded">
+                                                    {JSON.stringify(program.prep_materials, null, 2)}
+                                                </pre>
+                                            )}
+                                    </>
+                                ) : (
+                                    <p>{String(program.prep_materials)}</p>
+                                )}
+                            </div>
                         </Card>
                     )}
                 </div>

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { MediaInput } from "@/components/ui/MediaInput";
+import { Modal } from "@/components/ui/Modal";
 import { Textarea } from "@/components/ui/Textarea";
 import { AcademyApi, type Milestone } from "@/lib/academy";
+import { useState } from "react";
 
 type AddMilestoneModalProps = {
     isOpen: boolean;
@@ -20,7 +21,7 @@ export function AddMilestoneModal({ isOpen, onClose, onSuccess, programId }: Add
     const [formData, setFormData] = useState({
         name: "",
         criteria: "",
-        video_url: "",
+        video_media_id: "",
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -33,7 +34,7 @@ export function AddMilestoneModal({ isOpen, onClose, onSuccess, programId }: Add
                 program_id: programId,
                 name: formData.name,
                 criteria: formData.criteria || undefined,
-                video_url: formData.video_url || undefined,
+                video_media_id: formData.video_media_id || undefined,
             };
 
             const newMilestone = await AcademyApi.createMilestone(milestoneData);
@@ -43,7 +44,7 @@ export function AddMilestoneModal({ isOpen, onClose, onSuccess, programId }: Add
             setFormData({
                 name: "",
                 criteria: "",
-                video_url: "",
+                video_media_id: "",
             });
         } catch (err) {
             console.error(err);
@@ -73,12 +74,12 @@ export function AddMilestoneModal({ isOpen, onClose, onSuccess, programId }: Add
                     onChange={(e) => setFormData({ ...formData, criteria: e.target.value })}
                 />
 
-                <Input
-                    label="Video URL (Optional)"
-                    placeholder="https://..."
-                    type="url"
-                    value={formData.video_url}
-                    onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
+                <MediaInput
+                    label="Demo Video (Optional)"
+                    purpose="milestone_video"
+                    mode="both"
+                    value={formData.video_media_id || null}
+                    onChange={(mediaId) => setFormData({ ...formData, video_media_id: mediaId || "" })}
                 />
 
                 <div className="flex justify-end gap-2 pt-2">

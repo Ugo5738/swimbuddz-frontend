@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
-import { Select } from "@/components/ui/Select";
-import { AcademyApi, ProgramLevel, BillingType, MilestoneType, RequiredEvidence, type Milestone, type Skill } from "@/lib/academy";
 import { MediaInput } from "@/components/ui/MediaInput";
+import { Select } from "@/components/ui/Select";
+import { Textarea } from "@/components/ui/Textarea";
+import { AcademyApi, BillingType, MilestoneType, ProgramLevel, RequiredEvidence, type Skill } from "@/lib/academy";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 // Curriculum lesson with full details including skills
@@ -34,7 +34,7 @@ interface MilestoneFormItem {
     name: string;
     description: string;
     criteria: string;
-    video_url: string;
+    video_media_id: string;
     order_index: number;
     milestone_type: MilestoneType;
     required_evidence: RequiredEvidence;
@@ -167,7 +167,7 @@ export default function NewProgramPage() {
                 name: "",
                 description: "",
                 criteria: "",
-                video_url: "",
+                video_media_id: "",
                 order_index: milestones.length + 1,
                 milestone_type: MilestoneType.SKILL,
                 required_evidence: RequiredEvidence.NONE,
@@ -244,6 +244,7 @@ export default function NewProgramPage() {
                     program_id: program.id,
                     name: milestone.name,
                     criteria: milestone.criteria || milestone.description || undefined,
+                    video_media_id: milestone.video_media_id || undefined,
                     order_index: milestone.order_index,
                     milestone_type: milestone.milestone_type,
                     required_evidence: milestone.required_evidence,
@@ -621,11 +622,12 @@ export default function NewProgramPage() {
                                         placeholder="What needs to be demonstrated..."
                                     />
 
-                                    <Input
-                                        label="Demo Video URL"
-                                        value={milestone.video_url}
-                                        onChange={(e) => updateMilestone(index, "video_url", e.target.value)}
-                                        placeholder="https://... (example video showing this milestone)"
+                                    <MediaInput
+                                        label="Demo Video (Optional)"
+                                        purpose="milestone_video"
+                                        mode="both"
+                                        value={milestone.video_media_id || null}
+                                        onChange={(mediaId) => updateMilestone(index, "video_media_id", mediaId || "")}
                                     />
 
                                     <div className="grid grid-cols-2 gap-4">

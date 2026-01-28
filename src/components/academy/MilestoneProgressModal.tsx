@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMediaUrl } from "@/hooks/useMediaUrl";
+import { AcademyApi, Milestone, ProgressStatus, StudentProgress } from "@/lib/academy";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { AcademyApi, Milestone, StudentProgress, ProgressStatus } from "@/lib/academy";
 
 interface MilestoneProgressModalProps {
     isOpen: boolean;
@@ -28,6 +29,7 @@ export function MilestoneProgressModal({
     );
     const [coachNotes, setCoachNotes] = useState(currentProgress?.coach_notes || "");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [milestoneVideoUrl] = useMediaUrl(milestone.video_media_id);
 
     // Update state when currentProgress changes
     useEffect(() => {
@@ -81,9 +83,9 @@ export function MilestoneProgressModal({
                         {milestone.criteria && (
                             <div className="mt-1 text-sm text-slate-600">{milestone.criteria}</div>
                         )}
-                        {milestone.video_url && (
+                        {milestoneVideoUrl && (
                             <a
-                                href={milestone.video_url}
+                                href={milestoneVideoUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="mt-2 inline-flex items-center text-xs text-cyan-600 hover:text-cyan-700"

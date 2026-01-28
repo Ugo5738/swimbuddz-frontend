@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
-import { Upload, Link, X, Check, Loader2 } from 'lucide-react';
-import { uploadMedia, registerMediaUrl } from '@/lib/media';
+import { registerMediaUrl, uploadMedia } from '@/lib/media';
+import { Check, Link, Loader2, Upload, X } from 'lucide-react';
+import { useCallback, useRef, useState } from 'react';
 
 export type MediaInputMode = 'upload-only' | 'url-only' | 'both';
 
 interface MediaInputProps {
     /** The purpose for the upload - determines file validation */
-    purpose: 'coach_document' | 'payment_proof' | 'milestone_evidence' | 'profile_photo' | 'cover_image' | 'size_chart' | 'category_image' | 'collection_image' | 'product_image' | 'content_image' | 'general';
+    purpose: 'coach_document' | 'payment_proof' | 'milestone_evidence' | 'milestone_video' | 'profile_photo' | 'cover_image' | 'size_chart' | 'category_image' | 'collection_image' | 'product_image' | 'content_image' | 'general';
     /** Display mode - upload-only shows just upload, both shows tabs */
     mode?: MediaInputMode;
     /** Current media_id value */
@@ -53,6 +53,8 @@ export function MediaInput({
             case 'cover_image':
                 return 'image/*';
             case 'milestone_evidence':
+                return 'image/*,video/*';
+            case 'milestone_video':
                 return 'image/*,video/*';
             case 'coach_document':
             case 'payment_proof':
