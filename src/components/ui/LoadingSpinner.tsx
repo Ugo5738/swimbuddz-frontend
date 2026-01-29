@@ -6,7 +6,7 @@ interface LoadingSpinnerProps {
 
 /**
  * Standardized loading spinner component for SwimBuddz.
- * Uses a cyan-colored border spinner with optional text label.
+ * Uses an elegant partial arc spinner (cyan gradient) with optional text label.
  *
  * Sizes:
  * - sm: 16px (for inline/button loading)
@@ -19,9 +19,9 @@ export function LoadingSpinner({
     fullScreen = false
 }: LoadingSpinnerProps) {
     const sizeClasses = {
-        sm: "h-4 w-4 border-2",
-        md: "h-8 w-8 border-[3px]",
-        lg: "h-12 w-12 border-4",
+        sm: "h-4 w-4",
+        md: "h-8 w-8",
+        lg: "h-12 w-12",
     };
 
     const textClasses = {
@@ -31,11 +31,25 @@ export function LoadingSpinner({
     };
 
     const spinner = (
-        <div className="flex flex-col items-center justify-center gap-3" role="status" aria-live="polite">
-            <div
-                className={`animate-spin rounded-full border-cyan-200 border-t-cyan-600 ${sizeClasses[size]}`}
+        <div className="flex flex-col items-center justify-center gap-4" role="status" aria-live="polite">
+            <svg
+                className={`animate-spin ${sizeClasses[size]}`}
+                viewBox="0 0 50 50"
                 aria-hidden="true"
-            />
+            >
+                <circle
+                    cx="25"
+                    cy="25"
+                    r="20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    className="text-cyan-600"
+                    strokeDasharray="80, 200"
+                    strokeDashoffset="0"
+                />
+            </svg>
             {text && <p className={textClasses[size]}>{text}</p>}
             {!text && <span className="sr-only">Loading...</span>}
         </div>
@@ -55,7 +69,6 @@ export function LoadingSpinner({
 /**
  * LoadingPage - Displays a centered loading spinner for full-page loading states.
  * Use this when the entire page content is loading.
- * Matches the standard SwimBuddz loader style shown across the platform.
  */
 export function LoadingPage({ text = "Loading..." }: { text?: string }) {
     return (
@@ -64,10 +77,24 @@ export function LoadingPage({ text = "Loading..." }: { text?: string }) {
             role="status"
             aria-live="polite"
         >
-            <div
-                className="h-12 w-12 animate-spin rounded-full border-4 border-cyan-200 border-t-cyan-600"
+            <svg
+                className="h-12 w-12 animate-spin"
+                viewBox="0 0 50 50"
                 aria-hidden="true"
-            />
+            >
+                <circle
+                    cx="25"
+                    cy="25"
+                    r="20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    className="text-cyan-600"
+                    strokeDasharray="80, 200"
+                    strokeDashoffset="0"
+                />
+            </svg>
             <p className="text-lg font-medium text-slate-600">{text}</p>
         </div>
     );

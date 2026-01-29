@@ -3,7 +3,8 @@
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { LoadingCard, LoadingPage } from "@/components/ui/LoadingCard";
+import { LoadingCard } from "@/components/ui/LoadingCard";
+import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { apiGet, apiPost } from "@/lib/api";
 import { uploadMedia } from "@/lib/media";
 import Link from "next/link";

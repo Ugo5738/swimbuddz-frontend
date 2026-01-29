@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/Card";
-import { LoadingPage, LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 type LoadingCardProps = {
   text?: string;
@@ -9,8 +9,6 @@ type LoadingCardProps = {
  * LoadingCard - Displays a loading spinner inside a card container.
  * Use for inline loading states within a page (e.g., loading a section).
  * For full-page loading states, use LoadingPage instead.
- *
- * Uses the standardized SwimBuddz loading spinner (cyan border, lg size).
  */
 export function LoadingCard({ text = "Loading..." }: LoadingCardProps) {
   return (
@@ -21,6 +19,3 @@ export function LoadingCard({ text = "Loading..." }: LoadingCardProps) {
     </Card>
   );
 }
-
-// Re-export LoadingPage from LoadingSpinner for backwards compatibility
-export { LoadingPage };

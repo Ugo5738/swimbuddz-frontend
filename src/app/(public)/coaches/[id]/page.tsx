@@ -3,7 +3,7 @@
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { LoadingPage } from "@/components/ui/LoadingCard";
+import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { AcademyApi, Cohort, CohortStatus } from "@/lib/academy";
 import { Member, MembersApi } from "@/lib/members";
 import Link from "next/link";
