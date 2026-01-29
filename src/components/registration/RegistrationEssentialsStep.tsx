@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-import { City, Country, State } from "country-state-city";
+import { Country, State } from "country-state-city";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import PhoneInput from "react-phone-number-input";
@@ -42,11 +42,6 @@ export function RegistrationEssentialsStep({
     const selectedState =
         states.find((s) => s.name === formData.state) ||
         states.find((s) => s.isoCode === formData.state);
-    const cities = selectedCountry
-        ? selectedState
-            ? City.getCitiesOfState(selectedCountry.isoCode, selectedState.isoCode) || []
-            : City.getCitiesOfCountry(selectedCountry.isoCode) || []
-        : [];
 
     return (
         <div className="space-y-6">
@@ -185,45 +180,21 @@ export function RegistrationEssentialsStep({
                     />
                 )}
 
-                {cities.length > 10 ? (
-                    <Select
-                        label="City"
-                        name="city"
-                        value={formData.city}
-                        onChange={(e) => onUpdate("city", e.target.value)}
-                        required
-                        disabled={!selectedCountry || (states.length > 0 && !selectedState)}
-                    >
-                        <option value="">
-                            {!selectedCountry
-                                ? "Select a country first"
-                                : states.length > 0 && !selectedState
-                                    ? "Select a state first"
-                                    : "Select city"}
-                        </option>
-                        {cities.map((city) => (
-                            <option key={`${city.name}-${city.latitude ?? ""}-${city.longitude ?? ""}`} value={city.name}>
-                                {city.name}
-                            </option>
-                        ))}
-                    </Select>
-                ) : (
-                    <Input
-                        label="City / Area"
-                        name="city"
-                        value={formData.city}
-                        onChange={(e) => onUpdate("city", e.target.value)}
-                        required
-                        disabled={!selectedCountry || (states.length > 0 && !selectedState)}
-                        placeholder={
-                            !selectedCountry
-                                ? "Select a country first"
-                                : states.length > 0 && !selectedState
-                                    ? "Select a state first"
-                                    : "e.g., Lekki, Ikeja, Victoria Island"
-                        }
-                    />
-                )}
+                <Input
+                    label="City / Area"
+                    name="city"
+                    value={formData.city}
+                    onChange={(e) => onUpdate("city", e.target.value)}
+                    required
+                    disabled={!selectedCountry || (states.length > 0 && !selectedState)}
+                    placeholder={
+                        !selectedCountry
+                            ? "Select a country first"
+                            : states.length > 0 && !selectedState
+                                ? "Select a state first"
+                                : "Enter your city or area"
+                    }
+                />
             </div>
 
             {includeSwimLevel ? (

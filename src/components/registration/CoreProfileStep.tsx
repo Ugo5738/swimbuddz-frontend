@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-import { City, Country } from "country-state-city";
+import { Country } from "country-state-city";
 import { Camera, Eye, EyeOff, X } from "lucide-react";
 import { useState } from "react";
 import PhoneInput from 'react-phone-number-input';
@@ -39,11 +39,7 @@ export function CoreProfileStep({ formData, onUpdate }: CoreProfileStepProps) {
     );
     const [showPassword, setShowPassword] = useState(false);
 
-    // Get cities for selected country
     const selectedCountry = countries.find((c) => c.name === formData.country);
-    const cities = selectedCountry
-        ? City.getCitiesOfCountry(selectedCountry.isoCode) || []
-        : [];
 
     const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -253,33 +249,15 @@ export function CoreProfileStep({ formData, onUpdate }: CoreProfileStepProps) {
                     ))}
                 </Select>
 
-                {cities.length > 10 ? (
-                    <Select
-                        label="City"
-                        name="city"
-                        value={formData.city}
-                        onChange={(e) => onUpdate("city", e.target.value)}
-                        required
-                        disabled={!formData.country}
-                    >
-                        <option value="">Select city</option>
-                        {cities.map((city) => (
-                            <option key={city.name} value={city.name}>
-                                {city.name}
-                            </option>
-                        ))}
-                    </Select>
-                ) : (
-                    <Input
-                        label="City / Area"
-                        name="city"
-                        value={formData.city}
-                        onChange={(e) => onUpdate("city", e.target.value)}
-                        required
-                        disabled={!formData.country}
-                        placeholder={formData.country ? "e.g., Lekki, Ikeja, Victoria Island" : "Select a country first"}
-                    />
-                )}
+                <Input
+                    label="City / Area"
+                    name="city"
+                    value={formData.city}
+                    onChange={(e) => onUpdate("city", e.target.value)}
+                    required
+                    disabled={!formData.country}
+                    placeholder={formData.country ? "Enter your city or area" : "Select a country first"}
+                />
             </div>
 
             {/* Occupation */}
