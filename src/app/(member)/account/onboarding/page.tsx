@@ -25,6 +25,7 @@ type MemberProfile = {
     phone?: string | null;
     area_in_lagos?: string | null;
     city?: string | null;
+    state?: string | null;
     country?: string | null;
     time_zone?: string | null;
     gender?: string | null;
