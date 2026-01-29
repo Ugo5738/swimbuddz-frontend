@@ -35,6 +35,7 @@ interface FormData {
   gender: string;
   dateOfBirth: string;
   city: string;
+  state: string;
   country: string;
   swimLevel: string;
   discoverySource: string;
@@ -77,7 +78,6 @@ interface FormData {
 
   // About You (optional vetting)
   occupation?: string;
-  areaInLagos?: string;
   howFoundUs?: string;
   previousCommunities?: string;
   hopesFromSwimbuddz?: string;
@@ -94,6 +94,7 @@ const initialFormData: FormData = {
   gender: "",
   dateOfBirth: "",
   city: "",
+  state: "",
   country: "Nigeria",
   swimLevel: "",
   discoverySource: "",
@@ -129,7 +130,6 @@ const initialFormData: FormData = {
   paymentNotes: "", // New field
   // About You
   occupation: "",
-  areaInLagos: "",
   howFoundUs: "",
   previousCommunities: "",
   hopesFromSwimbuddz: "",
@@ -184,6 +184,7 @@ function RegisterContent() {
             gender: profile.gender || "",
             dateOfBirth: profile.date_of_birth ? new Date(profile.date_of_birth).toISOString().split("T")[0] : "",
             city: profile.city || "",
+            state: profile.state || "",
             country: profile.country || "Nigeria",
             swimLevel: profile.swim_level || "",
             discoverySource: profile.discovery_source || "",
@@ -274,6 +275,7 @@ function RegisterContent() {
           formData.email &&
           formData.password && formData.password.length >= 8 &&
           formData.phone &&
+          formData.state &&
           formData.city &&
           formData.country &&
           formData.swimLevel
@@ -339,6 +341,7 @@ function RegisterContent() {
           password: formData.password,
           phone: formData.phone || undefined,
           city: formData.city || undefined,
+          state: formData.state || undefined,
           country: formData.country || "Nigeria",
           swim_level: "not_applicable",
           membership_tier: "community",
@@ -363,8 +366,8 @@ function RegisterContent() {
         password: formData.password,
         phone: formData.phone,
         city: formData.city,
+        state: formData.state,
         country: formData.country,
-        area_in_lagos: formData.areaInLagos || undefined,
         swim_level: formData.swimLevel,
         // Always allow account access after email verification; tier upgrades are handled separately.
         membership_tier: "community",
@@ -406,8 +409,8 @@ function RegisterContent() {
               email: formData.email,
               password: formData.password,
               phone: formData.phone,
-              areaInLagos: formData.areaInLagos,
               city: formData.city,
+              state: formData.state,
               country: formData.country,
               swimLevel: formData.swimLevel,
             }}

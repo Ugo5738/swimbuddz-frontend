@@ -23,7 +23,6 @@ interface CoreProfileStepProps {
         discoverySource: string;
         profilePhotoUrl?: string;
         occupation?: string;
-        areaInLagos?: string;
         previousCommunities?: string;
     };
     onUpdate: (field: string, value: any) => void;
@@ -234,17 +233,6 @@ export function CoreProfileStep({ formData, onUpdate }: CoreProfileStepProps) {
                 />
             </div>
 
-            {/* Address / Area */}
-            <Input
-                label="Address"
-                name="areaInLagos"
-                value={formData.areaInLagos || ""}
-                onChange={(e) => onUpdate("areaInLagos", e.target.value)}
-                placeholder="e.g. Lekki, Yaba"
-                hint="Helps us coordinate sessions and ride-shares"
-                required
-            />
-
             {/* Location */}
             <div className="grid gap-4 md:grid-cols-2">
                 <Select
@@ -265,21 +253,33 @@ export function CoreProfileStep({ formData, onUpdate }: CoreProfileStepProps) {
                     ))}
                 </Select>
 
-                <Select
-                    label="City"
-                    name="city"
-                    value={formData.city}
-                    onChange={(e) => onUpdate("city", e.target.value)}
-                    required
-                    disabled={!formData.country}
-                >
-                    <option value="">Select city</option>
-                    {cities.map((city) => (
-                        <option key={city.name} value={city.name}>
-                            {city.name}
-                        </option>
-                    ))}
-                </Select>
+                {cities.length > 10 ? (
+                    <Select
+                        label="City"
+                        name="city"
+                        value={formData.city}
+                        onChange={(e) => onUpdate("city", e.target.value)}
+                        required
+                        disabled={!formData.country}
+                    >
+                        <option value="">Select city</option>
+                        {cities.map((city) => (
+                            <option key={city.name} value={city.name}>
+                                {city.name}
+                            </option>
+                        ))}
+                    </Select>
+                ) : (
+                    <Input
+                        label="City / Area"
+                        name="city"
+                        value={formData.city}
+                        onChange={(e) => onUpdate("city", e.target.value)}
+                        required
+                        disabled={!formData.country}
+                        placeholder={formData.country ? "e.g., Lekki, Ikeja, Victoria Island" : "Select a country first"}
+                    />
+                )}
             </div>
 
             {/* Occupation */}

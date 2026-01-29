@@ -56,7 +56,6 @@ interface ReviewConfirmStepProps {
         showInDirectory: boolean;
         interestTags?: string[];
         occupation?: string;
-        areaInLagos?: string;
         previousCommunities?: string;
         hopesFromSwimbuddz?: string;
     };
@@ -190,14 +189,6 @@ export function ReviewConfirmStep({
                                 <dt className="text-slate-600">Occupation:</dt>
                                 <dd className="col-span-2 font-medium text-slate-900">
                                     {formData.occupation}
-                                </dd>
-                            </div>
-                        )}
-                        {formData.areaInLagos && (
-                            <div className="grid grid-cols-3 gap-2">
-                                <dt className="text-slate-600">Area in Lagos:</dt>
-                                <dd className="col-span-2 font-medium text-slate-900">
-                                    {formData.areaInLagos}
                                 </dd>
                             </div>
                         )}

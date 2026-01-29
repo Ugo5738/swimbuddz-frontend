@@ -107,6 +107,7 @@ type OnboardingDraft = {
         phone: string;
         areaInLagos: string;
         city: string;
+        state: string;
         country: string;
         gender: string;
         dateOfBirth: string;
@@ -282,6 +283,7 @@ export default function DashboardOnboardingPage() {
         phone: "",
         areaInLagos: "",
         city: "",
+        state: "",
         country: "",
         gender: "",
         dateOfBirth: "",
@@ -357,6 +359,7 @@ export default function DashboardOnboardingPage() {
             phone: profile?.phone || "",
             areaInLagos: profile?.area_in_lagos || "",
             city: profile?.city || "",
+            state: profile?.state || "",
             country: profile?.country || "",
             gender: profile?.gender || "",
             dateOfBirth: formatDateForInput(profile?.date_of_birth),
@@ -459,6 +462,7 @@ export default function DashboardOnboardingPage() {
         coreForm.lastName &&
         coreForm.phone &&
         coreForm.country &&
+        coreForm.state &&
         coreForm.city &&
         coreForm.gender &&
         coreForm.dateOfBirth &&
@@ -685,8 +689,10 @@ export default function DashboardOnboardingPage() {
                     profile: {
                         phone: coreForm.phone,
                         area_in_lagos: coreForm.areaInLagos || undefined,
+                        address: coreForm.areaInLagos || undefined,
                         country: coreForm.country,
                         city: coreForm.city,
+                        state: coreForm.state,
                         gender: coreForm.gender,
                         date_of_birth: coreForm.dateOfBirth,
                         time_zone: coreForm.timeZone,
@@ -1072,8 +1078,8 @@ export default function DashboardOnboardingPage() {
                                 firstName: coreForm.firstName,
                                 lastName: coreForm.lastName,
                                 phone: coreForm.phone,
-                                areaInLagos: coreForm.areaInLagos,
                                 city: coreForm.city,
+                                state: coreForm.state,
                                 country: coreForm.country,
                             }}
                             onUpdate={(field, value) => setCoreForm((prev) => ({ ...prev, [field]: value }))}

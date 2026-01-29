@@ -9,9 +9,11 @@ export type PendingCompletionStatus =
 // Nested types matching new API response structure
 type MemberProfileData = {
   phone?: string | null;
+  address?: string | null;
   gender?: string | null;
   date_of_birth?: string | null;
   city?: string | null;
+  state?: string | null;
   country?: string | null;
   time_zone?: string | null;
   swim_level?: string | null;
@@ -78,7 +80,9 @@ export type PendingRegistrationPayload = {
   // Nested profile input
   profile?: {
     phone?: string;
+    address?: string;
     city?: string;
+    state?: string;
     country?: string;
     area_in_lagos?: string;
     swim_level?: string;

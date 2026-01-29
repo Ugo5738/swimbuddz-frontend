@@ -95,20 +95,20 @@ export default function ClubPlanSelectionPage() {
     }
 
     return (
-        <div className="max-w-xl mx-auto space-y-8">
-            {/* Header */}
-            <div className="text-center space-y-3">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 text-white shadow-lg shadow-cyan-500/25">
-                    <Sparkles className="w-7 h-7" />
+        <div className="max-w-xl mx-auto space-y-6 pb-24 sm:pb-8">
+            {/* Header - tighter on mobile */}
+            <div className="text-center space-y-2">
+                <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 text-white shadow-lg shadow-cyan-500/25">
+                    <Sparkles className="w-6 h-6 sm:w-7 sm:h-7" />
                 </div>
-                <h1 className="text-2xl font-bold text-slate-900">Choose Your Plan</h1>
-                <p className="text-slate-500">
-                    Select a billing cycle that works for you. You can pause or change anytime.
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Choose Your Plan</h1>
+                <p className="text-sm sm:text-base text-slate-500">
+                    Select a billing cycle that works for you.
                 </p>
             </div>
 
-            {/* Plan Cards */}
-            <div className="space-y-3">
+            {/* Plan Cards - tighter spacing on mobile */}
+            <div className="space-y-2 sm:space-y-3">
                 {PLAN_OPTIONS.map((plan) => {
                     const isSelected = selectedPlan === plan.key;
                     const price = CLUB_PRICING[plan.key];
@@ -119,24 +119,24 @@ export default function ClubPlanSelectionPage() {
                             key={plan.key}
                             type="button"
                             onClick={() => handleSelectPlan(plan.key)}
-                            className={`relative w-full p-4 rounded-2xl border-2 text-left transition-all duration-200 ${isSelected
+                            className={`relative w-full p-3 sm:p-4 rounded-2xl border-2 text-left transition-all duration-200 ${isSelected
                                 ? "border-cyan-500 bg-gradient-to-r from-cyan-50 to-blue-50 shadow-lg shadow-cyan-500/10"
                                 : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-md"
                                 } ${plan.highlight ? "ring-2 ring-cyan-100" : ""}`}
                         >
-                            <div className="flex items-center gap-4">
-                                {/* Icon */}
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isSelected
+                            <div className="flex items-center gap-3 sm:gap-4">
+                                {/* Icon - smaller on mobile */}
+                                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${isSelected
                                     ? "bg-cyan-500 text-white"
                                     : "bg-slate-100 text-slate-500"
                                     }`}>
-                                    <Icon className="w-6 h-6" />
+                                    <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
                                 </div>
 
                                 {/* Content */}
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                        <h3 className="text-lg font-semibold text-slate-900">
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <h3 className="text-base sm:text-lg font-semibold text-slate-900">
                                             {plan.label}
                                         </h3>
                                         {plan.highlight && (
@@ -145,30 +145,30 @@ export default function ClubPlanSelectionPage() {
                                             </span>
                                         )}
                                     </div>
-                                    <p className="text-sm text-slate-500">{plan.description}</p>
+                                    <p className="text-xs sm:text-sm text-slate-500 hidden sm:block">{plan.description}</p>
                                     {plan.savings && (
-                                        <p className="text-sm font-medium text-emerald-600 mt-0.5">
+                                        <p className="text-xs sm:text-sm font-medium text-emerald-600">
                                             {plan.savings}
                                         </p>
                                     )}
                                 </div>
 
                                 {/* Price */}
-                                <div className="text-right">
-                                    <div className="text-xl font-bold text-slate-900">
+                                <div className="text-right flex-shrink-0">
+                                    <div className="text-lg sm:text-xl font-bold text-slate-900">
                                         {formatCurrency(price)}
                                     </div>
                                     <div className="text-xs text-slate-400">
-                                        /{plan.key === "quarterly" ? "quarter" : plan.key === "biannual" ? "6 months" : "year"}
+                                        /{plan.key === "quarterly" ? "quarter" : plan.key === "biannual" ? "6 mo" : "year"}
                                     </div>
                                 </div>
 
                                 {/* Selected indicator */}
-                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected
+                                <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${isSelected
                                     ? "bg-cyan-500 border-cyan-500"
                                     : "border-slate-300"
                                     }`}>
-                                    {isSelected && <Check className="w-4 h-4 text-white" />}
+                                    {isSelected && <Check className="w-3 h-3 sm:w-4 sm:h-4 text-white" />}
                                 </div>
                             </div>
                         </button>
@@ -176,10 +176,10 @@ export default function ClubPlanSelectionPage() {
                 })}
             </div>
 
-            {/* What's included */}
-            <div className="bg-slate-50 rounded-2xl p-5">
-                <h4 className="text-sm font-semibold text-slate-900 mb-3">What's included with Club</h4>
-                <ul className="space-y-2">
+            {/* What's included - more compact on mobile */}
+            <div className="bg-slate-50 rounded-2xl p-4 sm:p-5">
+                <h4 className="text-sm font-semibold text-slate-900 mb-2 sm:mb-3">What's included with Club</h4>
+                <ul className="space-y-1.5 sm:space-y-2">
                     {[
                         "Priority session booking",
                         "Access to all pool locations",
@@ -187,27 +187,28 @@ export default function ClubPlanSelectionPage() {
                         "Coach matching & feedback",
                         "Pause or cancel anytime",
                     ].map((item) => (
-                        <li key={item} className="flex items-center gap-2 text-sm text-slate-600">
-                            <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                        <li key={item} className="flex items-center gap-2 text-xs sm:text-sm text-slate-600">
+                            <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 flex-shrink-0" />
                             {item}
                         </li>
                     ))}
                 </ul>
             </div>
 
-            {/* Continue button */}
-            <Button
-                onClick={handleContinue}
-                disabled={!selectedPlan}
-                size="lg"
-                className="w-full"
-            >
-                Continue to Checkout
-            </Button>
-
-            <p className="text-center text-xs text-slate-400">
-                You'll review your order on the next step before paying
-            </p>
+            {/* Sticky CTA on mobile */}
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-100 sm:relative sm:p-0 sm:bg-transparent sm:border-0">
+                <Button
+                    onClick={handleContinue}
+                    disabled={!selectedPlan}
+                    size="lg"
+                    className="w-full"
+                >
+                    Continue to Checkout
+                </Button>
+                <p className="text-center text-xs text-slate-400 mt-2 sm:mt-3">
+                    You'll review your order on the next step
+                </p>
+            </div>
         </div>
     );
 }

@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-import { City, Country } from "country-state-city";
+import { City, Country, State } from "country-state-city";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import PhoneInput from "react-phone-number-input";
@@ -17,8 +17,8 @@ interface RegistrationEssentialsStepProps {
         email?: string;
         password?: string;
         phone: string;
-        areaInLagos?: string;
         city: string;
+        state: string;
         country: string;
         swimLevel?: string;
     };
@@ -35,8 +35,18 @@ export function RegistrationEssentialsStep({
 }: RegistrationEssentialsStepProps) {
     const [showPassword, setShowPassword] = useState(false);
 
-    const selectedCountry = countries.find((c) => c.name === formData.country) || countries.find((c) => c.isoCode === formData.country);
-    const cities = selectedCountry ? City.getCitiesOfCountry(selectedCountry.isoCode) || [] : [];
+    const selectedCountry =
+        countries.find((c) => c.name === formData.country) ||
+        countries.find((c) => c.isoCode === formData.country);
+    const states = selectedCountry ? State.getStatesOfCountry(selectedCountry.isoCode) || [] : [];
+    const selectedState =
+        states.find((s) => s.name === formData.state) ||
+        states.find((s) => s.isoCode === formData.state);
+    const cities = selectedCountry
+        ? selectedState
+            ? City.getCitiesOfState(selectedCountry.isoCode, selectedState.isoCode) || []
+            : City.getCitiesOfCountry(selectedCountry.isoCode) || []
+        : [];
 
     return (
         <div className="space-y-6">
@@ -129,6 +139,7 @@ export function RegistrationEssentialsStep({
                     value={formData.country}
                     onChange={(e) => {
                         onUpdate("country", e.target.value);
+                        onUpdate("state", "");
                         onUpdate("city", "");
                     }}
                     required
@@ -141,33 +152,79 @@ export function RegistrationEssentialsStep({
                     ))}
                 </Select>
 
-                <Select
-                    label="City"
-                    name="city"
-                    value={formData.city}
-                    onChange={(e) => onUpdate("city", e.target.value)}
-                    required
-                    disabled={!selectedCountry}
-                >
-                    <option value="">
-                        {selectedCountry ? "Select city" : "Select a country first"}
-                    </option>
-                    {cities.map((city) => (
-                        <option key={`${city.name}-${city.latitude ?? ""}-${city.longitude ?? ""}`} value={city.name}>
-                            {city.name}
+                {states.length > 0 ? (
+                    <Select
+                        label="State"
+                        name="state"
+                        value={formData.state}
+                        onChange={(e) => {
+                            onUpdate("state", e.target.value);
+                            onUpdate("city", "");
+                        }}
+                        required
+                        disabled={!selectedCountry}
+                    >
+                        <option value="">
+                            {selectedCountry ? "Select state" : "Select a country first"}
                         </option>
-                    ))}
-                </Select>
-            </div>
+                        {states.map((state) => (
+                            <option key={state.isoCode} value={state.name}>
+                                {state.name}
+                            </option>
+                        ))}
+                    </Select>
+                ) : (
+                    <Input
+                        label="State / Region"
+                        name="state"
+                        value={formData.state}
+                        onChange={(e) => onUpdate("state", e.target.value)}
+                        required
+                        disabled={!selectedCountry}
+                        placeholder={selectedCountry ? "Enter state or region" : "Select a country first"}
+                    />
+                )}
 
-            <Input
-                label="Address"
-                name="areaInLagos"
-                value={formData.areaInLagos || ""}
-                onChange={(e) => onUpdate("areaInLagos", e.target.value)}
-                placeholder="e.g., Lekki, Yaba"
-                hint="Helps us coordinate sessions and ride-shares"
-            />
+                {cities.length > 10 ? (
+                    <Select
+                        label="City"
+                        name="city"
+                        value={formData.city}
+                        onChange={(e) => onUpdate("city", e.target.value)}
+                        required
+                        disabled={!selectedCountry || (states.length > 0 && !selectedState)}
+                    >
+                        <option value="">
+                            {!selectedCountry
+                                ? "Select a country first"
+                                : states.length > 0 && !selectedState
+                                    ? "Select a state first"
+                                    : "Select city"}
+                        </option>
+                        {cities.map((city) => (
+                            <option key={`${city.name}-${city.latitude ?? ""}-${city.longitude ?? ""}`} value={city.name}>
+                                {city.name}
+                            </option>
+                        ))}
+                    </Select>
+                ) : (
+                    <Input
+                        label="City / Area"
+                        name="city"
+                        value={formData.city}
+                        onChange={(e) => onUpdate("city", e.target.value)}
+                        required
+                        disabled={!selectedCountry || (states.length > 0 && !selectedState)}
+                        placeholder={
+                            !selectedCountry
+                                ? "Select a country first"
+                                : states.length > 0 && !selectedState
+                                    ? "Select a state first"
+                                    : "e.g., Lekki, Ikeja, Victoria Island"
+                        }
+                    />
+                )}
+            </div>
 
             {includeSwimLevel ? (
                 <Select
