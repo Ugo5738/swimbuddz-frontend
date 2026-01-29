@@ -403,42 +403,45 @@ export default function AdminMembersPage() {
     };
 
     return (
-        <div className="space-y-6">
-            <header className="flex items-center justify-between">
-                <div className="space-y-2">
-                    <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">Admin</p>
-                    <h1 className="text-4xl font-bold text-slate-900">Members</h1>
-                    <p className="text-sm text-slate-600">Manage community members and approve registrations.</p>
+        <div className="space-y-4 sm:space-y-6">
+            {/* Header - Responsive layout */}
+            <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-1 sm:space-y-2">
+                    <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] sm:tracking-[0.3em] text-cyan-600">Admin</p>
+                    <h1 className="text-2xl sm:text-4xl font-bold text-slate-900">Members</h1>
+                    <p className="text-xs sm:text-sm text-slate-600">Manage community members and approve registrations.</p>
                 </div>
-                <Button onClick={openCreateModal} className="flex items-center gap-2">
+                <Button onClick={openCreateModal} className="flex items-center justify-center gap-2 w-full sm:w-auto">
                     <UserPlus className="h-4 w-4" />
-                    Create Member
+                    <span className="sm:inline">Create Member</span>
                 </Button>
             </header>
 
-            {/* Filter Tabs */}
-            <div className="flex gap-2 border-b border-slate-200">
-                {(["all", "pending", "approved", "rejected", "upgrades"] as FilterTab[]).map((tab) => (
-                    <button
-                        key={tab}
-                        onClick={() => setFilterTab(tab)}
-                        className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${filterTab === tab
-                            ? "text-cyan-700"
-                            : "text-slate-500 hover:text-slate-700"
-                            }`}
-                    >
-                        <span className="capitalize">{tab}</span>
-                        <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${filterTab === tab
-                            ? "bg-cyan-100 text-cyan-700"
-                            : "bg-slate-100 text-slate-500"
-                            }`}>
-                            {counts[tab]}
-                        </span>
-                        {filterTab === tab && (
-                            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-600" />
-                        )}
-                    </button>
-                ))}
+            {/* Filter Tabs - Horizontally scrollable on mobile */}
+            <div className="relative -mx-3 sm:mx-0">
+                <div className="flex gap-1 sm:gap-2 border-b border-slate-200 overflow-x-auto px-3 sm:px-0 scrollbar-hide">
+                    {(["all", "pending", "approved", "rejected", "upgrades"] as FilterTab[]).map((tab) => (
+                        <button
+                            key={tab}
+                            onClick={() => setFilterTab(tab)}
+                            className={`px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${filterTab === tab
+                                ? "text-cyan-700"
+                                : "text-slate-500 hover:text-slate-700"
+                                }`}
+                        >
+                            <span className="capitalize">{tab}</span>
+                            <span className={`ml-1.5 sm:ml-2 px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs ${filterTab === tab
+                                ? "bg-cyan-100 text-cyan-700"
+                                : "bg-slate-100 text-slate-500"
+                                }`}>
+                                {counts[tab]}
+                            </span>
+                            {filterTab === tab && (
+                                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-600" />
+                            )}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Pending Approval/Upgrade Alert */}
@@ -456,140 +459,237 @@ export default function AdminMembersPage() {
                 </div>
             )}
 
-            <Card>
+            <Card className="overflow-hidden">
                 {isLoading ? (
-                    <div className="flex min-h-[400px] items-center justify-center">
-                        <LoadingSpinner size="md" text="Loading members..." />
+                    <div className="flex min-h-[300px] sm:min-h-[400px] items-center justify-center">
+                        <LoadingSpinner size="lg" text="Loading members..." />
                     </div>
                 ) : error ? (
                     <div className="p-4 text-center text-red-500">Error: {error}</div>
                 ) : filteredMembers.length === 0 ? (
-                    <div className="p-8 text-center text-slate-500">
+                    <div className="p-6 sm:p-8 text-center text-slate-500">
                         {filterTab === "all"
                             ? "No members found. Create one to get started."
                             : `No ${filterTab} members found.`}
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm text-slate-600">
-                            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
-                                <tr>
-                                    <th className="px-4 py-3 font-semibold">Name</th>
-                                    <th className="px-4 py-3 font-semibold">Contact</th>
-                                    <th className="px-4 py-3 font-semibold">Tier</th>
-                                    <th className="px-4 py-3 font-semibold">Level</th>
-                                    <th className="px-4 py-3 font-semibold">Status</th>
-                                    <th className="px-4 py-3 font-semibold">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-200">
-                                {filteredMembers.map((member) => {
-                                    const isDeletingMember = deletingMemberIds.has(member.id);
-                                    return (
-                                        <tr
-                                            key={member.id}
-                                            className={isDeletingMember ? "bg-slate-50 opacity-60" : "hover:bg-slate-50"}
-                                        >
-                                            <td className="px-4 py-3 font-medium text-slate-900">
-                                                <Link href={`/admin/members/${member.id}`} className="hover:underline hover:text-cyan-700">
+                    <>
+                        {/* Mobile Card View */}
+                        <div className="divide-y divide-slate-100 sm:hidden">
+                            {filteredMembers.map((member) => {
+                                const isDeletingMember = deletingMemberIds.has(member.id);
+                                return (
+                                    <div
+                                        key={member.id}
+                                        className={`p-4 ${isDeletingMember ? "bg-slate-50 opacity-60" : ""}`}
+                                    >
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="min-w-0 flex-1">
+                                                <Link
+                                                    href={`/admin/members/${member.id}`}
+                                                    className="font-medium text-slate-900 hover:text-cyan-700 block truncate"
+                                                >
                                                     {member.first_name} {member.last_name}
                                                 </Link>
-                                                {member.requested_membership_tiers && member.requested_membership_tiers.length > 0 && (
-                                                    <span className="ml-2 inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800">
-                                                        Upgrade Requested
-                                                    </span>
-                                                )}
-                                                {isDeletingMember && (
-                                                    <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-                                                        Deleting...
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex flex-col">
-                                                    <span>{member.email}</span>
-                                                    <span className="text-xs text-slate-400">{member.phone}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <span className="capitalize">{member.membership_tier || "community"}</span>
-                                                {member.requested_membership_tiers && member.requested_membership_tiers.length > 0 && (
-                                                    <div className="text-xs text-purple-600">
-                                                        ➞ {member.requested_membership_tiers.join(", ")}
-                                                    </div>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3">{member.swim_level}</td>
-                                            <td className="px-4 py-3">
-                                                {getStatusBadge(member.approval_status)}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex items-center gap-2">
-                                                    <Link
-                                                        href={`/admin/members/${member.id}`}
-                                                        className="p-1.5 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-700"
-                                                        title="View"
+                                                <p className="text-xs text-slate-500 truncate mt-0.5">{member.email}</p>
+                                            </div>
+                                            {getStatusBadge(member.approval_status)}
+                                        </div>
+
+                                        <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
+                                            <span className="capitalize bg-slate-100 px-2 py-0.5 rounded">
+                                                {member.membership_tier || "community"}
+                                            </span>
+                                            <span>{member.swim_level}</span>
+                                            {member.requested_membership_tiers && member.requested_membership_tiers.length > 0 && (
+                                                <span className="text-purple-600 font-medium">
+                                                    ➞ {member.requested_membership_tiers.join(", ")}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {/* Mobile Actions */}
+                                        <div className="flex items-center gap-1 mt-3 pt-3 border-t border-slate-100">
+                                            <Link
+                                                href={`/admin/members/${member.id}`}
+                                                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium hover:bg-slate-200 transition"
+                                            >
+                                                <Eye className="h-3.5 w-3.5" />
+                                                View
+                                            </Link>
+                                            <button
+                                                onClick={() => openEditModal(member)}
+                                                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium hover:bg-slate-200 transition"
+                                            >
+                                                <Pencil className="h-3.5 w-3.5" />
+                                                Edit
+                                            </button>
+                                            {member.approval_status === "pending" && (
+                                                <>
+                                                    <button
+                                                        onClick={() => openApprovalModal(member, "approve")}
+                                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-green-100 text-green-700 text-xs font-medium hover:bg-green-200 transition"
                                                     >
-                                                        <Eye className="h-4 w-4" />
+                                                        <CheckCircle className="h-3.5 w-3.5" />
+                                                        Approve
+                                                    </button>
+                                                    <button
+                                                        onClick={() => openApprovalModal(member, "reject")}
+                                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-red-100 text-red-700 text-xs font-medium hover:bg-red-200 transition"
+                                                    >
+                                                        <XCircle className="h-3.5 w-3.5" />
+                                                        Reject
+                                                    </button>
+                                                </>
+                                            )}
+                                            {member.approval_status === "approved" && member.requested_membership_tiers && member.requested_membership_tiers.length > 0 && (
+                                                <button
+                                                    onClick={() => openApprovalModal(member, "upgrade")}
+                                                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-purple-100 text-purple-700 text-xs font-medium hover:bg-purple-200 transition"
+                                                >
+                                                    <TrendingUp className="h-3.5 w-3.5" />
+                                                    Upgrade
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => {
+                                                    if (isDeletingMember) return;
+                                                    openDeleteModal(member);
+                                                }}
+                                                className="p-2 rounded-lg bg-slate-100 text-slate-400 hover:bg-red-100 hover:text-red-600 transition disabled:opacity-50"
+                                                disabled={isDeletingMember}
+                                                aria-label="Delete"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Desktop Table View */}
+                        <div className="hidden sm:block overflow-x-auto">
+                            <table className="w-full text-left text-sm text-slate-600">
+                                <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
+                                    <tr>
+                                        <th className="px-4 py-3 font-semibold">Name</th>
+                                        <th className="px-4 py-3 font-semibold">Contact</th>
+                                        <th className="px-4 py-3 font-semibold">Tier</th>
+                                        <th className="px-4 py-3 font-semibold">Level</th>
+                                        <th className="px-4 py-3 font-semibold">Status</th>
+                                        <th className="px-4 py-3 font-semibold">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-200">
+                                    {filteredMembers.map((member) => {
+                                        const isDeletingMember = deletingMemberIds.has(member.id);
+                                        return (
+                                            <tr
+                                                key={member.id}
+                                                className={isDeletingMember ? "bg-slate-50 opacity-60" : "hover:bg-slate-50"}
+                                            >
+                                                <td className="px-4 py-3 font-medium text-slate-900">
+                                                    <Link href={`/admin/members/${member.id}`} className="hover:underline hover:text-cyan-700">
+                                                        {member.first_name} {member.last_name}
                                                     </Link>
-                                                    <button
-                                                        onClick={() => openEditModal(member)}
-                                                        className="p-1.5 rounded hover:bg-slate-100 text-slate-500 hover:text-cyan-600"
-                                                        title="Edit"
-                                                    >
-                                                        <Pencil className="h-4 w-4" />
-                                                    </button>
-
-                                                    {/* Approve/Reject buttons for pending members */}
-                                                    {member.approval_status === "pending" && (
-                                                        <>
-                                                            <button
-                                                                onClick={() => openApprovalModal(member, "approve")}
-                                                                className="p-1.5 rounded hover:bg-green-50 text-green-600 hover:text-green-700"
-                                                                title="Approve"
-                                                            >
-                                                                <CheckCircle className="h-4 w-4" />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => openApprovalModal(member, "reject")}
-                                                                className="p-1.5 rounded hover:bg-red-50 text-red-500 hover:text-red-600"
-                                                                title="Reject"
-                                                            >
-                                                                <XCircle className="h-4 w-4" />
-                                                            </button>
-                                                        </>
+                                                    {member.requested_membership_tiers && member.requested_membership_tiers.length > 0 && (
+                                                        <span className="ml-2 inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800">
+                                                            Upgrade Requested
+                                                        </span>
                                                     )}
-
-                                                    {/* Approve Upgrade button */}
-                                                    {member.approval_status === "approved" && member.requested_membership_tiers && member.requested_membership_tiers.length > 0 && (
-                                                        <button
-                                                            onClick={() => openApprovalModal(member, "upgrade")} // We need to update openApprovalModal signature or handle this
-                                                            className="p-1.5 rounded hover:bg-purple-50 text-purple-600 hover:text-purple-700"
-                                                            title="Approve Upgrade"
+                                                    {isDeletingMember && (
+                                                        <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                                                            Deleting...
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex flex-col">
+                                                        <span>{member.email}</span>
+                                                        <span className="text-xs text-slate-400">{member.phone}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span className="capitalize">{member.membership_tier || "community"}</span>
+                                                    {member.requested_membership_tiers && member.requested_membership_tiers.length > 0 && (
+                                                        <div className="text-xs text-purple-600">
+                                                            ➞ {member.requested_membership_tiers.join(", ")}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3">{member.swim_level}</td>
+                                                <td className="px-4 py-3">
+                                                    {getStatusBadge(member.approval_status)}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <Link
+                                                            href={`/admin/members/${member.id}`}
+                                                            className="p-1.5 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-700"
+                                                            title="View"
                                                         >
-                                                            <TrendingUp className="h-4 w-4" />
+                                                            <Eye className="h-4 w-4" />
+                                                        </Link>
+                                                        <button
+                                                            onClick={() => openEditModal(member)}
+                                                            className="p-1.5 rounded hover:bg-slate-100 text-slate-500 hover:text-cyan-600"
+                                                            title="Edit"
+                                                        >
+                                                            <Pencil className="h-4 w-4" />
                                                         </button>
-                                                    )}
 
-                                                    <button
-                                                        onClick={() => {
-                                                            if (isDeletingMember) return;
-                                                            openDeleteModal(member);
-                                                        }}
-                                                        className="p-1.5 rounded hover:bg-red-50 text-slate-400 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
-                                                        title="Delete"
-                                                        disabled={isDeletingMember}
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                                                        {/* Approve/Reject buttons for pending members */}
+                                                        {member.approval_status === "pending" && (
+                                                            <>
+                                                                <button
+                                                                    onClick={() => openApprovalModal(member, "approve")}
+                                                                    className="p-1.5 rounded hover:bg-green-50 text-green-600 hover:text-green-700"
+                                                                    title="Approve"
+                                                                >
+                                                                    <CheckCircle className="h-4 w-4" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => openApprovalModal(member, "reject")}
+                                                                    className="p-1.5 rounded hover:bg-red-50 text-red-500 hover:text-red-600"
+                                                                    title="Reject"
+                                                                >
+                                                                    <XCircle className="h-4 w-4" />
+                                                                </button>
+                                                            </>
+                                                        )}
+
+                                                        {/* Approve Upgrade button */}
+                                                        {member.approval_status === "approved" && member.requested_membership_tiers && member.requested_membership_tiers.length > 0 && (
+                                                            <button
+                                                                onClick={() => openApprovalModal(member, "upgrade")}
+                                                                className="p-1.5 rounded hover:bg-purple-50 text-purple-600 hover:text-purple-700"
+                                                                title="Approve Upgrade"
+                                                            >
+                                                                <TrendingUp className="h-4 w-4" />
+                                                            </button>
+                                                        )}
+
+                                                        <button
+                                                            onClick={() => {
+                                                                if (isDeletingMember) return;
+                                                                openDeleteModal(member);
+                                                            }}
+                                                            className="p-1.5 rounded hover:bg-red-50 text-slate-400 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                                                            title="Delete"
+                                                            disabled={isDeletingMember}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
                 )}
             </Card>
 
@@ -850,7 +950,7 @@ export default function AdminMembersPage() {
                 title="Create New Member"
             >
                 <form onSubmit={handleCreateMember} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <Input
                             label="First Name"
                             name="first_name"
@@ -881,7 +981,7 @@ export default function AdminMembersPage() {
                         value={formData.phone}
                         onChange={handleInputChange}
                     />
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <Select
                             label="Swim Level"
                             name="swim_level"
@@ -907,15 +1007,16 @@ export default function AdminMembersPage() {
                     <p className="text-xs text-slate-500 bg-slate-50 p-2 rounded">
                         Note: Admin-created members are automatically approved.
                     </p>
-                    <div className="flex justify-end gap-3 pt-4">
+                    <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-4">
                         <Button
                             type="button"
                             variant="secondary"
                             onClick={() => setIsCreateModalOpen(false)}
+                            className="w-full sm:w-auto"
                         >
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={isSubmitting}>
+                        <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
                             {isSubmitting ? "Creating..." : "Create Member"}
                         </Button>
                     </div>
@@ -929,7 +1030,7 @@ export default function AdminMembersPage() {
                 title="Edit Member"
             >
                 <form onSubmit={handleUpdateMember} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <Input
                             label="First Name"
                             name="first_name"
@@ -952,7 +1053,7 @@ export default function AdminMembersPage() {
                         value={formData.email}
                         onChange={handleInputChange}
                         required
-                        disabled // Email usually shouldn't be changed easily
+                        disabled
                         hint="Email cannot be changed"
                     />
                     <Input
@@ -962,7 +1063,7 @@ export default function AdminMembersPage() {
                         value={formData.phone}
                         onChange={handleInputChange}
                     />
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <Select
                             label="Swim Level"
                             name="swim_level"
@@ -989,7 +1090,7 @@ export default function AdminMembersPage() {
                     {/* Location Details */}
                     <div className="border-t pt-4">
                         <h3 className="text-sm font-semibold mb-3 text-slate-700">Location</h3>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                             <Input
                                 label="City"
                                 name="city"
@@ -1008,7 +1109,7 @@ export default function AdminMembersPage() {
                     {/* Emergency Contact */}
                     <div className="border-t pt-4">
                         <h3 className="text-sm font-semibold mb-3 text-slate-700">Emergency Contact</h3>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                             <Input
                                 label="Contact Name"
                                 name="emergency_contact_name"
@@ -1024,15 +1125,16 @@ export default function AdminMembersPage() {
                         </div>
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-4">
+                    <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-4">
                         <Button
                             type="button"
                             variant="secondary"
                             onClick={() => setIsEditModalOpen(false)}
+                            className="w-full sm:w-auto"
                         >
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={isSubmitting}>
+                        <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
                             {isSubmitting ? "Saving..." : "Save Changes"}
                         </Button>
                     </div>

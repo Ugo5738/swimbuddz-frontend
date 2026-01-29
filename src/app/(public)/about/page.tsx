@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { Card } from "@/components/ui/Card";
+import Link from "next/link";
 
 const tierSections = [
   {
@@ -218,7 +218,7 @@ export default function AboutPage() {
           ))}
         </div>
         <p className="text-slate-600 italic">
-          As we grow, we'll expand and adjust locations to serve more members and different parts of the city (and beyond).
+          As we grow, we'll expand and adjust locations to serve more members in different parts of the city (and beyond).
         </p>
       </section>
 
