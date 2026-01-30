@@ -19,6 +19,14 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'drum.armymwr.com',
       },
+      {
+        protocol: 'https',
+        hostname: '*.s3.eu-west-1.amazonaws.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.cloudfront.net',
+      },
     ],
   },
   async rewrites() {
