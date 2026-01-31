@@ -184,10 +184,12 @@ export default function AdminDiscountsPage() {
                     <h1 className="text-2xl font-bold text-slate-900">Discount Codes</h1>
                     <p className="text-slate-600 text-sm">Manage discount codes for payments</p>
                 </div>
-                <Button onClick={() => setShowForm(true)} className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Create Discount
-                </Button>
+                {!showForm && (
+                    <Button onClick={() => setShowForm(true)} className="gap-2">
+                        <Plus className="h-4 w-4" />
+                        Create Discount
+                    </Button>
+                )}
             </header>
 
             {/* Create/Edit Form */}
