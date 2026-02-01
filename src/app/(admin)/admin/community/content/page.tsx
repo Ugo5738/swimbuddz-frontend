@@ -366,7 +366,7 @@ export default function AdminContentPage() {
                         Create your first post to get started!
                     </p>
                 </Card>
-            ) : posts.length > 0 ? (
+            ) : posts.length > 0 && !showCreateModal ? (
                 <div className="space-y-4">
                     {posts.map((post) => (
                         <Card key={post.id} className="p-6">

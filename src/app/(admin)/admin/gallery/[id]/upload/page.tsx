@@ -151,10 +151,10 @@ export default function AlbumUploadPage() {
                 if (caption) formData.append('description', caption);
 
                 try {
-                    const response = await fetch(`${API_BASE_URL} /api/v1 / media / media`, {
+                    const response = await fetch(`${API_BASE_URL}/api/v1/media/media`, {
                         method: 'POST',
                         headers: {
-                            'Authorization': `Bearer ${token} `
+                            'Authorization': `Bearer ${token}`
                         },
                         body: formData
                     });
@@ -197,10 +197,10 @@ export default function AlbumUploadPage() {
                 return;
             }
 
-            const response = await fetch(`${API_BASE_URL} /api/v1 / media / media / ${photoId} `, {
+            const response = await fetch(`${API_BASE_URL}/api/v1/media/media/${photoId}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${token} `
+                    'Authorization': `Bearer ${token}`
                 }
             });
 
@@ -246,7 +246,7 @@ export default function AlbumUploadPage() {
                     </div>
 
                     <Link
-                        href={`/ gallery / ${albumId} `}
+                        href={`/gallery/${albumId}`}
                         target="_blank"
                         className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-200 transition-colors"
                     >
@@ -264,7 +264,7 @@ export default function AlbumUploadPage() {
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
-                        className={`relative border - 2 border - dashed rounded - 2xl p - 8 transition - all duration - 200 ${isDragOver
+                        className={`relative border-2 border-dashed rounded-2xl p-8 transition-all duration-200 ${isDragOver
                             ? 'border-cyan-500 bg-cyan-50'
                             : 'border-slate-300 hover:border-slate-400 bg-slate-50/50'
                             } `}
@@ -279,8 +279,8 @@ export default function AlbumUploadPage() {
                         />
 
                         <div className="flex flex-col items-center gap-4 text-center pointer-events-none">
-                            <div className={`p - 4 rounded - full transition - colors ${isDragOver ? 'bg-cyan-100' : 'bg-slate-100'} `}>
-                                <CloudUpload className={`h - 10 w - 10 ${isDragOver ? 'text-cyan-600' : 'text-slate-400'} `} />
+                            <div className={`p-4 rounded-full transition-colors ${isDragOver ? 'bg-cyan-100' : 'bg-slate-100'} `}>
+                                <CloudUpload className={`h-10 w-10 ${isDragOver ? 'text-cyan-600' : 'text-slate-400'} `} />
                             </div>
                             <div className="space-y-1">
                                 <p className="text-lg font-semibold text-slate-900">
@@ -439,7 +439,7 @@ export default function AlbumUploadPage() {
                                 <img
                                     src={photo.thumbnail_url || photo.file_url}
                                     alt={photo.title || photo.description || 'Photo'}
-                                    className={`w - full h - full object - cover transition - all duration - 300 group - hover: scale - 105 ${loadedImages.has(photo.id) ? 'opacity-100' : 'opacity-0'
+                                    className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-105 ${loadedImages.has(photo.id) ? 'opacity-100' : 'opacity-0'
                                         } `}
                                     onLoad={() => handleImageLoad(photo.id)}
                                 />

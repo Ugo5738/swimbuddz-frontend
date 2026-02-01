@@ -44,7 +44,7 @@ export function CoachPicker({
 
     const loadCoaches = async () => {
         try {
-            const data = await apiGet<Coach[]>("/api/v1/admin/coaches?status=approved,active", { auth: true });
+            const data = await apiGet<Coach[]>("/api/v1/admin/coaches/?status=approved,active", { auth: true });
             setCoaches(data);
         } catch (e) {
             console.error("Failed to load coaches", e);
