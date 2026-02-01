@@ -538,12 +538,12 @@ export default function HomePage() {
         </div>
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           {howItWorks.map((step, idx) => (
-            <div key={step.step} className="relative space-y-4">
+            <div key={step.step} className="relative space-y-4 text-center md:text-left">
               {/* Connector line for desktop */}
               {idx < howItWorks.length - 1 && (
                 <div className="hidden lg:block absolute top-6 left-[60%] w-full h-0.5 bg-gradient-to-r from-cyan-200 to-transparent" />
               )}
-              <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-cyan-600 text-xl font-bold text-white shadow-lg shadow-cyan-500/25">
+              <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-cyan-600 text-xl font-bold text-white shadow-lg shadow-cyan-500/25 mx-auto md:mx-0">
                 {step.step}
               </div>
               <h3 className="text-lg font-semibold text-slate-900">{step.title}</h3>
@@ -565,7 +565,7 @@ export default function HomePage() {
         </div>
         <div className="grid gap-6 md:grid-cols-3">
           {testimonials.map((testimonial, idx) => (
-            <Card key={idx} className="relative overflow-hidden">
+            <Card key={idx} className="relative overflow-hidden text-center md:text-left">
               <div className="absolute top-0 left-0 text-6xl text-cyan-100 font-serif leading-none">&quot;</div>
               <div className="relative space-y-4 p-6 pt-8">
                 <p className="text-slate-700 italic text-lg">&quot;{testimonial.quote}&quot;</p>

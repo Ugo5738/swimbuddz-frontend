@@ -28,6 +28,9 @@ const navGroups = [
 type NavItem = typeof navGroups[number];
 type DropdownItem = { href: string; label: string; description: string };
 
+// Check if user is admin by email
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+
 export function Header() {
     const router = useRouter();
     const pathname = usePathname();
@@ -37,6 +40,11 @@ export function Header() {
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const mobileNavRef = useRef<HTMLElement>(null);
+
+    // Determine if current user is admin
+    const isAdmin = session?.user?.email && ADMIN_EMAIL &&
+        session.user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+    const dashboardUrl = isAdmin ? "/admin" : "/account";
 
     useEffect(() => {
         // Get initial session
@@ -257,7 +265,7 @@ export function Header() {
                         {session ? (
                             <>
                                 <Link
-                                    href="/account"
+                                    href={dashboardUrl}
                                     className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-cyan-600 to-cyan-500 text-white font-medium hover:from-cyan-500 hover:to-cyan-400 transition-all hover:shadow-lg hover:shadow-cyan-500/25"
                                 >
                                     Dashboard
@@ -320,12 +328,12 @@ export function Header() {
                             {session ? (
                                 <>
                                     <Link
-                                        href="/account"
+                                        href={dashboardUrl}
                                         onClick={closeMobileMenu}
                                         className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-500 text-white font-semibold mb-2"
                                     >
                                         <LayoutDashboard className="h-5 w-5" />
-                                        Go to Dashboard
+                                        Dashboard
                                     </Link>
                                     <Link
                                         href="/account/profile"

@@ -285,7 +285,7 @@ export default function AdminContentPage() {
                                                 <img
                                                     src={formData.featured_image_url}
                                                     alt="Featured"
-                                                    className="w-full h-64 object-cover"
+                                                    className="w-full max-h-96 object-contain bg-slate-100"
                                                 />
                                             </div>
                                         )}
