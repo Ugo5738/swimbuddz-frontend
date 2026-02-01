@@ -7,7 +7,6 @@ import { Card } from "@/components/ui/Card";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Input } from "@/components/ui/Input";
 import { LoadingCard } from "@/components/ui/LoadingCard";
-import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { supabase } from "@/lib/auth";
 import {
@@ -25,14 +24,6 @@ import { useCallback, useEffect, useState } from "react";
 
 type ApplicationStep = "check" | "auth" | "form" | "status";
 type DocumentMethod = "link" | "upload";
-
-const experienceRanges = [
-    { value: "0", label: "Less than 1 year" },
-    { value: "1", label: "1-2 years" },
-    { value: "3", label: "3-4 years" },
-    { value: "5", label: "5-9 years" },
-    { value: "10", label: "10+ years" },
-];
 
 export default function CoachApplyPage() {
     const router = useRouter();
@@ -457,19 +448,16 @@ export default function CoachApplyPage() {
                     <div className="space-y-4">
                         <h2 className="text-lg font-semibold text-slate-900">Experience</h2>
 
-                        <Select
+                        <Input
                             label="Years of Coaching Experience"
+                            type="number"
                             required
-                            value={String(formData.coaching_years)}
+                            min={0}
+                            max={50}
+                            value={formData.coaching_years}
                             onChange={(e) => setFormData({ ...formData, coaching_years: parseInt(e.target.value) || 0 })}
                             className="w-full sm:w-48"
-                        >
-                            {experienceRanges.map((range) => (
-                                <option key={range.value} value={range.value}>
-                                    {range.label}
-                                </option>
-                            ))}
-                        </Select>
+                        />
 
                         <OptionPillGroup
                             label="Coaching Specialties"

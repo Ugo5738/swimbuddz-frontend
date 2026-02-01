@@ -3,7 +3,7 @@
 import { Card } from "@/components/ui/Card";
 import { supabase } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
-import { ArrowLeft, Camera, Check, CloudUpload, ExternalLink, Images, Loader2, Trash2, Upload, X } from "lucide-react";
+import { ArrowLeft, Camera, Check, CloudUpload, ExternalLink, Image, Images, Loader2, Trash2, Upload, X } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -29,8 +29,10 @@ export default function AlbumUploadPage() {
     const albumId = params?.id as string;
 
     const [albumTitle, setAlbumTitle] = useState("");
+    const [coverMediaId, setCoverMediaId] = useState<string | null>(null);
     const [photos, setPhotos] = useState<Photo[]>([]);
     const [uploading, setUploading] = useState(false);
+    const [settingCover, setSettingCover] = useState<string | null>(null);
     const [selectedFiles, setSelectedFiles] = useState<FilePreview[]>([]);
     const [caption, setCaption] = useState("");
     const [isDragOver, setIsDragOver] = useState(false);
@@ -61,9 +63,41 @@ export default function AlbumUploadPage() {
                 const data = await response.json();
                 setAlbumTitle(data.title);
                 setPhotos(data.media_items || []);
+                setCoverMediaId(data.cover_media_id || data.cover_photo?.id || null);
             }
         } catch (error) {
             console.error('Failed to fetch album:', error);
+        }
+    };
+
+    const setAsCover = async (photoId: string) => {
+        setSettingCover(photoId);
+        try {
+            const token = await getAuthToken();
+            if (!token) {
+                alert("You need to be signed in to set album cover");
+                return;
+            }
+
+            const response = await fetch(`${API_BASE_URL}/api/v1/media/albums/${albumId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ cover_media_id: photoId })
+            });
+
+            if (response.ok) {
+                setCoverMediaId(photoId);
+            } else {
+                alert('Failed to set cover photo');
+            }
+        } catch (error) {
+            console.error('Failed to set cover:', error);
+            alert('Failed to set cover photo');
+        } finally {
+            setSettingCover(null);
         }
     };
 
@@ -427,44 +461,65 @@ export default function AlbumUploadPage() {
                     </Card>
                 ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                        {photos.map((photo) => (
-                            <div key={photo.id} className="group relative aspect-square rounded-xl overflow-hidden bg-slate-100">
-                                {/* Loading placeholder */}
-                                {!loadedImages.has(photo.id) && (
-                                    <div className="absolute inset-0 bg-gradient-to-br from-slate-200 to-slate-100 animate-pulse flex items-center justify-center">
-                                        <Camera className="h-8 w-8 text-slate-300" />
-                                    </div>
-                                )}
+                        {photos.map((photo) => {
+                            const isCover = coverMediaId === photo.id;
+                            const isSettingThis = settingCover === photo.id;
 
-                                <img
-                                    src={photo.thumbnail_url || photo.file_url}
-                                    alt={photo.title || photo.description || 'Photo'}
-                                    className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-105 ${loadedImages.has(photo.id) ? 'opacity-100' : 'opacity-0'
-                                        } `}
-                                    onLoad={() => handleImageLoad(photo.id)}
-                                />
+                            return (
+                                <div key={photo.id} className={`group relative aspect-square rounded-xl overflow-hidden bg-slate-100 ${isCover ? 'ring-2 ring-cyan-500 ring-offset-2' : ''}`}>
+                                    {/* Loading placeholder */}
+                                    {!loadedImages.has(photo.id) && (
+                                        <div className="absolute inset-0 bg-gradient-to-br from-slate-200 to-slate-100 animate-pulse flex items-center justify-center">
+                                            <Camera className="h-8 w-8 text-slate-300" />
+                                        </div>
+                                    )}
 
-                                {/* Hover overlay */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                    <img
+                                        src={photo.thumbnail_url || photo.file_url}
+                                        alt={photo.title || photo.description || 'Photo'}
+                                        className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-105 ${loadedImages.has(photo.id) ? 'opacity-100' : 'opacity-0'}`}
+                                        onLoad={() => handleImageLoad(photo.id)}
+                                    />
 
-                                {/* Actions */}
-                                <div className="absolute inset-x-0 bottom-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                                    <div className="flex items-center justify-between">
-                                        {(photo.title || photo.description) && (
-                                            <p className="text-white text-sm font-medium truncate flex-1 mr-2">
-                                                {photo.title || photo.description}
-                                            </p>
-                                        )}
-                                        <button
-                                            onClick={() => deletePhoto(photo.id)}
-                                            className="p-2 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors flex-shrink-0"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </button>
+                                    {/* Cover badge */}
+                                    {isCover && (
+                                        <div className="absolute top-2 left-2 px-2 py-1 rounded-full bg-cyan-500 text-white text-xs font-semibold flex items-center gap-1">
+                                            <Image className="h-3 w-3" />
+                                            Cover
+                                        </div>
+                                    )}
+
+                                    {/* Hover overlay */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                                    {/* Actions */}
+                                    <div className="absolute inset-x-0 bottom-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                                        <div className="flex items-center justify-between gap-2">
+                                            {!isCover && (
+                                                <button
+                                                    onClick={() => setAsCover(photo.id)}
+                                                    disabled={isSettingThis}
+                                                    className="p-2 rounded-full bg-cyan-500 hover:bg-cyan-600 text-white transition-colors flex-shrink-0 disabled:opacity-50"
+                                                    title="Set as album cover"
+                                                >
+                                                    {isSettingThis ? (
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                    ) : (
+                                                        <Image className="h-4 w-4" />
+                                                    )}
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => deletePhoto(photo.id)}
+                                                className="p-2 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors flex-shrink-0 ml-auto"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>

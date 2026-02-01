@@ -21,6 +21,7 @@ const navGroups = [
         ]
     },
     { href: "/sessions-and-events", label: "Sessions", type: "link" as const },
+    { href: "/tips", label: "Tips", type: "link" as const },
     // { href: "/store", label: "Shop", type: "link" as const },
     { href: "/gallery", label: "Gallery", type: "link" as const },
 ];
