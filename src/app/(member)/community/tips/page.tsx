@@ -23,14 +23,33 @@ interface ContentPost {
 const categoryColors: Record<string, { bg: string; text: string }> = {
     technique: { bg: "bg-blue-100", text: "text-blue-700" },
     swimming_tips: { bg: "bg-blue-100", text: "text-blue-700" },
+    getting_started: { bg: "bg-sky-100", text: "text-sky-700" },
     fitness: { bg: "bg-emerald-100", text: "text-emerald-700" },
     breathing: { bg: "bg-cyan-100", text: "text-cyan-700" },
     nutrition: { bg: "bg-orange-100", text: "text-orange-700" },
     safety: { bg: "bg-rose-100", text: "text-rose-700" },
+    health_recovery: { bg: "bg-teal-100", text: "text-teal-700" },
+    community_culture: { bg: "bg-fuchsia-100", text: "text-fuchsia-700" },
     equipment: { bg: "bg-purple-100", text: "text-purple-700" },
     news: { bg: "bg-amber-100", text: "text-amber-700" },
     education: { bg: "bg-indigo-100", text: "text-indigo-700" },
     general: { bg: "bg-slate-100", text: "text-slate-700" },
+};
+
+const categoryLabels: Record<string, string> = {
+    swimming_tips: "Swimming Tips",
+    safety: "Safety",
+    breathing: "Breathing Techniques",
+    technique: "Technique",
+    news: "News",
+    education: "Education",
+    getting_started: "Getting Started",
+    community_culture: "Community & Culture",
+    health_recovery: "Health & Recovery",
+    fitness: "Fitness",
+    nutrition: "Nutrition",
+    equipment: "Equipment",
+    general: "General",
 };
 
 export default function CommunityTipsPage() {
@@ -81,7 +100,7 @@ export default function CommunityTipsPage() {
     };
 
     const formatCategoryName = (category: string) => {
-        return category.replace(/_/g, " ");
+        return categoryLabels[category.toLowerCase()] || category.replace(/_/g, " ");
     };
 
     if (loading) {

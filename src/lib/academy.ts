@@ -398,4 +398,12 @@ export const AcademyApi = {
         apiPut<{ message: string }>(`/api/v1/academy/curricula/${curriculumId}/weeks/reorder`, weekIds, { auth: true }),
     reorderLessons: (weekId: string, lessonIds: string[]) =>
         apiPut<{ message: string }>(`/api/v1/academy/curriculum-weeks/${weekId}/lessons/reorder`, lessonIds, { auth: true }),
+
+    // --- Program Interest (Get Notified) ---
+    registerProgramInterest: (programId: string) =>
+        apiPost<{ message: string; registered: boolean }>(`/api/v1/academy/programs/${programId}/interest`, {}, { auth: true }),
+    removeProgramInterest: (programId: string) =>
+        apiDelete<{ message: string; registered: boolean }>(`/api/v1/academy/programs/${programId}/interest`, { auth: true }),
+    checkProgramInterest: (programId: string) =>
+        apiGet<{ registered: boolean }>(`/api/v1/academy/programs/${programId}/interest`, { auth: true }),
 };

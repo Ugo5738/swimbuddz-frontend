@@ -4,19 +4,26 @@ import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { Input } from "@/components/ui/Input";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Select } from "@/components/ui/Select";
 import { Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/components/ui/Table";
 import { Textarea } from "@/components/ui/Textarea";
-import { Announcement, AnnouncementCategory, AnnouncementCreate, CommunicationsApi } from "@/lib/communications";
+import { Announcement, AnnouncementCategory, AnnouncementCreate, CommunicationsApi, formatAnnouncementCategory } from "@/lib/communications";
 import { useEffect, useState } from "react";
 
 const initialFormState: AnnouncementCreate = {
   title: "",
   category: AnnouncementCategory.GENERAL,
+  status: "published",
+  audience: "community",
   body: "",
-  published_at: new Date().toISOString()
+  published_at: new Date().toISOString(),
+  expires_at: null,
+  notify_email: true,
+  notify_push: false,
+  is_pinned: false,
 };
 
 export default function AdminAnnouncementsPage() {
@@ -32,9 +39,21 @@ export default function AdminAnnouncementsPage() {
     loadAnnouncements();
   }, []);
 
+  useEffect(() => {
+    if (editingId) return;
+    const isUrgent =
+      formState.category === AnnouncementCategory.RAIN_UPDATE ||
+      formState.category === AnnouncementCategory.SCHEDULE_CHANGE;
+    setFormState((prev) => ({
+      ...prev,
+      notify_email: true,
+      notify_push: isUrgent,
+    }));
+  }, [formState.category, editingId]);
+
   async function loadAnnouncements() {
     try {
-      const data = await CommunicationsApi.listAnnouncements();
+      const data = await CommunicationsApi.listAnnouncements(true);
       setAnnouncements(data || []);
     } catch (err) {
       console.error(err);
@@ -50,8 +69,14 @@ export default function AdminAnnouncementsPage() {
     setFormState({
       title: announcement.title,
       category: announcement.category,
+      status: announcement.status,
+      audience: announcement.audience,
       body: announcement.body,
-      published_at: announcement.published_at
+      published_at: announcement.published_at,
+      expires_at: announcement.expires_at ?? null,
+      notify_email: announcement.notify_email,
+      notify_push: announcement.notify_push,
+      is_pinned: announcement.is_pinned,
     });
     setEditingId(id);
   }
@@ -102,6 +127,20 @@ export default function AdminAnnouncementsPage() {
     }
   }
 
+  const formatDateTimeLocal = (value?: string | null) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toISOString().slice(0, 16);
+  };
+
+  const parseDateTimeLocal = (value: string) => {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return date.toISOString();
+  };
+
   return (
     <div className="space-y-6">
       <header className="space-y-2">
@@ -125,18 +164,61 @@ export default function AdminAnnouncementsPage() {
             ) : null}
             <form className="space-y-4" onSubmit={handleSubmit}>
               <Input label="Title" value={formState.title} onChange={(event) => setFormState((prev) => ({ ...prev, title: event.target.value }))} required />
-              <Select
-                label="Category"
-                value={formState.category}
-                onChange={(event) => setFormState((prev) => ({ ...prev, category: event.target.value as AnnouncementCategory }))}
-              >
-                <option value={AnnouncementCategory.GENERAL}>General</option>
-                <option value={AnnouncementCategory.RAIN_UPDATE}>Rain Update</option>
-                <option value={AnnouncementCategory.SCHEDULE_CHANGE}>Schedule Change</option>
-                <option value={AnnouncementCategory.ACADEMY}>Academy</option>
-                <option value={AnnouncementCategory.EVENT}>Event</option>
-                <option value={AnnouncementCategory.COMPETITION}>Competition</option>
-              </Select>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Select
+                  label="Category"
+                  value={formState.category}
+                  onChange={(event) => setFormState((prev) => ({ ...prev, category: event.target.value as AnnouncementCategory }))}
+                >
+                  <option value={AnnouncementCategory.GENERAL}>General</option>
+                  <option value={AnnouncementCategory.RAIN_UPDATE}>Rain Update</option>
+                  <option value={AnnouncementCategory.SCHEDULE_CHANGE}>Schedule Change</option>
+                  <option value={AnnouncementCategory.ACADEMY_UPDATE}>Academy Update</option>
+                  <option value={AnnouncementCategory.EVENT}>Event</option>
+                  <option value={AnnouncementCategory.COMPETITION}>Competition</option>
+                </Select>
+                <Select
+                  label="Status"
+                  value={formState.status}
+                  onChange={(event) => setFormState((prev) => ({ ...prev, status: event.target.value as AnnouncementCreate["status"] }))}
+                >
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                  <option value="archived">Archived</option>
+                </Select>
+                <Select
+                  label="Audience"
+                  value={formState.audience}
+                  onChange={(event) => setFormState((prev) => ({ ...prev, audience: event.target.value as AnnouncementCreate["audience"] }))}
+                >
+                  <option value="community">Community (All Members)</option>
+                  <option value="club">Club</option>
+                  <option value="academy">Academy</option>
+                </Select>
+                <Input
+                  label="Expires At"
+                  type="datetime-local"
+                  value={formatDateTimeLocal(formState.expires_at)}
+                  onChange={(event) => setFormState((prev) => ({ ...prev, expires_at: parseDateTimeLocal(event.target.value) }))}
+                />
+              </div>
+              <div className="flex flex-wrap gap-4">
+                <Checkbox
+                  label="Pin announcement"
+                  checked={formState.is_pinned || false}
+                  onChange={(event) => setFormState((prev) => ({ ...prev, is_pinned: event.target.checked }))}
+                />
+                <Checkbox
+                  label="Notify by email"
+                  checked={formState.notify_email ?? false}
+                  onChange={(event) => setFormState((prev) => ({ ...prev, notify_email: event.target.checked }))}
+                />
+                <Checkbox
+                  label="Notify by push"
+                  checked={formState.notify_push ?? false}
+                  onChange={(event) => setFormState((prev) => ({ ...prev, notify_push: event.target.checked }))}
+                />
+              </div>
               <Textarea
                 label="Content"
                 rows={4}
@@ -163,6 +245,8 @@ export default function AdminAnnouncementsPage() {
                 <TableHeaderCell>Title</TableHeaderCell>
                 <TableHeaderCell>Date</TableHeaderCell>
                 <TableHeaderCell>Category</TableHeaderCell>
+                <TableHeaderCell>Status</TableHeaderCell>
+                <TableHeaderCell>Audience</TableHeaderCell>
                 <TableHeaderCell>Actions</TableHeaderCell>
               </TableRow>
             </TableHead>
@@ -170,9 +254,17 @@ export default function AdminAnnouncementsPage() {
               {announcements.map((announcement) => (
                 <TableRow key={announcement.id}>
                   <TableCell>{announcement.title}</TableCell>
-                  <TableCell>{new Date(announcement.published_at).toLocaleDateString()}</TableCell>
                   <TableCell>
-                    <Badge variant="info">{announcement.category}</Badge>
+                    {announcement.published_at ? new Date(announcement.published_at).toLocaleDateString() : "--"}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="info">{formatAnnouncementCategory(announcement.category)}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="info" className="capitalize">{announcement.status}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="info" className="capitalize">{announcement.audience}</Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">

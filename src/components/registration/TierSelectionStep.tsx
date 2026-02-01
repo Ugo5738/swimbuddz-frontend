@@ -23,7 +23,7 @@ const tierOptions: TierOption[] = [
         label: "Community",
         tagline: "Join the SwimBuddz family",
         price: "₦20,000",
-        priceNote: "per annum",
+        priceNote: "year",
         icon: <Users className="h-6 w-6" />,
         accentColor: "cyan",
         features: [
@@ -39,7 +39,7 @@ const tierOptions: TierOption[] = [
         label: "Club",
         tagline: "Swim with us regularly",
         price: "₦42,500+",
-        priceNote: "per quarter",
+        priceNote: "quarter",
         icon: <Star className="h-6 w-6" />,
         accentColor: "emerald",
         featured: true,
@@ -57,7 +57,7 @@ const tierOptions: TierOption[] = [
         label: "Academy",
         tagline: "Structured learning program",
         price: "₦50,000+",
-        priceNote: "per cohort",
+        priceNote: "cohort",
         icon: <Sparkles className="h-6 w-6" />,
         accentColor: "purple",
         includes: "Everything in Club, plus:",
@@ -158,7 +158,7 @@ export function TierSelectionStep({
                                 </div>
                             )}
 
-                            <div className="p-6 space-y-5">
+                            <div className="p-6 flex flex-col h-full">
                                 {/* Icon & Title */}
                                 <div className="space-y-3">
                                     <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl ${colors.icon}`}>
@@ -173,7 +173,7 @@ export function TierSelectionStep({
                                 </div>
 
                                 {/* Price */}
-                                <div className="pb-4 border-b border-slate-100">
+                                <div className="py-4 mt-4 border-b border-slate-100">
                                     <div className="flex items-baseline gap-1">
                                         <span className={`text-3xl font-bold ${colors.text}`}>
                                             {tier.price}
@@ -186,15 +186,17 @@ export function TierSelectionStep({
                                     </div>
                                 </div>
 
-                                {/* Includes note */}
-                                {tier.includes && (
-                                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                                        {tier.includes}
-                                    </p>
-                                )}
+                                {/* Includes note - fixed height placeholder for alignment */}
+                                <div className="h-6 mt-4">
+                                    {tier.includes && (
+                                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                                            {tier.includes}
+                                        </p>
+                                    )}
+                                </div>
 
-                                {/* Features */}
-                                <ul className="space-y-3">
+                                {/* Features - flex-grow to push button to bottom */}
+                                <ul className="space-y-3 mt-2 flex-grow">
                                     {tier.features.map((feature, index) => (
                                         <li
                                             key={index}
@@ -206,11 +208,11 @@ export function TierSelectionStep({
                                     ))}
                                 </ul>
 
-                                {/* Select Button */}
+                                {/* Select Button - always at bottom */}
                                 <button
                                     type="button"
                                     disabled={isDisabled}
-                                    className={`w-full py-3 px-4 rounded-xl font-semibold text-sm transition-all ${isSelected
+                                    className={`w-full py-3 px-4 rounded-xl font-semibold text-sm transition-all mt-6 ${isSelected
                                         ? `${colors.text} bg-white border-2 ${colors.border}`
                                         : isDisabled
                                             ? "bg-slate-100 text-slate-400 cursor-not-allowed"

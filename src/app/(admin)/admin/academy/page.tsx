@@ -34,32 +34,6 @@ export default function AdminAcademyPage() {
         loadData();
     }, []);
 
-    const handleDeleteProgram = async (e: React.MouseEvent, id: string) => {
-        e.stopPropagation();
-        if (!confirm("Are you sure you want to delete this program?")) return;
-        try {
-            await AcademyApi.deleteProgram(id);
-            setPrograms(prev => prev.filter(p => p.id !== id));
-            toast.success("Program deleted");
-        } catch (error) {
-            console.error("Failed to delete program", error);
-            toast.error("Failed to delete program");
-        }
-    };
-
-    const handleDeleteCohort = async (e: React.MouseEvent, id: string) => {
-        e.stopPropagation();
-        if (!confirm("Are you sure you want to delete this cohort?")) return;
-        try {
-            await AcademyApi.deleteCohort(id);
-            setCohorts(prev => prev.filter(c => c.id !== id));
-            toast.success("Cohort deleted");
-        } catch (error) {
-            console.error("Failed to delete cohort", error);
-            toast.error("Failed to delete cohort");
-        }
-    };
-
     const handleTransitionCohortStatuses = async () => {
         setTransitioningStatuses(true);
         try {
@@ -80,59 +54,80 @@ export default function AdminAcademyPage() {
         return <LoadingPage text="Loading academy data..." />;
     }
 
+    const statusColors: Record<string, string> = {
+        active: "text-green-600 bg-green-50",
+        open: "text-blue-600 bg-blue-50",
+        completed: "text-slate-600 bg-slate-100",
+        draft: "text-amber-600 bg-amber-50",
+    };
+
     return (
-        <div className="space-y-6">
-            <header className="flex items-center justify-between">
+        <div className="space-y-4 md:space-y-6">
+            {/* Header */}
+            <header className="space-y-3">
                 <div className="space-y-1">
-                    <h1 className="text-3xl font-bold text-slate-900">Academy Management</h1>
-                    <p className="text-slate-600">Manage programs, cohorts, and enrollments.</p>
+                    <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Academy Management</h1>
+                    <p className="text-sm text-slate-600">Manage programs, cohorts, and enrollments.</p>
                 </div>
-                <div className="flex gap-2">
+
+                {/* Action Buttons - Horizontal scroll on mobile */}
+                <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:pb-0">
                     <button
                         onClick={handleTransitionCohortStatuses}
                         disabled={transitioningStatuses}
-                        className="rounded bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Update cohort statuses (OPEN→ACTIVE, ACTIVE→COMPLETED) based on dates"
+                        className="flex-shrink-0 rounded-lg bg-purple-600 px-3 py-2 text-xs md:text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                        title="Update cohort statuses based on dates"
                     >
-                        {transitioningStatuses ? "Updating..." : "⚡ Update Cohort Statuses"}
+                        {transitioningStatuses ? "..." : "⚡ Update Cohort Statuses"}
                     </button>
                     <button
                         onClick={() => router.push("/admin/academy/programs/new")}
-                        className="rounded bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700"
+                        className="flex-shrink-0 rounded-lg bg-cyan-600 px-3 py-2 text-xs md:text-sm font-medium text-white hover:bg-cyan-700 whitespace-nowrap"
                     >
                         Create Program
                     </button>
                     <button
                         onClick={() => router.push("/admin/academy/cohorts/new")}
-                        className="rounded bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700"
+                        className="flex-shrink-0 rounded-lg bg-cyan-600 px-3 py-2 text-xs md:text-sm font-medium text-white hover:bg-cyan-700 whitespace-nowrap"
                     >
                         Create Cohort
                     </button>
                 </div>
             </header>
 
-            <div className="grid gap-6 md:grid-cols-2">
+            {/* Content Grid - Stack on mobile */}
+            <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
                 {/* Programs Section */}
-                <div className="space-y-4">
-                    <h2 className="text-xl font-semibold text-slate-900">Programs</h2>
+                <div className="space-y-3">
+                    <h2 className="text-lg md:text-xl font-semibold text-slate-900">Programs</h2>
                     {programs.length === 0 ? (
-                        <Card>
-                            <p className="text-slate-500">No programs found.</p>
+                        <Card className="p-4 md:p-6">
+                            <p className="text-slate-500 text-sm">No programs found.</p>
                         </Card>
                     ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-2 md:space-y-3">
                             {programs.map((program) => (
                                 <Card
                                     key={program.id}
-                                    className="flex flex-col gap-2 cursor-pointer hover:shadow-md transition-shadow relative group"
+                                    className="p-3 md:p-4 cursor-pointer hover:shadow-md transition-shadow active:bg-slate-50"
                                     onClick={() => router.push(`/admin/academy/programs/${program.id}`)}
                                 >
-                                    <div className="flex justify-between">
-                                        <h3 className="font-medium text-slate-900">{program.name}</h3>
-                                        <span className="text-xs font-medium uppercase text-slate-500">{program.level}</span>
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="min-w-0 flex-1">
+                                            <h3 className="font-medium text-slate-900 text-sm md:text-base truncate">
+                                                {program.name}
+                                            </h3>
+                                            <p className="text-xs md:text-sm text-slate-600 line-clamp-2 mt-1">
+                                                {program.description || "No description"}
+                                            </p>
+                                        </div>
+                                        <span className="flex-shrink-0 text-xs font-medium uppercase text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                                            {program.level}
+                                        </span>
                                     </div>
-                                    <p className="text-sm text-slate-600">{program.description || "No description"}</p>
-                                    <div className="text-xs text-slate-500">{program.duration_weeks} weeks</div>
+                                    <div className="text-xs text-slate-500 mt-2">
+                                        {program.duration_weeks} weeks
+                                    </div>
                                 </Card>
                             ))}
                         </div>
@@ -140,32 +135,35 @@ export default function AdminAcademyPage() {
                 </div>
 
                 {/* Cohorts Section */}
-                <div className="space-y-4">
-                    <h2 className="text-xl font-semibold text-slate-900">Cohorts</h2>
+                <div className="space-y-3">
+                    <h2 className="text-lg md:text-xl font-semibold text-slate-900">Cohorts</h2>
                     {cohorts.length === 0 ? (
-                        <Card>
-                            <p className="text-slate-500">No cohorts found.</p>
+                        <Card className="p-4 md:p-6">
+                            <p className="text-slate-500 text-sm">No cohorts found.</p>
                         </Card>
                     ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-2 md:space-y-3">
                             {cohorts.map((cohort) => (
                                 <Card
                                     key={cohort.id}
-                                    className="flex flex-col gap-2 cursor-pointer hover:shadow-md transition-shadow relative group"
+                                    className="p-3 md:p-4 cursor-pointer hover:shadow-md transition-shadow active:bg-slate-50"
                                     onClick={() => router.push(`/admin/academy/cohorts/${cohort.id}`)}
                                 >
-                                    <div className="flex justify-between">
-                                        <h3 className="font-medium text-slate-900">{cohort.name}</h3>
-                                        <span className={`text-xs font-medium uppercase ${cohort.status === 'active' ? 'text-green-600' : 'text-slate-500'
+                                    <div className="flex items-start justify-between gap-2">
+                                        <h3 className="font-medium text-slate-900 text-sm md:text-base truncate min-w-0 flex-1">
+                                            {cohort.name}
+                                        </h3>
+                                        <span className={`flex-shrink-0 text-xs font-medium uppercase px-2 py-0.5 rounded ${statusColors[cohort.status] || "text-slate-500 bg-slate-100"
                                             }`}>
                                             {cohort.status}
                                         </span>
                                     </div>
-                                    <div className="flex justify-between text-sm text-slate-600">
-                                        <span>Starts: {new Date(cohort.start_date).toLocaleDateString()}</span>
-                                        <span>Ends: {new Date(cohort.end_date).toLocaleDateString()}</span>
+                                    <div className="flex flex-col sm:flex-row sm:justify-between gap-1 text-xs text-slate-600 mt-2">
+                                        <span>
+                                            📅 {new Date(cohort.start_date).toLocaleDateString()} - {new Date(cohort.end_date).toLocaleDateString()}
+                                        </span>
+                                        <span>👥 {cohort.capacity} spots</span>
                                     </div>
-                                    <div className="text-xs text-slate-500">Capacity: {cohort.capacity}</div>
                                 </Card>
                             ))}
                         </div>

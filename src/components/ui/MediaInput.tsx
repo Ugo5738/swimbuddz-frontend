@@ -51,7 +51,13 @@ export function MediaInput({
         switch (purpose) {
             case 'profile_photo':
             case 'cover_image':
+            case 'content_image':
+            case 'category_image':
+            case 'collection_image':
+            case 'product_image':
                 return 'image/*';
+            case 'size_chart':
+                return 'image/*,.pdf';
             case 'milestone_evidence':
                 return 'image/*,video/*';
             case 'milestone_video':

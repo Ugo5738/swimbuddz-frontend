@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
-import { Plus, Users, Trash2 } from "lucide-react";
+import { Textarea } from "@/components/ui/Textarea";
 import { apiEndpoints } from "@/lib/config";
+import { Plus, Trash2, Users } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface VolunteerRole {
     id: string;
@@ -26,7 +26,7 @@ export default function AdminVolunteersPage() {
     const [formData, setFormData] = useState({
         title: "",
         description: "",
-        category: "logistics",
+        category: "event_logistics",
         slots_available: "",
         is_active: true,
     });
@@ -74,7 +74,7 @@ export default function AdminVolunteersPage() {
                 setFormData({
                     title: "",
                     description: "",
-                    category: "logistics",
+                    category: "event_logistics",
                     slots_available: "",
                     is_active: true,
                 });
@@ -124,15 +124,17 @@ export default function AdminVolunteersPage() {
     return (
         <div className="mx-auto max-w-6xl space-y-6 py-8">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900">Volunteer Role Management</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Volunteer Role Management</h1>
                     <p className="mt-2 text-slate-600">Create and manage volunteer opportunities</p>
                 </div>
-                <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    Create Role
-                </Button>
+                {!showCreateModal && (
+                    <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 w-fit">
+                        <Plus className="h-4 w-4" />
+                        Create Role
+                    </Button>
+                )}
             </div>
 
             {/* Create Role Modal */}
@@ -165,11 +167,13 @@ export default function AdminVolunteersPage() {
                                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                 required
                             >
+                                <option value="event_logistics">Event Logistics</option>
+                                <option value="peer_mentor">Peer Mentor</option>
+                                <option value="social_ambassador">Social Ambassador</option>
                                 <option value="media">Media & Photography</option>
-                                <option value="logistics">Logistics Support</option>
-                                <option value="admin">Administrative</option>
-                                <option value="coaching_support">Coaching Assistant</option>
                                 <option value="lane_marshal">Lane Marshal</option>
+                                <option value="coaching_support">Coaching Assistant</option>
+                                <option value="admin">Administrative</option>
                             </Select>
 
                             <Input
@@ -213,7 +217,7 @@ export default function AdminVolunteersPage() {
             {/* Roles List */}
             {loading ? (
                 <div className="py-12 text-center text-slate-600">Loading roles...</div>
-            ) : roles.length === 0 ? (
+            ) : roles.length === 0 && !showCreateModal ? (
                 <Card className="p-12 text-center">
                     <Users className="mx-auto h-12 w-12 text-slate-400" />
                     <h3 className="mt-4 text-lg font-semibold text-slate-900">No roles created yet</h3>
@@ -221,7 +225,7 @@ export default function AdminVolunteersPage() {
                         Create your first volunteer role to get started!
                     </p>
                 </Card>
-            ) : (
+            ) : roles.length > 0 ? (
                 <div className="space-y-4">
                     {roles.map((role) => (
                         <Card key={role.id} className="p-6">
@@ -276,7 +280,7 @@ export default function AdminVolunteersPage() {
                         </Card>
                     ))}
                 </div>
-            )}
+            ) : null}
         </div>
     );
 }

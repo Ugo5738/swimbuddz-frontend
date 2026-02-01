@@ -16,6 +16,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 const levelLabels: Record<ProgramLevel, string> = {
     [ProgramLevel.BEGINNER_1]: "Beginner 1",
@@ -42,6 +43,8 @@ export default function ProgramDetailPage() {
     const [cohorts, setCohorts] = useState<Cohort[]>([]);
     const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isInterested, setIsInterested] = useState(false);
+    const [interestLoading, setInterestLoading] = useState(false);
 
     useEffect(() => {
         if (programId) {
@@ -52,12 +55,13 @@ export default function ProgramDetailPage() {
     const loadData = async () => {
         try {
             setLoading(true);
-            const [programData, milestonesData, cohortsData, enrollmentsData] =
+            const [programData, milestonesData, cohortsData, enrollmentsData, interestData] =
                 await Promise.all([
                     AcademyApi.getProgram(programId),
                     AcademyApi.listMilestones(programId),
                     AcademyApi.listCohorts(programId),
                     AcademyApi.getMyEnrollments().catch(() => []),
+                    AcademyApi.checkProgramInterest(programId).catch(() => ({ registered: false })),
                 ]);
 
             setProgram(programData);
@@ -65,10 +69,31 @@ export default function ProgramDetailPage() {
             // Only show open cohorts
             setCohorts(cohortsData.filter((c) => c.status === CohortStatus.OPEN));
             setEnrollments(enrollmentsData);
+            setIsInterested(interestData.registered);
         } catch (error) {
             console.error("Failed to load program:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleNotifyClick = async () => {
+        setInterestLoading(true);
+        try {
+            if (isInterested) {
+                const result = await AcademyApi.removeProgramInterest(programId);
+                setIsInterested(false);
+                toast.success(result.message);
+            } else {
+                const result = await AcademyApi.registerProgramInterest(programId);
+                setIsInterested(true);
+                toast.success(result.message);
+            }
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Something went wrong";
+            toast.error(message);
+        } finally {
+            setInterestLoading(false);
         }
     };
 
@@ -110,7 +135,7 @@ export default function ProgramDetailPage() {
         : "Free";
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-4 md:space-y-8">
             {/* Breadcrumb */}
             <Link
                 href="/account/academy/browse"
@@ -120,8 +145,8 @@ export default function ProgramDetailPage() {
             </Link>
 
             {/* Hero Section */}
-            <div className="relative rounded-2xl overflow-hidden">
-                <div className="relative h-64 bg-gradient-to-br from-cyan-500 to-blue-600">
+            <div className="relative rounded-xl md:rounded-2xl overflow-hidden">
+                <div className="relative h-40 md:h-64 bg-gradient-to-br from-cyan-500 to-blue-600">
                     {program.cover_image_url && (
                         <Image
                             src={program.cover_image_url}
@@ -133,18 +158,20 @@ export default function ProgramDetailPage() {
                         />
                     )}
                 </div>
-                <div className="absolute inset-0 flex items-end p-8 bg-gradient-to-t from-black/60 to-transparent pointer-events-none">
-                    <div className="text-white space-y-2">
-                        <Badge className={levelColors[program.level]}>
-                            {levelLabels[program.level]}
-                        </Badge>
-                        {isEnrolledInProgram && (
-                            <Badge className="bg-green-500 text-white ml-2">
-                                ✓ Enrolled
+                <div className="absolute inset-0 flex items-end p-4 md:p-8 bg-gradient-to-t from-black/60 to-transparent pointer-events-none">
+                    <div className="text-white space-y-1 md:space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                            <Badge className={levelColors[program.level]}>
+                                {levelLabels[program.level]}
                             </Badge>
-                        )}
-                        <h1 className="text-4xl font-bold">{program.name}</h1>
-                        <div className="flex items-center gap-6 text-lg text-white/80">
+                            {isEnrolledInProgram && (
+                                <Badge className="bg-green-500 text-white">
+                                    ✓ Enrolled
+                                </Badge>
+                            )}
+                        </div>
+                        <h1 className="text-2xl md:text-4xl font-bold">{program.name}</h1>
+                        <div className="flex items-center gap-4 md:gap-6 text-sm md:text-lg text-white/80">
                             <span>📅 {program.duration_weeks} weeks</span>
                             <span className="font-bold text-white">{price}</span>
                         </div>
@@ -153,15 +180,15 @@ export default function ProgramDetailPage() {
             </div>
 
             {/* Content Grid */}
-            <div className="grid gap-8 lg:grid-cols-3">
+            <div className="grid gap-4 md:gap-8 lg:grid-cols-3">
                 {/* Main Content */}
-                <div className="lg:col-span-2 space-y-8">
+                <div className="lg:col-span-2 space-y-4 md:space-y-8">
                     {/* Description */}
-                    <Card className="p-6">
-                        <h2 className="text-xl font-semibold text-slate-900 mb-4">
+                    <Card className="p-4 md:p-6">
+                        <h2 className="text-lg md:text-xl font-semibold text-slate-900 mb-3 md:mb-4">
                             About This Program
                         </h2>
-                        <p className="text-slate-600 leading-relaxed">
+                        <p className="text-sm md:text-base text-slate-600 leading-relaxed">
                             {program.description ||
                                 "No description available for this program."}
                         </p>
@@ -169,8 +196,8 @@ export default function ProgramDetailPage() {
 
                     {/* Milestones */}
                     {milestones.length > 0 && (
-                        <Card className="p-6">
-                            <h2 className="text-xl font-semibold text-slate-900 mb-4">
+                        <Card className="p-4 md:p-6">
+                            <h2 className="text-lg md:text-xl font-semibold text-slate-900 mb-3 md:mb-4">
                                 What You&apos;ll Learn
                             </h2>
                             <div className="space-y-3">
@@ -179,15 +206,15 @@ export default function ProgramDetailPage() {
                                         key={milestone.id}
                                         className="flex items-start gap-3"
                                     >
-                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center text-sm font-medium">
+                                        <span className="flex-shrink-0 w-5 h-5 md:w-6 md:h-6 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center text-xs md:text-sm font-medium">
                                             {index + 1}
                                         </span>
                                         <div>
-                                            <h4 className="font-medium text-slate-900">
+                                            <h4 className="font-medium text-slate-900 text-sm md:text-base">
                                                 {milestone.name}
                                             </h4>
                                             {milestone.criteria && (
-                                                <p className="text-sm text-slate-600">
+                                                <p className="text-xs md:text-sm text-slate-600">
                                                     {milestone.criteria}
                                                 </p>
                                             )}
@@ -200,26 +227,37 @@ export default function ProgramDetailPage() {
                 </div>
 
                 {/* Sidebar - Available Cohorts */}
-                <div className="space-y-6">
-                    <Card className="p-6">
-                        <h2 className="text-xl font-semibold text-slate-900 mb-4">
+                <div className="space-y-4 md:space-y-6">
+                    <Card className="p-4 md:p-6">
+                        <h2 className="text-lg md:text-xl font-semibold text-slate-900 mb-3 md:mb-4">
                             Available Cohorts
                         </h2>
                         {cohorts.length === 0 ? (
-                            <div className="text-center py-6 space-y-3">
-                                <span className="text-4xl">📅</span>
-                                <p className="text-slate-600">
+                            <div className="text-center py-4 md:py-6 space-y-3">
+                                <span className="text-3xl md:text-4xl">📅</span>
+                                <p className="text-sm md:text-base text-slate-600">
                                     No open cohorts at the moment.
                                 </p>
-                                <p className="text-sm text-slate-500">
-                                    Want to be notified when new cohorts open?
+                                <p className="text-xs md:text-sm text-slate-500">
+                                    {isInterested
+                                        ? "You'll be notified when new cohorts open!"
+                                        : "Want to be notified when new cohorts open?"}
                                 </p>
-                                <Button variant="outline" size="sm">
-                                    Get Notified
+                                <Button
+                                    variant={isInterested ? "secondary" : "outline"}
+                                    size="sm"
+                                    onClick={handleNotifyClick}
+                                    disabled={interestLoading}
+                                >
+                                    {interestLoading
+                                        ? "..."
+                                        : isInterested
+                                            ? "✓ Notifications On"
+                                            : "Get Notified"}
                                 </Button>
                             </div>
                         ) : (
-                            <div className="space-y-4">
+                            <div className="space-y-3 md:space-y-4">
                                 {cohorts.map((cohort) => {
                                     const enrollment = getEnrollmentForCohort(
                                         cohort.id
@@ -229,19 +267,19 @@ export default function ProgramDetailPage() {
                                     return (
                                         <div
                                             key={cohort.id}
-                                            className="border rounded-lg p-4 hover:border-cyan-300 transition-colors"
+                                            className="border rounded-lg p-3 md:p-4 hover:border-cyan-300 transition-colors"
                                         >
                                             <div className="flex items-start justify-between gap-2 mb-2">
-                                                <h4 className="font-semibold text-slate-900">
+                                                <h4 className="font-semibold text-slate-900 text-sm md:text-base">
                                                     {cohort.name}
                                                 </h4>
                                                 {isEnrolled && (
-                                                    <Badge className="bg-green-100 text-green-700">
+                                                    <Badge className="bg-green-100 text-green-700 text-xs">
                                                         Enrolled
                                                     </Badge>
                                                 )}
                                             </div>
-                                            <div className="text-sm text-slate-600 space-y-1">
+                                            <div className="text-xs md:text-sm text-slate-600 space-y-1">
                                                 <p>
                                                     📅{" "}
                                                     {new Date(
@@ -272,6 +310,7 @@ export default function ProgramDetailPage() {
                                                             : undefined
                                                     }
                                                     className="w-full"
+                                                    size="sm"
                                                 >
                                                     {isEnrolled
                                                         ? "View Enrollment"
@@ -286,11 +325,11 @@ export default function ProgramDetailPage() {
                     </Card>
 
                     {/* Program Info */}
-                    <Card className="p-6 bg-slate-50">
-                        <h3 className="font-semibold text-slate-900 mb-3">
+                    <Card className="p-4 md:p-6 bg-slate-50">
+                        <h3 className="font-semibold text-slate-900 mb-3 text-sm md:text-base">
                             Program Details
                         </h3>
-                        <dl className="space-y-2 text-sm">
+                        <dl className="space-y-2 text-xs md:text-sm">
                             <div className="flex justify-between">
                                 <dt className="text-slate-500">Duration</dt>
                                 <dd className="font-medium text-slate-900">

@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Textarea } from "@/components/ui/Textarea";
+import { apiGet } from "@/lib/api";
+import { formatAnnouncementCategory } from "@/lib/communications";
 import { apiEndpoints } from "@/lib/config";
 import { format } from "date-fns";
 import { ArrowLeft, Calendar, MessageCircle, User } from "lucide-react";
@@ -49,11 +51,11 @@ export default function AnnouncementDetailPage() {
 
     const fetchAnnouncement = async () => {
         try {
-            const response = await fetch(`${apiEndpoints.announcements}/${announcementId}`);
-            if (response.ok) {
-                const data = await response.json();
-                setAnnouncement(data);
-            }
+            const data = await apiGet<Announcement>(
+                `/api/v1/communications/announcements/${announcementId}`,
+                { auth: true }
+            );
+            setAnnouncement(data);
         } catch (error) {
             console.error("Failed to fetch announcement:", error);
         } finally {
@@ -142,7 +144,7 @@ export default function AnnouncementDetailPage() {
             <header className="space-y-3">
                 <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
                     <Badge variant="info" className="capitalize">
-                        {announcement.category}
+                        {formatAnnouncementCategory(announcement.category)}
                     </Badge>
                     {announcement.is_pinned && (
                         <Badge variant="warning">Pinned</Badge>

@@ -4,8 +4,9 @@ import { parseBlockContent, serializeBlocks } from "@/components/editor";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
 import { MediaInput } from "@/components/ui/MediaInput";
+import { Select } from "@/components/ui/Select";
+import { apiGet } from "@/lib/api";
 import { apiEndpoints } from "@/lib/config";
 import { PartialBlock } from "@blocknote/core";
 import { format } from "date-fns";
@@ -38,6 +39,10 @@ interface ContentPost {
     created_at: string;
 }
 
+interface AdminMemberRef {
+    id: string;
+}
+
 export default function AdminContentPage() {
     const [posts, setPosts] = useState<ContentPost[]>([]);
     const [loading, setLoading] = useState(true);
@@ -46,6 +51,7 @@ export default function AdminContentPage() {
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
     const [editorContent, setEditorContent] = useState<PartialBlock[]>([]);
+    const [createdBy, setCreatedBy] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         title: "",
         summary: "",
@@ -57,6 +63,19 @@ export default function AdminContentPage() {
 
     useEffect(() => {
         fetchPosts();
+    }, []);
+
+    useEffect(() => {
+        const fetchAdminMember = async () => {
+            try {
+                const member = await apiGet<AdminMemberRef>("/api/v1/members/me", { auth: true });
+                setCreatedBy(member.id);
+            } catch (error) {
+                console.error("Failed to resolve admin member id:", error);
+            }
+        };
+
+        fetchAdminMember();
     }, []);
 
     const fetchPosts = async () => {
@@ -81,8 +100,11 @@ export default function AdminContentPage() {
         e.preventDefault();
 
         try {
-            // TODO: Get created_by from auth context
-            const createdBy = "temp-admin-id";
+            if (!createdBy) {
+                console.error("Missing admin member id. Unable to create post.");
+                alert("Unable to create post. Please refresh and try again.");
+                return;
+            }
 
             const payload = {
                 ...formData,
@@ -181,15 +203,17 @@ export default function AdminContentPage() {
     return (
         <div className="mx-auto max-w-6xl space-y-6 py-8">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900">Content Management</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Content Management</h1>
                     <p className="mt-2 text-slate-600">Create and manage swimming tips & articles with Notion-style editing</p>
                 </div>
-                <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    Create Post
-                </Button>
+                {!showCreateModal && (
+                    <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 w-fit">
+                        <Plus className="h-4 w-4" />
+                        Create Post
+                    </Button>
+                )}
             </div>
 
             {/* Create/Edit Post Modal */}
@@ -238,12 +262,33 @@ export default function AdminContentPage() {
                                 placeholder="Brief summary to entice readers..."
                             />
 
+                            <MediaInput
+                                label="Featured Image (displayed at top of article)"
+                                purpose="content_image"
+                                mode="both"
+                                value={formData.featured_image_media_id || null}
+                                onChange={(mediaId, fileUrl) => setFormData({
+                                    ...formData,
+                                    featured_image_media_id: mediaId || "",
+                                    featured_image_url: fileUrl || ""
+                                })}
+                            />
+
                             {/* Block Editor / Preview */}
                             {showPreview ? (
                                 <div className="space-y-2">
                                     <label className="block text-sm font-medium text-slate-700">Preview</label>
                                     <div className="border border-slate-200 rounded-lg p-6 bg-white min-h-[400px]">
                                         <h1 className="text-3xl font-bold text-slate-900 mb-4">{formData.title || "Untitled"}</h1>
+                                        {formData.featured_image_url && (
+                                            <div className="mb-6 -mx-6 -mt-2">
+                                                <img
+                                                    src={formData.featured_image_url}
+                                                    alt="Featured"
+                                                    className="w-full h-64 object-cover"
+                                                />
+                                            </div>
+                                        )}
                                         <BlockViewer content={serializeBlocks(editorContent)} />
                                     </div>
                                 </div>
@@ -267,10 +312,13 @@ export default function AdminContentPage() {
                                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                     required
                                 >
+                                    <option value="getting_started">Getting Started</option>
                                     <option value="swimming_tips">Swimming Tips</option>
                                     <option value="safety">Safety</option>
                                     <option value="breathing">Breathing Techniques</option>
                                     <option value="technique">Technique</option>
+                                    <option value="health_recovery">Health &amp; Recovery</option>
+                                    <option value="community_culture">Community &amp; Culture</option>
                                     <option value="news">News</option>
                                     <option value="education">Education</option>
                                 </Select>
@@ -286,18 +334,6 @@ export default function AdminContentPage() {
                                     <option value="academy">Academy Members Only</option>
                                 </Select>
                             </div>
-
-                            <MediaInput
-                                label="Featured Image"
-                                purpose="content_image"
-                                mode="both"
-                                value={formData.featured_image_media_id || null}
-                                onChange={(mediaId, fileUrl) => setFormData({
-                                    ...formData,
-                                    featured_image_media_id: mediaId || "",
-                                    featured_image_url: fileUrl || ""
-                                })}
-                            />
 
                             <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
                                 <Button
@@ -322,7 +358,7 @@ export default function AdminContentPage() {
             {/* Posts List */}
             {loading ? (
                 <div className="py-12 text-center text-slate-600">Loading posts...</div>
-            ) : posts.length === 0 ? (
+            ) : posts.length === 0 && !showCreateModal ? (
                 <Card className="p-12 text-center">
                     <BookOpen className="mx-auto h-12 w-12 text-slate-400" />
                     <h3 className="mt-4 text-lg font-semibold text-slate-900">No posts created yet</h3>
@@ -330,7 +366,7 @@ export default function AdminContentPage() {
                         Create your first post to get started!
                     </p>
                 </Card>
-            ) : (
+            ) : posts.length > 0 ? (
                 <div className="space-y-4">
                     {posts.map((post) => (
                         <Card key={post.id} className="p-6">
@@ -388,7 +424,7 @@ export default function AdminContentPage() {
                         </Card>
                     ))}
                 </div>
-            )}
+            ) : null}
         </div>
     );
 }

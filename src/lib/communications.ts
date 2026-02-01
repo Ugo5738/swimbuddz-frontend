@@ -5,10 +5,25 @@ import { apiDelete, apiGet, apiPatch, apiPost } from "./api";
 export enum AnnouncementCategory {
     RAIN_UPDATE = "rain_update",
     SCHEDULE_CHANGE = "schedule_change",
-    ACADEMY = "academy",
+    ACADEMY_UPDATE = "academy_update",
     EVENT = "event",
     COMPETITION = "competition",
     GENERAL = "general",
+}
+
+const announcementCategoryLabels: Record<string, string> = {
+    rain_update: "Rain Update",
+    schedule_change: "Schedule Change",
+    academy_update: "Academy Update",
+    event: "Event",
+    competition: "Competition",
+    general: "General",
+};
+
+export function formatAnnouncementCategory(category: string): string {
+    if (!category) return "";
+    const normalized = category.toLowerCase();
+    return announcementCategoryLabels[normalized] || normalized.replace(/_/g, " ");
 }
 
 // --- Types ---
@@ -19,8 +34,13 @@ export interface Announcement {
     summary?: string;
     body: string;
     category: AnnouncementCategory;
+    status: "draft" | "published" | "archived";
+    audience: "community" | "club" | "academy";
+    expires_at?: string | null;
+    notify_email: boolean;
+    notify_push: boolean;
     is_pinned: boolean;
-    published_at: string;
+    published_at?: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -30,8 +50,13 @@ export interface AnnouncementCreate {
     summary?: string;
     body: string;
     category?: AnnouncementCategory;
+    status?: "draft" | "published" | "archived";
+    audience?: "community" | "club" | "academy";
+    expires_at?: string | null;
+    notify_email?: boolean;
+    notify_push?: boolean;
     is_pinned?: boolean;
-    published_at: string;
+    published_at?: string | null;
 }
 
 export interface AnnouncementUpdate {
@@ -39,15 +64,24 @@ export interface AnnouncementUpdate {
     summary?: string;
     body?: string;
     category?: AnnouncementCategory;
+    status?: "draft" | "published" | "archived";
+    audience?: "community" | "club" | "academy";
+    expires_at?: string | null;
+    notify_email?: boolean;
+    notify_push?: boolean;
     is_pinned?: boolean;
-    published_at?: string;
+    published_at?: string | null;
 }
 
 // --- API Functions ---
 
 export const CommunicationsApi = {
     // Announcements
-    listAnnouncements: () => apiGet<Announcement[]>("/api/v1/communications/announcements/"),
+    listAnnouncements: (includeAll = false) =>
+        apiGet<Announcement[]>(
+            `/api/v1/communications/announcements/${includeAll ? "?include_all=true" : ""}`,
+            includeAll ? { auth: true } : undefined
+        ),
 
     getAnnouncement: (id: string) => apiGet<Announcement>(`/api/v1/communications/announcements/${id}`),
 

@@ -126,15 +126,17 @@ export default function AdminEventsPage() {
     return (
         <div className="mx-auto max-w-6xl space-y-6 py-8">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900">Event Management</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Event Management</h1>
                     <p className="mt-2 text-slate-600">Create and manage community events</p>
                 </div>
-                <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    Create Event
-                </Button>
+                {!showCreateModal && (
+                    <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 w-fit">
+                        <Plus className="h-4 w-4" />
+                        Create Event
+                    </Button>
+                )}
             </div>
 
             {/* Create Event Modal */}
@@ -245,7 +247,7 @@ export default function AdminEventsPage() {
             {/* Events List */}
             {loading ? (
                 <LoadingPage text="Loading events..." />
-            ) : events.length === 0 ? (
+            ) : events.length === 0 && !showCreateModal ? (
                 <Card className="p-12 text-center">
                     <Calendar className="mx-auto h-12 w-12 text-slate-400" />
                     <h3 className="mt-4 text-lg font-semibold text-slate-900">No events created yet</h3>
@@ -253,7 +255,7 @@ export default function AdminEventsPage() {
                         Create your first event to get started!
                     </p>
                 </Card>
-            ) : (
+            ) : events.length > 0 ? (
                 <div className="space-y-4">
                     {events.map((event) => (
                         <Card key={event.id} className="p-6">
@@ -310,7 +312,7 @@ export default function AdminEventsPage() {
                         </Card>
                     ))}
                 </div>
-            )}
+            ) : null}
         </div>
     );
 }

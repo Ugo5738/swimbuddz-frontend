@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
-import { Plus, Trophy, Trash2 } from "lucide-react";
 import { apiEndpoints } from "@/lib/config";
+import { Plus, Trash2, Trophy } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface ClubChallenge {
     id: string;
@@ -119,15 +119,17 @@ export default function AdminChallengesPage() {
     return (
         <div className="mx-auto max-w-6xl space-y-6 py-8">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900">Club Challenge Management</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Club Challenge Management</h1>
                     <p className="mt-2 text-slate-600">Create and manage club challenges & badges</p>
                 </div>
-                <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    Create Challenge
-                </Button>
+                {!showCreateModal && (
+                    <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 w-fit">
+                        <Plus className="h-4 w-4" />
+                        Create Challenge
+                    </Button>
+                )}
             </div>
 
             {/* Create Challenge Modal */}
@@ -190,7 +192,7 @@ export default function AdminChallengesPage() {
             {/* Challenges List */}
             {loading ? (
                 <div className="py-12 text-center text-slate-600">Loading challenges...</div>
-            ) : challenges.length === 0 ? (
+            ) : challenges.length === 0 && !showCreateModal ? (
                 <Card className="p-12 text-center">
                     <Trophy className="mx-auto h-12 w-12 text-slate-400" />
                     <h3 className="mt-4 text-lg font-semibold text-slate-900">
@@ -200,7 +202,7 @@ export default function AdminChallengesPage() {
                         Create your first club challenge to get started!
                     </p>
                 </Card>
-            ) : (
+            ) : challenges.length > 0 ? (
                 <div className="space-y-4">
                     {challenges.map((challenge) => (
                         <Card key={challenge.id} className="p-6">
@@ -259,7 +261,7 @@ export default function AdminChallengesPage() {
                         </Card>
                     ))}
                 </div>
-            )}
+            ) : null}
         </div>
     );
 }

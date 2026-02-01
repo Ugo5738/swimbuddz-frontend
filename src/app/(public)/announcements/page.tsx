@@ -4,7 +4,8 @@ import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
-import { apiEndpoints } from "@/lib/config";
+import { apiGet } from "@/lib/api";
+import { formatAnnouncementCategory } from "@/lib/communications";
 import { format } from "date-fns";
 import { Pin } from "lucide-react";
 import Link from "next/link";
@@ -31,13 +32,11 @@ export default function AnnouncementsPage() {
 
     const fetchAnnouncements = async () => {
         try {
-            const response = await fetch(apiEndpoints.announcements);
-            if (response.ok) {
-                const data = await response.json();
-                setAnnouncements(data);
-            } else {
-                setError("Unable to load announcements. Try again soon.");
-            }
+            const data = await apiGet<Announcement[]>(
+                "/api/v1/communications/announcements",
+                { auth: true }
+            );
+            setAnnouncements(data || []);
         } catch (err) {
             console.error("Failed to fetch announcements:", err);
             setError("Unable to load announcements. Try again soon.");
@@ -78,7 +77,7 @@ export default function AnnouncementsPage() {
                             <Card key={announcement.id} className="space-y-3">
                                 <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
                                     <Badge variant="info" className="capitalize">
-                                        {announcement.category}
+                                        {formatAnnouncementCategory(announcement.category)}
                                     </Badge>
                                     {announcement.is_pinned && (
                                         <Badge variant="warning" className="flex items-center gap-1">
