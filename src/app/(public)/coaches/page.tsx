@@ -135,7 +135,7 @@ export default function PublicCoachesPage() {
                     Share your expertise and help others learn to swim. Apply to become a SwimBuddz coach today.
                 </p>
                 <Link href="/coach/apply">
-                    <Button className="bg-white text-emerald-700 hover:bg-emerald-50">
+                    <Button variant="secondary" className="!bg-white !text-emerald-700 hover:!bg-emerald-50 font-semibold">
                         Apply to Coach
                     </Button>
                 </Link>
