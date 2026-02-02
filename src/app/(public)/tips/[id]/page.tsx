@@ -15,7 +15,7 @@ interface ContentPost {
     id: string;
     title: string;
     summary: string;
-    content: string;
+    body: string;
     category: string;
     tier_access: string;
     featured_image_url: string | null;
@@ -209,7 +209,7 @@ export default function TipDetailPage() {
 
                 {/* Content */}
                 <div className="prose prose-slate prose-lg max-w-none">
-                    <BlockViewer content={post.content} />
+                    <BlockViewer content={post.body} />
                 </div>
             </article>
 

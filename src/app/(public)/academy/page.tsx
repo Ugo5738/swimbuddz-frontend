@@ -202,7 +202,7 @@ export default function AcademyPage() {
                             Secure your spot in our next structured learning cycle.
                         </p>
                     </div>
-                    <Link href="/member/academy" className="text-cyan-600 font-semibold hover:text-cyan-700 flex items-center gap-1">
+                    <Link href="/upgrade/academy/details" className="text-cyan-600 font-semibold hover:text-cyan-700 flex items-center gap-1">
                         View all programs <span aria-hidden="true">&rarr;</span>
                     </Link>
                 </div>

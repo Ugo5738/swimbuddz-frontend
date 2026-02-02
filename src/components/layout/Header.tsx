@@ -45,7 +45,7 @@ export function Header() {
     // Determine if current user is admin
     const isAdmin = session?.user?.email && ADMIN_EMAIL &&
         session.user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
-    const dashboardUrl = isAdmin ? "/admin" : "/account";
+    const dashboardUrl = isAdmin ? "/admin/dashboard" : "/account";
 
     useEffect(() => {
         // Get initial session
