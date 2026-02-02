@@ -65,7 +65,7 @@ export default function CommunityTipsPage() {
     const fetchPosts = async () => {
         try {
             // Fetch published content posts from API
-            const response = await fetch(`${apiEndpoints.content}?published_only=true`);
+            const response = await fetch(`${apiEndpoints.content}/?published_only=true`);
             if (response.ok) {
                 const data = await response.json();
                 setPosts(data);

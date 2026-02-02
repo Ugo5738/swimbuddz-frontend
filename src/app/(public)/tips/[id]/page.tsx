@@ -1,7 +1,6 @@
 "use client";
 
 import { BlockViewer } from "@/components/editor/BlockViewer";
-import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiEndpoints } from "@/lib/config";
@@ -83,7 +82,7 @@ export default function TipDetailPage() {
 
                 // Fetch related posts in same category
                 const relatedResponse = await fetch(
-                    `${apiEndpoints.content}?published_only=true&category=${data.category}`
+                    `${apiEndpoints.content}/?published_only=true&category=${data.category}`
                 );
                 if (relatedResponse.ok) {
                     const relatedData = await relatedResponse.json();

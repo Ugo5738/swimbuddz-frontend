@@ -1,6 +1,5 @@
 "use client";
 
-import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiEndpoints } from "@/lib/config";
@@ -53,7 +52,7 @@ export default function TipsPage() {
 
     const fetchPosts = async () => {
         try {
-            const response = await fetch(`${apiEndpoints.content}?published_only=true`);
+            const response = await fetch(`${apiEndpoints.content}/?published_only=true`);
             if (response.ok) {
                 const data = await response.json();
                 // Only show community-accessible posts to public visitors
