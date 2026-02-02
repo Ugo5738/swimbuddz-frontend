@@ -7,8 +7,19 @@
 const envApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 const fallbackApiBaseUrl =
     typeof window === 'undefined' ? 'http://localhost:8000' : '';
-export const API_BASE_URL =
-    envApiBaseUrl !== undefined ? envApiBaseUrl : fallbackApiBaseUrl;
+
+// Ensure HTTPS in production to prevent mixed content errors
+function normalizeApiUrl(url: string | undefined): string {
+    if (!url) return fallbackApiBaseUrl;
+
+    // In production (non-localhost), enforce HTTPS
+    if (!url.includes('localhost') && url.startsWith('http://')) {
+        return url.replace('http://', 'https://');
+    }
+    return url;
+}
+
+export const API_BASE_URL = normalizeApiUrl(envApiBaseUrl);
 
 // External Links
 export const WHATSAPP_GROUP_URL = process.env.NEXT_PUBLIC_WHATSAPP_URL || 'https://chat.whatsapp.com/BVtV5iKH9LhCBphqXqDVYv';
