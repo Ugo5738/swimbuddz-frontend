@@ -236,7 +236,7 @@ export default function HomePage() {
   return (
     <div className="space-y-20">
       {/* 1. HERO SECTION - Full screen height, full width */}
-      <section className="relative overflow-hidden min-h-[70vh] sm:min-h-[85vh] flex items-center -mx-4 md:-mx-[calc(50vw-50%)] w-[calc(100%+2rem)] md:w-screen" style={{ marginTop: '-2rem' }}>
+      <section className="relative overflow-hidden min-h-[60vh] sm:min-h-[85vh] flex items-center -mx-4 md:-mx-[calc(50vw-50%)] w-[calc(100%+2rem)] md:w-screen" style={{ marginTop: '-2rem' }}>
         {/* Background Image Slideshow */}
         <div className="absolute inset-0">
           {heroImages.map((img, idx) => (
@@ -248,7 +248,7 @@ export default function HomePage() {
               <img
                 src={img}
                 alt=""
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover object-top sm:object-center"
                 loading={idx === 0 ? "eager" : "lazy"}
               />
             </div>
