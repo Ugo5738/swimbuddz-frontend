@@ -132,6 +132,53 @@ export default function AdminContentPage() {
         }
     };
 
+    const handleUpdatePost = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!editingPost) return;
+
+        try {
+            const payload = {
+                title: formData.title,
+                summary: formData.summary,
+                body: serializeBlocks(editorContent),
+                category: formData.category,
+                tier_access: formData.tier_access,
+                featured_image_url: formData.featured_image_url || null,
+                featured_image_media_id: formData.featured_image_media_id || null,
+            };
+
+            const response = await fetch(
+                `${apiEndpoints.content}/${editingPost.id}`,
+                {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                }
+            );
+
+            if (response.ok) {
+                setShowCreateModal(false);
+                resetForm();
+                await fetchPosts();
+            } else {
+                const error = await response.json();
+                console.error("Failed to update post:", error);
+                alert("Failed to update post. Please try again.");
+            }
+        } catch (error) {
+            console.error("Failed to update post:", error);
+        }
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        if (editingPost) {
+            handleUpdatePost(e);
+        } else {
+            handleCreatePost(e);
+        }
+    };
+
     const handlePublishPost = async (postId: string) => {
         try {
             const response = await fetch(
@@ -220,7 +267,7 @@ export default function AdminContentPage() {
             {showCreateModal && (
                 <div className={editorModalClasses}>
                     <Card className={`p-6 ${isFullscreen ? 'min-h-screen rounded-none' : ''}`}>
-                        <form onSubmit={handleCreatePost} className="space-y-4">
+                        <form onSubmit={handleSubmit} className="space-y-4">
                             {/* Header with title and controls */}
                             <div className="flex items-center justify-between">
                                 <h2 className="text-xl font-semibold text-slate-900">
