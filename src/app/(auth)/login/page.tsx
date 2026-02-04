@@ -16,6 +16,38 @@ const ADMIN_EMAILS = [
   "admin@admin.com",
 ].filter(Boolean) as string[];
 
+/** Convert raw error messages to user-friendly text */
+function formatErrorMessage(message: string): string {
+  // Handle rate limit errors
+  if (message.includes("RATE_LIMIT") || message.toLowerCase().includes("rate limit")) {
+    return "Too many attempts. Please wait a few minutes before trying again.";
+  }
+  // Handle JSON-like error responses
+  if (message.startsWith("{") || message.includes('"detail"')) {
+    try {
+      const parsed = JSON.parse(message);
+      if (parsed.detail) {
+        // Recursively format the detail message
+        return formatErrorMessage(parsed.detail);
+      }
+    } catch {
+      // If parsing fails, try to extract meaningful text
+      const detailMatch = message.match(/"detail"\s*:\s*"([^"]+)"/);
+      if (detailMatch) {
+        return formatErrorMessage(detailMatch[1]);
+      }
+    }
+  }
+  // Handle common Supabase errors
+  if (message.includes("Invalid login credentials")) {
+    return "Invalid email or password. Please check your credentials and try again.";
+  }
+  if (message.includes("Email not confirmed")) {
+    return "Please confirm your email address first. Check your inbox for the confirmation link.";
+  }
+  return message;
+}
+
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -61,7 +93,7 @@ function LoginContent() {
 
     if (signInError) {
       setLoading(false);
-      setError(signInError.message);
+      setError(formatErrorMessage(signInError.message));
       return;
     }
 
@@ -76,7 +108,7 @@ function LoginContent() {
     const completion = await completePendingRegistrationOnBackend();
     if (completion.status === "error") {
       setLoading(false);
-      setError(`Signed in, but ${completion.message}`);
+      setError(formatErrorMessage(completion.message));
       return;
     }
 

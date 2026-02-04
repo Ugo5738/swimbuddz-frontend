@@ -1,12 +1,29 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
 import { supabase } from "@/lib/auth";
+import Link from "next/link";
+import { useState } from "react";
+
+/** Convert raw error messages to user-friendly text */
+function formatErrorMessage(message: string): string {
+    // Handle rate limit errors
+    if (message.includes("RATE_LIMIT") || message.toLowerCase().includes("rate limit")) {
+        return "Too many attempts. Please wait a few minutes before trying again.";
+    }
+    // Handle email already confirmed
+    if (message.toLowerCase().includes("already confirmed") || message.toLowerCase().includes("already registered")) {
+        return "This email is already confirmed. You can log in directly.";
+    }
+    // Handle user not found
+    if (message.toLowerCase().includes("user not found") || message.toLowerCase().includes("no user")) {
+        return "No account found with this email. Please check the email address or register a new account.";
+    }
+    return message;
+}
 
 export default function ResendConfirmationPage() {
     const [email, setEmail] = useState("");
@@ -21,9 +38,12 @@ export default function ResendConfirmationPage() {
         setLoading(true);
 
         try {
+            const emailRedirectTo =
+                typeof window !== "undefined" ? `${window.location.origin}/confirm` : undefined;
             const { error: resendError } = await supabase.auth.resend({
                 type: "signup",
                 email: email.trim(),
+                options: emailRedirectTo ? { emailRedirectTo } : undefined,
             });
 
             if (resendError) {
@@ -33,7 +53,7 @@ export default function ResendConfirmationPage() {
             setSuccess(true);
         } catch (err) {
             const message = err instanceof Error ? err.message : "Failed to resend confirmation email";
-            setError(message);
+            setError(formatErrorMessage(message));
         } finally {
             setLoading(false);
         }
