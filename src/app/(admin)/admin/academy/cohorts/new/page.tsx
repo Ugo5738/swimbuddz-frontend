@@ -10,6 +10,7 @@ import {
     AcademyApi,
     CohortStatus,
     LocationType,
+    type CoachAssignmentInput,
     type Program,
 } from "@/lib/academy";
 import { SessionLocation, SessionsApi, SessionType } from "@/lib/sessions";
@@ -134,7 +135,7 @@ export default function NewCohortPage() {
         setSaving(true);
         try {
             // Build coach_assignments array from lead + assistant selections
-            const coachAssignments: { coach_id: string; role: string }[] = [];
+            const coachAssignments: CoachAssignmentInput[] = [];
             if (formData.lead_coach_id) {
                 coachAssignments.push({ coach_id: formData.lead_coach_id, role: "lead" });
             }
