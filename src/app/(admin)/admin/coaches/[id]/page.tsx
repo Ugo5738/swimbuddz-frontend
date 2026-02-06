@@ -1,9 +1,11 @@
 "use client";
 
+import { CoachReadinessCard } from "@/components/coaches/CoachReadinessCard";
 import { CoachStatusBadge } from "@/components/coaches/CoachStatusBadge";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { Modal } from "@/components/ui/Modal";
 import { TagList } from "@/components/ui/TagList";
@@ -27,9 +29,12 @@ export default function AdminCoachDetailPage() {
     // Modal states
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [showInfoModal, setShowInfoModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [rejectReason, setRejectReason] = useState("");
     const [infoMessage, setInfoMessage] = useState("");
     const [adminNotes, setAdminNotes] = useState("");
+    const [deleteConfirm, setDeleteConfirm] = useState("");
+    const [deleteLoading, setDeleteLoading] = useState(false);
 
     useEffect(() => {
         loadApplication();
@@ -100,6 +105,24 @@ export default function AdminCoachDetailPage() {
         }
     };
 
+    const handleDelete = async () => {
+        if (deleteConfirm.trim().toUpperCase() !== "DELETE") {
+            setError("Type DELETE to confirm this action.");
+            return;
+        }
+        setDeleteLoading(true);
+        setError(null);
+        try {
+            await CoachesApi.deleteApplication(coachId);
+            setShowDeleteModal(false);
+            router.push("/admin/coaches");
+        } catch (err) {
+            setError("Failed to delete coach profile");
+        } finally {
+            setDeleteLoading(false);
+        }
+    };
+
     if (loading) {
         return <LoadingCard text="Loading application..." />;
     }
@@ -137,19 +160,31 @@ export default function AdminCoachDetailPage() {
                     </div>
                 </div>
 
-                {canTakeAction && (
-                    <div className="flex gap-2">
-                        <Button variant="outline" onClick={() => setShowInfoModal(true)}>
-                            Request Info
-                        </Button>
-                        <Button variant="outline" onClick={() => setShowRejectModal(true)}>
-                            Reject
-                        </Button>
-                        <Button onClick={handleApprove} disabled={actionLoading}>
-                            {actionLoading ? "..." : "Approve"}
-                        </Button>
-                    </div>
-                )}
+                <div className="flex gap-2">
+                    {canTakeAction && (
+                        <>
+                            <Button variant="outline" onClick={() => setShowInfoModal(true)}>
+                                Request Info
+                            </Button>
+                            <Button variant="outline" onClick={() => setShowRejectModal(true)}>
+                                Reject
+                            </Button>
+                            <Button onClick={handleApprove} disabled={actionLoading}>
+                                {actionLoading ? "..." : "Approve"}
+                            </Button>
+                        </>
+                    )}
+                    <Button
+                        variant="outline"
+                        className="border-rose-200 text-rose-700 hover:bg-rose-50"
+                        onClick={() => {
+                            setDeleteConfirm("");
+                            setShowDeleteModal(true);
+                        }}
+                    >
+                        Delete Coach
+                    </Button>
+                </div>
             </div>
 
             {error && <Alert variant="error" title="Error">{error}</Alert>}
@@ -407,6 +442,11 @@ export default function AdminCoachDetailPage() {
                         />
                     </Card>
 
+                    {/* Coach Readiness (only for approved coaches) */}
+                    {application.status === "approved" && application.member_id && (
+                        <CoachReadinessCard coachId={application.member_id} />
+                    )}
+
                     {/* Rejection Reason */}
                     {application.rejection_reason && (
                         <Card className="p-6 border-red-100 bg-red-50">
@@ -469,6 +509,36 @@ export default function AdminCoachDetailPage() {
                     </Button>
                     <Button className="flex-1" onClick={handleRequestInfo} disabled={actionLoading}>
                         {actionLoading ? "..." : "Send Request"}
+                    </Button>
+                </div>
+            </Modal>
+
+            {/* Delete Modal */}
+            <Modal
+                isOpen={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                title="Delete Coach Profile"
+            >
+                <p className="text-sm text-slate-600 mb-4">
+                    This will delete the coach profile and related coach agreements so the member can re-apply from
+                    scratch. The member account and login will be preserved.
+                </p>
+                <Input
+                    label="Type DELETE to confirm"
+                    value={deleteConfirm}
+                    onChange={(e) => setDeleteConfirm(e.target.value)}
+                />
+                <div className="flex gap-2 mt-4">
+                    <Button variant="outline" className="flex-1" onClick={() => setShowDeleteModal(false)}>
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="danger"
+                        className="flex-1"
+                        onClick={handleDelete}
+                        disabled={deleteLoading}
+                    >
+                        {deleteLoading ? "..." : "Delete"}
                     </Button>
                 </div>
             </Modal>

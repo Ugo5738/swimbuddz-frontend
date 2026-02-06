@@ -21,6 +21,80 @@
   }
 }
 
+@layer components {
+  .markdown-content {
+    @apply text-slate-900 leading-relaxed;
+  }
+
+  .markdown-content h1 {
+    @apply mt-8 scroll-mt-24 text-3xl font-bold text-slate-900;
+  }
+
+  .markdown-content h2 {
+    @apply mt-8 scroll-mt-24 text-2xl font-semibold text-slate-900;
+  }
+
+  .markdown-content h3 {
+    @apply mt-6 scroll-mt-24 text-xl font-semibold text-slate-900;
+  }
+
+  .markdown-content p {
+    @apply my-4 text-slate-700;
+  }
+
+  .markdown-content strong {
+    @apply text-slate-900;
+  }
+
+  .markdown-content ul {
+    @apply my-4 list-disc pl-6 text-slate-700;
+  }
+
+  .markdown-content ol {
+    @apply my-4 list-decimal pl-6 text-slate-700;
+  }
+
+  .markdown-content li {
+    @apply my-1;
+  }
+
+  .markdown-content hr {
+    @apply my-8 border-slate-200;
+  }
+
+  .markdown-content table {
+    @apply w-full border-collapse text-left text-sm;
+  }
+
+  .markdown-content thead {
+    @apply bg-slate-50;
+  }
+
+  .markdown-content th {
+    @apply border border-slate-200 px-3 py-2 font-semibold text-slate-900;
+  }
+
+  .markdown-content td {
+    @apply border border-slate-200 px-3 py-2 align-top text-slate-700;
+  }
+
+  .markdown-content pre {
+    @apply my-6 overflow-x-auto rounded-xl bg-slate-900 p-4 text-slate-100;
+  }
+
+  .markdown-content code {
+    @apply rounded bg-slate-100 px-1 py-0.5 text-[0.95em] text-slate-900;
+  }
+
+  .markdown-content pre code {
+    @apply bg-transparent p-0 text-slate-100;
+  }
+
+  .markdown-content input[type="checkbox"] {
+    @apply mr-2 translate-y-0.5;
+  }
+}
+
 @layer utilities {
   /* Hide scrollbar while maintaining scroll functionality */
   .scrollbar-hide {

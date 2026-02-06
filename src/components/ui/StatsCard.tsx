@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Card } from "./Card";
 
-type ColorVariant = "cyan" | "amber" | "green" | "purple" | "orange" | "slate" | "rose";
+type ColorVariant = "cyan" | "amber" | "green" | "blue" | "purple" | "orange" | "slate" | "rose";
 
 const colorStyles: Record<ColorVariant, {
     border: string;
@@ -37,6 +37,14 @@ const colorStyles: Record<ColorVariant, {
         iconText: "text-green-600",
         labelText: "text-slate-600",
         linkText: "text-green-600 hover:text-green-700",
+    },
+    blue: {
+        border: "border-l-blue-500",
+        bg: "",
+        iconBg: "bg-blue-100",
+        iconText: "text-blue-600",
+        labelText: "text-slate-600",
+        linkText: "text-blue-600 hover:text-blue-700",
     },
     purple: {
         border: "border-l-purple-500",

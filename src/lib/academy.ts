@@ -123,6 +123,19 @@ export interface Cohort {
     updated_at: string;
 }
 
+export type CoachAssignmentRole = "lead" | "assistant" | "shadow" | "observer";
+
+export interface CoachAssignmentInput {
+    coach_id: string;
+    role?: CoachAssignmentRole;
+}
+
+export interface CohortCreate extends Partial<Cohort> {
+    program_id: string;
+    coach_id?: string | null;
+    coach_assignments?: CoachAssignmentInput[];
+}
+
 export interface Enrollment {
     id: string;
     program_id?: string | null;
@@ -254,6 +267,91 @@ export interface MemberBasicInfo {
     email?: string;
 }
 
+// --- Cohort Complexity Scoring Types ---
+
+export enum ProgramCategory {
+    LEARN_TO_SWIM = "learn_to_swim",
+    SPECIAL_POPULATIONS = "special_populations",
+    INSTITUTIONAL = "institutional",
+    COMPETITIVE_ELITE = "competitive_elite",
+    CERTIFICATIONS = "certifications",
+    SPECIALIZED_DISCIPLINES = "specialized_disciplines",
+    ADJACENT_SERVICES = "adjacent_services",
+}
+
+export enum CoachGrade {
+    GRADE_1 = "grade_1",
+    GRADE_2 = "grade_2",
+    GRADE_3 = "grade_3",
+}
+
+export interface DimensionScore {
+    score: number; // 1-5
+    rationale?: string;
+}
+
+export interface CohortComplexityScoreCreate {
+    category: ProgramCategory;
+    dimension_1: DimensionScore;
+    dimension_2: DimensionScore;
+    dimension_3: DimensionScore;
+    dimension_4: DimensionScore;
+    dimension_5: DimensionScore;
+    dimension_6: DimensionScore;
+    dimension_7: DimensionScore;
+}
+
+export interface CohortComplexityScoreResponse {
+    id: string;
+    cohort_id: string;
+    category: ProgramCategory;
+    dimension_1_score: number;
+    dimension_1_rationale?: string;
+    dimension_2_score: number;
+    dimension_2_rationale?: string;
+    dimension_3_score: number;
+    dimension_3_rationale?: string;
+    dimension_4_score: number;
+    dimension_4_rationale?: string;
+    dimension_5_score: number;
+    dimension_5_rationale?: string;
+    dimension_6_score: number;
+    dimension_6_rationale?: string;
+    dimension_7_score: number;
+    dimension_7_rationale?: string;
+    total_score: number;
+    required_coach_grade: CoachGrade;
+    pay_band_min: number;
+    pay_band_max: number;
+    scored_by_id: string;
+    scored_at: string;
+    reviewed_by_id?: string;
+    reviewed_at?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ComplexityScoreCalculation {
+    total_score: number;
+    required_coach_grade: CoachGrade;
+    pay_band_min: number;
+    pay_band_max: number;
+}
+
+export interface EligibleCoach {
+    member_id: string;
+    name: string;
+    email?: string;
+    grade: CoachGrade;
+    total_coaching_hours?: number;
+    average_feedback_rating?: number;
+}
+
+export interface DimensionLabels {
+    category: ProgramCategory;
+    labels: string[];
+}
+
 export interface NextSessionInfo {
     date?: string;
     location?: string;
@@ -290,7 +388,7 @@ export const AcademyApi = {
         const query = programId ? `?program_id=${programId}` : "";
         return apiGet<Cohort[]>(`/api/v1/academy/cohorts${query}`);
     },
-    createCohort: (data: Partial<Cohort>) => apiPost<Cohort>("/api/v1/academy/cohorts", data, { auth: true }),
+    createCohort: (data: CohortCreate) => apiPost<Cohort>("/api/v1/academy/cohorts", data, { auth: true }),
     getCohort: (id: string) => apiGet<Cohort>(`/api/v1/academy/cohorts/${id}`),
     updateCohort: (id: string, data: Partial<Cohort>) => apiPut<Cohort>(`/api/v1/academy/cohorts/${id}`, data, { auth: true }),
     deleteCohort: (id: string) => apiDelete<void>(`/api/v1/academy/cohorts/${id}`, { auth: true }),
@@ -406,4 +504,138 @@ export const AcademyApi = {
         apiDelete<{ message: string; registered: boolean }>(`/api/v1/academy/programs/${programId}/interest`, { auth: true }),
     checkProgramInterest: (programId: string) =>
         apiGet<{ registered: boolean }>(`/api/v1/academy/programs/${programId}/interest`, { auth: true }),
+
+    // --- Cohort Complexity Scoring ---
+    previewComplexityScore: (category: ProgramCategory, dimensionScores: number[]) => {
+        const scoresParam = dimensionScores.map((s) => `dimension_scores=${s}`).join("&");
+        return apiPost<ComplexityScoreCalculation>(
+            `/api/v1/academy/scoring/calculate?category=${category}&${scoresParam}`,
+            {},
+            { auth: true }
+        );
+    },
+
+    getDimensionLabels: (category: ProgramCategory) =>
+        apiGet<DimensionLabels>(`/api/v1/academy/scoring/dimensions/${category}`, { auth: true }),
+
+    getCohortComplexityScore: (cohortId: string) =>
+        apiGet<CohortComplexityScoreResponse>(`/api/v1/academy/cohorts/${cohortId}/complexity-score`, { auth: true }),
+
+    createCohortComplexityScore: (cohortId: string, data: CohortComplexityScoreCreate) =>
+        apiPost<CohortComplexityScoreResponse>(`/api/v1/academy/cohorts/${cohortId}/complexity-score`, data, { auth: true }),
+
+    updateCohortComplexityScore: (cohortId: string, data: Partial<CohortComplexityScoreCreate>) =>
+        apiPut<CohortComplexityScoreResponse>(`/api/v1/academy/cohorts/${cohortId}/complexity-score`, data, { auth: true }),
+
+    deleteCohortComplexityScore: (cohortId: string) =>
+        apiDelete<void>(`/api/v1/academy/cohorts/${cohortId}/complexity-score`, { auth: true }),
+
+    markComplexityScoreReviewed: (cohortId: string) =>
+        apiPost<{ message: string }>(`/api/v1/academy/cohorts/${cohortId}/complexity-score/review`, {}, { auth: true }),
+
+    getEligibleCoaches: (cohortId: string) =>
+        apiGet<EligibleCoach[]>(`/api/v1/academy/cohorts/${cohortId}/eligible-coaches`, { auth: true }),
+};
+
+
+// ============================================================================
+// COACH ASSIGNMENT TYPES & API
+// ============================================================================
+
+export interface CoachAssignment {
+    id: string;
+    cohort_id: string;
+    coach_id: string;
+    role: "lead" | "assistant" | "shadow" | "observer";
+    start_date: string;
+    end_date?: string;
+    assigned_by_id: string;
+    status: "active" | "completed" | "cancelled";
+    notes?: string;
+    is_session_override: boolean;
+    session_date?: string;
+    created_at: string;
+    updated_at: string;
+    coach_name?: string;
+    cohort_name?: string;
+    program_name?: string;
+}
+
+export interface CoachAssignmentCreate {
+    cohort_id: string;
+    coach_id: string;
+    role: "lead" | "assistant" | "shadow" | "observer";
+    start_date?: string;
+    end_date?: string;
+    notes?: string;
+    is_session_override?: boolean;
+    session_date?: string;
+}
+
+export interface ShadowEvaluation {
+    id: string;
+    assignment_id: string;
+    evaluator_id: string;
+    session_date: string;
+    scores: Record<string, number>;
+    feedback?: string;
+    recommendation: string;
+    created_at: string;
+    evaluator_name?: string;
+}
+
+export interface ShadowEvaluationCreate {
+    session_date: string;
+    scores: Record<string, number>;
+    feedback?: string;
+    recommendation: "continue_shadow" | "ready_for_assistant" | "ready_for_lead";
+}
+
+export interface ReadinessCheck {
+    name: string;
+    description: string;
+    status: "passed" | "pending" | "failed";
+    required: boolean;
+    details?: string;
+}
+
+export interface CoachReadiness {
+    coach_id: string;
+    coach_name?: string;
+    target_grade: string;
+    is_ready: boolean;
+    checks: ReadinessCheck[];
+    missing_requirements: string[];
+    recommendations: string[];
+}
+
+export const CoachAssignmentApi = {
+    listByCohort: (cohortId: string) =>
+        apiGet<CoachAssignment[]>(`/api/v1/academy/coach-assignments/cohort/${cohortId}`, { auth: true }),
+
+    listMyAssignments: () =>
+        apiGet<CoachAssignment[]>("/api/v1/academy/coach-assignments/coach/me", { auth: true }),
+
+    listByCoach: (coachId: string) =>
+        apiGet<CoachAssignment[]>(`/api/v1/academy/coach-assignments/coach/${coachId}`, { auth: true }),
+
+    create: (data: CoachAssignmentCreate) =>
+        apiPost<CoachAssignment>("/api/v1/academy/coach-assignments/", data, { auth: true }),
+
+    update: (id: string, data: Partial<CoachAssignment>) =>
+        apiPatch<CoachAssignment>(`/api/v1/academy/coach-assignments/${id}`, data, { auth: true }),
+
+    cancel: (id: string) =>
+        apiDelete<void>(`/api/v1/academy/coach-assignments/${id}`, { auth: true }),
+
+    // Shadow evaluations
+    createEvaluation: (assignmentId: string, data: ShadowEvaluationCreate) =>
+        apiPost<ShadowEvaluation>(`/api/v1/academy/coach-assignments/${assignmentId}/evaluations`, data, { auth: true }),
+
+    listEvaluations: (assignmentId: string) =>
+        apiGet<ShadowEvaluation[]>(`/api/v1/academy/coach-assignments/${assignmentId}/evaluations`, { auth: true }),
+
+    // Readiness
+    getReadiness: (coachId: string, targetGrade: string = "grade_1") =>
+        apiGet<CoachReadiness>(`/api/v1/academy/coach-assignments/readiness/${coachId}?target_grade=${targetGrade}`, { auth: true }),
 };

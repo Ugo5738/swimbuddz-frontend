@@ -8,6 +8,7 @@ import { LoadingCard } from "@/components/ui/LoadingCard";
 import { TagList } from "@/components/ui/TagList";
 import { AdminCoachApplicationListItem, CoachesApi } from "@/lib/coaches";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type StatusFilter = CoachStatus | "all";
@@ -51,13 +52,39 @@ export default function AdminCoachesPage() {
         }
     };
 
+    const pathname = usePathname();
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Coach Applications</h1>
-                    <p className="text-slate-600 mt-1">Review and manage coach applications</p>
+                    <h1 className="text-2xl font-bold text-slate-900">Coach Management</h1>
+                    <p className="text-slate-600 mt-1">Review and manage coaches</p>
                 </div>
+            </div>
+
+            {/* Sub-navigation tabs */}
+            <div className="flex gap-4 border-b border-slate-200">
+                <Link
+                    href="/admin/coaches"
+                    className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
+                        pathname === "/admin/coaches"
+                            ? "border-cyan-600 text-cyan-600"
+                            : "border-transparent text-slate-500 hover:text-slate-700"
+                    }`}
+                >
+                    Applications
+                </Link>
+                <Link
+                    href="/admin/coaches/agreements"
+                    className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
+                        pathname?.startsWith("/admin/coaches/agreements")
+                            ? "border-cyan-600 text-cyan-600"
+                            : "border-transparent text-slate-500 hover:text-slate-700"
+                    }`}
+                >
+                    Agreements
+                </Link>
             </div>
 
             <FilterTabs

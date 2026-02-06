@@ -5,7 +5,7 @@
  * Run `npm run generate:types` to update types after backend changes.
  */
 
-import { apiGet, apiPatch, apiPost } from "./api";
+import { apiDelete, apiGet, apiPatch, apiPost } from "./api";
 import type { components } from "./api-types";
 
 // === Generated Types (re-exported from api-types.ts) ===
@@ -116,6 +116,12 @@ export const CoachesApi = {
             { message, admin_notes: adminNotes },
             { auth: true }
         ),
+
+    /**
+     * Delete a coach application/profile (admin only).
+     */
+    deleteApplication: (id: string) =>
+        apiDelete<{ message: string }>(`/api/v1/admin/coaches/applications/${id}`, { auth: true }),
 };
 
 // === Helper functions ===
@@ -193,3 +199,199 @@ export const levelsTaughtOptions = [
     { value: "advanced", label: "Advanced" },
     { value: "competitive", label: "Competitive" },
 ];
+
+// ============================================================================
+// COACH AGREEMENT TYPES & API
+// ============================================================================
+
+export type SignatureType = "typed_name" | "drawn" | "checkbox" | "uploaded_image";
+
+export interface AgreementContent {
+    version: string;
+    title: string;
+    content: string;
+    content_hash: string;
+    effective_date: string;
+    requires_signature: boolean;
+}
+
+export interface SignAgreementRequest {
+    signature_type: SignatureType;
+    signature_data: string;
+    signature_media_id?: string;
+    agreement_version: string;
+    agreement_content_hash: string;
+    handbook_acknowledged: boolean;
+    handbook_version?: string;
+}
+
+export interface CoachAgreementResponse {
+    id: string;
+    coach_profile_id: string;
+    agreement_version: string;
+    signature_type: string;
+    signed_at: string;
+    is_active: boolean;
+    ip_address?: string;
+    created_at: string;
+}
+
+export interface AgreementStatus {
+    has_signed_current_version: boolean;
+    current_version: string;
+    signed_version?: string;
+    signed_at?: string;
+    requires_new_signature: boolean;
+}
+
+export interface AgreementHistoryItem {
+    id: string;
+    agreement_version: string;
+    signature_type: string;
+    signed_at: string;
+    is_active: boolean;
+    superseded_at?: string;
+}
+
+export const AgreementApi = {
+    /**
+     * Get the current agreement content for signing.
+     */
+    getCurrentAgreement: () =>
+        apiGet<AgreementContent>("/api/v1/coaches/agreement/current", { auth: true }),
+
+    /**
+     * Check if the coach has signed the current agreement.
+     */
+    getAgreementStatus: () =>
+        apiGet<AgreementStatus>("/api/v1/coaches/agreement/status", { auth: true }),
+
+    /**
+     * Sign the coach agreement.
+     */
+    signAgreement: (data: SignAgreementRequest) =>
+        apiPost<CoachAgreementResponse>("/api/v1/coaches/agreement/sign", data, { auth: true }),
+
+    /**
+     * Get the coach's agreement signing history.
+     */
+    getAgreementHistory: () =>
+        apiGet<AgreementHistoryItem[]>("/api/v1/coaches/agreement/history", { auth: true }),
+};
+
+
+// ============================================================================
+// ADMIN AGREEMENT VERSION MANAGEMENT
+// ============================================================================
+
+export interface AgreementVersionListItem {
+    id: string;
+    version: string;
+    title: string;
+    effective_date: string;
+    is_current: boolean;
+    content_hash: string;
+    signature_count: number;
+    created_at: string;
+}
+
+export interface AgreementVersionDetail extends AgreementVersionListItem {
+    content: string;
+    created_by_id: string | null;
+    active_signature_count: number;
+    updated_at: string;
+}
+
+export interface CreateAgreementVersionRequest {
+    version: string;
+    title: string;
+    content: string;
+    effective_date: string;
+}
+
+export const AdminAgreementApi = {
+    /**
+     * List all agreement versions (admin only).
+     */
+    list: () =>
+        apiGet<AgreementVersionListItem[]>("/api/v1/admin/coaches/agreements", {
+            auth: true,
+        }),
+
+    /**
+     * Get a specific agreement version with signature stats (admin only).
+     */
+    get: (versionId: string) =>
+        apiGet<AgreementVersionDetail>(
+            `/api/v1/admin/coaches/agreements/${versionId}`,
+            { auth: true }
+        ),
+
+    /**
+     * Create a new agreement version (admin only).
+     * Auto-sets as current and notifies active coaches.
+     */
+    create: (data: CreateAgreementVersionRequest) =>
+        apiPost<AgreementVersionDetail>(
+            "/api/v1/admin/coaches/agreements",
+            data,
+            { auth: true }
+        ),
+};
+
+
+// ============================================================================
+// HANDBOOK
+// ============================================================================
+
+export interface HandbookContent {
+    version: string;
+    title: string;
+    content: string;
+    content_hash: string;
+    effective_date: string;
+}
+
+export interface HandbookVersionListItem {
+    id: string;
+    version: string;
+    title: string;
+    effective_date: string;
+    is_current: boolean;
+    content_hash: string;
+    created_at: string;
+}
+
+export const HandbookApi = {
+    /**
+     * Get the current handbook content.
+     */
+    getCurrentHandbook: () =>
+        apiGet<HandbookContent>("/api/v1/coaches/handbook/current", { auth: true }),
+
+    /**
+     * Get a specific handbook version.
+     */
+    getHandbookVersion: (version: string) =>
+        apiGet<HandbookContent>(`/api/v1/coaches/handbook/${version}`, { auth: true }),
+};
+
+export const AdminHandbookApi = {
+    /**
+     * List all handbook versions (admin only).
+     */
+    list: () =>
+        apiGet<HandbookVersionListItem[]>("/api/v1/admin/coaches/handbook/versions", {
+            auth: true,
+        }),
+
+    /**
+     * Create a new handbook version (admin only).
+     */
+    create: (data: { version: string; title: string; content: string; effective_date: string }) =>
+        apiPost<HandbookVersionListItem>(
+            "/api/v1/admin/coaches/handbook",
+            data,
+            { auth: true }
+        ),
+};

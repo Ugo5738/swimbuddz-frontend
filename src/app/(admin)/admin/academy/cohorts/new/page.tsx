@@ -41,8 +41,9 @@ export default function NewCohortPage() {
         status: CohortStatus.OPEN,
         allow_mid_entry: false,
         require_approval: false, // If true, enrollment needs admin approval even after payment
-        // Coach (coach_id is the member_id of the assigned coach)
-        coach_id: null as string | null,
+        // Coach assignments
+        lead_coach_id: null as string | null,
+        assistant_coach_id: null as string | null,
         // Location
         timezone: "Africa/Lagos",
         location_type: LocationType.POOL,
@@ -125,9 +126,22 @@ export default function NewCohortPage() {
             toast.error("Please fill in all required fields");
             return;
         }
+        if (formData.lead_coach_id && formData.assistant_coach_id && formData.lead_coach_id === formData.assistant_coach_id) {
+            toast.error("Lead and assistant coach cannot be the same person");
+            return;
+        }
 
         setSaving(true);
         try {
+            // Build coach_assignments array from lead + assistant selections
+            const coachAssignments: { coach_id: string; role: string }[] = [];
+            if (formData.lead_coach_id) {
+                coachAssignments.push({ coach_id: formData.lead_coach_id, role: "lead" });
+            }
+            if (formData.assistant_coach_id) {
+                coachAssignments.push({ coach_id: formData.assistant_coach_id, role: "assistant" });
+            }
+
             const cohort = await AcademyApi.createCohort({
                 program_id: selectedProgramId,
                 name: formData.name,
@@ -136,7 +150,9 @@ export default function NewCohortPage() {
                 capacity: formData.capacity,
                 status: formData.status,
                 allow_mid_entry: formData.allow_mid_entry,
-                coach_id: formData.coach_id || undefined,
+                // Send lead coach_id for backward compat + coach_assignments for new system
+                coach_id: formData.lead_coach_id || undefined,
+                coach_assignments: coachAssignments.length > 0 ? coachAssignments : undefined,
                 timezone: formData.timezone,
                 location_type: formData.location_type,
                 location_name: formData.location_name || undefined,
@@ -353,12 +369,23 @@ export default function NewCohortPage() {
 
                         <div className="border-t pt-4 mt-4">
                             <h3 className="font-semibold text-slate-900 mb-3">Coach Assignment</h3>
-                            <CoachPicker
-                                value={formData.coach_id}
-                                onChange={(memberId) => setFormData({ ...formData, coach_id: memberId })}
-                                label="Assign Coach"
-                                hint="Optionally assign a coach to this cohort"
-                            />
+                            <div className="space-y-4">
+                                <CoachPicker
+                                    value={formData.lead_coach_id}
+                                    onChange={(memberId) => setFormData({ ...formData, lead_coach_id: memberId })}
+                                    label="Lead Coach"
+                                    hint="Primary coach responsible for this cohort"
+                                />
+                                <CoachPicker
+                                    value={formData.assistant_coach_id}
+                                    onChange={(memberId) => setFormData({ ...formData, assistant_coach_id: memberId })}
+                                    label="Assistant Coach (optional)"
+                                    hint="Supporting coach for the cohort"
+                                />
+                                {formData.lead_coach_id && formData.assistant_coach_id && formData.lead_coach_id === formData.assistant_coach_id && (
+                                    <p className="text-sm text-amber-600">⚠ Lead and assistant coach cannot be the same person</p>
+                                )}
+                            </div>
                         </div>
 
                         <div className="border-t pt-4 mt-4">
@@ -535,6 +562,8 @@ export default function NewCohortPage() {
                                     <div><span className="text-slate-500">End:</span> {formData.end_date || "—"}</div>
                                     <div><span className="text-slate-500">Location:</span> {formData.location_name || "Not set"}</div>
                                     <div><span className="text-slate-500">Status:</span> {formData.status}</div>
+                                    <div><span className="text-slate-500">Lead Coach:</span> {formData.lead_coach_id ? "Assigned" : "Not assigned"}</div>
+                                    <div><span className="text-slate-500">Assistant Coach:</span> {formData.assistant_coach_id ? "Assigned" : "None"}</div>
                                 </div>
                             </div>
 

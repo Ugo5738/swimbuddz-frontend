@@ -1,7 +1,9 @@
 "use client";
 
 import { supabase } from "@/lib/auth";
-import { getCoachApplicationStatus } from "@/lib/coach";
+import { getCoachApplicationStatus, type AgreementStatus } from "@/lib/coach";
+import { AgreementApi } from "@/lib/coaches";
+import { MembersApi } from "@/lib/members";
 import {
     Bell,
     BookOpen,
@@ -9,6 +11,7 @@ import {
     CheckCircle,
     ChevronRight,
     CreditCard,
+    FileSignature,
     GraduationCap,
     Home,
     LayoutDashboard,
@@ -18,11 +21,11 @@ import {
     User,
     Users,
     Wallet,
-    X,
+    X
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { type ReactNode, useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 type CoachLayoutProps = {
     children: ReactNode;
@@ -60,6 +63,7 @@ const baseNavSections: NavSection[] = [
         title: "Resources",
         items: [
             { href: "/coach/resources", label: "Teaching Materials", icon: BookOpen },
+            { href: "/coach/handbook", label: "Coach Handbook", icon: FileSignature },
         ],
     },
     {
@@ -74,6 +78,7 @@ const baseNavSections: NavSection[] = [
         items: [
             { href: "/coach/profile", label: "My Profile", icon: User },
             { href: "/coach/preferences", label: "Preferences", icon: Settings },
+            { href: "/coach/agreement", label: "Coach Agreement", icon: FileSignature },
         ],
     },
 ];
@@ -85,6 +90,15 @@ export function CoachLayout({ children }: CoachLayoutProps) {
     const [coachName, setCoachName] = useState("Coach");
     const [loading, setLoading] = useState(true);
     const [coachStatus, setCoachStatus] = useState<string | null>(null);
+    const [agreementStatus, setAgreementStatus] = useState<AgreementStatus | null>(null);
+
+    // Pages exempt from gating redirects (to prevent infinite loops)
+    const ONBOARDING_EXEMPT_PATHS = [
+        "/coach/onboarding",
+        "/coach/agreement",
+        "/coach/handbook",
+    ];
+    const AGREEMENT_EXEMPT_PATHS = ["/coach/agreement", "/coach/handbook"];
 
     useEffect(() => {
         async function loadCoachData() {
@@ -92,8 +106,22 @@ export function CoachLayout({ children }: CoachLayoutProps) {
                 const {
                     data: { user },
                 } = await supabase.auth.getUser();
-                if (user?.email) {
-                    setCoachName(user.email.split("@")[0]);
+
+                // Fetch member profile for real name
+                try {
+                    const member = await MembersApi.getMe();
+                    if (member?.first_name) {
+                        setCoachName(
+                            `${member.first_name}${member.last_name ? ` ${member.last_name}` : ""}`
+                        );
+                    } else if (user?.email) {
+                        setCoachName(user.email.split("@")[0]);
+                    }
+                } catch {
+                    // Fallback to email prefix if member fetch fails
+                    if (user?.email) {
+                        setCoachName(user.email.split("@")[0]);
+                    }
                 }
 
                 // Check if user has coach access
@@ -103,6 +131,39 @@ export function CoachLayout({ children }: CoachLayoutProps) {
                     // Redirect to apply page if not approved
                     router.push("/coach/apply");
                     return;
+                }
+
+                // HARD REDIRECT: "approved" coaches must complete onboarding first
+                if (status.status === "approved") {
+                    const isExempt = ONBOARDING_EXEMPT_PATHS.some(
+                        (p) => pathname?.startsWith(p)
+                    );
+                    if (!isExempt) {
+                        router.push("/coach/onboarding");
+                        return;
+                    }
+                }
+
+                // Check agreement status for active coaches
+                if (status.status === "active") {
+                    try {
+                        const agreement = await AgreementApi.getAgreementStatus();
+                        setAgreementStatus(agreement);
+
+                        // HARD REDIRECT: active coaches must sign current agreement
+                        if (!agreement.has_signed_current_version) {
+                            const isExempt = AGREEMENT_EXEMPT_PATHS.some(
+                                (p) => pathname?.startsWith(p)
+                            );
+                            if (!isExempt) {
+                                router.push("/coach/agreement");
+                                return;
+                            }
+                        }
+                    } catch {
+                        // Agreement check failed — allow access but log warning
+                        console.warn("Agreement status check failed");
+                    }
                 }
             } catch (err) {
                 console.error("Failed to load coach data", err);

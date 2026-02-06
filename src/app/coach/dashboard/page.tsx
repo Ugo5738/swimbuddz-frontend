@@ -8,39 +8,110 @@ import { LoadingCard } from "@/components/ui/LoadingCard";
 import { StatsCard } from "@/components/ui/StatsCard";
 import {
     calculateCohortStats,
+    getCoachApplicationStatus,
+    getCoachDashboard,
     getMyCoachCohorts,
     getMyCoachEarnings,
+    getPendingMilestoneReviews,
+    type CoachDashboardSummary,
     type CoachEarnings,
     type Cohort,
+    type PendingMilestoneReview,
 } from "@/lib/coach";
-import { formatDate, formatNaira } from "@/lib/format";
-import { Calendar, DollarSign, GraduationCap, Users } from "lucide-react";
+import { AgreementApi } from "@/lib/coaches";
+import { formatDate, formatNaira, formatRelativeTime } from "@/lib/format";
+import {
+    AlertCircle,
+    Calendar,
+    CheckCircle,
+    ClipboardCheck,
+    DollarSign,
+    GraduationCap,
+    Users,
+} from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 export default function CoachDashboardPage() {
+    const router = useRouter();
     const [cohorts, setCohorts] = useState<Cohort[]>([]);
     const [earnings, setEarnings] = useState<CoachEarnings | null>(null);
+    const [dashboard, setDashboard] = useState<CoachDashboardSummary | null>(null);
+    const [pendingReviews, setPendingReviews] = useState<PendingMilestoneReview[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [accessVerified, setAccessVerified] = useState(false);
+
+    // Defense-in-depth: verify coach status and agreement before showing dashboard
+    useEffect(() => {
+        async function checkAccess() {
+            try {
+                const status = await getCoachApplicationStatus();
+                if (status.status === "approved") {
+                    router.push("/coach/onboarding");
+                    return;
+                }
+                if (status.status === "active") {
+                    try {
+                        const agreement = await AgreementApi.getAgreementStatus();
+                        if (!agreement.has_signed_current_version) {
+                            router.push("/coach/agreement");
+                            return;
+                        }
+                    } catch {
+                        // Agreement check failed — allow access (layout handles gating)
+                    }
+                }
+                setAccessVerified(true);
+            } catch {
+                // Layout-level checks will handle redirect
+                setAccessVerified(true);
+            }
+        }
+        checkAccess();
+    }, [router]);
 
     useEffect(() => {
+        if (!accessVerified) return;
+
         Promise.all([
             getMyCoachCohorts(),
             getMyCoachEarnings().catch(() => null),
+            getCoachDashboard().catch(() => null),
+            getPendingMilestoneReviews().catch(() => []),
         ])
-            .then(([cohortsData, earningsData]) => {
+            .then(([cohortsData, earningsData, dashboardData, reviewsData]) => {
                 setCohorts(cohortsData);
                 setEarnings(earningsData);
+                setDashboard(dashboardData);
+                setPendingReviews(reviewsData);
             })
             .catch((err) => {
                 console.error("Failed to load dashboard data", err);
                 setError("Failed to load your dashboard. Please try again.");
             })
             .finally(() => setLoading(false));
-    }, []);
+    }, [accessVerified]);
 
     const stats = useMemo(() => calculateCohortStats(cohorts), [cohorts]);
+
+    // Use dashboard data if available, otherwise fall back to calculated stats
+    const displayStats = dashboard
+        ? {
+              activeCohorts: dashboard.active_cohorts,
+              upcomingCohorts: dashboard.upcoming_cohorts,
+              completedCohorts: dashboard.completed_cohorts,
+              totalStudents: dashboard.total_students,
+              pendingReviews: dashboard.pending_milestone_reviews,
+          }
+        : {
+              activeCohorts: stats.activeCohorts,
+              upcomingCohorts: stats.upcomingCohorts,
+              completedCohorts: stats.completedCohorts,
+              totalStudents: 0,
+              pendingReviews: 0,
+          };
 
     // Separate active and upcoming cohorts
     const activeCohorts = cohorts.filter((c) => c.status === "active");
@@ -80,32 +151,39 @@ export default function CoachDashboardPage() {
             </header>
 
             {/* Stats Overview */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 <StatsCard
                     label="Active Cohorts"
-                    value={stats.activeCohorts}
+                    value={displayStats.activeCohorts}
                     icon={<GraduationCap className="h-5 w-5" />}
                     color="green"
                     variant="elaborate"
                 />
                 <StatsCard
-                    label="Upcoming Cohorts"
-                    value={stats.upcomingCohorts}
-                    icon={<Calendar className="h-5 w-5" />}
+                    label="Total Students"
+                    value={displayStats.totalStudents}
+                    icon={<Users className="h-5 w-5" />}
                     color="cyan"
                     variant="elaborate"
                 />
                 <StatsCard
-                    label="Next 7 Days"
-                    value={stats.next7Days}
+                    label="Pending Reviews"
+                    value={displayStats.pendingReviews}
+                    icon={<ClipboardCheck className="h-5 w-5" />}
+                    color={displayStats.pendingReviews > 0 ? "amber" : "slate"}
+                    variant="elaborate"
+                />
+                <StatsCard
+                    label="Upcoming"
+                    value={displayStats.upcomingCohorts}
                     icon={<Calendar className="h-5 w-5" />}
-                    color="amber"
+                    color="blue"
                     variant="elaborate"
                 />
                 <StatsCard
                     label="Completed"
-                    value={stats.completedCohorts}
-                    icon={<GraduationCap className="h-5 w-5" />}
+                    value={displayStats.completedCohorts}
+                    icon={<CheckCircle className="h-5 w-5" />}
                     color="slate"
                     variant="elaborate"
                 />
@@ -164,6 +242,64 @@ export default function CoachDashboardPage() {
                         )}
                     </Card>
 
+                    {/* Pending Milestone Reviews */}
+                    {pendingReviews.length > 0 && (
+                        <Card className="p-6 border-amber-200 bg-amber-50/50">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2">
+                                    <AlertCircle className="h-5 w-5 text-amber-600" />
+                                    <div>
+                                        <h2 className="text-xl font-semibold text-slate-900">
+                                            Pending Reviews
+                                        </h2>
+                                        <p className="text-sm text-slate-600">
+                                            Students waiting for milestone approval
+                                        </p>
+                                    </div>
+                                </div>
+                                <Link href="/coach/reviews">
+                                    <Button variant="outline" size="sm">
+                                        Review All
+                                    </Button>
+                                </Link>
+                            </div>
+
+                            <div className="space-y-3">
+                                {pendingReviews.slice(0, 3).map((review) => (
+                                    <div
+                                        key={review.progress_id}
+                                        className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-100"
+                                    >
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium text-slate-900 truncate">
+                                                {review.student_name}
+                                            </p>
+                                            <p className="text-sm text-slate-600 truncate">
+                                                {review.milestone_name}
+                                            </p>
+                                            <p className="text-xs text-slate-500">
+                                                {review.cohort_name} • Claimed{" "}
+                                                {formatRelativeTime(review.claimed_at)}
+                                            </p>
+                                        </div>
+                                        <Link
+                                            href={`/coach/students/${review.enrollment_id}?review=${review.progress_id}`}
+                                        >
+                                            <Button size="sm" variant="secondary">
+                                                Review
+                                            </Button>
+                                        </Link>
+                                    </div>
+                                ))}
+                                {pendingReviews.length > 3 && (
+                                    <p className="text-sm text-center text-amber-700">
+                                        +{pendingReviews.length - 3} more pending reviews
+                                    </p>
+                                )}
+                            </div>
+                        </Card>
+                    )}
+
                     {/* Upcoming Sessions Placeholder */}
                     <Card className="p-6">
                         <div className="flex items-center justify-between mb-4">
@@ -200,6 +336,20 @@ export default function CoachDashboardPage() {
                             Quick Actions
                         </h2>
                         <div className="space-y-2">
+                            {pendingReviews.length > 0 && (
+                                <Link href="/coach/reviews" className="block">
+                                    <Button
+                                        variant="secondary"
+                                        className="w-full justify-start bg-amber-50 hover:bg-amber-100 border-amber-200"
+                                    >
+                                        <ClipboardCheck className="h-4 w-4 mr-2 text-amber-600" />
+                                        Review Milestones
+                                        <Badge variant="warning" className="ml-auto">
+                                            {pendingReviews.length}
+                                        </Badge>
+                                    </Button>
+                                </Link>
+                            )}
                             <Link href="/coach/cohorts" className="block">
                                 <Button variant="secondary" className="w-full justify-start">
                                     <GraduationCap className="h-4 w-4 mr-2" />

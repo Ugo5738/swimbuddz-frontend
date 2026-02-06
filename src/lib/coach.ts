@@ -5,6 +5,9 @@
 
 import { apiGet, apiPost } from "./api";
 
+// Re-export AgreementStatus type from coaches.ts for convenience
+export type { AgreementStatus } from "./coaches";
+
 // --- Types ---
 
 export type CohortStatus = "open" | "active" | "completed" | "cancelled";
@@ -111,6 +114,123 @@ export type CoachProfile = {
     show_in_directory?: boolean;
     created_at: string;
     updated_at: string;
+};
+
+// --- Coach Grade Types ---
+
+export type CoachGrade = "grade_1" | "grade_2" | "grade_3";
+export type ProgramCategory =
+    | "learn_to_swim"
+    | "special_populations"
+    | "institutional"
+    | "competitive_elite"
+    | "certifications"
+    | "specialized_disciplines"
+    | "adjacent_services";
+
+export type CoachGrades = {
+    coach_profile_id: string;
+    member_id: string;
+    display_name: string | null;
+    learn_to_swim_grade: CoachGrade | null;
+    special_populations_grade: CoachGrade | null;
+    institutional_grade: CoachGrade | null;
+    competitive_elite_grade: CoachGrade | null;
+    certifications_grade: CoachGrade | null;
+    specialized_disciplines_grade: CoachGrade | null;
+    adjacent_services_grade: CoachGrade | null;
+    total_coaching_hours: number;
+    cohorts_completed: number;
+    average_feedback_rating: number | null;
+    swimbuddz_level: number | null;
+    last_active_date: string | null;
+    first_aid_cert_expiry: string | null;
+    cpr_expiry_date: string | null;
+    lifeguard_expiry_date: string | null;
+};
+
+export type CoachProgressionStats = {
+    coach_profile_id: string;
+    total_coaching_hours: number;
+    cohorts_completed: number;
+    active_cohorts: number;
+    average_feedback_rating: number | null;
+    swimbuddz_level: number | null;
+    highest_grade: CoachGrade | null;
+    grades_held: string[];
+    credentials_valid: boolean;
+    expiring_soon: string[];
+};
+
+// --- Dashboard Types ---
+
+export type UpcomingSessionSummary = {
+    cohort_id: string;
+    cohort_name: string;
+    program_name: string | null;
+    session_date: string;
+    location_name: string | null;
+    enrolled_count: number;
+};
+
+export type CoachDashboardSummary = {
+    active_cohorts: number;
+    upcoming_cohorts: number;
+    completed_cohorts: number;
+    total_students: number;
+    students_pending_approval: number;
+    pending_milestone_reviews: number;
+    upcoming_sessions_count: number;
+    next_session: UpcomingSessionSummary | null;
+    current_period_earnings: number;
+    pending_payout: number;
+};
+
+export type CoachCohortDetail = {
+    id: string;
+    name: string;
+    program_id: string;
+    program_name: string;
+    program_level: string | null;
+    status: CohortStatus;
+    start_date: string;
+    end_date: string;
+    capacity: number;
+    enrolled_count: number;
+    waitlist_count: number;
+    location_name: string | null;
+    location_address: string | null;
+    required_grade: CoachGrade | null;
+    pay_band_min: number | null;
+    pay_band_max: number | null;
+    weeks_completed: number;
+    total_weeks: number;
+    milestones_count: number;
+    milestones_achieved_count: number;
+};
+
+// --- Milestone Review Types ---
+
+export type PendingMilestoneReview = {
+    progress_id: string;
+    enrollment_id: string;
+    milestone_id: string;
+    milestone_name: string;
+    milestone_type: string;
+    student_member_id: string;
+    student_name: string;
+    student_email: string | null;
+    cohort_id: string;
+    cohort_name: string;
+    evidence_media_id: string | null;
+    student_notes: string | null;
+    claimed_at: string;
+};
+
+export type MilestoneReviewAction = {
+    action: "approve" | "reject";
+    score?: number;
+    coach_notes?: string;
 };
 
 // --- API Functions ---
@@ -439,4 +559,140 @@ export function groupStudentsByProgress(
             completed: [] as Enrollment[],
         }
     );
+}
+
+// ============================================================================
+// COACH DASHBOARD API FUNCTIONS
+// ============================================================================
+
+/**
+ * Get coach dashboard summary with all key metrics.
+ */
+export async function getCoachDashboard(): Promise<CoachDashboardSummary> {
+    return apiGet<CoachDashboardSummary>("/api/v1/academy/coach/me/dashboard", {
+        auth: true,
+    });
+}
+
+/**
+ * Get detailed cohort view for coach dashboard.
+ */
+export async function getCoachCohortDetail(
+    cohortId: string
+): Promise<CoachCohortDetail> {
+    return apiGet<CoachCohortDetail>(
+        `/api/v1/academy/coach/me/cohorts/${cohortId}`,
+        { auth: true }
+    );
+}
+
+/**
+ * Get pending milestone reviews for the current coach.
+ */
+export async function getPendingMilestoneReviews(): Promise<
+    PendingMilestoneReview[]
+> {
+    return apiGet<PendingMilestoneReview[]>(
+        "/api/v1/academy/coach/me/pending-reviews",
+        { auth: true }
+    );
+}
+
+/**
+ * Review (approve/reject) a milestone claim.
+ */
+export async function reviewMilestoneClaim(
+    progressId: string,
+    action: MilestoneReviewAction
+): Promise<{ message: string; progress_id: string; status: string }> {
+    return apiPost(
+        `/api/v1/academy/coach/me/milestone-reviews/${progressId}`,
+        action,
+        { auth: true }
+    );
+}
+
+// ============================================================================
+// COACH GRADES API FUNCTIONS
+// ============================================================================
+
+/**
+ * Get the current coach's grades across all categories.
+ */
+export async function getMyCoachGrades(): Promise<CoachGrades> {
+    return apiGet<CoachGrades>("/api/v1/coaches/me/grades", { auth: true });
+}
+
+/**
+ * Get the current coach's progression statistics.
+ */
+export async function getMyCoachProgression(): Promise<CoachProgressionStats> {
+    return apiGet<CoachProgressionStats>("/api/v1/coaches/me/progression", {
+        auth: true,
+    });
+}
+
+// ============================================================================
+// HELPER FUNCTIONS FOR GRADES
+// ============================================================================
+
+/**
+ * Get human-readable label for a coach grade.
+ */
+export function getGradeLabel(grade: CoachGrade | null): string {
+    if (!grade) return "Not Assigned";
+    const labels: Record<CoachGrade, string> = {
+        grade_1: "Grade 1 (Foundational)",
+        grade_2: "Grade 2 (Technical)",
+        grade_3: "Grade 3 (Advanced)",
+    };
+    return labels[grade] || grade;
+}
+
+/**
+ * Get short label for a coach grade.
+ */
+export function getGradeShortLabel(grade: CoachGrade | null): string {
+    if (!grade) return "-";
+    const labels: Record<CoachGrade, string> = {
+        grade_1: "G1",
+        grade_2: "G2",
+        grade_3: "G3",
+    };
+    return labels[grade] || grade;
+}
+
+/**
+ * Get human-readable label for a program category.
+ */
+export function getCategoryLabel(category: ProgramCategory): string {
+    const labels: Record<ProgramCategory, string> = {
+        learn_to_swim: "Learn to Swim",
+        special_populations: "Special Populations",
+        institutional: "Institutional",
+        competitive_elite: "Competitive & Elite",
+        certifications: "Certifications",
+        specialized_disciplines: "Specialized Disciplines",
+        adjacent_services: "Adjacent Services",
+    };
+    return labels[category] || category;
+}
+
+/**
+ * Get the grade for a specific category from a CoachGrades object.
+ */
+export function getGradeForCategory(
+    grades: CoachGrades,
+    category: ProgramCategory
+): CoachGrade | null {
+    const fieldMap: Record<ProgramCategory, keyof CoachGrades> = {
+        learn_to_swim: "learn_to_swim_grade",
+        special_populations: "special_populations_grade",
+        institutional: "institutional_grade",
+        competitive_elite: "competitive_elite_grade",
+        certifications: "certifications_grade",
+        specialized_disciplines: "specialized_disciplines_grade",
+        adjacent_services: "adjacent_services_grade",
+    };
+    return grades[fieldMap[category]] as CoachGrade | null;
 }

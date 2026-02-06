@@ -1,13 +1,13 @@
 "use client";
 
-import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
 import { EditCohortModal } from "@/components/academy/EditCohortModal";
-import { MilestoneProgressModal } from "@/components/academy/MilestoneProgressModal";
 import { EnrollmentStatusBadge } from "@/components/academy/EnrollmentStatusBadge";
+import { MilestoneProgressModal } from "@/components/academy/MilestoneProgressModal";
 import { PaymentStatusBadge } from "@/components/academy/PaymentStatusBadge";
 import { UpdateEnrollmentModal } from "@/components/academy/UpdateEnrollmentModal";
 import { CohortSessionsSection } from "@/components/sessions/CohortSessionsSection";
+import { Badge } from "@/components/ui/Badge";
+import { Card } from "@/components/ui/Card";
 import {
     AcademyApi, Cohort,
     Enrollment,
@@ -15,8 +15,8 @@ import {
     ProgressStatus,
     StudentProgress
 } from "@/lib/academy";
-import { API_BASE_URL } from "@/lib/config";
 import { supabase } from "@/lib/auth";
+import { API_BASE_URL } from "@/lib/config";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -195,6 +195,12 @@ export default function CohortDetailsPage() {
                         {cohort.status}
                     </Badge>
                     <div className="flex gap-2">
+                        <button
+                            onClick={() => router.push(`/admin/academy/cohorts/${cohortId}/score`)}
+                            className="rounded bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700"
+                        >
+                            Complexity Score
+                        </button>
                         <button
                             onClick={() => setIsEditModalOpen(true)}
                             className="rounded bg-white px-4 py-2 text-sm font-medium text-slate-700 border border-slate-300 hover:bg-slate-50"
