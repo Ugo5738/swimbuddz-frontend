@@ -354,7 +354,11 @@ function CheckoutContent() {
                 clearState();
                 router.push(`/account/billing?pending_transfer=${intent.reference}`);
             } else {
-                toast.success(`Payment reference created: ${intent.reference}`);
+                if (intent.status === "paid") {
+                    toast.success("Payment complete. Access activated.");
+                } else {
+                    toast.success(`Payment reference created: ${intent.reference}`);
+                }
                 clearState();
                 router.push("/account/billing");
             }
