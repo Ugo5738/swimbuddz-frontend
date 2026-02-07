@@ -180,7 +180,7 @@ export default function SessionsPage() {
                       href={`/sessions/${session.id}/sign-in`}
                       className="inline-flex font-semibold text-cyan-700 hover:underline"
                     >
-                      Sign in &rarr;
+                      Book spot &rarr;
                     </Link>
                   </div>
                 )}

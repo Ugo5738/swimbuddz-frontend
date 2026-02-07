@@ -262,7 +262,7 @@ export default function MemberSessionsPage() {
                                         {hasAccess ? (
                                             <Link href={`/sessions/${session.id}/sign-in`}>
                                                 <Button className="w-full" size="sm">
-                                                    View & Sign Up
+                                                    View & Book Spot
                                                 </Button>
                                             </Link>
                                         ) : (

@@ -20,7 +20,9 @@ const TIER_ROUTES: Record<string, string[]> = {
 
     // Club tier - requires club or academy
     "/club": ["club", "academy"],
-    "/sessions": ["club", "academy"],
+    // Sessions include Community sessions, so Community members must be able to access `/sessions/*`.
+    // Per-session tier restrictions should be enforced by the sessions API / UI, not a blanket route rule.
+    "/sessions": ["community", "club", "academy"],
 
     // Academy tier - requires academy only
     "/academy": ["academy"],
