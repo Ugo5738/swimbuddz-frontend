@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { getMediaUrl, getMediaUrlFromCache, prefetchMediaUrls } from '@/lib/media';
 
 /**
@@ -45,9 +45,14 @@ export function useMediaUrl(mediaId: string | null | undefined): [string | null,
  */
 export function useMediaUrls(mediaIds: (string | null | undefined)[]): Map<string, string | null> {
     const [urlMap, setUrlMap] = useState<Map<string, string | null>>(new Map());
+    const serializedIds = JSON.stringify(mediaIds);
+    const validIds = useMemo(
+        () => mediaIds.filter((id): id is string => !!id),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [serializedIds]
+    );
 
     useEffect(() => {
-        const validIds = mediaIds.filter((id): id is string => !!id);
         if (validIds.length === 0) return;
 
         prefetchMediaUrls(validIds).then(() => {
@@ -57,7 +62,7 @@ export function useMediaUrls(mediaIds: (string | null | undefined)[]): Map<strin
             });
             setUrlMap(newMap);
         });
-    }, [JSON.stringify(mediaIds)]);
+    }, [validIds]);
 
     return urlMap;
 }

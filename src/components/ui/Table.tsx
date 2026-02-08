@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
 import clsx from "clsx";
+import type { ReactNode } from "react";
 
 type TableProps = {
   children: ReactNode;
@@ -7,7 +7,7 @@ type TableProps = {
 };
 
 type TableSectionProps = {
-  children: ReactNode;
+  children?: ReactNode;
   className?: string;
 };
 
