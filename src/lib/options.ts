@@ -52,12 +52,13 @@ export const paymentReadinessOptions = [
 ];
 
 export const volunteerInterestOptions = [
-    { value: "ride_share", label: "Ride share lead" },
-    { value: "mentor", label: "Mentor / buddy" },
-    { value: "media", label: "Media & storytelling" },
-    { value: "trip_planner", label: "Trip planner" },
-    { value: "host", label: "Host sessions" },
-    { value: "coach_support", label: "Coach support" }
+    { value: "warmup_lead", label: "Lead warm-up exercises" },
+    { value: "lane_marshal", label: "Lane marshal" },
+    { value: "checkin", label: "Session check-in" },
+    { value: "safety", label: "Safety & welfare" },
+    { value: "welcome", label: "Welcoming first-timers" },
+    { value: "gallery_support", label: "Gallery & uploads" },
+    { value: "trip_planner", label: "Trip planning" },
 ];
 
 export const academyFocusOptions = [

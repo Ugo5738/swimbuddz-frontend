@@ -1,88 +1,112 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/Card";
+import { Alert } from "@/components/ui/Alert";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
-import { Users, CheckCircle } from "lucide-react";
-import { apiEndpoints } from "@/lib/config";
-
-interface VolunteerRole {
-    id: string;
-    title: string;
-    description: string;
-    category: string;
-    is_active: boolean;
-    slots_available: number | null;
-    interested_count: number;
-}
-
-const categoryLabels: Record<string, string> = {
-    media: "Media & Photography",
-    logistics: "Logistics Support",
-    admin: "Administrative",
-    coaching_support: "Coaching Assistant",
-    lane_marshal: "Lane Marshal",
-};
+import { Modal } from "@/components/ui/Modal";
+import { StatsCard } from "@/components/ui/StatsCard";
+import {
+    CATEGORY_LABELS,
+    RECOGNITION_LABELS,
+    TIER_SHORT_LABELS,
+    VolunteersApi,
+    type HoursSummary,
+    type VolunteerOpportunity,
+    type VolunteerProfile,
+    type VolunteerReward,
+    type VolunteerRole,
+} from "@/lib/volunteers";
+import {
+    ArrowRight,
+    Calendar, ChevronRight,
+    Clock,
+    HandHeart, Shield,
+    Star,
+    Trophy,
+} from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export default function VolunteerHubPage() {
+    const [profile, setProfile] = useState<VolunteerProfile | null>(null);
+    const [profileNotFound, setProfileNotFound] = useState(false);
     const [roles, setRoles] = useState<VolunteerRole[]>([]);
-    const [myInterests, setMyInterests] = useState<string[]>([]);
+    const [upcoming, setUpcoming] = useState<VolunteerOpportunity[]>([]);
+    const [summary, setSummary] = useState<HoursSummary | null>(null);
+    const [rewards, setRewards] = useState<VolunteerReward[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    // Registration modal
+    const [showRegister, setShowRegister] = useState(false);
+    const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+    const [registering, setRegistering] = useState(false);
 
     useEffect(() => {
-        fetchRoles();
-        fetchMyInterests();
+        loadData();
     }, []);
 
-    const fetchRoles = async () => {
+    const loadData = async () => {
+        setLoading(true);
+        setError(null);
         try {
-            const response = await fetch(`${apiEndpoints.volunteers}/roles`);
-            if (response.ok) {
-                const data = await response.json();
-                setRoles(data);
+            // Load roles (public)
+            const rolesData = await VolunteersApi.listRoles();
+            setRoles(rolesData);
+
+            // Load upcoming opportunities (public)
+            const upcomingData = await VolunteersApi.listUpcomingOpportunities();
+            setUpcoming(upcomingData);
+
+            // Try to load profile (may 404 if not registered)
+            try {
+                const profileData = await VolunteersApi.getMyProfile();
+                setProfile(profileData);
+
+                // If registered, load summary and rewards
+                const [summaryData, rewardsData] = await Promise.all([
+                    VolunteersApi.getMyHoursSummary(),
+                    VolunteersApi.getMyRewards(),
+                ]);
+                setSummary(summaryData);
+                setRewards(rewardsData);
+            } catch {
+                setProfileNotFound(true);
             }
-        } catch (error) {
-            console.error("Failed to fetch volunteer roles:", error);
+        } catch {
+            setError("Failed to load volunteer data. Please try again.");
         } finally {
             setLoading(false);
         }
     };
 
-    const fetchMyInterests = async () => {
+    const handleRegister = async () => {
+        setRegistering(true);
         try {
-            // TODO: Get actual member_id from auth and fetch their interests
-            // For now, using empty array
-            setMyInterests([]);
-        } catch (error) {
-            console.error("Failed to fetch interests:", error);
+            const newProfile = await VolunteersApi.registerAsVolunteer({
+                preferred_roles: selectedRoles.length > 0 ? selectedRoles : undefined,
+            });
+            setProfile(newProfile);
+            setProfileNotFound(false);
+            setShowRegister(false);
+            // Reload summary
+            const summaryData = await VolunteersApi.getMyHoursSummary();
+            setSummary(summaryData);
+        } catch {
+            setError("Failed to register. Please try again.");
+        } finally {
+            setRegistering(false);
         }
     };
 
-    const handleRegisterInterest = async (roleId: string) => {
-        try {
-            // TODO: Get actual member_id from auth context
-            const memberId = "temp-member-id";
+    if (loading) {
+        return <LoadingPage text="Loading volunteer hub..." />;
+    }
 
-            const response = await fetch(
-                `${apiEndpoints.volunteers}/interest?member_id=${memberId}`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ role_id: roleId }),
-                }
-            );
-
-            if (response.ok) {
-                setMyInterests([...myInterests, roleId]);
-                await fetchRoles(); // Refresh to update interested_count
-            }
-        } catch (error) {
-            console.error("Failed to register interest:", error);
-        }
-    };
-
-    const activeRoles = roles.filter((role) => role.is_active);
+    const unredeemed = rewards.filter((r) => !r.is_redeemed);
+    const tierColor = profile?.tier === "tier_3" ? "amber" : profile?.tier === "tier_2" ? "green" : "cyan";
 
     return (
         <div className="mx-auto max-w-6xl space-y-6 py-4 md:py-8">
@@ -90,120 +114,258 @@ export default function VolunteerHubPage() {
             <header className="space-y-3">
                 <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Volunteer Hub</h1>
                 <p className="text-sm md:text-base text-slate-600">
-                    Help make SwimBuddz even better by volunteering your time and skills.
+                    Help make SwimBuddz sessions and events better by volunteering your time.
                 </p>
             </header>
 
-            {/* Info Banner */}
-            <Card className="bg-cyan-50 p-6">
-                <h3 className="font-semibold text-cyan-900">Why Volunteer?</h3>
-                <p className="mt-2 text-sm text-cyan-800">
-                    Volunteering is a great way to give back to the community, develop new skills, and
-                    connect with other members. Whether you're interested in photography, logistics, or
-                    coaching support, there's a role for you!
-                </p>
-            </Card>
+            {error && <Alert variant="error">{error}</Alert>}
 
-            {/* My Interests */}
-            {myInterests.length > 0 && (
-                <Card className="p-6">
-                    <h3 className="mb-4 font-semibold text-slate-900">My Volunteer Interests</h3>
-                    <div className="flex flex-wrap gap-3">
-                        {myInterests.map((roleId) => {
-                            const role = roles.find((r) => r.id === roleId);
-                            return role ? (
-                                <div
-                                    key={roleId}
-                                    className="flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-sm font-medium text-emerald-700"
-                                >
-                                    <CheckCircle className="h-4 w-4" />
-                                    {role.title}
-                                </div>
-                            ) : null;
-                        })}
+            {/* Not Registered Banner */}
+            {profileNotFound && (
+                <Card className="bg-cyan-50 border-cyan-200">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex items-start gap-3">
+                            <HandHeart className="h-6 w-6 text-cyan-600 mt-0.5" />
+                            <div>
+                                <h3 className="font-semibold text-cyan-900">Join the Volunteer Team</h3>
+                                <p className="mt-1 text-sm text-cyan-800">
+                                    Volunteering is rotational, flexible, and rewarding. Pick roles
+                                    that interest you, claim opportunities when they fit your schedule, and
+                                    earn recognition and perks as you contribute.
+                                </p>
+                            </div>
+                        </div>
+                        <Button onClick={() => setShowRegister(true)} className="whitespace-nowrap">
+                            Register as Volunteer
+                        </Button>
                     </div>
                 </Card>
             )}
 
-            {/* Available Roles */}
-            <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-slate-900">Available Volunteer Roles</h2>
+            {/* Profile Summary (if registered) */}
+            {profile && summary && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <StatsCard
+                        label="Total Hours"
+                        value={summary.total_hours.toFixed(1)}
+                        icon={<Clock className="h-5 w-5" />}
+                        color="cyan"
+                        description={`${summary.hours_this_month.toFixed(1)} this month`}
+                    />
+                    <StatsCard
+                        label="Tier"
+                        value={TIER_SHORT_LABELS[profile.tier]}
+                        icon={<Shield className="h-5 w-5" />}
+                        color={tierColor as "cyan" | "green" | "amber"}
+                        description={
+                            summary.next_tier_hours_needed
+                                ? `${summary.next_tier_hours_needed.toFixed(0)}h to next milestone`
+                                : "Top milestone reached"
+                        }
+                    />
+                    <StatsCard
+                        label="Sessions"
+                        value={summary.total_sessions}
+                        icon={<Calendar className="h-5 w-5" />}
+                        color="blue"
+                    />
+                    <StatsCard
+                        label="Reliability"
+                        value={`${profile.reliability_score}%`}
+                        icon={<Star className="h-5 w-5" />}
+                        color={profile.reliability_score >= 80 ? "green" : "amber"}
+                    />
+                </div>
+            )}
 
-                {loading ? (
-                    <LoadingPage text="Loading volunteer roles..." />
-                ) : activeRoles.length === 0 ? (
-                    <Card className="p-12 text-center">
-                        <Users className="mx-auto h-12 w-12 text-slate-400" />
-                        <h3 className="mt-4 text-lg font-semibold text-slate-900">
-                            No active roles at the moment
-                        </h3>
-                        <p className="mt-2 text-sm text-slate-600">
-                            Check back soon for new volunteer opportunities!
+            {/* Recognition Badge */}
+            {profile?.recognition_tier && (
+                <Card className="bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200">
+                    <div className="flex items-center gap-3">
+                        <Trophy className="h-6 w-6 text-amber-600" />
+                        <div>
+                            <span className="font-semibold text-amber-900">
+                                {RECOGNITION_LABELS[profile.recognition_tier]}
+                            </span>
+                            <span className="text-sm text-amber-700 ml-2">Volunteer Recognition</span>
+                        </div>
+                    </div>
+                </Card>
+            )}
+
+            {/* Unredeemed Rewards */}
+            {unredeemed.length > 0 && (
+                <Card>
+                    <h3 className="mb-3 font-semibold text-slate-900">Your Rewards</h3>
+                    <div className="space-y-2">
+                        {unredeemed.map((reward) => (
+                            <div
+                                key={reward.id}
+                                className="flex items-center justify-between rounded-lg bg-emerald-50 px-4 py-3"
+                            >
+                                <div>
+                                    <p className="font-medium text-emerald-900">{reward.title}</p>
+                                    {reward.description && (
+                                        <p className="text-sm text-emerald-700">{reward.description}</p>
+                                    )}
+                                </div>
+                                <Badge variant="success">Available</Badge>
+                            </div>
+                        ))}
+                    </div>
+                </Card>
+            )}
+
+            {/* Upcoming Opportunities */}
+            <section className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold text-slate-900">Upcoming Opportunities</h2>
+                    <Link
+                        href="/community/volunteers/opportunities"
+                        className="flex items-center gap-1 text-sm font-medium text-cyan-600 hover:text-cyan-700"
+                    >
+                        View all <ArrowRight className="h-4 w-4" />
+                    </Link>
+                </div>
+
+                {upcoming.length === 0 ? (
+                    <Card className="py-10 text-center">
+                        <Calendar className="mx-auto h-10 w-10 text-slate-400" />
+                        <p className="mt-3 text-sm text-slate-600">
+                            No upcoming opportunities right now. Check back soon!
                         </p>
                     </Card>
                 ) : (
-                    <div className="space-y-4">
-                        {activeRoles.map((role) => {
-                            const hasRegistered = myInterests.includes(role.id);
-                            const isFull = role.slots_available && role.interested_count >= role.slots_available;
-
-                            return (
-                                <Card key={role.id} className="p-6">
-                                    <div className="flex items-start justify-between gap-4">
-                                        <div className="flex-1 space-y-3">
-                                            {/* Title & Category */}
-                                            <div>
-                                                <div className="flex items-center gap-3">
-                                                    <h3 className="text-lg font-semibold text-slate-900">{role.title}</h3>
-                                                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
-                                                        {categoryLabels[role.category] || role.category}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* Description */}
-                                            <p className="text-sm text-slate-700">{role.description}</p>
-
-                                            {/* Slots Info */}
-                                            <div className="flex items-center gap-4 text-sm text-slate-600">
-                                                {role.slots_available && (
-                                                    <div>
-                                                        <span className="font-medium">{role.interested_count}</span> /{" "}
-                                                        {role.slots_available} interested
-                                                    </div>
-                                                )}
-                                                {!role.slots_available && (
-                                                    <div>
-                                                        <span className="font-medium">{role.interested_count}</span>{" "}
-                                                        member{role.interested_count !== 1 ? "s" : ""} interested
-                                                    </div>
-                                                )}
-                                            </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                        {upcoming.slice(0, 4).map((opp) => (
+                            <Link key={opp.id} href={`/community/volunteers/opportunities/${opp.id}`}>
+                                <Card className="h-full transition-shadow hover:shadow-md cursor-pointer">
+                                    <div className="space-y-2">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <h3 className="font-semibold text-slate-900">{opp.title}</h3>
+                                            <Badge
+                                                variant={
+                                                    opp.slots_filled >= opp.slots_needed
+                                                        ? "warning"
+                                                        : "info"
+                                                }
+                                            >
+                                                {opp.slots_filled}/{opp.slots_needed} filled
+                                            </Badge>
                                         </div>
-
-                                        {/* Action Button */}
-                                        <div>
-                                            {hasRegistered ? (
-                                                <div className="flex items-center gap-2 rounded-lg bg-emerald-100 px-4 py-2 text-sm font-medium text-emerald-700">
-                                                    <CheckCircle className="h-4 w-4" />
-                                                    Registered
-                                                </div>
-                                            ) : (
-                                                <Button
-                                                    onClick={() => handleRegisterInterest(role.id)}
-                                                    disabled={!!isFull}
-                                                >
-                                                    {isFull ? "Full" : "Register Interest"}
-                                                </Button>
-                                            )}
+                                        {opp.role_title && (
+                                            <Badge variant="default">{opp.role_title}</Badge>
+                                        )}
+                                        <div className="flex flex-wrap gap-3 text-sm text-slate-600">
+                                            <span>
+                                                {new Date(opp.date).toLocaleDateString("en-NG", {
+                                                    weekday: "short",
+                                                    month: "short",
+                                                    day: "numeric",
+                                                })}
+                                            </span>
+                                            {opp.start_time && <span>{opp.start_time.slice(0, 5)}</span>}
+                                            {opp.location_name && <span>{opp.location_name}</span>}
                                         </div>
+                                        {opp.opportunity_type === "approval_required" && (
+                                            <p className="text-xs text-amber-600">Requires admin approval</p>
+                                        )}
                                     </div>
                                 </Card>
-                            );
-                        })}
+                            </Link>
+                        ))}
                     </div>
                 )}
-            </div>
+            </section>
+
+            {/* Volunteer Roles */}
+            <section className="space-y-4">
+                <h2 className="text-xl font-semibold text-slate-900">Volunteer Roles</h2>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {roles.map((role) => (
+                        <Card key={role.id} className="p-4">
+                            <div className="flex items-start gap-3">
+                                <span className="text-2xl">{role.icon || "🙋"}</span>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="font-semibold text-slate-900">{role.title}</h3>
+                                    <p className="mt-1 text-xs text-slate-500">
+                                        {CATEGORY_LABELS[role.category] || role.category}
+                                    </p>
+                                    {role.description && (
+                                        <p className="mt-1 text-sm text-slate-600 line-clamp-2">
+                                            {role.description}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </Card>
+                    ))}
+                </div>
+            </section>
+
+            {/* Leaderboard Link */}
+            <Link href="/community/volunteers/leaderboard">
+                <Card className="flex items-center justify-between transition-shadow hover:shadow-md cursor-pointer">
+                    <div className="flex items-center gap-3">
+                        <Trophy className="h-5 w-5 text-amber-500" />
+                        <span className="font-medium text-slate-900">Volunteer Leaderboard</span>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-slate-400" />
+                </Card>
+            </Link>
+
+            {/* Registration Modal */}
+            <Modal
+                isOpen={showRegister}
+                onClose={() => setShowRegister(false)}
+                title="Register as a Volunteer"
+            >
+                <p className="text-sm text-slate-600">
+                    Select the roles you&apos;re interested in. Don&apos;t worry — you can change
+                    these later, and you&apos;re never locked into anything.
+                </p>
+
+                <div className="mt-4 space-y-2">
+                    {roles.map((role) => (
+                        <label
+                            key={role.id}
+                            className="flex items-center gap-3 rounded-lg border border-slate-200 p-3 cursor-pointer hover:bg-slate-50 transition"
+                        >
+                            <input
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                                checked={selectedRoles.includes(role.id)}
+                                onChange={(e) => {
+                                    if (e.target.checked) {
+                                        setSelectedRoles([...selectedRoles, role.id]);
+                                    } else {
+                                        setSelectedRoles(selectedRoles.filter((id) => id !== role.id));
+                                    }
+                                }}
+                            />
+                            <div>
+                                <span className="font-medium text-slate-900">
+                                    {role.icon || "🙋"} {role.title}
+                                </span>
+                                {role.description && (
+                                    <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
+                                        {role.description}
+                                    </p>
+                                )}
+                            </div>
+                        </label>
+                    ))}
+                </div>
+
+                <div className="mt-6 flex justify-end gap-3">
+                    <Button variant="secondary" onClick={() => setShowRegister(false)}>
+                        Cancel
+                    </Button>
+                    <Button onClick={handleRegister} disabled={registering}>
+                        {registering ? "Registering..." : "Join Volunteer Team"}
+                    </Button>
+                </div>
+            </Modal>
         </div>
     );
 }

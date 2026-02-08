@@ -147,7 +147,10 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 | `/community/events/[id]` | `src/app/(member)/community/events/[id]/page.tsx` | Event detail and RSVP |
 | `/community/tips` | `src/app/(member)/community/tips/page.tsx` | Swimming tips library |
 | `/community/tips/[id]` | `src/app/(member)/community/tips/[id]/page.tsx` | Single tip detail |
-| `/community/volunteers` | `src/app/(member)/community/volunteers/page.tsx` | Volunteer opportunities |
+| `/community/volunteers` | `src/app/(member)/community/volunteers/page.tsx` | Volunteer hub — profile, opportunities, roles, rewards |
+| `/community/volunteers/opportunities` | `src/app/(member)/community/volunteers/opportunities/page.tsx` | Browse all open volunteer opportunities |
+| `/community/volunteers/opportunities/[id]` | `src/app/(member)/community/volunteers/opportunities/[id]/page.tsx` | Opportunity detail — claim/cancel slot |
+| `/community/volunteers/leaderboard` | `src/app/(member)/community/volunteers/leaderboard/page.tsx` | Volunteer leaderboard (all-time and monthly) |
 
 ### Upgrade Flows
 
@@ -292,7 +295,8 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 | `/admin/community/challenges` | `src/app/(admin)/admin/community/challenges/page.tsx` | Manage community challenges |
 | `/admin/community/content` | `src/app/(admin)/admin/community/content/page.tsx` | Manage community content (tips, articles) |
 | `/admin/community/events` | `src/app/(admin)/admin/community/events/page.tsx` | Manage community events |
-| `/admin/community/volunteers` | `src/app/(admin)/admin/community/volunteers/page.tsx` | Manage volunteer opportunities |
+| `/admin/community/volunteers` | `src/app/(admin)/admin/community/volunteers/page.tsx` | Volunteer management — dashboard, roles, profiles, opportunities |
+| `/admin/community/volunteers/opportunities/[id]` | `src/app/(admin)/admin/community/volunteers/opportunities/[id]/page.tsx` | Admin slot management — approve, check-in/out, no-show |
 
 ---
 

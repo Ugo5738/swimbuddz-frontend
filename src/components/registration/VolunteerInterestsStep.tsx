@@ -1,15 +1,14 @@
 "use client";
 
 import { OptionPillGroup } from "@/components/forms/OptionPillGroup";
+import { SingleSelectPills } from "@/components/forms/SingleSelectPills";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-import { SingleSelectPills } from "@/components/forms/SingleSelectPills";
 import { Textarea } from "@/components/ui/Textarea";
 import {
-    paymentReadinessOptions,
     currencyOptions,
     languageOptions,
-    discoverySourceOptions
+    paymentReadinessOptions
 } from "@/lib/options";
 
 interface VolunteerInterestsStepProps {
@@ -33,12 +32,12 @@ interface VolunteerInterestsStepProps {
 }
 
 const volunteerRoleOptions = [
-    { value: "media", label: "Media & Photography" },
-    { value: "logistics", label: "Logistics Support" },
-    { value: "coaching_support", label: "Coaching Assistant" },
-    { value: "lane_marshal", label: "Lane Marshal" },
-    { value: "admin", label: "Administrative Support" },
-    { value: "event_planning", label: "Event Planning" },
+    { value: "session_lead", label: "Session coordination" },
+    { value: "media", label: "Media & photography" },
+    { value: "ride_share", label: "Ride share driver" },
+    { value: "events_logistics", label: "Events & logistics" },
+    { value: "mentor", label: "Mentoring newcomers" },
+    { value: "academy_assistant", label: "Academy coaching support" },
 ];
 
 const interestTagOptions = [
