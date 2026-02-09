@@ -138,23 +138,7 @@ function CohortDetailPageInner() {
                 cohort_id: cohort.id,
             });
 
-            // Create payment intent
-            const { apiPost } = await import("@/lib/api");
-            const paymentIntent = await apiPost<{
-                reference: string;
-                checkout_url?: string;
-                amount: number;
-            }>(
-                "/api/v1/payments/intents",
-                {
-                    purpose: "academy_cohort",
-                    enrollment_id: enrollment.id,
-                    currency: "NGN",
-                },
-                { auth: true }
-            );
-
-            // Persist checkout context so the payment step can resume safely
+            // Persist checkout context so the checkout page can display pricing and accept discount codes
             setTargetTier("academy");
             setSelectedCohort({
                 id: cohort.id,
@@ -174,17 +158,11 @@ function CohortDetailPageInner() {
                     : undefined,
             });
 
-            // Redirect to payment
-            if (paymentIntent.checkout_url) {
-                toast.success(
-                    `Redirecting to payment (₦${paymentIntent.amount.toLocaleString()})...`
-                );
-                window.location.href = paymentIntent.checkout_url;
-                return;
-            }
-
-            toast.success("Enrollment created!");
-            router.push(`/account/academy/enrollments/${enrollment.id}`);
+            // Redirect to checkout page where user can apply discount codes before payment
+            toast.success("Enrollment created! Proceeding to checkout...");
+            router.push(
+                `/checkout?purpose=academy_cohort&cohort_id=${cohort.id}&enrollment_id=${enrollment.id}`
+            );
         } catch (error: any) {
             console.error("Enrollment failed:", error);
             toast.error(error.message || "Failed to enroll. Please try again.");

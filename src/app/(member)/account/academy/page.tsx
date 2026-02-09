@@ -176,32 +176,14 @@ export default function StudentAcademyPage() {
                 return;
             }
 
-            // Step 2: Create payment intent for academy cohort
-            const { apiPost } = await import("@/lib/api");
-            const paymentIntent = await apiPost<{
-                reference: string;
-                checkout_url?: string;
-                amount: number;
-            }>(
-                "/api/v1/payments/intents",
-                {
-                    purpose: "academy_cohort",
-                    enrollment_id: enrollment.id,
-                    currency: "NGN"
-                },
-                { auth: true }
-            );
-
-            // Step 3: Redirect to payment if checkout URL exists
-            if (paymentIntent.checkout_url) {
-                toast.success(`Enrollment created! Redirecting to payment (₦${paymentIntent.amount.toLocaleString()})...`);
-                window.location.href = paymentIntent.checkout_url;
-                return;
-            }
-
-            // No checkout URL - show success and reload
-            toast.success("Enrollment request submitted! Payment reference: " + paymentIntent.reference);
-            await loadData();
+            // Step 2: Redirect to checkout page where user can apply discount codes before payment
+            const params = new URLSearchParams({
+                purpose: "academy_cohort",
+                cohort_id: cohortId,
+                enrollment_id: enrollment.id,
+            });
+            toast.success("Enrollment created! Proceeding to checkout...");
+            window.location.href = `/checkout?${params.toString()}`;
         } catch (error) {
             console.error("Enrollment failed", error);
             toast.error("Failed to enroll. Please try again.");

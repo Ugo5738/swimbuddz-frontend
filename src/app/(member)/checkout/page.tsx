@@ -290,34 +290,37 @@ function CheckoutContent() {
                         state.extensionInfo?.required && state.includeCommunityExtension,
                 };
             } else if (purpose === "academy_cohort") {
-                // Try to create a new enrollment, or use existing one if already enrolled
-                let enrollmentId: string;
+                // Use existing enrollment ID from URL if available (set by quick-enroll paths)
+                let enrollmentId: string | undefined = urlEnrollmentId || undefined;
 
-                try {
-                    const newEnrollment = await apiPost<{ id: string }>(
-                        "/api/v1/academy/enrollments/me",
-                        { cohort_id: state.selectedCohortId },
-                        { auth: true }
-                    );
-                    enrollmentId = newEnrollment.id;
-                } catch (enrollError: any) {
-                    // If already enrolled, try to get existing enrollment
-                    if (enrollError?.message?.includes("already")) {
-                        // Fetch existing enrollments and find the one for this cohort
-                        const existingEnrollments = await apiGet<{ id: string; cohort_id: string; payment_status: string }[]>(
-                            "/api/v1/academy/my-enrollments",
+                if (!enrollmentId) {
+                    // Try to create a new enrollment, or use existing one if already enrolled
+                    try {
+                        const newEnrollment = await apiPost<{ id: string }>(
+                            "/api/v1/academy/enrollments/me",
+                            { cohort_id: state.selectedCohortId },
                             { auth: true }
                         );
-                        const existingEnrollment = existingEnrollments.find(
-                            e => e.cohort_id === state.selectedCohortId && e.payment_status !== "paid"
-                        );
-                        if (existingEnrollment) {
-                            enrollmentId = existingEnrollment.id;
+                        enrollmentId = newEnrollment.id;
+                    } catch (enrollError: any) {
+                        // If already enrolled, try to get existing enrollment
+                        if (enrollError?.message?.includes("already")) {
+                            // Fetch existing enrollments and find the one for this cohort
+                            const existingEnrollments = await apiGet<{ id: string; cohort_id: string; payment_status: string }[]>(
+                                "/api/v1/academy/my-enrollments",
+                                { auth: true }
+                            );
+                            const existingEnrollment = existingEnrollments.find(
+                                e => e.cohort_id === state.selectedCohortId && e.payment_status !== "paid"
+                            );
+                            if (existingEnrollment) {
+                                enrollmentId = existingEnrollment.id;
+                            } else {
+                                throw new Error("You already have a paid enrollment for this cohort");
+                            }
                         } else {
-                            throw new Error("You already have a paid enrollment for this cohort");
+                            throw enrollError;
                         }
-                    } else {
-                        throw enrollError;
                     }
                 }
 
