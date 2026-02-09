@@ -4,10 +4,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import {
     CATEGORY_LABELS,
-    ROLE_DETAILS,
     TIER_SHORT_LABELS,
     type VolunteerRole,
-    type VolunteerRoleCategory,
 } from "@/lib/volunteers";
 import { CheckCircle2, Clock, Sparkles, Users } from "lucide-react";
 
@@ -20,7 +18,7 @@ type RoleDetailModalProps = {
 export function RoleDetailModal({ role, isOpen, onClose }: RoleDetailModalProps) {
     if (!role) return null;
 
-    const details = ROLE_DETAILS[role.category as VolunteerRoleCategory];
+    const hasDetails = role.time_commitment || role.responsibilities?.length || role.skills_needed || role.best_for;
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={role.title}>
@@ -43,55 +41,63 @@ export function RoleDetailModal({ role, isOpen, onClose }: RoleDetailModalProps)
                     <p className="text-sm text-slate-700">{role.description}</p>
                 )}
 
-                {/* Rich details from ROLE_DETAILS constant */}
-                {details && (
+                {/* Rich details from API */}
+                {hasDetails && (
                     <>
-                        <div className="flex items-start gap-2">
-                            <Clock className="h-4 w-4 text-cyan-600 mt-0.5 flex-shrink-0" />
-                            <div>
-                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                    Time Commitment
-                                </p>
-                                <p className="text-sm text-slate-700">{details.timeCommitment}</p>
+                        {role.time_commitment && (
+                            <div className="flex items-start gap-2">
+                                <Clock className="h-4 w-4 text-cyan-600 mt-0.5 flex-shrink-0" />
+                                <div>
+                                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                        Time Commitment
+                                    </p>
+                                    <p className="text-sm text-slate-700">{role.time_commitment}</p>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
-                        <div className="flex items-start gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-cyan-600 mt-0.5 flex-shrink-0" />
-                            <div>
-                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                    What You&apos;ll Do
-                                </p>
-                                <ul className="mt-1 space-y-1">
-                                    {details.responsibilities.map((item, i) => (
-                                        <li key={i} className="text-sm text-slate-700 flex items-start gap-2">
-                                            <span className="text-cyan-500 mt-0.5">&#8226;</span>
-                                            <span>{item}</span>
-                                        </li>
-                                    ))}
-                                </ul>
+                        {role.responsibilities && role.responsibilities.length > 0 && (
+                            <div className="flex items-start gap-2">
+                                <CheckCircle2 className="h-4 w-4 text-cyan-600 mt-0.5 flex-shrink-0" />
+                                <div>
+                                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                        What You&apos;ll Do
+                                    </p>
+                                    <ul className="mt-1 space-y-1">
+                                        {role.responsibilities.map((item, i) => (
+                                            <li key={i} className="text-sm text-slate-700 flex items-start gap-2">
+                                                <span className="text-cyan-500 mt-0.5">&#8226;</span>
+                                                <span>{item}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
-                        <div className="flex items-start gap-2">
-                            <Sparkles className="h-4 w-4 text-cyan-600 mt-0.5 flex-shrink-0" />
-                            <div>
-                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                    Skills Needed
-                                </p>
-                                <p className="text-sm text-slate-700">{details.skillsNeeded}</p>
+                        {role.skills_needed && (
+                            <div className="flex items-start gap-2">
+                                <Sparkles className="h-4 w-4 text-cyan-600 mt-0.5 flex-shrink-0" />
+                                <div>
+                                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                        Skills Needed
+                                    </p>
+                                    <p className="text-sm text-slate-700">{role.skills_needed}</p>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
-                        <div className="flex items-start gap-2">
-                            <Users className="h-4 w-4 text-cyan-600 mt-0.5 flex-shrink-0" />
-                            <div>
-                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                    Best For
-                                </p>
-                                <p className="text-sm text-slate-700">{details.bestFor}</p>
+                        {role.best_for && (
+                            <div className="flex items-start gap-2">
+                                <Users className="h-4 w-4 text-cyan-600 mt-0.5 flex-shrink-0" />
+                                <div>
+                                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                        Best For
+                                    </p>
+                                    <p className="text-sm text-slate-700">{role.best_for}</p>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </>
                 )}
 

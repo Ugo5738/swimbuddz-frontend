@@ -35,6 +35,7 @@ import {
     Clock,
     Eye,
     MapPin,
+    Pencil,
     Plus,
     Settings,
     Star,
@@ -61,10 +62,14 @@ export default function AdminVolunteersPage() {
     // Modals
     const [showCreateRole, setShowCreateRole] = useState(false);
     const [showCreateOpp, setShowCreateOpp] = useState(false);
+    const [showEditRole, setShowEditRole] = useState(false);
+    const [editingRole, setEditingRole] = useState<VolunteerRole | null>(null);
 
     // Forms
     const [roleForm, setRoleForm] = useState({
         title: "", description: "", category: "other" as VolunteerRoleCategory, icon: "",
+        min_tier: "tier_1" as "tier_1" | "tier_2" | "tier_3",
+        time_commitment: "", responsibilities: "" , skills_needed: "", best_for: "",
     });
     const [oppForm, setOppForm] = useState({
         title: "", description: "", role_id: "", date: "", start_time: "",
@@ -101,21 +106,79 @@ export default function AdminVolunteersPage() {
         }
     };
 
+    const emptyRoleForm = {
+        title: "", description: "", category: "other" as VolunteerRoleCategory, icon: "",
+        min_tier: "tier_1" as "tier_1" | "tier_2" | "tier_3",
+        time_commitment: "", responsibilities: "", skills_needed: "", best_for: "",
+    };
+
     const handleCreateRole = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            const respList = roleForm.responsibilities.trim()
+                ? roleForm.responsibilities.split("\n").map((s) => s.trim()).filter(Boolean)
+                : undefined;
             await VolunteersApi.admin.createRole({
                 title: roleForm.title,
                 description: roleForm.description,
                 category: roleForm.category,
                 icon: roleForm.icon || undefined,
-            });
+                min_tier: roleForm.min_tier,
+                time_commitment: roleForm.time_commitment || undefined,
+                responsibilities: respList,
+                skills_needed: roleForm.skills_needed || undefined,
+                best_for: roleForm.best_for || undefined,
+            } as Partial<VolunteerRole>);
             setShowCreateRole(false);
-            setRoleForm({ title: "", description: "", category: "other", icon: "" });
+            setRoleForm(emptyRoleForm);
             const rolesData = await VolunteersApi.listRoles(false);
             setRoles(rolesData);
         } catch {
             setError("Failed to create role.");
+        }
+    };
+
+    const openEditRole = (role: VolunteerRole) => {
+        setEditingRole(role);
+        setRoleForm({
+            title: role.title,
+            description: role.description || "",
+            category: role.category,
+            icon: role.icon || "",
+            min_tier: role.min_tier as "tier_1" | "tier_2" | "tier_3",
+            time_commitment: role.time_commitment || "",
+            responsibilities: role.responsibilities?.join("\n") || "",
+            skills_needed: role.skills_needed || "",
+            best_for: role.best_for || "",
+        });
+        setShowEditRole(true);
+    };
+
+    const handleEditRole = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingRole) return;
+        try {
+            const respList = roleForm.responsibilities.trim()
+                ? roleForm.responsibilities.split("\n").map((s) => s.trim()).filter(Boolean)
+                : undefined;
+            await VolunteersApi.admin.updateRole(editingRole.id, {
+                title: roleForm.title,
+                description: roleForm.description,
+                category: roleForm.category,
+                icon: roleForm.icon || undefined,
+                min_tier: roleForm.min_tier,
+                time_commitment: roleForm.time_commitment || undefined,
+                responsibilities: respList,
+                skills_needed: roleForm.skills_needed || undefined,
+                best_for: roleForm.best_for || undefined,
+            } as Partial<VolunteerRole>);
+            setShowEditRole(false);
+            setEditingRole(null);
+            setRoleForm(emptyRoleForm);
+            const rolesData = await VolunteersApi.listRoles(false);
+            setRoles(rolesData);
+        } catch {
+            setError("Failed to update role.");
         }
     };
 
@@ -864,41 +927,7 @@ export default function AdminVolunteersPage() {
                                     </h3>
                                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                                         {groupRoles.sort((a, b) => a.sort_order - b.sort_order).map((role) => (
-                                            <Card
-                                                key={role.id}
-                                                className={`relative ${!role.is_active ? "opacity-60" : ""}`}
-                                            >
-                                                <div className="flex items-start gap-3">
-                                                    <span className="text-2xl flex-shrink-0 mt-0.5">
-                                                        {role.icon || "🙋"}
-                                                    </span>
-                                                    <div className="min-w-0 flex-1">
-                                                        <div className="flex items-center gap-2 flex-wrap">
-                                                            <h4 className="font-medium text-slate-900 text-sm">
-                                                                {role.title}
-                                                            </h4>
-                                                            {!role.is_active && (
-                                                                <Badge variant="default">Inactive</Badge>
-                                                            )}
-                                                        </div>
-                                                        <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                                                            {role.description}
-                                                        </p>
-                                                        <div className="flex items-center justify-between mt-3">
-                                                            <span className="text-xs text-slate-400">
-                                                                Min: {TIER_SHORT_LABELS[role.min_tier]}
-                                                            </span>
-                                                            <Button
-                                                                size="sm"
-                                                                variant="ghost"
-                                                                onClick={() => handleToggleRole(role.id, role.is_active)}
-                                                            >
-                                                                {role.is_active ? "Deactivate" : "Activate"}
-                                                            </Button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </Card>
+                                            <RoleCard key={role.id} role={role} onEdit={openEditRole} onToggle={handleToggleRole} />
                                         ))}
                                     </div>
                                 </div>
@@ -922,31 +951,7 @@ export default function AdminVolunteersPage() {
                                 </h3>
                                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                                     {ungrouped.map((role) => (
-                                        <Card key={role.id} className={!role.is_active ? "opacity-60" : ""}>
-                                            <div className="flex items-start gap-3">
-                                                <span className="text-2xl flex-shrink-0 mt-0.5">
-                                                    {role.icon || "🙋"}
-                                                </span>
-                                                <div className="min-w-0 flex-1">
-                                                    <h4 className="font-medium text-slate-900 text-sm">{role.title}</h4>
-                                                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                                                        {role.description}
-                                                    </p>
-                                                    <div className="flex items-center justify-between mt-3">
-                                                        <span className="text-xs text-slate-400">
-                                                            Min: {TIER_SHORT_LABELS[role.min_tier]}
-                                                        </span>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            onClick={() => handleToggleRole(role.id, role.is_active)}
-                                                        >
-                                                            {role.is_active ? "Deactivate" : "Activate"}
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </Card>
+                                        <RoleCard key={role.id} role={role} onEdit={openEditRole} onToggle={handleToggleRole} />
                                     ))}
                                 </div>
                             </div>
@@ -987,11 +992,156 @@ export default function AdminVolunteersPage() {
                                     placeholder="e.g., 📸"
                                 />
                             </div>
+                            <Select
+                                label="Minimum Tier"
+                                value={roleForm.min_tier}
+                                onChange={(e) => setRoleForm({ ...roleForm, min_tier: e.target.value as "tier_1" | "tier_2" | "tier_3" })}
+                            >
+                                <option value="tier_1">Tier 1 — Anyone</option>
+                                <option value="tier_2">Tier 2 — Core</option>
+                                <option value="tier_3">Tier 3 — Lead</option>
+                            </Select>
+
+                            <div className="border-t border-slate-200 pt-4">
+                                <h4 className="text-sm font-medium text-slate-700 mb-3">Role Details (shown to members)</h4>
+                                <div className="space-y-3">
+                                    <Input
+                                        label="Time Commitment"
+                                        value={roleForm.time_commitment}
+                                        onChange={(e) => setRoleForm({ ...roleForm, time_commitment: e.target.value })}
+                                        placeholder="e.g., 90–120 min (full session + 15 min before/after)"
+                                    />
+                                    <Textarea
+                                        label="Responsibilities (one per line)"
+                                        value={roleForm.responsibilities}
+                                        onChange={(e) => setRoleForm({ ...roleForm, responsibilities: e.target.value })}
+                                        rows={4}
+                                        placeholder={"Arrive 15 minutes before session starts\nBrief other volunteers on the day's plan\nHandle any on-the-ground issues"}
+                                    />
+                                    <Textarea
+                                        label="Skills Needed"
+                                        value={roleForm.skills_needed}
+                                        onChange={(e) => setRoleForm({ ...roleForm, skills_needed: e.target.value })}
+                                        rows={2}
+                                        placeholder="e.g., Comfortable speaking to groups. Calm under mild pressure."
+                                    />
+                                    <Textarea
+                                        label="Best For"
+                                        value={roleForm.best_for}
+                                        onChange={(e) => setRoleForm({ ...roleForm, best_for: e.target.value })}
+                                        rows={2}
+                                        placeholder="e.g., People who like organising and being the go-to person."
+                                    />
+                                </div>
+                            </div>
+
                             <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
                                 <Button type="button" variant="secondary" onClick={() => setShowCreateRole(false)}>
                                     Cancel
                                 </Button>
                                 <Button type="submit">Create Role</Button>
+                            </div>
+                        </form>
+                    </Modal>
+
+                    {/* Edit Role Modal */}
+                    <Modal
+                        isOpen={showEditRole}
+                        onClose={() => { setShowEditRole(false); setEditingRole(null); }}
+                        title={editingRole ? `Edit: ${editingRole.title}` : "Edit Volunteer Role"}
+                    >
+                        <form onSubmit={handleEditRole} className="space-y-4">
+                            <Input
+                                label="Title"
+                                value={roleForm.title}
+                                onChange={(e) => setRoleForm({ ...roleForm, title: e.target.value })}
+                                required
+                            />
+                            <Textarea
+                                label="Description"
+                                value={roleForm.description}
+                                onChange={(e) => setRoleForm({ ...roleForm, description: e.target.value })}
+                                rows={3}
+                                placeholder="Describe the role and responsibilities..."
+                            />
+                            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+                                <Select
+                                    label="Category"
+                                    value={roleForm.category}
+                                    onChange={(e) => setRoleForm({ ...roleForm, category: e.target.value as VolunteerRoleCategory })}
+                                >
+                                    {Object.entries(CATEGORY_LABELS).map(([val, label]) => (
+                                        <option key={val} value={val}>{label}</option>
+                                    ))}
+                                </Select>
+                                <Input
+                                    label="Icon (emoji)"
+                                    value={roleForm.icon}
+                                    onChange={(e) => setRoleForm({ ...roleForm, icon: e.target.value })}
+                                    placeholder="e.g., 📸"
+                                />
+                            </div>
+                            <Select
+                                label="Minimum Tier"
+                                value={roleForm.min_tier}
+                                onChange={(e) => setRoleForm({ ...roleForm, min_tier: e.target.value as "tier_1" | "tier_2" | "tier_3" })}
+                            >
+                                <option value="tier_1">Tier 1 — Anyone</option>
+                                <option value="tier_2">Tier 2 — Core</option>
+                                <option value="tier_3">Tier 3 — Lead</option>
+                            </Select>
+
+                            <div className="border-t border-slate-200 pt-4">
+                                <h4 className="text-sm font-medium text-slate-700 mb-3">Role Details (shown to members)</h4>
+                                <div className="space-y-3">
+                                    <Input
+                                        label="Time Commitment"
+                                        value={roleForm.time_commitment}
+                                        onChange={(e) => setRoleForm({ ...roleForm, time_commitment: e.target.value })}
+                                        placeholder="e.g., 90–120 min (full session + 15 min before/after)"
+                                    />
+                                    <Textarea
+                                        label="Responsibilities (one per line)"
+                                        value={roleForm.responsibilities}
+                                        onChange={(e) => setRoleForm({ ...roleForm, responsibilities: e.target.value })}
+                                        rows={5}
+                                        placeholder={"Arrive 15 minutes before session starts\nBrief other volunteers on the day's plan\nHandle any on-the-ground issues"}
+                                    />
+                                    <Textarea
+                                        label="Skills Needed"
+                                        value={roleForm.skills_needed}
+                                        onChange={(e) => setRoleForm({ ...roleForm, skills_needed: e.target.value })}
+                                        rows={2}
+                                        placeholder="e.g., Comfortable speaking to groups. Calm under mild pressure."
+                                    />
+                                    <Textarea
+                                        label="Best For"
+                                        value={roleForm.best_for}
+                                        onChange={(e) => setRoleForm({ ...roleForm, best_for: e.target.value })}
+                                        rows={2}
+                                        placeholder="e.g., People who like organising and being the go-to person."
+                                    />
+                                </div>
+                            </div>
+
+                            {editingRole && (
+                                <div className="flex items-center gap-4 text-xs text-slate-400">
+                                    <span>{editingRole.active_volunteers_count} active volunteer{editingRole.active_volunteers_count !== 1 ? "s" : ""}</span>
+                                    <span>·</span>
+                                    <span>Sort: {editingRole.sort_order}</span>
+                                    <span>·</span>
+                                    <span>Created {new Date(editingRole.created_at).toLocaleDateString("en-NG")}</span>
+                                </div>
+                            )}
+                            <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={() => { setShowEditRole(false); setEditingRole(null); }}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button type="submit">Save Changes</Button>
                             </div>
                         </form>
                     </Modal>
@@ -1032,6 +1182,67 @@ function OppStatusBadge({ status }: { status: string }) {
         cancelled: "danger",
     };
     return <Badge variant={map[status] || "default"}>{status}</Badge>;
+}
+
+function RoleCard({
+    role,
+    onEdit,
+    onToggle,
+}: {
+    role: VolunteerRole;
+    onEdit: (role: VolunteerRole) => void;
+    onToggle: (roleId: string, currentActive: boolean) => void;
+}) {
+    const hasDetails = !!(role.time_commitment || role.responsibilities?.length || role.skills_needed || role.best_for);
+
+    return (
+        <Card
+            className={`relative group cursor-pointer transition-shadow hover:shadow-md ${!role.is_active ? "opacity-60" : ""}`}
+            onClick={() => onEdit(role)}
+        >
+            <div className="space-y-3">
+                {/* Top row: icon + title + status */}
+                <div className="flex items-start gap-3">
+                    <span className="text-2xl flex-shrink-0">{role.icon || "🙋"}</span>
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="font-semibold text-slate-900 text-sm">{role.title}</h4>
+                            {!role.is_active && <Badge variant="default">Inactive</Badge>}
+                        </div>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                            {CATEGORY_LABELS[role.category] || role.category}
+                        </p>
+                    </div>
+                    <Pencil className="h-4 w-4 text-slate-300 group-hover:text-cyan-500 transition-colors flex-shrink-0 mt-1" />
+                </div>
+
+                {/* Description */}
+                <p className="text-xs text-slate-500 line-clamp-2">{role.description}</p>
+
+                {/* Meta row */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                    <div className="flex items-center gap-3 text-xs text-slate-400">
+                        <span>Min: {TIER_SHORT_LABELS[role.min_tier]}</span>
+                        <span>{role.active_volunteers_count} active</span>
+                        {!hasDetails && (
+                            <span className="text-amber-500" title="No detailed role info defined">⚠</span>
+                        )}
+                    </div>
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onToggle(role.id, role.is_active);
+                        }}
+                        className="text-xs"
+                    >
+                        {role.is_active ? "Deactivate" : "Activate"}
+                    </Button>
+                </div>
+            </div>
+        </Card>
+    );
 }
 
 function formatDate(dateStr: string) {
