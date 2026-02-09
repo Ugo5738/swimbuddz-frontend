@@ -40,6 +40,16 @@ export function CommunitySignalsStep({ showHeader = true, formData, onToggleMult
         onToggle={(value) => onToggleMulti("volunteerInterest", value)}
         hint="Optional — you can always opt in later"
       />
+      <p className="text-xs text-slate-500">
+        <a
+          href="/community/volunteers"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-cyan-600 hover:text-cyan-700 font-medium"
+        >
+          Learn about volunteer roles →
+        </a>
+      </p>
     </div>
   );
 }

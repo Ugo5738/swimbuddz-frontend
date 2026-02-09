@@ -61,7 +61,7 @@ export default function LeaderboardPage() {
     };
 
     return (
-        <div className="mx-auto max-w-3xl space-y-6 py-4 md:py-8">
+        <div className="mx-auto max-w-6xl space-y-6 py-4 md:py-8">
             {/* Back + Header */}
             <div className="space-y-3">
                 <Link

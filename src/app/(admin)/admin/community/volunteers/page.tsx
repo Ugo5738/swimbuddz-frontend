@@ -1,40 +1,49 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
-import { StatsCard } from "@/components/ui/StatsCard";
-import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
-import { Textarea } from "@/components/ui/Textarea";
-import { Modal } from "@/components/ui/Modal";
-import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { Alert } from "@/components/ui/Alert";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { LoadingPage } from "@/components/ui/LoadingSpinner";
+import { Modal } from "@/components/ui/Modal";
+import { Select } from "@/components/ui/Select";
+import { StatsCard } from "@/components/ui/StatsCard";
 import {
     Table,
-    TableHead,
     TableBody,
-    TableRow,
-    TableHeaderCell,
     TableCell,
+    TableHead,
+    TableHeaderCell,
+    TableRow,
 } from "@/components/ui/Table";
+import { Textarea } from "@/components/ui/Textarea";
 import {
-    Users, Clock, Calendar, Plus, Trophy, AlertTriangle,
-    Eye, Settings, TrendingUp, MapPin,
-} from "lucide-react";
-import {
-    VolunteersApi,
-    TIER_SHORT_LABELS,
-    CATEGORY_LABELS,
     CATEGORY_GROUPS,
+    CATEGORY_LABELS,
+    TIER_SHORT_LABELS,
+    VolunteersApi,
     type DashboardSummary,
-    type VolunteerRole,
-    type VolunteerProfile,
     type VolunteerOpportunity,
+    type VolunteerProfile,
+    type VolunteerRole,
     type VolunteerRoleCategory,
 } from "@/lib/volunteers";
+import {
+    AlertTriangle,
+    Calendar,
+    Clock,
+    Eye,
+    MapPin,
+    Plus,
+    Settings,
+    Star,
+    TrendingUp,
+    Trophy,
+    Users,
+} from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 type Tab = "dashboard" | "roles" | "volunteers" | "opportunities";
 
@@ -63,6 +72,11 @@ export default function AdminVolunteersPage() {
         opportunity_type: "open_claim" as "open_claim" | "approval_required",
         min_tier: "tier_1" as "tier_1" | "tier_2" | "tier_3",
     });
+
+    // Spotlight feature
+    const [showFeatureModal, setShowFeatureModal] = useState(false);
+    const [featureTarget, setFeatureTarget] = useState<VolunteerProfile | null>(null);
+    const [featureForm, setFeatureForm] = useState({ spotlight_quote: "", featured_until: "" });
 
     useEffect(() => { loadData(); }, []);
 
@@ -151,6 +165,34 @@ export default function AdminVolunteersPage() {
             setOpportunities(oppsData);
         } catch {
             setError("Failed to publish opportunity.");
+        }
+    };
+
+    const handleFeature = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!featureTarget) return;
+        try {
+            await VolunteersApi.admin.featureVolunteer(featureTarget.member_id, {
+                spotlight_quote: featureForm.spotlight_quote || undefined,
+                featured_until: featureForm.featured_until || undefined,
+            });
+            setShowFeatureModal(false);
+            setFeatureTarget(null);
+            setFeatureForm({ spotlight_quote: "", featured_until: "" });
+            const profilesData = await VolunteersApi.admin.listProfiles({ active_only: false });
+            setProfiles(profilesData);
+        } catch {
+            setError("Failed to feature volunteer.");
+        }
+    };
+
+    const handleUnfeature = async (memberId: string) => {
+        try {
+            await VolunteersApi.admin.unfeatureVolunteer(memberId);
+            const profilesData = await VolunteersApi.admin.listProfiles({ active_only: false });
+            setProfiles(profilesData);
+        } catch {
+            setError("Failed to unfeature volunteer.");
         }
     };
 
@@ -589,6 +631,11 @@ export default function AdminVolunteersPage() {
                                             {p.recognition_tier && (
                                                 <RecognitionBadge tier={p.recognition_tier} />
                                             )}
+                                            {p.is_featured && (
+                                                <Badge variant="info">
+                                                    <Star className="h-3 w-3 inline mr-0.5" /> Featured
+                                                </Badge>
+                                            )}
                                             {!p.is_active && <Badge variant="danger">Inactive</Badge>}
                                         </div>
                                         <div className="flex flex-wrap gap-3 text-xs text-slate-500">
@@ -604,6 +651,36 @@ export default function AdminVolunteersPage() {
                                         {p.member_email && (
                                             <p className="text-xs text-slate-400">{p.member_email}</p>
                                         )}
+                                        <div className="pt-1">
+                                            {p.is_featured ? (
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => handleUnfeature(p.member_id)}
+                                                    className="text-xs"
+                                                >
+                                                    <Star className="h-3 w-3 mr-1 fill-amber-400 text-amber-400" />
+                                                    Unfeature
+                                                </Button>
+                                            ) : (
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => {
+                                                        setFeatureTarget(p);
+                                                        setFeatureForm({
+                                                            spotlight_quote: p.spotlight_quote || "",
+                                                            featured_until: "",
+                                                        });
+                                                        setShowFeatureModal(true);
+                                                    }}
+                                                    className="text-xs"
+                                                >
+                                                    <Star className="h-3 w-3 mr-1" />
+                                                    Feature
+                                                </Button>
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -620,18 +697,24 @@ export default function AdminVolunteersPage() {
                                             <TableHeaderCell>Reliability</TableHeaderCell>
                                             <TableHeaderCell>No-Shows</TableHeaderCell>
                                             <TableHeaderCell>Recognition</TableHeaderCell>
+                                            <TableHeaderCell>Spotlight</TableHeaderCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
                                         {profiles.map((p) => (
                                             <TableRow key={p.id}>
                                                 <TableCell>
-                                                    <div>
-                                                        <p className="font-medium text-slate-900">
-                                                            {p.member_name || "Unknown"}
-                                                        </p>
-                                                        {p.member_email && (
-                                                            <p className="text-xs text-slate-400">{p.member_email}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <div>
+                                                            <p className="font-medium text-slate-900">
+                                                                {p.member_name || "Unknown"}
+                                                            </p>
+                                                            {p.member_email && (
+                                                                <p className="text-xs text-slate-400">{p.member_email}</p>
+                                                            )}
+                                                        </div>
+                                                        {p.is_featured && (
+                                                            <Star className="h-4 w-4 fill-amber-400 text-amber-400 flex-shrink-0" />
                                                         )}
                                                     </div>
                                                 </TableCell>
@@ -659,6 +742,34 @@ export default function AdminVolunteersPage() {
                                                         <span className="text-xs text-slate-300">—</span>
                                                     )}
                                                 </TableCell>
+                                                <TableCell>
+                                                    {p.is_featured ? (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            onClick={() => handleUnfeature(p.member_id)}
+                                                        >
+                                                            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400 mr-1" />
+                                                            Unfeature
+                                                        </Button>
+                                                    ) : (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            onClick={() => {
+                                                                setFeatureTarget(p);
+                                                                setFeatureForm({
+                                                                    spotlight_quote: p.spotlight_quote || "",
+                                                                    featured_until: "",
+                                                                });
+                                                                setShowFeatureModal(true);
+                                                            }}
+                                                        >
+                                                            <Star className="h-3.5 w-3.5 mr-1" />
+                                                            Feature
+                                                        </Button>
+                                                    )}
+                                                </TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
@@ -668,6 +779,62 @@ export default function AdminVolunteersPage() {
                     )}
                 </div>
             )}
+
+            {/* Feature Volunteer Modal */}
+            <Modal
+                isOpen={showFeatureModal}
+                onClose={() => {
+                    setShowFeatureModal(false);
+                    setFeatureTarget(null);
+                }}
+                title="Feature Volunteer"
+            >
+                <form onSubmit={handleFeature} className="space-y-4">
+                    <div className="flex items-center gap-3 rounded-lg bg-cyan-50 px-4 py-3">
+                        <Star className="h-5 w-5 text-cyan-600 flex-shrink-0" />
+                        <div>
+                            <p className="text-sm font-medium text-slate-900">
+                                {featureTarget?.member_name || "Unknown"}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                                {featureTarget?.total_hours.toFixed(0)}h volunteered &middot; {featureTarget?.total_sessions_volunteered} sessions
+                            </p>
+                        </div>
+                    </div>
+
+                    <Textarea
+                        label="Spotlight Quote"
+                        value={featureForm.spotlight_quote}
+                        onChange={(e) => setFeatureForm({ ...featureForm, spotlight_quote: e.target.value })}
+                        rows={3}
+                        placeholder="A short quote from this volunteer (optional)..."
+                    />
+
+                    <Input
+                        label="Featured Until (optional)"
+                        type="date"
+                        value={featureForm.featured_until}
+                        onChange={(e) => setFeatureForm({ ...featureForm, featured_until: e.target.value })}
+                    />
+                    <p className="text-xs text-slate-400 -mt-3">
+                        Leave empty for indefinite featuring. The currently featured volunteer (if any) will be replaced.
+                    </p>
+
+                    <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => {
+                                setShowFeatureModal(false);
+                                setFeatureTarget(null);
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button type="submit">Feature Volunteer</Button>
+                    </div>
+                </form>
+            </Modal>
 
             {/* ── Roles ───────────────────────────────────────────────── */}
             {tab === "roles" && (

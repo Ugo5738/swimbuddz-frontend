@@ -1,5 +1,13 @@
+"use client";
+
 import { Card } from "@/components/ui/Card";
+import {
+    RECOGNITION_LABELS,
+    VolunteersApi,
+    type SpotlightData,
+} from "@/lib/volunteers";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 const communityFeatures = [
     {
@@ -39,6 +47,20 @@ const benefits = [
 ];
 
 export default function CommunityPage() {
+    const [spotlight, setSpotlight] = useState<SpotlightData | null>(null);
+
+    useEffect(() => {
+        VolunteersApi.getSpotlight()
+            .then(setSpotlight)
+            .catch(() => {/* spotlight is supplementary — don't break page */});
+    }, []);
+
+    const hasSpotlightContent = spotlight && (
+        spotlight.total_active_volunteers > 0 ||
+        spotlight.featured_volunteer ||
+        spotlight.total_hours_all_time > 0
+    );
+
     return (
         <div className="space-y-12">
             {/* Hero Section */}
@@ -95,6 +117,108 @@ export default function CommunityPage() {
                     ))}
                 </div>
             </section>
+
+            {/* Volunteer Spotlight */}
+            {hasSpotlightContent && (
+                <section className="space-y-6">
+                    <div>
+                        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
+                            Volunteer with us
+                        </p>
+                        <h2 className="text-2xl font-semibold text-slate-900 mt-1">
+                            Our Volunteers Make It Happen
+                        </h2>
+                        <p className="text-base text-slate-600 mt-2">
+                            SwimBuddz runs on the generosity of community members who give their time.
+                        </p>
+                    </div>
+
+                    {/* Aggregate Stats */}
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+                        <Card className="text-center py-6">
+                            <p className="text-3xl font-bold text-cyan-600">
+                                {spotlight!.total_active_volunteers}
+                            </p>
+                            <p className="text-sm text-slate-600 mt-1">Active Volunteers</p>
+                        </Card>
+                        <Card className="text-center py-6">
+                            <p className="text-3xl font-bold text-cyan-600">
+                                {Math.floor(spotlight!.total_hours_all_time)}+
+                            </p>
+                            <p className="text-sm text-slate-600 mt-1">Hours Logged</p>
+                        </Card>
+                        <Card className="text-center py-6 col-span-2 md:col-span-1">
+                            <p className="text-3xl font-bold text-cyan-600">
+                                {spotlight!.top_volunteers.length}
+                            </p>
+                            <p className="text-sm text-slate-600 mt-1">Top Contributors</p>
+                        </Card>
+                    </div>
+
+                    {/* Milestones */}
+                    {spotlight!.milestones_this_month.length > 0 && (
+                        <div className="space-y-2">
+                            {spotlight!.milestones_this_month.map((m, i) => (
+                                <div key={i} className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
+                                    <span className="text-lg">🏅</span>
+                                    <span className="text-sm text-amber-800">{m.description} this month</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Featured Volunteer */}
+                    {spotlight!.featured_volunteer && (
+                        <Card className="bg-gradient-to-br from-cyan-50 to-slate-50 border-cyan-200">
+                            <div className="flex items-center gap-2 mb-3">
+                                <span className="text-lg">⭐</span>
+                                <h3 className="font-semibold text-cyan-800">Volunteer of the Month</h3>
+                            </div>
+                            <div className="flex items-start gap-4">
+                                {spotlight!.featured_volunteer.profile_photo_url ? (
+                                    <img
+                                        src={spotlight!.featured_volunteer.profile_photo_url}
+                                        alt={spotlight!.featured_volunteer.member_name}
+                                        className="h-16 w-16 rounded-full object-cover border-2 border-white shadow"
+                                    />
+                                ) : (
+                                    <div className="h-16 w-16 rounded-full bg-cyan-200 flex items-center justify-center text-2xl text-cyan-700 border-2 border-white shadow flex-shrink-0">
+                                        {spotlight!.featured_volunteer.member_name.charAt(0)}
+                                    </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-slate-900">
+                                        {spotlight!.featured_volunteer.member_name}
+                                    </p>
+                                    {spotlight!.featured_volunteer.recognition_tier && (
+                                        <p className="text-xs text-slate-500">
+                                            {RECOGNITION_LABELS[spotlight!.featured_volunteer.recognition_tier]}
+                                        </p>
+                                    )}
+                                    <p className="text-sm text-slate-600 mt-1">
+                                        {spotlight!.featured_volunteer.total_hours.toFixed(0)} hours volunteered
+                                    </p>
+                                    {spotlight!.featured_volunteer.spotlight_quote && (
+                                        <blockquote className="mt-2 border-l-2 border-cyan-300 pl-3 text-sm italic text-slate-600">
+                                            &ldquo;{spotlight!.featured_volunteer.spotlight_quote}&rdquo;
+                                        </blockquote>
+                                    )}
+                                </div>
+                            </div>
+                        </Card>
+                    )}
+
+                    {/* CTA */}
+                    <div className="text-center">
+                        <Link
+                            href="/community/volunteers"
+                            className="inline-block rounded-full bg-cyan-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-cyan-700 transition"
+                        >
+                            Explore Volunteer Roles
+                        </Link>
+                    </div>
+                </section>
+            )}
 
             {/* CTA Section */}
             <section className="rounded-3xl bg-gradient-to-br from-cyan-600 to-cyan-700 px-8 py-12 text-center text-white">

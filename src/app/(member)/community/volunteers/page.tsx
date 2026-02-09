@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { Modal } from "@/components/ui/Modal";
 import { StatsCard } from "@/components/ui/StatsCard";
+import { RoleDetailModal } from "@/components/volunteers/RoleDetailModal";
 import {
     CATEGORY_LABELS,
     RECOGNITION_LABELS,
@@ -43,6 +44,8 @@ export default function VolunteerHubPage() {
     const [showRegister, setShowRegister] = useState(false);
     const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
     const [registering, setRegistering] = useState(false);
+    // Role detail modal
+    const [selectedRole, setSelectedRole] = useState<VolunteerRole | null>(null);
 
     useEffect(() => {
         loadData();
@@ -283,7 +286,11 @@ export default function VolunteerHubPage() {
                 <h2 className="text-xl font-semibold text-slate-900">Volunteer Roles</h2>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {roles.map((role) => (
-                        <Card key={role.id} className="p-4">
+                        <Card
+                            key={role.id}
+                            className="p-4 cursor-pointer transition-shadow hover:shadow-md"
+                            onClick={() => setSelectedRole(role)}
+                        >
                             <div className="flex items-start gap-3">
                                 <span className="text-2xl">{role.icon || "🙋"}</span>
                                 <div className="flex-1 min-w-0">
@@ -296,6 +303,7 @@ export default function VolunteerHubPage() {
                                             {role.description}
                                         </p>
                                     )}
+                                    <p className="mt-1.5 text-xs font-medium text-cyan-600">View details</p>
                                 </div>
                             </div>
                         </Card>
@@ -304,7 +312,7 @@ export default function VolunteerHubPage() {
             </section>
 
             {/* Leaderboard Link */}
-            <Link href="/community/volunteers/leaderboard">
+            <Link href="/community/volunteers/leaderboard" className="mt-2 block">
                 <Card className="flex items-center justify-between transition-shadow hover:shadow-md cursor-pointer">
                     <div className="flex items-center gap-3">
                         <Trophy className="h-5 w-5 text-amber-500" />
@@ -343,7 +351,7 @@ export default function VolunteerHubPage() {
                                     }
                                 }}
                             />
-                            <div>
+                            <div className="flex-1">
                                 <span className="font-medium text-slate-900">
                                     {role.icon || "🙋"} {role.title}
                                 </span>
@@ -352,6 +360,17 @@ export default function VolunteerHubPage() {
                                         {role.description}
                                     </p>
                                 )}
+                                <button
+                                    type="button"
+                                    className="text-xs text-cyan-600 hover:text-cyan-700 font-medium mt-0.5"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setSelectedRole(role);
+                                    }}
+                                >
+                                    Learn more
+                                </button>
                             </div>
                         </label>
                     ))}
@@ -366,6 +385,13 @@ export default function VolunteerHubPage() {
                     </Button>
                 </div>
             </Modal>
+
+            {/* Role Detail Modal */}
+            <RoleDetailModal
+                role={selectedRole}
+                isOpen={!!selectedRole}
+                onClose={() => setSelectedRole(null)}
+            />
         </div>
     );
 }
