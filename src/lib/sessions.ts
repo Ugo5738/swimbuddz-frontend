@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPost, apiPut } from "./api";
+import { apiDelete, apiGet, apiPatch, apiPost } from "./api";
 
 // --- Enums ---
 
@@ -12,6 +12,7 @@ export enum SessionType {
 }
 
 export enum SessionStatus {
+  DRAFT = "draft",
   SCHEDULED = "scheduled",
   IN_PROGRESS = "in_progress",
   COMPLETED = "completed",
@@ -65,6 +66,7 @@ export interface Session {
   template_id?: string;
   is_recurring_instance: boolean;
 
+  published_at?: string;
   created_at: string;
   updated_at: string;
 
@@ -142,17 +144,29 @@ export interface SessionUpdate {
 // --- API Functions ---
 export const SessionsApi = {
   // List sessions with optional filters
-  listSessions: (params?: { types?: string; cohort_id?: string }) => {
+  listSessions: (params?: {
+    types?: string;
+    cohort_id?: string;
+    include_drafts?: boolean;
+  }) => {
     const query = new URLSearchParams();
     if (params?.types) query.set("types", params.types);
     if (params?.cohort_id) query.set("cohort_id", params.cohort_id);
+    if (params?.include_drafts) query.set("include_drafts", "true");
     const queryStr = query.toString() ? `?${query.toString()}` : "";
-    return apiGet<Session[]>(`/api/v1/sessions${queryStr}`);
+    return apiGet<Session[]>(`/api/v1/sessions${queryStr}`, {
+      auth: Boolean(params?.include_drafts),
+    });
   },
 
   // Get sessions for a specific cohort
-  getCohortSessions: (cohortId: string) =>
-    apiGet<Session[]>(`/api/v1/sessions?cohort_id=${cohortId}`),
+  getCohortSessions: (cohortId: string, options?: { includeDrafts?: boolean }) => {
+    const query = new URLSearchParams({ cohort_id: cohortId });
+    if (options?.includeDrafts) query.set("include_drafts", "true");
+    return apiGet<Session[]>(`/api/v1/sessions?${query.toString()}`, {
+      auth: Boolean(options?.includeDrafts),
+    });
+  },
 
   // Get single session
   getSession: (id: string) =>
@@ -164,11 +178,27 @@ export const SessionsApi = {
 
   // Update session
   updateSession: (id: string, data: SessionUpdate) =>
-    apiPut<Session>(`/api/v1/sessions/${id}`, data, { auth: true }),
+    apiPatch<Session>(`/api/v1/sessions/${id}`, data, { auth: true }),
 
   // Delete session
   deleteSession: (id: string) =>
     apiDelete<void>(`/api/v1/sessions/${id}`, { auth: true }),
+
+  // Publish a draft session (transitions DRAFT → SCHEDULED, triggers notifications)
+  publishSession: (id: string, shortNoticeMessage?: string) => {
+    const query = shortNoticeMessage
+      ? `?short_notice_message=${encodeURIComponent(shortNoticeMessage)}`
+      : "";
+    return apiPost<Session>(`/api/v1/sessions/${id}/publish${query}`, {}, { auth: true });
+  },
+
+  // Cancel a session (triggers cancellation notifications)
+  cancelSession: (id: string, cancellationReason?: string) => {
+    const query = cancellationReason
+      ? `?cancellation_reason=${encodeURIComponent(cancellationReason)}`
+      : "";
+    return apiPost<Session>(`/api/v1/sessions/${id}/cancel${query}`, {}, { auth: true });
+  },
 
   // Get session stats
   getStats: () =>

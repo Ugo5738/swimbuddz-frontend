@@ -5,7 +5,6 @@ import { NextResponse } from "next/server";
 // Routes that require an approved membership
 const MEMBER_ROUTES = [
     "/sessions",
-    "/profile",
     "/account",
     "/attendance",
 ];
@@ -28,7 +27,7 @@ const TIER_ROUTES: Record<string, string[]> = {
     "/academy": ["academy"],
 };
 
-const PUBLIC_LANDING_ROUTES = new Set(["/community", "/club", "/academy"]);
+const PUBLIC_LANDING_ROUTES = new Set(["/community", "/club", "/academy", "/sessions"]);
 
 function parseDateMs(value: any): number | null {
     if (!value) return null;
@@ -90,8 +89,8 @@ export async function middleware(request: NextRequest) {
             } = await supabase.auth.getUser();
 
             if (userError || !user) {
-                // Not logged in, redirect to login
-                return NextResponse.redirect(new URL("/login", request.url));
+                // Not logged in, redirect to login and preserve return path.
+                return redirectToLogin(request, "not_logged_in");
             }
 
             // Check if user is admin (by email)
@@ -109,7 +108,7 @@ export async function middleware(request: NextRequest) {
             } = await supabase.auth.getSession();
 
             if (!session?.access_token) {
-                return NextResponse.redirect(new URL("/login", request.url));
+                return redirectToLogin(request, "missing_access_token");
             }
 
             // Fetch member profile to check approval status
@@ -155,7 +154,7 @@ export async function middleware(request: NextRequest) {
                 // Community activation paywall: allow account/profile, block other member routes.
                 const paywallAllowed =
                     pathname.startsWith("/account") ||
-                    pathname.startsWith("/profile");
+                    pathname.startsWith("/account/profile");
 
                 if (!communityActive && !paywallAllowed) {
                     const url = new URL("/account/billing", request.url);
@@ -192,7 +191,7 @@ export async function middleware(request: NextRequest) {
                         const requiredTier = allowedTiers.includes("academy") ? "academy" : "club";
                         if (requestedTiers.includes(requiredTier)) {
                             return NextResponse.redirect(
-                                new URL("/profile?upgrade=pending", request.url)
+                                new URL("/account/profile?upgrade=pending", request.url)
                             );
                         }
 
@@ -236,7 +235,6 @@ export const config = {
         "/club/:path*",
         "/academy/:path*",
         "/sessions/:path*",
-        "/profile/:path*",
         "/account/:path*",
         "/attendance/:path*",
         "/admin/:path*",

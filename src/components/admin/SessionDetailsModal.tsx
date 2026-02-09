@@ -1,16 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
+import { Textarea } from "@/components/ui/Textarea";
 import { supabase } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
-import { Modal } from "@/components/ui/Modal";
-import { Button } from "@/components/ui/Button";
-import { Alert } from "@/components/ui/Alert";
+import { useEffect, useState } from "react";
+
+type SessionStatusType = "draft" | "scheduled" | "in_progress" | "completed" | "cancelled";
 
 interface Session {
     id: string;
     title: string;
     session_type?: "club" | "academy" | "community" | "cohort_class" | "one_on_one" | "group_booking" | "event";
+    status?: SessionStatusType;
     location: string;
     starts_at: string;
     ends_at: string;
@@ -19,7 +23,24 @@ interface Session {
     description?: string;
     template_id?: string;
     is_recurring_instance?: boolean;
+    published_at?: string;
 }
+
+const STATUS_BADGE_STYLES: Record<SessionStatusType, string> = {
+    draft: "bg-amber-100 text-amber-800",
+    scheduled: "bg-green-100 text-green-800",
+    in_progress: "bg-blue-100 text-blue-800",
+    completed: "bg-slate-100 text-slate-800",
+    cancelled: "bg-red-100 text-red-800",
+};
+
+const STATUS_LABELS: Record<SessionStatusType, string> = {
+    draft: "DRAFT",
+    scheduled: "PUBLISHED",
+    in_progress: "IN PROGRESS",
+    completed: "COMPLETED",
+    cancelled: "CANCELLED",
+};
 
 export { SessionDetailsModal };
 
@@ -28,38 +49,32 @@ function SessionDetailsModal({
     session,
     onClose,
     onDelete,
-    onEdit
+    onEdit,
+    onPublish,
+    onCancel,
 }: {
     session: Session;
     onClose: () => void;
     onDelete: (sessionId: string) => void;
     onEdit: (session: Session) => void;
+    onPublish?: (sessionId: string, shortNoticeMessage?: string) => void;
+    onCancel?: (sessionId: string, cancellationReason?: string) => void;
 }) {
     const [rideConfigs, setRideConfigs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [editingSession, setEditingSession] = useState(false);
-    const [editingRideShare, setEditingRideShare] = useState(false);
 
-    // Editable session fields
-    const [sessionData, setSessionData] = useState({
-        title: session.title,
-        location: session.location,
-        starts_at: session.starts_at,
-        ends_at: session.ends_at,
-        capacity: session.capacity,
-        description: session.description || ""
-    });
+    // Publish/Cancel flow state
+    const [showPublishConfirm, setShowPublishConfirm] = useState(false);
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+    const [shortNoticeMessage, setShortNoticeMessage] = useState("");
+    const [cancellationReason, setCancellationReason] = useState("");
+    const [actionLoading, setActionLoading] = useState(false);
 
-    // Editable ride configs
-    const [editableRideConfigs, setEditableRideConfigs] = useState<any[]>([]);
+    const status = session.status || "scheduled";
 
     useEffect(() => {
         fetchRideConfigs();
     }, [session.id]);
-
-    useEffect(() => {
-        setEditableRideConfigs(rideConfigs);
-    }, [rideConfigs]);
 
     const fetchRideConfigs = async () => {
         try {
@@ -81,6 +96,34 @@ function SessionDetailsModal({
         }
     };
 
+    const handlePublish = async () => {
+        if (!onPublish) return;
+        setActionLoading(true);
+        try {
+            await onPublish(session.id, shortNoticeMessage || undefined);
+        } finally {
+            setActionLoading(false);
+            setShowPublishConfirm(false);
+        }
+    };
+
+    const handleCancel = async () => {
+        if (!onCancel) return;
+        setActionLoading(true);
+        try {
+            await onCancel(session.id, cancellationReason || undefined);
+        } finally {
+            setActionLoading(false);
+            setShowCancelConfirm(false);
+        }
+    };
+
+    // Check if session start is less than 6 hours away
+    const isShortNotice = () => {
+        const hoursUntilStart = (new Date(session.starts_at).getTime() - Date.now()) / (1000 * 60 * 60);
+        return hoursUntilStart < 6;
+    };
+
     return (
         <Modal
             isOpen={true}
@@ -93,7 +136,12 @@ function SessionDetailsModal({
                         <p className="text-sm font-medium text-slate-700">Title</p>
                         <p className="text-slate-900">{session.title}</p>
                     </div>
-                    <div>
+                    <div className="flex items-center gap-2">
+                        {/* Status badge */}
+                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${STATUS_BADGE_STYLES[status]}`}>
+                            {STATUS_LABELS[status]}
+                        </span>
+                        {/* Session type badge */}
                         <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${session.session_type === 'club' ? 'bg-cyan-100 text-cyan-800' :
                             session.session_type === 'academy' ? 'bg-purple-100 text-purple-800' :
                                 'bg-emerald-100 text-emerald-800'
@@ -126,6 +174,14 @@ function SessionDetailsModal({
                         </p>
                     </div>
                 </div>
+                {session.published_at && (
+                    <div>
+                        <p className="text-sm font-medium text-slate-700">Published</p>
+                        <p className="text-sm text-slate-600">
+                            {new Date(session.published_at).toLocaleString()}
+                        </p>
+                    </div>
+                )}
                 {session.description && (
                     <div>
                         <p className="text-sm font-medium text-slate-700">Description</p>
@@ -178,17 +234,91 @@ function SessionDetailsModal({
                         This session was generated from a template
                     </Alert>
                 )}
-                <div className="flex justify-end gap-2">
-                    <Button variant="secondary" onClick={onClose}>
-                        Close
-                    </Button>
-                    <Button variant="outline" onClick={() => onEdit(session)}>
-                        Edit
-                    </Button>
-                    <Button variant="danger" onClick={() => onDelete(session.id)}>
-                        Delete
-                    </Button>
-                </div>
+
+                {/* Publish Confirmation */}
+                {showPublishConfirm && (
+                    <div className="border-t pt-4 space-y-3">
+                        <p className="text-sm font-medium text-slate-900">Publish this session?</p>
+                        <p className="text-sm text-slate-600">
+                            This will make the session visible to members and send notification emails to subscribed members.
+                        </p>
+                        {isShortNotice() && (
+                            <Alert variant="info" title="Short Notice">
+                                This session starts in less than 6 hours. It will be marked as short notice.
+                            </Alert>
+                        )}
+                        <Textarea
+                            label="Message (optional)"
+                            placeholder="e.g. Created on short notice — things will be more structured from next week."
+                            value={shortNoticeMessage}
+                            onChange={(e) => setShortNoticeMessage(e.target.value)}
+                        />
+                        <div className="flex gap-2">
+                            <Button
+                                onClick={handlePublish}
+                                disabled={actionLoading}
+                            >
+                                {actionLoading ? "Publishing..." : "Confirm Publish"}
+                            </Button>
+                            <Button variant="secondary" onClick={() => setShowPublishConfirm(false)} disabled={actionLoading}>
+                                Back
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Cancel Confirmation */}
+                {showCancelConfirm && (
+                    <div className="border-t pt-4 space-y-3">
+                        <p className="text-sm font-medium text-red-700">Cancel this session?</p>
+                        <p className="text-sm text-slate-600">
+                            This will cancel the session and notify all registered members.
+                        </p>
+                        <Textarea
+                            label="Cancellation reason (optional)"
+                            placeholder="e.g. Pool maintenance — session rescheduled to next week."
+                            value={cancellationReason}
+                            onChange={(e) => setCancellationReason(e.target.value)}
+                        />
+                        <div className="flex gap-2">
+                            <Button
+                                variant="danger"
+                                onClick={handleCancel}
+                                disabled={actionLoading}
+                            >
+                                {actionLoading ? "Cancelling..." : "Confirm Cancel"}
+                            </Button>
+                            <Button variant="secondary" onClick={() => setShowCancelConfirm(false)} disabled={actionLoading}>
+                                Back
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Action buttons */}
+                {!showPublishConfirm && !showCancelConfirm && (
+                    <div className="flex flex-wrap justify-end gap-2">
+                        <Button variant="secondary" onClick={onClose}>
+                            Close
+                        </Button>
+                        {status === "draft" && onPublish && (
+                            <Button onClick={() => setShowPublishConfirm(true)}>
+                                Publish
+                            </Button>
+                        )}
+                        <Button variant="outline" onClick={() => onEdit(session)}>
+                            Edit
+                        </Button>
+                        {(status === "draft" || status === "scheduled") && onCancel && (
+                            <Button variant="danger" onClick={() => setShowCancelConfirm(true)}>
+                                Cancel Session
+                            </Button>
+                        )}
+                        <Button variant="danger" onClick={() => onDelete(session.id)}>
+                            Delete
+                        </Button>
+                    </div>
+                )}
             </div>
         </Modal>
     );

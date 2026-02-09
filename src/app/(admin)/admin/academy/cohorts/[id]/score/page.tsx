@@ -16,15 +16,10 @@ import {
     ProgramCategory,
 } from "@/lib/academy";
 import {
-    ArrowLeft,
-    Calculator,
-    CheckCircle,
-    ChevronRight,
     Save,
     Star,
     Users,
 } from "lucide-react";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -88,6 +83,11 @@ export default function CohortScoringPage() {
         pay_band_min: number;
         pay_band_max: number;
     } | null>(null);
+
+    // Step mapping (matches cohort creation pattern)
+    const stepLabels = ["Category", "Dimensions", "Review"];
+    const steps: Array<"category" | "scoring" | "review"> = ["category", "scoring", "review"];
+    const currentStepIndex = steps.indexOf(step);
 
     useEffect(() => {
         loadData();
@@ -256,117 +256,115 @@ export default function CohortScoringPage() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="max-w-4xl mx-auto space-y-6">
             {/* Header */}
-            <div className="flex items-center gap-4">
-                <Link href={`/admin/academy/cohorts/${cohortId}`}>
-                    <Button variant="ghost" size="sm">
-                        <ArrowLeft className="h-4 w-4 mr-2" />
-                        Back to Cohort
-                    </Button>
-                </Link>
+            <header className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Cohort Complexity Scoring</h1>
-                    <p className="text-slate-600">{cohort.name}</p>
+                    <button
+                        onClick={() => router.push(`/admin/academy/cohorts/${cohortId}`)}
+                        className="text-sm text-slate-500 hover:text-slate-900 mb-2"
+                    >
+                        ← Back to Cohort
+                    </button>
+                    <h1 className="text-3xl font-bold text-slate-900">Cohort Complexity Scoring</h1>
                 </div>
-            </div>
+            </header>
 
-            {/* Progress Steps */}
-            <div className="flex items-center gap-2 text-sm">
-                <StepIndicator
-                    step={1}
-                    label="Category"
-                    active={step === "category"}
-                    completed={selectedCategory !== null}
-                />
-                <ChevronRight className="h-4 w-4 text-slate-400" />
-                <StepIndicator
-                    step={2}
-                    label="Dimensions"
-                    active={step === "scoring"}
-                    completed={step === "review"}
-                />
-                <ChevronRight className="h-4 w-4 text-slate-400" />
-                <StepIndicator
-                    step={3}
-                    label="Review"
-                    active={step === "review"}
-                    completed={existingScore !== null}
-                />
+            {/* Step Indicator */}
+            <div className="flex gap-2">
+                {stepLabels.map((label, i) => (
+                    <div
+                        key={label}
+                        className={`flex-1 rounded-lg px-3 py-2 text-center text-sm font-medium transition-colors ${
+                            i === currentStepIndex
+                                ? "bg-cyan-600 text-white"
+                                : i < currentStepIndex
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-slate-100 text-slate-500"
+                        }`}
+                    >
+                        {label}
+                    </div>
+                ))}
             </div>
 
             {/* Step Content */}
-            {step === "category" && (
-                <CategorySelector onSelect={handleCategorySelect} />
-            )}
+            <Card className="p-6">
+                {step === "category" && (
+                    <CategorySelector onSelect={handleCategorySelect} />
+                )}
 
-            {step === "scoring" && selectedCategory && (
-                <DimensionScoringForm
-                    category={selectedCategory}
-                    labels={dimensionLabels}
-                    scores={dimensionScores}
-                    onScoreChange={handleDimensionScoreChange}
-                    onRationaleChange={handleDimensionRationaleChange}
-                    onPreview={handlePreviewScore}
-                    onBack={() => setStep("category")}
-                />
-            )}
+                {step === "scoring" && selectedCategory && (
+                    <DimensionScoringForm
+                        category={selectedCategory}
+                        labels={dimensionLabels}
+                        scores={dimensionScores}
+                        onScoreChange={handleDimensionScoreChange}
+                        onRationaleChange={handleDimensionRationaleChange}
+                    />
+                )}
 
-            {step === "review" && previewResult && selectedCategory && (
-                <ScoreReview
-                    category={selectedCategory}
-                    labels={dimensionLabels}
-                    scores={dimensionScores}
-                    result={previewResult}
-                    existingScore={existingScore}
-                    eligibleCoaches={eligibleCoaches}
-                    saving={saving}
-                    onSave={handleSaveScore}
-                    onDelete={existingScore ? handleDeleteScore : undefined}
-                    onEdit={() => setStep("scoring")}
-                />
-            )}
+                {step === "review" && previewResult && selectedCategory && (
+                    <ScoreReview
+                        category={selectedCategory}
+                        labels={dimensionLabels}
+                        scores={dimensionScores}
+                        result={previewResult}
+                        existingScore={existingScore}
+                        eligibleCoaches={eligibleCoaches}
+                    />
+                )}
+            </Card>
+
+            {/* Navigation */}
+            <div className="flex justify-between">
+                <Button
+                    variant="ghost"
+                    onClick={() => {
+                        if (step === "scoring") setStep("category");
+                        else if (step === "review") setStep("scoring");
+                    }}
+                    disabled={step === "category"}
+                >
+                    ← Previous
+                </Button>
+
+                <div className="flex gap-2">
+                    {step === "review" && existingScore && (
+                        <Button
+                            variant="outline"
+                            onClick={handleDeleteScore}
+                            className="text-red-600 hover:bg-red-50"
+                        >
+                            Delete Score
+                        </Button>
+                    )}
+
+                    {step === "scoring" ? (
+                        <Button onClick={handlePreviewScore}>
+                            Calculate & Review →
+                        </Button>
+                    ) : step === "review" ? (
+                        <Button onClick={handleSaveScore} disabled={saving}>
+                            <Save className="h-4 w-4 mr-2" />
+                            {saving ? "Saving..." : existingScore ? "Update Score" : "Save Score"}
+                        </Button>
+                    ) : null}
+                </div>
+            </div>
         </div>
     );
 }
 
 // --- Sub-components ---
 
-function StepIndicator({
-    step,
-    label,
-    active,
-    completed,
-}: {
-    step: number;
-    label: string;
-    active: boolean;
-    completed: boolean;
-}) {
-    return (
-        <div className={`flex items-center gap-2 ${active ? "text-cyan-600" : completed ? "text-green-600" : "text-slate-400"}`}>
-            <div
-                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${active
-                        ? "bg-cyan-100 text-cyan-700"
-                        : completed
-                            ? "bg-green-100 text-green-700"
-                            : "bg-slate-100 text-slate-500"
-                    }`}
-            >
-                {completed ? <CheckCircle className="h-4 w-4" /> : step}
-            </div>
-            <span className="font-medium">{label}</span>
-        </div>
-    );
-}
-
 function CategorySelector({ onSelect }: { onSelect: (category: ProgramCategory) => void }) {
     return (
-        <Card className="p-6">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">
+        <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-slate-900">
                 Select Program Category
             </h2>
-            <p className="text-slate-600 mb-6">
+            <p className="text-sm text-slate-600">
                 Choose the category that best describes this cohort. Each category has specific
                 scoring dimensions tailored to its unique requirements.
             </p>
@@ -385,7 +383,7 @@ function CategorySelector({ onSelect }: { onSelect: (category: ProgramCategory) 
                     </button>
                 ))}
             </div>
-        </Card>
+        </div>
     );
 }
 
@@ -408,27 +406,23 @@ function DimensionScoringForm({
     scores,
     onScoreChange,
     onRationaleChange,
-    onPreview,
-    onBack,
 }: {
     category: ProgramCategory;
     labels: string[];
     scores: DimensionScore[];
     onScoreChange: (index: number, score: number) => void;
     onRationaleChange: (index: number, rationale: string) => void;
-    onPreview: () => void;
-    onBack: () => void;
 }) {
     const totalScore = scores.reduce((sum, d) => sum + d.score, 0);
 
     return (
-        <Card className="p-6">
-            <div className="flex items-center justify-between mb-6">
+        <div className="space-y-6">
+            <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-lg font-semibold text-slate-900">
+                    <h2 className="text-xl font-semibold text-slate-900">
                         Score Dimensions: {CATEGORY_LABELS[category]}
                     </h2>
-                    <p className="text-slate-600">
+                    <p className="text-sm text-slate-600">
                         Rate each dimension from 1 (minimal) to 5 (maximum complexity)
                     </p>
                 </div>
@@ -478,18 +472,7 @@ function DimensionScoringForm({
                     </div>
                 ))}
             </div>
-
-            <div className="flex items-center justify-between mt-6 pt-6 border-t border-slate-200">
-                <Button variant="outline" onClick={onBack}>
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Change Category
-                </Button>
-                <Button onClick={onPreview}>
-                    <Calculator className="h-4 w-4 mr-2" />
-                    Calculate & Preview
-                </Button>
-            </div>
-        </Card>
+        </div>
     );
 }
 
@@ -500,10 +483,6 @@ function ScoreReview({
     result,
     existingScore,
     eligibleCoaches,
-    saving,
-    onSave,
-    onDelete,
-    onEdit,
 }: {
     category: ProgramCategory;
     labels: string[];
@@ -516,111 +495,87 @@ function ScoreReview({
     };
     existingScore: CohortComplexityScoreResponse | null;
     eligibleCoaches: EligibleCoach[];
-    saving: boolean;
-    onSave: () => void;
-    onDelete?: () => void;
-    onEdit: () => void;
 }) {
     return (
         <div className="space-y-6">
             {/* Score Summary */}
-            <Card className="p-6">
-                <div className="flex items-start justify-between mb-6">
-                    <div>
-                        <h2 className="text-lg font-semibold text-slate-900">Score Summary</h2>
-                        <p className="text-slate-600">Category: {CATEGORY_LABELS[category]}</p>
-                    </div>
-                    {existingScore && (
-                        <Badge variant="success">Saved</Badge>
-                    )}
+            <div className="flex items-start justify-between">
+                <div>
+                    <h2 className="text-xl font-semibold text-slate-900">Score Summary</h2>
+                    <p className="text-sm text-slate-600">Category: {CATEGORY_LABELS[category]}</p>
+                </div>
+                {existingScore && (
+                    <Badge variant="success">Saved</Badge>
+                )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Total Score */}
+                <div className="bg-slate-50 rounded-lg p-4 text-center">
+                    <p className="text-sm text-slate-500 mb-1">Total Score</p>
+                    <p className="text-4xl font-bold text-slate-900">{result.total_score}</p>
+                    <p className="text-sm text-slate-500">out of 35</p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                    {/* Total Score */}
-                    <div className="bg-slate-50 rounded-lg p-4 text-center">
-                        <p className="text-sm text-slate-500 mb-1">Total Score</p>
-                        <p className="text-4xl font-bold text-slate-900">{result.total_score}</p>
-                        <p className="text-sm text-slate-500">out of 35</p>
+                {/* Required Grade */}
+                <div className="bg-slate-50 rounded-lg p-4 text-center">
+                    <p className="text-sm text-slate-500 mb-1">Required Coach Grade</p>
+                    <div className="flex justify-center">
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${GRADE_COLORS[result.required_coach_grade]}`}>
+                            {GRADE_LABELS[result.required_coach_grade]}
+                        </span>
                     </div>
-
-                    {/* Required Grade */}
-                    <div className="bg-slate-50 rounded-lg p-4 text-center">
-                        <p className="text-sm text-slate-500 mb-1">Required Coach Grade</p>
-                        <div className="flex justify-center">
-                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${GRADE_COLORS[result.required_coach_grade]}`}>
-                                {GRADE_LABELS[result.required_coach_grade]}
-                            </span>
-                        </div>
-                        <p className="text-xs text-slate-500 mt-2">
-                            {result.total_score <= 14 ? "Score 7-14" : result.total_score <= 24 ? "Score 15-24" : "Score 25-35"}
-                        </p>
-                    </div>
-
-                    {/* Pay Band */}
-                    <div className="bg-slate-50 rounded-lg p-4 text-center">
-                        <p className="text-sm text-slate-500 mb-1">Pay Band</p>
-                        <p className="text-2xl font-bold text-slate-900">
-                            {result.pay_band_min}% - {result.pay_band_max}%
-                        </p>
-                        <p className="text-sm text-slate-500">of program revenue</p>
-                    </div>
+                    <p className="text-xs text-slate-500 mt-2">
+                        {result.total_score <= 14 ? "Score 7-14" : result.total_score <= 24 ? "Score 15-24" : "Score 25-35"}
+                    </p>
                 </div>
 
-                {/* Dimension Breakdown */}
-                <div className="border-t border-slate-200 pt-4">
-                    <h3 className="font-medium text-slate-900 mb-3">Dimension Scores</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {labels.map((label, index) => (
-                            <div key={index} className="flex items-center justify-between text-sm">
-                                <span className="text-slate-600">{label}</span>
-                                <div className="flex items-center gap-2">
-                                    <div className="flex">
-                                        {[1, 2, 3, 4, 5].map((s) => (
-                                            <Star
-                                                key={s}
-                                                className={`h-4 w-4 ${s <= scores[index].score
-                                                        ? "text-amber-400 fill-amber-400"
-                                                        : "text-slate-200"
-                                                    }`}
-                                            />
-                                        ))}
-                                    </div>
-                                    <span className="font-medium text-slate-900">{scores[index].score}</span>
+                {/* Pay Band */}
+                <div className="bg-slate-50 rounded-lg p-4 text-center">
+                    <p className="text-sm text-slate-500 mb-1">Pay Band</p>
+                    <p className="text-2xl font-bold text-slate-900">
+                        {result.pay_band_min}% - {result.pay_band_max}%
+                    </p>
+                    <p className="text-sm text-slate-500">of program revenue</p>
+                </div>
+            </div>
+
+            {/* Dimension Breakdown */}
+            <div className="border-t border-slate-200 pt-4">
+                <h3 className="font-medium text-slate-900 mb-3">Dimension Scores</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {labels.map((label, index) => (
+                        <div key={index} className="flex items-center justify-between text-sm">
+                            <span className="text-slate-600">{label}</span>
+                            <div className="flex items-center gap-2">
+                                <div className="flex">
+                                    {[1, 2, 3, 4, 5].map((s) => (
+                                        <Star
+                                            key={s}
+                                            className={`h-4 w-4 ${s <= scores[index].score
+                                                    ? "text-amber-400 fill-amber-400"
+                                                    : "text-slate-200"
+                                                }`}
+                                        />
+                                    ))}
                                 </div>
+                                <span className="font-medium text-slate-900">{scores[index].score}</span>
                             </div>
-                        ))}
-                    </div>
+                        </div>
+                    ))}
                 </div>
-
-                {/* Actions */}
-                <div className="flex items-center justify-between mt-6 pt-6 border-t border-slate-200">
-                    <div className="flex gap-2">
-                        <Button variant="outline" onClick={onEdit}>
-                            Edit Scores
-                        </Button>
-                        {onDelete && (
-                            <Button variant="outline" onClick={onDelete} className="text-red-600 hover:bg-red-50">
-                                Delete Score
-                            </Button>
-                        )}
-                    </div>
-                    <Button onClick={onSave} disabled={saving}>
-                        <Save className="h-4 w-4 mr-2" />
-                        {saving ? "Saving..." : existingScore ? "Update Score" : "Save Score"}
-                    </Button>
-                </div>
-            </Card>
+            </div>
 
             {/* Eligible Coaches */}
             {existingScore && (
-                <Card className="p-6">
+                <div className="border-t border-slate-200 pt-6">
                     <div className="flex items-center gap-2 mb-4">
                         <Users className="h-5 w-5 text-slate-600" />
-                        <h2 className="text-lg font-semibold text-slate-900">
+                        <h3 className="text-lg font-semibold text-slate-900">
                             Eligible Coaches ({eligibleCoaches.length})
-                        </h2>
+                        </h3>
                     </div>
-                    <p className="text-slate-600 mb-4">
+                    <p className="text-sm text-slate-600 mb-4">
                         Coaches who meet or exceed the {GRADE_LABELS[result.required_coach_grade]} requirement
                     </p>
 
@@ -656,7 +611,7 @@ function ScoreReview({
                             ))}
                         </div>
                     )}
-                </Card>
+                </div>
             )}
         </div>
     );

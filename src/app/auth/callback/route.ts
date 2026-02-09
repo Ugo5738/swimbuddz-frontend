@@ -1,11 +1,12 @@
-import { NextResponse } from "next/server";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url);
     const code = searchParams.get("code");
-    const next = searchParams.get("next") ?? "/profile";
+    const next = searchParams.get("next") ?? "/account";
+    const nextPath = next.startsWith("/") && !next.startsWith("//") ? next : "/account";
 
     if (code) {
         try {
@@ -31,7 +32,25 @@ export async function GET(request: Request) {
             const { error } = await supabase.auth.exchangeCodeForSession(code);
 
             if (!error) {
-                return NextResponse.redirect(`${origin}${next}?action=complete_registration`);
+                // Best-effort: complete any pending registration so member routes don't fail on first login.
+                try {
+                    const { data } = await supabase.auth.getSession();
+                    const token = data.session?.access_token;
+                    if (token) {
+                        const apiBaseUrl =
+                            process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+                        await fetch(`${apiBaseUrl}/api/v1/pending-registrations/complete`, {
+                            method: "POST",
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                            },
+                        });
+                    }
+                } catch {
+                    // Ignore completion failures - it may already be completed.
+                }
+
+                return NextResponse.redirect(`${origin}${nextPath}`);
             } else {
                 console.error("Supabase auth error:", error);
                 return NextResponse.redirect(`${origin}/auth/auth-code-error?error=${encodeURIComponent(error.message)}`);

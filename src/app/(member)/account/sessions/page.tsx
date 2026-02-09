@@ -44,6 +44,7 @@ const tierColors: Record<string, string> = {
 export default function MemberSessionsPage() {
     const [sessions, setSessions] = useState<Session[]>([]);
     const [memberTiers, setMemberTiers] = useState<Set<string>>(new Set());
+    const [bookedSessionIds, setBookedSessionIds] = useState<Set<string>>(new Set());
     const [loading, setLoading] = useState(true);
     const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
     const [selectedTier, setSelectedTier] = useState<string>("");
@@ -52,13 +53,17 @@ export default function MemberSessionsPage() {
         loadData();
     }, []);
 
-    const loadData = async () => {
-        try {
-            setLoading(true);
-            const [sessionsData, memberData] = await Promise.all([
-                SessionsApi.listSessions(),
-                apiGet<MemberInfo>("/api/v1/members/me", { auth: true }),
-            ]);
+	    const loadData = async () => {
+	        try {
+	            setLoading(true);
+	            const [sessionsData, memberData, attendanceData] = await Promise.all([
+	                SessionsApi.listSessions(),
+	                apiGet<MemberInfo>("/api/v1/members/me", { auth: true }),
+	                apiGet<Array<{ session_id: string; status?: string }>>(
+	                    "/api/v1/attendance/me",
+	                    { auth: true }
+	                ).catch(() => []),
+	            ]);
 
             // Filter to only future sessions AND only bookable session types
             // Hide COHORT_CLASS and ONE_ON_ONE (these are managed via enrollment/booking)
@@ -69,12 +74,24 @@ export default function MemberSessionsPage() {
                 SessionType.CLUB,
                 SessionType.GROUP_BOOKING,
             ];
-            const futureSessions = sessionsData.filter(
-                (s) =>
-                    new Date(s.starts_at) > now &&
-                    bookableTypes.includes(s.session_type)
-            );
-            setSessions(futureSessions);
+	            const futureSessions = sessionsData.filter(
+	                (s) =>
+	                    new Date(s.starts_at) > now &&
+	                    bookableTypes.includes(s.session_type)
+	            );
+	            setSessions(futureSessions);
+
+	            // Mark sessions already booked by this member (from attendance records).
+	            const booked = new Set<string>();
+	            for (const record of attendanceData || []) {
+	                const status = String(record.status || "").toLowerCase();
+	                if (!record.session_id) continue;
+	                if (status === "cancelled" || status === "canceled" || status === "no_show") {
+	                    continue;
+	                }
+	                booked.add(record.session_id);
+	            }
+	            setBookedSessionIds(booked);
 
             // Determine member's active tiers with proper hierarchy
             const tiers = new Set<string>();
@@ -188,12 +205,13 @@ export default function MemberSessionsPage() {
                     </p>
                 </Card>
             ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {sessions.map((session) => {
-                        const hasAccess = canAccessSession(session);
-                        const requiredTier = sessionTierMap[session.session_type];
-                        const startDate = new Date(session.starts_at);
-                        const endDate = new Date(session.ends_at);
+	                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+	                    {sessions.map((session) => {
+	                        const hasAccess = canAccessSession(session);
+	                        const isBooked = bookedSessionIds.has(session.id);
+	                        const requiredTier = sessionTierMap[session.session_type];
+	                        const startDate = new Date(session.starts_at);
+	                        const endDate = new Date(session.ends_at);
 
                         return (
                             <Card
@@ -215,19 +233,26 @@ export default function MemberSessionsPage() {
                                     </div>
                                 )}
 
-                                {/* Session Content */}
-                                <div className="p-5">
-                                    {/* Header with tier badge */}
-                                    <div className="flex items-start justify-between gap-2 mb-3">
-                                        <Badge className={tierColors[requiredTier]}>
-                                            {tierLabels[requiredTier]}
-                                        </Badge>
-                                        {!hasAccess && (
-                                            <Badge className="bg-slate-200 text-slate-600">
-                                                Upgrade Required
-                                            </Badge>
-                                        )}
-                                    </div>
+	                                {/* Session Content */}
+	                                <div className="p-5">
+	                                    {/* Header with tier badge */}
+	                                    <div className="flex items-start justify-between gap-2 mb-3">
+	                                        <div className="flex flex-wrap items-center gap-2">
+	                                            <Badge className={tierColors[requiredTier]}>
+	                                                {tierLabels[requiredTier]}
+	                                            </Badge>
+	                                            {isBooked && (
+	                                                <Badge className="bg-emerald-100 text-emerald-700">
+	                                                    Booked
+	                                                </Badge>
+	                                            )}
+	                                        </div>
+	                                        {!hasAccess && (
+	                                            <Badge className="bg-slate-200 text-slate-600">
+	                                                Upgrade Required
+	                                            </Badge>
+	                                        )}
+	                                    </div>
 
                                     {/* Title */}
                                     <h3 className="font-semibold text-slate-900 mb-2">
@@ -257,18 +282,26 @@ export default function MemberSessionsPage() {
                                         )}
                                     </div>
 
-                                    {/* CTA */}
-                                    <div className="mt-4">
-                                        {hasAccess ? (
-                                            <Link href={`/sessions/${session.id}/sign-in`}>
-                                                <Button className="w-full" size="sm">
-                                                    View & Book Spot
-                                                </Button>
-                                            </Link>
-                                        ) : (
-                                            <Button
-                                                variant="outline"
-                                                className="w-full"
+	                                    {/* CTA */}
+	                                    <div className="mt-4">
+	                                        {hasAccess ? (
+	                                            isBooked ? (
+	                                                <Link href={`/sessions/${session.id}/book`}>
+	                                                    <Button className="w-full" size="sm" variant="secondary">
+	                                                        View Booking
+	                                                    </Button>
+	                                                </Link>
+	                                            ) : (
+	                                                <Link href={`/sessions/${session.id}/book`}>
+	                                                    <Button className="w-full" size="sm">
+	                                                        View & Book Spot
+	                                                    </Button>
+	                                                </Link>
+	                                            )
+	                                        ) : (
+	                                            <Button
+	                                                variant="outline"
+	                                                className="w-full"
                                                 size="sm"
                                                 onClick={() => handleLockedClick(session)}
                                             >

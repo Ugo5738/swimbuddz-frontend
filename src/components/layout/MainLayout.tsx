@@ -20,7 +20,6 @@ export function MainLayout({ children }: MainLayoutProps) {
   // Member/coach portal routes should use their own layouts without the public chrome
   const isMemberPortalRoute =
     pathname?.startsWith("/account") ||
-    pathname?.startsWith("/profile") ||
     pathname?.startsWith("/community/directory") ||
     pathname?.startsWith("/community/events") ||
     pathname?.startsWith("/community/tips") ||

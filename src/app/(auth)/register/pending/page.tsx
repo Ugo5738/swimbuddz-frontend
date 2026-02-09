@@ -39,12 +39,12 @@ export default function RegistrationPendingPage() {
                 setMemberName(member.first_name);
                 setStatus(member.approval_status || "pending");
 
-                // If approved, redirect to profile
-                if (member.approval_status === "approved") {
-                    // Force session refresh to ensure middleware sees the new status
-                    await supabase.auth.refreshSession();
-                    router.push("/profile");
-                }
+	                // If approved, redirect to profile
+	                if (member.approval_status === "approved") {
+	                    // Force session refresh to ensure middleware sees the new status
+	                    await supabase.auth.refreshSession();
+	                    router.push("/account/profile");
+	                }
             } else {
                 // Member not found - maybe registration incomplete
                 setStatus("pending");
@@ -127,10 +127,10 @@ export default function RegistrationPendingPage() {
                             Welcome to SwimBuddz{memberName ? `, ${memberName}` : ""}! Redirecting you to your profile...
                         </p>
                         <button
-                            onClick={async () => {
-                                await supabase.auth.refreshSession();
-                                router.push("/profile");
-                            }}
+	                            onClick={async () => {
+	                                await supabase.auth.refreshSession();
+	                                router.push("/account/profile");
+	                            }}
                             className="inline-flex items-center justify-center rounded-full bg-cyan-600 px-6 py-3 font-semibold text-white hover:bg-cyan-700 transition-colors"
                         >
                             Go to Profile

@@ -175,41 +175,41 @@ export default function CohortDetailsPage() {
     }
 
     return (
-        <div className="space-y-6">
-            <header className="flex items-center justify-between">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm text-slate-500">
-                        <button onClick={() => router.push("/admin/academy")} className="hover:text-slate-900">
-                            Academy
-                        </button>
-                        <span>/</span>
-                        <span>Cohorts</span>
+        <div className="space-y-6 min-w-0 overflow-hidden">
+            <header className="space-y-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="space-y-1 min-w-0">
+                        <div className="flex items-center gap-2 text-sm text-slate-500">
+                            <button onClick={() => router.push("/admin/academy")} className="hover:text-slate-900">
+                                Academy
+                            </button>
+                            <span>/</span>
+                            <span>Cohorts</span>
+                        </div>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 break-words">{cohort.name}</h1>
+                        <p className="text-slate-600">
+                            {new Date(cohort.start_date).toLocaleDateString()} - {new Date(cohort.end_date).toLocaleDateString()}
+                        </p>
                     </div>
-                    <h1 className="text-3xl font-bold text-slate-900">{cohort.name}</h1>
-                    <p className="text-slate-600">
-                        {new Date(cohort.start_date).toLocaleDateString()} - {new Date(cohort.end_date).toLocaleDateString()}
-                    </p>
-                </div>
-                <div className="flex items-center gap-4">
-                    <Badge variant={cohort.status === 'active' ? 'success' : 'default'}>
-                        {cohort.status}
-                    </Badge>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        <Badge variant={cohort.status === 'active' ? 'success' : 'default'}>
+                            {cohort.status}
+                        </Badge>
                         <button
                             onClick={() => router.push(`/admin/academy/cohorts/${cohortId}/score`)}
-                            className="rounded bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700"
+                            className="rounded bg-cyan-600 px-3 py-2 text-sm font-medium text-white hover:bg-cyan-700"
                         >
                             Complexity Score
                         </button>
                         <button
                             onClick={() => setIsEditModalOpen(true)}
-                            className="rounded bg-white px-4 py-2 text-sm font-medium text-slate-700 border border-slate-300 hover:bg-slate-50"
+                            className="rounded bg-white px-3 py-2 text-sm font-medium text-slate-700 border border-slate-300 hover:bg-slate-50"
                         >
                             Edit
                         </button>
                         <button
                             onClick={handleDelete}
-                            className="rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+                            className="rounded bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
                         >
                             Delete
                         </button>
@@ -218,8 +218,8 @@ export default function CohortDetailsPage() {
             </header>
 
             {/* Summary Stats */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <Card className="bg-gradient-to-br from-cyan-50 to-blue-50">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+                <Card className="bg-gradient-to-br from-cyan-50 to-blue-50 min-w-0">
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm font-medium text-slate-600">Total Students</p>
@@ -233,7 +233,7 @@ export default function CohortDetailsPage() {
                     </div>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-green-50 to-emerald-50">
+                <Card className="bg-gradient-to-br from-green-50 to-emerald-50 min-w-0">
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm font-medium text-slate-600">Average Completion</p>
@@ -247,7 +247,7 @@ export default function CohortDetailsPage() {
                     </div>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-yellow-50 to-orange-50">
+                <Card className="bg-gradient-to-br from-yellow-50 to-orange-50 min-w-0">
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm font-medium text-slate-600">Pending Payments</p>
@@ -270,8 +270,8 @@ export default function CohortDetailsPage() {
             />
 
             {/* Student Progress Table */}
-            <Card className="overflow-hidden">
-                <div className="border-b border-slate-200 bg-slate-50 px-6 py-4">
+            <Card className="overflow-hidden !p-0">
+                <div className="border-b border-slate-200 bg-slate-50 px-4 sm:px-6 py-4">
                     <h2 className="text-lg font-semibold text-slate-900">Student Progress</h2>
                     <p className="text-sm text-slate-600">Track and update milestone achievements</p>
                 </div>

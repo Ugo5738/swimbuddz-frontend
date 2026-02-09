@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Card } from "@/components/ui/Card";
+import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
+import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet } from "@/lib/api";
-import { Alert } from "@/components/ui/Alert";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 function formatDate(start: string, end: string) {
   const dateObj = new Date(start);
@@ -48,12 +48,14 @@ export default function SessionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [membership, setMembership] = useState<"community" | "club" | "academy">("community");
+  const [bookedSessionIds, setBookedSessionIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     async function loadData() {
       try {
         setLoading(true);
         let membership = "community"; // default if not logged in
+        let bookedIds = new Set<string>();
         try {
           const profile = await apiGet<any>("/api/v1/members/me", { auth: true });
           if (profile) {
@@ -63,10 +65,25 @@ export default function SessionsPage() {
               "community"
             ).toLowerCase();
           }
+
+          // If logged in, fetch attendance to mark sessions already booked.
+          const attendance = await apiGet<Array<{ session_id: string; status?: string }>>(
+            "/api/v1/attendance/me",
+            { auth: true }
+          ).catch(() => []);
+          for (const record of attendance || []) {
+            const status = String(record.status || "").toLowerCase();
+            if (!record.session_id) continue;
+            if (status === "cancelled" || status === "canceled" || status === "no_show") {
+              continue;
+            }
+            bookedIds.add(record.session_id);
+          }
         } catch (e) {
           console.log("User not logged in or profile fetch failed, defaulting to community view.");
         }
         setMembership(membership as "community" | "club" | "academy");
+        setBookedSessionIds(bookedIds);
 
         // Filter by session type instead of allowed tiers
         let types: string[] = [];
@@ -130,14 +147,19 @@ export default function SessionsPage() {
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2">
-            {sessions.map((session) => (
-              <Card key={session.id} className="space-y-4">
+            {sessions.map((session) => {
+              const isBooked = bookedSessionIds.has(session.id);
+              return (
+                <Card key={session.id} className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
                     <h2 className="text-xl font-semibold text-slate-900">{session.title}</h2>
                     <p className="text-sm text-slate-500">{session.location}</p>
                   </div>
-                  <Badge variant="info">{(session.session_type || "SESSION").replace("_", " ")}</Badge>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="info">{(session.session_type || "SESSION").replace("_", " ")}</Badge>
+                    {isBooked ? <Badge variant="success">Booked</Badge> : null}
+                  </div>
                 </div>
                 <p className="text-sm font-semibold text-slate-700">
                   {formatDate(session.starts_at, session.ends_at)}
@@ -177,15 +199,16 @@ export default function SessionsPage() {
                 ) : (
                   <div>
                     <Link
-                      href={`/sessions/${session.id}/sign-in`}
+                      href={`/sessions/${session.id}/book`}
                       className="inline-flex font-semibold text-cyan-700 hover:underline"
                     >
-                      Book spot &rarr;
+                      {isBooked ? "View booking →" : "Book spot →"}
                     </Link>
                   </div>
                 )}
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
           </div>
         )}
       </section>

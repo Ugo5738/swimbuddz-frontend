@@ -11,9 +11,9 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { LoadingCard } from "@/components/ui/LoadingCard";
+import { MediaInput } from "@/components/ui/MediaInput";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import { MediaInput } from "@/components/ui/MediaInput";
 import { apiGet, apiPatch } from "@/lib/api";
 import { WHATSAPP_GROUP_URL } from "@/lib/config";
 import {
@@ -375,7 +375,7 @@ function ProfileContent() {
           } else {
             // Refresh profile or show success
             // For now, just remove the query param
-            router.replace("/profile");
+            router.replace("/account/profile");
           }
         })
         .finally(() => {

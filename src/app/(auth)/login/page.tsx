@@ -55,6 +55,8 @@ function LoginContent() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [magicLoading, setMagicLoading] = useState(false);
+  const [magicSent, setMagicSent] = useState(false);
 
   useEffect(() => {
     const redirectParam = searchParams.get("redirect");
@@ -85,6 +87,7 @@ function LoginContent() {
     event.preventDefault();
     setError(null);
     setLoading(true);
+    setMagicSent(false);
 
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
@@ -124,6 +127,36 @@ function LoginContent() {
     router.push(nextPath);
   }
 
+  async function handleMagicLink() {
+    setError(null);
+    setMagicSent(false);
+    if (!email.trim()) {
+      setError("Enter your email address first.");
+      return;
+    }
+
+    const redirectParam = searchParams.get("redirect");
+    const nextPath =
+      redirectParam && redirectParam.startsWith("/") ? redirectParam : "/account";
+
+    setMagicLoading(true);
+    const { error: otpError } = await supabase.auth.signInWithOtp({
+      email: email.trim(),
+      options: {
+        shouldCreateUser: false,
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+      },
+    });
+
+    setMagicLoading(false);
+    if (otpError) {
+      setError(formatErrorMessage(otpError.message));
+      return;
+    }
+
+    setMagicSent(true);
+  }
+
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <header className="space-y-2 text-center">
@@ -135,6 +168,11 @@ function LoginContent() {
         {error ? (
           <Alert variant="error" title="Unable to log in">
             {error}
+          </Alert>
+        ) : null}
+        {magicSent ? (
+          <Alert variant="success" title="Check your email">
+            We sent a sign-in link to <span className="font-semibold">{email.trim()}</span>. Open it on this device to continue.
           </Alert>
         ) : null}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -159,6 +197,16 @@ function LoginContent() {
             {loading ? "Signing in..." : "Sign in"}
           </Button>
         </form>
+        <div className="text-center text-sm text-slate-500">or</div>
+        <Button
+          type="button"
+          variant="secondary"
+          className="w-full"
+          onClick={handleMagicLink}
+          disabled={magicLoading || loading}
+        >
+          {magicLoading ? "Sending link..." : "Email me a sign-in link"}
+        </Button>
         <p className="text-center text-sm text-slate-600">
           New here? <a href="/register" className="font-semibold text-cyan-700 hover:underline">Create an account</a>
         </p>

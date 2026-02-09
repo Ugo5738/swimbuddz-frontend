@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { getSessions, Session } from "@/lib/sessions";
 import { apiGet } from "@/lib/api";
+import { getSessions, Session } from "@/lib/sessions";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export function UpcomingSessions() {
     const [sessions, setSessions] = useState<Session[]>([]);
@@ -83,8 +82,8 @@ export function UpcomingSessions() {
                     {membership === "community" && (session.session_type === "club" || session.session_type === "cohort_class") ? (
                         <span className="text-xs font-medium text-amber-700">Club members only</span>
                     ) : (
-                        <Link href={`/sessions/${session.id}/sign-in`}>
-                            <Button size="sm" variant="outline">Sign In</Button>
+                        <Link href={`/sessions/${session.id}/book`}>
+                            <Button size="sm" variant="outline">Book</Button>
                         </Link>
                     )}
                 </div>

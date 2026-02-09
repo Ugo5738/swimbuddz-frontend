@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Card } from "@/components/ui/Card";
+import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import { Input } from "@/components/ui/Input";
-import { Alert } from "@/components/ui/Alert";
-import type { Session } from "@/lib/sessions";
 import { apiGet, apiPost } from "@/lib/api";
+import type { Session } from "@/lib/sessions";
+import { signInToSession } from "@/lib/sessions";
+import { useEffect, useState } from "react";
 
 // Helper to format currency
 const formatCurrency = (amount: number) => {
@@ -102,7 +102,23 @@ export function SessionSignIn({ session }: SessionSignInProps) {
 
   async function handlePayment() {
     if (totalCost <= 0) {
-      setError("No payment required for this session.");
+      setSaving(true);
+      setError(null);
+      try {
+        await signInToSession({
+          sessionId: session.id,
+          status,
+          notes: note || undefined,
+          ride_config_id: selectedRideShareAreaId || undefined,
+          pickup_location_id: selectedRideShareLocation || undefined,
+        });
+        setConfirmation(true);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unable to book this session. Please try again.";
+        setError(message);
+      } finally {
+        setSaving(false);
+      }
       return;
     }
 

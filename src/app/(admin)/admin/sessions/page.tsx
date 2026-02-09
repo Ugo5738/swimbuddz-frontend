@@ -18,10 +18,14 @@ import type { DateSelectArg, EventClickArg, EventInput } from "@fullcalendar/cor
 import { Calendar, List, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 
+type SessionStatusType = "draft" | "scheduled" | "in_progress" | "completed" | "cancelled";
+
 interface Session {
   id: string;
   title: string;
   session_type?: "club" | "academy" | "community" | "cohort_class" | "one_on_one" | "group_booking" | "event";
+  status?: SessionStatusType;
+  published_at?: string;
   location: string;
   starts_at: string;  // API returns starts_at, not start_time
   ends_at: string;    // API returns ends_at, not end_time
@@ -31,6 +35,31 @@ interface Session {
   template_id?: string;
   is_recurring_instance?: boolean;
   ride_share_areas?: RideShareArea[];
+}
+
+const STATUS_BADGE_STYLES: Record<SessionStatusType, string> = {
+  draft: "bg-amber-100 text-amber-800",
+  scheduled: "bg-green-100 text-green-800",
+  in_progress: "bg-blue-100 text-blue-800",
+  completed: "bg-slate-100 text-slate-800",
+  cancelled: "bg-red-100 text-red-800",
+};
+
+const STATUS_LABELS: Record<SessionStatusType, string> = {
+  draft: "DRAFT",
+  scheduled: "PUBLISHED",
+  in_progress: "IN PROGRESS",
+  completed: "COMPLETED",
+  cancelled: "CANCELLED",
+};
+
+function SessionStatusBadge({ status }: { status?: SessionStatusType }) {
+  const s = status || "scheduled";
+  return (
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_BADGE_STYLES[s]}`}>
+      {STATUS_LABELS[s]}
+    </span>
+  );
 }
 
 interface RideShareArea {
@@ -329,6 +358,60 @@ export default function AdminSessionsPage() {
     }
   };
 
+  const handlePublishSession = async (sessionId: string, shortNoticeMessage?: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const query = shortNoticeMessage
+        ? `?short_notice_message=${encodeURIComponent(shortNoticeMessage)}`
+        : "";
+
+      const res = await fetch(`${API_BASE_URL}/api/v1/sessions/${sessionId}/publish${query}`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || "Failed to publish session");
+      }
+
+      await fetchData();
+      setSelectedSession(null);
+    } catch (err) {
+      console.error("Failed to publish session", err);
+      setError(err instanceof Error ? err.message : "Failed to publish session");
+    }
+  };
+
+  const handleCancelSession = async (sessionId: string, cancellationReason?: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const query = cancellationReason
+        ? `?cancellation_reason=${encodeURIComponent(cancellationReason)}`
+        : "";
+
+      const res = await fetch(`${API_BASE_URL}/api/v1/sessions/${sessionId}/cancel${query}`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || "Failed to cancel session");
+      }
+
+      await fetchData();
+      setSelectedSession(null);
+    } catch (err) {
+      console.error("Failed to cancel session", err);
+      setError(err instanceof Error ? err.message : "Failed to cancel session");
+    }
+  };
+
   // Convert sessions to calendar events
   const calendarEvents: EventInput[] = sessions.map(session => ({
     id: session.id,
@@ -440,10 +523,13 @@ export default function AdminSessionsPage() {
               <div key={session.id} className="rounded-lg border border-slate-200 bg-white p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-medium text-slate-900 truncate">
-                      {session.is_recurring_instance && <span className="mr-1">🔁</span>}
-                      {session.title}
-                    </h3>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-medium text-slate-900 truncate">
+                        {session.is_recurring_instance && <span className="mr-1">🔁</span>}
+                        {session.title}
+                      </h3>
+                      <SessionStatusBadge status={session.status} />
+                    </div>
                     <div className="mt-1 space-y-1 text-sm text-slate-600">
                       <p>{new Date(session.starts_at).toLocaleDateString()} at {new Date(session.starts_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
                       <p className="truncate">{session.location}</p>
@@ -469,6 +555,7 @@ export default function AdminSessionsPage() {
                 <thead className="border-b border-slate-200 bg-slate-50">
                   <tr>
                     <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Title</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Status</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Date</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Time</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 hidden md:table-cell">Location</th>
@@ -481,6 +568,9 @@ export default function AdminSessionsPage() {
                       <td className="px-4 py-3 text-sm">
                         {session.is_recurring_instance && <span className="mr-1">🔁</span>}
                         {session.title}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <SessionStatusBadge status={session.status} />
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600">
                         {new Date(session.starts_at).toLocaleDateString()}
@@ -527,6 +617,8 @@ export default function AdminSessionsPage() {
             setSelectedSession(null);
             setShowEditSession(true);
           }}
+          onPublish={handlePublishSession}
+          onCancel={handleCancelSession}
         />
       )}
 

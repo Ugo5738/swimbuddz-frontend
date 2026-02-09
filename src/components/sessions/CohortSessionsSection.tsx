@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
 import { AddSessionModal } from "@/components/sessions/AddSessionModal";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { SessionsApi, SessionStatus, type Session } from "@/lib/sessions";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 type CohortSessionsSectionProps = {
@@ -25,7 +24,9 @@ export function CohortSessionsSection({
 
     const loadSessions = async () => {
         try {
-            const data = await SessionsApi.getCohortSessions(cohortId);
+            const data = await SessionsApi.getCohortSessions(cohortId, {
+                includeDrafts: true,
+            });
             // Sort by starts_at
             data.sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
             setSessions(data);
@@ -94,13 +95,13 @@ export function CohortSessionsSection({
 
     return (
         <>
-            <Card className="overflow-hidden">
-                <div className="border-b border-slate-200 bg-slate-50 px-6 py-4 flex items-center justify-between">
-                    <div>
+            <Card className="overflow-hidden !p-0">
+                <div className="border-b border-slate-200 bg-slate-50 px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
                         <h2 className="text-lg font-semibold text-slate-900">Sessions</h2>
                         <p className="text-sm text-slate-600">Manage class sessions for this cohort</p>
                     </div>
-                    <Button onClick={() => setIsAddModalOpen(true)}>
+                    <Button onClick={() => setIsAddModalOpen(true)} className="shrink-0">
                         + Add Session
                     </Button>
                 </div>
@@ -121,66 +122,101 @@ export function CohortSessionsSection({
                             return (
                                 <div
                                     key={session.id}
-                                    className="p-4 hover:bg-slate-50/50 transition-colors flex items-center gap-4"
+                                    className="p-3 sm:p-4 hover:bg-slate-50/50 transition-colors"
                                 >
-                                    {/* Week/Date column */}
-                                    <div className="w-24 flex-shrink-0">
-                                        <div className="text-xs font-medium text-slate-500 uppercase">
-                                            Week {session.week_number || "—"}
-                                        </div>
-                                        <div className="text-sm font-semibold text-slate-900">{date}</div>
-                                    </div>
-
-                                    {/* Time column */}
-                                    <div className="w-24 flex-shrink-0">
-                                        <div className="text-sm text-slate-700">
-                                            {time} – {endTime}
-                                        </div>
-                                    </div>
-
-                                    {/* Title/Lesson column */}
-                                    <div className="flex-1 min-w-0">
-                                        <div className="font-medium text-slate-900 truncate">
-                                            {session.lesson_title || session.title}
-                                        </div>
-                                        {session.location_name && (
-                                            <div className="text-xs text-slate-500 truncate">
-                                                📍 {session.location_name}
+                                    {/* Desktop layout */}
+                                    <div className="hidden sm:flex items-center gap-4">
+                                        <div className="w-24 flex-shrink-0">
+                                            <div className="text-xs font-medium text-slate-500 uppercase">
+                                                Week {session.week_number || "—"}
                                             </div>
-                                        )}
-                                    </div>
-
-                                    {/* Capacity column */}
-                                    <div className="w-20 text-center flex-shrink-0">
-                                        <div className="text-xs text-slate-500">Capacity</div>
-                                        <div className="text-sm font-medium text-slate-700">
-                                            {session.capacity}
+                                            <div className="text-sm font-semibold text-slate-900">{date}</div>
+                                        </div>
+                                        <div className="w-24 flex-shrink-0">
+                                            <div className="text-sm text-slate-700">
+                                                {time} – {endTime}
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="font-medium text-slate-900 truncate">
+                                                {session.lesson_title || session.title}
+                                            </div>
+                                            {session.location_name && (
+                                                <div className="text-xs text-slate-500 truncate">
+                                                    📍 {session.location_name}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="w-20 text-center flex-shrink-0">
+                                            <div className="text-xs text-slate-500">Capacity</div>
+                                            <div className="text-sm font-medium text-slate-700">
+                                                {session.capacity}
+                                            </div>
+                                        </div>
+                                        <div className="w-28 flex-shrink-0">
+                                            <select
+                                                value={session.status}
+                                                onChange={(e) => handleStatusChange(session.id, e.target.value as SessionStatus)}
+                                                className="w-full text-xs rounded border border-slate-200 px-2 py-1 focus:outline-none focus:border-cyan-500"
+                                            >
+                                                <option value={SessionStatus.DRAFT}>Draft</option>
+                                                <option value={SessionStatus.SCHEDULED}>Scheduled</option>
+                                                <option value={SessionStatus.IN_PROGRESS}>In Progress</option>
+                                                <option value={SessionStatus.COMPLETED}>Completed</option>
+                                                <option value={SessionStatus.CANCELLED}>Cancelled</option>
+                                            </select>
+                                        </div>
+                                        <div className="flex-shrink-0">
+                                            <button
+                                                onClick={() => handleDeleteSession(session.id)}
+                                                className="text-red-500 hover:text-red-700 text-sm"
+                                                title="Delete session"
+                                            >
+                                                🗑️
+                                            </button>
                                         </div>
                                     </div>
 
-                                    {/* Status */}
-                                    <div className="w-28 flex-shrink-0">
-                                        <select
-                                            value={session.status}
-                                            onChange={(e) => handleStatusChange(session.id, e.target.value as SessionStatus)}
-                                            className="w-full text-xs rounded border border-slate-200 px-2 py-1 focus:outline-none focus:border-cyan-500"
-                                        >
-                                            <option value={SessionStatus.SCHEDULED}>Scheduled</option>
-                                            <option value={SessionStatus.IN_PROGRESS}>In Progress</option>
-                                            <option value={SessionStatus.COMPLETED}>Completed</option>
-                                            <option value={SessionStatus.CANCELLED}>Cancelled</option>
-                                        </select>
-                                    </div>
-
-                                    {/* Actions */}
-                                    <div className="flex-shrink-0">
-                                        <button
-                                            onClick={() => handleDeleteSession(session.id)}
-                                            className="text-red-500 hover:text-red-700 text-sm"
-                                            title="Delete session"
-                                        >
-                                            🗑️
-                                        </button>
+                                    {/* Mobile layout */}
+                                    <div className="sm:hidden space-y-2">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="min-w-0 flex-1">
+                                                <div className="font-medium text-slate-900 text-sm truncate">
+                                                    {session.lesson_title || session.title}
+                                                </div>
+                                                <div className="text-xs text-slate-500 mt-0.5">
+                                                    Wk {session.week_number || "—"} · {date} · {time}–{endTime}
+                                                </div>
+                                                {session.location_name && (
+                                                    <div className="text-xs text-slate-400 truncate">
+                                                        📍 {session.location_name}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <button
+                                                onClick={() => handleDeleteSession(session.id)}
+                                                className="text-red-500 hover:text-red-700 text-sm flex-shrink-0 p-1"
+                                                title="Delete session"
+                                            >
+                                                🗑️
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <select
+                                                value={session.status}
+                                                onChange={(e) => handleStatusChange(session.id, e.target.value as SessionStatus)}
+                                                className="text-xs rounded border border-slate-200 px-2 py-1 focus:outline-none focus:border-cyan-500"
+                                            >
+                                                <option value={SessionStatus.DRAFT}>Draft</option>
+                                                <option value={SessionStatus.SCHEDULED}>Scheduled</option>
+                                                <option value={SessionStatus.IN_PROGRESS}>In Progress</option>
+                                                <option value={SessionStatus.COMPLETED}>Completed</option>
+                                                <option value={SessionStatus.CANCELLED}>Cancelled</option>
+                                            </select>
+                                            <span className="text-xs text-slate-400">
+                                                {session.capacity} seats
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             );

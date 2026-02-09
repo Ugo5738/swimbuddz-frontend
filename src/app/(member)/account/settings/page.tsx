@@ -3,7 +3,7 @@
 import { Alert } from "@/components/ui/Alert";
 import { Card } from "@/components/ui/Card";
 import { apiEndpoints } from "@/lib/config";
-import { Bell, BookOpen, Calendar, CreditCard, Loader2, Mail, Megaphone, MessageSquare, Smartphone } from "lucide-react";
+import { Bell, BookOpen, Calendar, Clock, CreditCard, Loader2, Mail, Megaphone, MessageSquare, Smartphone, Users, Waves } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface NotificationPreferences {
@@ -20,6 +20,15 @@ interface NotificationPreferences {
     push_academy_updates: boolean;
     push_coach_messages: boolean;
     weekly_digest: boolean;
+    // Session subscriptions
+    subscribe_community_sessions: boolean;
+    subscribe_club_sessions: boolean;
+    subscribe_event_sessions: boolean;
+    // Reminder timing
+    reminder_24h_enabled: boolean;
+    reminder_3h_enabled: boolean;
+    // Session digest
+    weekly_session_digest: boolean;
     created_at: string;
     updated_at: string;
 }
@@ -236,6 +245,74 @@ export default function NotificationSettingsPage() {
                 </div>
             </Card>
 
+            {/* Session Subscriptions */}
+            <Card className="p-6">
+                <div className="flex items-center gap-2 mb-4">
+                    <Waves className="h-5 w-5 text-cyan-600" />
+                    <h2 className="text-lg font-semibold text-slate-900">Session Alerts</h2>
+                </div>
+                <p className="text-sm text-slate-500 mb-4">
+                    Choose which types of sessions you want to be notified about when they are published.
+                </p>
+
+                <div className="space-y-0">
+                    <PreferenceRow
+                        icon={<Users className="h-4 w-4" />}
+                        title="Community Sessions"
+                        description="Open swims and social sessions"
+                        enabled={preferences.subscribe_community_sessions}
+                        onChange={(v) => updatePreference("subscribe_community_sessions", v)}
+                        saving={saving}
+                    />
+                    <PreferenceRow
+                        icon={<Waves className="h-4 w-4" />}
+                        title="Club Sessions"
+                        description="Structured club training sessions"
+                        enabled={preferences.subscribe_club_sessions}
+                        onChange={(v) => updatePreference("subscribe_club_sessions", v)}
+                        saving={saving}
+                    />
+                    <PreferenceRow
+                        icon={<Calendar className="h-4 w-4" />}
+                        title="Events"
+                        description="Community events and meets"
+                        enabled={preferences.subscribe_event_sessions}
+                        onChange={(v) => updatePreference("subscribe_event_sessions", v)}
+                        saving={saving}
+                    />
+                </div>
+            </Card>
+
+            {/* Reminder Timing */}
+            <Card className="p-6">
+                <div className="flex items-center gap-2 mb-4">
+                    <Clock className="h-5 w-5 text-cyan-600" />
+                    <h2 className="text-lg font-semibold text-slate-900">Reminder Timing</h2>
+                </div>
+                <p className="text-sm text-slate-500 mb-4">
+                    Control when you receive session reminders before the start time.
+                </p>
+
+                <div className="space-y-0">
+                    <PreferenceRow
+                        icon={<Bell className="h-4 w-4" />}
+                        title="24-Hour Reminder"
+                        description="Get reminded the day before a session"
+                        enabled={preferences.reminder_24h_enabled}
+                        onChange={(v) => updatePreference("reminder_24h_enabled", v)}
+                        saving={saving}
+                    />
+                    <PreferenceRow
+                        icon={<Bell className="h-4 w-4" />}
+                        title="3-Hour Reminder"
+                        description="Get reminded a few hours before a session"
+                        enabled={preferences.reminder_3h_enabled}
+                        onChange={(v) => updatePreference("reminder_3h_enabled", v)}
+                        saving={saving}
+                    />
+                </div>
+            </Card>
+
             {/* Push Notifications (Future) */}
             <Card className="p-6">
                 <div className="flex items-center gap-2 mb-4">
@@ -289,10 +366,18 @@ export default function NotificationSettingsPage() {
 
                 <PreferenceRow
                     icon={<Calendar className="h-4 w-4" />}
-                    title="Weekly Digest"
-                    description="A weekly summary of your activity and upcoming sessions"
+                    title="Weekly Activity Digest"
+                    description="A weekly summary of your activity and updates"
                     enabled={preferences.weekly_digest}
                     onChange={(v) => updatePreference("weekly_digest", v)}
+                    saving={saving}
+                />
+                <PreferenceRow
+                    icon={<Waves className="h-4 w-4" />}
+                    title="Weekly Session Digest"
+                    description="Every Sunday, get a preview of the week's upcoming sessions"
+                    enabled={preferences.weekly_session_digest}
+                    onChange={(v) => updatePreference("weekly_session_digest", v)}
                     saving={saving}
                 />
             </Card>

@@ -170,9 +170,10 @@ export default function NewCohortPage() {
                 thursday: 4, friday: 5, saturday: 6
             };
 
-            let weekNumber = 1;
-            let sessionCount = 0;
-            const currentDate = new Date(startDate);
+	            let weekNumber = 1;
+	            let sessionCount = 0;
+	            let failedSessionCount = 0;
+	            const currentDate = new Date(startDate);
 
             // Loop through each week of the cohort
             while (currentDate <= endDate) {
@@ -213,9 +214,10 @@ export default function NewCohortPage() {
                                 location_address: formData.location_address || undefined,
                             });
                             sessionCount++;
-                        } catch (sessionErr) {
-                            console.error('Failed to create session:', sessionErr);
-                        }
+	                        } catch (sessionErr) {
+	                            failedSessionCount++;
+	                            console.error('Failed to create session:', sessionErr);
+	                        }
                     }
                 }
 
@@ -224,8 +226,18 @@ export default function NewCohortPage() {
                 weekNumber++;
             }
 
-            toast.success(`Cohort created with ${sessionCount} sessions!`);
-            router.push(`/admin/academy/cohorts/${cohort.id}`);
+	            if (sessionCount === 0) {
+	                toast.error(
+	                    "Cohort created, but no sessions were generated. Double-check the cohort dates and schedule."
+	                );
+	            } else if (failedSessionCount > 0) {
+	                toast.success(
+	                    `Cohort created with ${sessionCount} sessions (${failedSessionCount} failed).`
+	                );
+	            } else {
+	                toast.success(`Cohort created with ${sessionCount} sessions!`);
+	            }
+	            router.push(`/admin/academy/cohorts/${cohort.id}`);
         } catch (err) {
             console.error(err);
             toast.error("Failed to create cohort");

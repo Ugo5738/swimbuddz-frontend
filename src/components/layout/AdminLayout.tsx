@@ -250,7 +250,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 lg:ml-72">
+      <div className="flex-1 min-w-0 overflow-x-hidden lg:ml-72">
         {/* Mobile Header - Improved sticky behavior and touch targets */}
         <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur-sm lg:hidden">
           <div className="flex items-center justify-between px-3 py-3">

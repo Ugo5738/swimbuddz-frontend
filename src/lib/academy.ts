@@ -352,6 +352,11 @@ export interface DimensionLabels {
     labels: string[];
 }
 
+type DimensionLabelsApiResponse = {
+    category: ProgramCategory;
+    labels: string[];
+};
+
 export interface NextSessionInfo {
     date?: string;
     location?: string;
@@ -516,7 +521,7 @@ export const AcademyApi = {
     },
 
     getDimensionLabels: (category: ProgramCategory) =>
-        apiGet<DimensionLabels>(`/api/v1/academy/scoring/dimensions/${category}`, { auth: true }),
+        apiGet<DimensionLabelsApiResponse>(`/api/v1/academy/scoring/dimensions/${category}`, { auth: true }),
 
     getCohortComplexityScore: (cohortId: string) =>
         apiGet<CohortComplexityScoreResponse>(`/api/v1/academy/cohorts/${cohortId}/complexity-score`, { auth: true }),
