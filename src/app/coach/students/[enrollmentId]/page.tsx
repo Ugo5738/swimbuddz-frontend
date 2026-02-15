@@ -11,13 +11,13 @@ import {
     calculateProgressPercentage,
     getEnrollmentProgress,
     getProgramMilestones,
-    updateStudentProgress,
+    reviewMilestone,
     type Enrollment,
     type Milestone,
     type StudentProgress,
 } from "@/lib/coach";
 import { formatDate } from "@/lib/format";
-import { Check, CheckCircle2, Circle, GraduationCap } from "lucide-react";
+import { Check, CheckCircle2, Circle, Clock, GraduationCap, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -63,32 +63,23 @@ export default function CoachStudentProgressPage() {
         loadData();
     }, [enrollmentId]);
 
-    const handleProgressUpdate = async (
-        milestoneId: string,
-        newStatus: "achieved" | "pending",
+    const handleReview = async (
+        progressId: string,
+        action: "approve" | "reject",
         notes?: string
     ) => {
         try {
-            const updated = await updateStudentProgress(enrollmentId, milestoneId, {
-                status: newStatus,
-                achieved_at:
-                    newStatus === "achieved" ? new Date().toISOString() : undefined,
+            await reviewMilestone(progressId, {
+                action,
                 coach_notes: notes,
             });
 
-            // Update local state
-            setProgress((prev) => {
-                const existing = prev.find((p) => p.milestone_id === milestoneId);
-                if (existing) {
-                    return prev.map((p) =>
-                        p.milestone_id === milestoneId ? updated : p
-                    );
-                }
-                return [...prev, updated];
-            });
+            // Refresh progress data after review
+            const updatedProgress = await getEnrollmentProgress(enrollmentId);
+            setProgress(updatedProgress);
         } catch (err) {
-            console.error("Failed to update progress", err);
-            alert("Failed to update progress. Please try again.");
+            console.error("Failed to review milestone", err);
+            alert("Failed to review milestone. Please try again.");
         }
     };
 
@@ -105,7 +96,12 @@ export default function CoachStudentProgressPage() {
     }
 
     const progressPercent = calculateProgressPercentage(progress, milestones.length);
-    const achievedCount = progress.filter((p) => p.status === "achieved").length;
+    const achievedCount = progress.filter(
+        (p) => p.status === "achieved" && p.reviewed_at
+    ).length;
+    const pendingReviewCount = progress.filter(
+        (p) => p.status === "achieved" && !p.reviewed_at
+    ).length;
 
     // Map progress by milestone_id for easy lookup
     const progressByMilestone = progress.reduce(
@@ -143,11 +139,18 @@ export default function CoachStudentProgressPage() {
                             <p className="text-sm text-slate-500">{enrollment.member_email}</p>
                         )}
                     </div>
-                    <Badge
-                        variant={enrollment.status === "enrolled" ? "info" : "success"}
-                    >
-                        {enrollment.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                        {pendingReviewCount > 0 && (
+                            <Badge variant="warning">
+                                {pendingReviewCount} pending review
+                            </Badge>
+                        )}
+                        <Badge
+                            variant={enrollment.status === "enrolled" ? "info" : "success"}
+                        >
+                            {enrollment.status}
+                        </Badge>
+                    </div>
                 </div>
             </header>
 
@@ -170,7 +173,7 @@ export default function CoachStudentProgressPage() {
                             </span>
                         </div>
                         <p className="text-sm text-slate-600 mt-2">
-                            {achievedCount} of {milestones.length} milestones achieved
+                            {achievedCount} of {milestones.length} milestones verified
                         </p>
                     </div>
                     <div className="text-center sm:text-right">
@@ -224,7 +227,7 @@ export default function CoachStudentProgressPage() {
                         <GraduationCap className="h-12 w-12 mx-auto text-slate-400 mb-3" />
                         <p className="text-slate-600 font-medium">No milestones defined</p>
                         <p className="text-sm text-slate-500 mt-1">
-                            This program doesn't have any milestones to track yet.
+                            This program doesn&apos;t have any milestones to track yet.
                         </p>
                     </div>
                 ) : (
@@ -235,7 +238,7 @@ export default function CoachStudentProgressPage() {
                                 milestone={milestone}
                                 index={index}
                                 progress={progressByMilestone[milestone.id]}
-                                onUpdate={handleProgressUpdate}
+                                onReview={handleReview}
                             />
                         ))}
                     </div>
@@ -249,14 +252,14 @@ function MilestoneItem({
     milestone,
     index,
     progress,
-    onUpdate,
+    onReview,
 }: {
     milestone: Milestone;
     index: number;
     progress?: StudentProgress;
-    onUpdate: (
-        milestoneId: string,
-        status: "achieved" | "pending",
+    onReview: (
+        progressId: string,
+        action: "approve" | "reject",
         notes?: string
     ) => Promise<void>;
 }) {
@@ -265,25 +268,26 @@ function MilestoneItem({
     const [saving, setSaving] = useState(false);
 
     const isAchieved = progress?.status === "achieved";
+    const isVerified = isAchieved && !!progress?.reviewed_at;
+    const isPendingReview = isAchieved && !progress?.reviewed_at;
+    const isRejected =
+        progress?.status === "pending" && !!progress?.reviewed_at;
 
-    const handleToggle = async () => {
+    const handleApprove = async () => {
+        if (!progress) return;
         setSaving(true);
         try {
-            await onUpdate(
-                milestone.id,
-                isAchieved ? "pending" : "achieved",
-                notes || undefined
-            );
+            await onReview(progress.id, "approve", notes || undefined);
         } finally {
             setSaving(false);
         }
     };
 
-    const handleSaveNotes = async () => {
+    const handleReject = async () => {
         if (!progress) return;
         setSaving(true);
         try {
-            await onUpdate(milestone.id, progress.status, notes || undefined);
+            await onReview(progress.id, "reject", notes || undefined);
         } finally {
             setSaving(false);
         }
@@ -292,83 +296,170 @@ function MilestoneItem({
     return (
         <div
             className={`border rounded-lg transition-all ${
-                isAchieved
+                isVerified
                     ? "border-emerald-200 bg-emerald-50"
-                    : "border-slate-200 bg-white"
+                    : isPendingReview
+                      ? "border-amber-200 bg-amber-50"
+                      : isRejected
+                        ? "border-red-200 bg-red-50"
+                        : "border-slate-200 bg-white"
             }`}
         >
             <div className="p-4">
                 <div className="flex items-start gap-3">
-                    <button
-                        onClick={handleToggle}
-                        disabled={saving}
-                        className={`flex-shrink-0 mt-0.5 transition-colors ${
-                            saving ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
-                        }`}
-                    >
-                        {isAchieved ? (
+                    <div className="flex-shrink-0 mt-0.5">
+                        {isVerified ? (
                             <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+                        ) : isPendingReview ? (
+                            <Clock className="h-6 w-6 text-amber-500" />
+                        ) : isRejected ? (
+                            <XCircle className="h-6 w-6 text-red-500" />
                         ) : (
-                            <Circle className="h-6 w-6 text-slate-300 hover:text-slate-400" />
+                            <Circle className="h-6 w-6 text-slate-300" />
                         )}
-                    </button>
+                    </div>
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                             <span className="text-sm text-slate-400">#{index + 1}</span>
                             <h3
                                 className={`font-medium ${
-                                    isAchieved ? "text-emerald-900" : "text-slate-900"
+                                    isVerified
+                                        ? "text-emerald-900"
+                                        : isPendingReview
+                                          ? "text-amber-900"
+                                          : isRejected
+                                            ? "text-red-900"
+                                            : "text-slate-900"
                                 }`}
                             >
                                 {milestone.name}
                             </h3>
+                            {isVerified && (
+                                <Badge variant="success" className="text-xs">
+                                    ✓ Verified
+                                </Badge>
+                            )}
+                            {isPendingReview && (
+                                <Badge variant="warning" className="text-xs">
+                                    Pending Review
+                                </Badge>
+                            )}
+                            {isRejected && (
+                                <Badge variant="danger" className="text-xs">
+                                    Rejected
+                                </Badge>
+                            )}
                         </div>
                         {milestone.criteria && (
                             <p className="text-sm text-slate-600 mt-1">{milestone.criteria}</p>
                         )}
-                        {isAchieved && progress?.achieved_at && (
+                        {isVerified && progress?.reviewed_at && (
                             <p className="text-xs text-emerald-600 mt-2">
                                 <Check className="h-3 w-3 inline mr-1" />
-                                Achieved {formatDate(progress.achieved_at)}
+                                Verified {formatDate(progress.reviewed_at)}
+                            </p>
+                        )}
+                        {isPendingReview && progress?.achieved_at && (
+                            <p className="text-xs text-amber-600 mt-2">
+                                <Clock className="h-3 w-3 inline mr-1" />
+                                Student claimed {formatDate(progress.achieved_at)}
+                            </p>
+                        )}
+                        {isRejected && progress?.reviewed_at && (
+                            <p className="text-xs text-red-600 mt-2">
+                                <XCircle className="h-3 w-3 inline mr-1" />
+                                Rejected {formatDate(progress.reviewed_at)} — awaiting student resubmission
                             </p>
                         )}
                     </div>
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setIsExpanded(!isExpanded)}
-                    >
-                        {isExpanded ? "Hide" : "Notes"}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        {isPendingReview && (
+                            <>
+                                <Button
+                                    size="sm"
+                                    variant="primary"
+                                    onClick={handleApprove}
+                                    disabled={saving}
+                                >
+                                    {saving ? "..." : "Approve"}
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setIsExpanded(true)}
+                                    className="text-red-600 border-red-200 hover:bg-red-50"
+                                >
+                                    Reject
+                                </Button>
+                            </>
+                        )}
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setIsExpanded(!isExpanded)}
+                        >
+                            {isExpanded ? "Hide" : "Notes"}
+                        </Button>
+                    </div>
                 </div>
             </div>
 
             {isExpanded && (
                 <div className="px-4 pb-4 border-t border-slate-100 pt-4">
-                    <Textarea
-                        label="Coach Notes"
-                        hideLabel
-                        placeholder="Add notes about this milestone..."
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        rows={3}
-                    />
                     {progress?.student_notes && (
-                        <div className="mt-3 p-3 bg-slate-100 rounded-lg">
+                        <div className="mb-3 p-3 bg-slate-100 rounded-lg">
                             <p className="text-xs text-slate-500 mb-1">Student Notes:</p>
                             <p className="text-sm text-slate-700">{progress.student_notes}</p>
                         </div>
                     )}
-                    <div className="flex justify-end gap-2 mt-3">
-                        <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={handleSaveNotes}
-                            disabled={saving || notes === (progress?.coach_notes || "")}
-                        >
-                            {saving ? "Saving..." : "Save Notes"}
-                        </Button>
-                    </div>
+                    {isVerified || isRejected ? (
+                        /* Read-only view for verified or rejected milestones */
+                        progress?.coach_notes ? (
+                            <div className={`p-3 rounded-lg ${isVerified ? "bg-emerald-50" : "bg-red-50"}`}>
+                                <p className={`text-xs mb-1 ${isVerified ? "text-emerald-600" : "text-red-600"}`}>
+                                    {isVerified ? "Coach Notes:" : "Rejection Feedback:"}
+                                </p>
+                                <p className="text-sm text-slate-700">{progress.coach_notes}</p>
+                            </div>
+                        ) : (
+                            <p className="text-sm text-slate-400 italic">No coach notes added.</p>
+                        )
+                    ) : (
+                        /* Editable notes + action buttons for pending review */
+                        <>
+                            <Textarea
+                                label="Coach Notes"
+                                hideLabel
+                                placeholder="Add notes about this milestone..."
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                                rows={3}
+                            />
+                            {isPendingReview && (
+                                <div className="flex justify-end gap-2 mt-3">
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={handleReject}
+                                        disabled={saving}
+                                        className="text-red-600 border-red-200 hover:bg-red-50"
+                                    >
+                                        <XCircle className="h-4 w-4 mr-1" />
+                                        {saving ? "..." : "Reject with Notes"}
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="primary"
+                                        onClick={handleApprove}
+                                        disabled={saving}
+                                    >
+                                        <CheckCircle2 className="h-4 w-4 mr-1" />
+                                        {saving ? "..." : "Approve with Notes"}
+                                    </Button>
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
             )}
         </div>

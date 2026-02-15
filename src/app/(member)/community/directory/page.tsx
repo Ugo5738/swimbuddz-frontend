@@ -1,20 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/Card";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
-import { Search, MapPin, Award } from "lucide-react";
 import { apiEndpoints } from "@/lib/config";
+import { Award, MapPin, Search } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface Member {
     id: string;
     first_name: string;
     last_name: string;
-    city: string;
-    country: string;
-    swim_level: string;
-    interest_tags: string[];
-    profile_photo_url?: string;
+    city: string | null;
+    country: string | null;
+    swim_level: string | null;
+    interest_tags: string[] | null;
+    profile_photo_url: string | null;
 }
 
 const swimLevelLabels: Record<string, string> = {
@@ -35,34 +35,10 @@ export default function MemberDirectoryPage() {
 
     const fetchMembers = async () => {
         try {
-            // Fetch members with auth - uses /api/v1/members/ which requires auth
-            const { getCurrentAccessToken } = await import("@/lib/auth");
-            const token = typeof window !== "undefined"
-                ? await getCurrentAccessToken()
-                : null;
-
-            const headers: HeadersInit = token
-                ? { "Authorization": `Bearer ${token}` }
-                : {};
-
-            const response = await fetch(`${apiEndpoints.members}/`, { headers });
+            const response = await fetch(`${apiEndpoints.members}/directory`);
             if (response.ok) {
                 const data = await response.json();
-                // Filter only members who opted in to directory
-                // show_in_directory is now in the nested profile object
-                const directoryMembers = data
-                    .filter((m: any) => m.profile?.show_in_directory)
-                    .map((m: any) => ({
-                        id: m.id,
-                        first_name: m.first_name,
-                        last_name: m.last_name,
-                        city: m.profile?.city || "",
-                        country: m.profile?.country || "",
-                        swim_level: m.profile?.swim_level || "",
-                        interest_tags: m.profile?.interest_tags || [],
-                        profile_photo_url: m.profile_photo_url,
-                    }));
-                setMembers(directoryMembers);
+                setMembers(data);
             }
         } catch (error) {
             console.error("Failed to fetch members:", error);
@@ -77,7 +53,7 @@ export default function MemberDirectoryPage() {
             `${member.first_name} ${member.last_name}`
                 .toLowerCase()
                 .includes(searchQuery.toLowerCase()) ||
-            member.city.toLowerCase().includes(searchQuery.toLowerCase());
+            (member.city || "").toLowerCase().includes(searchQuery.toLowerCase());
 
         const matchesLevel =
             filterLevel === "all" || member.swim_level === filterLevel;
@@ -192,22 +168,26 @@ export default function MemberDirectoryPage() {
                                             <h3 className="font-semibold text-slate-900">
                                                 {member.first_name} {member.last_name}
                                             </h3>
-                                            <div className="mt-1 flex items-center gap-1 text-sm text-slate-600">
-                                                <MapPin className="h-3.5 w-3.5" />
-                                                <span>
-                                                    {member.city}, {member.country}
-                                                </span>
-                                            </div>
+                                            {(member.city || member.country) && (
+                                                <div className="mt-1 flex items-center gap-1 text-sm text-slate-600">
+                                                    <MapPin className="h-3.5 w-3.5" />
+                                                    <span>
+                                                        {[member.city, member.country].filter(Boolean).join(", ")}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
                                     {/* Swim Level */}
-                                    <div className="flex items-center gap-2">
-                                        <Award className="h-4 w-4 text-slate-400" />
-                                        <span className="text-sm text-slate-700">
-                                            {swimLevelLabels[member.swim_level] || member.swim_level}
-                                        </span>
-                                    </div>
+                                    {member.swim_level && (
+                                        <div className="flex items-center gap-2">
+                                            <Award className="h-4 w-4 text-slate-400" />
+                                            <span className="text-sm text-slate-700">
+                                                {swimLevelLabels[member.swim_level] || member.swim_level}
+                                            </span>
+                                        </div>
+                                    )}
 
                                     {/* Interest Tags */}
                                     {member.interest_tags && member.interest_tags.length > 0 && (

@@ -15,6 +15,7 @@ import { LoadingCard } from "@/components/ui/LoadingCard";
 import { Select } from "@/components/ui/Select";
 import { apiGet, apiPatch } from "@/lib/api";
 import { uploadMedia } from "@/lib/media";
+import { VolunteersApi } from "@/lib/volunteers";
 import { Camera, Loader2, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -846,6 +847,40 @@ export default function DashboardOnboardingPage() {
                 },
                 { auth: true }
             );
+
+            // Also create/update volunteer profile in volunteer service
+            // Map category codes from registration to role IDs
+            if (signalsForm.volunteerInterest.length > 0) {
+                try {
+                    const allRoles = await VolunteersApi.listRoles();
+                    const roleIds = signalsForm.volunteerInterest
+                        .map((cat) => {
+                            const match = allRoles.find(
+                                (r) => r.category.toLowerCase() === cat.toLowerCase()
+                            );
+                            return match?.id;
+                        })
+                        .filter(Boolean) as string[];
+
+                    if (roleIds.length > 0) {
+                        try {
+                            // Try to create new profile
+                            await VolunteersApi.registerAsVolunteer({
+                                preferred_roles: roleIds,
+                            });
+                        } catch {
+                            // 409 = already registered → update instead
+                            await VolunteersApi.updateMyProfile({
+                                preferred_roles: roleIds,
+                            }).catch(() => {});
+                        }
+                    }
+                } catch {
+                    // Non-critical — volunteer profile sync is best-effort
+                    console.warn("Could not sync volunteer profile from onboarding");
+                }
+            }
+
             toast.success("Preferences saved");
             clearDraft();
             await loadMember({ silent: true });

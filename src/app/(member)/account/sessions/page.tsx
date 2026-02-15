@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { apiGet } from "@/lib/api";
 import { Session, SessionsApi, SessionType } from "@/lib/sessions";
-import { Lock } from "lucide-react";
+import { Calendar, CheckCircle, Clock, Lock, MapPin, Users, Waves } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -36,10 +36,24 @@ const tierLabels: Record<string, string> = {
 };
 
 const tierColors: Record<string, string> = {
-    community: "bg-green-100 text-green-700",
+    community: "bg-emerald-100 text-emerald-700",
     club: "bg-blue-100 text-blue-700",
     academy: "bg-purple-100 text-purple-700",
 };
+
+/** Accent bar colour per tier */
+const tierAccentColors: Record<string, string> = {
+    community: "bg-emerald-500",
+    club: "bg-blue-500",
+    academy: "bg-purple-500",
+};
+
+/** Convert slugs like "rowe_park_pool" → "Rowe Park Pool" */
+function formatLocationName(name: string): string {
+    return name
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 export default function MemberSessionsPage() {
     const [sessions, setSessions] = useState<Session[]>([]);
@@ -53,17 +67,17 @@ export default function MemberSessionsPage() {
         loadData();
     }, []);
 
-	    const loadData = async () => {
-	        try {
-	            setLoading(true);
-	            const [sessionsData, memberData, attendanceData] = await Promise.all([
-	                SessionsApi.listSessions(),
-	                apiGet<MemberInfo>("/api/v1/members/me", { auth: true }),
-	                apiGet<Array<{ session_id: string; status?: string }>>(
-	                    "/api/v1/attendance/me",
-	                    { auth: true }
-	                ).catch(() => []),
-	            ]);
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const [sessionsData, memberData, attendanceData] = await Promise.all([
+                SessionsApi.listSessions(),
+                apiGet<MemberInfo>("/api/v1/members/me", { auth: true }),
+                apiGet<Array<{ session_id: string; status?: string }>>(
+                    "/api/v1/attendance/me",
+                    { auth: true }
+                ).catch(() => []),
+            ]);
 
             // Filter to only future sessions AND only bookable session types
             // Hide COHORT_CLASS and ONE_ON_ONE (these are managed via enrollment/booking)
@@ -74,24 +88,24 @@ export default function MemberSessionsPage() {
                 SessionType.CLUB,
                 SessionType.GROUP_BOOKING,
             ];
-	            const futureSessions = sessionsData.filter(
-	                (s) =>
-	                    new Date(s.starts_at) > now &&
-	                    bookableTypes.includes(s.session_type)
-	            );
-	            setSessions(futureSessions);
+            const futureSessions = sessionsData.filter(
+                (s) =>
+                    new Date(s.starts_at) > now &&
+                    bookableTypes.includes(s.session_type)
+            );
+            setSessions(futureSessions);
 
-	            // Mark sessions already booked by this member (from attendance records).
-	            const booked = new Set<string>();
-	            for (const record of attendanceData || []) {
-	                const status = String(record.status || "").toLowerCase();
-	                if (!record.session_id) continue;
-	                if (status === "cancelled" || status === "canceled" || status === "no_show") {
-	                    continue;
-	                }
-	                booked.add(record.session_id);
-	            }
-	            setBookedSessionIds(booked);
+            // Mark sessions already booked by this member (from attendance records).
+            const booked = new Set<string>();
+            for (const record of attendanceData || []) {
+                const status = String(record.status || "").toLowerCase();
+                if (!record.session_id) continue;
+                if (status === "cancelled" || status === "canceled" || status === "no_show") {
+                    continue;
+                }
+                booked.add(record.session_id);
+            }
+            setBookedSessionIds(booked);
 
             // Determine member's active tiers with proper hierarchy
             const tiers = new Set<string>();
@@ -196,31 +210,35 @@ export default function MemberSessionsPage() {
             {/* Sessions Grid */}
             {sessions.length === 0 ? (
                 <Card className="p-12 text-center">
-                    <div className="text-4xl mb-4">📅</div>
-                    <h2 className="text-xl font-semibold text-slate-900 mb-2">
+                    <Waves className="mx-auto h-12 w-12 text-slate-300" />
+                    <h2 className="mt-4 text-xl font-semibold text-slate-900">
                         No upcoming sessions
                     </h2>
-                    <p className="text-slate-600">
+                    <p className="mt-2 text-slate-600">
                         Check back later for new session listings.
                     </p>
                 </Card>
             ) : (
-	                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-	                    {sessions.map((session) => {
-	                        const hasAccess = canAccessSession(session);
-	                        const isBooked = bookedSessionIds.has(session.id);
-	                        const requiredTier = sessionTierMap[session.session_type];
-	                        const startDate = new Date(session.starts_at);
-	                        const endDate = new Date(session.ends_at);
+                <div className="grid gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {sessions.map((session) => {
+                        const hasAccess = canAccessSession(session);
+                        const isBooked = bookedSessionIds.has(session.id);
+                        const requiredTier = sessionTierMap[session.session_type];
+                        const startDate = new Date(session.starts_at);
+                        const endDate = new Date(session.ends_at);
+                        const accentColor = tierAccentColors[requiredTier] || "bg-slate-400";
 
                         return (
-                            <Card
+                            <div
                                 key={session.id}
-                                className={`relative overflow-hidden transition-all ${hasAccess
-                                    ? "hover:shadow-lg cursor-pointer"
+                                className={`relative flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition-all ${hasAccess
+                                    ? "hover:shadow-lg hover:border-slate-200"
                                     : "opacity-60"
                                     }`}
                             >
+                                {/* Coloured accent bar */}
+                                <div className={`h-1.5 ${accentColor}`} />
+
                                 {/* Locked Overlay */}
                                 {!hasAccess && (
                                     <div
@@ -233,75 +251,97 @@ export default function MemberSessionsPage() {
                                     </div>
                                 )}
 
-	                                {/* Session Content */}
-	                                <div className="p-5">
-	                                    {/* Header with tier badge */}
-	                                    <div className="flex items-start justify-between gap-2 mb-3">
-	                                        <div className="flex flex-wrap items-center gap-2">
-	                                            <Badge className={tierColors[requiredTier]}>
-	                                                {tierLabels[requiredTier]}
-	                                            </Badge>
-	                                            {isBooked && (
-	                                                <Badge className="bg-emerald-100 text-emerald-700">
-	                                                    Booked
-	                                                </Badge>
-	                                            )}
-	                                        </div>
-	                                        {!hasAccess && (
-	                                            <Badge className="bg-slate-200 text-slate-600">
-	                                                Upgrade Required
-	                                            </Badge>
-	                                        )}
-	                                    </div>
-
-                                    {/* Title */}
-                                    <h3 className="font-semibold text-slate-900 mb-2">
-                                        {session.title}
-                                    </h3>
-
-                                    {/* Details */}
-                                    <div className="space-y-1 text-sm text-slate-600">
-                                        <p>
-                                            📅 {startDate.toLocaleDateString("en-NG", {
-                                                weekday: "short",
-                                                month: "short",
-                                                day: "numeric",
-                                            })}
-                                        </p>
-                                        <p>
-                                            🕐 {startDate.toLocaleTimeString("en-NG", {
-                                                hour: "2-digit",
-                                                minute: "2-digit",
-                                            })} - {endDate.toLocaleTimeString("en-NG", {
-                                                hour: "2-digit",
-                                                minute: "2-digit",
-                                            })}
-                                        </p>
-                                        {session.location_name && (
-                                            <p>📍 {session.location_name}</p>
+                                {/* Session Content */}
+                                <div className="flex flex-1 flex-col p-5">
+                                    {/* Header with tier badge + booked status */}
+                                    <div className="flex items-center justify-between mb-3">
+                                        <Badge className={tierColors[requiredTier]}>
+                                            {tierLabels[requiredTier]}
+                                        </Badge>
+                                        {isBooked && (
+                                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                                                <CheckCircle className="h-3.5 w-3.5" />
+                                                Booked
+                                            </span>
+                                        )}
+                                        {!hasAccess && (
+                                            <Badge className="bg-slate-200 text-slate-500">
+                                                Locked
+                                            </Badge>
                                         )}
                                     </div>
 
-	                                    {/* CTA */}
-	                                    <div className="mt-4">
-	                                        {hasAccess ? (
-	                                            isBooked ? (
-	                                                <Link href={`/sessions/${session.id}/book`}>
-	                                                    <Button className="w-full" size="sm" variant="secondary">
-	                                                        View Booking
-	                                                    </Button>
-	                                                </Link>
-	                                            ) : (
-	                                                <Link href={`/sessions/${session.id}/book`}>
-	                                                    <Button className="w-full" size="sm">
-	                                                        View & Book Spot
-	                                                    </Button>
-	                                                </Link>
-	                                            )
-	                                        ) : (
-	                                            <Button
-	                                                variant="outline"
-	                                                className="w-full"
+                                    {/* Title + description */}
+                                    <h3 className="text-lg font-semibold text-slate-900">
+                                        {session.title}
+                                    </h3>
+                                    {session.description && (
+                                        <p className="mt-1 line-clamp-2 text-sm text-slate-500">
+                                            {session.description}
+                                        </p>
+                                    )}
+
+                                    {/* Details */}
+                                    <div className="mt-4 space-y-2 border-t border-slate-100 pt-3 text-sm text-slate-600">
+                                        <div className="flex items-center gap-2">
+                                            <Calendar className="h-4 w-4 shrink-0 text-slate-400" />
+                                            <span>
+                                                {startDate.toLocaleDateString("en-NG", {
+                                                    weekday: "short",
+                                                    month: "short",
+                                                    day: "numeric",
+                                                })}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Clock className="h-4 w-4 shrink-0 text-slate-400" />
+                                            <span>
+                                                {startDate.toLocaleTimeString("en-NG", {
+                                                    hour: "2-digit",
+                                                    minute: "2-digit",
+                                                })} – {endDate.toLocaleTimeString("en-NG", {
+                                                    hour: "2-digit",
+                                                    minute: "2-digit",
+                                                })}
+                                            </span>
+                                        </div>
+                                        {session.location_name && (
+                                            <div className="flex items-center gap-2">
+                                                <MapPin className="h-4 w-4 shrink-0 text-slate-400" />
+                                                <span>{formatLocationName(session.location_name)}</span>
+                                            </div>
+                                        )}
+                                        {session.capacity > 0 && (
+                                            <div className="flex items-center gap-2">
+                                                <Users className="h-4 w-4 shrink-0 text-slate-400" />
+                                                <span>{session.capacity} spots</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Spacer to push CTA to bottom */}
+                                    <div className="flex-1" />
+
+                                    {/* CTA */}
+                                    <div className="mt-4">
+                                        {hasAccess ? (
+                                            isBooked ? (
+                                                <Link href={`/sessions/${session.id}/book`}>
+                                                    <Button className="w-full" size="sm" variant="secondary">
+                                                        View Booking
+                                                    </Button>
+                                                </Link>
+                                            ) : (
+                                                <Link href={`/sessions/${session.id}/book`}>
+                                                    <Button className="w-full" size="sm">
+                                                        View & Book Spot
+                                                    </Button>
+                                                </Link>
+                                            )
+                                        ) : (
+                                            <Button
+                                                variant="outline"
+                                                className="w-full"
                                                 size="sm"
                                                 onClick={() => handleLockedClick(session)}
                                             >
@@ -310,7 +350,7 @@ export default function MemberSessionsPage() {
                                         )}
                                     </div>
                                 </div>
-                            </Card>
+                            </div>
                         );
                     })}
                 </div>

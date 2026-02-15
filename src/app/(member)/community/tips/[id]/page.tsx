@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Textarea } from "@/components/ui/Textarea";
+import { apiGet } from "@/lib/api";
 import { apiEndpoints } from "@/lib/config";
 import { format } from "date-fns";
 import { ArrowLeft, Calendar, MessageCircle, User } from "lucide-react";
@@ -55,12 +56,17 @@ export default function ContentDetailPage() {
     const [newComment, setNewComment] = useState("");
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [memberId, setMemberId] = useState<string | null>(null);
 
     useEffect(() => {
         if (postId) {
             fetchPost();
             fetchComments();
         }
+        // Get current member ID for commenting
+        apiGet<{ id: string }>("/api/v1/members/me", { auth: true })
+            .then((data) => setMemberId(data.id))
+            .catch(() => {});
     }, [postId]);
 
     const fetchPost = async () => {
@@ -90,13 +96,10 @@ export default function ContentDetailPage() {
     };
 
     const handleAddComment = async () => {
-        if (!newComment.trim()) return;
+        if (!newComment.trim() || !memberId) return;
 
         setSubmitting(true);
         try {
-            // TODO: Get actual member_id from auth context
-            const memberId = "temp-member-id";
-
             const response = await fetch(
                 `${apiEndpoints.content}/${postId}/comments?member_id=${memberId}`,
                 {
@@ -236,7 +239,7 @@ export default function ContentDetailPage() {
                         <div className="flex justify-end">
                             <Button
                                 onClick={handleAddComment}
-                                disabled={!newComment.trim() || submitting}
+                                disabled={!newComment.trim() || submitting || !memberId}
                             >
                                 {submitting ? "Posting..." : "Post Comment"}
                             </Button>

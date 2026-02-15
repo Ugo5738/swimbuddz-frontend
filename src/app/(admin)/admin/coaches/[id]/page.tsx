@@ -1,5 +1,6 @@
 "use client";
 
+import { CoachGradesCard } from "@/components/coaches/CoachGradesCard";
 import { CoachReadinessCard } from "@/components/coaches/CoachReadinessCard";
 import { CoachStatusBadge } from "@/components/coaches/CoachStatusBadge";
 import { Alert } from "@/components/ui/Alert";
@@ -445,6 +446,11 @@ export default function AdminCoachDetailPage() {
                     {/* Coach Readiness (only for approved coaches) */}
                     {application.status === "approved" && application.member_id && (
                         <CoachReadinessCard coachId={application.member_id} />
+                    )}
+
+                    {/* Coach Grades (only for approved/active coaches) */}
+                    {["approved", "active"].includes(application.status) && (
+                        <CoachGradesCard coachProfileId={coachId} />
                     )}
 
                     {/* Rejection Reason */}

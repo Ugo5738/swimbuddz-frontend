@@ -5,7 +5,7 @@
  * Run `npm run generate:types` to update types after backend changes.
  */
 
-import { apiDelete, apiGet, apiPatch, apiPost } from "./api";
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./api";
 import type { components } from "./api-types";
 
 // === Generated Types (re-exported from api-types.ts) ===
@@ -36,6 +36,53 @@ export type CoachStatus =
     | "active"
     | "inactive"
     | "suspended";
+
+// === Coach Grade Types ===
+
+export type CoachGradeValue = "grade_1" | "grade_2" | "grade_3";
+
+export interface CoachGradesData {
+    coach_profile_id: string;
+    member_id: string;
+    display_name: string | null;
+    learn_to_swim_grade: CoachGradeValue | null;
+    special_populations_grade: CoachGradeValue | null;
+    institutional_grade: CoachGradeValue | null;
+    competitive_elite_grade: CoachGradeValue | null;
+    certifications_grade: CoachGradeValue | null;
+    specialized_disciplines_grade: CoachGradeValue | null;
+    adjacent_services_grade: CoachGradeValue | null;
+    total_coaching_hours: number;
+    cohorts_completed: number;
+    average_feedback_rating: number | null;
+    swimbuddz_level: number | null;
+    last_active_date: string | null;
+    first_aid_cert_expiry: string | null;
+    cpr_expiry_date: string | null;
+    lifeguard_expiry_date: string | null;
+}
+
+export interface UpdateCoachGradesData {
+    learn_to_swim_grade?: CoachGradeValue | null;
+    special_populations_grade?: CoachGradeValue | null;
+    institutional_grade?: CoachGradeValue | null;
+    competitive_elite_grade?: CoachGradeValue | null;
+    certifications_grade?: CoachGradeValue | null;
+    specialized_disciplines_grade?: CoachGradeValue | null;
+    adjacent_services_grade?: CoachGradeValue | null;
+    swimbuddz_level?: number | null;
+    admin_notes?: string;
+}
+
+export interface CoachGradeSuggestion {
+    recommended_grade: CoachGradeValue;
+    rationale: string;
+    areas_for_improvement: string[];
+    strengths: string[];
+    confidence: number;
+    ai_request_id: string;
+    model_used: string;
+}
 
 // === API Client ===
 
@@ -122,6 +169,26 @@ export const CoachesApi = {
      */
     deleteApplication: (id: string) =>
         apiDelete<{ message: string }>(`/api/v1/admin/coaches/applications/${id}`, { auth: true }),
+
+    // === Admin Grade Management ===
+
+    /**
+     * Get a coach's grades (admin only).
+     */
+    getGrades: (coachProfileId: string) =>
+        apiGet<CoachGradesData>(`/api/v1/admin/coaches/${coachProfileId}/grades`, { auth: true }),
+
+    /**
+     * Update a coach's grades (admin only).
+     */
+    updateGrades: (coachProfileId: string, data: UpdateCoachGradesData) =>
+        apiPut<CoachGradesData>(`/api/v1/admin/coaches/${coachProfileId}/grades`, data, { auth: true }),
+
+    /**
+     * Get AI-suggested grades for a coach (admin only).
+     */
+    suggestGrades: (coachProfileId: string) =>
+        apiPost<CoachGradeSuggestion>(`/api/v1/admin/coaches/${coachProfileId}/suggest-grades`, {}, { auth: true }),
 };
 
 // === Helper functions ===

@@ -41,12 +41,16 @@ export default function AnnouncementDetailPage() {
     const [newComment, setNewComment] = useState("");
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [memberId, setMemberId] = useState<string | null>(null);
 
     useEffect(() => {
         if (announcementId) {
             fetchAnnouncement();
             fetchComments();
         }
+        apiGet<{ id: string }>("/api/v1/members/me", { auth: true })
+            .then((data) => setMemberId(data.id))
+            .catch(() => {});
     }, [announcementId]);
 
     const fetchAnnouncement = async () => {
@@ -76,13 +80,10 @@ export default function AnnouncementDetailPage() {
     };
 
     const handleAddComment = async () => {
-        if (!newComment.trim()) return;
+        if (!newComment.trim() || !memberId) return;
 
         setSubmitting(true);
         try {
-            // TODO: Get actual member_id from auth context
-            const memberId = "temp-member-id";
-
             const response = await fetch(
                 `${apiEndpoints.announcements}/${announcementId}/comments?member_id=${memberId}`,
                 {
@@ -185,7 +186,7 @@ export default function AnnouncementDetailPage() {
                         <div className="flex justify-end">
                             <Button
                                 onClick={handleAddComment}
-                                disabled={!newComment.trim() || submitting}
+                                disabled={!newComment.trim() || submitting || !memberId}
                             >
                                 {submitting ? "Posting..." : "Post Comment"}
                             </Button>

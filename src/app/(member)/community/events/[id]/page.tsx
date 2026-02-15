@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Calendar, MapPin, Users, ArrowLeft, CheckCircle } from "lucide-react";
-import { format } from "date-fns";
+import { Card } from "@/components/ui/Card";
+import { apiGet } from "@/lib/api";
 import { apiEndpoints } from "@/lib/config";
+import { format } from "date-fns";
+import { ArrowLeft, Calendar, CheckCircle, MapPin, Users } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface Event {
     id: string;
@@ -47,12 +48,16 @@ export default function EventDetailPage() {
     const [userRsvp, setUserRsvp] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [memberId, setMemberId] = useState<string | null>(null);
 
     useEffect(() => {
         if (eventId) {
             fetchEvent();
             fetchRsvps();
         }
+        apiGet<{ id: string }>("/api/v1/members/me", { auth: true })
+            .then((data) => setMemberId(data.id))
+            .catch(() => {});
     }, [eventId]);
 
     const fetchEvent = async () => {
@@ -82,11 +87,9 @@ export default function EventDetailPage() {
     };
 
     const handleRsvp = async (status: "going" | "maybe" | "not_going") => {
+        if (!memberId) return;
         setSubmitting(true);
         try {
-            // TODO: Get actual member_id from auth context
-            const memberId = "temp-member-id";
-
             const response = await fetch(
                 `${apiEndpoints.events}/${eventId}/rsvp?member_id=${memberId}`,
                 {

@@ -411,6 +411,25 @@ export async function updateStudentProgress(
 }
 
 /**
+ * Review (approve/reject) a student milestone claim.
+ * Uses the proper review endpoint that sets reviewed_at/reviewed_by_coach_id.
+ */
+export async function reviewMilestone(
+    progressId: string,
+    data: {
+        action: "approve" | "reject";
+        score?: number;
+        coach_notes?: string;
+    }
+): Promise<{ message: string; progress_id: string; status: string }> {
+    return apiPost(
+        `/api/v1/academy/coach/me/milestone-reviews/${progressId}`,
+        data,
+        { auth: true }
+    );
+}
+
+/**
  * Get the current coach's profile and application status.
  */
 export async function getMyCoachProfile(): Promise<CoachProfile> {

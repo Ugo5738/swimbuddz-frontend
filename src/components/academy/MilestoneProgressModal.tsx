@@ -1,8 +1,9 @@
 "use client";
 
 import { useMediaUrl } from "@/hooks/useMediaUrl";
-import { AcademyApi, Milestone, ProgressStatus, StudentProgress } from "@/lib/academy";
-import { useEffect, useState } from "react";
+import { Milestone, ProgressStatus, StudentProgress } from "@/lib/academy";
+import { reviewMilestone } from "@/lib/coach";
+import { useState } from "react";
 import { toast } from "sonner";
 
 interface MilestoneProgressModalProps {
@@ -24,40 +25,36 @@ export function MilestoneProgressModal({
     currentProgress,
     onSuccess,
 }: MilestoneProgressModalProps) {
-    const [status, setStatus] = useState<ProgressStatus>(
-        currentProgress?.status || ProgressStatus.PENDING
-    );
     const [coachNotes, setCoachNotes] = useState(currentProgress?.coach_notes || "");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [milestoneVideoUrl] = useMediaUrl(milestone.video_media_id);
 
-    // Update state when currentProgress changes
-    useEffect(() => {
-        setStatus(currentProgress?.status || ProgressStatus.PENDING);
-        setCoachNotes(currentProgress?.coach_notes || "");
-    }, [currentProgress]);
-
     if (!isOpen) return null;
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const isPendingReview =
+        currentProgress?.status === ProgressStatus.ACHIEVED && !currentProgress?.reviewed_at;
+    const isVerified =
+        currentProgress?.status === ProgressStatus.ACHIEVED && !!currentProgress?.reviewed_at;
+    const isRejected =
+        currentProgress?.status === ProgressStatus.PENDING && !!currentProgress?.reviewed_at;
+
+    const handleReview = async (action: "approve" | "reject") => {
+        if (!currentProgress?.id) {
+            toast.error("No progress record to review");
+            return;
+        }
         setIsSubmitting(true);
-
         try {
-            const achievedAt = status === ProgressStatus.ACHIEVED ? new Date().toISOString() : undefined;
-
-            await AcademyApi.updateProgress(enrollmentId, milestone.id, {
-                status,
-                achieved_at: achievedAt,
+            await reviewMilestone(currentProgress.id, {
+                action,
                 coach_notes: coachNotes || undefined,
             });
-
-            toast.success("Progress updated successfully");
+            toast.success(action === "approve" ? "Milestone verified!" : "Re-demo requested");
             onSuccess();
             onClose();
         } catch (error) {
-            console.error("Failed to update progress", error);
-            toast.error("Failed to update progress");
+            console.error(`Failed to ${action} milestone:`, error);
+            toast.error(`Failed to ${action} milestone`);
         } finally {
             setIsSubmitting(false);
         }
@@ -69,7 +66,7 @@ export function MilestoneProgressModal({
                 className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl"
                 onClick={(e) => e.stopPropagation()}
             >
-                <h2 className="mb-4 text-xl font-bold text-slate-900">Update Milestone Progress</h2>
+                <h2 className="mb-4 text-xl font-bold text-slate-900">Review Milestone</h2>
 
                 <div className="mb-4 space-y-2 rounded-lg bg-slate-50 p-4">
                     <div className="flex items-start justify-between">
@@ -100,11 +97,11 @@ export function MilestoneProgressModal({
                     </div>
                 </div>
 
-                {/* Student's Evidence Section */}
-                {currentProgress?.status === ProgressStatus.ACHIEVED && !currentProgress?.reviewed_at && (
+                {/* Student's Evidence Section - shown when pending review */}
+                {isPendingReview && (
                     <div className="mb-4 rounded-lg border-2 border-amber-200 bg-amber-50 p-4">
                         <div className="text-sm font-medium text-amber-800 mb-2">
-                            📝 Student has claimed this milestone
+                            Student has claimed this milestone
                         </div>
                         {currentProgress?.student_notes && (
                             <div className="text-sm text-amber-700 mb-2">
@@ -119,153 +116,90 @@ export function MilestoneProgressModal({
                                 </span>
                             </div>
                         )}
-                        <div className="mt-3 flex gap-2">
-                            <button
-                                type="button"
-                                onClick={async () => {
-                                    setIsSubmitting(true);
-                                    try {
-                                        await AcademyApi.updateProgress(enrollmentId, milestone.id, {
-                                            status: ProgressStatus.ACHIEVED,
-                                            reviewed_at: new Date().toISOString(),
-                                            coach_notes: coachNotes || "Verified",
-                                        });
-                                        toast.success("Milestone verified!");
-                                        onSuccess();
-                                        onClose();
-                                    } catch (error) {
-                                        toast.error("Failed to verify");
-                                    } finally {
-                                        setIsSubmitting(false);
-                                    }
-                                }}
-                                disabled={isSubmitting}
-                                className="flex-1 rounded bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
-                            >
-                                ✓ Verify
-                            </button>
-                            <button
-                                type="button"
-                                onClick={async () => {
-                                    setIsSubmitting(true);
-                                    try {
-                                        await AcademyApi.updateProgress(enrollmentId, milestone.id, {
-                                            status: ProgressStatus.PENDING,
-                                            coach_notes: coachNotes || "Re-demo requested",
-                                        });
-                                        toast.success("Re-demo requested");
-                                        onSuccess();
-                                        onClose();
-                                    } catch (error) {
-                                        toast.error("Failed to request re-demo");
-                                    } finally {
-                                        setIsSubmitting(false);
-                                    }
-                                }}
-                                disabled={isSubmitting}
-                                className="flex-1 rounded bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
-                            >
-                                ↺ Request Re-demo
-                            </button>
-                        </div>
                     </div>
                 )}
 
                 {/* Already Verified Banner */}
-                {currentProgress?.reviewed_at && (
+                {isVerified && (
                     <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-4">
                         <div className="text-sm font-medium text-green-800">
-                            ✓ Verified on {new Date(currentProgress.reviewed_at).toLocaleDateString()}
+                            Verified on {new Date(currentProgress!.reviewed_at!).toLocaleDateString()}
+                        </div>
+                        {currentProgress?.coach_notes && (
+                            <div className="text-sm text-green-700 mt-1">
+                                <span className="font-medium">Your notes:</span> {currentProgress.coach_notes}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Rejected Banner */}
+                {isRejected && (
+                    <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4">
+                        <div className="text-sm font-medium text-red-800">
+                            Rejected on {new Date(currentProgress!.reviewed_at!).toLocaleDateString()}
+                        </div>
+                        {currentProgress?.coach_notes && (
+                            <div className="text-sm text-red-700 mt-1">
+                                <span className="font-medium">Your feedback:</span> {currentProgress.coach_notes}
+                            </div>
+                        )}
+                        <div className="text-xs text-red-600 mt-2">
+                            Awaiting student resubmission
                         </div>
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                            Status
-                        </label>
-                        <div className="flex gap-3">
+                {/* Coach Notes + Actions - only for pending review */}
+                {isPendingReview && (
+                    <div className="space-y-4">
+                        <div>
+                            <label htmlFor="coachNotes" className="block text-sm font-medium text-slate-700 mb-1">
+                                Coach Notes
+                            </label>
+                            <textarea
+                                id="coachNotes"
+                                value={coachNotes}
+                                onChange={(e) => setCoachNotes(e.target.value)}
+                                rows={3}
+                                className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                                placeholder="Add notes about the student's performance..."
+                                disabled={isSubmitting}
+                            />
+                        </div>
+                        <div className="flex gap-3 pt-2">
                             <button
                                 type="button"
-                                onClick={() => setStatus(ProgressStatus.ACHIEVED)}
-                                className={`flex-1 rounded-lg border-2 px-4 py-3 text-sm font-medium transition-colors ${status === ProgressStatus.ACHIEVED
-                                    ? "border-green-500 bg-green-50 text-green-700"
-                                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                                    }`}
+                                onClick={() => handleReview("reject")}
+                                disabled={isSubmitting}
+                                className="flex-1 rounded bg-amber-600 px-3 py-2.5 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
                             >
-                                <div className="flex items-center justify-center gap-2">
-                                    <div
-                                        className={`h-3 w-3 rounded-full ${status === ProgressStatus.ACHIEVED ? "bg-green-500" : "bg-slate-300"
-                                            }`}
-                                    />
-                                    Achieved
-                                </div>
+                                {isSubmitting ? "..." : "Request Re-demo"}
                             </button>
                             <button
                                 type="button"
-                                onClick={() => setStatus(ProgressStatus.PENDING)}
-                                className={`flex-1 rounded-lg border-2 px-4 py-3 text-sm font-medium transition-colors ${status === ProgressStatus.PENDING
-                                    ? "border-slate-500 bg-slate-50 text-slate-700"
-                                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                                    }`}
+                                onClick={() => handleReview("approve")}
+                                disabled={isSubmitting}
+                                className="flex-1 rounded bg-green-600 px-3 py-2.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
                             >
-                                <div className="flex items-center justify-center gap-2">
-                                    <div
-                                        className={`h-3 w-3 rounded-full ${status === ProgressStatus.PENDING ? "bg-slate-400" : "bg-slate-300"
-                                            }`}
-                                    />
-                                    Pending
-                                </div>
+                                {isSubmitting ? "..." : "Verify"}
                             </button>
                         </div>
                     </div>
+                )}
 
-                    {currentProgress?.achieved_at && (
-                        <div className="rounded-lg bg-green-50 border border-green-100 p-3">
-                            <div className="text-xs font-medium text-green-700">Achieved on</div>
-                            <div className="text-sm text-green-900">
-                                {new Date(currentProgress.achieved_at).toLocaleDateString('en-US', {
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric',
-                                })}
-                            </div>
-                        </div>
-                    )}
-
-                    <div>
-                        <label htmlFor="coachNotes" className="block text-sm font-medium text-slate-700 mb-1">
-                            Coach Notes
-                        </label>
-                        <textarea
-                            id="coachNotes"
-                            value={coachNotes}
-                            onChange={(e) => setCoachNotes(e.target.value)}
-                            rows={4}
-                            className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                            placeholder="Add notes about the student's performance, areas for improvement, or encouragement..."
-                        />
-                    </div>
-
-                    <div className="flex gap-2 pt-2">
+                {/* Close button for non-actionable states */}
+                {!isPendingReview && (
+                    <div className="pt-2">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                            disabled={isSubmitting}
+                            className="w-full rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                         >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            className="flex-1 rounded bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700 disabled:opacity-50"
-                            disabled={isSubmitting}
-                        >
-                            {isSubmitting ? "Saving..." : "Save Changes"}
+                            Close
                         </button>
                     </div>
-                </form>
+                )}
             </div>
         </div>
     );

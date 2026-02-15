@@ -140,12 +140,12 @@ export async function getMyPayouts(options?: {
     if (options?.page_size) params.append("page_size", String(options.page_size));
 
     const query = params.toString() ? `?${params.toString()}` : "";
-    return apiGet<PayoutListResponse>(`/payments/coach/me/payouts/${query}`, { auth: true });
+    return apiGet<PayoutListResponse>(`/api/v1/payments/coach/me/payouts/${query}`, { auth: true });
 }
 
 /** Get a single payout detail. */
 export async function getMyPayout(payoutId: string): Promise<Payout> {
-    return apiGet<Payout>(`/payments/coach/me/payouts/${payoutId}`, { auth: true });
+    return apiGet<Payout>(`/api/v1/payments/coach/me/payouts/${payoutId}`, { auth: true });
 }
 
 // --- Admin Payout API ---
@@ -164,12 +164,12 @@ export async function adminListPayouts(options?: {
     if (options?.page_size) params.append("page_size", String(options.page_size));
 
     const query = params.toString() ? `?${params.toString()}` : "";
-    return apiGet<PayoutListResponse>(`/payments/admin/payouts/${query}`, { auth: true });
+    return apiGet<PayoutListResponse>(`/api/v1/payments/admin/payouts/${query}`, { auth: true });
 }
 
 /** Admin: Get payout summary stats. */
 export async function adminGetPayoutSummary(): Promise<PayoutSummary> {
-    return apiGet<PayoutSummary>("/payments/admin/payouts/summary", { auth: true });
+    return apiGet<PayoutSummary>("/api/v1/payments/admin/payouts/summary", { auth: true });
 }
 
 /** Admin: Create a new payout for a coach. */
@@ -183,7 +183,7 @@ export async function adminCreatePayout(data: {
     other_earnings?: number;
     admin_notes?: string;
 }): Promise<Payout> {
-    return apiPost<Payout>("/payments/admin/payouts/", data, { auth: true });
+    return apiPost<Payout>("/api/v1/payments/admin/payouts/", data, { auth: true });
 }
 
 /** Admin: Approve a pending payout. */
@@ -191,14 +191,14 @@ export async function adminApprovePayout(
     payoutId: string,
     admin_notes?: string
 ): Promise<Payout> {
-    return apiPost<Payout>(`/payments/admin/payouts/${payoutId}/approve`, {
+    return apiPost<Payout>(`/api/v1/payments/admin/payouts/${payoutId}/approve`, {
         admin_notes,
     }, { auth: true });
 }
 
 /** Admin: Initiate Paystack transfer for a payout. */
 export async function adminInitiateTransfer(payoutId: string): Promise<Payout> {
-    return apiPost<Payout>(`/payments/admin/payouts/${payoutId}/initiate-transfer`, {}, { auth: true });
+    return apiPost<Payout>(`/api/v1/payments/admin/payouts/${payoutId}/initiate-transfer`, {}, { auth: true });
 }
 
 /** Admin: Mark payout as manually completed. */
@@ -210,7 +210,7 @@ export async function adminCompleteManual(
         admin_notes?: string;
     }
 ): Promise<Payout> {
-    return apiPost<Payout>(`/payments/admin/payouts/${payoutId}/complete-manual`, data, { auth: true });
+    return apiPost<Payout>(`/api/v1/payments/admin/payouts/${payoutId}/complete-manual`, data, { auth: true });
 }
 
 /** Admin: Mark payout as failed. */
@@ -219,7 +219,7 @@ export async function adminFailPayout(
     failure_reason: string,
     admin_notes?: string
 ): Promise<Payout> {
-    return apiPost<Payout>(`/payments/admin/payouts/${payoutId}/fail`, {
+    return apiPost<Payout>(`/api/v1/payments/admin/payouts/${payoutId}/fail`, {
         failure_reason,
         admin_notes,
     }, { auth: true });

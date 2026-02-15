@@ -7,6 +7,9 @@ import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import {
     AcademyApi,
+    AICoachSuggestion,
+    AIDimensionSuggestion,
+    AIScoringResponse,
     CoachGrade,
     Cohort,
     CohortComplexityScoreCreate,
@@ -16,7 +19,9 @@ import {
     ProgramCategory,
 } from "@/lib/academy";
 import {
+    Bot,
     Save,
+    Sparkles,
     Star,
     Users,
 } from "lucide-react";
@@ -84,6 +89,14 @@ export default function CohortScoringPage() {
         pay_band_max: number;
     } | null>(null);
 
+    // AI state
+    const [aiSuggesting, setAiSuggesting] = useState(false);
+    const [aiSuggestions, setAiSuggestions] = useState<AIDimensionSuggestion[] | null>(null);
+    const [aiOverallRationale, setAiOverallRationale] = useState<string | null>(null);
+    const [aiConfidence, setAiConfidence] = useState<number | null>(null);
+    const [coachSuggestions, setCoachSuggestions] = useState<AICoachSuggestion[]>([]);
+    const [suggestingCoach, setSuggestingCoach] = useState(false);
+
     // Step mapping (matches cohort creation pattern)
     const stepLabels = ["Category", "Dimensions", "Review"];
     const steps: Array<"category" | "scoring" | "review"> = ["category", "scoring", "review"];
@@ -147,6 +160,10 @@ export default function CohortScoringPage() {
             setSelectedCategory(category);
             const labels = await AcademyApi.getDimensionLabels(category);
             setDimensionLabels(labels.labels);
+            // Reset AI suggestions when category changes
+            setAiSuggestions(null);
+            setAiOverallRationale(null);
+            setAiConfidence(null);
             setStep("scoring");
         } catch (err) {
             console.error("Failed to load dimension labels", err);
@@ -168,6 +185,35 @@ export default function CohortScoringPage() {
             updated[index] = { ...updated[index], rationale };
             return updated;
         });
+    }
+
+    async function handleAISuggest() {
+        if (!selectedCategory) return;
+
+        setAiSuggesting(true);
+        try {
+            const result: AIScoringResponse = await AcademyApi.aiScoreCohort(cohortId, {
+                category: selectedCategory,
+            });
+
+            setAiSuggestions(result.dimensions);
+            setAiOverallRationale(result.overall_rationale);
+            setAiConfidence(result.confidence);
+
+            // Apply AI suggestions to the dimension scores
+            const newScores = result.dimensions.map((dim) => ({
+                score: dim.score,
+                rationale: dim.rationale,
+            }));
+            setDimensionScores(newScores);
+
+            toast.success("AI suggestions applied! Review and adjust as needed.");
+        } catch (err) {
+            console.error("AI scoring failed", err);
+            toast.error("AI scoring is not available right now. Please score manually.");
+        } finally {
+            setAiSuggesting(false);
+        }
     }
 
     async function handlePreviewScore() {
@@ -228,10 +274,31 @@ export default function CohortScoringPage() {
             setPreviewResult(null);
             setSelectedCategory(null);
             setDimensionScores(Array(7).fill({ score: 3, rationale: "" }));
+            setAiSuggestions(null);
+            setAiOverallRationale(null);
+            setCoachSuggestions([]);
             setStep("category");
         } catch (err) {
             console.error("Failed to delete score", err);
             toast.error("Failed to delete complexity score");
+        }
+    }
+
+    async function handleSuggestCoach() {
+        setSuggestingCoach(true);
+        try {
+            const result = await AcademyApi.aiSuggestCoach(cohortId);
+            setCoachSuggestions(result.suggestions);
+            if (result.suggestions.length === 0) {
+                toast.info("No coaches to rank — none meet the grade requirement.");
+            } else {
+                toast.success(`AI ranked ${result.suggestions.length} coaches by suitability.`);
+            }
+        } catch (err) {
+            console.error("AI coach suggestion failed", err);
+            toast.error("AI coach suggestion is not available right now.");
+        } finally {
+            setSuggestingCoach(false);
         }
     }
 
@@ -299,6 +366,7 @@ export default function CohortScoringPage() {
                         category={selectedCategory}
                         labels={dimensionLabels}
                         scores={dimensionScores}
+                        aiSuggestions={aiSuggestions}
                         onScoreChange={handleDimensionScoreChange}
                         onRationaleChange={handleDimensionRationaleChange}
                     />
@@ -306,12 +374,18 @@ export default function CohortScoringPage() {
 
                 {step === "review" && previewResult && selectedCategory && (
                     <ScoreReview
+                        cohortId={cohortId}
                         category={selectedCategory}
                         labels={dimensionLabels}
                         scores={dimensionScores}
                         result={previewResult}
                         existingScore={existingScore}
                         eligibleCoaches={eligibleCoaches}
+                        aiOverallRationale={aiOverallRationale}
+                        aiConfidence={aiConfidence}
+                        coachSuggestions={coachSuggestions}
+                        suggestingCoach={suggestingCoach}
+                        onSuggestCoach={handleSuggestCoach}
                     />
                 )}
             </Card>
@@ -330,6 +404,18 @@ export default function CohortScoringPage() {
                 </Button>
 
                 <div className="flex gap-2">
+                    {step === "scoring" && (
+                        <Button
+                            variant="outline"
+                            onClick={handleAISuggest}
+                            disabled={aiSuggesting}
+                            className="border-violet-300 text-violet-700 hover:bg-violet-50"
+                        >
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            {aiSuggesting ? "AI Thinking..." : "AI Suggest Scores"}
+                        </Button>
+                    )}
+
                     {step === "review" && existingScore && (
                         <Button
                             variant="outline"
@@ -404,12 +490,14 @@ function DimensionScoringForm({
     category,
     labels,
     scores,
+    aiSuggestions,
     onScoreChange,
     onRationaleChange,
 }: {
     category: ProgramCategory;
     labels: string[];
     scores: DimensionScore[];
+    aiSuggestions: AIDimensionSuggestion[] | null;
     onScoreChange: (index: number, score: number) => void;
     onRationaleChange: (index: number, rationale: string) => void;
 }) {
@@ -432,58 +520,92 @@ function DimensionScoringForm({
                 </div>
             </div>
 
-            <div className="space-y-6">
-                {labels.map((label, index) => (
-                    <div key={index} className="border-b border-slate-100 pb-6 last:border-0">
-                        <div className="flex items-start justify-between mb-3">
-                            <div>
-                                <h3 className="font-medium text-slate-900">
-                                    {index + 1}. {label}
-                                </h3>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                {SCORE_DESCRIPTIONS.map(({ score }) => (
-                                    <button
-                                        key={score}
-                                        onClick={() => onScoreChange(index, score)}
-                                        className={`w-10 h-10 rounded-lg font-medium transition-colors ${scores[index].score === score
-                                                ? "bg-cyan-600 text-white"
-                                                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                                            }`}
-                                    >
-                                        {score}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-4 mb-2">
-                            <span className="text-sm text-slate-500">
-                                {SCORE_DESCRIPTIONS[scores[index].score - 1].label}:{" "}
-                                {SCORE_DESCRIPTIONS[scores[index].score - 1].description}
-                            </span>
-                        </div>
-                        <textarea
-                            placeholder="Add rationale for this score (optional)"
-                            value={scores[index].rationale || ""}
-                            onChange={(e) => onRationaleChange(index, e.target.value)}
-                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                            rows={2}
-                        />
+            {/* AI banner when suggestions are active */}
+            {aiSuggestions && (
+                <div className="flex items-start gap-3 p-3 bg-violet-50 border border-violet-200 rounded-lg">
+                    <Sparkles className="h-5 w-5 text-violet-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                        <p className="text-sm font-medium text-violet-900">
+                            AI suggestions applied
+                        </p>
+                        <p className="text-xs text-violet-600 mt-0.5">
+                            Scores and rationales have been pre-filled by AI. Review each dimension and adjust as needed before proceeding.
+                        </p>
                     </div>
-                ))}
+                </div>
+            )}
+
+            <div className="space-y-6">
+                {labels.map((label, index) => {
+                    const aiDim = aiSuggestions?.[index];
+                    return (
+                        <div key={index} className="border-b border-slate-100 pb-6 last:border-0">
+                            <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                    <h3 className="font-medium text-slate-900">
+                                        {index + 1}. {label}
+                                    </h3>
+                                    {aiDim && (
+                                        <span
+                                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-violet-100 text-violet-700"
+                                            title={`AI confidence: ${Math.round(aiDim.confidence * 100)}%`}
+                                        >
+                                            <Bot className="h-3 w-3" />
+                                            {Math.round(aiDim.confidence * 100)}%
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    {SCORE_DESCRIPTIONS.map(({ score }) => (
+                                        <button
+                                            key={score}
+                                            onClick={() => onScoreChange(index, score)}
+                                            className={`w-10 h-10 rounded-lg font-medium transition-colors ${scores[index].score === score
+                                                    ? "bg-cyan-600 text-white"
+                                                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                                                }`}
+                                        >
+                                            {score}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4 mb-2">
+                                <span className="text-sm text-slate-500">
+                                    {SCORE_DESCRIPTIONS[scores[index].score - 1].label}:{" "}
+                                    {SCORE_DESCRIPTIONS[scores[index].score - 1].description}
+                                </span>
+                            </div>
+                            <textarea
+                                placeholder="Add rationale for this score (optional)"
+                                value={scores[index].rationale || ""}
+                                onChange={(e) => onRationaleChange(index, e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                rows={2}
+                            />
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );
 }
 
 function ScoreReview({
+    cohortId,
     category,
     labels,
     scores,
     result,
     existingScore,
     eligibleCoaches,
+    aiOverallRationale,
+    aiConfidence,
+    coachSuggestions,
+    suggestingCoach,
+    onSuggestCoach,
 }: {
+    cohortId: string;
     category: ProgramCategory;
     labels: string[];
     scores: DimensionScore[];
@@ -495,6 +617,11 @@ function ScoreReview({
     };
     existingScore: CohortComplexityScoreResponse | null;
     eligibleCoaches: EligibleCoach[];
+    aiOverallRationale: string | null;
+    aiConfidence: number | null;
+    coachSuggestions: AICoachSuggestion[];
+    suggestingCoach: boolean;
+    onSuggestCoach: () => void;
 }) {
     return (
         <div className="space-y-6">
@@ -540,6 +667,24 @@ function ScoreReview({
                 </div>
             </div>
 
+            {/* AI Overall Rationale */}
+            {aiOverallRationale && (
+                <div className="flex items-start gap-3 p-4 bg-violet-50 border border-violet-200 rounded-lg">
+                    <Bot className="h-5 w-5 text-violet-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                        <div className="flex items-center gap-2 mb-1">
+                            <p className="text-sm font-medium text-violet-900">AI Analysis</p>
+                            {aiConfidence !== null && (
+                                <span className="text-xs px-1.5 py-0.5 bg-violet-200 text-violet-800 rounded">
+                                    {Math.round(aiConfidence * 100)}% confidence
+                                </span>
+                            )}
+                        </div>
+                        <p className="text-sm text-violet-700">{aiOverallRationale}</p>
+                    </div>
+                </div>
+            )}
+
             {/* Dimension Breakdown */}
             <div className="border-t border-slate-200 pt-4">
                 <h3 className="font-medium text-slate-900 mb-3">Dimension Scores</h3>
@@ -569,15 +714,76 @@ function ScoreReview({
             {/* Eligible Coaches */}
             {existingScore && (
                 <div className="border-t border-slate-200 pt-6">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Users className="h-5 w-5 text-slate-600" />
-                        <h3 className="text-lg font-semibold text-slate-900">
-                            Eligible Coaches ({eligibleCoaches.length})
-                        </h3>
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <Users className="h-5 w-5 text-slate-600" />
+                            <h3 className="text-lg font-semibold text-slate-900">
+                                Eligible Coaches ({eligibleCoaches.length})
+                            </h3>
+                        </div>
+                        {eligibleCoaches.length > 0 && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={onSuggestCoach}
+                                disabled={suggestingCoach}
+                                className="border-violet-300 text-violet-700 hover:bg-violet-50"
+                            >
+                                <Sparkles className="h-4 w-4 mr-1.5" />
+                                {suggestingCoach ? "AI Thinking..." : "AI Suggest Coach"}
+                            </Button>
+                        )}
                     </div>
                     <p className="text-sm text-slate-600 mb-4">
                         Coaches who meet or exceed the {GRADE_LABELS[result.required_coach_grade]} requirement
                     </p>
+
+                    {/* AI Coach Suggestions */}
+                    {coachSuggestions.length > 0 && (
+                        <div className="mb-6 p-4 bg-violet-50 border border-violet-200 rounded-lg">
+                            <div className="flex items-center gap-2 mb-3">
+                                <Bot className="h-5 w-5 text-violet-600" />
+                                <h4 className="text-sm font-semibold text-violet-900">
+                                    AI Recommended Order
+                                </h4>
+                            </div>
+                            <div className="space-y-3">
+                                {coachSuggestions.map((suggestion, i) => (
+                                    <div
+                                        key={suggestion.member_id}
+                                        className="flex items-start gap-3 p-3 bg-white rounded-lg border border-violet-100"
+                                    >
+                                        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-violet-600 text-white flex items-center justify-center text-sm font-bold">
+                                            {i + 1}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-medium text-slate-900">{suggestion.name}</p>
+                                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${GRADE_COLORS[suggestion.grade]}`}>
+                                                    {GRADE_LABELS[suggestion.grade]}
+                                                </span>
+                                                <span className="text-xs px-1.5 py-0.5 bg-violet-100 text-violet-700 rounded">
+                                                    {Math.round(suggestion.match_score * 100)}% match
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-slate-600 mt-1">{suggestion.rationale}</p>
+                                            <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
+                                                {suggestion.total_coaching_hours != null && (
+                                                    <span>{suggestion.total_coaching_hours} hrs</span>
+                                                )}
+                                                {suggestion.average_feedback_rating != null && (
+                                                    <span className="flex items-center gap-1">
+                                                        <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
+                                                        {suggestion.average_feedback_rating.toFixed(1)}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {eligibleCoaches.length === 0 ? (
                         <div className="text-center py-8 text-slate-500">

@@ -363,6 +363,57 @@ export interface NextSessionInfo {
     notes?: string;
 }
 
+// --- AI Scoring Types ---
+
+export interface AIScoringRequest {
+    category?: ProgramCategory;
+    age_group?: string;
+    skill_level?: string;
+    special_needs?: string;
+    location_type?: string;
+    duration_weeks?: number;
+    class_size?: number;
+}
+
+export interface AIDimensionSuggestion {
+    dimension: string;
+    label: string;
+    score: number;
+    rationale: string;
+    confidence: number;
+}
+
+export interface AIScoringResponse {
+    dimensions: AIDimensionSuggestion[];
+    total_score: number;
+    required_coach_grade: CoachGrade;
+    pay_band_min: number;
+    pay_band_max: number;
+    overall_rationale: string;
+    confidence: number;
+    model_used: string;
+    ai_request_id?: string;
+}
+
+export interface AICoachSuggestion {
+    member_id: string;
+    name: string;
+    email?: string;
+    grade: CoachGrade;
+    total_coaching_hours?: number;
+    average_feedback_rating?: number;
+    match_score: number;
+    rationale: string;
+}
+
+export interface AICoachSuggestionResponse {
+    suggestions: AICoachSuggestion[];
+    required_coach_grade: CoachGrade;
+    category: ProgramCategory;
+    model_used: string;
+    ai_request_id?: string;
+}
+
 export interface OnboardingInfo {
     enrollment_id: string;
     program_name: string;
@@ -511,14 +562,12 @@ export const AcademyApi = {
         apiGet<{ registered: boolean }>(`/api/v1/academy/programs/${programId}/interest`, { auth: true }),
 
     // --- Cohort Complexity Scoring ---
-    previewComplexityScore: (category: ProgramCategory, dimensionScores: number[]) => {
-        const scoresParam = dimensionScores.map((s) => `dimension_scores=${s}`).join("&");
-        return apiPost<ComplexityScoreCalculation>(
-            `/api/v1/academy/scoring/calculate?category=${category}&${scoresParam}`,
-            {},
+    previewComplexityScore: (category: ProgramCategory, dimensionScores: number[]) =>
+        apiPost<ComplexityScoreCalculation>(
+            `/api/v1/academy/scoring/calculate`,
+            { category, dimension_scores: dimensionScores },
             { auth: true }
-        );
-    },
+        ),
 
     getDimensionLabels: (category: ProgramCategory) =>
         apiGet<DimensionLabelsApiResponse>(`/api/v1/academy/scoring/dimensions/${category}`, { auth: true }),
@@ -540,6 +589,13 @@ export const AcademyApi = {
 
     getEligibleCoaches: (cohortId: string) =>
         apiGet<EligibleCoach[]>(`/api/v1/academy/cohorts/${cohortId}/eligible-coaches`, { auth: true }),
+
+    // --- AI-Assisted Scoring ---
+    aiScoreCohort: (cohortId: string, data: AIScoringRequest = {}) =>
+        apiPost<AIScoringResponse>(`/api/v1/academy/cohorts/${cohortId}/ai-score`, data, { auth: true }),
+
+    aiSuggestCoach: (cohortId: string) =>
+        apiPost<AICoachSuggestionResponse>(`/api/v1/academy/cohorts/${cohortId}/ai-suggest-coach`, {}, { auth: true }),
 };
 
 

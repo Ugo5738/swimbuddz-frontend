@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { Textarea } from "@/components/ui/Textarea";
+import { apiGet, apiPost } from "@/lib/api";
 import {
     calculateProgressPercentage,
     getCohort,
@@ -16,7 +17,6 @@ import {
     type Enrollment,
     type Milestone,
 } from "@/lib/coach";
-import { apiEndpoints } from "@/lib/config";
 import { formatDate } from "@/lib/format";
 import { Calendar, CheckCircle, Mail, MapPin, Send, Users, XCircle } from "lucide-react";
 import Link from "next/link";
@@ -66,9 +66,10 @@ export default function CoachCohortDetailPage() {
                     cohortData.program_id
                         ? getProgramMilestones(cohortData.program_id).catch(() => [])
                         : Promise.resolve([]),
-                    fetch(`${apiEndpoints.attendance}/cohorts/${cohortId}/summary`)
-                        .then(res => res.ok ? res.json() : null)
-                        .catch(() => null),
+                    apiGet<AttendanceSummary>(
+                        `/api/v1/attendance/cohorts/${cohortId}/attendance/summary`,
+                        { auth: true }
+                    ).catch(() => null),
                 ]);
 
                 setStudents(studentsData);
@@ -92,27 +93,19 @@ export default function CoachCohortDetailPage() {
         setMessageSuccess(null);
 
         try {
-            const response = await fetch(`${apiEndpoints.messages}/cohorts/${cohortId}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    subject: messageSubject,
-                    body: messageBody,
-                }),
-            });
+            const result = await apiPost<{ message: string }>(
+                `/api/v1/messages/cohorts/${cohortId}`,
+                { subject: messageSubject, body: messageBody },
+                { auth: true }
+            );
 
-            if (response.ok) {
-                const result = await response.json();
-                setMessageSuccess(result.message);
-                setMessageSubject("");
-                setMessageBody("");
-                setTimeout(() => {
-                    setShowMessageModal(false);
-                    setMessageSuccess(null);
-                }, 2000);
-            } else {
-                setMessageSuccess("Failed to send message. Please try again.");
-            }
+            setMessageSuccess(result.message || "Message sent successfully!");
+            setMessageSubject("");
+            setMessageBody("");
+            setTimeout(() => {
+                setShowMessageModal(false);
+                setMessageSuccess(null);
+            }, 2000);
         } catch (err) {
             console.error("Failed to send message", err);
             setMessageSuccess("Failed to send message. Please try again.");

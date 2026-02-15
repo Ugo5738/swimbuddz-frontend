@@ -1,9 +1,9 @@
 "use client";
 
+import { MilestoneClaimModal } from "@/components/academy/MilestoneClaimModal";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { MilestoneClaimModal } from "@/components/academy/MilestoneClaimModal";
 import {
     AcademyApi,
     Enrollment,
@@ -255,16 +255,24 @@ export default function EnrollmentDetailPage() {
                                     );
                                     const isAchieved =
                                         milestoneProgress?.status === "achieved";
-                                    const isVerified = !!milestoneProgress?.reviewed_at;
+                                    const isVerified =
+                                        isAchieved && !!milestoneProgress?.reviewed_at;
+                                    const isPendingReview =
+                                        isAchieved && !milestoneProgress?.reviewed_at;
+                                    const isRejected =
+                                        milestoneProgress?.status === "pending" &&
+                                        !!milestoneProgress?.reviewed_at;
 
                                     return (
                                         <div
                                             key={milestone.id}
-                                            className={`flex items-start gap-4 rounded-lg border-2 p-4 transition-all ${isAchieved
-                                                ? isVerified
-                                                    ? "border-green-300 bg-green-50"
-                                                    : "border-amber-200 bg-amber-50"
-                                                : "border-slate-200 bg-white"
+                                            className={`flex items-start gap-4 rounded-lg border-2 p-4 transition-all ${isVerified
+                                                ? "border-green-300 bg-green-50"
+                                                : isPendingReview
+                                                    ? "border-amber-200 bg-amber-50"
+                                                    : isRejected
+                                                        ? "border-red-200 bg-red-50"
+                                                        : "border-slate-200 bg-white"
                                                 }`}
                                         >
                                             <div className="flex-shrink-0 mt-0.5">
@@ -284,7 +292,7 @@ export default function EnrollmentDetailPage() {
                                                             />
                                                         </svg>
                                                     </div>
-                                                ) : isAchieved ? (
+                                                ) : isPendingReview ? (
                                                     <div className="h-6 w-6 rounded-full bg-amber-500 flex items-center justify-center">
                                                         <svg
                                                             className="h-4 w-4 text-white"
@@ -300,6 +308,22 @@ export default function EnrollmentDetailPage() {
                                                             />
                                                         </svg>
                                                     </div>
+                                                ) : isRejected ? (
+                                                    <div className="h-6 w-6 rounded-full bg-red-500 flex items-center justify-center">
+                                                        <svg
+                                                            className="h-4 w-4 text-white"
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                            stroke="currentColor"
+                                                        >
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                strokeWidth={2}
+                                                                d="M6 18L18 6M6 6l12 12"
+                                                            />
+                                                        </svg>
+                                                    </div>
                                                 ) : (
                                                     <div className="h-6 w-6 rounded-full border-2 border-slate-300" />
                                                 )}
@@ -309,9 +333,11 @@ export default function EnrollmentDetailPage() {
                                                     <h4
                                                         className={`font-medium ${isVerified
                                                             ? "text-green-900"
-                                                            : isAchieved
+                                                            : isPendingReview
                                                                 ? "text-amber-900"
-                                                                : "text-slate-900"
+                                                                : isRejected
+                                                                    ? "text-red-900"
+                                                                    : "text-slate-900"
                                                             }`}
                                                     >
                                                         {milestone.name}
@@ -321,10 +347,26 @@ export default function EnrollmentDetailPage() {
                                                         <Badge className="bg-green-100 text-green-800 text-xs">
                                                             ✓ Verified
                                                         </Badge>
-                                                    ) : isAchieved ? (
+                                                    ) : isPendingReview ? (
                                                         <Badge className="bg-amber-100 text-amber-800 text-xs">
                                                             Pending Review
                                                         </Badge>
+                                                    ) : isRejected ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <Badge className="bg-red-100 text-red-800 text-xs">
+                                                                Needs Resubmission
+                                                            </Badge>
+                                                            {isPaid && (
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    onClick={() => handleOpenClaimModal(milestone)}
+                                                                    className="text-xs"
+                                                                >
+                                                                    Resubmit
+                                                                </Button>
+                                                            )}
+                                                        </div>
                                                     ) : (
                                                         isPaid && (
                                                             <Button
@@ -371,7 +413,7 @@ export default function EnrollmentDetailPage() {
                                                             ).toLocaleDateString()}
                                                         </p>
                                                     )}
-                                                {isAchieved && !isVerified &&
+                                                {isPendingReview &&
                                                     milestoneProgress?.achieved_at && (
                                                         <p className="text-xs text-amber-600 mt-1">
                                                             Claimed{" "}
@@ -379,6 +421,16 @@ export default function EnrollmentDetailPage() {
                                                                 milestoneProgress.achieved_at
                                                             ).toLocaleDateString()}{" "}
                                                             • Awaiting coach verification
+                                                        </p>
+                                                    )}
+                                                {isRejected &&
+                                                    milestoneProgress?.reviewed_at && (
+                                                        <p className="text-xs text-red-600 mt-1">
+                                                            Reviewed{" "}
+                                                            {new Date(
+                                                                milestoneProgress.reviewed_at
+                                                            ).toLocaleDateString()}{" "}
+                                                            • Please review feedback and resubmit
                                                         </p>
                                                     )}
                                             </div>
