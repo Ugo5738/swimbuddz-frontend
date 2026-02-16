@@ -37,7 +37,7 @@ export default function AcademyCohortSelectionPage() {
     const loadCohorts = useCallback(async () => {
         setLoading(true);
         try {
-            const data = await apiGet<Cohort[]>("/api/v1/academy/cohorts?status=open", {
+            const data = await apiGet<Cohort[]>("/api/v1/academy/cohorts/enrollable", {
                 auth: true,
             });
             setCohorts(data);

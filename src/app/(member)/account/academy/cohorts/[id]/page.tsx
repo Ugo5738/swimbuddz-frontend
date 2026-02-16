@@ -199,7 +199,19 @@ function CohortDetailPageInner() {
     const price =
         cohort.price_override ?? program.price_amount ?? 0;
     const priceDisplay = price > 0 ? `₦${price.toLocaleString()}` : "Free";
-    const isOpen = cohort.status === CohortStatus.OPEN;
+    const now = new Date();
+    const cohortStartDate = new Date(cohort.start_date);
+    const daysSinceStart = Math.floor(
+        (now.getTime() - cohortStartDate.getTime()) / (7 * 24 * 60 * 60 * 1000)
+    );
+    const currentWeek = Math.floor(daysSinceStart / 7) + 1;
+    const midEntryCutoffWeek = cohort.mid_entry_cutoff_week ?? 2;
+    const isMidEntryEligible =
+        cohort.status === CohortStatus.ACTIVE &&
+        Boolean(cohort.allow_mid_entry) &&
+        currentWeek <= midEntryCutoffWeek;
+    const isEnrollable = cohort.status === CohortStatus.OPEN || isMidEntryEligible;
+    const isInProgress = cohort.status === CohortStatus.ACTIVE;
     const isEnrolled = !!myEnrollment;
 
     return (
@@ -226,9 +238,14 @@ function CohortDetailPageInner() {
                                         ✓ Enrolled
                                     </Badge>
                                 )}
-                                {!isOpen && (
+                                {!isEnrollable && (
                                     <Badge className="bg-orange-500 text-white">
                                         {cohort.status}
+                                    </Badge>
+                                )}
+                                {isMidEntryEligible && (
+                                    <Badge className="bg-emerald-500 text-white">
+                                        Mid-entry open
                                     </Badge>
                                 )}
                             </div>
@@ -299,14 +316,18 @@ function CohortDetailPageInner() {
                                 <Button>View My Enrollment</Button>
                             </Link>
                         </div>
-                    ) : isOpen ? (
+                    ) : isEnrollable ? (
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                             <div>
                                 <p className="font-medium text-slate-900">
-                                    Ready to start your journey?
+                                    {isInProgress
+                                        ? "This cohort is already in progress."
+                                        : "Ready to start your journey?"}
                                 </p>
                                 <p className="text-sm text-slate-600">
-                                    Secure your spot in this cohort today.
+                                    {isInProgress
+                                        ? `Mid-entry is open through week ${midEntryCutoffWeek}.`
+                                        : "Secure your spot in this cohort today."}
                                 </p>
                             </div>
                             <Button
@@ -314,7 +335,11 @@ function CohortDetailPageInner() {
                                 onClick={handleEnroll}
                                 disabled={enrolling}
                             >
-                                {enrolling ? "Processing..." : "Enroll Now"}
+                                {enrolling
+                                    ? "Processing..."
+                                    : isInProgress
+                                        ? "Join In-Progress Cohort"
+                                        : "Enroll Now"}
                             </Button>
                         </div>
                     ) : (

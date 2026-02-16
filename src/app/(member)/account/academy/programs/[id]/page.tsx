@@ -6,7 +6,6 @@ import { Card } from "@/components/ui/Card";
 import {
     AcademyApi,
     Cohort,
-    CohortStatus,
     Enrollment,
     Milestone,
     Program,
@@ -59,15 +58,14 @@ export default function ProgramDetailPage() {
                 await Promise.all([
                     AcademyApi.getProgram(programId),
                     AcademyApi.listMilestones(programId),
-                    AcademyApi.listCohorts(programId),
+                    AcademyApi.getEnrollableCohorts(programId),
                     AcademyApi.getMyEnrollments().catch(() => []),
                     AcademyApi.checkProgramInterest(programId).catch(() => ({ registered: false })),
                 ]);
 
             setProgram(programData);
             setMilestones(milestonesData);
-            // Only show open cohorts
-            setCohorts(cohortsData.filter((c) => c.status === CohortStatus.OPEN));
+            setCohorts(cohortsData);
             setEnrollments(enrollmentsData);
             setIsInterested(interestData.registered);
         } catch (error) {
@@ -236,7 +234,7 @@ export default function ProgramDetailPage() {
                             <div className="text-center py-4 md:py-6 space-y-3">
                                 <span className="text-3xl md:text-4xl">📅</span>
                                 <p className="text-sm md:text-base text-slate-600">
-                                    No open cohorts at the moment.
+                                    No cohorts available to join right now.
                                 </p>
                                 <p className="text-xs md:text-sm text-slate-500">
                                     {isInterested

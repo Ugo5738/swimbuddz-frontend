@@ -203,7 +203,7 @@ export default function BillingPage() {
     useEffect(() => {
         const fetchCohorts = async () => {
             try {
-                const cohorts = await apiGet<Cohort[]>("/api/v1/academy/cohorts?status=open", { auth: true });
+                const cohorts = await apiGet<Cohort[]>("/api/v1/academy/cohorts/enrollable", { auth: true });
                 setOpenCohorts(cohorts);
             } catch {
                 setOpenCohorts([]);

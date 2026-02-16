@@ -67,7 +67,7 @@ export default function StudentAcademyPage() {
         try {
             const [myEnrollments, availableCohorts] = await Promise.all([
                 AcademyApi.getMyEnrollments(),
-                AcademyApi.getOpenCohorts()
+                AcademyApi.getEnrollableCohorts()
             ]);
 
             // Filter out cohorts I'm already enrolled in
@@ -434,7 +434,7 @@ export default function StudentAcademyPage() {
                 <h2 className="text-xl font-semibold text-slate-900">Available Cohorts</h2>
                 {openCohorts.length === 0 ? (
                     <Card className="p-6 text-center text-slate-500">
-                        No open cohorts available at the moment.
+                        No cohorts available to join at the moment.
                     </Card>
                 ) : (
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

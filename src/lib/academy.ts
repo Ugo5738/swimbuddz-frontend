@@ -115,6 +115,7 @@ export interface Cohort {
     // Status
     status: CohortStatus;
     allow_mid_entry?: boolean;
+    mid_entry_cutoff_week?: number;
     require_approval?: boolean; // If true, enrollment needs admin approval even after payment
     notes_internal?: string;
     // Relations
@@ -490,6 +491,10 @@ export const AcademyApi = {
 
     // Open cohorts
     getOpenCohorts: () => apiGet<Cohort[]>("/api/v1/academy/cohorts/open"),
+    getEnrollableCohorts: (programId?: string) => {
+        const query = programId ? `?program_id=${programId}` : "";
+        return apiGet<Cohort[]>(`/api/v1/academy/cohorts/enrollable${query}`);
+    },
 
     // Admin tasks
     triggerCohortStatusTransitions: () =>
