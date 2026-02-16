@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
+import { useMediaUrls } from "@/hooks/useMediaUrl";
 import {
     getPendingMilestoneReviews,
     reviewMilestoneClaim,
@@ -16,10 +17,12 @@ import {
     CheckCircle,
     ClipboardCheck,
     ExternalLink,
+    Loader2,
+    Play,
     XCircle
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export default function CoachReviewsPage() {
     const [reviews, setReviews] = useState<PendingMilestoneReview[]>([]);
@@ -28,6 +31,13 @@ export default function CoachReviewsPage() {
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [actionError, setActionError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+    // Resolve evidence media IDs to actual URLs
+    const evidenceMediaIds = useMemo(
+        () => reviews.map((r) => r.evidence_media_id),
+        [reviews]
+    );
+    const evidenceUrlMap = useMediaUrls(evidenceMediaIds);
 
     useEffect(() => {
         loadReviews();
@@ -146,6 +156,11 @@ export default function CoachReviewsPage() {
                         <ReviewCard
                             key={review.progress_id}
                             review={review}
+                            evidenceUrl={
+                                review.evidence_media_id
+                                    ? evidenceUrlMap.get(review.evidence_media_id) ?? null
+                                    : null
+                            }
                             onApprove={() =>
                                 handleReview(
                                     review.progress_id,
@@ -173,11 +188,13 @@ export default function CoachReviewsPage() {
 
 function ReviewCard({
     review,
+    evidenceUrl,
     onApprove,
     onReject,
     isLoading,
 }: {
     review: PendingMilestoneReview;
+    evidenceUrl: string | null;
     onApprove: () => void;
     onReject: () => void;
     isLoading: boolean;
@@ -223,23 +240,19 @@ function ReviewCard({
                                 <p className="text-sm text-slate-700">{review.student_notes}</p>
                             </div>
                         )}
+
+                        {/* Evidence Media */}
+                        {review.evidence_media_id && (
+                            <EvidenceViewer
+                                evidenceUrl={evidenceUrl}
+                                hasMedia={!!review.evidence_media_id}
+                            />
+                        )}
                     </div>
                 </div>
 
                 {/* Actions */}
                 <div className="flex flex-col gap-2 sm:w-auto w-full">
-                    {review.evidence_media_id && (
-                        <Link
-                            href={`/api/media/${review.evidence_media_id}`}
-                            target="_blank"
-                            className="w-full"
-                        >
-                            <Button variant="outline" size="sm" className="w-full">
-                                <ExternalLink className="h-4 w-4 mr-2" />
-                                View Evidence
-                            </Button>
-                        </Link>
-                    )}
 
                     <Link
                         href={`/coach/students/${review.enrollment_id}`}
@@ -274,5 +287,72 @@ function ReviewCard({
                 </div>
             </div>
         </Card>
+    );
+}
+
+function EvidenceViewer({
+    evidenceUrl,
+    hasMedia,
+}: {
+    evidenceUrl: string | null;
+    hasMedia: boolean;
+}) {
+    if (!hasMedia) return null;
+
+    // Still resolving the URL
+    if (!evidenceUrl) {
+        return (
+            <div className="mt-3 p-3 bg-cyan-50 rounded-lg flex items-center gap-2 text-sm text-cyan-600">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading evidence...
+            </div>
+        );
+    }
+
+    const isVideo =
+        /\.(mp4|mov|webm|ogg|avi)(\?|$)/i.test(evidenceUrl) ||
+        evidenceUrl.includes("video");
+
+    if (isVideo) {
+        return (
+            <div className="mt-3 rounded-lg overflow-hidden border border-slate-200">
+                <div className="px-3 py-1.5 bg-slate-100 flex items-center gap-1.5">
+                    <Play className="h-3.5 w-3.5 text-slate-600" />
+                    <span className="text-xs font-medium text-slate-600">Student Evidence</span>
+                </div>
+                <video
+                    controls
+                    preload="metadata"
+                    className="w-full max-h-64"
+                    src={evidenceUrl}
+                >
+                    Your browser does not support video playback.
+                </video>
+            </div>
+        );
+    }
+
+    // Image or other media — show inline with link to open full size
+    return (
+        <div className="mt-3 rounded-lg overflow-hidden border border-slate-200">
+            <div className="px-3 py-1.5 bg-slate-100 flex items-center justify-between">
+                <span className="text-xs font-medium text-slate-600">Student Evidence</span>
+                <a
+                    href={evidenceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-cyan-600 hover:text-cyan-700 flex items-center gap-1"
+                >
+                    <ExternalLink className="h-3 w-3" />
+                    Open full size
+                </a>
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+                src={evidenceUrl}
+                alt="Milestone evidence"
+                className="w-full max-h-64 object-contain bg-slate-50"
+            />
+        </div>
     );
 }

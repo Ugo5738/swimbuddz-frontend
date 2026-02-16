@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { Textarea } from "@/components/ui/Textarea";
+import { useMediaUrl } from "@/hooks/useMediaUrl";
 import { apiGet } from "@/lib/api";
 import {
     calculateProgressPercentage,
@@ -17,7 +18,7 @@ import {
     type StudentProgress,
 } from "@/lib/coach";
 import { formatDate } from "@/lib/format";
-import { Check, CheckCircle2, Circle, Clock, GraduationCap, XCircle } from "lucide-react";
+import { Check, CheckCircle2, Circle, Clock, Expand, GraduationCap, Loader2, Play, X, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -263,7 +264,7 @@ function MilestoneItem({
         notes?: string
     ) => Promise<void>;
 }) {
-    const [isExpanded, setIsExpanded] = useState(false);
+    const [showNotes, setShowNotes] = useState(false);
     const [notes, setNotes] = useState(progress?.coach_notes || "");
     const [saving, setSaving] = useState(false);
 
@@ -305,6 +306,7 @@ function MilestoneItem({
                         : "border-slate-200 bg-white"
             }`}
         >
+            {/* Milestone Header */}
             <div className="p-4">
                 <div className="flex items-start gap-3">
                     <div className="flex-shrink-0 mt-0.5">
@@ -336,7 +338,7 @@ function MilestoneItem({
                             </h3>
                             {isVerified && (
                                 <Badge variant="success" className="text-xs">
-                                    ✓ Verified
+                                    Verified
                                 </Badge>
                             )}
                             {isPendingReview && (
@@ -368,100 +370,217 @@ function MilestoneItem({
                         {isRejected && progress?.reviewed_at && (
                             <p className="text-xs text-red-600 mt-2">
                                 <XCircle className="h-3 w-3 inline mr-1" />
-                                Rejected {formatDate(progress.reviewed_at)} — awaiting student resubmission
+                                Rejected {formatDate(progress.reviewed_at)} — awaiting resubmission
                             </p>
                         )}
                     </div>
-                    <div className="flex items-center gap-2">
-                        {isPendingReview && (
-                            <>
-                                <Button
-                                    size="sm"
-                                    variant="primary"
-                                    onClick={handleApprove}
-                                    disabled={saving}
-                                >
-                                    {saving ? "..." : "Approve"}
-                                </Button>
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setIsExpanded(true)}
-                                    className="text-red-600 border-red-200 hover:bg-red-50"
-                                >
-                                    Reject
-                                </Button>
-                            </>
-                        )}
+                    {/* Details toggle for non-pending states */}
+                    {!isPendingReview && (progress?.coach_notes || progress?.student_notes || progress?.evidence_media_id) && (
                         <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => setIsExpanded(!isExpanded)}
+                            onClick={() => setShowNotes(!showNotes)}
                         >
-                            {isExpanded ? "Hide" : "Notes"}
+                            {showNotes ? "Hide" : "Details"}
                         </Button>
-                    </div>
+                    )}
                 </div>
             </div>
 
-            {isExpanded && (
+            {/* Evidence + Review section — always visible for pending reviews */}
+            {isPendingReview && (
+                <div className="px-4 pb-4 border-t border-amber-200 pt-4 space-y-3">
+                    {/* Student Evidence — prominent */}
+                    {progress?.evidence_media_id && (
+                        <EvidenceMedia mediaId={progress.evidence_media_id} />
+                    )}
+
+                    {/* Student notes */}
+                    {progress?.student_notes && (
+                        <div className="p-3 bg-white/60 rounded-lg border border-amber-100">
+                            <p className="text-xs font-medium text-slate-500 mb-1">Student Notes</p>
+                            <p className="text-sm text-slate-700">{progress.student_notes}</p>
+                        </div>
+                    )}
+
+                    {!progress?.evidence_media_id && !progress?.student_notes && (
+                        <p className="text-sm text-amber-600 italic">
+                            No evidence or notes submitted with this claim.
+                        </p>
+                    )}
+
+                    {/* Coach notes input */}
+                    <Textarea
+                        label="Coach Notes"
+                        hideLabel
+                        placeholder="Add notes about this milestone (optional)..."
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        rows={2}
+                    />
+
+                    {/* Action buttons */}
+                    <div className="flex justify-end gap-2">
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleReject}
+                            disabled={saving}
+                            className="text-red-600 border-red-200 hover:bg-red-50"
+                        >
+                            <XCircle className="h-4 w-4 mr-1" />
+                            {saving ? "..." : "Reject"}
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="primary"
+                            onClick={handleApprove}
+                            disabled={saving}
+                        >
+                            <CheckCircle2 className="h-4 w-4 mr-1" />
+                            {saving ? "..." : "Approve"}
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            {/* Expandable notes section for verified/rejected/not-started */}
+            {!isPendingReview && showNotes && (
                 <div className="px-4 pb-4 border-t border-slate-100 pt-4">
+                    {/* Show evidence for verified/rejected too */}
+                    {progress?.evidence_media_id && (
+                        <EvidenceMedia mediaId={progress.evidence_media_id} />
+                    )}
+
                     {progress?.student_notes && (
                         <div className="mb-3 p-3 bg-slate-100 rounded-lg">
                             <p className="text-xs text-slate-500 mb-1">Student Notes:</p>
                             <p className="text-sm text-slate-700">{progress.student_notes}</p>
                         </div>
                     )}
-                    {isVerified || isRejected ? (
-                        /* Read-only view for verified or rejected milestones */
-                        progress?.coach_notes ? (
-                            <div className={`p-3 rounded-lg ${isVerified ? "bg-emerald-50" : "bg-red-50"}`}>
-                                <p className={`text-xs mb-1 ${isVerified ? "text-emerald-600" : "text-red-600"}`}>
-                                    {isVerified ? "Coach Notes:" : "Rejection Feedback:"}
-                                </p>
-                                <p className="text-sm text-slate-700">{progress.coach_notes}</p>
-                            </div>
-                        ) : (
-                            <p className="text-sm text-slate-400 italic">No coach notes added.</p>
-                        )
+
+                    {progress?.coach_notes ? (
+                        <div className={`p-3 rounded-lg ${isVerified ? "bg-emerald-50" : isRejected ? "bg-red-50" : "bg-slate-50"}`}>
+                            <p className={`text-xs mb-1 ${isVerified ? "text-emerald-600" : isRejected ? "text-red-600" : "text-slate-500"}`}>
+                                {isVerified ? "Coach Notes:" : isRejected ? "Rejection Feedback:" : "Notes:"}
+                            </p>
+                            <p className="text-sm text-slate-700">{progress.coach_notes}</p>
+                        </div>
                     ) : (
-                        /* Editable notes + action buttons for pending review */
-                        <>
-                            <Textarea
-                                label="Coach Notes"
-                                hideLabel
-                                placeholder="Add notes about this milestone..."
-                                value={notes}
-                                onChange={(e) => setNotes(e.target.value)}
-                                rows={3}
-                            />
-                            {isPendingReview && (
-                                <div className="flex justify-end gap-2 mt-3">
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={handleReject}
-                                        disabled={saving}
-                                        className="text-red-600 border-red-200 hover:bg-red-50"
-                                    >
-                                        <XCircle className="h-4 w-4 mr-1" />
-                                        {saving ? "..." : "Reject with Notes"}
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="primary"
-                                        onClick={handleApprove}
-                                        disabled={saving}
-                                    >
-                                        <CheckCircle2 className="h-4 w-4 mr-1" />
-                                        {saving ? "..." : "Approve with Notes"}
-                                    </Button>
-                                </div>
-                            )}
-                        </>
+                        <p className="text-sm text-slate-400 italic">No notes.</p>
                     )}
                 </div>
             )}
         </div>
+    );
+}
+
+/**
+ * In-app media viewer for student evidence.
+ * Shows inline preview + click to open full-screen overlay.
+ */
+function EvidenceMedia({ mediaId }: { mediaId: string }) {
+    const [url, isLoading] = useMediaUrl(mediaId);
+    const [showFullscreen, setShowFullscreen] = useState(false);
+
+    if (isLoading) {
+        return (
+            <div className="p-3 bg-cyan-50 rounded-lg flex items-center gap-2 text-sm text-cyan-600">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading student evidence...
+            </div>
+        );
+    }
+
+    if (!url) {
+        return (
+            <div className="p-3 bg-slate-50 rounded-lg text-sm text-slate-500">
+                Evidence uploaded but could not be loaded.
+            </div>
+        );
+    }
+
+    const isVideo =
+        /\.(mp4|mov|webm|ogg|avi)(\?|$)/i.test(url) || url.includes("video");
+
+    return (
+        <>
+            <div className="rounded-lg overflow-hidden border border-slate-200">
+                <div className="px-3 py-1.5 bg-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                        <Play className="h-3.5 w-3.5 text-slate-600" />
+                        <span className="text-xs font-medium text-slate-600">
+                            Student Evidence
+                        </span>
+                    </div>
+                    <button
+                        onClick={() => setShowFullscreen(true)}
+                        className="text-xs text-cyan-600 hover:text-cyan-700 flex items-center gap-1"
+                    >
+                        <Expand className="h-3 w-3" />
+                        Full screen
+                    </button>
+                </div>
+                {isVideo ? (
+                    <video
+                        controls
+                        preload="metadata"
+                        className="w-full max-h-72"
+                        src={url}
+                    >
+                        Your browser does not support video playback.
+                    </video>
+                ) : (
+                    <button
+                        onClick={() => setShowFullscreen(true)}
+                        className="w-full cursor-pointer"
+                    >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                            src={url}
+                            alt="Student milestone evidence"
+                            className="w-full max-h-72 object-contain bg-slate-50"
+                        />
+                    </button>
+                )}
+            </div>
+
+            {/* Fullscreen in-app overlay */}
+            {showFullscreen && (
+                <div
+                    className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+                    onClick={() => setShowFullscreen(false)}
+                >
+                    <button
+                        onClick={() => setShowFullscreen(false)}
+                        className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                    >
+                        <X className="h-6 w-6" />
+                    </button>
+                    <div
+                        className="max-w-5xl w-full max-h-[90vh]"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {isVideo ? (
+                            <video
+                                controls
+                                autoPlay
+                                className="w-full max-h-[90vh] rounded-lg"
+                                src={url}
+                            >
+                                Your browser does not support video playback.
+                            </video>
+                        ) : (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img
+                                src={url}
+                                alt="Student milestone evidence"
+                                className="w-full max-h-[90vh] object-contain rounded-lg"
+                            />
+                        )}
+                    </div>
+                </div>
+            )}
+        </>
     );
 }

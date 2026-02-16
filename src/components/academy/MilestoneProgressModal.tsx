@@ -28,6 +28,7 @@ export function MilestoneProgressModal({
     const [coachNotes, setCoachNotes] = useState(currentProgress?.coach_notes || "");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [milestoneVideoUrl] = useMediaUrl(milestone.video_media_id);
+    const [evidenceUrl, evidenceLoading] = useMediaUrl(currentProgress?.evidence_media_id);
 
     if (!isOpen) return null;
 
@@ -110,10 +111,36 @@ export function MilestoneProgressModal({
                         )}
                         {currentProgress?.evidence_media_id && (
                             <div className="text-sm">
-                                <span className="font-medium text-amber-700">Evidence: </span>
-                                <span className="text-cyan-600">
-                                    Media uploaded (ID: {currentProgress.evidence_media_id.slice(0, 8)}...)
-                                </span>
+                                <span className="font-medium text-amber-700 block mb-1">Evidence:</span>
+                                {evidenceLoading ? (
+                                    <span className="text-cyan-600 text-xs">Loading evidence...</span>
+                                ) : evidenceUrl ? (
+                                    /\.(mp4|mov|webm|ogg|avi)(\?|$)/i.test(evidenceUrl) ||
+                                    evidenceUrl.includes("video") ? (
+                                        <video
+                                            controls
+                                            preload="metadata"
+                                            className="w-full max-h-48 rounded border border-amber-200"
+                                            src={evidenceUrl}
+                                        />
+                                    ) : (
+                                        <a
+                                            href={evidenceUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block"
+                                        >
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                                src={evidenceUrl}
+                                                alt="Student evidence"
+                                                className="w-full max-h-48 object-contain rounded border border-amber-200"
+                                            />
+                                        </a>
+                                    )
+                                ) : (
+                                    <span className="text-slate-500 text-xs">Unable to load evidence</span>
+                                )}
                             </div>
                         )}
                     </div>
