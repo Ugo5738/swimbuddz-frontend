@@ -20,7 +20,8 @@ import {
   Trophy,
   UserCheck,
   Users,
-  X
+  Wallet,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -45,8 +46,8 @@ const navSections: NavSection[] = [
   {
     title: "Overview",
     items: [
-      { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard }
-    ]
+      { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    ],
   },
   {
     title: "Core Management",
@@ -56,32 +57,49 @@ const navSections: NavSection[] = [
       { href: "/admin/sessions", label: "Sessions", icon: Calendar },
       { href: "/admin/discounts", label: "Discounts", icon: Trophy },
       { href: "/admin/transport", label: "Transport", icon: Car },
-      { href: "/admin/attendance", label: "Attendance", icon: ClipboardCheck }
-    ]
+      { href: "/admin/attendance", label: "Attendance", icon: ClipboardCheck },
+      { href: "/admin/wallet", label: "Wallet", icon: Wallet },
+    ],
   },
   {
     title: "Academy",
     items: [
-      { href: "/admin/academy", label: "Programs & Cohorts", icon: GraduationCap }
-    ]
+      {
+        href: "/admin/academy",
+        label: "Programs & Cohorts",
+        icon: GraduationCap,
+      },
+    ],
   },
   {
     title: "Community",
     items: [
       { href: "/admin/community/events", label: "Events", icon: CalendarDays },
-      { href: "/admin/community/volunteers", label: "Volunteers", icon: HandHeart },
-      { href: "/admin/community/content", label: "Tips & Content", icon: FileText },
-      { href: "/admin/community/challenges", label: "Challenges", icon: Trophy }
-    ]
+      {
+        href: "/admin/community/volunteers",
+        label: "Volunteers",
+        icon: HandHeart,
+      },
+      {
+        href: "/admin/community/content",
+        label: "Tips & Content",
+        icon: FileText,
+      },
+      {
+        href: "/admin/community/challenges",
+        label: "Challenges",
+        icon: Trophy,
+      },
+    ],
   },
   {
     title: "Content",
     items: [
       { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
       { href: "/admin/homepage-media", label: "Homepage Media", icon: Image },
-      { href: "/admin/gallery", label: "Gallery", icon: Image }
-    ]
-  }
+      { href: "/admin/gallery", label: "Gallery", icon: Image },
+    ],
+  },
 ];
 
 export function AdminLayout({ children }: AdminLayoutProps) {
@@ -89,11 +107,15 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string>("");
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
+    new Set(),
+  );
 
   useEffect(() => {
     async function getUserEmail() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user?.email) {
         setUserEmail(user.email);
       }
@@ -119,7 +141,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   };
 
   const toggleSection = (title: string) => {
-    setCollapsedSections(prev => {
+    setCollapsedSections((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(title)) {
         newSet.delete(title);
@@ -132,7 +154,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   // Check if any item in a section is active
   const isSectionActive = (section: NavSection) => {
-    return section.items.some(item => isActive(item.href));
+    return section.items.some((item) => isActive(item.href));
   };
 
   return (
@@ -148,18 +170,30 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-[280px] transform bg-gradient-to-b from-slate-900 to-slate-800 text-white transition-transform duration-300 ease-in-out lg:translate-x-0 lg:w-72 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+        className={`fixed inset-y-0 left-0 z-50 w-[280px] transform bg-gradient-to-b from-slate-900 to-slate-800 text-white transition-transform duration-300 ease-in-out lg:translate-x-0 lg:w-72 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
         aria-label="Admin navigation"
       >
         <div className="flex h-full flex-col">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-slate-700 p-4 lg:p-6">
-            <Link href="/admin/dashboard" className="flex items-center gap-2 lg:gap-3">
-              <img src="/logo.png" alt="SwimBuddz Logo" className="h-8 lg:h-10 w-auto" />
+            <Link
+              href="/admin/dashboard"
+              className="flex items-center gap-2 lg:gap-3"
+            >
+              <img
+                src="/logo.png"
+                alt="SwimBuddz Logo"
+                className="h-8 lg:h-10 w-auto"
+              />
               <div className="flex flex-col">
-                <span className="text-lg lg:text-xl font-bold text-cyan-400">SwimBuddz</span>
-                <span className="text-[10px] lg:text-xs font-medium text-slate-400">Admin Panel</span>
+                <span className="text-lg lg:text-xl font-bold text-cyan-400">
+                  SwimBuddz
+                </span>
+                <span className="text-[10px] lg:text-xs font-medium text-slate-400">
+                  Admin Panel
+                </span>
               </div>
             </Link>
             <button
@@ -182,10 +216,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                   {/* Collapsible section header for mobile */}
                   <button
                     onClick={() => toggleSection(section.title)}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors lg:pointer-events-none ${hasActiveItem
-                      ? "text-cyan-400 bg-slate-700/30"
-                      : "text-slate-500 hover:text-slate-400 hover:bg-slate-700/20"
-                      }`}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors lg:pointer-events-none ${
+                      hasActiveItem
+                        ? "text-cyan-400 bg-slate-700/30"
+                        : "text-slate-500 hover:text-slate-400 hover:bg-slate-700/20"
+                    }`}
                     aria-expanded={!isCollapsed}
                   >
                     <span>{section.title}</span>
@@ -200,8 +235,9 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
                   {/* Navigation items */}
                   <ul
-                    className={`space-y-0.5 overflow-hidden transition-all duration-200 ${isCollapsed ? "max-h-0 lg:max-h-none" : "max-h-[500px]"
-                      }`}
+                    className={`space-y-0.5 overflow-hidden transition-all duration-200 ${
+                      isCollapsed ? "max-h-0 lg:max-h-none" : "max-h-[500px]"
+                    }`}
                   >
                     {section.items.map((item) => {
                       const Icon = item.icon;
@@ -210,10 +246,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                         <li key={item.href}>
                           <Link
                             href={item.href}
-                            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${active
-                              ? "bg-cyan-600 text-white shadow-lg shadow-cyan-600/30"
-                              : "text-slate-300 hover:bg-slate-700/50 hover:text-white active:bg-slate-700"
-                              }`}
+                            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+                              active
+                                ? "bg-cyan-600 text-white shadow-lg shadow-cyan-600/30"
+                                : "text-slate-300 hover:bg-slate-700/50 hover:text-white active:bg-slate-700"
+                            }`}
                           >
                             <Icon className="h-5 w-5 shrink-0" />
                             <span className="truncate">{item.label}</span>
@@ -233,8 +270,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               <div className="flex items-center gap-2 lg:gap-3 px-3 py-2 rounded-lg bg-slate-700/30">
                 <Mail className="h-4 lg:h-5 w-4 lg:w-5 text-slate-400 shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] lg:text-xs font-medium text-slate-400">Logged in as</p>
-                  <p className="text-xs lg:text-sm font-medium text-white truncate">{userEmail}</p>
+                  <p className="text-[10px] lg:text-xs font-medium text-slate-400">
+                    Logged in as
+                  </p>
+                  <p className="text-xs lg:text-sm font-medium text-white truncate">
+                    {userEmail}
+                  </p>
                 </div>
               </div>
             )}
@@ -262,8 +303,14 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               <Menu className="h-6 w-6" />
             </button>
             <Link href="/admin/dashboard" className="flex items-center gap-2">
-              <img src="/logo.png" alt="SwimBuddz Logo" className="h-7 w-auto" />
-              <span className="text-base font-semibold text-cyan-700">Admin</span>
+              <img
+                src="/logo.png"
+                alt="SwimBuddz Logo"
+                className="h-7 w-auto"
+              />
+              <span className="text-base font-semibold text-cyan-700">
+                Admin
+              </span>
             </Link>
             {/* User avatar or placeholder for balance */}
             <div className="p-2 -mr-2">

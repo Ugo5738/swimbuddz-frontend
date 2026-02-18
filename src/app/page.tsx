@@ -8,28 +8,32 @@ import { useEffect, useState } from "react";
 const whoSwimBudzIsFor = [
   {
     title: "Beginners",
-    description: "Start from zero in a safe, supportive environment. Learn water confidence, breathing and basic strokes.",
+    description:
+      "Start from zero in a safe, supportive environment. Learn water confidence, breathing and basic strokes.",
     icon: "🌊",
-    gradient: "from-cyan-400 to-blue-500"
+    gradient: "from-cyan-400 to-blue-500",
   },
   {
     title: "Fitness Swimmers",
-    description: "Improve your technique, build endurance, and stay consistent with weekly group sessions.",
+    description:
+      "Improve your technique, build endurance, and stay consistent with weekly group sessions.",
     icon: "💪",
-    gradient: "from-emerald-400 to-teal-500"
+    gradient: "from-emerald-400 to-teal-500",
   },
   {
     title: "Competitive / Ocean Curious",
-    description: "Explore more advanced training, challenges and open-water goals over time.",
+    description:
+      "Explore more advanced training, challenges and open-water goals over time.",
     icon: "🏊",
-    gradient: "from-purple-400 to-indigo-500"
-  }
+    gradient: "from-purple-400 to-indigo-500",
+  },
 ];
 
 const tiers = [
   {
     name: "Community",
-    description: "Join a welcoming space to connect with other swimming enthusiasts.",
+    description:
+      "Join a welcoming space to connect with other swimming enthusiasts.",
     benefits: [
       "Access to Global Community Network of swimmers",
       "Access to Community Events & Socials",
@@ -41,11 +45,12 @@ const tiers = [
     ],
     pricing: "Paid - Annually",
     link: "/community",
-    accent: "cyan"
+    accent: "cyan",
   },
   {
     name: "Club",
-    description: "For swimmers who want to make swimming a lifestyle, with structured, ongoing improvement and an active training group.",
+    description:
+      "For swimmers who want to make swimming a lifestyle, with structured, ongoing improvement and an active training group.",
     benefits: [
       "Regular training exercises",
       "Improvement at your own pace",
@@ -53,66 +58,72 @@ const tiers = [
       "Team culture & challenges",
       "Everything in Community",
       "Exclusive club events",
-      "Monthly subscription"
+      "Monthly subscription",
     ],
     pricing: "Paid - Monthly",
     link: "/club",
     accent: "blue",
-    featured: true
+    featured: true,
   },
   {
     name: "Academy",
-    description: "A formal training program with a curriculum, assessments, and certification.",
+    description:
+      "A formal training program with a curriculum, assessments, and certification.",
     benefits: [
       "Structured curriculum/milestones",
       "Coach-assigned drills and goals",
       "Certification",
       "Cohort-based program",
       "Higher-value, deeper experience",
-      "Everything in Community & Club"
+      "Everything in Community & Club",
     ],
     pricing: "Paid - Cohort Based",
     link: "/academy",
-    accent: "purple"
-  }
+    accent: "purple",
+  },
 ];
 
 const howItWorks = [
   {
     step: "1",
     title: "Join the Community",
-    description: "Create your profile, choose your tier, and get plugged into announcements & groups."
+    description:
+      "Create your profile, choose your tier, and get plugged into announcements & groups.",
   },
   {
     step: "2",
     title: "Pick Your Path",
-    description: "Join Club training sessions or enroll in Academy cohorts when you're ready."
+    description:
+      "Join Club training sessions or enroll in Academy cohorts when you're ready.",
   },
   {
     step: "3",
     title: "Show Up Consistently",
-    description: "Attend sessions, practice drills, and track your progress."
+    description: "Attend sessions, practice drills, and track your progress.",
   },
   {
     step: "4",
     title: "Grow With the Pod",
-    description: "Take on challenges, volunteer, and be part of building SwimBuddz."
-  }
+    description:
+      "Take on challenges, volunteer, and be part of building SwimBuddz.",
+  },
 ];
 
 const testimonials = [
   {
-    quote: "I went from being afraid of water to swimming across the pool confidently.",
-    author: "SwimBuddz Member"
+    quote:
+      "I went from being afraid of water to swimming across the pool confidently.",
+    author: "SwimBuddz Member",
   },
   {
     quote: "The group energy keeps me showing up, even on slow days.",
-    author: "Club Member"
+    author: "Club Member",
   },
   {
-    quote: "SwimBuddz gave me the structure I needed to finally learn how to swim properly.",
-    author: "Academy Graduate"
-  }
+    quote:
+      "SwimBuddz gave me the structure I needed to finally learn how to swim properly.",
+    author: "Academy Graduate",
+  },
 ];
 
 // Default placeholder hero images (used when no admin-uploaded banners exist)
@@ -123,12 +134,18 @@ const defaultHeroImages = [
 ];
 
 // Wave SVG component for decorative borders
-function WaveDecoration({ className = "", flip = false }: { className?: string; flip?: boolean }) {
+function WaveDecoration({
+  className = "",
+  flip = false,
+}: {
+  className?: string;
+  flip?: boolean;
+}) {
   return (
     <svg
       viewBox="0 0 1200 120"
       preserveAspectRatio="none"
-      className={`w-full ${flip ? 'rotate-180' : ''} ${className}`}
+      className={`w-full ${flip ? "rotate-180" : ""} ${className}`}
     >
       <path
         d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z"
@@ -169,7 +186,10 @@ export default function HomePage() {
         if (response.ok) {
           const assets = await response.json();
           const bannerUrls = assets
-            .filter((a: any) => a.key.startsWith("homepage_banner_") && a.media_item?.file_url)
+            .filter(
+              (a: any) =>
+                a.key.startsWith("homepage_banner_") && a.media_item?.file_url,
+            )
             .sort((a: any, b: any) => {
               const orderA = parseInt(a.key.split("_").pop() || "0");
               const orderB = parseInt(b.key.split("_").pop() || "0");
@@ -205,7 +225,10 @@ export default function HomePage() {
         if (response.ok) {
           const assets = await response.json();
           const communityPhotos = assets
-            .filter((a: any) => a.key.startsWith("community_photo_") && a.media_item?.file_url)
+            .filter(
+              (a: any) =>
+                a.key.startsWith("community_photo_") && a.media_item?.file_url,
+            )
             .sort((a: any, b: any) => {
               const orderA = parseInt(a.key.split("_").pop() || "0");
               const orderB = parseInt(b.key.split("_").pop() || "0");
@@ -230,20 +253,24 @@ export default function HomePage() {
   }, []);
 
   const handleImageLoad = (id: string) => {
-    setLoadedImages(prev => new Set(prev).add(id));
+    setLoadedImages((prev) => new Set(prev).add(id));
   };
 
   return (
     <div className="space-y-20">
       {/* 1. HERO SECTION - Full screen height, full width */}
-      <section className="relative overflow-hidden min-h-[60vh] sm:min-h-[85vh] flex items-center -mx-4 md:-mx-[calc(50vw-50%)] w-[calc(100%+2rem)] md:w-screen" style={{ marginTop: '-2rem' }}>
+      <section
+        className="relative overflow-hidden min-h-[60vh] sm:min-h-[85vh] flex items-center -mx-4 md:-mx-[calc(50vw-50%)] w-[calc(100%+2rem)] md:w-screen"
+        style={{ marginTop: "-2rem" }}
+      >
         {/* Background Image Slideshow */}
         <div className="absolute inset-0">
           {heroImages.map((img, idx) => (
             <div
               key={idx}
-              className={`absolute inset-0 transition-opacity duration-1000 ${idx === currentImageIndex ? 'opacity-100' : 'opacity-0'
-                }`}
+              className={`absolute inset-0 transition-opacity duration-1000 ${
+                idx === currentImageIndex ? "opacity-100" : "opacity-0"
+              }`}
             >
               <img
                 src={img}
@@ -258,7 +285,10 @@ export default function HomePage() {
 
           {/* Animated gradient orbs - hidden on mobile for performance */}
           <div className="hidden sm:block absolute -top-24 -right-24 h-96 w-96 rounded-full bg-cyan-500/20 blur-3xl animate-pulse" />
-          <div className="hidden sm:block absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-blue-500/20 blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+          <div
+            className="hidden sm:block absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-blue-500/20 blur-3xl animate-pulse"
+            style={{ animationDelay: "1s" }}
+          />
 
           {/* Wave pattern at bottom */}
           <div className="absolute bottom-0 left-0 right-0 text-slate-900/50 h-16 sm:h-24">
@@ -287,7 +317,8 @@ export default function HomePage() {
             </h1>
 
             <p className="text-lg text-slate-200 max-w-2xl md:text-xl">
-              SwimBuddz connects beginners, fitness swimmers, and competitors in a structured but friendly swim community.
+              SwimBuddz connects beginners, fitness swimmers, and competitors in
+              a structured but friendly swim community.
             </p>
 
             <div className="flex flex-col gap-4 sm:flex-row pt-2">
@@ -313,8 +344,9 @@ export default function HomePage() {
             <button
               key={idx}
               onClick={() => setCurrentImageIndex(idx)}
-              className={`w-2 h-2 rounded-full transition-all ${idx === currentImageIndex ? 'bg-white w-8' : 'bg-white/50'
-                }`}
+              className={`w-2 h-2 rounded-full transition-all ${
+                idx === currentImageIndex ? "bg-white w-8" : "bg-white/50"
+              }`}
               aria-label={`Go to slide ${idx + 1}`}
             />
           ))}
@@ -333,13 +365,20 @@ export default function HomePage() {
         </div>
         <div className="grid gap-6 md:grid-cols-3">
           {whoSwimBudzIsFor.map((audience) => (
-            <Card key={audience.title} className="group relative overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
-              <div className={`absolute inset-0 bg-gradient-to-br ${audience.gradient} opacity-0 group-hover:opacity-5 transition-opacity`} />
+            <Card
+              key={audience.title}
+              className="group relative overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1"
+            >
+              <div
+                className={`absolute inset-0 bg-gradient-to-br ${audience.gradient} opacity-0 group-hover:opacity-5 transition-opacity`}
+              />
               <div className="relative space-y-4 text-center p-6">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 text-4xl shadow-sm">
                   {audience.icon}
                 </div>
-                <h3 className="text-xl font-semibold text-slate-900">{audience.title}</h3>
+                <h3 className="text-xl font-semibold text-slate-900">
+                  {audience.title}
+                </h3>
                 <p className="text-slate-600">{audience.description}</p>
               </div>
             </Card>
@@ -357,33 +396,53 @@ export default function HomePage() {
             Choose Your Level of Commitment
           </h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Start with Community, upgrade to Club for consistent training, or join Academy for structured learning.
+            Start with Community, upgrade to Club for consistent training, or
+            join Academy for structured learning.
           </p>
         </div>
         <div className="grid gap-6 md:grid-cols-3">
           {tiers.map((tier) => (
             <Card
               key={tier.name}
-              className={`relative overflow-hidden transition-all hover:shadow-lg ${tier.featured ? 'ring-2 ring-cyan-500 shadow-lg md:-translate-y-2' : ''
-                }`}
+              className={`relative overflow-hidden transition-all hover:shadow-lg ${
+                tier.featured
+                  ? "ring-2 ring-cyan-500 shadow-lg md:-translate-y-2"
+                  : ""
+              }`}
             >
               {tier.featured && (
                 <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-cyan-500 to-blue-500 py-1.5 text-center text-xs font-semibold text-white">
                   Most Popular
                 </div>
               )}
-              <div className={`space-y-6 ${tier.featured ? 'pt-10' : 'pt-6'} p-6`}>
+              <div
+                className={`space-y-6 ${tier.featured ? "pt-10" : "pt-6"} p-6`}
+              >
                 <div>
-                  <h3 className="text-2xl font-bold text-cyan-700">{tier.name}</h3>
+                  <h3 className="text-2xl font-bold text-cyan-700">
+                    {tier.name}
+                  </h3>
                   <p className="text-slate-600 mt-2">{tier.description}</p>
-                  <p className="text-sm font-semibold text-slate-500 mt-3">{tier.pricing}</p>
+                  <p className="text-sm font-semibold text-slate-500 mt-3">
+                    {tier.pricing}
+                  </p>
                 </div>
                 <ul className="space-y-3">
                   {tier.benefits.map((benefit, idx) => (
                     <li key={idx} className="flex items-start gap-3 text-sm">
                       <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-cyan-100 text-cyan-700">
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        <svg
+                          className="w-3 h-3"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={3}
+                            d="M5 13l4 4L19 7"
+                          />
                         </svg>
                       </span>
                       <span className="text-slate-700">{benefit}</span>
@@ -392,10 +451,11 @@ export default function HomePage() {
                 </ul>
                 <Link
                   href={tier.link}
-                  className={`block text-center font-semibold py-3 rounded-xl transition-all ${tier.featured
-                    ? 'bg-cyan-600 text-white hover:bg-cyan-500'
-                    : 'bg-slate-100 text-cyan-700 hover:bg-slate-200'
-                    }`}
+                  className={`block text-center font-semibold py-3 rounded-xl transition-all ${
+                    tier.featured
+                      ? "bg-cyan-600 text-white hover:bg-cyan-500"
+                      : "bg-slate-100 text-cyan-700 hover:bg-slate-200"
+                  }`}
                 >
                   Learn more →
                 </Link>
@@ -409,9 +469,12 @@ export default function HomePage() {
       <section className="space-y-6 rounded-2xl bg-gradient-to-br from-cyan-50 to-white border border-cyan-100 p-8 md:p-10">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900">SwimBuddz Gear</h2>
+            <h2 className="text-2xl font-bold text-slate-900">
+              SwimBuddz Gear
+            </h2>
             <p className="text-slate-600 mt-2">
-              Browse our collection of swim essentials — goggles, caps, training equipment and more.
+              Browse our collection of swim essentials — goggles, caps, training
+              equipment and more.
             </p>
           </div>
           {/* <Link
@@ -425,23 +488,31 @@ export default function HomePage() {
           </Link> */}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {["🥽 Goggles", "🏊 Caps", "🎽 Swimwear", "🏋️ Training"].map((item, idx) => (
-            <Link
-              key={idx}
-              href="/store"
-              className="group bg-white rounded-xl p-6 text-center border border-slate-100 hover:border-cyan-200 hover:shadow-md transition-all"
-            >
-              <span className="text-3xl block mb-2">{item.split(" ")[0]}</span>
-              <span className="text-sm font-medium text-slate-700 group-hover:text-cyan-700">{item.split(" ").slice(1).join(" ")}</span>
-            </Link>
-          ))}
+          {["🥽 Goggles", "🏊 Caps", "🎽 Swimwear", "🏋️ Training"].map(
+            (item, idx) => (
+              <Link
+                key={idx}
+                href="/store"
+                className="group bg-white rounded-xl p-6 text-center border border-slate-100 hover:border-cyan-200 hover:shadow-md transition-all"
+              >
+                <span className="text-3xl block mb-2">
+                  {item.split(" ")[0]}
+                </span>
+                <span className="text-sm font-medium text-slate-700 group-hover:text-cyan-700">
+                  {item.split(" ").slice(1).join(" ")}
+                </span>
+              </Link>
+            ),
+          )}
         </div>
       </section>
 
       {/* 4. SESSIONS & EVENTS PREVIEW */}
       <section className="space-y-6 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 p-8 md:p-10">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Upcoming Sessions & Events</h2>
+          <h2 className="text-2xl font-bold text-slate-900">
+            Upcoming Sessions & Events
+          </h2>
           <p className="text-slate-600 mt-2">
             Join training sessions or RSVP to community events.
           </p>
@@ -455,8 +526,18 @@ export default function HomePage() {
             className="inline-flex items-center gap-2 rounded-full bg-cyan-600 px-8 py-3.5 font-semibold text-white hover:bg-cyan-500 transition-all hover:scale-105 hover:shadow-lg hover:shadow-cyan-500/25"
           >
             View Full Calendar
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
             </svg>
           </Link>
         </Card>
@@ -472,45 +553,47 @@ export default function HomePage() {
             Building a Culture Together
           </h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            We&apos;re building a culture of consistency, safety and fun in and out of the pool.
+            We&apos;re building a culture of consistency, safety and fun in and
+            out of the pool.
           </p>
         </div>
 
         {/* Photo grid - real photos or placeholders */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-          {galleryPhotos.length > 0 ? (
-            galleryPhotos.map((photo) => (
-              <div
-                key={photo.id}
-                className="group relative aspect-square rounded-2xl overflow-hidden bg-slate-100"
-              >
-                {!loadedImages.has(photo.id) && (
-                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-100 to-cyan-200 animate-pulse flex items-center justify-center">
-                    <span className="text-4xl">🏊</span>
-                  </div>
-                )}
-                <img
-                  src={photo.file_url || photo.thumbnail_url}
-                  alt={photo.title || "SwimBuddz community"}
-                  className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${loadedImages.has(photo.id) ? 'opacity-100' : 'opacity-0'
+          {galleryPhotos.length > 0
+            ? galleryPhotos.map((photo) => (
+                <div
+                  key={photo.id}
+                  className="group relative aspect-square rounded-2xl overflow-hidden bg-slate-100"
+                >
+                  {!loadedImages.has(photo.id) && (
+                    <div className="absolute inset-0 bg-gradient-to-br from-cyan-100 to-cyan-200 animate-pulse flex items-center justify-center">
+                      <span className="text-4xl">🏊</span>
+                    </div>
+                  )}
+                  <img
+                    src={photo.file_url || photo.thumbnail_url}
+                    alt={photo.title || "SwimBuddz community"}
+                    className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${
+                      loadedImages.has(photo.id) ? "opacity-100" : "opacity-0"
                     }`}
-                  onLoad={() => handleImageLoad(photo.id)}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            ))
-          ) : (
-            // Placeholder cards
-            [1, 2, 3, 4, 5, 6].map((i) => (
-              <div
-                key={i}
-                className="group relative aspect-square rounded-2xl bg-gradient-to-br from-cyan-100 to-cyan-200 flex items-center justify-center overflow-hidden transition-all hover:shadow-lg"
-              >
-                <span className="text-4xl md:text-5xl group-hover:scale-110 transition-transform">🏊</span>
-                <div className="absolute inset-0 bg-gradient-to-t from-cyan-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            ))
-          )}
+                    onLoad={() => handleImageLoad(photo.id)}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              ))
+            : // Placeholder cards
+              [1, 2, 3, 4, 5, 6].map((i) => (
+                <div
+                  key={i}
+                  className="group relative aspect-square rounded-2xl bg-gradient-to-br from-cyan-100 to-cyan-200 flex items-center justify-center overflow-hidden transition-all hover:shadow-lg"
+                >
+                  <span className="text-4xl md:text-5xl group-hover:scale-110 transition-transform">
+                    🏊
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-t from-cyan-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              ))}
         </div>
 
         <div className="text-center">
@@ -519,8 +602,18 @@ export default function HomePage() {
             className="inline-flex items-center gap-2 rounded-full border-2 border-cyan-600 px-8 py-3.5 font-semibold text-cyan-700 hover:bg-cyan-50 transition-all hover:scale-105"
           >
             Browse Gallery
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
             </svg>
           </Link>
         </div>
@@ -538,7 +631,10 @@ export default function HomePage() {
         </div>
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           {howItWorks.map((step, idx) => (
-            <div key={step.step} className="relative space-y-4 text-center md:text-left">
+            <div
+              key={step.step}
+              className="relative space-y-4 text-center md:text-left"
+            >
               {/* Connector line for desktop */}
               {idx < howItWorks.length - 1 && (
                 <div className="hidden lg:block absolute top-6 left-[60%] w-full h-0.5 bg-gradient-to-r from-cyan-200 to-transparent" />
@@ -546,7 +642,9 @@ export default function HomePage() {
               <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-cyan-600 text-xl font-bold text-white shadow-lg shadow-cyan-500/25 mx-auto md:mx-0">
                 {step.step}
               </div>
-              <h3 className="text-lg font-semibold text-slate-900">{step.title}</h3>
+              <h3 className="text-lg font-semibold text-slate-900">
+                {step.title}
+              </h3>
               <p className="text-sm text-slate-600">{step.description}</p>
             </div>
           ))}
@@ -565,11 +663,20 @@ export default function HomePage() {
         </div>
         <div className="grid gap-6 md:grid-cols-3">
           {testimonials.map((testimonial, idx) => (
-            <Card key={idx} className="relative overflow-hidden text-center md:text-left">
-              <div className="absolute top-0 left-0 text-6xl text-cyan-100 font-serif leading-none">&quot;</div>
+            <Card
+              key={idx}
+              className="relative overflow-hidden text-center md:text-left"
+            >
+              <div className="absolute top-0 left-0 text-6xl text-cyan-100 font-serif leading-none">
+                &quot;
+              </div>
               <div className="relative space-y-4 p-6 pt-8">
-                <p className="text-slate-700 italic text-lg">&quot;{testimonial.quote}&quot;</p>
-                <p className="text-sm font-semibold text-cyan-700">— {testimonial.author}</p>
+                <p className="text-slate-700 italic text-lg">
+                  &quot;{testimonial.quote}&quot;
+                </p>
+                <p className="text-sm font-semibold text-cyan-700">
+                  — {testimonial.author}
+                </p>
               </div>
             </Card>
           ))}

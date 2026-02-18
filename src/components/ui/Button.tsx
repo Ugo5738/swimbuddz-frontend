@@ -6,16 +6,18 @@ const baseClasses =
 
 const variants = {
   primary: "bg-cyan-600 text-white hover:bg-cyan-500",
-  secondary: "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+  secondary:
+    "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
   ghost: "text-cyan-700 hover:bg-cyan-50",
   danger: "bg-rose-600 text-white hover:bg-rose-500",
-  outline: "border border-slate-200 bg-transparent text-slate-700 hover:bg-slate-50"
+  outline:
+    "border border-slate-200 bg-transparent text-slate-700 hover:bg-slate-50",
 } as const;
 
 const sizes = {
   sm: "px-3 py-2 text-sm min-h-[36px]",
   md: "px-4 py-2.5 text-sm min-h-[44px]",
-  lg: "px-6 py-3 text-base min-h-[48px]"
+  lg: "px-6 py-3 text-base min-h-[48px]",
 } as const;
 
 type ButtonProps = {
@@ -25,9 +27,18 @@ type ButtonProps = {
   className?: string;
 } & ButtonHTMLAttributes<HTMLButtonElement>;
 
-export function Button({ children, variant = "primary", size = "md", className, ...props }: ButtonProps) {
+export function Button({
+  children,
+  variant = "primary",
+  size = "md",
+  className,
+  ...props
+}: ButtonProps) {
   return (
-    <button className={clsx(baseClasses, variants[variant], sizes[size], className)} {...props}>
+    <button
+      className={clsx(baseClasses, variants[variant], sizes[size], className)}
+      {...props}
+    >
       {children}
     </button>
   );

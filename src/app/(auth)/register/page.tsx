@@ -163,14 +163,15 @@ function RegisterContent() {
       apiGet<any>("/api/v1/members/me", { auth: true })
         .then((profile) => {
           console.log("Fetched profile for upgrade:", profile);
-          const rawTiers: string[] =
-            (profile.membership_tiers && profile.membership_tiers.length > 0
+          const rawTiers: string[] = (
+            profile.membership_tiers && profile.membership_tiers.length > 0
               ? profile.membership_tiers
               : profile.membership_tier
                 ? [profile.membership_tier]
-                : ["community"]).map((t: string) => t.toLowerCase());
+                : ["community"]
+          ).map((t: string) => t.toLowerCase());
           const normalizedTiers = rawTiers.filter((t) =>
-            ["community", "club", "academy"].includes(t)
+            ["community", "club", "academy"].includes(t),
           ) as Tier[];
           setCurrentTiers(normalizedTiers);
           setCurrentTier(normalizedTiers[0] || null);
@@ -182,7 +183,9 @@ function RegisterContent() {
             email: profile.email || "",
             phone: profile.phone || "",
             gender: profile.gender || "",
-            dateOfBirth: profile.date_of_birth ? new Date(profile.date_of_birth).toISOString().split("T")[0] : "",
+            dateOfBirth: profile.date_of_birth
+              ? new Date(profile.date_of_birth).toISOString().split("T")[0]
+              : "",
             city: profile.city || "",
             state: profile.state || "",
             country: profile.country || "Nigeria",
@@ -190,15 +193,19 @@ function RegisterContent() {
             discoverySource: profile.discovery_source || "",
             profilePhotoUrl: profile.profile_photo_url || "",
             emergencyContactName: profile.emergency_contact_name || "",
-            emergencyContactRelationship: profile.emergency_contact_relationship || "",
+            emergencyContactRelationship:
+              profile.emergency_contact_relationship || "",
             emergencyContactPhone: profile.emergency_contact_phone || "",
             medicalInfo: profile.medical_info || "",
             locationPreference: profile.location_preference || [],
             timeOfDayAvailability: profile.time_of_day_availability || [],
             consentPhoto: profile.consent_photo || "yes",
-            academySkillAssessment: profile.academy_skill_assessment || initialFormData.academySkillAssessment,
+            academySkillAssessment:
+              profile.academy_skill_assessment ||
+              initialFormData.academySkillAssessment,
             academyGoals: profile.academy_goals || "",
-            academyPreferredCoachGender: profile.academy_preferred_coach_gender || "",
+            academyPreferredCoachGender:
+              profile.academy_preferred_coach_gender || "",
             academyLessonPreference: profile.academy_lesson_preference || "",
             volunteerInterest: profile.volunteer_interest || [],
             interestTags: profile.interest_tags || [],
@@ -218,16 +225,12 @@ function RegisterContent() {
   const steps = useMemo<Step[]>(() => {
     if (isUpgrade) {
       // Upgrade mode only needs tier selection - we redirect to onboarding after
-      return [
-        { key: "tier", title: "Choose Tier", required: true },
-      ];
+      return [{ key: "tier", title: "Choose Tier", required: true }];
     }
 
     if (isCoachRegistration) {
       // Coach registration only needs account creation - no tier selection
-      return [
-        { key: "essentials", title: "Create Account", required: true },
-      ];
+      return [{ key: "essentials", title: "Create Account", required: true }];
     }
 
     return [
@@ -273,12 +276,13 @@ function RegisterContent() {
           formData.firstName &&
           formData.lastName &&
           formData.email &&
-          formData.password && formData.password.length >= 8 &&
+          formData.password &&
+          formData.password.length >= 8 &&
           formData.phone &&
           formData.state &&
           formData.city &&
           formData.country &&
-          formData.swimLevel
+          formData.swimLevel,
         );
 
       case "confirm":
@@ -318,9 +322,13 @@ function RegisterContent() {
         // Save the requested tier to member profile
         const requestedTiers = expandTier(formData.membershipTier);
 
-        await apiPatch("/api/v1/members/me", {
-          requested_membership_tiers: requestedTiers,
-        }, { auth: true });
+        await apiPatch(
+          "/api/v1/members/me",
+          {
+            requested_membership_tiers: requestedTiers,
+          },
+          { auth: true },
+        );
 
         // Redirect to onboarding with the appropriate step
         const step = formData.membershipTier === "academy" ? "academy" : "club";
@@ -380,7 +388,10 @@ function RegisterContent() {
 
       router.push("/register/success");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to complete registration.";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to complete registration.";
       setErrorMessage(message);
     } finally {
       setSubmitting(false);
@@ -417,8 +428,6 @@ function RegisterContent() {
             onUpdate={updateField}
           />
         );
-
-
 
       case "confirm":
         return (
@@ -478,7 +487,10 @@ function RegisterContent() {
               const isCompleted = index < currentStep;
 
               return (
-                <div key={step.key} className="flex flex-col items-center gap-2 bg-slate-50 px-2">
+                <div
+                  key={step.key}
+                  className="flex flex-col items-center gap-2 bg-slate-50 px-2"
+                >
                   <div
                     className={clsx(
                       "flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-colors",
@@ -486,7 +498,7 @@ function RegisterContent() {
                         ? "bg-cyan-600 text-white ring-4 ring-cyan-100"
                         : isCompleted
                           ? "bg-cyan-600 text-white"
-                          : "bg-slate-200 text-slate-500"
+                          : "bg-slate-200 text-slate-500",
                     )}
                   >
                     {isCompleted ? "✓" : index + 1}
@@ -494,7 +506,11 @@ function RegisterContent() {
                   <span
                     className={clsx(
                       "hidden text-xs font-medium sm:block",
-                      isActive ? "text-cyan-700" : isCompleted ? "text-cyan-600" : "text-slate-500"
+                      isActive
+                        ? "text-cyan-700"
+                        : isCompleted
+                          ? "text-cyan-600"
+                          : "text-slate-500",
                     )}
                   >
                     {step.title}
@@ -535,10 +551,7 @@ function RegisterContent() {
               Back
             </Button>
 
-            <Button
-              onClick={goNext}
-              disabled={!isStepValid() || submitting}
-            >
+            <Button onClick={goNext} disabled={!isStepValid() || submitting}>
               {currentStep === totalSteps - 1
                 ? submitting
                   ? "Submitting..."

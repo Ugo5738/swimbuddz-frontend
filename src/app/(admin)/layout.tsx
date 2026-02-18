@@ -7,7 +7,11 @@ import { supabase } from "@/lib/auth";
 
 const ADMIN_EMAILS = ["admin@admin.com"];
 
-export default function AdminLayoutWrapper({ children }: { children: ReactNode }) {
+export default function AdminLayoutWrapper({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -15,7 +19,9 @@ export default function AdminLayoutWrapper({ children }: { children: ReactNode }
   useEffect(() => {
     async function checkAuth() {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
         if (!user || !user.email || !ADMIN_EMAILS.includes(user.email)) {
           console.warn("Unauthorized admin access attempt", user?.email);
@@ -38,7 +44,9 @@ export default function AdminLayoutWrapper({ children }: { children: ReactNode }
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="text-lg font-medium text-slate-600">Verifying Admin Access...</div>
+        <div className="text-lg font-medium text-slate-600">
+          Verifying Admin Access...
+        </div>
       </div>
     );
   }

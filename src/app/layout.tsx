@@ -9,7 +9,7 @@ import "../styles/globals.css";
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
-  display: "swap"
+  display: "swap",
 });
 
 export const viewport: Viewport = {
@@ -22,7 +22,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "SwimBuddz",
   description:
-    "SwimBuddz – building a global swimming community (community, club, and academy). Mobile-first experience for swimmers worldwide, currently active in Lagos."
+    "SwimBuddz – building a global swimming community (community, club, and academy). Mobile-first experience for swimmers worldwide, currently active in Lagos.",
 };
 
 type RootLayoutProps = {

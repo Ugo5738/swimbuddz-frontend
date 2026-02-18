@@ -6,81 +6,88 @@
 // API Base URL - changes between dev/prod.
 const envApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 const fallbackApiBaseUrl =
-    typeof window === 'undefined' ? 'http://localhost:8000' : '';
+  typeof window === "undefined" ? "http://localhost:8000" : "";
 
 // Ensure HTTPS in production to prevent mixed content errors
 function normalizeApiUrl(url: string | undefined): string {
-    if (!url) return fallbackApiBaseUrl;
+  if (!url) return fallbackApiBaseUrl;
 
-    // In production (non-localhost), enforce HTTPS
-    if (!url.includes('localhost') && url.startsWith('http://')) {
-        return url.replace('http://', 'https://');
-    }
-    return url;
+  // In production (non-localhost), enforce HTTPS
+  if (!url.includes("localhost") && url.startsWith("http://")) {
+    return url.replace("http://", "https://");
+  }
+  return url;
 }
 
 export const API_BASE_URL = normalizeApiUrl(envApiBaseUrl);
 
 // External Links
-export const WHATSAPP_GROUP_URL = process.env.NEXT_PUBLIC_WHATSAPP_URL || 'https://chat.whatsapp.com/BVtV5iKH9LhCBphqXqDVYv';
+export const WHATSAPP_GROUP_URL =
+  process.env.NEXT_PUBLIC_WHATSAPP_URL ||
+  "https://chat.whatsapp.com/BVtV5iKH9LhCBphqXqDVYv";
 
 // Feature Flags
-export const ENABLE_REGISTRATION = process.env.NEXT_PUBLIC_ENABLE_REGISTRATION !== 'false';
-export const ENABLE_GALLERY = process.env.NEXT_PUBLIC_ENABLE_GALLERY !== 'false';
+export const ENABLE_REGISTRATION =
+  process.env.NEXT_PUBLIC_ENABLE_REGISTRATION !== "false";
+export const ENABLE_GALLERY =
+  process.env.NEXT_PUBLIC_ENABLE_GALLERY !== "false";
 
 // API Endpoints Builder
 export const apiEndpoints = {
-    // Base URL for direct access
-    baseUrl: API_BASE_URL,
+  // Base URL for direct access
+  baseUrl: API_BASE_URL,
 
-    // Members
-    members: `${API_BASE_URL}/api/v1/members`,
-    pendingRegistrations: `${API_BASE_URL}/api/v1/pending-registrations`,
+  // Members
+  members: `${API_BASE_URL}/api/v1/members`,
+  pendingRegistrations: `${API_BASE_URL}/api/v1/pending-registrations`,
 
-    // Sessions
-    sessions: `${API_BASE_URL}/api/v1/sessions`,
+  // Sessions
+  sessions: `${API_BASE_URL}/api/v1/sessions`,
 
-    // Events
-    events: `${API_BASE_URL}/api/v1/events`,
+  // Events
+  events: `${API_BASE_URL}/api/v1/events`,
 
-    // Attendance
-    attendance: `${API_BASE_URL}/api/v1/attendance`,
+  // Attendance
+  attendance: `${API_BASE_URL}/api/v1/attendance`,
 
-    // Volunteers
-    volunteers: `${API_BASE_URL}/api/v1/volunteers`,
+  // Volunteers
+  volunteers: `${API_BASE_URL}/api/v1/volunteers`,
 
-    // Media/Gallery
-    media: `${API_BASE_URL}/api/v1/media`,
+  // Media/Gallery
+  media: `${API_BASE_URL}/api/v1/media`,
 
-    // Communications
-    announcements: `${API_BASE_URL}/api/v1/communications/announcements`,
-    content: `${API_BASE_URL}/api/v1/content`,
-    messages: `${API_BASE_URL}/api/v1/messages`,
+  // Communications
+  announcements: `${API_BASE_URL}/api/v1/communications/announcements`,
+  content: `${API_BASE_URL}/api/v1/content`,
+  messages: `${API_BASE_URL}/api/v1/messages`,
 
-    // Academy
-    academy: `${API_BASE_URL}/api/v1/academy`,
+  // Academy
+  academy: `${API_BASE_URL}/api/v1/academy`,
 
-    // Payments
-    payments: `${API_BASE_URL}/api/v1/payments`,
+  // Payments
+  payments: `${API_BASE_URL}/api/v1/payments`,
 
-    // Transport
-    transport: `${API_BASE_URL}/api/v1/transport`,
+  // Transport
+  transport: `${API_BASE_URL}/api/v1/transport`,
 
-    // Challenges
-    challenges: `${API_BASE_URL}/api/v1/challenges`,
+  // Challenges
+  challenges: `${API_BASE_URL}/api/v1/challenges`,
 } as const;
 
 // Helper function to build full endpoint URLs
-export function buildApiUrl(endpoint: string, params?: Record<string, string | number>): string {
-    let url = `${API_BASE_URL}${endpoint}`;
+export function buildApiUrl(
+  endpoint: string,
+  params?: Record<string, string | number>,
+): string {
+  let url = `${API_BASE_URL}${endpoint}`;
 
-    if (params) {
-        const searchParams = new URLSearchParams();
-        Object.entries(params).forEach(([key, value]) => {
-            searchParams.append(key, String(value));
-        });
-        url += `?${searchParams.toString()}`;
-    }
+  if (params) {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      searchParams.append(key, String(value));
+    });
+    url += `?${searchParams.toString()}`;
+  }
 
-    return url;
+  return url;
 }

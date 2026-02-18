@@ -12,225 +12,225 @@ export type { AgreementStatus } from "./coaches";
 
 export type CohortStatus = "open" | "active" | "completed" | "cancelled";
 export type EnrollmentStatus =
-    | "pending_approval"
-    | "enrolled"
-    | "completed"
-    | "dropped"
-    | "waitlist";
+  | "pending_approval"
+  | "enrolled"
+  | "completed"
+  | "dropped"
+  | "waitlist";
 export type ProgressStatus = "pending" | "achieved";
 
 export type Program = {
-    id: string;
-    name: string;
-    description: string | null;
-    level: string;
-    duration_weeks: number;
-    default_capacity: number;
-    currency: string;
-    price_amount: number;
-    cover_image_url: string | null;
-    is_published: boolean;
-    created_at: string;
-    updated_at: string;
+  id: string;
+  name: string;
+  description: string | null;
+  level: string;
+  duration_weeks: number;
+  default_capacity: number;
+  currency: string;
+  price_amount: number;
+  cover_image_url: string | null;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
 };
 
 export type Cohort = {
-    id: string;
-    name: string;
-    program_id: string;
-    coach_id: string | null;
-    start_date: string;
-    end_date: string;
-    capacity: number;
-    status: CohortStatus;
-    allow_mid_entry: boolean;
-    require_approval: boolean;
-    timezone: string | null;
-    location_type: string | null;
-    location_name: string | null;
-    location_address: string | null;
-    price_override: number | null;
-    notes_internal: string | null;
-    created_at: string;
-    updated_at: string;
-    program?: Program;
+  id: string;
+  name: string;
+  program_id: string;
+  coach_id: string | null;
+  start_date: string;
+  end_date: string;
+  capacity: number;
+  status: CohortStatus;
+  allow_mid_entry: boolean;
+  require_approval: boolean;
+  timezone: string | null;
+  location_type: string | null;
+  location_name: string | null;
+  location_address: string | null;
+  price_override: number | null;
+  notes_internal: string | null;
+  created_at: string;
+  updated_at: string;
+  program?: Program;
 };
 
 export type Milestone = {
-    id: string;
-    program_id: string;
-    name: string;
-    criteria: string | null;
-    video_media_id: string | null;
-    created_at: string;
-    updated_at: string;
+  id: string;
+  program_id: string;
+  name: string;
+  criteria: string | null;
+  video_media_id: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 export type StudentProgress = {
-    id: string;
-    enrollment_id: string;
-    milestone_id: string;
-    status: ProgressStatus;
-    achieved_at: string | null;
-    evidence_media_id: string | null;
-    student_notes: string | null;
-    coach_notes: string | null;
-    score: number | null;
-    reviewed_by_coach_id: string | null;
-    reviewed_at: string | null;
-    created_at: string;
-    updated_at: string;
+  id: string;
+  enrollment_id: string;
+  milestone_id: string;
+  status: ProgressStatus;
+  achieved_at: string | null;
+  evidence_media_id: string | null;
+  student_notes: string | null;
+  coach_notes: string | null;
+  score: number | null;
+  reviewed_by_coach_id: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 export type Enrollment = {
-    id: string;
-    program_id: string | null;
-    cohort_id: string | null;
-    member_id: string;
-    status: EnrollmentStatus;
-    payment_status: string;
-    preferences: Record<string, unknown> | null;
-    created_at: string;
-    updated_at: string;
-    cohort?: Cohort;
-    program?: Program;
-    // Additional fields populated by backend when returning students
-    member_name?: string;
-    member_email?: string;
-    progress?: StudentProgress[];
+  id: string;
+  program_id: string | null;
+  cohort_id: string | null;
+  member_id: string;
+  status: EnrollmentStatus;
+  payment_status: string;
+  preferences: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+  cohort?: Cohort;
+  program?: Program;
+  // Additional fields populated by backend when returning students
+  member_name?: string;
+  member_email?: string;
+  progress?: StudentProgress[];
 };
 
 export type CoachProfile = {
-    id: string;
-    member_id: string;
-    display_name: string | null;
-    status: string;
-    short_bio: string | null;
-    coaching_years: number;
-    coaching_specialties: string[];
-    certifications: string[];
-    pools_supported: string[];
-    preferred_cohort_types: string[];
-    show_in_directory?: boolean;
-    created_at: string;
-    updated_at: string;
+  id: string;
+  member_id: string;
+  display_name: string | null;
+  status: string;
+  short_bio: string | null;
+  coaching_years: number;
+  coaching_specialties: string[];
+  certifications: string[];
+  pools_supported: string[];
+  preferred_cohort_types: string[];
+  show_in_directory?: boolean;
+  created_at: string;
+  updated_at: string;
 };
 
 // --- Coach Grade Types ---
 
 export type CoachGrade = "grade_1" | "grade_2" | "grade_3";
 export type ProgramCategory =
-    | "learn_to_swim"
-    | "special_populations"
-    | "institutional"
-    | "competitive_elite"
-    | "certifications"
-    | "specialized_disciplines"
-    | "adjacent_services";
+  | "learn_to_swim"
+  | "special_populations"
+  | "institutional"
+  | "competitive_elite"
+  | "certifications"
+  | "specialized_disciplines"
+  | "adjacent_services";
 
 export type CoachGrades = {
-    coach_profile_id: string;
-    member_id: string;
-    display_name: string | null;
-    learn_to_swim_grade: CoachGrade | null;
-    special_populations_grade: CoachGrade | null;
-    institutional_grade: CoachGrade | null;
-    competitive_elite_grade: CoachGrade | null;
-    certifications_grade: CoachGrade | null;
-    specialized_disciplines_grade: CoachGrade | null;
-    adjacent_services_grade: CoachGrade | null;
-    total_coaching_hours: number;
-    cohorts_completed: number;
-    average_feedback_rating: number | null;
-    swimbuddz_level: number | null;
-    last_active_date: string | null;
-    first_aid_cert_expiry: string | null;
-    cpr_expiry_date: string | null;
-    lifeguard_expiry_date: string | null;
+  coach_profile_id: string;
+  member_id: string;
+  display_name: string | null;
+  learn_to_swim_grade: CoachGrade | null;
+  special_populations_grade: CoachGrade | null;
+  institutional_grade: CoachGrade | null;
+  competitive_elite_grade: CoachGrade | null;
+  certifications_grade: CoachGrade | null;
+  specialized_disciplines_grade: CoachGrade | null;
+  adjacent_services_grade: CoachGrade | null;
+  total_coaching_hours: number;
+  cohorts_completed: number;
+  average_feedback_rating: number | null;
+  swimbuddz_level: number | null;
+  last_active_date: string | null;
+  first_aid_cert_expiry: string | null;
+  cpr_expiry_date: string | null;
+  lifeguard_expiry_date: string | null;
 };
 
 export type CoachProgressionStats = {
-    coach_profile_id: string;
-    total_coaching_hours: number;
-    cohorts_completed: number;
-    active_cohorts: number;
-    average_feedback_rating: number | null;
-    swimbuddz_level: number | null;
-    highest_grade: CoachGrade | null;
-    grades_held: string[];
-    credentials_valid: boolean;
-    expiring_soon: string[];
+  coach_profile_id: string;
+  total_coaching_hours: number;
+  cohorts_completed: number;
+  active_cohorts: number;
+  average_feedback_rating: number | null;
+  swimbuddz_level: number | null;
+  highest_grade: CoachGrade | null;
+  grades_held: string[];
+  credentials_valid: boolean;
+  expiring_soon: string[];
 };
 
 // --- Dashboard Types ---
 
 export type UpcomingSessionSummary = {
-    cohort_id: string;
-    cohort_name: string;
-    program_name: string | null;
-    session_date: string;
-    location_name: string | null;
-    enrolled_count: number;
+  cohort_id: string;
+  cohort_name: string;
+  program_name: string | null;
+  session_date: string;
+  location_name: string | null;
+  enrolled_count: number;
 };
 
 export type CoachDashboardSummary = {
-    active_cohorts: number;
-    upcoming_cohorts: number;
-    completed_cohorts: number;
-    total_students: number;
-    students_pending_approval: number;
-    pending_milestone_reviews: number;
-    upcoming_sessions_count: number;
-    next_session: UpcomingSessionSummary | null;
-    current_period_earnings: number;
-    pending_payout: number;
+  active_cohorts: number;
+  upcoming_cohorts: number;
+  completed_cohorts: number;
+  total_students: number;
+  students_pending_approval: number;
+  pending_milestone_reviews: number;
+  upcoming_sessions_count: number;
+  next_session: UpcomingSessionSummary | null;
+  current_period_earnings: number;
+  pending_payout: number;
 };
 
 export type CoachCohortDetail = {
-    id: string;
-    name: string;
-    program_id: string;
-    program_name: string;
-    program_level: string | null;
-    status: CohortStatus;
-    start_date: string;
-    end_date: string;
-    capacity: number;
-    enrolled_count: number;
-    waitlist_count: number;
-    location_name: string | null;
-    location_address: string | null;
-    required_grade: CoachGrade | null;
-    pay_band_min: number | null;
-    pay_band_max: number | null;
-    weeks_completed: number;
-    total_weeks: number;
-    milestones_count: number;
-    milestones_achieved_count: number;
+  id: string;
+  name: string;
+  program_id: string;
+  program_name: string;
+  program_level: string | null;
+  status: CohortStatus;
+  start_date: string;
+  end_date: string;
+  capacity: number;
+  enrolled_count: number;
+  waitlist_count: number;
+  location_name: string | null;
+  location_address: string | null;
+  required_grade: CoachGrade | null;
+  pay_band_min: number | null;
+  pay_band_max: number | null;
+  weeks_completed: number;
+  total_weeks: number;
+  milestones_count: number;
+  milestones_achieved_count: number;
 };
 
 // --- Milestone Review Types ---
 
 export type PendingMilestoneReview = {
-    progress_id: string;
-    enrollment_id: string;
-    milestone_id: string;
-    milestone_name: string;
-    milestone_type: string;
-    student_member_id: string;
-    student_name: string;
-    student_email: string | null;
-    cohort_id: string;
-    cohort_name: string;
-    evidence_media_id: string | null;
-    student_notes: string | null;
-    claimed_at: string;
+  progress_id: string;
+  enrollment_id: string;
+  milestone_id: string;
+  milestone_name: string;
+  milestone_type: string;
+  student_member_id: string;
+  student_name: string;
+  student_email: string | null;
+  cohort_id: string;
+  cohort_name: string;
+  evidence_media_id: string | null;
+  student_notes: string | null;
+  claimed_at: string;
 };
 
 export type MilestoneReviewAction = {
-    action: "approve" | "reject";
-    score?: number;
-    coach_notes?: string;
+  action: "approve" | "reject";
+  score?: number;
+  coach_notes?: string;
 };
 
 // --- API Functions ---
@@ -239,24 +239,26 @@ export type MilestoneReviewAction = {
  * Get cohorts assigned to the current coach.
  */
 export async function getMyCoachCohorts(): Promise<Cohort[]> {
-    return apiGet<Cohort[]>("/api/v1/academy/cohorts/coach/me", { auth: true });
+  return apiGet<Cohort[]>("/api/v1/academy/cohorts/coach/me", { auth: true });
 }
 
 /**
  * Get a specific cohort by ID.
  */
 export async function getCohort(cohortId: string): Promise<Cohort> {
-    return apiGet<Cohort>(`/api/v1/academy/cohorts/${cohortId}`, { auth: true });
+  return apiGet<Cohort>(`/api/v1/academy/cohorts/${cohortId}`, { auth: true });
 }
 
 /**
  * Get students enrolled in a cohort.
  * Requires coach or admin permission.
  */
-export async function getCohortStudents(cohortId: string): Promise<Enrollment[]> {
-    return apiGet<Enrollment[]>(`/api/v1/academy/cohorts/${cohortId}/students`, {
-        auth: true,
-    });
+export async function getCohortStudents(
+  cohortId: string,
+): Promise<Enrollment[]> {
+  return apiGet<Enrollment[]>(`/api/v1/academy/cohorts/${cohortId}/students`, {
+    auth: true,
+  });
 }
 
 /**
@@ -264,48 +266,52 @@ export async function getCohortStudents(cohortId: string): Promise<Enrollment[]>
  * Returns enrollments with cohort and progress data.
  */
 export async function getMyCoachStudents(): Promise<Enrollment[]> {
-    return apiGet<Enrollment[]>("/api/v1/academy/coach/me/students", {
-        auth: true,
-    });
+  return apiGet<Enrollment[]>("/api/v1/academy/coach/me/students", {
+    auth: true,
+  });
 }
 
 // --- Session Types ---
 
 export type SessionLocation =
-    | "sunfit_pool"
-    | "rowe_park_pool"
-    | "federal_palace_pool"
-    | "open_water"
-    | "other";
+  | "sunfit_pool"
+  | "rowe_park_pool"
+  | "federal_palace_pool"
+  | "open_water"
+  | "other";
 
 export type SessionType =
-    | "cohort_class"
-    | "one_on_one"
-    | "group_booking"
-    | "club"
-    | "community"
-    | "event";
+  | "cohort_class"
+  | "one_on_one"
+  | "group_booking"
+  | "club"
+  | "community"
+  | "event";
 
-export type SessionStatus = "scheduled" | "in_progress" | "completed" | "cancelled";
+export type SessionStatus =
+  | "scheduled"
+  | "in_progress"
+  | "completed"
+  | "cancelled";
 
 export type CoachSession = {
-    id: string;
-    title: string;
-    description: string | null;
-    session_type: SessionType;
-    status: SessionStatus;
-    starts_at: string;
-    ends_at: string;
-    timezone: string;
-    location: SessionLocation | null;
-    location_name: string | null;
-    location_address: string | null;
-    capacity: number;
-    cohort_id: string | null;
-    week_number: number | null;
-    lesson_title: string | null;
-    created_at: string;
-    updated_at: string;
+  id: string;
+  title: string;
+  description: string | null;
+  session_type: SessionType;
+  status: SessionStatus;
+  starts_at: string;
+  ends_at: string;
+  timezone: string;
+  location: SessionLocation | null;
+  location_name: string | null;
+  location_address: string | null;
+  capacity: number;
+  cohort_id: string | null;
+  week_number: number | null;
+  lesson_title: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 /**
@@ -313,17 +319,17 @@ export type CoachSession = {
  * Includes sessions from assigned cohorts and direct assignments.
  */
 export async function getMyCoachSessions(options?: {
-    fromDate?: string;
-    toDate?: string;
+  fromDate?: string;
+  toDate?: string;
 }): Promise<CoachSession[]> {
-    const params = new URLSearchParams();
-    if (options?.fromDate) params.set("from_date", options.fromDate);
-    if (options?.toDate) params.set("to_date", options.toDate);
+  const params = new URLSearchParams();
+  if (options?.fromDate) params.set("from_date", options.fromDate);
+  if (options?.toDate) params.set("to_date", options.toDate);
 
-    const queryString = params.toString();
-    const url = `/api/v1/sessions/coach/me${queryString ? `?${queryString}` : ""}`;
+  const queryString = params.toString();
+  const url = `/api/v1/sessions/coach/me${queryString ? `?${queryString}` : ""}`;
 
-    return apiGet<CoachSession[]>(url, { auth: true });
+  return apiGet<CoachSession[]>(url, { auth: true });
 }
 
 // --- Resource Types ---
@@ -332,82 +338,92 @@ export type ResourceSourceType = "url" | "upload";
 export type ResourceVisibility = "enrolled_only" | "public" | "coach_only";
 
 export type CohortResource = {
-    id: string;
-    cohort_id: string;
-    title: string;
-    resource_type: string; // 'note', 'drill', 'assignment'
-    description: string | null;
-    source_type: ResourceSourceType;
-    content_media_id: string | null;
-    storage_path: string | null;
-    mime_type: string | null;
-    file_size_bytes: number | null;
-    visibility: ResourceVisibility;
-    week_number: number | null;
-    created_at: string;
-    cohort?: Cohort;
+  id: string;
+  cohort_id: string;
+  title: string;
+  resource_type: string; // 'note', 'drill', 'assignment'
+  description: string | null;
+  source_type: ResourceSourceType;
+  content_media_id: string | null;
+  storage_path: string | null;
+  mime_type: string | null;
+  file_size_bytes: number | null;
+  visibility: ResourceVisibility;
+  week_number: number | null;
+  created_at: string;
+  cohort?: Cohort;
 };
 
 /**
  * Get all resources across all cohorts assigned to the current coach.
  */
 export async function getMyCoachResources(): Promise<CohortResource[]> {
-    return apiGet<CohortResource[]>("/api/v1/academy/coach/me/resources", {
-        auth: true,
-    });
+  return apiGet<CohortResource[]>("/api/v1/academy/coach/me/resources", {
+    auth: true,
+  });
 }
 
 /**
  * Get resources for a specific cohort.
  */
-export async function getCohortResources(cohortId: string): Promise<CohortResource[]> {
-    return apiGet<CohortResource[]>(`/api/v1/academy/cohorts/${cohortId}/resources`, {
-        auth: true,
-    });
+export async function getCohortResources(
+  cohortId: string,
+): Promise<CohortResource[]> {
+  return apiGet<CohortResource[]>(
+    `/api/v1/academy/cohorts/${cohortId}/resources`,
+    {
+      auth: true,
+    },
+  );
 }
 
 /**
  * Get milestones for a program.
  */
-export async function getProgramMilestones(programId: string): Promise<Milestone[]> {
-    return apiGet<Milestone[]>(`/api/v1/academy/programs/${programId}/milestones`, {
-        auth: true,
-    });
+export async function getProgramMilestones(
+  programId: string,
+): Promise<Milestone[]> {
+  return apiGet<Milestone[]>(
+    `/api/v1/academy/programs/${programId}/milestones`,
+    {
+      auth: true,
+    },
+  );
 }
 
 /**
  * Get progress records for an enrollment.
  */
 export async function getEnrollmentProgress(
-    enrollmentId: string
+  enrollmentId: string,
 ): Promise<StudentProgress[]> {
-    return apiGet<StudentProgress[]>(
-        `/api/v1/academy/enrollments/${enrollmentId}/progress`,
-        { auth: true }
-    );
+  return apiGet<StudentProgress[]>(
+    `/api/v1/academy/enrollments/${enrollmentId}/progress`,
+    { auth: true },
+  );
 }
 
 /**
  * Update student progress (coach marking milestone as achieved).
  */
 export async function updateStudentProgress(
-    enrollmentId: string,
-    milestoneId: string,
-    data: {
-        status: ProgressStatus;
-        achieved_at?: string;
-        coach_notes?: string;
-    }
+  enrollmentId: string,
+  milestoneId: string,
+  data: {
+    status: ProgressStatus;
+    achieved_at?: string;
+    coach_notes?: string;
+  },
 ): Promise<StudentProgress> {
-    return apiPost<StudentProgress>(
-        "/api/v1/academy/progress",
-        {
-            enrollment_id: enrollmentId,
-            milestone_id: milestoneId,
-            ...data,
-        },
-        { auth: true }
-    );
+  return apiPost<StudentProgress>(
+    "/api/v1/academy/progress",
+    {
+      enrollment_id: enrollmentId,
+      milestone_id: milestoneId,
+      ...data,
+    },
+    { auth: true },
+  );
 }
 
 /**
@@ -415,25 +431,25 @@ export async function updateStudentProgress(
  * Uses the proper review endpoint that sets reviewed_at/reviewed_by_coach_id.
  */
 export async function reviewMilestone(
-    progressId: string,
-    data: {
-        action: "approve" | "reject";
-        score?: number;
-        coach_notes?: string;
-    }
+  progressId: string,
+  data: {
+    action: "approve" | "reject";
+    score?: number;
+    coach_notes?: string;
+  },
 ): Promise<{ message: string; progress_id: string; status: string }> {
-    return apiPost(
-        `/api/v1/academy/coach/me/milestone-reviews/${progressId}`,
-        data,
-        { auth: true }
-    );
+  return apiPost(
+    `/api/v1/academy/coach/me/milestone-reviews/${progressId}`,
+    data,
+    { auth: true },
+  );
 }
 
 /**
  * Get the current coach's profile and application status.
  */
 export async function getMyCoachProfile(): Promise<CoachProfile> {
-    return apiGet<CoachProfile>("/api/v1/coaches/me", { auth: true });
+  return apiGet<CoachProfile>("/api/v1/coaches/me", { auth: true });
 }
 
 /** Alias for getMyCoachProfile for backwards compatibility. */
@@ -443,65 +459,65 @@ export const getCoachProfile = getMyCoachProfile;
  * Update the current coach's preferences/availability.
  */
 export async function updateCoachPreferences(data: {
-    pools_supported?: string[];
-    can_travel_between_pools?: boolean;
-    travel_radius_km?: number;
-    preferred_cohort_types?: string[];
-    max_swimmers_per_session?: number;
-    show_in_directory?: boolean;
+  pools_supported?: string[];
+  can_travel_between_pools?: boolean;
+  travel_radius_km?: number;
+  preferred_cohort_types?: string[];
+  max_swimmers_per_session?: number;
+  show_in_directory?: boolean;
 }): Promise<CoachProfile> {
-    return apiPost<CoachProfile>("/api/v1/coaches/me/preferences", data, {
-        auth: true,
-    });
+  return apiPost<CoachProfile>("/api/v1/coaches/me/preferences", data, {
+    auth: true,
+  });
 }
 
 /**
  * Get coach application status (lightweight check).
  */
 export async function getCoachApplicationStatus(): Promise<{
-    status: string;
-    can_access_dashboard: boolean;
-    application_submitted_at: string | null;
-    application_reviewed_at: string | null;
-    rejection_reason: string | null;
+  status: string;
+  can_access_dashboard: boolean;
+  application_submitted_at: string | null;
+  application_reviewed_at: string | null;
+  rejection_reason: string | null;
 }> {
-    return apiGet("/api/v1/coaches/application-status", { auth: true });
+  return apiGet("/api/v1/coaches/application-status", { auth: true });
 }
 
 // --- Earnings Types ---
 
 export type CohortEarning = {
-    cohort_id: string;
-    cohort_name: string;
-    program_name: string | null;
-    status: string;
-    start_date: string | null;
-    end_date: string | null;
-    earnings: number;
+  cohort_id: string;
+  cohort_name: string;
+  program_name: string | null;
+  status: string;
+  start_date: string | null;
+  end_date: string | null;
+  earnings: number;
 };
 
 export type CoachEarnings = {
-    summary: {
-        total_earnings: number;
-        active_cohorts: number;
-        completed_cohorts: number;
-        pending_payout: number;
-    };
-    rates: {
-        academy_cohort_stipend: number;
-        one_to_one_rate_per_hour: number;
-        group_session_rate_per_hour: number;
-    };
-    cohort_earnings: CohortEarning[];
+  summary: {
+    total_earnings: number;
+    active_cohorts: number;
+    completed_cohorts: number;
+    pending_payout: number;
+  };
+  rates: {
+    academy_cohort_stipend: number;
+    one_to_one_rate_per_hour: number;
+    group_session_rate_per_hour: number;
+  };
+  cohort_earnings: CohortEarning[];
 };
 
 /**
  * Get earnings summary for the current coach.
  */
 export async function getMyCoachEarnings(): Promise<CoachEarnings> {
-    return apiGet<CoachEarnings>("/api/v1/academy/coach/me/earnings", {
-        auth: true,
-    });
+  return apiGet<CoachEarnings>("/api/v1/academy/coach/me/earnings", {
+    auth: true,
+  });
 }
 
 // --- Helper Functions ---
@@ -510,74 +526,74 @@ export async function getMyCoachEarnings(): Promise<CoachEarnings> {
  * Calculate cohort statistics from a list of cohorts.
  */
 export function calculateCohortStats(cohorts: Cohort[]) {
-    const now = Date.now();
-    const activeCohorts = cohorts.filter((c) => c.status === "active");
-    const upcomingCohorts = cohorts.filter((c) => {
-        const start = Date.parse(c.start_date);
-        return (
-            Number.isFinite(start) &&
-            start > now &&
-            c.status !== "completed" &&
-            c.status !== "cancelled"
-        );
-    });
-    const next7Days = upcomingCohorts.filter((c) => {
-        const start = Date.parse(c.start_date);
-        const sevenDaysFromNow = now + 7 * 24 * 60 * 60 * 1000;
-        return start <= sevenDaysFromNow;
-    });
+  const now = Date.now();
+  const activeCohorts = cohorts.filter((c) => c.status === "active");
+  const upcomingCohorts = cohorts.filter((c) => {
+    const start = Date.parse(c.start_date);
+    return (
+      Number.isFinite(start) &&
+      start > now &&
+      c.status !== "completed" &&
+      c.status !== "cancelled"
+    );
+  });
+  const next7Days = upcomingCohorts.filter((c) => {
+    const start = Date.parse(c.start_date);
+    const sevenDaysFromNow = now + 7 * 24 * 60 * 60 * 1000;
+    return start <= sevenDaysFromNow;
+  });
 
-    return {
-        totalCohorts: cohorts.length,
-        activeCohorts: activeCohorts.length,
-        upcomingCohorts: upcomingCohorts.length,
-        next7Days: next7Days.length,
-        completedCohorts: cohorts.filter((c) => c.status === "completed").length,
-    };
+  return {
+    totalCohorts: cohorts.length,
+    activeCohorts: activeCohorts.length,
+    upcomingCohorts: upcomingCohorts.length,
+    next7Days: next7Days.length,
+    completedCohorts: cohorts.filter((c) => c.status === "completed").length,
+  };
 }
 
 /**
  * Calculate student progress percentage for a single enrollment.
  */
 export function calculateProgressPercentage(
-    progress: StudentProgress[],
-    totalMilestones: number
+  progress: StudentProgress[],
+  totalMilestones: number,
 ): number {
-    if (totalMilestones === 0) return 0;
-    const achieved = progress.filter((p) => p.status === "achieved").length;
-    return Math.round((achieved / totalMilestones) * 100);
+  if (totalMilestones === 0) return 0;
+  const achieved = progress.filter((p) => p.status === "achieved").length;
+  return Math.round((achieved / totalMilestones) * 100);
 }
 
 /**
  * Get students grouped by their progress status.
  */
 export function groupStudentsByProgress(
-    enrollments: Enrollment[],
-    milestones: Milestone[]
+  enrollments: Enrollment[],
+  milestones: Milestone[],
 ) {
-    const totalMilestones = milestones.length;
+  const totalMilestones = milestones.length;
 
-    return enrollments.reduce(
-        (acc, enrollment) => {
-            const progress = enrollment.progress || [];
-            const percentage = calculateProgressPercentage(progress, totalMilestones);
+  return enrollments.reduce(
+    (acc, enrollment) => {
+      const progress = enrollment.progress || [];
+      const percentage = calculateProgressPercentage(progress, totalMilestones);
 
-            if (percentage === 0) {
-                acc.notStarted.push(enrollment);
-            } else if (percentage === 100) {
-                acc.completed.push(enrollment);
-            } else {
-                acc.inProgress.push(enrollment);
-            }
+      if (percentage === 0) {
+        acc.notStarted.push(enrollment);
+      } else if (percentage === 100) {
+        acc.completed.push(enrollment);
+      } else {
+        acc.inProgress.push(enrollment);
+      }
 
-            return acc;
-        },
-        {
-            notStarted: [] as Enrollment[],
-            inProgress: [] as Enrollment[],
-            completed: [] as Enrollment[],
-        }
-    );
+      return acc;
+    },
+    {
+      notStarted: [] as Enrollment[],
+      inProgress: [] as Enrollment[],
+      completed: [] as Enrollment[],
+    },
+  );
 }
 
 // ============================================================================
@@ -588,47 +604,47 @@ export function groupStudentsByProgress(
  * Get coach dashboard summary with all key metrics.
  */
 export async function getCoachDashboard(): Promise<CoachDashboardSummary> {
-    return apiGet<CoachDashboardSummary>("/api/v1/academy/coach/me/dashboard", {
-        auth: true,
-    });
+  return apiGet<CoachDashboardSummary>("/api/v1/academy/coach/me/dashboard", {
+    auth: true,
+  });
 }
 
 /**
  * Get detailed cohort view for coach dashboard.
  */
 export async function getCoachCohortDetail(
-    cohortId: string
+  cohortId: string,
 ): Promise<CoachCohortDetail> {
-    return apiGet<CoachCohortDetail>(
-        `/api/v1/academy/coach/me/cohorts/${cohortId}`,
-        { auth: true }
-    );
+  return apiGet<CoachCohortDetail>(
+    `/api/v1/academy/coach/me/cohorts/${cohortId}`,
+    { auth: true },
+  );
 }
 
 /**
  * Get pending milestone reviews for the current coach.
  */
 export async function getPendingMilestoneReviews(): Promise<
-    PendingMilestoneReview[]
+  PendingMilestoneReview[]
 > {
-    return apiGet<PendingMilestoneReview[]>(
-        "/api/v1/academy/coach/me/pending-reviews",
-        { auth: true }
-    );
+  return apiGet<PendingMilestoneReview[]>(
+    "/api/v1/academy/coach/me/pending-reviews",
+    { auth: true },
+  );
 }
 
 /**
  * Review (approve/reject) a milestone claim.
  */
 export async function reviewMilestoneClaim(
-    progressId: string,
-    action: MilestoneReviewAction
+  progressId: string,
+  action: MilestoneReviewAction,
 ): Promise<{ message: string; progress_id: string; status: string }> {
-    return apiPost(
-        `/api/v1/academy/coach/me/milestone-reviews/${progressId}`,
-        action,
-        { auth: true }
-    );
+  return apiPost(
+    `/api/v1/academy/coach/me/milestone-reviews/${progressId}`,
+    action,
+    { auth: true },
+  );
 }
 
 // ============================================================================
@@ -639,16 +655,16 @@ export async function reviewMilestoneClaim(
  * Get the current coach's grades across all categories.
  */
 export async function getMyCoachGrades(): Promise<CoachGrades> {
-    return apiGet<CoachGrades>("/api/v1/coaches/me/grades", { auth: true });
+  return apiGet<CoachGrades>("/api/v1/coaches/me/grades", { auth: true });
 }
 
 /**
  * Get the current coach's progression statistics.
  */
 export async function getMyCoachProgression(): Promise<CoachProgressionStats> {
-    return apiGet<CoachProgressionStats>("/api/v1/coaches/me/progression", {
-        auth: true,
-    });
+  return apiGet<CoachProgressionStats>("/api/v1/coaches/me/progression", {
+    auth: true,
+  });
 }
 
 // ============================================================================
@@ -659,59 +675,59 @@ export async function getMyCoachProgression(): Promise<CoachProgressionStats> {
  * Get human-readable label for a coach grade.
  */
 export function getGradeLabel(grade: CoachGrade | null): string {
-    if (!grade) return "Not Assigned";
-    const labels: Record<CoachGrade, string> = {
-        grade_1: "Grade 1 (Foundational)",
-        grade_2: "Grade 2 (Technical)",
-        grade_3: "Grade 3 (Advanced)",
-    };
-    return labels[grade] || grade;
+  if (!grade) return "Not Assigned";
+  const labels: Record<CoachGrade, string> = {
+    grade_1: "Grade 1 (Foundational)",
+    grade_2: "Grade 2 (Technical)",
+    grade_3: "Grade 3 (Advanced)",
+  };
+  return labels[grade] || grade;
 }
 
 /**
  * Get short label for a coach grade.
  */
 export function getGradeShortLabel(grade: CoachGrade | null): string {
-    if (!grade) return "-";
-    const labels: Record<CoachGrade, string> = {
-        grade_1: "G1",
-        grade_2: "G2",
-        grade_3: "G3",
-    };
-    return labels[grade] || grade;
+  if (!grade) return "-";
+  const labels: Record<CoachGrade, string> = {
+    grade_1: "G1",
+    grade_2: "G2",
+    grade_3: "G3",
+  };
+  return labels[grade] || grade;
 }
 
 /**
  * Get human-readable label for a program category.
  */
 export function getCategoryLabel(category: ProgramCategory): string {
-    const labels: Record<ProgramCategory, string> = {
-        learn_to_swim: "Learn to Swim",
-        special_populations: "Special Populations",
-        institutional: "Institutional",
-        competitive_elite: "Competitive & Elite",
-        certifications: "Certifications",
-        specialized_disciplines: "Specialized Disciplines",
-        adjacent_services: "Adjacent Services",
-    };
-    return labels[category] || category;
+  const labels: Record<ProgramCategory, string> = {
+    learn_to_swim: "Learn to Swim",
+    special_populations: "Special Populations",
+    institutional: "Institutional",
+    competitive_elite: "Competitive & Elite",
+    certifications: "Certifications",
+    specialized_disciplines: "Specialized Disciplines",
+    adjacent_services: "Adjacent Services",
+  };
+  return labels[category] || category;
 }
 
 /**
  * Get the grade for a specific category from a CoachGrades object.
  */
 export function getGradeForCategory(
-    grades: CoachGrades,
-    category: ProgramCategory
+  grades: CoachGrades,
+  category: ProgramCategory,
 ): CoachGrade | null {
-    const fieldMap: Record<ProgramCategory, keyof CoachGrades> = {
-        learn_to_swim: "learn_to_swim_grade",
-        special_populations: "special_populations_grade",
-        institutional: "institutional_grade",
-        competitive_elite: "competitive_elite_grade",
-        certifications: "certifications_grade",
-        specialized_disciplines: "specialized_disciplines_grade",
-        adjacent_services: "adjacent_services_grade",
-    };
-    return grades[fieldMap[category]] as CoachGrade | null;
+  const fieldMap: Record<ProgramCategory, keyof CoachGrades> = {
+    learn_to_swim: "learn_to_swim_grade",
+    special_populations: "special_populations_grade",
+    institutional: "institutional_grade",
+    competitive_elite: "competitive_elite_grade",
+    certifications: "certifications_grade",
+    specialized_disciplines: "specialized_disciplines_grade",
+    adjacent_services: "adjacent_services_grade",
+  };
+  return grades[fieldMap[category]] as CoachGrade | null;
 }

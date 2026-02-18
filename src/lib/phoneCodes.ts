@@ -240,5 +240,5 @@ export const phoneCodes: PhoneCode[] = [
   { name: "Wallis and Futuna", code: "WF", dial_code: "+681" },
   { name: "Yemen", code: "YE", dial_code: "+967" },
   { name: "Zambia", code: "ZM", dial_code: "+260" },
-  { name: "Zimbabwe", code: "ZW", dial_code: "+263" }
+  { name: "Zimbabwe", code: "ZW", dial_code: "+263" },
 ];

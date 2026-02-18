@@ -23,12 +23,10 @@ Do not start coding without absorbing these.
 ## 2. Task Execution Rules
 
 - **Follow `TODO.md` in order.**
-
   - Implement tasks sequentially unless a task explicitly says otherwise.
   - Do not invent new epics or large features that are not in `TODO.md`.
 
 - **One focused task at a time.**
-
   - Keep PR / change scope limited to the relevant task.
   - If you need to change other parts of the app to support a task, keep changes minimal and related.
 
@@ -71,11 +69,9 @@ Do NOT:
 ## 5. Backend Integration
 
 - All HTTP calls to backend should go through:
-
   - `src/lib/api.ts` (or a small suite of helpers in that file).
 
 - Do not call `fetch` directly from random components for backend calls, unless you are:
-
   - In a Next.js server component doing simple data fetching AND still respecting `api.ts` contract.
 
 - Use the endpoints and shapes defined in the backend’s `API_CONTRACT.md`.  
@@ -88,7 +84,6 @@ Do NOT:
 - Use a single place (e.g. `src/lib/auth.ts`) to initialise the Supabase client.
 - Do not initialise Supabase clients in multiple places.
 - For authenticated requests:
-
   - Retrieve the current session token from Supabase.
   - Include it as `Authorization: Bearer <token>` in backend requests (via `api.ts`).
 
@@ -127,7 +122,6 @@ When duplicating UI patterns (e.g., forms, tables):
 
 - Admin routes live under the `(admin)` route group.
 - Admin pages must not be accessible to non-admin users:
-
   - Use backend role info from `/api/v1/identity/me`.
   - If a user is not admin → redirect or show “Access denied”.
 

@@ -15,7 +15,10 @@ type SwimBackgroundFormData = {
 
 type SwimBackgroundStepProps = {
   formData: SwimBackgroundFormData;
-  onUpdate: (field: keyof SwimBackgroundFormData, value: string | string[]) => void;
+  onUpdate: (
+    field: keyof SwimBackgroundFormData,
+    value: string | string[],
+  ) => void;
   onToggleStroke: (stroke: string) => void;
   onToggleGoal: (goal: string) => void;
 };
@@ -35,7 +38,7 @@ export const swimGoalOptions = [
 
 export function parseGoalsNarrative(text: string | null | undefined) {
   const normalizedOptions = new Map(
-    swimGoalOptions.map((option) => [option.value.toLowerCase(), option.value])
+    swimGoalOptions.map((option) => [option.value.toLowerCase(), option.value]),
   );
 
   const raw = String(text || "").trim();
@@ -58,7 +61,8 @@ export function parseGoalsNarrative(text: string | null | undefined) {
   const otherGoals = otherParts.join("; ");
   const uniqueGoals = Array.from(new Set(goals));
   if (otherGoals) {
-    if (!uniqueGoals.includes(OTHER_GOAL_VALUE)) uniqueGoals.push(OTHER_GOAL_VALUE);
+    if (!uniqueGoals.includes(OTHER_GOAL_VALUE))
+      uniqueGoals.push(OTHER_GOAL_VALUE);
   }
 
   // Back-compat: if we couldn't match any goal option, keep the original text as "Other goals".
@@ -72,7 +76,7 @@ export function parseGoalsNarrative(text: string | null | undefined) {
 export function buildGoalsNarrative(goals: string[], otherGoals: string) {
   const segments: string[] = [];
   const uniqueGoals = Array.from(
-    new Set((goals || []).filter((goal) => goal && goal !== OTHER_GOAL_VALUE))
+    new Set((goals || []).filter((goal) => goal && goal !== OTHER_GOAL_VALUE)),
   );
   if (uniqueGoals.length) segments.push(...uniqueGoals);
   const extra = String(otherGoals || "").trim();
@@ -80,16 +84,25 @@ export function buildGoalsNarrative(goals: string[], otherGoals: string) {
   return segments.join("; ");
 }
 
-export function SwimBackgroundStep({ formData, onUpdate, onToggleStroke, onToggleGoal }: SwimBackgroundStepProps) {
+export function SwimBackgroundStep({
+  formData,
+  onUpdate,
+  onToggleStroke,
+  onToggleGoal,
+}: SwimBackgroundStepProps) {
   const otherSelected = formData.goals.includes(OTHER_GOAL_VALUE);
-  const otherGoalsMissing = otherSelected && !String(formData.otherGoals || "").trim();
+  const otherGoalsMissing =
+    otherSelected && !String(formData.otherGoals || "").trim();
 
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h3 className="text-lg font-semibold text-slate-900">Swimming background</h3>
+        <h3 className="text-lg font-semibold text-slate-900">
+          Swimming background
+        </h3>
         <p className="text-sm text-slate-600">
-          This does not lock you into a program — it helps us guide you safely and personally.
+          This does not lock you into a program — it helps us guide you safely
+          and personally.
         </p>
       </div>
 

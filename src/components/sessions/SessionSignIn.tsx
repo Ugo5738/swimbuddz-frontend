@@ -12,9 +12,9 @@ import { useEffect, useState } from "react";
 
 // Helper to format currency
 const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-NG', {
-    style: 'currency',
-    currency: 'NGN',
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
@@ -29,8 +29,14 @@ type PaymentIntentResponse = {
 
 const steps = [
   { title: "Identity", description: "Confirm who's attending." },
-  { title: "Attendance & Ride", description: "Choose attendance type and ride options." },
-  { title: "Review & Submit", description: "Review details and confirm sign-in." }
+  {
+    title: "Attendance & Ride",
+    description: "Choose attendance type and ride options.",
+  },
+  {
+    title: "Review & Submit",
+    description: "Review details and confirm sign-in.",
+  },
 ];
 
 type SessionSignInProps = {
@@ -43,8 +49,12 @@ export function SessionSignIn({ session }: SessionSignInProps) {
   const [note, setNote] = useState("");
 
   // New State for Ride Share Booking
-  const [selectedRideShareAreaId, setSelectedRideShareAreaId] = useState<string | null>(null);
-  const [selectedRideShareLocation, setSelectedRideShareLocation] = useState<string | null>(null);
+  const [selectedRideShareAreaId, setSelectedRideShareAreaId] = useState<
+    string | null
+  >(null);
+  const [selectedRideShareLocation, setSelectedRideShareLocation] = useState<
+    string | null
+  >(null);
 
   // Payment option state - defaults to Paystack (online) for session payments
   const [showManualPayment, setShowManualPayment] = useState(false);
@@ -52,19 +62,30 @@ export function SessionSignIn({ session }: SessionSignInProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<boolean>(false);
-  const [member, setMember] = useState<{ name: string; email: string } | null>(null);
+  const [member, setMember] = useState<{ name: string; email: string } | null>(
+    null,
+  );
   const [loadingMember, setLoadingMember] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Parse session times from starts_at/ends_at
   const startsAt = new Date(session.starts_at);
   const endsAt = new Date(session.ends_at);
-  const startTime = startsAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-  const endTime = endsAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-  const hasRideShareAreas = session.rideShareAreas && session.rideShareAreas.length > 0;
+  const startTime = startsAt.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const endTime = endsAt.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const hasRideShareAreas =
+    session.rideShareAreas && session.rideShareAreas.length > 0;
 
   // Calculate total cost
-  const selectedArea = session.rideShareAreas?.find(a => a.id === selectedRideShareAreaId);
+  const selectedArea = session.rideShareAreas?.find(
+    (a) => a.id === selectedRideShareAreaId,
+  );
   const rideShareCost = selectedArea ? selectedArea.cost : 0;
   const poolFee = session.pool_fee ?? 0;
   const totalCost = poolFee + rideShareCost;
@@ -76,10 +97,12 @@ export function SessionSignIn({ session }: SessionSignInProps) {
           setAuthError("Please sign in to continue.");
           return;
         }
-        const fullName = `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || profile.email;
+        const fullName =
+          `${profile.first_name || ""} ${profile.last_name || ""}`.trim() ||
+          profile.email;
         setMember({
           name: fullName,
-          email: profile.email || ""
+          email: profile.email || "",
         });
       })
       .catch(() => {
@@ -114,7 +137,10 @@ export function SessionSignIn({ session }: SessionSignInProps) {
         });
         setConfirmation(true);
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Unable to book this session. Please try again.";
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Unable to book this session. Please try again.";
         setError(message);
       } finally {
         setSaving(false);
@@ -138,7 +164,7 @@ export function SessionSignIn({ session }: SessionSignInProps) {
           pickup_location_id: selectedRideShareLocation || undefined,
           attendance_status: status,
         },
-        { auth: true }
+        { auth: true },
       );
 
       if (intent.checkout_url) {
@@ -148,7 +174,10 @@ export function SessionSignIn({ session }: SessionSignInProps) {
         setError("Unable to initialize payment. Please try again.");
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to process payment. Please try again.";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to process payment. Please try again.";
       setError(message);
     } finally {
       setSaving(false);
@@ -158,11 +187,17 @@ export function SessionSignIn({ session }: SessionSignInProps) {
   if (confirmation) {
     return (
       <Card className="space-y-4">
-        <h2 className="text-2xl font-semibold text-emerald-700">You're confirmed for {session.title}</h2>
+        <h2 className="text-2xl font-semibold text-emerald-700">
+          You're confirmed for {session.title}
+        </h2>
         <p className="text-sm text-slate-600">
           {session.location_name ?? session.location} —{" "}
-          {startsAt.toLocaleDateString("en-NG", { weekday: "long", month: "short", day: "numeric" })},{" "}
-          {startTime}–{endTime}
+          {startsAt.toLocaleDateString("en-NG", {
+            weekday: "long",
+            month: "short",
+            day: "numeric",
+          })}
+          , {startTime}–{endTime}
         </p>
         <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm">
           <p className="font-semibold text-emerald-900">✓ Sign-in successful</p>
@@ -192,7 +227,9 @@ export function SessionSignIn({ session }: SessionSignInProps) {
             {!showManualPayment ? (
               <>
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-                  <p className="font-semibold text-emerald-900">💳 Pay Online with Paystack</p>
+                  <p className="font-semibold text-emerald-900">
+                    💳 Pay Online with Paystack
+                  </p>
                   <p className="mt-1 text-sm text-emerald-700">
                     Secure payment via card, bank transfer, or USSD.
                   </p>
@@ -208,7 +245,9 @@ export function SessionSignIn({ session }: SessionSignInProps) {
             ) : (
               <>
                 <div className="rounded-lg border border-slate-200 bg-white p-4">
-                  <p className="font-semibold text-slate-900">💳 Bank Transfer</p>
+                  <p className="font-semibold text-slate-900">
+                    💳 Bank Transfer
+                  </p>
                   <div className="mt-2 space-y-1 text-sm text-slate-700">
                     <div className="flex justify-between">
                       <span className="text-slate-600">Bank:</span>
@@ -224,7 +263,9 @@ export function SessionSignIn({ session }: SessionSignInProps) {
                     </div>
                   </div>
                   <div className="mt-3 rounded bg-cyan-50 p-3 text-sm">
-                    <p className="font-medium text-cyan-900">📱 Send Receipt via WhatsApp</p>
+                    <p className="font-medium text-cyan-900">
+                      📱 Send Receipt via WhatsApp
+                    </p>
                     <p className="mt-1 text-cyan-800">
                       After payment, please send your receipt to:{" "}
                       <a
@@ -259,10 +300,16 @@ export function SessionSignIn({ session }: SessionSignInProps) {
         <div className="space-y-1">
           <p className="text-sm font-semibold text-cyan-600">Session</p>
           <h1 className="text-3xl font-bold text-slate-900">{session.title}</h1>
-          <p className="text-sm text-slate-600">{session.location_name ?? session.location}</p>
+          <p className="text-sm text-slate-600">
+            {session.location_name ?? session.location}
+          </p>
           <p className="text-sm font-semibold text-slate-700">
-            {startsAt.toLocaleDateString("en-NG", { weekday: "long", month: "short", day: "numeric" })} •{" "}
-            {startTime} – {endTime}
+            {startsAt.toLocaleDateString("en-NG", {
+              weekday: "long",
+              month: "short",
+              day: "numeric",
+            })}{" "}
+            • {startTime} – {endTime}
           </p>
         </div>
       </Card>
@@ -271,14 +318,17 @@ export function SessionSignIn({ session }: SessionSignInProps) {
         {steps.map((item, index) => (
           <div
             key={item.title}
-            className={`flex min-w-[150px] flex-col rounded-xl border px-3 py-2 text-sm ${index === step
-              ? "border-cyan-600 bg-cyan-50 text-cyan-900"
-              : index < step
-                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                : "border-slate-200 bg-white text-slate-500"
-              }`}
+            className={`flex min-w-[150px] flex-col rounded-xl border px-3 py-2 text-sm ${
+              index === step
+                ? "border-cyan-600 bg-cyan-50 text-cyan-900"
+                : index < step
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                  : "border-slate-200 bg-white text-slate-500"
+            }`}
           >
-            <span className="text-xs font-semibold uppercase">Step {index + 1}</span>
+            <span className="text-xs font-semibold uppercase">
+              Step {index + 1}
+            </span>
             <span className="font-semibold">{item.title}</span>
             <span className="text-xs">{item.description}</span>
           </div>
@@ -299,7 +349,9 @@ export function SessionSignIn({ session }: SessionSignInProps) {
       <Card className="space-y-4">
         {step === 0 && (
           <div className="space-y-3">
-            <h2 className="text-xl font-semibold text-slate-900">Signing in as</h2>
+            <h2 className="text-xl font-semibold text-slate-900">
+              Signing in as
+            </h2>
             {loadingMember ? (
               <p className="text-sm text-slate-500">Loading profile...</p>
             ) : member ? (
@@ -307,7 +359,9 @@ export function SessionSignIn({ session }: SessionSignInProps) {
                 <p className="text-base text-slate-700">{member.name}</p>
                 <p className="text-sm text-slate-500">{member.email}</p>
                 <div className="mt-4 rounded-lg border border-cyan-200 bg-cyan-50 p-3">
-                  <p className="text-sm font-medium text-cyan-900">✨ Coming Soon</p>
+                  <p className="text-sm font-medium text-cyan-900">
+                    ✨ Coming Soon
+                  </p>
                   <p className="mt-1 text-xs text-cyan-700">
                     Invite and book sessions with friends!
                   </p>
@@ -323,7 +377,13 @@ export function SessionSignIn({ session }: SessionSignInProps) {
 
         {step === 1 && (
           <div className="space-y-4">
-            <Select label="Attendance status" value={status} onChange={(event) => setStatus(event.target.value as typeof status)}>
+            <Select
+              label="Attendance status"
+              value={status}
+              onChange={(event) =>
+                setStatus(event.target.value as typeof status)
+              }
+            >
               <option value="PRESENT">Attend full session</option>
               <option value="LATE">Arriving late</option>
               <option value="EARLY">Leaving early</option>
@@ -340,14 +400,18 @@ export function SessionSignIn({ session }: SessionSignInProps) {
 
             {hasRideShareAreas && (
               <div className="space-y-4 border-t border-slate-200 pt-4">
-                <h3 className="font-semibold text-slate-900">Ride Share Options</h3>
-                <p className="text-sm text-slate-600">Select a ride share area to book a seat.</p>
+                <h3 className="font-semibold text-slate-900">
+                  Ride Share Options
+                </h3>
+                <p className="text-sm text-slate-600">
+                  Select a ride share area to book a seat.
+                </p>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   {session.rideShareAreas!.map((area) => (
                     <div
                       key={area.id}
-                      className={`cursor-pointer rounded-lg border p-3 transition hover:border-cyan-500 ${selectedRideShareAreaId === area.id ? 'border-cyan-600 bg-cyan-50 ring-1 ring-cyan-600' : 'border-slate-200 bg-white'}`}
+                      className={`cursor-pointer rounded-lg border p-3 transition hover:border-cyan-500 ${selectedRideShareAreaId === area.id ? "border-cyan-600 bg-cyan-50 ring-1 ring-cyan-600" : "border-slate-200 bg-white"}`}
                       onClick={() => {
                         if (selectedRideShareAreaId === area.id) {
                           setSelectedRideShareAreaId(null);
@@ -359,10 +423,16 @@ export function SessionSignIn({ session }: SessionSignInProps) {
                       }}
                     >
                       <div className="flex justify-between">
-                        <span className="font-semibold text-slate-900">{area.ride_area_name}</span>
-                        <span className="font-medium text-slate-700">₦{area.cost.toLocaleString()}</span>
+                        <span className="font-semibold text-slate-900">
+                          {area.ride_area_name}
+                        </span>
+                        <span className="font-medium text-slate-700">
+                          ₦{area.cost.toLocaleString()}
+                        </span>
                       </div>
-                      <p className="text-xs text-slate-500">Capacity: {area.capacity} per ride</p>
+                      <p className="text-xs text-slate-500">
+                        Capacity: {area.capacity} per ride
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -370,129 +440,174 @@ export function SessionSignIn({ session }: SessionSignInProps) {
                 {selectedRideShareAreaId && (
                   <div className="mt-4 space-y-3 rounded-xl bg-slate-50 p-4">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-slate-900">Select Pickup Location</p>
+                      <p className="text-sm font-medium text-slate-900">
+                        Select Pickup Location
+                      </p>
                       <span className="text-xs text-slate-500">
                         *Only one location per area can be active at a time
                       </span>
                     </div>
                     <div className="grid gap-3">
-                      {session.rideShareAreas!.find(a => a.id === selectedRideShareAreaId)?.pickup_locations.map((loc) => {
-                        const isSelected = selectedRideShareLocation === loc.id;
-                        const isFull = loc.current_bookings >= loc.max_capacity;
+                      {session
+                        .rideShareAreas!.find(
+                          (a) => a.id === selectedRideShareAreaId,
+                        )
+                        ?.pickup_locations.map((loc) => {
+                          const isSelected =
+                            selectedRideShareLocation === loc.id;
+                          const isFull =
+                            loc.current_bookings >= loc.max_capacity;
 
-                        return (
-                          <div
-                            key={loc.id}
-                            className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border-2 transition-all ${!loc.is_available
-                              ? 'cursor-not-allowed border-slate-200 bg-slate-50 opacity-60'
-                              : isSelected
-                                ? 'border-cyan-500 bg-gradient-to-br from-cyan-50 to-white shadow-lg shadow-cyan-100 ring-2 ring-cyan-200'
-                                : 'border-slate-200 bg-white hover:border-cyan-300 hover:shadow-md'
+                          return (
+                            <div
+                              key={loc.id}
+                              className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border-2 transition-all ${
+                                !loc.is_available
+                                  ? "cursor-not-allowed border-slate-200 bg-slate-50 opacity-60"
+                                  : isSelected
+                                    ? "border-cyan-500 bg-gradient-to-br from-cyan-50 to-white shadow-lg shadow-cyan-100 ring-2 ring-cyan-200"
+                                    : "border-slate-200 bg-white hover:border-cyan-300 hover:shadow-md"
                               }`}
-                            onClick={() => {
-                              if (loc.is_available) {
-                                setSelectedRideShareLocation(loc.id);
-                              }
-                            }}
-                          >
-                            {/* Header Section */}
-                            <div className="flex items-start justify-between gap-4 p-4 pb-3">
-                              <div className="flex items-start gap-3 flex-1">
-                                <div className="mt-0.5">
-                                  <input
-                                    type="radio"
-                                    name="pickup_location"
-                                    value={loc.id}
-                                    checked={isSelected}
-                                    readOnly
-                                    disabled={!loc.is_available}
-                                    className="h-5 w-5 border-slate-300 text-cyan-600 focus:ring-2 focus:ring-cyan-500 focus:ring-offset-1 disabled:cursor-not-allowed pointer-events-none"
-                                  />
-                                </div>
-                                <div className="flex-1">
-                                  <p className={`text-base font-semibold leading-tight ${!loc.is_available ? 'text-slate-500' : 'text-slate-900'}`}>
-                                    📍 {loc.name}
-                                  </p>
-                                  {loc.description && (
-                                    <p className="mt-1 text-xs leading-relaxed text-slate-500">{loc.description}</p>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="flex flex-col items-end gap-2">
-                                <div className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold shadow-sm ${!loc.is_available
-                                  ? 'bg-slate-200 text-slate-700'
-                                  : isFull
-                                    ? 'bg-gradient-to-r from-red-500 to-red-600 text-white'
-                                    : loc.current_bookings > 0
-                                      ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-white'
-                                      : 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white'
-                                  }`}>
-                                  {!loc.is_available
-                                    ? '🚫 Inactive'
-                                    : isFull
-                                      ? '🚫 Full'
-                                      : '✓ Available'}
-                                </div>
-                                <div className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium ${isSelected ? 'bg-white text-cyan-700' : 'bg-slate-100 text-slate-600'}`}>
-                                  <span>👥</span>
-                                  <span>{loc.current_bookings} / {loc.max_capacity}</span>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Route Info Section */}
-                            {loc.distance_text && (
-                              <>
-                                <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
-                                <div className={`px-4 py-3 ${isSelected ? 'bg-cyan-50/50' : 'bg-slate-50'}`}>
-                                  <div className="space-y-2.5 text-xs">
-                                    <div className="flex items-baseline justify-between">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-base">🗺️</span>
-                                        <span className="font-medium text-slate-700">Distance:</span>
-                                      </div>
-                                      <span className={`text-sm font-semibold ${isSelected ? 'text-cyan-600' : 'text-slate-900'}`}>
-                                        {loc.distance_text} km
-                                      </span>
-                                    </div>
-                                    <div className="flex items-baseline justify-between">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-base">⏱️</span>
-                                        <span className="font-medium text-slate-700">Duration:</span>
-                                      </div>
-                                      <span className={`text-sm font-semibold ${isSelected ? 'text-cyan-600' : 'text-slate-900'}`}>
-                                        {loc.duration_text} mins
-                                      </span>
-                                    </div>
-                                    {loc.departure_time_calculated && (
-                                      <div className="flex items-baseline justify-between border-t border-slate-200 pt-2.5">
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-base">🚗</span>
-                                          <span className="font-medium text-slate-700">Departure:</span>
-                                        </div>
-                                        <span className={`text-sm font-semibold ${isSelected ? 'text-cyan-600' : 'text-slate-900'}`}>
-                                          {new Date(loc.departure_time_calculated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </span>
-                                      </div>
+                              onClick={() => {
+                                if (loc.is_available) {
+                                  setSelectedRideShareLocation(loc.id);
+                                }
+                              }}
+                            >
+                              {/* Header Section */}
+                              <div className="flex items-start justify-between gap-4 p-4 pb-3">
+                                <div className="flex items-start gap-3 flex-1">
+                                  <div className="mt-0.5">
+                                    <input
+                                      type="radio"
+                                      name="pickup_location"
+                                      value={loc.id}
+                                      checked={isSelected}
+                                      readOnly
+                                      disabled={!loc.is_available}
+                                      className="h-5 w-5 border-slate-300 text-cyan-600 focus:ring-2 focus:ring-cyan-500 focus:ring-offset-1 disabled:cursor-not-allowed pointer-events-none"
+                                    />
+                                  </div>
+                                  <div className="flex-1">
+                                    <p
+                                      className={`text-base font-semibold leading-tight ${!loc.is_available ? "text-slate-500" : "text-slate-900"}`}
+                                    >
+                                      📍 {loc.name}
+                                    </p>
+                                    {loc.description && (
+                                      <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                                        {loc.description}
+                                      </p>
                                     )}
                                   </div>
                                 </div>
-                              </>
-                            )}
 
-                            {/* Warning Message */}
-                            {!loc.is_available && loc.current_bookings === 0 && (
-                              <div className="px-4 pb-3 pt-2">
-                                <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                                  <span>⚠️</span>
-                                  <span className="font-medium">Another location in this area is active</span>
+                                <div className="flex flex-col items-end gap-2">
+                                  <div
+                                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold shadow-sm ${
+                                      !loc.is_available
+                                        ? "bg-slate-200 text-slate-700"
+                                        : isFull
+                                          ? "bg-gradient-to-r from-red-500 to-red-600 text-white"
+                                          : loc.current_bookings > 0
+                                            ? "bg-gradient-to-r from-amber-400 to-amber-500 text-white"
+                                            : "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white"
+                                    }`}
+                                  >
+                                    {!loc.is_available
+                                      ? "🚫 Inactive"
+                                      : isFull
+                                        ? "🚫 Full"
+                                        : "✓ Available"}
+                                  </div>
+                                  <div
+                                    className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium ${isSelected ? "bg-white text-cyan-700" : "bg-slate-100 text-slate-600"}`}
+                                  >
+                                    <span>👥</span>
+                                    <span>
+                                      {loc.current_bookings} /{" "}
+                                      {loc.max_capacity}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
-                            )}
-                          </div>
-                        );
-                      })}
+
+                              {/* Route Info Section */}
+                              {loc.distance_text && (
+                                <>
+                                  <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
+                                  <div
+                                    className={`px-4 py-3 ${isSelected ? "bg-cyan-50/50" : "bg-slate-50"}`}
+                                  >
+                                    <div className="space-y-2.5 text-xs">
+                                      <div className="flex items-baseline justify-between">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-base">🗺️</span>
+                                          <span className="font-medium text-slate-700">
+                                            Distance:
+                                          </span>
+                                        </div>
+                                        <span
+                                          className={`text-sm font-semibold ${isSelected ? "text-cyan-600" : "text-slate-900"}`}
+                                        >
+                                          {loc.distance_text} km
+                                        </span>
+                                      </div>
+                                      <div className="flex items-baseline justify-between">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-base">⏱️</span>
+                                          <span className="font-medium text-slate-700">
+                                            Duration:
+                                          </span>
+                                        </div>
+                                        <span
+                                          className={`text-sm font-semibold ${isSelected ? "text-cyan-600" : "text-slate-900"}`}
+                                        >
+                                          {loc.duration_text} mins
+                                        </span>
+                                      </div>
+                                      {loc.departure_time_calculated && (
+                                        <div className="flex items-baseline justify-between border-t border-slate-200 pt-2.5">
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-base">
+                                              🚗
+                                            </span>
+                                            <span className="font-medium text-slate-700">
+                                              Departure:
+                                            </span>
+                                          </div>
+                                          <span
+                                            className={`text-sm font-semibold ${isSelected ? "text-cyan-600" : "text-slate-900"}`}
+                                          >
+                                            {new Date(
+                                              loc.departure_time_calculated,
+                                            ).toLocaleTimeString([], {
+                                              hour: "2-digit",
+                                              minute: "2-digit",
+                                            })}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </>
+                              )}
+
+                              {/* Warning Message */}
+                              {!loc.is_available &&
+                                loc.current_bookings === 0 && (
+                                  <div className="px-4 pb-3 pt-2">
+                                    <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                                      <span>⚠️</span>
+                                      <span className="font-medium">
+                                        Another location in this area is active
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+                            </div>
+                          );
+                        })}
                     </div>
                   </div>
                 )}
@@ -507,21 +622,45 @@ export function SessionSignIn({ session }: SessionSignInProps) {
             <ul className="list-disc space-y-2 pl-5">
               <li>
                 Status:{" "}
-                {status === "PRESENT" ? "Full session" : status === "LATE" ? "Arriving late" : "Leaving early"}
+                {status === "PRESENT"
+                  ? "Full session"
+                  : status === "LATE"
+                    ? "Arriving late"
+                    : "Leaving early"}
               </li>
               {selectedArea && (
                 <>
-                  <li>Ride Share: <span className="font-semibold">{selectedArea.ride_area_name}</span></li>
-                  <li>Pickup: {selectedArea.pickup_locations.find(l => l.id === selectedRideShareLocation)?.name || "Not selected"}</li>
+                  <li>
+                    Ride Share:{" "}
+                    <span className="font-semibold">
+                      {selectedArea.ride_area_name}
+                    </span>
+                  </li>
+                  <li>
+                    Pickup:{" "}
+                    {selectedArea.pickup_locations.find(
+                      (l) => l.id === selectedRideShareLocation,
+                    )?.name || "Not selected"}
+                  </li>
                   {(() => {
-                    const selectedLoc = selectedArea.pickup_locations.find(l => l.id === selectedRideShareLocation);
+                    const selectedLoc = selectedArea.pickup_locations.find(
+                      (l) => l.id === selectedRideShareLocation,
+                    );
                     return selectedLoc?.distance_text ? (
                       <>
                         <li>Distance: {selectedLoc.distance_text} km</li>
                         <li>Duration: {selectedLoc.duration_text} mins</li>
                         {selectedLoc.departure_time_calculated && (
                           <>
-                            <li>Departure: {new Date(selectedLoc.departure_time_calculated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</li>
+                            <li>
+                              Departure:{" "}
+                              {new Date(
+                                selectedLoc.departure_time_calculated,
+                              ).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </li>
                           </>
                         )}
                       </>
@@ -533,7 +672,9 @@ export function SessionSignIn({ session }: SessionSignInProps) {
             </ul>
 
             <div className="border-t border-slate-200 pt-4">
-              <h3 className="font-semibold text-slate-900">Payment Breakdown</h3>
+              <h3 className="font-semibold text-slate-900">
+                Payment Breakdown
+              </h3>
               <div className="mt-2 space-y-2 text-sm text-slate-700">
                 <div className="flex justify-between">
                   <span>Pool Fee:</span>
@@ -556,7 +697,9 @@ export function SessionSignIn({ session }: SessionSignInProps) {
               {!showManualPayment ? (
                 <>
                   <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-                    <p className="font-semibold text-emerald-900">💳 Pay Online with Paystack</p>
+                    <p className="font-semibold text-emerald-900">
+                      💳 Pay Online with Paystack
+                    </p>
                     <p className="mt-1 text-sm text-emerald-700">
                       Secure payment via card, bank transfer, or USSD.
                     </p>
@@ -572,7 +715,9 @@ export function SessionSignIn({ session }: SessionSignInProps) {
               ) : (
                 <>
                   <div className="rounded-lg border border-slate-200 bg-white p-4">
-                    <p className="font-semibold text-slate-900">💳 Bank Transfer Details</p>
+                    <p className="font-semibold text-slate-900">
+                      💳 Bank Transfer Details
+                    </p>
                     <div className="mt-2 space-y-1 text-sm text-slate-700">
                       <div className="flex justify-between">
                         <span className="text-slate-600">Bank:</span>
@@ -588,7 +733,9 @@ export function SessionSignIn({ session }: SessionSignInProps) {
                       </div>
                     </div>
                     <div className="mt-3 rounded bg-cyan-50 p-3 text-sm">
-                      <p className="font-medium text-cyan-900">📱 Send Receipt via WhatsApp</p>
+                      <p className="font-medium text-cyan-900">
+                        📱 Send Receipt via WhatsApp
+                      </p>
                       <p className="mt-1 text-cyan-800">
                         After payment, please send your receipt to:{" "}
                         <a
@@ -616,11 +763,24 @@ export function SessionSignIn({ session }: SessionSignInProps) {
         )}
 
         <div className="flex flex-wrap justify-between gap-3">
-          <Button type="button" variant="secondary" onClick={previousStep} disabled={step === 0 || saving}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={previousStep}
+            disabled={step === 0 || saving}
+          >
             Back
           </Button>
-          <Button type="button" onClick={step === steps.length - 1 ? handlePayment : nextStep} disabled={saving || (!!authError && step === 0)}>
-            {step === steps.length - 1 ? (saving ? "Processing..." : `Pay ${formatCurrency(totalCost)}`) : "Next"}
+          <Button
+            type="button"
+            onClick={step === steps.length - 1 ? handlePayment : nextStep}
+            disabled={saving || (!!authError && step === 0)}
+          >
+            {step === steps.length - 1
+              ? saving
+                ? "Processing..."
+                : `Pay ${formatCurrency(totalCost)}`
+              : "Next"}
           </Button>
         </div>
       </Card>

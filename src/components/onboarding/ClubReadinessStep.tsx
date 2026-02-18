@@ -15,7 +15,11 @@ type ClubReadinessStepProps = {
   onUpdateNotes: (value: string) => void;
 };
 
-export function ClubReadinessStep({ formData, onToggleAvailability, onUpdateNotes }: ClubReadinessStepProps) {
+export function ClubReadinessStep({
+  formData,
+  onToggleAvailability,
+  onUpdateNotes,
+}: ClubReadinessStepProps) {
   return (
     <div className="space-y-6">
       <div className="space-y-2">

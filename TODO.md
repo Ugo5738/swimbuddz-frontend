@@ -23,7 +23,6 @@ All API calls must respect that contract.
 ### 0.1 – Initialise Next.js + TypeScript + Tailwind
 
 - [x] **0.1.1 – Create base Next.js app (App Router)**
-
   - **Goal:** Create a Next.js app using the App Router and TypeScript.
   - **Requirements:**
     - Use `src/` directory.
@@ -33,7 +32,6 @@ All API calls must respect that contract.
     - `package.json`, `tsconfig.json`, `next.config.mjs`, `src/app/layout.tsx`, `src/app/page.tsx`.
 
 - [x] **0.1.2 – Configure Tailwind CSS**
-
   - **Goal:** Add Tailwind for styling.
   - **Requirements:**
     - Tailwind config file (`tailwind.config.mjs`).
@@ -59,7 +57,6 @@ All API calls must respect that contract.
 ### 0.2 – Directory & Component Skeleton
 
 - [x] **0.2.1 – Create base directory structure**
-
   - **Goal:** Prepare folders for later tasks.
   - **Requirements:**
     - Create:
@@ -73,7 +70,6 @@ All API calls must respect that contract.
     - Empty but committed directories with placeholder `README.md` or minimal files if needed.
 
 - [x] **0.2.2 – Layout components**
-
   - **Goal:** Centralise the main and admin layouts.
   - **Requirements:**
     - `src/components/layout/MainLayout.tsx`
@@ -111,7 +107,6 @@ All API calls must respect that contract.
 ### 1.1 – Home Page (`/`)
 
 - [x] **1.1.1 – Implement home hero section**
-
   - **Goal:** Explain SwimBuddz and direct users to registration.
   - **Requirements:**
     - Use `ROUTES_AND_PAGES.md` description for `/`.
@@ -156,7 +151,6 @@ All API calls must respect that contract.
 ### 1.3 – Guidelines & Privacy (`/guidelines`, `/privacy`)
 
 - [x] **1.3.1 – Implement Guidelines page**
-
   - **Goal:** Display community rules and safety guidelines.
   - **Requirements:**
     - Summarise key sections.
@@ -180,7 +174,6 @@ All API calls must respect that contract.
 > This depends on having the backend announcements API available. Use stubs/mocks temporarily if needed, then wire to real API once available.
 
 - [x] **1.4.1 – Announcements list page**
-
   - **Goal:** Show a list of official updates.
   - **Requirements:**
     - `src/app/(public)/announcements/page.tsx`.
@@ -212,7 +205,6 @@ All API calls must respect that contract.
 ### 2.1 – Supabase Client & Auth Helpers
 
 - [x] **2.1.1 – Implement Supabase client in `src/lib/auth.ts`**
-
   - **Goal:** Provide a single place to initialize Supabase.
   - **Requirements:**
     - Use `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
@@ -268,7 +260,6 @@ All API calls must respect that contract.
 ### 3.1 – Registration Flow (`/register`)
 
 - [x] **3.1.1 – Multi-step registration UI (MVP)**
-
   - **Goal:** Implement the initial six-step registration UI described in `UI_FLOWS.md`.
   - **Requirements (completed MVP scope):**
     - `src/app/(auth)/register/page.tsx` as client component with progress indicator + Next/Back controls.
@@ -357,7 +348,6 @@ All API calls must respect that contract.
 ### 3.2 – Member Profile (`/member/profile`)
 
 - [x] **3.2.1 – Implement profile view**
-
   - **Goal:** Show current member profile.
   - **Requirements:**
     - `src/app/(member)/profile/page.tsx`.
@@ -430,7 +420,6 @@ All API calls must respect that contract.
 ### 4.2 – Session Sign-in (`/sessions/[id]/sign-in`)
 
 - [x] **4.2.1 – Implement session sign-in page scaffolding**
-
   - **Goal:** Implement layout and data fetching for sign-in page.
   - **Requirements:**
     - `src/app/(sessions)/sessions/[id]/sign-in/page.tsx`.
@@ -444,7 +433,6 @@ All API calls must respect that contract.
     - Read-only summary view for selected session.
 
 - [x] **4.2.2 – Implement 3-step sign-in UI**
-
   - **Goal:** Match the 3-step flow described in `UI_FLOWS.md`.
   - **Requirements:**
     - If not authenticated:
@@ -512,7 +500,6 @@ All API calls must respect that contract.
 ### 5.3 – Admin Members (`/admin/members`)
 
 - [x] **5.3.1 – Implement members table**
-
   - **Goal:** Show and filter members.
   - **Requirements:**
     - `src/app/(admin)/members/page.tsx`.
@@ -553,7 +540,6 @@ All API calls must respect that contract.
 ### 5.5 – Admin Session Attendance (`/admin/sessions/[id]/attendance`)
 
 - [x] **5.5.1 – Implement attendance table**
-
   - **Goal:** Show and manage attendance for a specific session.
   - **Requirements:**
     - `src/app/(admin)/sessions/[id]/attendance/page.tsx`.

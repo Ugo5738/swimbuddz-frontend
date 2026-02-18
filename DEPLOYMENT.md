@@ -22,12 +22,14 @@
 Netlify will auto-detect Next.js. Verify these settings:
 
 **Build Settings:**
+
 ```
 Build command: npm run build
 Publish directory: .next
 ```
 
 **Environment Variables** (click "Show advanced" → "New variable"):
+
 ```bash
 # Required
 NEXT_PUBLIC_API_BASE_URL=https://your-backend-api.com
@@ -45,6 +47,7 @@ NEXT_PUBLIC_ENABLE_GALLERY=true
 Click **"Deploy site"**
 
 Netlify will:
+
 1. Clone your repo
 2. Install dependencies (`npm install`)
 3. Build the app (`npm run build`)
@@ -95,6 +98,7 @@ app.add_middleware(
 **Automatic deployments are now enabled!**
 
 Every time you push to your GitHub repo:
+
 1. Netlify detects the change
 2. Automatically builds and deploys
 3. Takes ~2-3 minutes
@@ -110,16 +114,19 @@ Every time you push to your GitHub repo:
 ## Environment-Specific Configuration
 
 ### Production (.env variables in Netlify)
+
 ```bash
 NEXT_PUBLIC_API_BASE_URL=https://api.swimbuddz.com
 ```
 
 ### Staging (separate site)
+
 ```bash
 NEXT_PUBLIC_API_BASE_URL=https://api-staging.swimbuddz.com
 ```
 
 ### Development (local .env.local)
+
 ```bash
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 ```
@@ -131,11 +138,13 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 ### Build Fails
 
 **Check build logs:**
+
 1. Go to **Deploys** tab
 2. Click on failed deploy
 3. View detailed logs
 
 **Common issues:**
+
 - Missing environment variables → Add in Site settings
 - ESLint errors → Already disabled in `.eslintrc.json`
 - Memory issues → Upgrade to paid plan if needed
@@ -143,6 +152,7 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 ### API Calls Fail
 
 **Check:**
+
 1. `NEXT_PUBLIC_API_BASE_URL` is set correctly in Netlify env vars
 2. Backend allows CORS from Netlify domain
 3. Backend is accessible (not localhost!)
@@ -150,6 +160,7 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 ### Images Not Loading
 
 **Solutions:**
+
 - Use Next.js `<Image>` component (already warned about)
 - Or suppress warnings with `eslint-disable-next-line`
 
@@ -167,13 +178,14 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 ### Additional Recommendations
 
 1. **Enable Next.js Image Optimization**
+
    ```typescript
    // next.config.js
    module.exports = {
      images: {
-       domains: ['your-supabase-url.supabase.co'],
+       domains: ["your-supabase-url.supabase.co"],
      },
-   }
+   };
    ```
 
 2. **Add Analytics**
@@ -188,6 +200,7 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 ### Netlify Dashboard
 
 Track:
+
 - Deploy status
 - Build times
 - Bandwidth usage
@@ -196,6 +209,7 @@ Track:
 ### Health Checks
 
 Set up monitoring for:
+
 - Homepage availability
 - API connectivity
 - Load times
@@ -237,6 +251,7 @@ If something breaks:
 ## Cost Estimate
 
 ### Netlify Free Tier
+
 - ✅ 100 GB bandwidth/month
 - ✅ 300 build minutes/month
 - ✅ Unlimited sites
@@ -246,6 +261,7 @@ If something breaks:
 **This is sufficient for SwimBuddz launch!**
 
 ### If you exceed:
+
 - $19/month for Pro plan
 - 400 GB bandwidth
 - 1,000 build minutes
@@ -255,12 +271,15 @@ If something breaks:
 ## Support
 
 **Netlify Documentation:**
+
 - https://docs.netlify.com
 
 **Next.js on Netlify:**
+
 - https://docs.netlify.com/frameworks/next-js/overview/
 
 **SwimBuddz Issues:**
+
 - Check deployment logs
 - Review this guide
 - Contact team
@@ -270,6 +289,7 @@ If something breaks:
 ## ✅ Production Ready!
 
 Your frontend is now ready for automated Netlify deployment with:
+
 - ✅ ESLint configured for production
 - ✅ Netlify configuration file
 - ✅ Environment variable template

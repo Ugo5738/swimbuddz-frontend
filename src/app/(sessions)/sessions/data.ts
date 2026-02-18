@@ -22,7 +22,7 @@ export const mockSessions: Session[] = [
     endTime: "15:00",
     poolFee: 4000,
     rideShareFee: 6000,
-    description: "Structured endurance sets + technique focus on pull work."
+    description: "Structured endurance sets + technique focus on pull work.",
   },
   {
     id: "federal-palace-meetup",
@@ -33,7 +33,7 @@ export const mockSessions: Session[] = [
     startTime: "09:00",
     endTime: "12:00",
     poolFee: 50000,
-    description: "Recovery swim plus mobility session with Coach Dan."
+    description: "Recovery swim plus mobility session with Coach Dan.",
   },
   {
     id: "academy-trials",
@@ -44,8 +44,9 @@ export const mockSessions: Session[] = [
     startTime: "09:00",
     endTime: "12:00",
     poolFee: 15000,
-    description: "Assessments for the July cohort. Includes dryland warm-up and breathwork."
-  }
+    description:
+      "Assessments for the July cohort. Includes dryland warm-up and breathwork.",
+  },
 ];
 
 export function getSessionById(id: string) {

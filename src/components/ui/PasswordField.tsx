@@ -12,12 +12,22 @@ type PasswordFieldProps = {
   required?: boolean;
 };
 
-export function PasswordField({ label, name, value, placeholder, onChange, required }: PasswordFieldProps) {
+export function PasswordField({
+  label,
+  name,
+  value,
+  placeholder,
+  onChange,
+  required,
+}: PasswordFieldProps) {
   const [visible, setVisible] = useState(false);
   const inputId = name;
 
   return (
-    <label className="flex flex-col gap-1 text-sm font-medium text-slate-700" htmlFor={inputId}>
+    <label
+      className="flex flex-col gap-1 text-sm font-medium text-slate-700"
+      htmlFor={inputId}
+    >
       <span className="flex items-center gap-1">
         {label}
         {required ? (
@@ -44,7 +54,11 @@ export function PasswordField({ label, name, value, placeholder, onChange, requi
           aria-label={visible ? "Hide password" : "Show password"}
           aria-pressed={visible}
         >
-          {visible ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+          {visible ? (
+            <EyeSlashIcon className="h-5 w-5" />
+          ) : (
+            <EyeIcon className="h-5 w-5" />
+          )}
         </button>
       </div>
     </label>

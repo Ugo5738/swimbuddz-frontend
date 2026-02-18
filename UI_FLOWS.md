@@ -16,11 +16,9 @@ The implementation of pages should follow these flows closely.
    - Sees hero explaining SwimBuddz.
    - Sees primary CTA: “Join SwimBuddz”.
 2. User clicks “Join SwimBuddz”.
-
    - Navigates to `/register`.
 
 3. On `/register`:
-
    - Multi-step registration:
      - Step 1: Basic info (name, email, international phone capture, city, country, time zone).
      - Step 2: Swimming level, deep-water comfort, strokes (multi-select), interests/goals (fitness, open water, remote coaching, academy track), certifications/background (coach, lifeguard, CPR).
@@ -31,7 +29,6 @@ The implementation of pages should follow these flows closely.
    - Allow multiple membership tiers to be selected simultaneously and surface conditional follow-up fields only when relevant (e.g., coaching credentials, hosting sessions).
 
 4. When user submits final step:
-
    - Frontend:
      - Calls backend `POST /api/v1/pending-registrations` with full profile data.
      - Creates Supabase user (sign-up).
@@ -54,24 +51,19 @@ The implementation of pages should follow these flows closely.
 ### Flow: WhatsApp Link → Sign-in Page → Confirmation
 
 1. Admin posts sign-in link in WhatsApp:
-
    - Example:  
      `https://app.swimbuddz.com/sessions/<session_id>/sign-in`
 
 2. Member taps the link:
-
    - Browser opens `/sessions/<session_id>/sign-in`.
 
 3. On `/sessions/[id]/sign-in`:
-
    - **Step 1: Session overview**
-
      - Show session title, type, location.
      - Show date and time (e.g. “Sat 16 Nov, 12–3 pm”).
      - Show pool fee and optional ride-share fee.
 
    - **Step 2: Identity**
-
      - If authenticated:
        - Show “Signing in as [Full Name]”.
        - Display a button: “Confirm attendance”.
@@ -80,12 +72,10 @@ The implementation of pages should follow these flows closely.
        - After login, resume sign-in flow.
 
    - **Step 3: Options & Submit**
-
      - Default:
        - Attend full session.
        - No ride-share.
      - Optional “More options” collapsible section:
-
        - Toggle time variant:
          - Arriving late.
          - Leaving early.
@@ -99,7 +89,6 @@ The implementation of pages should follow these flows closely.
        - Calls `POST /api/v1/sessions/{id}/sign-in`.
 
 4. After successful sign-in:
-
    - Show confirmation page/section:
      - “You’re confirmed for Yaba – Sat 16 Nov, 12–3 pm (pending payment confirmation).”
      - Show breakdown: pool fee + ride-share fee + total.
@@ -112,15 +101,12 @@ The implementation of pages should follow these flows closely.
 ### Flow: Profile → Attendance
 
 1. Member logs in and goes to `/member/profile`.
-
    - Nav shows a link to “Attendance”.
 
 2. Member clicks “Attendance”.
-
    - Navigates to `/member/attendance`.
 
 3. On `/member/attendance`:
-
    - Fetch data from `GET /api/v1/members/me/attendance`.
    - Show top summary:
      - Example: “You’ve attended 7 sessions in the last 2 months.”
@@ -138,15 +124,12 @@ The implementation of pages should follow these flows closely.
 ### Flow: Admin Dashboard → Sessions → Session Attendance
 
 1. Admin logs in and navigates to `/admin/dashboard`.
-
    - Sees basic metrics: total members, upcoming sessions, latest announcements.
 
 2. Admin clicks “Sessions”.
-
    - Navigates to `/admin/sessions`.
 
 3. On `/admin/sessions`:
-
    - See table of upcoming sessions:
      - Title, type, location, date, and sign-in counts.
    - Can:
@@ -154,11 +137,9 @@ The implementation of pages should follow these flows closely.
      - Click on a session row to manage attendance.
 
 4. Admin clicks on a session row.
-
    - Navigates to `/admin/sessions/[id]/attendance`.
 
 5. On `/admin/sessions/[id]/attendance`:
-
    - See table of attendees:
      - Name, level, ride-share role, payment status.
    - Can:
@@ -176,7 +157,6 @@ The implementation of pages should follow these flows closely.
 1. Admin goes to `/admin/announcements`.
 
 2. On `/admin/announcements`:
-
    - See list of existing announcements:
      - Title, date, category.
    - Can:
@@ -186,7 +166,6 @@ The implementation of pages should follow these flows closely.
        - Full content/body.
 
 3. After creating an announcement:
-
    - The detail view shows:
      - Announcement content.
      - A “Copy for WhatsApp” button.
@@ -200,15 +179,12 @@ The implementation of pages should follow these flows closely.
 ### Flow: Home → Announcements
 
 1. User lands on `/`.
-
    - Sees link “Announcements / News”.
 
 2. User clicks link.
-
    - Navigates to `/announcements`.
 
 3. On `/announcements`:
-
    - Sees list of announcements in reverse chronological order.
    - Clicks one to view full details on `/announcements/[id]`.
 
@@ -219,25 +195,21 @@ The implementation of pages should follow these flows closely.
 ### Flow: Store → Product → Cart → Checkout
 
 1. Member navigates to `/store`.
-
    - Sees featured products and categories.
    - Can filter by category, price, availability.
 
 2. Member clicks on a product.
-
    - Navigates to `/store/products/[slug]`.
    - Sees product details, images, sizes, price.
    - Can add to cart with size/quantity selection.
 
 3. Member clicks "View Cart".
-
    - Navigates to `/store/cart`.
    - Reviews items, quantities, subtotal.
    - Can update quantities or remove items.
    - Clicks "Proceed to Checkout".
 
 4. On `/store/checkout`:
-
    - **Step 1: Delivery Info**
      - Name, phone, address fields.
    - **Step 2: Payment**
@@ -245,7 +217,6 @@ The implementation of pages should follow these flows closely.
    - Submit order.
 
 5. After successful order:
-
    - Navigates to `/store/orders/[id]`.
    - Shows order confirmation with order number.
    - Member can track order status.
@@ -257,12 +228,10 @@ The implementation of pages should follow these flows closely.
 ### Flow: Academy → Program → Enrollment → Cohort
 
 1. Member navigates to `/academy`.
-
    - Sees list of available programs (e.g., "Learn to Swim", "Advanced Techniques").
    - Each program shows duration, price, description.
 
 2. Member clicks on a program.
-
    - Navigates to `/academy/programs/[id]`.
    - Sees detailed program info:
      - Curriculum modules.
@@ -271,7 +240,6 @@ The implementation of pages should follow these flows closely.
    - Clicks "Enroll" button.
 
 3. On enrollment flow (could be modal or separate page):
-
    - If authenticated:
      - Select cohort (if multiple available).
      - Confirm enrollment details.
@@ -280,7 +248,6 @@ The implementation of pages should follow these flows closely.
      - Redirect to login/register, then return to enrollment.
 
 4. After successful enrollment:
-
    - Navigates to `/account/academy/enrollments`.
    - Shows enrolled programs with cohort info.
    - Member can access:
@@ -289,7 +256,6 @@ The implementation of pages should follow these flows closely.
      - See cohort members (if enabled).
 
 5. Member tracks progress:
-
    - On `/account/academy/programs/[id]`:
      - Sees curriculum modules with completion status.
      - Can mark modules complete (if self-paced).
@@ -302,17 +268,14 @@ The implementation of pages should follow these flows closely.
 ### Flow: Admin Dashboard → Academy → Create Cohort
 
 1. Admin navigates to `/admin/academy/programs`.
-
    - Sees list of all programs.
    - Can create new program or edit existing.
 
 2. Admin clicks on a program.
-
    - Navigates to `/admin/academy/programs/[id]`.
    - Sees program details and existing cohorts.
 
 3. Admin clicks "Create Cohort".
-
    - Modal or form appears:
      - Name (e.g., "Batch 5").
      - Start date and end date.
@@ -321,14 +284,12 @@ The implementation of pages should follow these flows closely.
    - Submit: Calls `POST /api/v1/academy/programs/{id}/cohorts`.
 
 4. Admin manages enrollments:
-
    - Navigates to `/admin/academy/cohorts/[id]`.
    - Sees enrolled students list.
    - Can manually enroll/unenroll students.
    - Can track progress for each student.
 
 5. Admin reviews progress:
-
    - On `/admin/academy/cohorts/[id]/progress`:
      - Table showing each student's completion status.
      - Can export data or view detailed reports.
@@ -340,12 +301,10 @@ The implementation of pages should follow these flows closely.
 ### Flow: Events → Event Detail → RSVP
 
 1. Member navigates to `/events`.
-
    - Sees list of upcoming community events.
    - Events show: title, date, location, type (meetup, social, trip).
 
 2. Member clicks on an event.
-
    - Navigates to `/events/[id]`.
    - Sees full event details:
      - Description, organizer.
@@ -354,7 +313,6 @@ The implementation of pages should follow these flows closely.
    - Clicks "RSVP" button.
 
 3. RSVP confirmation:
-
    - If authenticated:
      - Calls `POST /api/v1/events/{id}/rsvp`.
      - Shows "You're registered!" message.
@@ -362,7 +320,6 @@ The implementation of pages should follow these flows closely.
      - Redirect to login, then return to RSVP.
 
 4. Member views their RSVPs:
-
    - On `/account/events`:
      - List of all events they've RSVP'd to.
      - Can cancel RSVP if needed.
@@ -374,19 +331,16 @@ The implementation of pages should follow these flows closely.
 ### Flow: Media → Gallery → Photos
 
 1. Member navigates to `/media`.
-
    - Sees list of media galleries.
    - Galleries organized by: session, event, trip.
 
 2. Member clicks on a gallery.
-
    - Navigates to `/media/galleries/[id]`.
    - Sees grid of photos/videos from that event.
    - Can click to view full-size images.
    - Can download images (if enabled).
 
 3. Admin uploads media:
-
    - On `/admin/media/galleries/[id]`:
      - Upload form for photos/videos.
      - Calls `POST /api/v1/media/galleries/{id}/upload`.
@@ -399,12 +353,10 @@ The implementation of pages should follow these flows closely.
 ### Flow: Admin Dashboard → Payments → Verify
 
 1. Admin navigates to `/admin/payments`.
-
    - Sees list of recent payment records.
    - Can filter by: status, member, date range.
 
 2. Admin clicks on a payment record.
-
    - Navigates to `/admin/payments/[id]`.
    - Sees payment details:
      - Member name, amount, reference.
@@ -412,13 +364,11 @@ The implementation of pages should follow these flows closely.
      - Status (pending, confirmed, failed).
 
 3. Admin verifies payment:
-
    - Checks bank statement or Paystack dashboard.
    - Clicks "Mark as Verified".
    - Calls `PATCH /api/v1/payments/{id}` to update status.
 
 4. Admin views payment dashboard:
-
    - On `/admin/payments/dashboard`:
      - Summary metrics: total collected, pending verification.
      - Charts by month, payment method.
@@ -433,7 +383,6 @@ The implementation of pages should follow these flows closely.
 1. Member signs in for a session (see Flow #2).
 
 2. In "Step 3: Options & Submit" section:
-
    - Expands "Ride-share" options:
      - **I need a ride (passenger)**:
        - Select pickup location from available areas.
@@ -446,13 +395,11 @@ The implementation of pages should follow these flows closely.
        - Default option.
 
 3. After sign-in confirmation:
-
    - On confirmation page, shows ride-share details:
      - If passenger: "You'll be picked up at [Location]".
      - If driver: "You're offering [X] seats from [Location]".
 
 4. Admin coordinates rides:
-
    - On `/admin/sessions/[id]/attendance`:
      - See ride-share column showing:
        - Drivers with available seats.
@@ -466,11 +413,13 @@ The implementation of pages should follow these flows closely.
 The SwimBuddz platform supports these primary user journeys:
 
 ### Public Flows
+
 - Home → Register → Profile
 - Home → Announcements
 - Home → Events → RSVP
 
 ### Member Flows
+
 - Session Sign-in (3-step: overview → identity → options)
 - View Attendance History
 - Browse Store → Purchase
@@ -480,6 +429,7 @@ The SwimBuddz platform supports these primary user journeys:
 - Manage Transport/Ride-Share
 
 ### Admin Flows
+
 - Manage Sessions & Attendance
 - Create Announcements
 - Manage Academy Programs & Cohorts

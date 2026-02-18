@@ -1,6 +1,6 @@
 /**
  * Members API client and type exports.
- * 
+ *
  * Types are generated from backend OpenAPI schema.
  * Run `npm run generate:types` to update types after backend changes.
  */
@@ -14,15 +14,18 @@ export type MemberUpdate = Partial<Member>; // Define locally since not in gener
 export type CoachProfile = components["schemas"]["CoachProfileResponse"];
 
 export const MembersApi = {
-    getMe: () => apiGet<Member>("/api/v1/members/me", { auth: true }),
+  getMe: () => apiGet<Member>("/api/v1/members/me", { auth: true }),
 
-    listCoaches: () => apiGet<Member[]>("/api/v1/members/coaches"),
+  listCoaches: () => apiGet<Member[]>("/api/v1/members/coaches"),
 
-    getCoach: (id: string) => apiGet<Member>(`/api/v1/members/coaches/${id}`),
+  getCoach: (id: string) => apiGet<Member>(`/api/v1/members/coaches/${id}`),
 
-    // Admin
-    listMembers: (skip = 0, limit = 100) =>
-        apiGet<MemberListItem[]>(`/api/v1/members/?skip=${skip}&limit=${limit}`, { auth: true }),
+  // Admin
+  listMembers: (skip = 0, limit = 100) =>
+    apiGet<MemberListItem[]>(`/api/v1/members/?skip=${skip}&limit=${limit}`, {
+      auth: true,
+    }),
 
-    getMember: (id: string) => apiGet<Member>(`/api/v1/members/${id}`, { auth: true }),
+  getMember: (id: string) =>
+    apiGet<Member>(`/api/v1/members/${id}`, { auth: true }),
 };

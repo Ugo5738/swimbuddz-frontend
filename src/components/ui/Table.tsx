@@ -14,7 +14,12 @@ type TableSectionProps = {
 export function Table({ children, className }: TableProps) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-slate-100 bg-white shadow-sm">
-      <table className={clsx("w-full border-collapse text-left text-sm text-slate-700", className)}>
+      <table
+        className={clsx(
+          "w-full border-collapse text-left text-sm text-slate-700",
+          className,
+        )}
+      >
         {children}
       </table>
     </div>
@@ -23,14 +28,21 @@ export function Table({ children, className }: TableProps) {
 
 export function TableHead({ children, className }: TableSectionProps) {
   return (
-    <thead className={clsx("bg-slate-50 text-xs font-semibold uppercase tracking-wide", className)}>
+    <thead
+      className={clsx(
+        "bg-slate-50 text-xs font-semibold uppercase tracking-wide",
+        className,
+      )}
+    >
       {children}
     </thead>
   );
 }
 
 export function TableRow({ children, className }: TableSectionProps) {
-  return <tr className={clsx("border-b border-slate-100", className)}>{children}</tr>;
+  return (
+    <tr className={clsx("border-b border-slate-100", className)}>{children}</tr>
+  );
 }
 
 export function TableHeaderCell({ children, className }: TableSectionProps) {
@@ -38,7 +50,11 @@ export function TableHeaderCell({ children, className }: TableSectionProps) {
 }
 
 export function TableBody({ children, className }: TableSectionProps) {
-  return <tbody className={clsx("divide-y divide-slate-100", className)}>{children}</tbody>;
+  return (
+    <tbody className={clsx("divide-y divide-slate-100", className)}>
+      {children}
+    </tbody>
+  );
 }
 
 export function TableCell({ children, className }: TableSectionProps) {

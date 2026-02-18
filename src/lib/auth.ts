@@ -15,7 +15,10 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
  */
 export async function getCurrentAccessToken(): Promise<string | null> {
   try {
-    const { data: { session }, error } = await supabase.auth.getSession();
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
 
     if (error) {
       console.warn("Session error detected, signing out:", error.message);
@@ -43,7 +46,9 @@ async function handleInvalidSession(): Promise<void> {
   // Only redirect if we're in a browser context
   if (typeof window !== "undefined") {
     // Clear any stale local storage
-    localStorage.removeItem("sb-" + supabaseUrl?.split("//")[1]?.split(".")[0] + "-auth-token");
+    localStorage.removeItem(
+      "sb-" + supabaseUrl?.split("//")[1]?.split(".")[0] + "-auth-token",
+    );
     window.location.href = "/login?session=expired";
   }
 }

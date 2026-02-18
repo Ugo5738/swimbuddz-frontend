@@ -160,7 +160,10 @@ export const SessionsApi = {
   },
 
   // Get sessions for a specific cohort
-  getCohortSessions: (cohortId: string, options?: { includeDrafts?: boolean }) => {
+  getCohortSessions: (
+    cohortId: string,
+    options?: { includeDrafts?: boolean },
+  ) => {
     const query = new URLSearchParams({ cohort_id: cohortId });
     if (options?.includeDrafts) query.set("include_drafts", "true");
     return apiGet<Session[]>(`/api/v1/sessions?${query.toString()}`, {
@@ -169,8 +172,7 @@ export const SessionsApi = {
   },
 
   // Get single session
-  getSession: (id: string) =>
-    apiGet<Session>(`/api/v1/sessions/${id}`),
+  getSession: (id: string) => apiGet<Session>(`/api/v1/sessions/${id}`),
 
   // Create session
   createSession: (data: SessionCreate) =>
@@ -189,7 +191,11 @@ export const SessionsApi = {
     const query = shortNoticeMessage
       ? `?short_notice_message=${encodeURIComponent(shortNoticeMessage)}`
       : "";
-    return apiPost<Session>(`/api/v1/sessions/${id}/publish${query}`, {}, { auth: true });
+    return apiPost<Session>(
+      `/api/v1/sessions/${id}/publish${query}`,
+      {},
+      { auth: true },
+    );
   },
 
   // Cancel a session (triggers cancellation notifications)
@@ -197,7 +203,11 @@ export const SessionsApi = {
     const query = cancellationReason
       ? `?cancellation_reason=${encodeURIComponent(cancellationReason)}`
       : "";
-    return apiPost<Session>(`/api/v1/sessions/${id}/cancel${query}`, {}, { auth: true });
+    return apiPost<Session>(
+      `/api/v1/sessions/${id}/cancel${query}`,
+      {},
+      { auth: true },
+    );
   },
 
   // Get session stats
@@ -239,7 +249,7 @@ interface SignInToSessionParams {
  * Sign in to a session with optional ride share booking
  */
 export const signInToSession = async (
-  params: SignInToSessionParams
+  params: SignInToSessionParams,
 ): Promise<{ success: boolean; message?: string }> => {
   const payload: Record<string, unknown> = {
     status: params.status || "PRESENT",
@@ -256,10 +266,15 @@ export const signInToSession = async (
   }
 
   try {
-    await apiPost(`/api/v1/attendance/sessions/${params.sessionId}/sign-in`, payload, { auth: true });
+    await apiPost(
+      `/api/v1/attendance/sessions/${params.sessionId}/sign-in`,
+      payload,
+      { auth: true },
+    );
     return { success: true };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to sign in to session";
+    const message =
+      error instanceof Error ? error.message : "Failed to sign in to session";
     throw new Error(message);
   }
 };

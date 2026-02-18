@@ -7,7 +7,10 @@ import { Input } from "@/components/ui/Input";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { PasswordField } from "@/components/ui/PasswordField";
 import { supabase } from "@/lib/auth";
-import { completePendingRegistrationOnBackend, getPostAuthRedirectPath } from "@/lib/registration";
+import {
+  completePendingRegistrationOnBackend,
+  getPostAuthRedirectPath,
+} from "@/lib/registration";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useEffect, useState } from "react";
 
@@ -19,7 +22,10 @@ const ADMIN_EMAILS = [
 /** Convert raw error messages to user-friendly text */
 function formatErrorMessage(message: string): string {
   // Handle rate limit errors
-  if (message.includes("RATE_LIMIT") || message.toLowerCase().includes("rate limit")) {
+  if (
+    message.includes("RATE_LIMIT") ||
+    message.toLowerCase().includes("rate limit")
+  ) {
     return "Too many attempts. Please wait a few minutes before trying again.";
   }
   // Handle JSON-like error responses
@@ -61,12 +67,15 @@ function LoginContent() {
   useEffect(() => {
     const redirectParam = searchParams.get("redirect");
     const errorParam = searchParams.get("error");
-    const redirectPath = redirectParam && redirectParam.startsWith("/") ? redirectParam : null;
+    const redirectPath =
+      redirectParam && redirectParam.startsWith("/") ? redirectParam : null;
     if (!redirectPath && !errorParam) return;
 
     let isMounted = true;
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!isMounted) return;
       if (!session) return;
       if (redirectPath) {
@@ -91,7 +100,7 @@ function LoginContent() {
 
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
-      password
+      password,
     });
 
     if (signInError) {
@@ -101,7 +110,9 @@ function LoginContent() {
     }
 
     // Admin users bypass pending-registration completion (they may not have a Member profile).
-    const { data: { user: signedInUser } } = await supabase.auth.getUser();
+    const {
+      data: { user: signedInUser },
+    } = await supabase.auth.getUser();
     if (signedInUser?.email && ADMIN_EMAILS.includes(signedInUser.email)) {
       setLoading(false);
       router.push("/admin/dashboard");
@@ -137,7 +148,9 @@ function LoginContent() {
 
     const redirectParam = searchParams.get("redirect");
     const nextPath =
-      redirectParam && redirectParam.startsWith("/") ? redirectParam : "/account";
+      redirectParam && redirectParam.startsWith("/")
+        ? redirectParam
+        : "/account";
 
     setMagicLoading(true);
     const { error: otpError } = await supabase.auth.signInWithOtp({
@@ -160,9 +173,15 @@ function LoginContent() {
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <header className="space-y-2 text-center">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">Account access</p>
-        <h1 className="text-3xl font-bold text-slate-900">Log in to SwimBuddz</h1>
-        <p className="text-sm text-slate-600">Use your Supabase credentials to access member and admin flows.</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
+          Account access
+        </p>
+        <h1 className="text-3xl font-bold text-slate-900">
+          Log in to SwimBuddz
+        </h1>
+        <p className="text-sm text-slate-600">
+          Use your Supabase credentials to access member and admin flows.
+        </p>
       </header>
       <Card className="space-y-6">
         {error ? (
@@ -172,7 +191,9 @@ function LoginContent() {
         ) : null}
         {magicSent ? (
           <Alert variant="success" title="Check your email">
-            We sent a sign-in link to <span className="font-semibold">{email.trim()}</span>. Open it on this device to continue.
+            We sent a sign-in link to{" "}
+            <span className="font-semibold">{email.trim()}</span>. Open it on
+            this device to continue.
           </Alert>
         ) : null}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -208,11 +229,20 @@ function LoginContent() {
           {magicLoading ? "Sending link..." : "Email me a sign-in link"}
         </Button>
         <p className="text-center text-sm text-slate-600">
-          New here? <a href="/register" className="font-semibold text-cyan-700 hover:underline">Create an account</a>
+          New here?{" "}
+          <a
+            href="/register"
+            className="font-semibold text-cyan-700 hover:underline"
+          >
+            Create an account
+          </a>
         </p>
         <p className="text-center text-sm text-slate-500">
           Didn't get the confirmation email?{" "}
-          <a href="/resend-confirmation" className="font-medium text-cyan-600 hover:underline">
+          <a
+            href="/resend-confirmation"
+            className="font-medium text-cyan-600 hover:underline"
+          >
             Resend it
           </a>
         </p>
@@ -223,7 +253,13 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="flex justify-center p-8"><LoadingSpinner /></div>}>
+    <Suspense
+      fallback={
+        <div className="flex justify-center p-8">
+          <LoadingSpinner />
+        </div>
+      }
+    >
       <LoginContent />
     </Suspense>
   );

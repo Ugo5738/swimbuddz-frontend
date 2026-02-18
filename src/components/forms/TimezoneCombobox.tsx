@@ -2,7 +2,14 @@
 
 import { timeZones } from "@/lib/timezones";
 import clsx from "clsx";
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent,
+} from "react";
 
 type TimezoneComboboxProps = {
   label: string;
@@ -13,7 +20,14 @@ type TimezoneComboboxProps = {
   placeholder?: string;
 };
 
-export function TimezoneCombobox({ label, value, onChange, required, name, placeholder }: TimezoneComboboxProps) {
+export function TimezoneCombobox({
+  label,
+  value,
+  onChange,
+  required,
+  name,
+  placeholder,
+}: TimezoneComboboxProps) {
   const [query, setQuery] = useState(value);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -29,7 +43,9 @@ export function TimezoneCombobox({ label, value, onChange, required, name, place
       return timeZones.slice(0, 10);
     }
 
-    return timeZones.filter((zone) => zone.toLowerCase().includes(term)).slice(0, 10);
+    return timeZones
+      .filter((zone) => zone.toLowerCase().includes(term))
+      .slice(0, 10);
   }, [query]);
 
   function handleInputChange(event: ChangeEvent<HTMLInputElement>) {
@@ -55,7 +71,9 @@ export function TimezoneCombobox({ label, value, onChange, required, name, place
       setActiveIndex(-1);
       return;
     }
-    const currentIndex = filteredOptions.findIndex((option) => option === value);
+    const currentIndex = filteredOptions.findIndex(
+      (option) => option === value,
+    );
     setActiveIndex(currentIndex >= 0 ? currentIndex : 0);
   }, [open, filteredOptions, value]);
 
@@ -75,7 +93,8 @@ export function TimezoneCombobox({ label, value, onChange, required, name, place
         return;
       }
       setActiveIndex((prev) => {
-        const next = prev < 0 ? 0 : Math.min(prev + 1, filteredOptions.length - 1);
+        const next =
+          prev < 0 ? 0 : Math.min(prev + 1, filteredOptions.length - 1);
         return next;
       });
       return;
@@ -131,11 +150,13 @@ export function TimezoneCombobox({ label, value, onChange, required, name, place
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 100)}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder ?? "Search by city or region (e.g., Africa/Lagos)"}
+          placeholder={
+            placeholder ?? "Search by city or region (e.g., Africa/Lagos)"
+          }
           required={required}
           className={clsx(
             "w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50",
-            "placeholder:text-slate-400"
+            "placeholder:text-slate-400",
           )}
           autoComplete="off"
         />
@@ -151,7 +172,7 @@ export function TimezoneCombobox({ label, value, onChange, required, name, place
                     "flex w-full items-center justify-between px-3 py-2 text-left text-sm text-slate-700",
                     option === value || index === activeIndex
                       ? "bg-cyan-50 text-cyan-900"
-                      : "hover:bg-slate-50"
+                      : "hover:bg-slate-50",
                   )}
                   ref={(el) => {
                     itemRefs.current[index] = el;
@@ -161,7 +182,11 @@ export function TimezoneCombobox({ label, value, onChange, required, name, place
                   onClick={() => handleSelect(option)}
                 >
                   <span>{option}</span>
-                  {option === value ? <span className="text-xs uppercase text-cyan-600">Selected</span> : null}
+                  {option === value ? (
+                    <span className="text-xs uppercase text-cyan-600">
+                      Selected
+                    </span>
+                  ) : null}
                 </button>
               </li>
             ))}

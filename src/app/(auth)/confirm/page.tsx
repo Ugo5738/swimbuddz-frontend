@@ -3,7 +3,10 @@
 import { Alert } from "@/components/ui/Alert";
 import { Card } from "@/components/ui/Card";
 import { supabase } from "@/lib/auth";
-import { completePendingRegistrationOnBackend, getPostAuthRedirectPath } from "@/lib/registration";
+import {
+  completePendingRegistrationOnBackend,
+  getPostAuthRedirectPath,
+} from "@/lib/registration";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -11,7 +14,9 @@ import { useEffect, useRef, useState } from "react";
 function getParam(name: string) {
   if (typeof window === "undefined") return null;
   const searchParams = new URLSearchParams(window.location.search);
-  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const hashParams = new URLSearchParams(
+    window.location.hash.replace(/^#/, ""),
+  );
   return hashParams.get(name) ?? searchParams.get(name);
 }
 
@@ -50,15 +55,25 @@ export default function ConfirmPage() {
       if (tokenHash && type) {
         const { error: verifyError } = await supabase.auth.verifyOtp({
           token_hash: tokenHash,
-          type: type as "signup" | "email" | "recovery" | "invite" | "magiclink" | "email_change",
+          type: type as
+            | "signup"
+            | "email"
+            | "recovery"
+            | "invite"
+            | "magiclink"
+            | "email_change",
         });
 
         if (verifyError) {
           // Handle specific error cases
           if (verifyError.message.includes("expired")) {
-            setError("This confirmation link has expired. Please request a new one.");
+            setError(
+              "This confirmation link has expired. Please request a new one.",
+            );
           } else if (verifyError.message.includes("already")) {
-            setError("This email has already been confirmed. You can log in now.");
+            setError(
+              "This email has already been confirmed. You can log in now.",
+            );
           } else {
             setError(verifyError.message);
           }
@@ -83,12 +98,14 @@ export default function ConfirmPage() {
       if (accessToken && refreshToken) {
         const { error: sessionError } = await supabase.auth.setSession({
           access_token: accessToken,
-          refresh_token: refreshToken
+          refresh_token: refreshToken,
         });
 
         if (sessionError) {
           if (sessionError.message.includes("expired")) {
-            setError("This confirmation link has expired. Please request a new one.");
+            setError(
+              "This confirmation link has expired. Please request a new one.",
+            );
           } else {
             setError(sessionError.message);
           }
@@ -109,7 +126,9 @@ export default function ConfirmPage() {
       }
 
       // No valid tokens found - check if user is already logged in
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (session) {
         // User is already authenticated, just redirect
         const nextPath = await getPostAuthRedirectPath();
@@ -118,7 +137,9 @@ export default function ConfirmPage() {
       }
 
       // No tokens and not logged in
-      setError("Confirmation tokens are missing. The link may have been truncated or expired. Please request a new confirmation email.");
+      setError(
+        "Confirmation tokens are missing. The link may have been truncated or expired. Please request a new confirmation email.",
+      );
       setIsProcessing(false);
     }
 
@@ -157,7 +178,8 @@ export default function ConfirmPage() {
             </>
           ) : (
             <p className="text-sm text-slate-600">
-              Please hold while we verify your email and prepare your SwimBuddz profile.
+              Please hold while we verify your email and prepare your SwimBuddz
+              profile.
             </p>
           )}
         </Card>

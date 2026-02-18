@@ -8,7 +8,7 @@ const variants = {
   warning: "bg-amber-50 text-amber-700",
   info: "bg-cyan-50 text-cyan-700",
   danger: "bg-rose-50 text-rose-700",
-  outline: "border border-slate-300 bg-transparent text-slate-700"
+  outline: "border border-slate-300 bg-transparent text-slate-700",
 } as const;
 
 type BadgeProps = {
@@ -17,13 +17,17 @@ type BadgeProps = {
   className?: string;
 };
 
-export function Badge({ children, variant = "default", className }: BadgeProps) {
+export function Badge({
+  children,
+  variant = "default",
+  className,
+}: BadgeProps) {
   return (
     <span
       className={clsx(
         "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold",
         variants[variant],
-        className
+        className,
       )}
     >
       {children}

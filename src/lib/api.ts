@@ -3,7 +3,7 @@ import { API_BASE_URL } from "./config";
 
 if (!process.env.NEXT_PUBLIC_API_BASE_URL) {
   console.warn(
-    "API base URL env var is not set (expected NEXT_PUBLIC_API_BASE_URL). Using defaults."
+    "API base URL env var is not set (expected NEXT_PUBLIC_API_BASE_URL). Using defaults.",
   );
 }
 
@@ -13,7 +13,10 @@ type RequestOptions = {
   body?: unknown;
 };
 
-async function buildHeaders(auth?: boolean, headers?: HeadersInit): Promise<HeadersInit> {
+async function buildHeaders(
+  auth?: boolean,
+  headers?: HeadersInit,
+): Promise<HeadersInit> {
   const result = new Headers(headers);
 
   if (!result.has("Content-Type")) {
@@ -28,13 +31,17 @@ async function buildHeaders(auth?: boolean, headers?: HeadersInit): Promise<Head
   return result;
 }
 
-async function request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
+async function request<T>(
+  method: string,
+  path: string,
+  options: RequestOptions = {},
+): Promise<T> {
   const headers = await buildHeaders(options.auth, options.headers);
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method,
     headers,
     body: options.body ? JSON.stringify(options.body) : undefined,
-    cache: "no-store"
+    cache: "no-store",
   });
   const responseText = await response.text();
   const contentType = response.headers.get("content-type") || "";
@@ -45,8 +52,13 @@ async function request<T>(method: string, path: string, options: RequestOptions 
       if (contentType.includes("application/json")) {
         try {
           const data = JSON.parse(responseText);
-          const detail = typeof data?.detail === "string" ? data.detail : JSON.stringify(data);
-          throw new Error(detail || `Request failed with status ${response.status}`);
+          const detail =
+            typeof data?.detail === "string"
+              ? data.detail
+              : JSON.stringify(data);
+          throw new Error(
+            detail || `Request failed with status ${response.status}`,
+          );
         } catch {
           // Fall back to raw text when JSON parsing fails.
         }
@@ -75,15 +87,27 @@ export function apiGet<T>(path: string, options?: RequestOptions) {
   return request<T>("GET", path, options);
 }
 
-export function apiPost<T>(path: string, body?: unknown, options?: RequestOptions) {
+export function apiPost<T>(
+  path: string,
+  body?: unknown,
+  options?: RequestOptions,
+) {
   return request<T>("POST", path, { ...options, body });
 }
 
-export function apiPut<T>(path: string, body?: unknown, options?: RequestOptions) {
+export function apiPut<T>(
+  path: string,
+  body?: unknown,
+  options?: RequestOptions,
+) {
   return request<T>("PUT", path, { ...options, body });
 }
 
-export function apiPatch<T>(path: string, body?: unknown, options?: RequestOptions) {
+export function apiPatch<T>(
+  path: string,
+  body?: unknown,
+  options?: RequestOptions,
+) {
   return request<T>("PATCH", path, { ...options, body });
 }
 

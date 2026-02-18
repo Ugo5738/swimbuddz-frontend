@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Table, TableHead, TableRow, TableHeaderCell, TableBody, TableCell } from "@/components/ui/Table";
+import {
+  Table,
+  TableHead,
+  TableRow,
+  TableHeaderCell,
+  TableBody,
+  TableCell,
+} from "@/components/ui/Table";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -15,7 +22,7 @@ const mockAttendance = [
     email: "ada@example.com",
     status: "PRESENT",
     role: "SWIMMER",
-    notes: "Looking forward to the session"
+    notes: "Looking forward to the session",
   },
   {
     id: "2",
@@ -23,8 +30,8 @@ const mockAttendance = [
     email: "bola@example.com",
     status: "LATE",
     role: "SWIMMER",
-    notes: "Will arrive 15 mins late"
-  }
+    notes: "Will arrive 15 mins late",
+  },
 ];
 
 export default function AdminSessionAttendancePage() {
@@ -38,8 +45,6 @@ export default function AdminSessionAttendancePage() {
     return () => clearTimeout(id);
   }, []);
 
-
-
   function handleExport() {
     alert("Exporting pool list (mock)");
   }
@@ -47,9 +52,19 @@ export default function AdminSessionAttendancePage() {
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">Admin · Attendance</p>
-        <h1 className="text-4xl font-bold text-slate-900">Session attendance</h1>
-        <p className="text-sm text-slate-600">This page uses mock data until <code className="bg-slate-100 px-1 py-0.5 rounded">/api/v1/admin/sessions/{"{id}"}/attendance</code> is ready.</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
+          Admin · Attendance
+        </p>
+        <h1 className="text-4xl font-bold text-slate-900">
+          Session attendance
+        </h1>
+        <p className="text-sm text-slate-600">
+          This page uses mock data until{" "}
+          <code className="bg-slate-100 px-1 py-0.5 rounded">
+            /api/v1/admin/sessions/{"{id}"}/attendance
+          </code>{" "}
+          is ready.
+        </p>
       </header>
 
       {loading ? (
@@ -85,7 +100,11 @@ export default function AdminSessionAttendancePage() {
                   <TableCell>{attendee.name}</TableCell>
                   <TableCell>{attendee.email}</TableCell>
                   <TableCell>
-                    <Badge variant={attendee.status === "PRESENT" ? "success" : "warning"}>
+                    <Badge
+                      variant={
+                        attendee.status === "PRESENT" ? "success" : "warning"
+                      }
+                    >
                       {attendee.status}
                     </Badge>
                   </TableCell>

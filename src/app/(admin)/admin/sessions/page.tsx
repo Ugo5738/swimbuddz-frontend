@@ -14,21 +14,37 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { supabase } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
-import type { DateSelectArg, EventClickArg, EventInput } from "@fullcalendar/core";
+import type {
+  DateSelectArg,
+  EventClickArg,
+  EventInput,
+} from "@fullcalendar/core";
 import { Calendar, List, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 
-type SessionStatusType = "draft" | "scheduled" | "in_progress" | "completed" | "cancelled";
+type SessionStatusType =
+  | "draft"
+  | "scheduled"
+  | "in_progress"
+  | "completed"
+  | "cancelled";
 
 interface Session {
   id: string;
   title: string;
-  session_type?: "club" | "academy" | "community" | "cohort_class" | "one_on_one" | "group_booking" | "event";
+  session_type?:
+    | "club"
+    | "academy"
+    | "community"
+    | "cohort_class"
+    | "one_on_one"
+    | "group_booking"
+    | "event";
   status?: SessionStatusType;
   published_at?: string;
   location: string;
-  starts_at: string;  // API returns starts_at, not start_time
-  ends_at: string;    // API returns ends_at, not end_time
+  starts_at: string; // API returns starts_at, not start_time
+  ends_at: string; // API returns ends_at, not end_time
   pool_fee: number;
   capacity: number;
   description?: string;
@@ -56,7 +72,9 @@ const STATUS_LABELS: Record<SessionStatusType, string> = {
 function SessionStatusBadge({ status }: { status?: SessionStatusType }) {
   const s = status || "scheduled";
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_BADGE_STYLES[s]}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_BADGE_STYLES[s]}`}
+    >
       {STATUS_LABELS[s]}
     </span>
   );
@@ -78,8 +96,8 @@ interface Template {
   title: string;
   description?: string;
   location: string;
-  type?: "club" | "academy" | "community";  // Frontend uses 'type'
-  session_type?: "club" | "academy" | "community";  // API returns 'session_type'
+  type?: "club" | "academy" | "community"; // Frontend uses 'type'
+  session_type?: "club" | "academy" | "community"; // API returns 'session_type'
   pool_fee: number;
   capacity: number;
   day_of_week: number;
@@ -106,7 +124,9 @@ export default function AdminSessionsPage() {
   const [showCreateTemplate, setShowCreateTemplate] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showEditSession, setShowEditSession] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
+    null,
+  );
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [sessionToEdit, setSessionToEdit] = useState<Session | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -118,7 +138,9 @@ export default function AdminSessionsPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const token = session?.access_token;
 
       if (!token) {
@@ -126,17 +148,22 @@ export default function AdminSessionsPage() {
         return;
       }
 
-      const headers = { "Authorization": `Bearer ${token}` };
+      const headers = { Authorization: `Bearer ${token}` };
 
       // Fetch sessions
-      const sessionsRes = await fetch(`${API_BASE_URL}/api/v1/sessions/`, { headers });
+      const sessionsRes = await fetch(`${API_BASE_URL}/api/v1/sessions/`, {
+        headers,
+      });
       if (sessionsRes.ok) {
         const sessionsData = await sessionsRes.json();
         setSessions(sessionsData);
       }
 
       // Fetch templates
-      const templatesRes = await fetch(`${API_BASE_URL}/api/v1/sessions/templates`, { headers });
+      const templatesRes = await fetch(
+        `${API_BASE_URL}/api/v1/sessions/templates`,
+        { headers },
+      );
       if (templatesRes.ok) {
         const templatesData = await templatesRes.json();
         setTemplates(templatesData);
@@ -151,11 +178,13 @@ export default function AdminSessionsPage() {
 
   const handleCreateSession = async (data: any) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const token = session?.access_token;
       const headers: HeadersInit = {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       };
 
       // Extract session and ride configs
@@ -165,7 +194,7 @@ export default function AdminSessionsPage() {
       const sessionRes = await fetch(`${API_BASE_URL}/api/v1/sessions/`, {
         method: "POST",
         headers,
-        body: JSON.stringify(sessionData)
+        body: JSON.stringify(sessionData),
       });
 
       if (!sessionRes.ok) {
@@ -181,11 +210,14 @@ export default function AdminSessionsPage() {
         const validConfigs = ride_configs.filter((c: any) => c.ride_area_id);
 
         if (validConfigs.length > 0) {
-          const transportRes = await fetch(`${API_BASE_URL}/api/v1/transport/sessions/${newSession.id}/ride-configs`, {
-            method: "POST",
-            headers,
-            body: JSON.stringify(validConfigs)
-          });
+          const transportRes = await fetch(
+            `${API_BASE_URL}/api/v1/transport/sessions/${newSession.id}/ride-configs`,
+            {
+              method: "POST",
+              headers,
+              body: JSON.stringify(validConfigs),
+            },
+          );
           if (!transportRes.ok) {
             const errorText = await transportRes.text();
             console.error("Ride config attachment error:", errorText);
@@ -203,22 +235,27 @@ export default function AdminSessionsPage() {
 
   const handleUpdateSession = async (sessionId: string, data: any) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const token = session?.access_token;
       const headers: HeadersInit = {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       };
 
       // Extract session and ride configs
       const { session: sessionData, ride_configs } = data;
 
       // 1. Update Session
-      const sessionRes = await fetch(`${API_BASE_URL}/api/v1/sessions/${sessionId}`, {
-        method: "PATCH",
-        headers,
-        body: JSON.stringify(sessionData)
-      });
+      const sessionRes = await fetch(
+        `${API_BASE_URL}/api/v1/sessions/${sessionId}`,
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify(sessionData),
+        },
+      );
 
       if (!sessionRes.ok) {
         const errorText = await sessionRes.text();
@@ -232,11 +269,14 @@ export default function AdminSessionsPage() {
         const validConfigs = ride_configs.filter((c: any) => c.ride_area_id);
 
         if (validConfigs.length > 0) {
-          const transportRes = await fetch(`${API_BASE_URL}/api/v1/transport/sessions/${sessionId}/ride-configs`, {
-            method: "POST",
-            headers,
-            body: JSON.stringify(validConfigs)
-          });
+          const transportRes = await fetch(
+            `${API_BASE_URL}/api/v1/transport/sessions/${sessionId}/ride-configs`,
+            {
+              method: "POST",
+              headers,
+              body: JSON.stringify(validConfigs),
+            },
+          );
           if (!transportRes.ok) {
             const errorText = await transportRes.text();
             console.error("Ride config update error:", errorText);
@@ -256,16 +296,18 @@ export default function AdminSessionsPage() {
 
   const handleCreateTemplate = async (data: any) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const token = session?.access_token;
 
       const res = await fetch(`${API_BASE_URL}/api/v1/sessions/templates`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       });
 
       if (!res.ok) throw new Error("Failed to create template");
@@ -279,17 +321,22 @@ export default function AdminSessionsPage() {
 
   const handleUpdateTemplate = async (templateId: string, data: any) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const token = session?.access_token;
 
-      const res = await fetch(`${API_BASE_URL}/api/v1/sessions/templates/${templateId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+      const res = await fetch(
+        `${API_BASE_URL}/api/v1/sessions/templates/${templateId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(data),
         },
-        body: JSON.stringify(data)
-      });
+      );
 
       if (!res.ok) throw new Error("Failed to update template");
 
@@ -301,18 +348,27 @@ export default function AdminSessionsPage() {
     }
   };
 
-  const handleGenerateSessions = async (templateId: string, weeks: number, skipConflicts: boolean) => {
-    const { data: { session } } = await supabase.auth.getSession();
+  const handleGenerateSessions = async (
+    templateId: string,
+    weeks: number,
+    skipConflicts: boolean,
+  ) => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     const token = session?.access_token;
 
-    const res = await fetch(`${API_BASE_URL}/api/v1/sessions/templates/${templateId}/generate`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
+    const res = await fetch(
+      `${API_BASE_URL}/api/v1/sessions/templates/${templateId}/generate`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ weeks, skip_conflicts: skipConflicts }),
       },
-      body: JSON.stringify({ weeks, skip_conflicts: skipConflicts })
-    });
+    );
 
     if (!res.ok) throw new Error("Failed to generate sessions");
 
@@ -325,12 +381,14 @@ export default function AdminSessionsPage() {
     if (!confirm("Delete this template?")) return;
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const token = session?.access_token;
 
       await fetch(`${API_BASE_URL}/api/v1/sessions/templates/${templateId}`, {
         method: "DELETE",
-        headers: { "Authorization": `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       await fetchData();
@@ -343,12 +401,14 @@ export default function AdminSessionsPage() {
     if (!confirm("Delete this session?")) return;
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const token = session?.access_token;
 
       await fetch(`${API_BASE_URL}/api/v1/sessions/${sessionId}`, {
         method: "DELETE",
-        headers: { "Authorization": `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       await fetchData();
@@ -358,19 +418,27 @@ export default function AdminSessionsPage() {
     }
   };
 
-  const handlePublishSession = async (sessionId: string, shortNoticeMessage?: string) => {
+  const handlePublishSession = async (
+    sessionId: string,
+    shortNoticeMessage?: string,
+  ) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const token = session?.access_token;
 
       const query = shortNoticeMessage
         ? `?short_notice_message=${encodeURIComponent(shortNoticeMessage)}`
         : "";
 
-      const res = await fetch(`${API_BASE_URL}/api/v1/sessions/${sessionId}/publish${query}`, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+      const res = await fetch(
+        `${API_BASE_URL}/api/v1/sessions/${sessionId}/publish${query}`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
 
       if (!res.ok) {
         const errorText = await res.text();
@@ -381,23 +449,33 @@ export default function AdminSessionsPage() {
       setSelectedSession(null);
     } catch (err) {
       console.error("Failed to publish session", err);
-      setError(err instanceof Error ? err.message : "Failed to publish session");
+      setError(
+        err instanceof Error ? err.message : "Failed to publish session",
+      );
     }
   };
 
-  const handleCancelSession = async (sessionId: string, cancellationReason?: string) => {
+  const handleCancelSession = async (
+    sessionId: string,
+    cancellationReason?: string,
+  ) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const token = session?.access_token;
 
       const query = cancellationReason
         ? `?cancellation_reason=${encodeURIComponent(cancellationReason)}`
         : "";
 
-      const res = await fetch(`${API_BASE_URL}/api/v1/sessions/${sessionId}/cancel${query}`, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+      const res = await fetch(
+        `${API_BASE_URL}/api/v1/sessions/${sessionId}/cancel${query}`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
 
       if (!res.ok) {
         const errorText = await res.text();
@@ -413,7 +491,7 @@ export default function AdminSessionsPage() {
   };
 
   // Convert sessions to calendar events
-  const calendarEvents: EventInput[] = sessions.map(session => ({
+  const calendarEvents: EventInput[] = sessions.map((session) => ({
     id: session.id,
     title: session.title,
     start: session.starts_at,
@@ -423,8 +501,8 @@ export default function AdminSessionsPage() {
       location: session.location,
       pool_fee: session.pool_fee,
       capacity: session.capacity,
-      is_recurring_instance: session.is_recurring_instance
-    }
+      is_recurring_instance: session.is_recurring_instance,
+    },
   }));
 
   const handleDateSelect = (selectInfo: DateSelectArg) => {
@@ -433,7 +511,7 @@ export default function AdminSessionsPage() {
   };
 
   const handleEventClick = (clickInfo: EventClickArg) => {
-    const session = sessions.find(s => s.id === clickInfo.event.id);
+    const session = sessions.find((s) => s.id === clickInfo.event.id);
     if (session) {
       setSelectedSession(session);
     }
@@ -450,31 +528,43 @@ export default function AdminSessionsPage() {
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <p className="text-sm font-semibold uppercase tracking-wider text-cyan-600">Admin · Sessions</p>
-        <h1 className="text-4xl font-bold text-slate-900">Sessions Management</h1>
-        <p className="text-slate-600">Manage swim sessions and recurring templates</p>
+        <p className="text-sm font-semibold uppercase tracking-wider text-cyan-600">
+          Admin · Sessions
+        </p>
+        <h1 className="text-4xl font-bold text-slate-900">
+          Sessions Management
+        </h1>
+        <p className="text-slate-600">
+          Manage swim sessions and recurring templates
+        </p>
       </header>
 
-      {error && <Alert variant="error" title="Error">{error}</Alert>}
+      {error && (
+        <Alert variant="error" title="Error">
+          {error}
+        </Alert>
+      )}
 
       {/* View Toggle */}
       <div className="flex items-center gap-2">
         <button
           onClick={() => setView("calendar")}
-          className={`flex items-center gap-2 rounded-lg px-3 sm:px-4 py-2.5 text-sm font-medium transition min-h-[44px] ${view === "calendar"
-            ? "bg-cyan-600 text-white"
-            : "bg-white text-slate-600 hover:bg-slate-50"
-            }`}
+          className={`flex items-center gap-2 rounded-lg px-3 sm:px-4 py-2.5 text-sm font-medium transition min-h-[44px] ${
+            view === "calendar"
+              ? "bg-cyan-600 text-white"
+              : "bg-white text-slate-600 hover:bg-slate-50"
+          }`}
         >
           <Calendar className="h-5 w-5 sm:h-4 sm:w-4" />
           <span className="hidden sm:inline">Calendar View</span>
         </button>
         <button
           onClick={() => setView("list")}
-          className={`flex items-center gap-2 rounded-lg px-3 sm:px-4 py-2.5 text-sm font-medium transition min-h-[44px] ${view === "list"
-            ? "bg-cyan-600 text-white"
-            : "bg-white text-slate-600 hover:bg-slate-50"
-            }`}
+          className={`flex items-center gap-2 rounded-lg px-3 sm:px-4 py-2.5 text-sm font-medium transition min-h-[44px] ${
+            view === "list"
+              ? "bg-cyan-600 text-white"
+              : "bg-white text-slate-600 hover:bg-slate-50"
+          }`}
         >
           <List className="h-5 w-5 sm:h-4 sm:w-4" />
           <span className="hidden sm:inline">List View</span>
@@ -502,7 +592,7 @@ export default function AdminSessionsPage() {
               setShowCreateTemplate(true);
             }}
             onGenerateSessions={(templateId) => {
-              const template = templates.find(t => t.id === templateId);
+              const template = templates.find((t) => t.id === templateId);
               if (template) {
                 setSelectedTemplate(template);
                 setShowGenerateModal(true);
@@ -520,26 +610,45 @@ export default function AdminSessionsPage() {
           {/* Mobile Card View */}
           <div className="sm:hidden space-y-3">
             {sessions.map((session) => (
-              <div key={session.id} className="rounded-lg border border-slate-200 bg-white p-4">
+              <div
+                key={session.id}
+                className="rounded-lg border border-slate-200 bg-white p-4"
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-medium text-slate-900 truncate">
-                        {session.is_recurring_instance && <span className="mr-1">🔁</span>}
+                        {session.is_recurring_instance && (
+                          <span className="mr-1">🔁</span>
+                        )}
                         {session.title}
                       </h3>
                       <SessionStatusBadge status={session.status} />
                     </div>
                     <div className="mt-1 space-y-1 text-sm text-slate-600">
-                      <p>{new Date(session.starts_at).toLocaleDateString()} at {new Date(session.starts_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
+                      <p>
+                        {new Date(session.starts_at).toLocaleDateString()} at{" "}
+                        {new Date(session.starts_at).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
                       <p className="truncate">{session.location}</p>
                     </div>
                   </div>
                   <div className="flex flex-col gap-2">
-                    <Button size="sm" variant="outline" onClick={() => setSelectedSession(session)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSelectedSession(session)}
+                    >
                       View
                     </Button>
-                    <Button size="sm" variant="danger" onClick={() => handleDeleteSession(session.id)}>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={() => handleDeleteSession(session.id)}
+                    >
                       Delete
                     </Button>
                   </div>
@@ -554,19 +663,33 @@ export default function AdminSessionsPage() {
               <table className="w-full">
                 <thead className="border-b border-slate-200 bg-slate-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Title</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Status</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Date</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Time</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 hidden md:table-cell">Location</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Actions</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">
+                      Title
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">
+                      Date
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">
+                      Time
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 hidden md:table-cell">
+                      Location
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {sessions.map((session) => (
                     <tr key={session.id} className="hover:bg-slate-50">
                       <td className="px-4 py-3 text-sm">
-                        {session.is_recurring_instance && <span className="mr-1">🔁</span>}
+                        {session.is_recurring_instance && (
+                          <span className="mr-1">🔁</span>
+                        )}
                         {session.title}
                       </td>
                       <td className="px-4 py-3 text-sm">
@@ -576,15 +699,28 @@ export default function AdminSessionsPage() {
                         {new Date(session.starts_at).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600">
-                        {new Date(session.starts_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        {new Date(session.starts_at).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </td>
-                      <td className="px-4 py-3 text-sm text-slate-600 hidden md:table-cell">{session.location}</td>
+                      <td className="px-4 py-3 text-sm text-slate-600 hidden md:table-cell">
+                        {session.location}
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => setSelectedSession(session)}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedSession(session)}
+                          >
                             View
                           </Button>
-                          <Button size="sm" variant="danger" onClick={() => handleDeleteSession(session.id)}>
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            onClick={() => handleDeleteSession(session.id)}
+                          >
                             Delete
                           </Button>
                         </div>
@@ -663,7 +799,7 @@ export default function AdminSessionsPage() {
 function SimpleSessionForm({
   onClose,
   onCreate,
-  initialDate
+  initialDate,
 }: {
   onClose: () => void;
   onCreate: (data: any) => void;
@@ -671,14 +807,16 @@ function SimpleSessionForm({
 }) {
   const now = new Date();
   const defaultStartDate = initialDate || now;
-  const defaultEndDate = new Date(defaultStartDate.getTime() + 3 * 60 * 60 * 1000); // 3 hours later
+  const defaultEndDate = new Date(
+    defaultStartDate.getTime() + 3 * 60 * 60 * 1000,
+  ); // 3 hours later
 
   const formatDateTimeLocal = (date: Date) => {
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
@@ -694,12 +832,14 @@ function SimpleSessionForm({
   });
 
   const [availableAreas, setAvailableAreas] = useState<any[]>([]);
-  const [selectedAreas, setSelectedAreas] = useState<Array<{
-    ride_area_id: string;
-    cost: number;
-    capacity: number;
-    departure_time: string;
-  }>>([]);
+  const [selectedAreas, setSelectedAreas] = useState<
+    Array<{
+      ride_area_id: string;
+      cost: number;
+      capacity: number;
+      departure_time: string;
+    }>
+  >([]);
 
   useEffect(() => {
     fetchAvailableAreas();
@@ -707,11 +847,13 @@ function SimpleSessionForm({
 
   const fetchAvailableAreas = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const token = session?.access_token;
 
       const res = await fetch(`${API_BASE_URL}/api/v1/transport/areas`, {
-        headers: { "Authorization": `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const areas = await res.json();
@@ -723,12 +865,19 @@ function SimpleSessionForm({
   };
 
   const addAreaConfig = () => {
-    setSelectedAreas([...selectedAreas, {
-      ride_area_id: "",
-      cost: 1000,
-      capacity: 4,
-      departure_time: formatDateTimeLocal(new Date(new Date(formData.start_time).getTime() - 2 * 60 * 60 * 1000))
-    }]);
+    setSelectedAreas([
+      ...selectedAreas,
+      {
+        ride_area_id: "",
+        cost: 1000,
+        capacity: 4,
+        departure_time: formatDateTimeLocal(
+          new Date(
+            new Date(formData.start_time).getTime() - 2 * 60 * 60 * 1000,
+          ),
+        ),
+      },
+    ]);
   };
 
   const removeAreaConfig = (index: number) => {
@@ -759,18 +908,20 @@ function SimpleSessionForm({
 
     // Process ride configs
     const rideConfigs = selectedAreas
-      .filter(config => config.ride_area_id) // Only include configs with selected area
-      .map(config => ({
+      .filter((config) => config.ride_area_id) // Only include configs with selected area
+      .map((config) => ({
         ride_area_id: config.ride_area_id,
         cost: parseFloat(config.cost as any) || 0,
         capacity: parseInt(config.capacity as any) || 4,
-        departure_time: config.departure_time ? new Date(config.departure_time).toISOString() : null
+        departure_time: config.departure_time
+          ? new Date(config.departure_time).toISOString()
+          : null,
       }));
 
     // Pass both separately to onCreate
     onCreate({
       session: sessionData,
-      ride_configs: rideConfigs
+      ride_configs: rideConfigs,
     });
   };
 
@@ -787,7 +938,9 @@ function SimpleSessionForm({
           <Select
             label="Session type"
             value={formData.type}
-            onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+            onChange={(e) =>
+              setFormData({ ...formData, type: e.target.value as any })
+            }
           >
             <option value="club">Club</option>
             <option value="academy">Academy</option>
@@ -796,7 +949,9 @@ function SimpleSessionForm({
           <Select
             label="Location"
             value={formData.location}
-            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, location: e.target.value })
+            }
           >
             <option value="sunfit_pool">Sunfit Pool</option>
             <option value="rowe_park_pool">Rowe Park Pool</option>
@@ -809,14 +964,18 @@ function SimpleSessionForm({
             label="Start Time"
             type="datetime-local"
             value={formData.start_time}
-            onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, start_time: e.target.value })
+            }
             required
           />
           <Input
             label="End Time"
             type="datetime-local"
             value={formData.end_time}
-            onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, end_time: e.target.value })
+            }
             required
           />
         </div>
@@ -825,26 +984,34 @@ function SimpleSessionForm({
             label="Pool Fee (cents)"
             type="number"
             value={formData.pool_fee}
-            onChange={(e) => setFormData({ ...formData, pool_fee: parseInt(e.target.value) })}
+            onChange={(e) =>
+              setFormData({ ...formData, pool_fee: parseInt(e.target.value) })
+            }
             required
           />
           <Input
             label="Capacity"
             type="number"
             value={formData.capacity}
-            onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) })}
+            onChange={(e) =>
+              setFormData({ ...formData, capacity: parseInt(e.target.value) })
+            }
             required
           />
         </div>
         <Textarea
           label="Description (optional)"
           value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, description: e.target.value })
+          }
         />
 
         <div className="border-t pt-4">
           <div className="flex justify-between items-center mb-2">
-            <label className="block text-sm font-medium">Ride Share Options</label>
+            <label className="block text-sm font-medium">
+              Ride Share Options
+            </label>
             <button
               type="button"
               onClick={addAreaConfig}
@@ -870,7 +1037,9 @@ function SimpleSessionForm({
                 <Select
                   label="Select Area"
                   value={config.ride_area_id}
-                  onChange={(e) => updateAreaConfig(index, "ride_area_id", e.target.value)}
+                  onChange={(e) =>
+                    updateAreaConfig(index, "ride_area_id", e.target.value)
+                  }
                   required
                 >
                   <option value="">-- Select Ride Area --</option>
@@ -884,28 +1053,40 @@ function SimpleSessionForm({
                   label="Cost (₦)"
                   type="number"
                   value={config.cost}
-                  onChange={(e) => updateAreaConfig(index, "cost", parseFloat(e.target.value))}
+                  onChange={(e) =>
+                    updateAreaConfig(index, "cost", parseFloat(e.target.value))
+                  }
                   required
                 />
                 <Input
                   label="Capacity (seats)"
                   type="number"
                   value={config.capacity}
-                  onChange={(e) => updateAreaConfig(index, "capacity", parseInt(e.target.value))}
+                  onChange={(e) =>
+                    updateAreaConfig(
+                      index,
+                      "capacity",
+                      parseInt(e.target.value),
+                    )
+                  }
                   required
                 />
                 <Input
                   label="Departure Time"
                   type="datetime-local"
                   value={config.departure_time}
-                  onChange={(e) => updateAreaConfig(index, "departure_time", e.target.value)}
+                  onChange={(e) =>
+                    updateAreaConfig(index, "departure_time", e.target.value)
+                  }
                 />
               </div>
             </div>
           ))}
         </div>
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
           <Button type="submit">Create Session</Button>
         </div>
       </form>
@@ -918,7 +1099,7 @@ function SimpleTemplateForm({
   onClose,
   onCreate,
   onUpdate,
-  initialData
+  initialData,
 }: {
   onClose: () => void;
   onCreate: (data: any) => void;
@@ -927,22 +1108,24 @@ function SimpleTemplateForm({
 }) {
   const [formData, setFormData] = useState({
     title: initialData?.title || "",
-    type: initialData?.type || initialData?.session_type || "club",  // Handle both field names
+    type: initialData?.type || initialData?.session_type || "club", // Handle both field names
     location: initialData?.location || "sunfit_pool",
     day_of_week: initialData?.day_of_week ?? 5, // Saturday
     start_time: initialData?.start_time || "09:00",
     duration_minutes: initialData?.duration_minutes || 180,
     pool_fee: initialData?.pool_fee || 2000,
     capacity: initialData?.capacity || 20,
-    auto_generate: initialData?.auto_generate || false
+    auto_generate: initialData?.auto_generate || false,
   });
 
   const [availableAreas, setAvailableAreas] = useState<any[]>([]);
-  const [selectedAreas, setSelectedAreas] = useState<Array<{
-    ride_area_id: string;
-    cost: number;
-    capacity: number;
-  }>>([]);
+  const [selectedAreas, setSelectedAreas] = useState<
+    Array<{
+      ride_area_id: string;
+      cost: number;
+      capacity: number;
+    }>
+  >([]);
 
   useEffect(() => {
     fetchAvailableAreas();
@@ -950,22 +1133,29 @@ function SimpleTemplateForm({
 
   // Load ride share config from existing template when editing
   useEffect(() => {
-    if (initialData?.ride_share_config && Array.isArray(initialData.ride_share_config)) {
-      setSelectedAreas(initialData.ride_share_config.map((cfg: any) => ({
-        ride_area_id: cfg.ride_area_id || "",
-        cost: cfg.cost || 0,
-        capacity: cfg.capacity || 4,
-      })));
+    if (
+      initialData?.ride_share_config &&
+      Array.isArray(initialData.ride_share_config)
+    ) {
+      setSelectedAreas(
+        initialData.ride_share_config.map((cfg: any) => ({
+          ride_area_id: cfg.ride_area_id || "",
+          cost: cfg.cost || 0,
+          capacity: cfg.capacity || 4,
+        })),
+      );
     }
   }, [initialData]);
 
   const fetchAvailableAreas = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const token = session?.access_token;
 
       const res = await fetch(`${API_BASE_URL}/api/v1/transport/areas`, {
-        headers: { "Authorization": `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const areas = await res.json();
@@ -977,11 +1167,14 @@ function SimpleTemplateForm({
   };
 
   const addAreaConfig = () => {
-    setSelectedAreas([...selectedAreas, {
-      ride_area_id: "",
-      cost: 1000,
-      capacity: 4,
-    }]);
+    setSelectedAreas([
+      ...selectedAreas,
+      {
+        ride_area_id: "",
+        cost: 1000,
+        capacity: 4,
+      },
+    ]);
   };
 
   const removeAreaConfig = (index: number) => {
@@ -1004,14 +1197,14 @@ function SimpleTemplateForm({
 
     const dataToSubmit = {
       ...restFormData,
-      session_type: type,  // API expects session_type, not type
+      session_type: type, // API expects session_type, not type
       ride_share_config: selectedAreas
-        .filter(config => config.ride_area_id)
-        .map(config => ({
+        .filter((config) => config.ride_area_id)
+        .map((config) => ({
           ride_area_id: config.ride_area_id,
           cost: parseFloat(config.cost as any) || 0,
-          capacity: parseInt(config.capacity as any) || 4
-        }))
+          capacity: parseInt(config.capacity as any) || 4,
+        })),
     };
 
     if (initialData && onUpdate) {
@@ -1022,7 +1215,11 @@ function SimpleTemplateForm({
   };
 
   return (
-    <Modal isOpen={true} onClose={onClose} title={initialData ? "Edit Template" : "Create Template"}>
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title={initialData ? "Edit Template" : "Create Template"}
+    >
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           label="Title"
@@ -1033,7 +1230,9 @@ function SimpleTemplateForm({
         <Select
           label="Session type"
           value={formData.type}
-          onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+          onChange={(e) =>
+            setFormData({ ...formData, type: e.target.value as any })
+          }
         >
           <option value="club">Club</option>
           <option value="academy">Academy</option>
@@ -1042,7 +1241,9 @@ function SimpleTemplateForm({
         <Select
           label="Day of Week"
           value={formData.day_of_week.toString()}
-          onChange={(e) => setFormData({ ...formData, day_of_week: parseInt(e.target.value) })}
+          onChange={(e) =>
+            setFormData({ ...formData, day_of_week: parseInt(e.target.value) })
+          }
         >
           <option value="0">Monday</option>
           <option value="1">Tuesday</option>
@@ -1056,13 +1257,17 @@ function SimpleTemplateForm({
           label="Start Time"
           type="time"
           value={formData.start_time}
-          onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, start_time: e.target.value })
+          }
           required
         />
         <Select
           label="Location (Pool)"
           value={formData.location}
-          onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, location: e.target.value })
+          }
         >
           <option value="sunfit_pool">Sunfit Pool</option>
           <option value="rowe_park_pool">Rowe Park Pool</option>
@@ -1074,14 +1279,21 @@ function SimpleTemplateForm({
           label="Duration (minutes)"
           type="number"
           value={formData.duration_minutes}
-          onChange={(e) => setFormData({ ...formData, duration_minutes: parseInt(e.target.value) })}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              duration_minutes: parseInt(e.target.value),
+            })
+          }
           required
         />
 
         {/* Ride Share Config */}
         <div className="border-t pt-4">
           <div className="flex justify-between items-center mb-2">
-            <label className="block text-sm font-medium">Ride Share Options (Optional)</label>
+            <label className="block text-sm font-medium">
+              Ride Share Options (Optional)
+            </label>
             <button
               type="button"
               onClick={addAreaConfig}
@@ -1094,7 +1306,9 @@ function SimpleTemplateForm({
           {selectedAreas.map((config, index) => (
             <div key={index} className="mb-3 p-3 border rounded bg-gray-50">
               <div className="flex justify-between items-center mb-2">
-                <span className="font-medium text-sm">Ride Area {index + 1}</span>
+                <span className="font-medium text-sm">
+                  Ride Area {index + 1}
+                </span>
                 <button
                   type="button"
                   onClick={() => removeAreaConfig(index)}
@@ -1107,7 +1321,9 @@ function SimpleTemplateForm({
                 <Select
                   label="Select Area"
                   value={config.ride_area_id}
-                  onChange={(e) => updateAreaConfig(index, "ride_area_id", e.target.value)}
+                  onChange={(e) =>
+                    updateAreaConfig(index, "ride_area_id", e.target.value)
+                  }
                 >
                   <option value="">-- Select Ride Area --</option>
                   {availableAreas.map((area) => (
@@ -1120,13 +1336,21 @@ function SimpleTemplateForm({
                   label="Cost (₦)"
                   type="number"
                   value={config.cost}
-                  onChange={(e) => updateAreaConfig(index, "cost", parseFloat(e.target.value))}
+                  onChange={(e) =>
+                    updateAreaConfig(index, "cost", parseFloat(e.target.value))
+                  }
                 />
                 <Input
                   label="Capacity (seats)"
                   type="number"
                   value={config.capacity}
-                  onChange={(e) => updateAreaConfig(index, "capacity", parseInt(e.target.value))}
+                  onChange={(e) =>
+                    updateAreaConfig(
+                      index,
+                      "capacity",
+                      parseInt(e.target.value),
+                    )
+                  }
                 />
               </div>
             </div>
@@ -1134,8 +1358,12 @@ function SimpleTemplateForm({
         </div>
 
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button type="submit">{initialData ? "Update Template" : "Create Template"}</Button>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit">
+            {initialData ? "Update Template" : "Create Template"}
+          </Button>
         </div>
       </form>
     </Modal>

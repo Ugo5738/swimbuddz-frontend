@@ -8,9 +8,9 @@ import { initAuthListener } from "@/lib/auth";
  * Wrap your app with this to handle session errors gracefully.
  */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    useEffect(() => {
-        initAuthListener();
-    }, []);
+  useEffect(() => {
+    initAuthListener();
+  }, []);
 
-    return <>{children}</>;
+  return <>{children}</>;
 }

@@ -8,9 +8,22 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { Input } from "@/components/ui/Input";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Select } from "@/components/ui/Select";
-import { Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/components/ui/Table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+} from "@/components/ui/Table";
 import { Textarea } from "@/components/ui/Textarea";
-import { Announcement, AnnouncementCategory, AnnouncementCreate, CommunicationsApi, formatAnnouncementCategory } from "@/lib/communications";
+import {
+  Announcement,
+  AnnouncementCategory,
+  AnnouncementCreate,
+  CommunicationsApi,
+  formatAnnouncementCategory,
+} from "@/lib/communications";
 import { useEffect, useState } from "react";
 
 const initialFormState: AnnouncementCreate = {
@@ -29,7 +42,8 @@ const initialFormState: AnnouncementCreate = {
 export default function AdminAnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
-  const [formState, setFormState] = useState<AnnouncementCreate>(initialFormState);
+  const [formState, setFormState] =
+    useState<AnnouncementCreate>(initialFormState);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -82,20 +96,25 @@ export default function AdminAnnouncementsPage() {
   }
 
   function resetForm() {
-    setFormState({ ...initialFormState, published_at: new Date().toISOString() });
+    setFormState({
+      ...initialFormState,
+      published_at: new Date().toISOString(),
+    });
     setEditingId(null);
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm("Are you sure you want to delete this announcement?")) return;
+    if (!window.confirm("Are you sure you want to delete this announcement?"))
+      return;
 
     try {
       await CommunicationsApi.deleteAnnouncement(id);
-      setAnnouncements(prev => prev.filter(a => a.id !== id));
+      setAnnouncements((prev) => prev.filter((a) => a.id !== id));
       setMessage("Announcement deleted");
     } catch (err) {
       console.error("Failed to delete announcement", err);
-      const errMsg = err instanceof Error ? err.message : "Unable to delete announcement.";
+      const errMsg =
+        err instanceof Error ? err.message : "Unable to delete announcement.";
       setError(errMsg);
     }
   }
@@ -108,9 +127,12 @@ export default function AdminAnnouncementsPage() {
 
     try {
       if (editingId) {
-        const updated = await CommunicationsApi.updateAnnouncement(editingId, formState);
+        const updated = await CommunicationsApi.updateAnnouncement(
+          editingId,
+          formState,
+        );
         setAnnouncements((prev) =>
-          prev.map((item) => (item.id === editingId ? updated : item))
+          prev.map((item) => (item.id === editingId ? updated : item)),
         );
         setMessage("Announcement updated");
       } else {
@@ -120,7 +142,8 @@ export default function AdminAnnouncementsPage() {
       }
       resetForm();
     } catch (error) {
-      const msg = error instanceof Error ? error.message : "Unable to save announcement.";
+      const msg =
+        error instanceof Error ? error.message : "Unable to save announcement.";
       setError(msg);
     } finally {
       setSaving(false);
@@ -144,8 +167,12 @@ export default function AdminAnnouncementsPage() {
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">Admin · Announcements</p>
-        <h1 className="text-4xl font-bold text-slate-900">Manage announcements</h1>
+        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
+          Admin · Announcements
+        </p>
+        <h1 className="text-4xl font-bold text-slate-900">
+          Manage announcements
+        </h1>
       </header>
 
       {loading ? (
@@ -155,7 +182,9 @@ export default function AdminAnnouncementsPage() {
       ) : (
         <>
           <Card className="space-y-4">
-            <h2 className="text-lg font-semibold text-slate-900">{editingId ? "Edit announcement" : "Create announcement"}</h2>
+            <h2 className="text-lg font-semibold text-slate-900">
+              {editingId ? "Edit announcement" : "Create announcement"}
+            </h2>
             {message ? <Alert variant="info" title={message} /> : null}
             {error ? (
               <Alert variant="error" title="Save failed">
@@ -163,24 +192,53 @@ export default function AdminAnnouncementsPage() {
               </Alert>
             ) : null}
             <form className="space-y-4" onSubmit={handleSubmit}>
-              <Input label="Title" value={formState.title} onChange={(event) => setFormState((prev) => ({ ...prev, title: event.target.value }))} required />
+              <Input
+                label="Title"
+                value={formState.title}
+                onChange={(event) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    title: event.target.value,
+                  }))
+                }
+                required
+              />
               <div className="grid gap-4 md:grid-cols-2">
                 <Select
                   label="Category"
                   value={formState.category}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, category: event.target.value as AnnouncementCategory }))}
+                  onChange={(event) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      category: event.target.value as AnnouncementCategory,
+                    }))
+                  }
                 >
                   <option value={AnnouncementCategory.GENERAL}>General</option>
-                  <option value={AnnouncementCategory.RAIN_UPDATE}>Rain Update</option>
-                  <option value={AnnouncementCategory.SCHEDULE_CHANGE}>Schedule Change</option>
-                  <option value={AnnouncementCategory.ACADEMY_UPDATE}>Academy Update</option>
+                  <option value={AnnouncementCategory.RAIN_UPDATE}>
+                    Rain Update
+                  </option>
+                  <option value={AnnouncementCategory.SCHEDULE_CHANGE}>
+                    Schedule Change
+                  </option>
+                  <option value={AnnouncementCategory.ACADEMY_UPDATE}>
+                    Academy Update
+                  </option>
                   <option value={AnnouncementCategory.EVENT}>Event</option>
-                  <option value={AnnouncementCategory.COMPETITION}>Competition</option>
+                  <option value={AnnouncementCategory.COMPETITION}>
+                    Competition
+                  </option>
                 </Select>
                 <Select
                   label="Status"
                   value={formState.status}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, status: event.target.value as AnnouncementCreate["status"] }))}
+                  onChange={(event) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      status: event.target
+                        .value as AnnouncementCreate["status"],
+                    }))
+                  }
                 >
                   <option value="draft">Draft</option>
                   <option value="published">Published</option>
@@ -189,7 +247,13 @@ export default function AdminAnnouncementsPage() {
                 <Select
                   label="Audience"
                   value={formState.audience}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, audience: event.target.value as AnnouncementCreate["audience"] }))}
+                  onChange={(event) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      audience: event.target
+                        .value as AnnouncementCreate["audience"],
+                    }))
+                  }
                 >
                   <option value="community">Community (All Members)</option>
                   <option value="club">Club</option>
@@ -199,41 +263,75 @@ export default function AdminAnnouncementsPage() {
                   label="Expires At"
                   type="datetime-local"
                   value={formatDateTimeLocal(formState.expires_at)}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, expires_at: parseDateTimeLocal(event.target.value) }))}
+                  onChange={(event) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      expires_at: parseDateTimeLocal(event.target.value),
+                    }))
+                  }
                 />
               </div>
               <div className="flex flex-wrap gap-4">
                 <Checkbox
                   label="Pin announcement"
                   checked={formState.is_pinned || false}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, is_pinned: event.target.checked }))}
+                  onChange={(event) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      is_pinned: event.target.checked,
+                    }))
+                  }
                 />
                 <Checkbox
                   label="Notify by email"
                   checked={formState.notify_email ?? false}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, notify_email: event.target.checked }))}
+                  onChange={(event) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      notify_email: event.target.checked,
+                    }))
+                  }
                 />
                 <Checkbox
                   label="Notify by push"
                   checked={formState.notify_push ?? false}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, notify_push: event.target.checked }))}
+                  onChange={(event) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      notify_push: event.target.checked,
+                    }))
+                  }
                 />
               </div>
               <Textarea
                 label="Content"
                 rows={4}
                 value={formState.body}
-                onChange={(event) => setFormState((prev) => ({ ...prev, body: event.target.value }))}
+                onChange={(event) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    body: event.target.value,
+                  }))
+                }
                 required
               />
               <div className="flex flex-wrap gap-3">
                 {editingId ? (
-                  <Button type="button" variant="ghost" onClick={resetForm} disabled={saving}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={resetForm}
+                    disabled={saving}
+                  >
                     Cancel edit
                   </Button>
                 ) : null}
                 <Button type="submit" disabled={saving}>
-                  {saving ? "Saving..." : editingId ? "Save changes" : "Create announcement"}
+                  {saving
+                    ? "Saving..."
+                    : editingId
+                      ? "Save changes"
+                      : "Create announcement"}
                 </Button>
               </div>
             </form>
@@ -255,23 +353,37 @@ export default function AdminAnnouncementsPage() {
                 <TableRow key={announcement.id}>
                   <TableCell>{announcement.title}</TableCell>
                   <TableCell>
-                    {announcement.published_at ? new Date(announcement.published_at).toLocaleDateString() : "--"}
+                    {announcement.published_at
+                      ? new Date(announcement.published_at).toLocaleDateString()
+                      : "--"}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="info">{formatAnnouncementCategory(announcement.category)}</Badge>
+                    <Badge variant="info">
+                      {formatAnnouncementCategory(announcement.category)}
+                    </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="info" className="capitalize">{announcement.status}</Badge>
+                    <Badge variant="info" className="capitalize">
+                      {announcement.status}
+                    </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="info" className="capitalize">{announcement.audience}</Badge>
+                    <Badge variant="info" className="capitalize">
+                      {announcement.audience}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button variant="secondary" onClick={() => startEdit(announcement.id)}>
+                      <Button
+                        variant="secondary"
+                        onClick={() => startEdit(announcement.id)}
+                      >
                         Edit
                       </Button>
-                      <Button variant="danger" onClick={() => handleDelete(announcement.id)}>
+                      <Button
+                        variant="danger"
+                        onClick={() => handleDelete(announcement.id)}
+                      >
                         Delete
                       </Button>
                     </div>

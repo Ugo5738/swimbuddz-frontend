@@ -4,20 +4,20 @@
  * @param options - Formatting options
  */
 export function formatNaira(
-    amount: number,
-    options: {
-        showDecimal?: boolean;
-        showSymbol?: boolean;
-    } = {}
+  amount: number,
+  options: {
+    showDecimal?: boolean;
+    showSymbol?: boolean;
+  } = {},
 ): string {
-    const { showDecimal = true, showSymbol = true } = options;
+  const { showDecimal = true, showSymbol = true } = options;
 
-    const formatted = new Intl.NumberFormat("en-NG", {
-        minimumFractionDigits: showDecimal ? 2 : 0,
-        maximumFractionDigits: showDecimal ? 2 : 0,
-    }).format(amount);
+  const formatted = new Intl.NumberFormat("en-NG", {
+    minimumFractionDigits: showDecimal ? 2 : 0,
+    maximumFractionDigits: showDecimal ? 2 : 0,
+  }).format(amount);
 
-    return showSymbol ? `₦${formatted}` : formatted;
+  return showSymbol ? `₦${formatted}` : formatted;
 }
 
 /**
@@ -26,28 +26,28 @@ export function formatNaira(
  * @param options - Formatting options
  */
 export function formatDate(
-    date: string | Date,
-    options: {
-        includeTime?: boolean;
-        includeYear?: boolean;
-        format?: "short" | "long";
-    } = {}
+  date: string | Date,
+  options: {
+    includeTime?: boolean;
+    includeYear?: boolean;
+    format?: "short" | "long";
+  } = {},
 ): string {
-    const { includeTime = false, includeYear = true, format = "short" } = options;
-    const d = typeof date === "string" ? new Date(date) : date;
+  const { includeTime = false, includeYear = true, format = "short" } = options;
+  const d = typeof date === "string" ? new Date(date) : date;
 
-    const dateOptions: Intl.DateTimeFormatOptions = {
-        month: format === "short" ? "short" : "long",
-        day: "numeric",
-        ...(includeYear && { year: "numeric" }),
-    };
+  const dateOptions: Intl.DateTimeFormatOptions = {
+    month: format === "short" ? "short" : "long",
+    day: "numeric",
+    ...(includeYear && { year: "numeric" }),
+  };
 
-    if (includeTime) {
-        dateOptions.hour = "numeric";
-        dateOptions.minute = "2-digit";
-    }
+  if (includeTime) {
+    dateOptions.hour = "numeric";
+    dateOptions.minute = "2-digit";
+  }
 
-    return d.toLocaleDateString("en-US", dateOptions);
+  return d.toLocaleDateString("en-US", dateOptions);
 }
 
 /**
@@ -55,11 +55,11 @@ export function formatDate(
  * @param date - Date string or Date object
  */
 export function formatTime(date: string | Date): string {
-    const d = typeof date === "string" ? new Date(date) : date;
-    return d.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-    });
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 /**
@@ -67,20 +67,20 @@ export function formatTime(date: string | Date): string {
  * @param date - Date string or Date object
  */
 export function formatRelativeTime(date: string | Date): string {
-    const d = typeof date === "string" ? new Date(date) : date;
-    const now = new Date();
-    const diffMs = d.getTime() - now.getTime();
-    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
-    const diffHours = Math.round(diffMs / (1000 * 60 * 60));
-    const diffMinutes = Math.round(diffMs / (1000 * 60));
+  const d = typeof date === "string" ? new Date(date) : date;
+  const now = new Date();
+  const diffMs = d.getTime() - now.getTime();
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+  const diffHours = Math.round(diffMs / (1000 * 60 * 60));
+  const diffMinutes = Math.round(diffMs / (1000 * 60));
 
-    const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
 
-    if (Math.abs(diffDays) >= 1) {
-        return rtf.format(diffDays, "day");
-    } else if (Math.abs(diffHours) >= 1) {
-        return rtf.format(diffHours, "hour");
-    } else {
-        return rtf.format(diffMinutes, "minute");
-    }
+  if (Math.abs(diffDays) >= 1) {
+    return rtf.format(diffDays, "day");
+  } else if (Math.abs(diffHours) >= 1) {
+    return rtf.format(diffHours, "hour");
+  } else {
+    return rtf.format(diffMinutes, "minute");
+  }
 }

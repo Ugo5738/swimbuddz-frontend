@@ -149,14 +149,14 @@ export async function apiGet<T>(
   options?: { auth?: boolean },
 ): Promise<T> {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL!;
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  const headers: HeadersInit = { "Content-Type": "application/json" };
 
   if (options?.auth) {
     const token = await getAccessTokenSomehow();
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (token) headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${baseUrl}${path}`, { headers, cache: 'no-store' });
+  const res = await fetch(`${baseUrl}${path}`, { headers, cache: "no-store" });
   if (!res.ok) {
     // handle error, parse JSON error if available
     throw new Error(`API error: ${res.status}`);
