@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import {
@@ -12,6 +11,7 @@ import {
   LocationType,
   type Cohort,
 } from "@/lib/academy";
+import { useEffect, useState } from "react";
 
 type EditCohortModalProps = {
   isOpen: boolean;
@@ -41,6 +41,7 @@ export function EditCohortModal({
     location_address: cohort.location_address || "",
     notes_internal: cohort.notes_internal || "",
     allow_mid_entry: cohort.allow_mid_entry || false,
+    admin_dropout_approval: cohort.admin_dropout_approval || false,
   });
 
   // Update form data when cohort changes
@@ -57,6 +58,7 @@ export function EditCohortModal({
       location_address: cohort.location_address || "",
       notes_internal: cohort.notes_internal || "",
       allow_mid_entry: cohort.allow_mid_entry || false,
+      admin_dropout_approval: cohort.admin_dropout_approval || false,
     });
   }, [cohort]);
 
@@ -211,6 +213,27 @@ export function EditCohortModal({
           />
           <label htmlFor="allow_mid_entry" className="text-sm text-slate-700">
             Allow mid-cohort entry
+          </label>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="admin_dropout_approval"
+            checked={formData.admin_dropout_approval}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                admin_dropout_approval: e.target.checked,
+              })
+            }
+            className="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+          />
+          <label
+            htmlFor="admin_dropout_approval"
+            className="text-sm text-slate-700"
+          >
+            Require admin approval for dropouts
           </label>
         </div>
 

@@ -69,7 +69,8 @@ const baseNavSections: NavSection[] = [
   {
     title: "Payments",
     items: [
-      { href: "/coach/payouts", label: "Payout History", icon: Wallet },
+      { href: "/coach/wallet", label: "Bubble Wallet", icon: Wallet },
+      { href: "/coach/payouts", label: "Payout History", icon: CreditCard },
       { href: "/coach/bank-account", label: "Bank Account", icon: CreditCard },
     ],
   },

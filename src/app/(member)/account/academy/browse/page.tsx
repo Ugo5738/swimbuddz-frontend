@@ -1,11 +1,10 @@
 "use client";
 
-import { Badge } from "@/components/ui/Badge";
+import { ProgramCard } from "@/components/academy/ProgramCard";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { ProgramCard } from "@/components/academy/ProgramCard";
-import { AcademyApi, Enrollment, Program, ProgramLevel } from "@/lib/academy";
+import { AcademyApi, Cohort, Enrollment, Program, ProgramLevel } from "@/lib/academy";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -21,6 +20,7 @@ const levels = [
 export default function AcademyBrowsePage() {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [cohortsByProgram, setCohortsByProgram] = useState<Record<string, Cohort[]>>({});
   const [loading, setLoading] = useState(true);
   const [selectedLevel, setSelectedLevel] = useState<string>("all");
 
@@ -31,16 +31,25 @@ export default function AcademyBrowsePage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      // Fetch published programs and user's enrollments
-      const [programsData, enrollmentsData] = await Promise.all([
+      // Fetch published programs, user's enrollments, and enrollable cohorts
+      const [programsData, enrollmentsData, cohortsData] = await Promise.all([
         AcademyApi.listPrograms(),
-        AcademyApi.getMyEnrollments().catch(() => []), // May fail if not logged in
+        AcademyApi.getMyEnrollments().catch(() => []),
+        AcademyApi.getEnrollableCohorts().catch(() => []),
       ]);
 
       // Filter to only published programs
       const publishedPrograms = programsData.filter((p) => p.is_published);
       setPrograms(publishedPrograms);
       setEnrollments(enrollmentsData);
+
+      // Group cohorts by program_id for quick lookup
+      const byProgram: Record<string, Cohort[]> = {};
+      for (const cohort of cohortsData) {
+        if (!byProgram[cohort.program_id]) byProgram[cohort.program_id] = [];
+        byProgram[cohort.program_id].push(cohort);
+      }
+      setCohortsByProgram(byProgram);
     } catch (error) {
       console.error("Failed to load programs:", error);
     } finally {
@@ -135,6 +144,7 @@ export default function AcademyBrowsePage() {
               key={program.id}
               program={program}
               enrolledProgramIds={enrolledProgramIds}
+              cohorts={cohortsByProgram[program.id] ?? []}
             />
           ))}
         </div>

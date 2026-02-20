@@ -37,6 +37,14 @@ export enum EnrollmentStatus {
   WAITLIST = "waitlist",
   DROPPED = "dropped",
   GRADUATED = "graduated",
+  DROPOUT_PENDING = "dropout_pending",
+}
+
+export enum InstallmentStatus {
+  PENDING = "pending",
+  PAID = "paid",
+  MISSED = "missed",
+  WAIVED = "waived",
 }
 
 export enum EnrollmentSource {
@@ -117,7 +125,15 @@ export interface Cohort {
   allow_mid_entry?: boolean;
   mid_entry_cutoff_week?: number;
   require_approval?: boolean; // If true, enrollment needs admin approval even after payment
+  admin_dropout_approval?: boolean; // If true, missed-installment dropout requires admin confirmation
   notes_internal?: string;
+  // ── Installment billing ──────────────────────────────────────────────────
+  /** Whether members can choose to pay in installments at checkout. */
+  installment_plan_enabled?: boolean;
+  /** Override for auto-computed installment count (duration_weeks / 4). */
+  installment_count?: number | null;
+  /** Override for first installment amount in ₦. If null, auto-split evenly. */
+  installment_deposit_amount?: number | null;
   // Relations
   program?: Program;
   created_at: string;
@@ -137,6 +153,19 @@ export interface CohortCreate extends Partial<Cohort> {
   coach_assignments?: CoachAssignmentInput[];
 }
 
+export interface EnrollmentInstallment {
+  id: string;
+  installment_number: number;
+  /** Amount in kobo (smallest NGN unit). Divide by 100 for NGN display. */
+  amount: number;
+  due_at: string;
+  status: InstallmentStatus;
+  paid_at?: string | null;
+  payment_reference?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Enrollment {
   id: string;
   program_id?: string | null;
@@ -150,6 +179,11 @@ export interface Enrollment {
   currency_snapshot?: string;
   payment_reference?: string;
   paid_at?: string;
+  // Installment tracking
+  total_installments?: number;
+  paid_installments_count?: number;
+  missed_installments_count?: number;
+  access_suspended?: boolean;
   // Enrollment tracking
   enrolled_at?: string;
   source?: EnrollmentSource;
@@ -158,6 +192,7 @@ export interface Enrollment {
   // Relations
   cohort?: Cohort;
   program?: Program;
+  installments?: EnrollmentInstallment[];
 }
 
 export interface Milestone {

@@ -10,10 +10,12 @@ import {
   AcademyApi,
   Cohort,
   Enrollment,
+  EnrollmentInstallment,
   EnrollmentStatus,
+  InstallmentStatus,
   PaymentStatus,
 } from "@/lib/academy";
-import { apiGet } from "@/lib/api";
+import { apiGet, apiPost } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import {
   ArrowLeft,
@@ -152,6 +154,29 @@ export default function EnrollmentDetailPage({
     }
   };
 
+  const handleDropoutAction = async (action: "approve" | "reverse") => {
+    const label = action === "approve" ? "drop" : "reinstate";
+    if (!confirm(`Are you sure you want to ${label} this enrollment?`)) return;
+    setUpdating(true);
+    try {
+      await apiPost(
+        `/api/v1/academy/admin/enrollments/${params.id}/dropout-action`,
+        { action },
+        { auth: true },
+      );
+      toast.success(
+        action === "approve"
+          ? "Student has been dropped."
+          : "Student reinstated successfully.",
+      );
+      await loadData();
+    } catch (e) {
+      toast.error(`Failed to ${label} enrollment`);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   if (loading) return <LoadingCard text="Loading enrollment details..." />;
   if (error || !enrollment)
     return (
@@ -163,7 +188,14 @@ export default function EnrollmentDetailPage({
   const isPendingApproval =
     enrollment.status === EnrollmentStatus.PENDING_APPROVAL;
   const isWaitlisted = enrollment.status === EnrollmentStatus.WAITLIST;
+  const isDropoutPending =
+    enrollment.status === EnrollmentStatus.DROPOUT_PENDING;
   const isPaid = enrollment.payment_status === PaymentStatus.PAID;
+  const isSuspended = !!enrollment.access_suspended;
+  const installments: EnrollmentInstallment[] = enrollment.installments ?? [];
+  const totalInstallments = enrollment.total_installments ?? installments.length;
+  const paidCount = enrollment.paid_installments_count ?? 0;
+  const missedCount = enrollment.missed_installments_count ?? 0;
 
   const getStatusBadgeVariant = (status: EnrollmentStatus) => {
     switch (status) {
@@ -176,6 +208,8 @@ export default function EnrollmentDetailPage({
       case EnrollmentStatus.GRADUATED:
         return "default";
       case EnrollmentStatus.DROPPED:
+        return "danger";
+      case EnrollmentStatus.DROPOUT_PENDING:
         return "danger";
       default:
         return "default";
@@ -288,6 +322,48 @@ export default function EnrollmentDetailPage({
         </Card>
       )}
 
+      {/* Dropout Pending Action */}
+      {isDropoutPending && (
+        <Card className="p-4 bg-orange-50 border-orange-300">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start gap-3">
+              <XCircle className="h-5 w-5 text-orange-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium text-orange-900">
+                  Dropout Approval Required
+                </p>
+                <p className="text-sm text-orange-700">
+                  This student has missed {missedCount} installment
+                  {missedCount !== 1 ? "s" : ""} and requires admin action.
+                  Their access is currently suspended.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 flex-shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleDropoutAction("reverse")}
+                disabled={updating}
+                className="text-green-700 border-green-300 hover:bg-green-50"
+              >
+                <CheckCircle className="h-4 w-4 mr-1" />
+                Reinstate
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => handleDropoutAction("approve")}
+                disabled={updating}
+                className="bg-red-600 text-white hover:bg-red-700"
+              >
+                <XCircle className="h-4 w-4 mr-1" />
+                Confirm Drop
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
@@ -384,6 +460,111 @@ export default function EnrollmentDetailPage({
               )}
           </Card>
 
+          {/* Installment Schedule */}
+          {installments.length > 0 && (
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Payment Schedule
+                </h2>
+                <div className="flex gap-3 text-sm">
+                  <span className="text-green-600 font-medium">
+                    {paidCount} paid
+                  </span>
+                  {missedCount > 0 && (
+                    <span className="text-red-600 font-medium">
+                      {missedCount} missed
+                    </span>
+                  )}
+                </div>
+              </div>
+              {isSuspended && (
+                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  ⚠️ Access is currently <strong>suspended</strong>. Restore by
+                  reinstating the enrollment or waiving the missed installment.
+                </div>
+              )}
+              <div className="space-y-2">
+                {installments.map((inst, i) => {
+                  const isPaidInst = inst.status === InstallmentStatus.PAID;
+                  const isMissed = inst.status === InstallmentStatus.MISSED;
+                  const isWaived = inst.status === InstallmentStatus.WAIVED;
+                  const due = new Date(inst.due_at);
+                  const amountNgn = inst.amount / 100;
+
+                  return (
+                    <div
+                      key={inst.id}
+                      className={`flex items-center justify-between rounded-lg border px-4 py-3 text-sm ${isPaidInst
+                          ? "border-green-200 bg-green-50"
+                          : isMissed
+                            ? "border-red-200 bg-red-50"
+                            : isWaived
+                              ? "border-blue-200 bg-blue-50"
+                              : "border-slate-200 bg-white"
+                        }`}
+                    >
+                      <div>
+                        <span className="font-medium text-slate-900">
+                          #{i + 1} of {totalInstallments}
+                        </span>
+                        <span className="ml-2 text-slate-500">
+                          Due{" "}
+                          {due.toLocaleDateString("en-NG", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </span>
+                        {inst.paid_at && (
+                          <span className="ml-2 text-green-600">
+                            · Paid{" "}
+                            {new Date(inst.paid_at).toLocaleDateString(
+                              "en-NG",
+                              { month: "short", day: "numeric" },
+                            )}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-semibold text-slate-900">
+                          ₦{amountNgn.toLocaleString()}
+                        </span>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${isPaidInst
+                              ? "bg-green-100 text-green-700"
+                              : isMissed
+                                ? "bg-red-100 text-red-700"
+                                : isWaived
+                                  ? "bg-blue-100 text-blue-700"
+                                  : "bg-slate-100 text-slate-600"
+                            }`}
+                        >
+                          {isPaidInst
+                            ? "✓ Paid"
+                            : isMissed
+                              ? "Missed"
+                              : isWaived
+                                ? "Waived"
+                                : "Pending"}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-3 flex justify-between rounded-lg bg-slate-50 px-4 py-2 text-sm">
+                <span className="text-slate-500">Total</span>
+                <span className="font-semibold text-slate-900">
+                  ₦
+                  {(
+                    installments.reduce((s, i) => s + i.amount, 0) / 100
+                  ).toLocaleString()}
+                </span>
+              </div>
+            </Card>
+          )}
+
           {/* Update Form */}
           <Card className="p-6">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">
@@ -403,6 +584,9 @@ export default function EnrollmentDetailPage({
                   Enrolled (Active)
                 </option>
                 <option value={EnrollmentStatus.WAITLIST}>Waitlist</option>
+                <option value={EnrollmentStatus.DROPOUT_PENDING}>
+                  Dropout Pending
+                </option>
                 <option value={EnrollmentStatus.DROPPED}>Dropped</option>
                 <option value={EnrollmentStatus.GRADUATED}>Graduated</option>
               </Select>
@@ -476,6 +660,33 @@ export default function EnrollmentDetailPage({
                     {formatDate((enrollment as any).paid_at)}
                   </span>
                 </div>
+              )}
+              {installments.length > 0 && (
+                <>
+                  <hr className="border-slate-100" />
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-500">Installments</span>
+                    <span className="font-semibold text-slate-900">
+                      {paidCount}/{totalInstallments}
+                    </span>
+                  </div>
+                  {missedCount > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-500">Missed</span>
+                      <span className="font-semibold text-red-600">
+                        {missedCount}
+                      </span>
+                    </div>
+                  )}
+                  {isSuspended && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-500">Access</span>
+                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                        Suspended
+                      </span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </Card>

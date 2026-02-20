@@ -9,7 +9,7 @@ export function EnrollmentStatusBadge({
   status,
   className = "",
 }: EnrollmentStatusBadgeProps) {
-  const styles = {
+  const styles: Record<EnrollmentStatus, string> = {
     [EnrollmentStatus.PENDING_APPROVAL]:
       "bg-amber-100 text-amber-700 border-amber-200",
     [EnrollmentStatus.ENROLLED]: "bg-green-100 text-green-700 border-green-200",
@@ -17,6 +17,8 @@ export function EnrollmentStatusBadge({
       "bg-yellow-100 text-yellow-700 border-yellow-200",
     [EnrollmentStatus.DROPPED]: "bg-red-100 text-red-700 border-red-200",
     [EnrollmentStatus.GRADUATED]: "bg-blue-100 text-blue-700 border-blue-200",
+    [EnrollmentStatus.DROPOUT_PENDING]:
+      "bg-orange-100 text-orange-700 border-orange-200",
   };
 
   return (

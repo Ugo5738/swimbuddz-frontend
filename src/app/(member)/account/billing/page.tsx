@@ -65,11 +65,22 @@ type Cohort = {
   status?: string;
 };
 
+type EnrollmentInstallment = {
+  id: string;
+  installment_number: number;
+  amount: number; // kobo
+  due_at: string;
+  status: "pending" | "paid" | "missed" | "waived";
+  paid_at?: string | null;
+};
+
 type Enrollment = {
   id: string;
   cohort_id: string;
   status: string;
   payment_status: string;
+  total_installments?: number;
+  paid_installments_count?: number;
   cohort?: {
     name: string;
     start_date?: string;
@@ -78,6 +89,7 @@ type Enrollment = {
       name: string;
     };
   };
+  installments?: EnrollmentInstallment[];
 };
 
 type WalletSummary = {
@@ -282,8 +294,8 @@ export default function BillingPage() {
 
         const anchorTs = new Date(
           returnedPayment.entitlement_applied_at ||
-            returnedPayment.paid_at ||
-            returnedPayment.created_at,
+          returnedPayment.paid_at ||
+          returnedPayment.created_at,
         ).getTime();
         const recentWelcomeBonus = (txnData.transactions || []).find((txn) => {
           if (txn.transaction_type !== "welcome_bonus") return false;
@@ -336,7 +348,7 @@ export default function BillingPage() {
     fetchCohorts();
   }, []);
 
-  // Load my enrollments for Academy section
+  // Load my enrollments for Academy section (with installments for paid ones)
   useEffect(() => {
     const fetchEnrollments = async () => {
       try {
@@ -344,7 +356,28 @@ export default function BillingPage() {
           "/api/v1/academy/my-enrollments",
           { auth: true },
         );
-        setMyEnrollments(enrollments);
+        // Fetch installments for paid enrollments that have them
+        const enriched = await Promise.all(
+          enrollments.map(async (e) => {
+            if (
+              (e.payment_status === "paid" || e.status === "enrolled") &&
+              e.total_installments &&
+              e.total_installments > 1
+            ) {
+              try {
+                const detail = await apiGet<Enrollment>(
+                  `/api/v1/academy/my-enrollments/${e.id}`,
+                  { auth: true },
+                );
+                return { ...e, installments: detail.installments };
+              } catch {
+                return e;
+              }
+            }
+            return e;
+          }),
+        );
+        setMyEnrollments(enriched);
       } catch {
         setMyEnrollments([]);
       }
@@ -549,13 +582,12 @@ export default function BillingPage() {
                       {formatCurrency(payment.amount)}
                     </p>
                     <span
-                      className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${
-                        payment.status === "pending_review"
+                      className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${payment.status === "pending_review"
                           ? "bg-blue-100 text-blue-800"
                           : payment.status === "failed"
                             ? "bg-red-100 text-red-800"
                             : "bg-amber-100 text-amber-800"
-                      }`}
+                        }`}
                     >
                       {payment.status === "pending_review"
                         ? "Under Review"
@@ -577,70 +609,70 @@ export default function BillingPage() {
                 {/* Upload Section */}
                 {(payment.status === "pending" ||
                   payment.status === "failed") && (
-                  <div className="space-y-2">
-                    <p className="text-xs md:text-sm text-slate-600">
-                      📤 Upload proof of payment (screenshot or receipt)
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <input
-                        type="file"
-                        accept="image/*,.pdf"
-                        onChange={(e) =>
-                          setProofFile({
-                            ...proofFile,
-                            [payment.reference]: e.target.files?.[0] || null,
-                          })
-                        }
-                        className="flex-1 text-xs md:text-sm text-slate-500 file:mr-2 md:file:mr-3 file:py-1.5 md:file:py-2 file:px-3 md:file:px-4 file:rounded-lg file:border-0 file:text-xs md:file:text-sm file:font-medium file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100"
-                      />
-                      <Button
-                        size="sm"
-                        className="w-full sm:w-auto flex-shrink-0"
-                        disabled={
-                          !proofFile[payment.reference] ||
-                          uploadingProof === payment.reference
-                        }
-                        onClick={async () => {
-                          const file = proofFile[payment.reference];
-                          if (!file) return;
-
-                          setUploadingProof(payment.reference);
-                          try {
-                            // Upload file to backend media service
-                            const mediaItem = await uploadMedia(
-                              file,
-                              "payment_proof",
-                              payment.reference,
-                              `Payment proof ${payment.reference}`,
-                            );
-                            // Send the media_id, not the URL
-                            const proofMediaId = mediaItem.id;
-
-                            await apiPost(
-                              `/api/v1/payments/${payment.reference}/proof`,
-                              { proof_media_id: proofMediaId },
-                              { auth: true },
-                            );
-                            toast.success(
-                              "Proof uploaded! Awaiting admin review.",
-                            );
-                            await load();
-                          } catch (e) {
-                            const msg =
-                              e instanceof Error ? e.message : "Upload failed";
-                            toast.error(msg);
-                          } finally {
-                            setUploadingProof(null);
+                    <div className="space-y-2">
+                      <p className="text-xs md:text-sm text-slate-600">
+                        📤 Upload proof of payment (screenshot or receipt)
+                      </p>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={(e) =>
+                            setProofFile({
+                              ...proofFile,
+                              [payment.reference]: e.target.files?.[0] || null,
+                            })
                           }
-                        }}
-                      >
-                        {uploadingProof === payment.reference
-                          ? "Uploading..."
-                          : "Submit"}
-                      </Button>
+                          className="flex-1 text-xs md:text-sm text-slate-500 file:mr-2 md:file:mr-3 file:py-1.5 md:file:py-2 file:px-3 md:file:px-4 file:rounded-lg file:border-0 file:text-xs md:file:text-sm file:font-medium file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100"
+                        />
+                        <Button
+                          size="sm"
+                          className="w-full sm:w-auto flex-shrink-0"
+                          disabled={
+                            !proofFile[payment.reference] ||
+                            uploadingProof === payment.reference
+                          }
+                          onClick={async () => {
+                            const file = proofFile[payment.reference];
+                            if (!file) return;
+
+                            setUploadingProof(payment.reference);
+                            try {
+                              // Upload file to backend media service
+                              const mediaItem = await uploadMedia(
+                                file,
+                                "payment_proof",
+                                payment.reference,
+                                `Payment proof ${payment.reference}`,
+                              );
+                              // Send the media_id, not the URL
+                              const proofMediaId = mediaItem.id;
+
+                              await apiPost(
+                                `/api/v1/payments/${payment.reference}/proof`,
+                                { proof_media_id: proofMediaId },
+                                { auth: true },
+                              );
+                              toast.success(
+                                "Proof uploaded! Awaiting admin review.",
+                              );
+                              await load();
+                            } catch (e) {
+                              const msg =
+                                e instanceof Error ? e.message : "Upload failed";
+                              toast.error(msg);
+                            } finally {
+                              setUploadingProof(null);
+                            }
+                          }}
+                        >
+                          {uploadingProof === payment.reference
+                            ? "Uploading..."
+                            : "Submit"}
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
                 {/* Under Review Message */}
                 {payment.status === "pending_review" && (
@@ -855,6 +887,59 @@ export default function BillingPage() {
                     Track your progress and milestones on the My Academy page.
                   </p>
                 </div>
+
+                {/* Installment schedule for installment-paying enrollments */}
+                {paidEnrollments.some(
+                  (e) => e.installments && e.installments.length > 0,
+                ) && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                        Payment schedule
+                      </p>
+                      {paidEnrollments
+                        .filter((e) => e.installments && e.installments.length > 0)
+                        .map((e) =>
+                          e.installments!.map((inst) => {
+                            const isPaid = inst.status === "paid";
+                            const isMissed = inst.status === "missed";
+                            const isUpcoming =
+                              !isPaid &&
+                              !isMissed &&
+                              new Date(inst.due_at) > new Date();
+                            return (
+                              <div
+                                key={inst.id}
+                                className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm ${isPaid
+                                    ? "bg-emerald-50 text-emerald-800"
+                                    : isMissed
+                                      ? "bg-red-50 text-red-800"
+                                      : isUpcoming
+                                        ? "bg-slate-50 text-slate-700"
+                                        : "bg-amber-50 text-amber-800"
+                                  }`}
+                              >
+                                <span className="flex items-center gap-2">
+                                  <span>
+                                    {isPaid
+                                      ? "✓"
+                                      : isMissed
+                                        ? "✗"
+                                        : "·"}
+                                  </span>
+                                  <span>
+                                    Installment {inst.installment_number} —{" "}
+                                    {formatDate(inst.due_at)}
+                                  </span>
+                                </span>
+                                <span className="font-medium tabular-nums">
+                                  {formatCurrency(Math.round(inst.amount / 100))}
+                                </span>
+                              </div>
+                            );
+                          }),
+                        )}
+                    </div>
+                  )}
 
                 <Link href="/account/academy" className="block">
                   <Button variant="outline" className="w-full">

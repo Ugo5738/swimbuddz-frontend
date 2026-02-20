@@ -44,6 +44,7 @@ export default function NewCohortPage() {
     status: CohortStatus.OPEN,
     allow_mid_entry: false,
     require_approval: false, // If true, enrollment needs admin approval even after payment
+    admin_dropout_approval: false, // If true, admin must confirm dropout after missed-installment threshold
     // Coach assignments
     lead_coach_id: null as string | null,
     assistant_coach_id: null as string | null,
@@ -55,6 +56,10 @@ export default function NewCohortPage() {
     // Notes & Pricing
     notes_internal: "",
     price_override: null as number | null, // Override program price for this cohort
+    // Installment billing
+    installment_plan_enabled: false,
+    installment_count: null as number | null, // null = auto-compute from duration
+    installment_deposit_amount: null as number | null, // null = auto even-split
   });
 
   // Schedule state (for generating sessions later)
@@ -185,6 +190,11 @@ export default function NewCohortPage() {
         location_address: formData.location_address || undefined,
         notes_internal: formData.notes_internal || undefined,
         require_approval: formData.require_approval,
+        admin_dropout_approval: formData.admin_dropout_approval,
+        // Installment billing
+        installment_plan_enabled: formData.installment_plan_enabled,
+        installment_count: formData.installment_count ?? undefined,
+        installment_deposit_amount: formData.installment_deposit_amount ?? undefined,
       });
 
       // Generate sessions based on schedule
@@ -321,13 +331,12 @@ export default function NewCohortPage() {
         {stepLabels.map((label, i) => (
           <div
             key={label}
-            className={`flex-1 rounded-lg px-3 py-2 text-center text-sm font-medium transition-colors ${
-              i === currentStepIndex
+            className={`flex-1 rounded-lg px-3 py-2 text-center text-sm font-medium transition-colors ${i === currentStepIndex
                 ? "bg-cyan-600 text-white"
                 : i < currentStepIndex
                   ? "bg-green-100 text-green-700"
                   : "bg-slate-100 text-slate-500"
-            }`}
+              }`}
           >
             {label}
           </div>
@@ -364,11 +373,10 @@ export default function NewCohortPage() {
                   <div
                     key={program.id}
                     onClick={() => setSelectedProgramId(program.id)}
-                    className={`cursor-pointer rounded-lg border-2 p-4 transition ${
-                      selectedProgramId === program.id
+                    className={`cursor-pointer rounded-lg border-2 p-4 transition ${selectedProgramId === program.id
                         ? "border-cyan-600 bg-cyan-50"
                         : "border-slate-200 hover:border-cyan-300"
-                    }`}
+                      }`}
                   >
                     <div className="flex justify-between items-start">
                       <div>
@@ -596,6 +604,142 @@ export default function NewCohortPage() {
                 cohort
               </p>
             </div>
+
+            {/* ── Installment Plan ──────────────────────────────────────── */}
+            <div className="border-t pt-4 mt-4">
+              <h3 className="font-semibold text-slate-900 mb-1">
+                Installment Plan
+              </h3>
+              <p className="text-xs text-slate-500 mb-3">
+                Allow members to spread payments over the cohort duration.
+                Count and amounts are auto-computed unless you override them.
+              </p>
+
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={formData.installment_plan_enabled}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      installment_plan_enabled: e.target.checked,
+                      // Clear overrides when disabling
+                      ...(!e.target.checked && {
+                        installment_count: null,
+                        installment_deposit_amount: null,
+                      }),
+                    })
+                  }
+                  className="rounded border-slate-300"
+                />
+                <div>
+                  <span className="text-sm text-slate-700">
+                    Enable installment payments for this cohort
+                  </span>
+                  {selectedProgram && (
+                    <p className="text-xs text-slate-500">
+                      Auto-plan:{" "}
+                      {Math.max(
+                        1,
+                        Math.floor(selectedProgram.duration_weeks / 4),
+                      )}{" "}
+                      installment
+                      {Math.max(
+                        1,
+                        Math.floor(selectedProgram.duration_weeks / 4),
+                      ) !== 1
+                        ? "s"
+                        : ""}{" "}
+                      every 4 weeks
+                    </p>
+                  )}
+                </div>
+              </label>
+
+              {formData.installment_plan_enabled && (
+                <div className="mt-4 space-y-4 pl-6 border-l-2 border-cyan-200">
+                  <div className="rounded-lg bg-cyan-50 border border-cyan-200 p-3 text-xs text-cyan-800">
+                    <strong>Auto-computed defaults:</strong> count = duration ÷ 4
+                    weeks (max 3 if fee &gt; ₦150,000), amounts split evenly with
+                    any remainder added to the first installment, due dates every 4
+                    weeks from cohort start.
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Input
+                        label="Installment Count (override)"
+                        type="number"
+                        min={2}
+                        max={12}
+                        value={formData.installment_count ?? ""}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            installment_count: e.target.value
+                              ? parseInt(e.target.value)
+                              : null,
+                          })
+                        }
+                        placeholder={
+                          selectedProgram
+                            ? `Auto: ${Math.max(1, Math.floor(selectedProgram.duration_weeks / 4))}`
+                            : "Auto-computed"
+                        }
+                      />
+                      <p className="text-xs text-slate-500 mt-1">
+                        Leave empty to use auto-computed count
+                      </p>
+                    </div>
+
+                    <div>
+                      <Input
+                        label="Deposit / First Installment (₦)"
+                        type="number"
+                        min={0}
+                        value={formData.installment_deposit_amount ?? ""}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            installment_deposit_amount: e.target.value
+                              ? parseInt(e.target.value)
+                              : null,
+                          })
+                        }
+                        placeholder="Leave empty for even split"
+                      />
+                      <p className="text-xs text-slate-500 mt-1">
+                        First payment amount; rest split evenly
+                      </p>
+                    </div>
+                  </div>
+
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.admin_dropout_approval}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          admin_dropout_approval: e.target.checked,
+                        })
+                      }
+                      className="rounded border-slate-300"
+                    />
+                    <div>
+                      <span className="text-sm text-slate-700">
+                        Require admin approval for dropouts
+                      </span>
+                      <p className="text-xs text-slate-500">
+                        If enabled, students with repeated missed installments
+                        move to dropout pending and must be manually confirmed
+                        by an admin
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -749,12 +893,34 @@ export default function NewCohortPage() {
                     {formData.status}
                   </div>
                   <div>
+                    <span className="text-slate-500">Dropout flow:</span>{" "}
+                    {formData.admin_dropout_approval
+                      ? "Admin approval required"
+                      : "Automatic after threshold"}
+                  </div>
+                  <div>
                     <span className="text-slate-500">Lead Coach:</span>{" "}
                     {formData.lead_coach_id ? "Assigned" : "Not assigned"}
                   </div>
                   <div>
                     <span className="text-slate-500">Assistant Coach:</span>{" "}
                     {formData.assistant_coach_id ? "Assigned" : "None"}
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Installments:</span>{" "}
+                    {formData.installment_plan_enabled ? (
+                      <span className="text-green-700">
+                        Enabled
+                        {formData.installment_count
+                          ? ` · ${formData.installment_count} payments`
+                          : " · auto-count"}
+                        {formData.installment_deposit_amount
+                          ? ` · ₦${formData.installment_deposit_amount.toLocaleString()} deposit`
+                          : " · even split"}
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">Disabled (full payment only)</span>
+                    )}
                   </div>
                 </div>
               </div>

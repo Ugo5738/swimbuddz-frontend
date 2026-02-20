@@ -229,6 +229,15 @@ export default function CohortDetailsPage() {
             <Badge variant={cohort.status === "active" ? "success" : "default"}>
               {cohort.status}
             </Badge>
+            <Badge
+              variant={cohort.admin_dropout_approval ? "warning" : "info"}
+              className="capitalize"
+            >
+              Dropout:{" "}
+              {cohort.admin_dropout_approval
+                ? "Admin Approval"
+                : "Automatic"}
+            </Badge>
             <button
               onClick={() =>
                 router.push(`/admin/academy/cohorts/${cohortId}/score`)

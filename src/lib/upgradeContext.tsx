@@ -20,12 +20,18 @@ export type Cohort = {
   program_name?: string;
   start_date?: string;
   end_date?: string;
+  duration_weeks?: number;
   price_override?: number; // Cohort-specific price override
   status?: string;
+  // Installment billing
+  installment_plan_enabled?: boolean;
+  installment_count?: number | null;
+  installment_deposit_amount?: number | null;
   program?: {
     id: string;
     name: string;
     price_amount: number;
+    duration_weeks?: number;
     currency?: string;
   };
 };

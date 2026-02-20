@@ -67,6 +67,12 @@ function CheckoutContent() {
     "paystack" | "manual_transfer"
   >("paystack");
 
+  // Installment billing mode — "full" or "installments"
+  // Only relevant when purpose === "academy_cohort" and cohort.installment_plan_enabled
+  const [billingMode, setBillingMode] = useState<"full" | "installments">(
+    "full",
+  );
+
   // Determine purpose from URL or context
   const urlPurpose = searchParams.get("purpose");
   const purpose =
@@ -217,6 +223,40 @@ function CheckoutContent() {
   const discountAmount = validatedDiscount?.amount || 0;
   const total = Math.max(0, subtotal - discountAmount);
 
+  // ── Installment plan preview (mirrors installments.py logic) ─────────────
+  const cohortForInstallments =
+    purpose === "academy_cohort" ? state.selectedCohort : null;
+  const installmentsEnabled =
+    cohortForInstallments?.installment_plan_enabled === true;
+
+  const installmentPreview = (() => {
+    if (!installmentsEnabled || !cohortForInstallments) return null;
+    const totalFee = total; // after any discount
+    const durationWeeks =
+      cohortForInstallments.duration_weeks ??
+      cohortForInstallments.program?.duration_weeks ??
+      8;
+
+    // Auto-compute count: one per 4-week block, capped at 3 if fee > ₦150,000
+    let count =
+      cohortForInstallments.installment_count ??
+      Math.max(1, Math.floor(durationWeeks / 4));
+    if (totalFee > 150_000 && count > 3) count = 3;
+    if (count < 2) count = 2; // minimum 2 installments to be meaningful
+
+    // Deposit (first installment)
+    const depositOverride = cohortForInstallments.installment_deposit_amount;
+    const evenSplit = Math.floor(totalFee / count);
+    const remainder = totalFee - evenSplit * count;
+    const deposit = depositOverride ?? evenSplit + remainder; // remainder on first
+
+    const subsequentAmount = depositOverride
+      ? Math.floor((totalFee - depositOverride) / (count - 1))
+      : evenSplit;
+
+    return { count, deposit, subsequentAmount, totalFee };
+  })();
+
   // Validate discount code against backend
   const handleApplyDiscount = async () => {
     if (!discountInput.trim()) return;
@@ -358,6 +398,8 @@ function CheckoutContent() {
           ...intentPayload,
           purpose: "academy_cohort",
           enrollment_id: enrollmentId,
+          use_installments:
+            installmentsEnabled && billingMode === "installments",
         };
       } else if (purpose === "community") {
         intentPayload = {
@@ -545,6 +587,36 @@ function CheckoutContent() {
         </div>
       </Card>
 
+      {/* ── Installment option — inconspicuous link below order summary ── */}
+      {installmentsEnabled && installmentPreview && billingMode === "full" && (
+        <p className="text-center text-sm text-slate-500 -mt-2">
+          Need more time?{" "}
+          <button
+            type="button"
+            onClick={() => setBillingMode("installments")}
+            className="text-cyan-600 underline underline-offset-2 hover:text-cyan-700 font-medium"
+          >
+            Pay in {installmentPreview.count} installments — {formatCurrency(installmentPreview.deposit)} now
+          </button>
+        </p>
+      )}
+
+      {/* ── Installment details — shown when installments selected ── */}
+      {installmentsEnabled && installmentPreview && billingMode === "installments" && (
+        <p className="text-center text-sm text-slate-500 -mt-2">
+          {formatCurrency(installmentPreview.deposit)} now, then{" "}
+          {installmentPreview.count - 1} ×{" "}
+          {formatCurrency(installmentPreview.subsequentAmount)} every 4 weeks —{" "}
+          <button
+            type="button"
+            onClick={() => setBillingMode("full")}
+            className="text-cyan-600 underline underline-offset-2 hover:text-cyan-700 font-medium"
+          >
+            pay in full instead
+          </button>
+        </p>
+      )}
+
       {/* Payment Method Selector - Only show for session payments, not membership */}
       {purpose === "session" && (
         <Card className="p-6">
@@ -553,11 +625,10 @@ function CheckoutContent() {
           </h2>
           <div className="grid gap-3 sm:grid-cols-2">
             <label
-              className={`relative flex cursor-pointer flex-col rounded-xl border-2 p-4 transition-all ${
-                paymentMethod === "paystack"
+              className={`relative flex cursor-pointer flex-col rounded-xl border-2 p-4 transition-all ${paymentMethod === "paystack"
                   ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-500"
                   : "border-slate-200 bg-white hover:border-slate-300"
-              }`}
+                }`}
             >
               <input
                 type="radio"
@@ -575,11 +646,10 @@ function CheckoutContent() {
               </span>
             </label>
             <label
-              className={`relative flex cursor-pointer flex-col rounded-xl border-2 p-4 transition-all ${
-                paymentMethod === "manual_transfer"
+              className={`relative flex cursor-pointer flex-col rounded-xl border-2 p-4 transition-all ${paymentMethod === "manual_transfer"
                   ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-500"
                   : "border-slate-200 bg-white hover:border-slate-300"
-              }`}
+                }`}
             >
               <input
                 type="radio"
@@ -641,9 +711,11 @@ function CheckoutContent() {
         >
           {processing
             ? "Processing..."
-            : paymentMethod === "paystack"
-              ? `Pay ${formatCurrency(total)}`
-              : `Confirm & Get Reference`}
+            : installmentsEnabled && billingMode === "installments"
+              ? `Pay ${formatCurrency(installmentPreview?.deposit ?? 0)} — Start Installment Plan`
+              : paymentMethod === "paystack"
+                ? `Pay ${formatCurrency(total)}`
+                : `Confirm & Get Reference`}
         </Button>
 
         <Link

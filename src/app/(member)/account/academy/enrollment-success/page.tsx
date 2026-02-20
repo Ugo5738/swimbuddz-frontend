@@ -125,11 +125,11 @@ function EnrollmentSuccessContent() {
           {onboarding.next_session && (
             <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
               <h4 className="font-semibold text-slate-900 mb-2">
-                📍 Next Session
+                📍 First Session
               </h4>
-              <div className="text-sm text-slate-600 space-y-1">
+              <div className="text-sm text-slate-600 space-y-1 mb-3">
                 {onboarding.next_session.date && (
-                  <p>
+                  <p className="font-medium text-slate-800">
                     {new Date(onboarding.next_session.date).toLocaleString(
                       "en-NG",
                       {
@@ -150,74 +150,34 @@ function EnrollmentSuccessContent() {
                   <p className="italic">{onboarding.next_session.notes}</p>
                 )}
               </div>
+              {onboarding.next_session.date && (() => {
+                const sessionDate = new Date(onboarding.next_session.date);
+                const endDate = new Date(sessionDate.getTime() + 90 * 60 * 1000); // assume 90 min
+                const fmt = (d: Date) =>
+                  d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+                const title = encodeURIComponent(
+                  `${onboarding.program_name} — First Session`,
+                );
+                const loc = encodeURIComponent(
+                  onboarding.next_session.location || onboarding.location || "",
+                );
+                const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${fmt(sessionDate)}/${fmt(endDate)}&location=${loc}`;
+                return (
+                  <a
+                    href={googleUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-700 hover:text-blue-900 underline underline-offset-2"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Add to Google Calendar
+                  </a>
+                );
+              })()}
             </div>
           )}
-        </div>
-      </Card>
-
-      {/* Before You Start Checklist */}
-      <Card className="p-6">
-        <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center gap-2">
-          <span className="text-2xl">📋</span>
-          Before Your First Session
-        </h2>
-        <div className="space-y-3">
-          <label className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
-            <input
-              type="checkbox"
-              className="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
-            />
-            <div>
-              <span className="font-medium text-slate-900">
-                Review the program curriculum
-              </span>
-              <p className="text-sm text-slate-600">
-                Familiarize yourself with what you&apos;ll be learning
-              </p>
-            </div>
-          </label>
-          <label className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
-            <input
-              type="checkbox"
-              className="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
-            />
-            <div>
-              <span className="font-medium text-slate-900">
-                Prepare your swim gear
-              </span>
-              <p className="text-sm text-slate-600">
-                Swimsuit, goggles, towel, and swim cap
-              </p>
-            </div>
-          </label>
-          <label className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
-            <input
-              type="checkbox"
-              className="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
-            />
-            <div>
-              <span className="font-medium text-slate-900">
-                Check the session schedule
-              </span>
-              <p className="text-sm text-slate-600">
-                View upcoming sessions and add them to your calendar
-              </p>
-            </div>
-          </label>
-          <label className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
-            <input
-              type="checkbox"
-              className="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
-            />
-            <div>
-              <span className="font-medium text-slate-900">
-                Explore the resources section
-              </span>
-              <p className="text-sm text-slate-600">
-                Access prep materials and learning resources
-              </p>
-            </div>
-          </label>
         </div>
       </Card>
 

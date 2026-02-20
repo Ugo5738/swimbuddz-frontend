@@ -3,6 +3,7 @@
 import { AddMilestoneModal } from "@/components/academy/AddMilestoneModal";
 import { Card } from "@/components/ui/Card";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
+import { Markdown } from "@/components/ui/Markdown";
 import { useMediaUrls } from "@/hooks/useMediaUrl";
 import { AcademyApi, Milestone, Program } from "@/lib/academy";
 import { useParams, useRouter } from "next/navigation";
@@ -120,11 +121,10 @@ export default function ProgramDetailsPage() {
           <button
             onClick={handleTogglePublish}
             disabled={publishLoading}
-            className={`rounded px-4 py-2 text-sm font-medium border ${
-              program.is_published
+            className={`rounded px-4 py-2 text-sm font-medium border ${program.is_published
                 ? "bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100"
                 : "bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
-            } disabled:opacity-50`}
+              } disabled:opacity-50`}
           >
             {publishLoading
               ? "Loading..."
@@ -146,6 +146,16 @@ export default function ProgramDetailsPage() {
           </button>
         </div>
       </header>
+
+      {!program.is_published && (
+        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <span className="mt-0.5 shrink-0">⚠️</span>
+          <p>
+            <span className="font-semibold">This program is unpublished.</span>{" "}
+            Members cannot see it or enroll. Click <strong>Publish</strong> when it&apos;s ready.
+          </p>
+        </div>
+      )}
 
       <div className="grid gap-6 md:grid-cols-3">
         {/* Main Info */}
@@ -207,8 +217,8 @@ export default function ProgramDetailsPage() {
               </button>
             </div>
             {!program.curriculum_json ||
-            !program.curriculum_json.weeks ||
-            program.curriculum_json.weeks.length === 0 ? (
+              !program.curriculum_json.weeks ||
+              program.curriculum_json.weeks.length === 0 ? (
               <p className="text-sm text-slate-500">
                 No curriculum defined yet.
               </p>
@@ -250,9 +260,9 @@ export default function ProgramDetailsPage() {
                                   </span>
                                 </div>
                                 {lesson.description && (
-                                  <p className="text-xs text-slate-600 mt-1">
+                                  <Markdown size="xs" className="mt-1">
                                     {lesson.description}
-                                  </p>
+                                  </Markdown>
                                 )}
                                 {lesson.video_url && (
                                   <a
@@ -342,11 +352,10 @@ export default function ProgramDetailsPage() {
                 <dt className="text-sm text-slate-500">Status</dt>
                 <dd className="text-sm font-medium">
                   <span
-                    className={`px-2 py-0.5 rounded-full text-xs ${
-                      program.is_published
+                    className={`px-2 py-0.5 rounded-full text-xs ${program.is_published
                         ? "bg-green-100 text-green-700"
                         : "bg-amber-100 text-amber-700"
-                    }`}
+                      }`}
                   >
                     {program.is_published ? "Published" : "Draft"}
                   </span>
@@ -383,7 +392,7 @@ export default function ProgramDetailsPage() {
               </h2>
               <div className="text-sm text-slate-600 space-y-6">
                 {program.prep_materials &&
-                typeof program.prep_materials === "object" ? (
+                  typeof program.prep_materials === "object" ? (
                   <>
                     {program.prep_materials.safety_briefing && (
                       <div>

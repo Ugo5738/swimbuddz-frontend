@@ -98,7 +98,7 @@ function statusBadgeVariant(status: string) {
 // Component
 // ============================================================================
 
-export default function WalletPage() {
+export default function CoachWalletPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -343,10 +343,10 @@ export default function WalletPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Link href="/account/wallet/topup">
+              <Link href="/coach/wallet/topup">
                 <Button size="sm">Add Bubbles</Button>
               </Link>
-              <Link href="/account/wallet/transactions">
+              <Link href="/coach/wallet/transactions">
                 <Button size="sm" variant="outline">
                   View Transactions
                 </Button>
@@ -368,7 +368,7 @@ export default function WalletPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <h1 className="text-2xl font-bold text-slate-900">Wallet</h1>
-        <Link href="/account/wallet/topup">
+        <Link href="/coach/wallet/topup">
           <Button size="sm">
             <Plus className="h-4 w-4 mr-1" />
             Add Bubbles
@@ -435,7 +435,7 @@ export default function WalletPage() {
             Recent Transactions
           </h2>
           <Link
-            href="/account/wallet/transactions"
+            href="/coach/wallet/transactions"
             className="text-sm text-cyan-600 hover:text-cyan-700"
           >
             View all
