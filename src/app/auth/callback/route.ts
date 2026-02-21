@@ -33,7 +33,7 @@ export async function GET(request: Request) {
       const { error } = await supabase.auth.exchangeCodeForSession(code);
 
       if (!error) {
-        // Best-effort: complete any pending registration so member routes don't fail on first login.
+        // Best-effort: complete any pending registration so member routes don't fail on first login
         // Skip this for password recovery — the user already has a member profile.
         const isPasswordReset = nextPath === "/reset-password";
         if (!isPasswordReset) {
