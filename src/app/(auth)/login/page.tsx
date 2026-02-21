@@ -214,6 +214,14 @@ function LoginContent() {
             onChange={(event) => setPassword(event.target.value)}
             required
           />
+          <div className="text-right">
+            <a
+              href="/forgot-password"
+              className="text-sm font-medium text-cyan-600 hover:underline"
+            >
+              Forgot password?
+            </a>
+          </div>
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Signing in..." : "Sign in"}
           </Button>

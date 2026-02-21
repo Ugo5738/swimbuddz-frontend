@@ -34,21 +34,28 @@ export async function GET(request: Request) {
 
       if (!error) {
         // Best-effort: complete any pending registration so member routes don't fail on first login.
-        try {
-          const { data } = await supabase.auth.getSession();
-          const token = data.session?.access_token;
-          if (token) {
-            const apiBaseUrl =
-              process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-            await fetch(`${apiBaseUrl}/api/v1/pending-registrations/complete`, {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            });
+        // Skip this for password recovery — the user already has a member profile.
+        const isPasswordReset = nextPath === "/reset-password";
+        if (!isPasswordReset) {
+          try {
+            const { data } = await supabase.auth.getSession();
+            const token = data.session?.access_token;
+            if (token) {
+              const apiBaseUrl =
+                process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+              await fetch(
+                `${apiBaseUrl}/api/v1/pending-registrations/complete`,
+                {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                  },
+                },
+              );
+            }
+          } catch {
+            // Ignore completion failures - it may already be completed.
           }
-        } catch {
-          // Ignore completion failures - it may already be completed.
         }
 
         return NextResponse.redirect(`${origin}${nextPath}`);
