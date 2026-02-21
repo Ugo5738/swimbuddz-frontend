@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { supabase } from "@/lib/auth";
+import { buildAppUrl } from "@/lib/config";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 
@@ -30,10 +31,7 @@ export default function ForgotPasswordPage() {
     setError(null);
     setLoading(true);
 
-    const redirectTo =
-      typeof window !== "undefined"
-        ? `${window.location.origin}/auth/callback?next=/reset-password`
-        : undefined;
+    const redirectTo = buildAppUrl("/auth/callback?next=/reset-password");
 
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(
       email.trim(),

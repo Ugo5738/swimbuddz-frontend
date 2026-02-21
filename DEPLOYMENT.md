@@ -33,6 +33,7 @@ Publish directory: .next
 ```bash
 # Required
 NEXT_PUBLIC_API_BASE_URL=https://your-backend-api.com
+NEXT_PUBLIC_APP_URL=https://your-frontend-domain.com
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
@@ -117,18 +118,21 @@ Every time you push to your GitHub repo:
 
 ```bash
 NEXT_PUBLIC_API_BASE_URL=https://api.swimbuddz.com
+NEXT_PUBLIC_APP_URL=https://swimbuddz.com
 ```
 
 ### Staging (separate site)
 
 ```bash
 NEXT_PUBLIC_API_BASE_URL=https://api-staging.swimbuddz.com
+NEXT_PUBLIC_APP_URL=https://staging.swimbuddz.com
 ```
 
 ### Development (local .env.local)
 
 ```bash
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 ---
@@ -154,8 +158,9 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 **Check:**
 
 1. `NEXT_PUBLIC_API_BASE_URL` is set correctly in Netlify env vars
-2. Backend allows CORS from Netlify domain
-3. Backend is accessible (not localhost!)
+2. `NEXT_PUBLIC_APP_URL` matches the canonical frontend domain
+3. Backend allows CORS from Netlify domain
+4. Backend is accessible (not localhost!)
 
 ### Images Not Loading
 

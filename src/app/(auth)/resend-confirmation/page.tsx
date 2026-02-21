@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { supabase } from "@/lib/auth";
+import { buildAppUrl } from "@/lib/config";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -47,10 +48,7 @@ export default function ResendConfirmationPage() {
     setLoading(true);
 
     try {
-      const emailRedirectTo =
-        typeof window !== "undefined"
-          ? `${window.location.origin}/confirm`
-          : undefined;
+      const emailRedirectTo = buildAppUrl("/confirm");
       const { error: resendError } = await supabase.auth.resend({
         type: "signup",
         email: email.trim(),

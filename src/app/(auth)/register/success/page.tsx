@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { supabase } from "@/lib/auth";
+import { buildAppUrl } from "@/lib/config";
 import { ArrowRight, CheckCircle, Mail, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -36,10 +37,7 @@ function RegistrationSuccessContent() {
     setResendMessage(null);
 
     try {
-      const emailRedirectTo =
-        typeof window !== "undefined"
-          ? `${window.location.origin}/confirm`
-          : undefined;
+      const emailRedirectTo = buildAppUrl("/confirm");
       const { error } = await supabase.auth.resend({
         type: "signup",
         email: email.trim(),

@@ -8,6 +8,11 @@ const envApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 const fallbackApiBaseUrl =
   typeof window === "undefined" ? "http://localhost:8000" : "";
 
+// Public app URL used for auth email redirects.
+const envAppBaseUrl = process.env.NEXT_PUBLIC_APP_URL;
+const fallbackAppBaseUrl =
+  typeof window === "undefined" ? "http://localhost:3000" : "";
+
 // Ensure HTTPS in production to prevent mixed content errors
 function normalizeApiUrl(url: string | undefined): string {
   if (!url) return fallbackApiBaseUrl;
@@ -19,7 +24,21 @@ function normalizeApiUrl(url: string | undefined): string {
   return url;
 }
 
+function normalizeAppUrl(url: string | undefined): string {
+  if (url && url.trim().length > 0) {
+    return url.trim().replace(/\/+$/, "");
+  }
+
+  // In the browser, fallback to current origin so local dev still works.
+  if (typeof window !== "undefined") {
+    return window.location.origin.replace(/\/+$/, "");
+  }
+
+  return fallbackAppBaseUrl;
+}
+
 export const API_BASE_URL = normalizeApiUrl(envApiBaseUrl);
+export const APP_BASE_URL = normalizeAppUrl(envAppBaseUrl);
 
 // External Links
 export const WHATSAPP_GROUP_URL =
@@ -90,4 +109,9 @@ export function buildApiUrl(
   }
 
   return url;
+}
+
+export function buildAppUrl(path: string): string {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${APP_BASE_URL}${normalizedPath}`;
 }

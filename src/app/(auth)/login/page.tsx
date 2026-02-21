@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { PasswordField } from "@/components/ui/PasswordField";
 import { supabase } from "@/lib/auth";
+import { buildAppUrl } from "@/lib/config";
 import {
   completePendingRegistrationOnBackend,
   getPostAuthRedirectPath,
@@ -157,7 +158,9 @@ function LoginContent() {
       email: email.trim(),
       options: {
         shouldCreateUser: false,
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+        emailRedirectTo: buildAppUrl(
+          `/auth/callback?next=${encodeURIComponent(nextPath)}`,
+        ),
       },
     });
 
