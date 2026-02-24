@@ -230,7 +230,7 @@ export interface CohortTimelineShiftLog {
 export interface EnrollmentInstallment {
   id: string;
   installment_number: number;
-  /** Amount in kobo (smallest NGN unit). Divide by 100 for NGN display. */
+  /** Amount in kobo (minor NGN unit). */
   amount: number;
   due_at: string;
   status: InstallmentStatus;

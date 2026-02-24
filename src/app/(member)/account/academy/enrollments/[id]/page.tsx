@@ -23,13 +23,15 @@ import { toast } from "sonner";
 
 // 1 Bubble = ₦100
 const NAIRA_PER_BUBBLE = 100;
+const KOBO_PER_NAIRA = 100;
+const KOBO_PER_BUBBLE = NAIRA_PER_BUBBLE * KOBO_PER_NAIRA;
 
 function formatNaira(kobo: number): string {
-  return `₦${(kobo / 100).toLocaleString("en-NG", { maximumFractionDigits: 0 })}`;
+  return `₦${(kobo / KOBO_PER_NAIRA).toLocaleString("en-NG", { maximumFractionDigits: 0 })}`;
 }
 
 function formatBubbles(kobo: number): string {
-  const bubbles = Math.ceil(kobo / (NAIRA_PER_BUBBLE * 100));
+  const bubbles = Math.ceil(kobo / KOBO_PER_BUBBLE);
   return `${bubbles.toLocaleString()} 🫧`;
 }
 
@@ -297,10 +299,6 @@ export default function EnrollmentDetailPage() {
   const nextPending = installments.find(
     (i) => i.status === InstallmentStatus.PENDING,
   );
-  const nextPendingBubbles = nextPending
-    ? Math.ceil(nextPending.amount / (NAIRA_PER_BUBBLE * 100))
-    : 0;
-
   return (
     <div className="space-y-8">
       {/* Breadcrumb */}
