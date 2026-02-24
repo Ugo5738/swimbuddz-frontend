@@ -50,17 +50,20 @@ async function request<T>(
     // Prefer structured API errors: FastAPI typically returns { detail: "..." }.
     if (responseText) {
       if (contentType.includes("application/json")) {
+        let parsed: any = null;
         try {
-          const data = JSON.parse(responseText);
+          parsed = JSON.parse(responseText);
+        } catch {
+          parsed = null;
+        }
+        if (parsed) {
           const detail =
-            typeof data?.detail === "string"
-              ? data.detail
-              : JSON.stringify(data);
+            typeof parsed?.detail === "string"
+              ? parsed.detail
+              : JSON.stringify(parsed);
           throw new Error(
             detail || `Request failed with status ${response.status}`,
           );
-        } catch {
-          // Fall back to raw text when JSON parsing fails.
         }
       }
       throw new Error(responseText);

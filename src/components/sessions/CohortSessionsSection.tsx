@@ -11,12 +11,14 @@ type CohortSessionsSectionProps = {
   cohortId: string;
   cohortTimezone?: string;
   cohortLocationName?: string;
+  refreshNonce?: number;
 };
 
 export function CohortSessionsSection({
   cohortId,
   cohortTimezone,
   cohortLocationName,
+  refreshNonce = 0,
 }: CohortSessionsSectionProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +47,7 @@ export function CohortSessionsSection({
     if (cohortId) {
       loadSessions();
     }
-  }, [cohortId]);
+  }, [cohortId, refreshNonce]);
 
   const handleDeleteSession = async (sessionId: string) => {
     if (!confirm("Are you sure you want to delete this session?")) return;

@@ -153,6 +153,80 @@ export interface CohortCreate extends Partial<Cohort> {
   coach_assignments?: CoachAssignmentInput[];
 }
 
+export interface CohortTimelineShiftRequest {
+  new_start_date: string;
+  new_end_date: string;
+  expected_updated_at?: string;
+  idempotency_key?: string;
+  reason?: string;
+  shift_sessions?: boolean;
+  shift_installments?: boolean;
+  reset_start_reminders?: boolean;
+  notify_members?: boolean;
+  set_status_to_open_if_future?: boolean;
+}
+
+export interface CohortTimelineSessionImpact {
+  session_id: string;
+  status: string;
+  starts_at: string;
+  ends_at: string;
+  new_starts_at: string;
+  new_ends_at: string;
+  will_shift: boolean;
+}
+
+export interface CohortTimelineShiftPreview {
+  cohort_id: string;
+  old_start_date: string;
+  old_end_date: string;
+  new_start_date: string;
+  new_end_date: string;
+  delta_seconds: number;
+  already_applied: boolean;
+  sessions_total: number;
+  sessions_shiftable: number;
+  sessions_blocked: number;
+  pending_installments: number;
+  reminder_resets_possible: number;
+  session_impacts: CohortTimelineSessionImpact[];
+}
+
+export interface CohortTimelineShiftResult {
+  cohort_id: string;
+  old_start_date: string;
+  old_end_date: string;
+  new_start_date: string;
+  new_end_date: string;
+  delta_seconds: number;
+  already_applied: boolean;
+  sessions_shifted: number;
+  sessions_skipped: number;
+  pending_installments_shifted: number;
+  reminder_resets_applied: number;
+  notification_attempts: number;
+  notification_sent: number;
+  warnings: string[];
+}
+
+export interface CohortTimelineShiftLog {
+  id: string;
+  cohort_id: string;
+  idempotency_key?: string;
+  actor_auth_id?: string;
+  actor_member_id?: string;
+  reason?: string;
+  old_start_date: string;
+  old_end_date: string;
+  new_start_date: string;
+  new_end_date: string;
+  delta_seconds: number;
+  options_json: Record<string, unknown>;
+  results_json: Record<string, unknown>;
+  warnings: string[];
+  created_at: string;
+}
+
 export interface EnrollmentInstallment {
   id: string;
   installment_number: number;
@@ -488,6 +562,23 @@ export const AcademyApi = {
   getCohort: (id: string) => apiGet<Cohort>(`/api/v1/academy/cohorts/${id}`),
   updateCohort: (id: string, data: Partial<Cohort>) =>
     apiPut<Cohort>(`/api/v1/academy/cohorts/${id}`, data, { auth: true }),
+  previewCohortTimelineShift: (id: string, data: CohortTimelineShiftRequest) =>
+    apiPost<CohortTimelineShiftPreview>(
+      `/api/v1/academy/cohorts/${id}/timeline-shifts/preview`,
+      data,
+      { auth: true },
+    ),
+  applyCohortTimelineShift: (id: string, data: CohortTimelineShiftRequest) =>
+    apiPost<CohortTimelineShiftResult>(
+      `/api/v1/academy/cohorts/${id}/timeline-shifts`,
+      data,
+      { auth: true },
+    ),
+  listCohortTimelineShiftLogs: (id: string, limit = 20) =>
+    apiGet<CohortTimelineShiftLog[]>(
+      `/api/v1/academy/cohorts/${id}/timeline-shifts?limit=${limit}`,
+      { auth: true },
+    ),
   deleteCohort: (id: string) =>
     apiDelete<void>(`/api/v1/academy/cohorts/${id}`, { auth: true }),
   listCohortsByCoach: (coachId: string) =>

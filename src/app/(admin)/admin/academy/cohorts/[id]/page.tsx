@@ -45,6 +45,7 @@ export default function CohortDetailsPage() {
   >({});
   const [loading, setLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [sessionsRefreshNonce, setSessionsRefreshNonce] = useState(0);
 
   // Milestone Progress Modal State
   const [isMilestoneModalOpen, setIsMilestoneModalOpen] = useState(false);
@@ -354,6 +355,7 @@ export default function CohortDetailsPage() {
         cohortId={cohortId}
         cohortTimezone={cohort.timezone}
         cohortLocationName={cohort.location_name}
+        refreshNonce={sessionsRefreshNonce}
       />
 
       {/* Student Progress Table */}
@@ -494,6 +496,7 @@ export default function CohortDetailsPage() {
           onClose={() => setIsEditModalOpen(false)}
           onSuccess={(updatedCohort) => {
             setCohort(updatedCohort);
+            setSessionsRefreshNonce((value) => value + 1);
             toast.success("Cohort updated successfully");
           }}
           cohort={cohort}
