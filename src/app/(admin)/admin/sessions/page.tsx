@@ -981,7 +981,7 @@ function SimpleSessionForm({
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
-            label="Pool Fee (cents)"
+            label="Pool Fee (₦)"
             type="number"
             value={formData.pool_fee}
             onChange={(e) =>
