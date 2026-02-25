@@ -414,6 +414,19 @@ export default function BillingPage() {
       (returnedPayment.status === "paid" &&
         !returnedPayment.entitlement_applied_at));
 
+  const paymentPurpose = (
+    returnedPayment?.purpose ||
+    returnedPayment?.payment_metadata?.purpose ||
+    ""
+  ).toLowerCase();
+  const isSessionPayment = paymentPurpose.includes("session");
+  const isAcademyPayment = paymentPurpose.includes("academy");
+  const isClubPayment = paymentPurpose.includes("club");
+  const isMembershipPayment =
+    paymentPurpose === "community" ||
+    paymentPurpose === "club_bundle" ||
+    isClubPayment;
+
   if (shouldShowPaymentLoading) {
     return (
       <div className="space-y-6">
@@ -423,7 +436,11 @@ export default function BillingPage() {
         <LoadingCard
           text={
             returnedPayment?.status === "paid"
-              ? "Activating membership..."
+              ? isSessionPayment
+                ? "Confirming session..."
+                : isAcademyPayment
+                  ? "Confirming enrollment..."
+                  : "Activating membership..."
               : "Confirming payment..."
           }
         />
@@ -464,9 +481,13 @@ export default function BillingPage() {
             variant="info"
             title="Verification taking longer than expected"
           >
-            Payment verification is still processing. Your membership will be
-            activated automatically once complete. You can refresh this page to
-            check status.
+            Payment verification is still processing.{" "}
+            {isSessionPayment
+              ? "Your session confirmation will be completed automatically once done."
+              : isAcademyPayment
+                ? "Your enrollment confirmation will be completed automatically once done."
+                : "Your membership will be activated automatically once complete."}{" "}
+            You can refresh this page to check status.
           </Alert>
         )}
 
@@ -475,33 +496,19 @@ export default function BillingPage() {
         returnedPayment?.status === "paid" &&
         returnedPayment.entitlement_applied_at &&
         (() => {
-          // Use the direct purpose field first, fall back to payment_metadata
-          const purpose = (
-            returnedPayment.purpose ||
-            returnedPayment.payment_metadata?.purpose ||
-            ""
-          ).toLowerCase();
-          const isClub = purpose.includes("club");
-          const isAcademy = purpose.includes("academy");
-          const isSession = purpose.includes("session");
-          const isMembership =
-            purpose === "community" ||
-            purpose === "club" ||
-            purpose === "club_bundle";
-
           let title = "Welcome to Community! 🎉";
           let description =
             "Your membership has been activated. You now have full access to member features.";
 
-          if (isSession) {
+          if (isSessionPayment) {
             title = "Session Confirmed! ✓";
             description =
               "Your attendance has been recorded. You'll receive a confirmation email with session details and your e-card.";
-          } else if (isClub) {
+          } else if (isClubPayment) {
             title = "Club is now active! 🎉";
             description =
               "You can now book sessions and access all Club features.";
-          } else if (isAcademy) {
+          } else if (isAcademyPayment) {
             title = "Academy enrollment confirmed! 🎉";
             description =
               "You're enrolled! Check your email for cohort details and next steps.";
@@ -511,7 +518,7 @@ export default function BillingPage() {
             <Alert variant="success" title={title}>
               <div className="space-y-2">
                 <p>{description}</p>
-                {isMembership && (
+                {isMembershipPayment && (
                   <p>
                     {walletSummary?.welcomeBonusGranted
                       ? `Welcome bonus added: +${walletSummary.welcomeBonusAmount} Bubbles.`
@@ -521,7 +528,7 @@ export default function BillingPage() {
                       : ""}
                   </p>
                 )}
-                {isMembership && (
+                {isMembershipPayment && (
                   <div className="flex flex-wrap gap-2 pt-1">
                     <Link href="/account/wallet?welcome=1">
                       <Button size="sm">Go to Wallet</Button>

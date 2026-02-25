@@ -5,7 +5,13 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet, apiPost } from "@/lib/api";
+import {
+  hasTierAccess,
+  requiredTierForSessionType,
+  tierDisplayLabel,
+} from "@/lib/sessionAccess";
 import { getSession, RideShareArea, Session } from "@/lib/sessions";
+import { getEffectiveTier, MembershipTier } from "@/lib/tiers";
 import {
   ArrowLeft,
   Calendar,
@@ -88,6 +94,20 @@ interface MemberProfile {
   last_name?: string;
   email: string;
   phone?: string;
+  membership?: {
+    primary_tier?: string | null;
+    active_tiers?: string[] | null;
+    requested_tiers?: string[] | null;
+    community_paid_until?: string | null;
+    club_paid_until?: string | null;
+    academy_paid_until?: string | null;
+  } | null;
+}
+
+function getUpgradeHref(requiredTier: MembershipTier): string {
+  if (requiredTier === "academy") return "/account/academy/browse";
+  if (requiredTier === "club") return "/club";
+  return "/community";
 }
 
 export default function SessionBookPage({
@@ -122,6 +142,10 @@ export default function SessionBookPage({
   } | null>(null);
   const [validatingDiscount, setValidatingDiscount] = useState(false);
 
+  // Wallet / bubbles state
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [payWithBubbles, setPayWithBubbles] = useState(false);
+
   // Payment state
   const [processing, setProcessing] = useState(false);
 
@@ -137,10 +161,15 @@ export default function SessionBookPage({
   const selectedArea = session?.rideShareAreas?.find(
     (a) => a.id === selectedRideAreaId,
   );
-  const rideShareCost = selectedArea?.cost ?? 0;
+  // Ride share cost only counts once a pickup location is confirmed
+  const rideShareCost = selectedArea && selectedPickupLocationId ? selectedArea.cost : 0;
   const subtotal = poolFee + rideShareCost;
   const discountAmount = validatedDiscount?.amount ?? 0;
   const total = Math.max(0, subtotal - discountAmount);
+
+  // Bubbles calculation (₦100 = 1 Bubble)
+  const bubblesNeeded = Math.ceil(total / 100);
+  const canPayWithBubbles = total > 0 && walletBalance !== null && walletBalance >= bubblesNeeded;
 
   // Verify payment if coming back from Paystack
   useEffect(() => {
@@ -217,12 +246,20 @@ export default function SessionBookPage({
 
         setSession(sessionData);
 
-        // Load member profile
+        // Load member profile and wallet balance in parallel
         try {
-          const profile = await apiGet<MemberProfile>("/api/v1/members/me", {
-            auth: true,
-          });
-          setMember(profile);
+          const [profile, wallet] = await Promise.allSettled([
+            apiGet<MemberProfile>("/api/v1/members/me", { auth: true }),
+            apiGet<{ balance: number; status: string }>("/api/v1/wallet/me", { auth: true }),
+          ]);
+          if (profile.status === "fulfilled") {
+            setMember(profile.value);
+          } else {
+            setError("Please sign in to book this session.");
+          }
+          if (wallet.status === "fulfilled" && wallet.value.status === "active") {
+            setWalletBalance(wallet.value.balance);
+          }
         } catch {
           setError("Please sign in to book this session.");
         }
@@ -314,20 +351,35 @@ export default function SessionBookPage({
 
   // Process payment
   const handlePayment = async () => {
-    // For free sessions (total = 0), just sign in directly
-    if (total <= 0) {
+    // Free session OR paying with Bubbles → direct sign-in path
+    if (total <= 0 || payWithBubbles) {
       setProcessing(true);
       try {
         await apiPost(
           `/api/v1/attendance/sessions/${params.id}/sign-in`,
           {
-            status: "PRESENT",
+            status: "present",
             ride_share_option: selectedRideAreaId ? "join" : undefined,
             needs_ride: !!selectedRideAreaId,
             pickup_location: selectedPickupLocationId,
+            pay_with_bubbles: payWithBubbles && total > 0,
           },
           { auth: true },
         );
+
+        // If ride selected and paying with bubbles, book the ride via transport service
+        if (payWithBubbles && selectedRideAreaId && selectedPickupLocationId && rideShareCost > 0) {
+          await apiPost(
+            `/api/v1/transport/sessions/${params.id}/bookings`,
+            {
+              session_ride_config_id: selectedRideAreaId,
+              pickup_location_id: selectedPickupLocationId,
+              pay_with_bubbles: true,
+            },
+            { auth: true },
+          );
+        }
+
         setPaymentSuccess(true);
       } catch (err) {
         const message =
@@ -339,6 +391,7 @@ export default function SessionBookPage({
       return;
     }
 
+    // Paystack flow
     setProcessing(true);
     try {
       const intent = await apiPost<PaymentIntentResponse>(
@@ -351,7 +404,7 @@ export default function SessionBookPage({
           direct_amount: subtotal,
           ride_config_id: selectedRideAreaId || undefined,
           pickup_location_id: selectedPickupLocationId || undefined,
-          attendance_status: "PRESENT",
+          attendance_status: "present",
           discount_code: validatedDiscount?.code || undefined,
         },
         { auth: true },
@@ -548,6 +601,35 @@ export default function SessionBookPage({
     );
   }
 
+  const memberTier = member ? getEffectiveTier(member) : "community";
+  const requiredTier = requiredTierForSessionType(session.session_type);
+  const hasAccess = hasTierAccess(memberTier, requiredTier);
+
+  if (!hasAccess) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-8">
+        <Card className="p-6 space-y-6 text-center">
+          <Alert variant="info" title="Tier upgrade required">
+            This is a {tierDisplayLabel(requiredTier)} session. Your current
+            tier is {tierDisplayLabel(memberTier)}.
+          </Alert>
+          <div className="flex flex-col gap-3">
+            <Link href={getUpgradeHref(requiredTier)}>
+              <Button className="w-full">
+                Upgrade to {tierDisplayLabel(requiredTier)}
+              </Button>
+            </Link>
+            <Link href="/sessions">
+              <Button variant="secondary" className="w-full">
+                Back to Sessions
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   // Parse session times
   const startsAt = new Date(session.starts_at);
   const endsAt = new Date(session.ends_at);
@@ -662,7 +744,15 @@ export default function SessionBookPage({
                     setSelectedPickupLocationId(null);
                   } else {
                     setSelectedRideAreaId(area.id);
-                    setSelectedPickupLocationId(null);
+                    // Auto-select when there is exactly one available pickup location
+                    const availableLocs = area.pickup_locations.filter(
+                      (loc) => loc.is_available && loc.current_bookings < loc.max_capacity,
+                    );
+                    if (availableLocs.length === 1) {
+                      setSelectedPickupLocationId(availableLocs[0].id);
+                    } else {
+                      setSelectedPickupLocationId(null);
+                    }
                   }
                   // Clear discount when ride share changes (affects total)
                   if (validatedDiscount) {
@@ -782,7 +872,16 @@ export default function SessionBookPage({
             <span className="text-slate-900">{formatCurrency(poolFee)}</span>
           </div>
 
-          {selectedArea && (
+          {selectedArea && !selectedPickupLocationId && (
+            <div className="flex justify-between py-2 text-slate-400">
+              <span className="italic">
+                Ride Share ({selectedArea.ride_area_name})
+              </span>
+              <span className="text-xs mt-0.5">← select pickup</span>
+            </div>
+          )}
+
+          {selectedArea && selectedPickupLocationId && (
             <div className="flex justify-between py-2">
               <span className="text-slate-700">
                 Ride Share ({selectedArea.ride_area_name})
@@ -874,12 +973,117 @@ export default function SessionBookPage({
                 </span>
               )}
               <span className="text-xl font-bold text-cyan-600">
-                {formatCurrency(total)}
+                {payWithBubbles
+                  ? `${bubblesNeeded} 🫧`
+                  : formatCurrency(total)}
               </span>
             </div>
           </div>
         </div>
       </Card>
+
+      {/* Payment Method */}
+      {total > 0 && (
+        <Card className="p-6 space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Payment Method</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Choose how to pay for this session</p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            {/* Card / Paystack */}
+            <div
+              onClick={() => setPayWithBubbles(false)}
+              className={`cursor-pointer rounded-xl border-2 p-4 transition-all ${
+                !payWithBubbles
+                  ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-300"
+                  : "border-slate-200 bg-white hover:border-cyan-200 hover:bg-cyan-50/40"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`flex-shrink-0 rounded-lg p-2 ${!payWithBubbles ? "bg-cyan-100" : "bg-slate-100"}`}>
+                  <CreditCard className={`w-5 h-5 ${!payWithBubbles ? "text-cyan-600" : "text-slate-400"}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-slate-900">Card Payment</p>
+                    {!payWithBubbles && (
+                      <span className="text-xs font-medium px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded-full">Selected</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">Paystack · Card, bank, USSD</p>
+                </div>
+              </div>
+              <p className="mt-3 text-xl font-bold text-slate-900">{formatCurrency(total)}</p>
+              <p className="text-xs text-slate-400 mt-1">🔒 Secure payment</p>
+            </div>
+
+            {/* Bubbles */}
+            <div
+              onClick={() => { if (canPayWithBubbles) setPayWithBubbles(true); }}
+              className={`rounded-xl border-2 p-4 transition-all ${
+                payWithBubbles
+                  ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-300 cursor-pointer"
+                  : canPayWithBubbles
+                    ? "border-slate-200 bg-white hover:border-cyan-200 hover:bg-cyan-50/40 cursor-pointer"
+                    : "border-slate-200 bg-white cursor-default"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`flex-shrink-0 rounded-lg p-2 text-xl leading-none ${payWithBubbles ? "bg-cyan-100" : "bg-slate-100"}`}>
+                  🫧
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-slate-900">Pay with Bubbles</p>
+                    {payWithBubbles && (
+                      <span className="text-xs font-medium px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded-full">Selected</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">SwimBuddz wallet</p>
+                </div>
+              </div>
+
+              <p className="mt-3 text-xl font-bold text-slate-900">
+                {bubblesNeeded} <span className="text-sm font-normal text-slate-500">Bubbles</span>
+              </p>
+
+              {walletBalance !== null ? (
+                <div className="mt-2 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-500">Your balance</span>
+                    <span className={`font-semibold ${canPayWithBubbles ? "text-emerald-600" : "text-red-500"}`}>
+                      {walletBalance} 🫧 {canPayWithBubbles ? "✓" : ""}
+                    </span>
+                  </div>
+                  {!canPayWithBubbles && (
+                    <Link
+                      href="/account/wallet/topup"
+                      className="mt-2 flex items-center justify-center gap-1 w-full text-xs font-semibold text-white bg-cyan-500 hover:bg-cyan-600 rounded-lg py-1.5 transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Top Up {bubblesNeeded - walletBalance} more Bubbles →
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <div className="mt-2">
+                  <p className="text-xs text-slate-500">
+                    <Link
+                      href="/account/wallet"
+                      className="text-cyan-600 font-medium underline"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Set up your wallet
+                    </Link>{" "}
+                    to pay with Bubbles
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Payment Button */}
       <div className="space-y-4">
@@ -895,8 +1099,16 @@ export default function SessionBookPage({
             "Processing..."
           ) : (
             <span className="flex items-center justify-center gap-2">
-              <CreditCard className="w-5 h-5" />
-              {total <= 0 ? "Confirm Booking" : `Pay ${formatCurrency(total)}`}
+              {payWithBubbles ? (
+                <span className="text-lg leading-none">🫧</span>
+              ) : (
+                <CreditCard className="w-5 h-5" />
+              )}
+              {total <= 0
+                ? "Confirm Booking"
+                : payWithBubbles
+                  ? `Pay ${bubblesNeeded} Bubbles`
+                  : `Pay ${formatCurrency(total)}`}
             </span>
           )}
         </Button>
@@ -910,7 +1122,9 @@ export default function SessionBookPage({
         <p className="text-center text-xs text-slate-400">
           {total <= 0
             ? "This session is free! Click to confirm your booking."
-            : "Payments are securely processed by Paystack."}
+            : payWithBubbles
+              ? "Bubbles will be deducted from your SwimBuddz wallet."
+              : "Payments are securely processed by Paystack."}
         </p>
       </div>
     </div>

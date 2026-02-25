@@ -1,35 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  Table,
-  TableHead,
-  TableRow,
-  TableHeaderCell,
-  TableBody,
-  TableCell,
-} from "@/components/ui/Table";
-import { Card } from "@/components/ui/Card";
+import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Alert } from "@/components/ui/Alert";
+import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+} from "@/components/ui/Table";
+import { useEffect, useState } from "react";
 
 const mockAttendance = [
   {
     id: "1",
     name: "Ada Obi",
     email: "ada@example.com",
-    status: "PRESENT",
-    role: "SWIMMER",
+    status: "present",
+    role: "swimmer",
     notes: "Looking forward to the session",
   },
   {
     id: "2",
     name: "Bola Adeyemi",
     email: "bola@example.com",
-    status: "LATE",
-    role: "SWIMMER",
+    status: "late",
+    role: "swimmer",
     notes: "Will arrive 15 mins late",
   },
 ];
@@ -102,7 +102,7 @@ export default function AdminSessionAttendancePage() {
                   <TableCell>
                     <Badge
                       variant={
-                        attendee.status === "PRESENT" ? "success" : "warning"
+                        attendee.status === "present" ? "success" : "warning"
                       }
                     >
                       {attendee.status}

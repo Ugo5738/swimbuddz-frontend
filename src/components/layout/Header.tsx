@@ -73,6 +73,13 @@ export function Header() {
     session.user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
   const dashboardUrl = isAdmin ? "/admin/dashboard" : "/account";
 
+  // Logged-in members go directly to the full session catalog; guests see the public teaser
+  const effectiveNavGroups = navGroups.map((item) =>
+    item.type === "link" && item.href === "/sessions-and-events" && session
+      ? { ...item, href: "/sessions" }
+      : item,
+  );
+
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -306,7 +313,7 @@ export function Header() {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-1 text-sm font-medium">
-          {navGroups.map((item) => renderNavItem(item))}
+          {effectiveNavGroups.map((item) => renderNavItem(item))}
 
           {/* Auth Actions */}
           <div className="flex items-center gap-2 ml-2 pl-2 border-l border-slate-200">
@@ -374,7 +381,7 @@ export function Header() {
           className="border-t bg-white px-4 py-4 max-h-[calc(80vh-1rem)] overflow-y-auto"
         >
           <div className="flex flex-col gap-1">
-            {navGroups.map((item) => renderNavItem(item, true))}
+            {effectiveNavGroups.map((item) => renderNavItem(item, true))}
 
             {/* Auth Actions */}
             <div className="border-t border-slate-100 mt-2 pt-2">

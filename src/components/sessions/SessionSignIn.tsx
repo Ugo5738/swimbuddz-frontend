@@ -45,7 +45,7 @@ type SessionSignInProps = {
 
 export function SessionSignIn({ session }: SessionSignInProps) {
   const [step, setStep] = useState(0);
-  const [status, setStatus] = useState<"PRESENT" | "LATE" | "EARLY">("PRESENT");
+  const [status, setStatus] = useState<"present" | "late">("present");
   const [note, setNote] = useState("");
 
   // New State for Ride Share Booking
@@ -384,11 +384,10 @@ export function SessionSignIn({ session }: SessionSignInProps) {
                 setStatus(event.target.value as typeof status)
               }
             >
-              <option value="PRESENT">Attend full session</option>
-              <option value="LATE">Arriving late</option>
-              <option value="EARLY">Leaving early</option>
+              <option value="present">Attend full session</option>
+              <option value="late">Arriving late or leaving early</option>
             </Select>
-            {status !== "PRESENT" ? (
+            {status !== "present" ? (
               <Textarea
                 label="Timing note"
                 hint="Let coaches know when you'll arrive/leave."
@@ -622,11 +621,7 @@ export function SessionSignIn({ session }: SessionSignInProps) {
             <ul className="list-disc space-y-2 pl-5">
               <li>
                 Status:{" "}
-                {status === "PRESENT"
-                  ? "Full session"
-                  : status === "LATE"
-                    ? "Arriving late"
-                    : "Leaving early"}
+                {status === "present" ? "Full session" : "Arriving late or leaving early"}
               </li>
               {selectedArea && (
                 <>

@@ -28,7 +28,8 @@ export function MainLayout({ children }: MainLayoutProps) {
     pathname?.startsWith("/attendance") ||
     pathname?.startsWith("/checkout") ||
     pathname?.startsWith("/upgrade") ||
-    pathname?.startsWith("/sessions/");
+    pathname?.startsWith("/sessions/") ||
+    pathname === "/sessions";
 
   if (isAdminRoute || isMemberPortalRoute || isCoachRoute) {
     return <>{children}</>;

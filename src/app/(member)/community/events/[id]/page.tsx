@@ -2,12 +2,14 @@
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { apiGet } from "@/lib/api";
+import { apiGet, apiPost } from "@/lib/api";
 import { apiEndpoints } from "@/lib/config";
 import { format } from "date-fns";
-import { ArrowLeft, Calendar, CheckCircle, MapPin, Users } from "lucide-react";
+import { ArrowLeft, Calendar, CheckCircle, CreditCard, MapPin, Users } from "lucide-react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface Event {
   id: string;
@@ -19,6 +21,7 @@ interface Event {
   end_time: string | null;
   max_capacity: number | null;
   tier_access: string;
+  cost_naira: number | null;
   created_at: string;
 }
 
@@ -28,6 +31,8 @@ interface RSVP {
   status: "going" | "maybe" | "not_going";
   created_at: string;
 }
+
+type WalletData = { balance: number };
 
 const eventTypeLabels: Record<string, string> = {
   social: "Social Event",
@@ -48,15 +53,16 @@ export default function EventDetailPage() {
   const [userRsvp, setUserRsvp] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [memberId, setMemberId] = useState<string | null>(null);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [payWithBubbles, setPayWithBubbles] = useState(false);
 
   useEffect(() => {
     if (eventId) {
       fetchEvent();
       fetchRsvps();
     }
-    apiGet<{ id: string }>("/api/v1/members/me", { auth: true })
-      .then((data) => setMemberId(data.id))
+    apiGet<WalletData>("/api/v1/wallet/me", { auth: true })
+      .then((data) => setWalletBalance(data.balance))
       .catch(() => {});
   }, [eventId]);
 
@@ -87,24 +93,23 @@ export default function EventDetailPage() {
   };
 
   const handleRsvp = async (status: "going" | "maybe" | "not_going") => {
-    if (!memberId) return;
     setSubmitting(true);
     try {
-      const response = await fetch(
-        `${apiEndpoints.events}/${eventId}/rsvp?member_id=${memberId}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status }),
-        },
-      );
-
-      if (response.ok) {
-        setUserRsvp(status);
-        await fetchRsvps();
+      const body: Record<string, unknown> = { status };
+      if (status === "going" && event?.cost_naira && event.cost_naira > 0) {
+        body.pay_with_bubbles = payWithBubbles;
+      }
+      await apiPost(`/api/v1/events/${eventId}/rsvp`, body, { auth: true });
+      setUserRsvp(status);
+      await fetchRsvps();
+      if (status === "going" && payWithBubbles && event?.cost_naira && event.cost_naira > 0) {
+        const bubblesUsed = Math.ceil(event.cost_naira / 100);
+        toast.success(`RSVP confirmed! ${bubblesUsed} 🫧 Bubbles used.`);
       }
     } catch (error) {
-      console.error("Failed to RSVP:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to RSVP. Please try again.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -115,6 +120,10 @@ export default function EventDetailPage() {
     maybe: rsvps.filter((r) => r.status === "maybe").length,
     not_going: rsvps.filter((r) => r.status === "not_going").length,
   };
+
+  const hasCost = !!(event?.cost_naira && event.cost_naira > 0);
+  const bubblesNeeded = hasCost ? Math.ceil(event!.cost_naira! / 100) : 0;
+  const canPayWithBubbles = hasCost && walletBalance !== null && walletBalance >= bubblesNeeded;
 
   if (loading) {
     return (
@@ -204,6 +213,21 @@ export default function EventDetailPage() {
                 </div>
               </div>
             )}
+
+            {hasCost && (
+              <div className="flex items-center gap-2 text-slate-700">
+                <span className="text-base">🎟️</span>
+                <div>
+                  <div className="font-medium">Entry Fee</div>
+                  <div className="text-slate-600">
+                    ₦{event.cost_naira!.toLocaleString()}{" "}
+                    <span className="text-xs text-slate-400">
+                      · {bubblesNeeded} 🫧
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Description */}
@@ -226,28 +250,137 @@ export default function EventDetailPage() {
           {isFullyBooked && userRsvp !== "going" ? (
             <div className="rounded-lg bg-amber-50 p-4 text-sm text-amber-900">
               <strong>Event is fully booked.</strong> You can still mark
-              yourself as "Maybe" to be notified if spots open up.
+              yourself as &quot;Maybe&quot; to be notified if spots open up.
             </div>
           ) : null}
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          {/* Payment Method — only for paid events, only when not fully booked */}
+          {hasCost && !(isFullyBooked && userRsvp !== "going") && (
+            <div className="mb-6 space-y-3">
+              <div>
+                <h4 className="text-sm font-semibold text-slate-800">Entry Fee Payment</h4>
+                <p className="text-xs text-slate-500 mt-0.5">Choose how to pay the ₦{event.cost_naira!.toLocaleString()} entry fee</p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                {/* Card Payment */}
+                <div
+                  onClick={() => setPayWithBubbles(false)}
+                  className={`cursor-pointer rounded-xl border-2 p-4 transition-all ${
+                    !payWithBubbles
+                      ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-300"
+                      : "border-slate-200 bg-white hover:border-cyan-200 hover:bg-cyan-50/40"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`flex-shrink-0 rounded-lg p-2 ${!payWithBubbles ? "bg-cyan-100" : "bg-slate-100"}`}>
+                      <CreditCard className={`h-5 w-5 ${!payWithBubbles ? "text-cyan-600" : "text-slate-400"}`} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-slate-900">Card Payment</p>
+                        {!payWithBubbles && (
+                          <span className="text-xs font-medium px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded-full">Selected</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">Paystack · Card, bank, USSD</p>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-xl font-bold text-slate-900">₦{event.cost_naira!.toLocaleString()}</p>
+                </div>
+
+                {/* Bubbles */}
+                <div
+                  onClick={() => { if (canPayWithBubbles) setPayWithBubbles(true); }}
+                  className={`rounded-xl border-2 p-4 transition-all ${
+                    payWithBubbles
+                      ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-300 cursor-pointer"
+                      : canPayWithBubbles
+                        ? "border-slate-200 bg-white hover:border-cyan-200 hover:bg-cyan-50/40 cursor-pointer"
+                        : "border-slate-200 bg-white cursor-default"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`flex-shrink-0 rounded-lg p-2 text-xl leading-none ${payWithBubbles ? "bg-cyan-100" : "bg-slate-100"}`}>
+                      🫧
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-slate-900">Pay with Bubbles</p>
+                        {payWithBubbles && (
+                          <span className="text-xs font-medium px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded-full">Selected</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">SwimBuddz wallet</p>
+                    </div>
+                  </div>
+
+                  <p className="mt-3 text-xl font-bold text-slate-900">
+                    {bubblesNeeded} <span className="text-sm font-normal text-slate-500">Bubbles</span>
+                  </p>
+
+                  {walletBalance !== null ? (
+                    <div className="mt-2 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-500">Your balance</span>
+                        <span className={`font-semibold ${canPayWithBubbles ? "text-emerald-600" : "text-red-500"}`}>
+                          {walletBalance} 🫧 {canPayWithBubbles ? "✓" : ""}
+                        </span>
+                      </div>
+                      {!canPayWithBubbles && (
+                        <Link
+                          href="/account/wallet/topup"
+                          className="mt-2 flex items-center justify-center gap-1 w-full text-xs font-semibold text-white bg-cyan-500 hover:bg-cyan-600 rounded-lg py-1.5 transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Top Up {bubblesNeeded - walletBalance} more Bubbles →
+                        </Link>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="mt-2">
+                      <p className="text-xs text-slate-500">
+                        <Link
+                          href="/account/wallet"
+                          className="text-cyan-600 font-medium underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Set up your wallet
+                        </Link>{" "}
+                        to pay with Bubbles
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="grid gap-3 sm:grid-cols-3">
             <button
               onClick={() => handleRsvp("going")}
               disabled={submitting || !!(isFullyBooked && userRsvp !== "going")}
-              className={`flex items-center justify-center gap-2 rounded-lg border-2 px-4 py-3 font-medium transition-all ${
+              className={`flex items-center justify-center gap-2 rounded-xl border-2 px-4 py-4 font-medium transition-all ${
                 userRsvp === "going"
                   ? "border-emerald-500 bg-emerald-50 text-emerald-700"
                   : "border-slate-200 text-slate-700 hover:border-emerald-300 hover:bg-emerald-50"
               } disabled:cursor-not-allowed disabled:opacity-50`}
             >
               {userRsvp === "going" && <CheckCircle className="h-5 w-5" />}
-              <span>Going</span>
+              <div className="text-center">
+                <div>Going</div>
+                {hasCost && (
+                  <div className="text-xs font-normal opacity-75 mt-0.5">
+                    {payWithBubbles ? `${bubblesNeeded} 🫧` : `₦${event.cost_naira!.toLocaleString()}`}
+                  </div>
+                )}
+              </div>
             </button>
 
             <button
               onClick={() => handleRsvp("maybe")}
               disabled={!!submitting}
-              className={`flex items-center justify-center gap-2 rounded-lg border-2 px-4 py-3 font-medium transition-all ${
+              className={`flex items-center justify-center gap-2 rounded-xl border-2 px-4 py-4 font-medium transition-all ${
                 userRsvp === "maybe"
                   ? "border-amber-500 bg-amber-50 text-amber-700"
                   : "border-slate-200 text-slate-700 hover:border-amber-300 hover:bg-amber-50"
@@ -260,14 +393,14 @@ export default function EventDetailPage() {
             <button
               onClick={() => handleRsvp("not_going")}
               disabled={!!submitting}
-              className={`flex items-center justify-center gap-2 rounded-lg border-2 px-4 py-3 font-medium transition-all ${
+              className={`flex items-center justify-center gap-2 rounded-xl border-2 px-4 py-4 font-medium transition-all ${
                 userRsvp === "not_going"
                   ? "border-slate-500 bg-slate-50 text-slate-700"
                   : "border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50"
               } disabled:cursor-not-allowed disabled:opacity-50`}
             >
               {userRsvp === "not_going" && <CheckCircle className="h-5 w-5" />}
-              <span>Can't Go</span>
+              <span>Can&apos;t Go</span>
             </button>
           </div>
 

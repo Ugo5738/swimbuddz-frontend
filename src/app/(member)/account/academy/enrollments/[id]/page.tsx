@@ -41,10 +41,14 @@ function InstallmentRow({
   installment,
   index,
   total,
+  onPayWithBubbles,
+  paying,
 }: {
   installment: EnrollmentInstallment;
   index: number;
   total: number;
+  onPayWithBubbles?: (installmentId: string) => void;
+  paying?: boolean;
 }) {
   const isPaid = installment.status === InstallmentStatus.PAID;
   const isMissed = installment.status === InstallmentStatus.MISSED;
@@ -134,14 +138,24 @@ function InstallmentRow({
         </p>
       </div>
 
-      {/* Amount */}
-      <div className="text-right">
+      {/* Amount + Pay with Bubbles */}
+      <div className="text-right shrink-0 space-y-1">
         <div className="font-semibold text-slate-900">
           {formatNaira(installment.amount)}
         </div>
         <div className="text-xs text-slate-400">
           {formatBubbles(installment.amount)}
         </div>
+        {!isPaid && !isWaived && onPayWithBubbles && (
+          <button
+            onClick={() => onPayWithBubbles(installment.id)}
+            disabled={paying}
+            className="mt-1 inline-flex items-center gap-1.5 rounded-lg border-2 border-cyan-400 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700 transition-all hover:bg-cyan-100 hover:border-cyan-500 disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap"
+          >
+            <span className="text-sm leading-none">🫧</span>
+            {paying ? "Paying..." : `Pay ${formatBubbles(installment.amount)}`}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -159,6 +173,7 @@ export default function EnrollmentDetailPage() {
   const [cohortSessions, setCohortSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState(false);
+  const [payingInstallmentId, setPayingInstallmentId] = useState<string | null>(null);
   const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(
     null,
   );
@@ -231,6 +246,27 @@ export default function EnrollmentDetailPage() {
       toast.error("Payment not found or still processing. Try again later.");
     } finally {
       setVerifying(false);
+    }
+  };
+
+  const handlePayInstallmentWithBubbles = async (installmentId: string) => {
+    setPayingInstallmentId(installmentId);
+    try {
+      await apiPost(
+        `/api/v1/academy/enrollments/${enrollmentId}/installments/${installmentId}/pay-with-bubbles`,
+        {},
+        { auth: true },
+      );
+      toast.success("Installment paid with Bubbles!");
+      await loadData();
+    } catch (e) {
+      toast.error(
+        e instanceof Error
+          ? e.message
+          : "Payment failed. Check your wallet balance.",
+      );
+    } finally {
+      setPayingInstallmentId(null);
     }
   };
 
@@ -496,6 +532,8 @@ export default function EnrollmentDetailPage() {
                     installment={inst}
                     index={i}
                     total={totalInstallments}
+                    onPayWithBubbles={handlePayInstallmentWithBubbles}
+                    paying={payingInstallmentId === inst.id}
                   />
                 ))}
               </div>

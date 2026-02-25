@@ -7,13 +7,13 @@ import {
   BookOpen,
   Briefcase,
   Calendar,
+  CalendarCheck,
   CalendarDays,
   CheckCircle,
   ChevronRight,
   ClipboardCheck,
   CreditCard,
   GraduationCap,
-  Wallet,
   HandHeart,
   Home,
   LayoutDashboard,
@@ -22,6 +22,7 @@ import {
   ShoppingBag,
   User,
   Users,
+  Wallet,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -113,6 +114,18 @@ const navSections: NavSection[] = [
     ],
   },
   {
+    title: "Sessions",
+    items: [
+      { href: "/sessions", label: "Browse Sessions", icon: Calendar },
+      { href: "/account/sessions", label: "My Bookings", icon: CalendarCheck },
+      {
+        href: "/account/attendance/history",
+        label: "My Attendance",
+        icon: ClipboardCheck,
+      },
+    ],
+  },
+  {
     title: "Community",
     items: [
       { href: "/community/directory", label: "Members", icon: Users },
@@ -124,17 +137,6 @@ const navSections: NavSection[] = [
       },
       { href: "/community/tips", label: "Tips & Articles", icon: BookOpen },
       { href: "/store", label: "Shop", icon: ShoppingBag },
-    ],
-  },
-  {
-    title: "Sessions",
-    items: [
-      { href: "/account/sessions", label: "Browse Sessions", icon: Calendar },
-      {
-        href: "/account/attendance/history",
-        label: "My Attendance",
-        icon: ClipboardCheck,
-      },
     ],
   },
   {
@@ -194,6 +196,12 @@ export function MemberLayout({ children }: MemberLayoutProps) {
         .catch(() => setIsCoach(false)),
     ]).finally(() => setLoading(false));
   }, [refreshMember]);
+
+  // Keep sidebar membership/status in sync after in-app navigation
+  // (e.g., checkout -> billing without a Paystack reference query param).
+  useEffect(() => {
+    refreshMember();
+  }, [pathname, refreshMember]);
 
   useEffect(() => {
     const reference =

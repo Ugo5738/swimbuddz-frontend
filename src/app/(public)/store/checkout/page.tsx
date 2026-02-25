@@ -24,10 +24,17 @@ interface StoreCredit {
   balance_ngn: number;
 }
 
+interface WalletData {
+  balance: number;
+  status: string;
+}
+
 interface CheckoutResponse {
   order_id: string;
   order_number: string;
   total_ngn: number;
+  requires_payment: boolean;
+  bubbles_applied: number | null;
   payment_url: string | null;
   payment_reference: string;
 }
@@ -43,6 +50,7 @@ export default function StoreCheckoutPage() {
 
   const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
   const [storeCredit, setStoreCredit] = useState<StoreCredit | null>(null);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
 
@@ -59,15 +67,17 @@ export default function StoreCheckoutPage() {
   });
   const [customerNotes, setCustomerNotes] = useState("");
   const [useStoreCredit, setUseStoreCredit] = useState(false);
+  const [payWithBubbles, setPayWithBubbles] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [locationsData, creditData] = await Promise.all([
+      const [locationsData, creditData, walletData] = await Promise.all([
         apiGet<PickupLocation[]>("/api/v1/store/pickup-locations"),
         apiGet<StoreCredit | null>("/api/v1/store/credits/me", {
           auth: true,
         }).catch(() => null),
+        apiGet<WalletData>("/api/v1/wallet/me", { auth: true }).catch(() => null),
       ]);
 
       setPickupLocations(locationsData);
@@ -75,6 +85,9 @@ export default function StoreCheckoutPage() {
         setSelectedLocationId(locationsData[0].id);
       }
       setStoreCredit(creditData);
+      if (walletData?.status === "active") {
+        setWalletBalance(walletData.balance);
+      }
     } catch (e) {
       console.error("Failed to load checkout data:", e);
     } finally {
@@ -128,38 +141,46 @@ export default function StoreCheckoutPage() {
           fulfillmentType === "delivery" ? deliveryAddress : undefined,
         customer_notes: customerNotes || undefined,
         apply_store_credit: useStoreCredit,
+        pay_with_bubbles: payWithBubbles,
       };
 
-      const orderResult = await apiPost<{
-        order_id: string;
-        order_number: string;
-        total_ngn: number;
-        requires_payment: boolean;
-      }>("/api/v1/store/checkout/start", checkoutPayload, { auth: true });
+      const orderResult = await apiPost<CheckoutResponse>(
+        "/api/v1/store/checkout/start",
+        checkoutPayload,
+        { auth: true },
+      );
 
-      // Step 2: If payment required, create payment intent
-      if (orderResult.requires_payment && orderResult.total_ngn > 0) {
-        const paymentResult = await apiPost<{
-          checkout_url: string | null;
-          reference: string;
-        }>(
-          "/api/v1/payments/intents",
-          {
-            purpose: "STORE_ORDER",
-            order_id: orderResult.order_id,
-          },
-          { auth: true },
-        );
-
-        if (paymentResult.checkout_url) {
-          // Redirect to Paystack
-          clearCart();
-          window.location.href = paymentResult.checkout_url;
-          return;
-        }
+      // If bubbles fully covered the order — no Paystack needed
+      if (!orderResult.requires_payment || orderResult.total_ngn <= 0) {
+        const bubblesMsg = orderResult.bubbles_applied
+          ? ` ${orderResult.bubbles_applied} 🫧 Bubbles used.`
+          : "";
+        toast.success(`Order ${orderResult.order_number} placed!${bubblesMsg}`);
+        clearCart();
+        router.push(`/account/orders/${orderResult.order_number}`);
+        return;
       }
 
-      // Order created but no payment needed (e.g., full store credit covered it)
+      // Step 2: Remaining balance — create Paystack intent
+      const paymentResult = await apiPost<{
+        checkout_url: string | null;
+        reference: string;
+      }>(
+        "/api/v1/payments/intents",
+        {
+          purpose: "STORE_ORDER",
+          order_id: orderResult.order_id,
+        },
+        { auth: true },
+      );
+
+      if (paymentResult.checkout_url) {
+        clearCart();
+        window.location.href = paymentResult.checkout_url;
+        return;
+      }
+
+      // Fallback: intent created but no URL
       toast.success(`Order ${orderResult.order_number} created!`);
       clearCart();
       router.push(`/account/orders/${orderResult.order_number}`);
@@ -196,7 +217,12 @@ export default function StoreCheckoutPage() {
   const creditToApply = useStoreCredit
     ? Math.min(creditBalance, cart.total_ngn)
     : 0;
-  const finalTotal = cart.total_ngn - creditToApply;
+  const afterCredit = cart.total_ngn - creditToApply;
+  const bubblesNeeded = Math.ceil(afterCredit / 100); // ₦100 = 1 Bubble
+  const canPayWithBubbles =
+    walletBalance !== null && walletBalance >= bubblesNeeded && afterCredit > 0;
+  const bubblesApplied = payWithBubbles && canPayWithBubbles ? bubblesNeeded : 0;
+  const finalTotal = Math.max(0, afterCredit - bubblesApplied * 100);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -407,6 +433,109 @@ export default function StoreCheckoutPage() {
               className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-transparent resize-none"
             />
           </Card>
+
+          {/* Payment Method */}
+          {afterCredit > 0 && (
+            <Card className="p-6 space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">Payment Method</h2>
+                <p className="text-xs text-slate-500 mt-0.5">Choose how to pay for your order</p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                {/* Card / Paystack */}
+                <div
+                  onClick={() => setPayWithBubbles(false)}
+                  className={`cursor-pointer rounded-xl border-2 p-4 transition-all ${
+                    !payWithBubbles
+                      ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-300"
+                      : "border-slate-200 bg-white hover:border-cyan-200 hover:bg-cyan-50/40"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`flex-shrink-0 rounded-lg p-2 ${!payWithBubbles ? "bg-cyan-100" : "bg-slate-100"}`}>
+                      <CreditCard className={`w-5 h-5 ${!payWithBubbles ? "text-cyan-600" : "text-slate-400"}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-slate-900">Card Payment</p>
+                        {!payWithBubbles && (
+                          <span className="text-xs font-medium px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded-full">Selected</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">Paystack · Card, bank, USSD</p>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-xl font-bold text-slate-900">₦{afterCredit.toLocaleString()}</p>
+                  <p className="text-xs text-slate-400 mt-1">🔒 Secure payment</p>
+                </div>
+
+                {/* Bubbles */}
+                <div
+                  onClick={() => { if (canPayWithBubbles) setPayWithBubbles(true); }}
+                  className={`rounded-xl border-2 p-4 transition-all ${
+                    payWithBubbles
+                      ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-300 cursor-pointer"
+                      : canPayWithBubbles
+                        ? "border-slate-200 bg-white hover:border-cyan-200 hover:bg-cyan-50/40 cursor-pointer"
+                        : "border-slate-200 bg-white cursor-default"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`flex-shrink-0 rounded-lg p-2 text-xl leading-none ${payWithBubbles ? "bg-cyan-100" : "bg-slate-100"}`}>
+                      🫧
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-slate-900">Pay with Bubbles</p>
+                        {payWithBubbles && (
+                          <span className="text-xs font-medium px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded-full">Selected</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">SwimBuddz wallet</p>
+                    </div>
+                  </div>
+
+                  <p className="mt-3 text-xl font-bold text-slate-900">
+                    {bubblesNeeded} <span className="text-sm font-normal text-slate-500">Bubbles</span>
+                  </p>
+
+                  {walletBalance !== null ? (
+                    <div className="mt-2 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-500">Your balance</span>
+                        <span className={`font-semibold ${canPayWithBubbles ? "text-emerald-600" : "text-red-500"}`}>
+                          {walletBalance.toLocaleString()} 🫧 {canPayWithBubbles ? "✓" : ""}
+                        </span>
+                      </div>
+                      {!canPayWithBubbles && (
+                        <Link
+                          href="/account/wallet/topup"
+                          className="mt-2 flex items-center justify-center gap-1 w-full text-xs font-semibold text-white bg-cyan-500 hover:bg-cyan-600 rounded-lg py-1.5 transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Top Up {bubblesNeeded - walletBalance} more Bubbles →
+                        </Link>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="mt-2">
+                      <p className="text-xs text-slate-500">
+                        <Link
+                          href="/account/wallet"
+                          className="text-cyan-600 font-medium underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Set up your wallet
+                        </Link>{" "}
+                        to pay with Bubbles
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+          )}
         </div>
 
         {/* Order Summary */}
@@ -468,6 +597,14 @@ export default function StoreCheckoutPage() {
                 </div>
               )}
 
+              {/* Bubbles deduction */}
+              {payWithBubbles && bubblesApplied > 0 && (
+                <div className="flex justify-between text-cyan-600 font-medium pt-2">
+                  <span className="flex items-center gap-1">🫧 {bubblesApplied} Bubbles</span>
+                  <span>-₦{(bubblesApplied * 100).toLocaleString()}</span>
+                </div>
+              )}
+
               <div className="pt-3 border-t border-slate-200 flex justify-between text-base font-semibold">
                 <span className="text-slate-900">Total</span>
                 <span className="text-cyan-600">
@@ -483,13 +620,30 @@ export default function StoreCheckoutPage() {
               size="lg"
               className="w-full mt-6"
             >
-              {processing
-                ? "Processing..."
-                : `Pay ₦${finalTotal.toLocaleString()}`}
+              {processing ? (
+                "Processing..."
+              ) : (
+                <span className="flex items-center justify-center gap-2">
+                  {payWithBubbles && bubblesApplied > 0 ? (
+                    <span className="text-lg leading-none">🫧</span>
+                  ) : (
+                    <CreditCard className="w-5 h-5" />
+                  )}
+                  {finalTotal <= 0
+                    ? `Pay ${bubblesApplied} Bubbles`
+                    : payWithBubbles && bubblesApplied > 0
+                      ? `Pay ₦${finalTotal.toLocaleString()} + ${bubblesApplied} 🫧`
+                      : `Pay ₦${finalTotal.toLocaleString()}`}
+                </span>
+              )}
             </Button>
 
             <p className="mt-4 text-xs text-center text-slate-500">
-              🔒 Secure payment via Paystack
+              {finalTotal <= 0
+                ? "🫧 Fully covered by your Bubbles wallet"
+                : payWithBubbles && bubblesApplied > 0
+                  ? "🫧 Bubbles applied · remaining paid via Paystack"
+                  : "🔒 Secure payment via Paystack"}
             </p>
           </Card>
         </div>

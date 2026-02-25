@@ -252,7 +252,7 @@ export const signInToSession = async (
   params: SignInToSessionParams,
 ): Promise<{ success: boolean; message?: string }> => {
   const payload: Record<string, unknown> = {
-    status: params.status || "PRESENT",
+    status: params.status || "present",
   };
 
   if (params.notes) {
