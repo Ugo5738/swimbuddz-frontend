@@ -1,3 +1,33 @@
+// Currency conversion constants (kept here for format utilities; authoritative values
+// live in the backend libs/common/currency.py)
+export const KOBO_PER_NAIRA = 100;
+export const NAIRA_PER_BUBBLE = 100;
+export const KOBO_PER_BUBBLE = KOBO_PER_NAIRA * NAIRA_PER_BUBBLE; // 10_000
+
+/**
+ * Convert a kobo amount (database unit) to Bubbles.
+ * Rounds up so the wallet always has enough.
+ */
+export function koboBubbles(kobo: number): number {
+  return Math.ceil(kobo / KOBO_PER_BUBBLE);
+}
+
+/**
+ * Format a Bubble count for display (e.g. "250 🫧").
+ * @param bubbles - Number of Bubbles
+ */
+export function formatBubbles(bubbles: number): string {
+  return `${bubbles.toLocaleString("en-NG")} 🫧`;
+}
+
+/**
+ * Format a kobo amount as Bubbles (convenience wrapper).
+ * @param kobo - Amount in kobo
+ */
+export function formatBubblesFromKobo(kobo: number): string {
+  return formatBubbles(koboBubbles(kobo));
+}
+
 /**
  * Format a number as Nigerian Naira currency
  * @param amount - The amount to format

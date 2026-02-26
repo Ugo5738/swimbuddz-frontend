@@ -5,7 +5,14 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Textarea } from "@/components/ui/Textarea";
 import { supabase } from "@/lib/auth";
-import { API_BASE_URL } from "@/lib/config";
+import { API_BASE_URL, buildAppUrl } from "@/lib/config";
+import {
+  Ban,
+  Link as LinkIcon,
+  Pencil,
+  Send,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 type SessionStatusType =
@@ -81,6 +88,7 @@ function SessionDetailsModal({
   const [shortNoticeMessage, setShortNoticeMessage] = useState("");
   const [cancellationReason, setCancellationReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const [copyFeedback, setCopyFeedback] = useState("");
 
   const status = session.status || "scheduled";
 
@@ -132,6 +140,19 @@ function SessionDetailsModal({
     } finally {
       setActionLoading(false);
       setShowCancelConfirm(false);
+    }
+  };
+
+  const handleCopyBookingLink = async () => {
+    const bookingUrl = buildAppUrl(`/sessions/${session.id}/book`);
+    try {
+      await navigator.clipboard.writeText(bookingUrl);
+      setCopyFeedback("Booking link copied");
+      setTimeout(() => setCopyFeedback(""), 2500);
+    } catch (err) {
+      console.error("Failed to copy booking link", err);
+      setCopyFeedback("Could not copy link. Please try again.");
+      setTimeout(() => setCopyFeedback(""), 2500);
     }
   };
 
@@ -346,29 +367,65 @@ function SessionDetailsModal({
 
         {/* Action buttons */}
         {!showPublishConfirm && !showCancelConfirm && (
-          <div className="flex flex-wrap justify-end gap-2">
-            <Button variant="secondary" onClick={onClose}>
-              Close
-            </Button>
-            {status === "draft" && onPublish && (
-              <Button onClick={() => setShowPublishConfirm(true)}>
-                Publish
+          <div className="space-y-2">
+            <div className="flex flex-wrap justify-end gap-2">
+              {status === "draft" && onPublish && (
+                <Button
+                  size="sm"
+                  className="h-9 w-9 min-h-0 p-0"
+                  onClick={() => setShowPublishConfirm(true)}
+                  aria-label="Publish"
+                  title="Publish"
+                >
+                  <Send size={16} aria-hidden="true" />
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 w-9 min-h-0 p-0"
+                onClick={() => onEdit(session)}
+                aria-label="Edit"
+                title="Edit"
+              >
+                <Pencil size={16} aria-hidden="true" />
               </Button>
-            )}
-            <Button variant="outline" onClick={() => onEdit(session)}>
-              Edit
-            </Button>
-            {(status === "draft" || status === "scheduled") && onCancel && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 w-9 min-h-0 p-0"
+                onClick={handleCopyBookingLink}
+                aria-label="Copy booking link"
+                title="Copy booking link"
+              >
+                <LinkIcon size={16} aria-hidden="true" />
+              </Button>
+              {(status === "draft" || status === "scheduled") && onCancel && (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  className="h-9 w-9 min-h-0 p-0"
+                  onClick={() => setShowCancelConfirm(true)}
+                  aria-label="Cancel session"
+                  title="Cancel session"
+                >
+                  <Ban size={16} aria-hidden="true" />
+                </Button>
+              )}
               <Button
                 variant="danger"
-                onClick={() => setShowCancelConfirm(true)}
+                size="sm"
+                className="h-9 w-9 min-h-0 p-0"
+                onClick={() => onDelete(session.id)}
+                aria-label="Delete"
+                title="Delete"
               >
-                Cancel Session
+                <Trash2 size={16} aria-hidden="true" />
               </Button>
-            )}
-            <Button variant="danger" onClick={() => onDelete(session.id)}>
-              Delete
-            </Button>
+            </div>
+            {copyFeedback ? (
+              <p className="text-sm text-right text-cyan-700">{copyFeedback}</p>
+            ) : null}
           </div>
         )}
       </div>

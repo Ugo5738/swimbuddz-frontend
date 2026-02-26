@@ -1,6 +1,7 @@
 "use client";
 
 import { MilestoneClaimModal } from "@/components/academy/MilestoneClaimModal";
+import { PaymentChoicePanel } from "@/components/payment/PaymentChoicePanel";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -14,25 +15,24 @@ import {
   PaymentStatus,
   StudentProgress,
 } from "@/lib/academy";
-import { apiPost } from "@/lib/api";
+import { apiGet, apiPost } from "@/lib/api";
+import {
+  KOBO_PER_NAIRA,
+  formatBubblesFromKobo,
+  koboBubbles
+} from "@/lib/format";
 import { Session, SessionsApi } from "@/lib/sessions";
+import { X } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-// 1 Bubble = ₦100
-const NAIRA_PER_BUBBLE = 100;
-const KOBO_PER_NAIRA = 100;
-const KOBO_PER_BUBBLE = NAIRA_PER_BUBBLE * KOBO_PER_NAIRA;
-
+// ─── Local format helpers ─────────────────────────────────────────────────────
+// formatNaira here takes KOBO (storage unit) and returns a ₦ string.
+// This is intentionally different from lib/format.ts which takes naira directly.
 function formatNaira(kobo: number): string {
   return `₦${(kobo / KOBO_PER_NAIRA).toLocaleString("en-NG", { maximumFractionDigits: 0 })}`;
-}
-
-function formatBubbles(kobo: number): string {
-  const bubbles = Math.ceil(kobo / KOBO_PER_BUBBLE);
-  return `${bubbles.toLocaleString()} 🫧`;
 }
 
 // ─── Installment schedule helper ─────────────────────────────────────────────
@@ -41,14 +41,13 @@ function InstallmentRow({
   installment,
   index,
   total,
-  onPayWithBubbles,
-  paying,
+  onOpenPayment,
 }: {
   installment: EnrollmentInstallment;
   index: number;
   total: number;
-  onPayWithBubbles?: (installmentId: string) => void;
-  paying?: boolean;
+  /** Opens the 3-action payment modal for this installment */
+  onOpenPayment?: (installmentId: string) => void;
 }) {
   const isPaid = installment.status === InstallmentStatus.PAID;
   const isMissed = installment.status === InstallmentStatus.MISSED;
@@ -138,22 +137,20 @@ function InstallmentRow({
         </p>
       </div>
 
-      {/* Amount + Pay with Bubbles */}
+      {/* Amount + Pay button */}
       <div className="text-right shrink-0 space-y-1">
         <div className="font-semibold text-slate-900">
           {formatNaira(installment.amount)}
         </div>
         <div className="text-xs text-slate-400">
-          {formatBubbles(installment.amount)}
+          {formatBubblesFromKobo(installment.amount)}
         </div>
-        {!isPaid && !isWaived && onPayWithBubbles && (
+        {!isPaid && !isWaived && onOpenPayment && (
           <button
-            onClick={() => onPayWithBubbles(installment.id)}
-            disabled={paying}
-            className="mt-1 inline-flex items-center gap-1.5 rounded-lg border-2 border-cyan-400 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700 transition-all hover:bg-cyan-100 hover:border-cyan-500 disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap"
+            onClick={() => onOpenPayment(installment.id)}
+            className="mt-1 inline-flex items-center gap-1.5 rounded-lg border-2 border-cyan-400 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700 transition-all hover:bg-cyan-100 hover:border-cyan-500 whitespace-nowrap"
           >
-            <span className="text-sm leading-none">🫧</span>
-            {paying ? "Paying..." : `Pay ${formatBubbles(installment.amount)}`}
+            💳 Pay Now
           </button>
         )}
       </div>
@@ -165,6 +162,7 @@ function InstallmentRow({
 
 export default function EnrollmentDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const enrollmentId = params.id as string;
 
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
@@ -174,6 +172,8 @@ export default function EnrollmentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState(false);
   const [payingInstallmentId, setPayingInstallmentId] = useState<string | null>(null);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [openPaymentModal, setOpenPaymentModal] = useState<string | null>(null);
   const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(
     null,
   );
@@ -187,8 +187,14 @@ export default function EnrollmentDetailPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const enrollmentData = await AcademyApi.getEnrollment(enrollmentId);
+      const [enrollmentData, walletData] = await Promise.all([
+        AcademyApi.getEnrollment(enrollmentId),
+        apiGet<{ balance: number }>("/api/v1/wallet/me", { auth: true }).catch(
+          () => null,
+        ),
+      ]);
       setEnrollment(enrollmentData);
+      if (walletData) setWalletBalance(walletData.balance);
 
       // Load milestones, progress, and cohort sessions
       const programId =
@@ -268,6 +274,23 @@ export default function EnrollmentDetailPage() {
     } finally {
       setPayingInstallmentId(null);
     }
+  };
+
+  /** Called by PaymentChoicePanel when the user confirms wallet payment. */
+  const handleWalletPayForModal = async () => {
+    if (!openPaymentModal) return;
+    await handlePayInstallmentWithBubbles(openPaymentModal);
+    setOpenPaymentModal(null);
+  };
+
+  /** Called by PaymentChoicePanel when the user chooses card/bank payment. */
+  const handlePayWithCard = () => {
+    if (!openPaymentModal) return;
+    const inst = installments.find((i) => i.id === openPaymentModal);
+    if (!inst) return;
+    router.push(
+      `/account/checkout?purpose=academy_installment&enrollment_id=${enrollmentId}&installment_id=${openPaymentModal}&amount=${inst.amount}`,
+    );
   };
 
   const handleOpenClaimModal = (milestone: Milestone) => {
@@ -508,7 +531,7 @@ export default function EnrollmentDetailPage() {
                       </p>
                       <p className="text-xs text-cyan-700 mt-0.5">
                         Keep at least{" "}
-                        <strong>{formatBubbles(nextPending.amount)}</strong> in
+                        <strong>{formatBubblesFromKobo(nextPending.amount)}</strong> in
                         your wallet and we&apos;ll deduct it automatically on
                         the due date.
                       </p>
@@ -532,8 +555,7 @@ export default function EnrollmentDetailPage() {
                     installment={inst}
                     index={i}
                     total={totalInstallments}
-                    onPayWithBubbles={handlePayInstallmentWithBubbles}
-                    paying={payingInstallmentId === inst.id}
+                    onOpenPayment={(id) => setOpenPaymentModal(id)}
                   />
                 ))}
               </div>
@@ -824,42 +846,72 @@ export default function EnrollmentDetailPage() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Wallet Balance Callout — show when there are pending installments */}
-          {nextPending && (
-            <Card className="overflow-hidden">
-              <div className="bg-gradient-to-br from-cyan-500 to-blue-600 p-4 text-white">
-                <div className="text-xs font-medium uppercase tracking-wide opacity-80">
-                  SwimBuddz Wallet 🫧
+          {nextPending && (() => {
+            const needed = koboBubbles(nextPending.amount);
+            const balance = walletBalance ?? 0;
+            const hasCovered = balance >= needed;
+            const shortfall = hasCovered ? 0 : needed - balance;
+            const topupUrl = shortfall > 0
+              ? `/account/wallet/topup?prefill=${shortfall}&return_to=${encodeURIComponent(`/account/academy/enrollments/${enrollmentId}`)}`
+              : `/account/wallet/topup`;
+            return (
+              <Card className="overflow-hidden">
+                <div className="bg-gradient-to-br from-cyan-500 to-blue-600 p-4 text-white">
+                  <div className="text-xs font-medium uppercase tracking-wide opacity-80">
+                    SwimBuddz Wallet 🫧
+                  </div>
+                  {walletBalance !== null ? (
+                    <>
+                      <p className="mt-1 text-2xl font-bold">
+                        {walletBalance.toLocaleString()} 🫧
+                      </p>
+                      {hasCovered ? (
+                        <p className="text-xs mt-0.5 text-green-200">
+                          ✅ Covered — {formatBubblesFromKobo(nextPending.amount)} needed on{" "}
+                          {new Date(nextPending.due_at).toLocaleDateString("en-NG", { month: "short", day: "numeric" })}
+                        </p>
+                      ) : (
+                        <p className="text-xs mt-0.5 text-amber-200">
+                          ⚠️ Short {shortfall.toLocaleString()} 🫧 for due on{" "}
+                          {new Date(nextPending.due_at).toLocaleDateString("en-NG", { month: "short", day: "numeric" })}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <p className="mt-1 text-sm">
+                        Auto-deduction on{" "}
+                        <strong>
+                          {new Date(nextPending.due_at).toLocaleDateString("en-NG", {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </strong>
+                      </p>
+                      <p className="text-xs opacity-80">
+                        Keep {formatBubblesFromKobo(nextPending.amount)} in your wallet
+                      </p>
+                    </>
+                  )}
                 </div>
-                <p className="mt-1 text-sm">
-                  Auto-deduction on{" "}
-                  <strong>
-                    {new Date(nextPending.due_at).toLocaleDateString("en-NG", {
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </strong>
-                </p>
-                <p className="text-xs opacity-80">
-                  Keep {formatBubbles(nextPending.amount)} in your wallet
-                </p>
-              </div>
-              <div className="p-4">
-                <Link href="/account/wallet">
-                  <Button variant="outline" className="w-full" size="sm">
-                    View Wallet Balance
-                  </Button>
-                </Link>
-                <Link href="/account/wallet/topup" className="mt-2 block">
-                  <Button
-                    className="w-full bg-cyan-600 text-white hover:bg-cyan-700"
-                    size="sm"
-                  >
-                    Top Up Bubbles
-                  </Button>
-                </Link>
-              </div>
-            </Card>
-          )}
+                <div className="p-4">
+                  <Link href="/account/wallet">
+                    <Button variant="outline" className="w-full" size="sm">
+                      View Wallet
+                    </Button>
+                  </Link>
+                  <Link href={topupUrl} className="mt-2 block">
+                    <Button
+                      className="w-full bg-cyan-600 text-white hover:bg-cyan-700"
+                      size="sm"
+                    >
+                      {shortfall > 0 ? `Add ${shortfall.toLocaleString()} 🫧` : "Top Up Bubbles"}
+                    </Button>
+                  </Link>
+                </div>
+              </Card>
+            );
+          })()}
 
           {/* Cohort Info */}
           {cohort && (
@@ -999,6 +1051,60 @@ export default function EnrollmentDetailPage() {
           onSuccess={handleClaimSuccess}
         />
       )}
+
+      {/* Payment Choice Modal */}
+      {openPaymentModal && (() => {
+        const activeInstallment = installments.find(
+          (i) => i.id === openPaymentModal,
+        );
+        if (!activeInstallment) return null;
+        const idx = installments.findIndex((i) => i.id === openPaymentModal);
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center p-4"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setOpenPaymentModal(null);
+            }}
+          >
+            <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
+              {/* Modal header */}
+              <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+                <div>
+                  <h2 className="text-base font-semibold text-slate-900">
+                    Pay Installment {idx + 1} of {totalInstallments}
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Due{" "}
+                    {new Date(activeInstallment.due_at).toLocaleDateString(
+                      "en-NG",
+                      { weekday: "short", month: "short", day: "numeric" },
+                    )}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setOpenPaymentModal(null)}
+                  className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Panel body */}
+              <div className="p-5">
+                <PaymentChoicePanel
+                  amountKobo={activeInstallment.amount}
+                  walletBalanceBubbles={walletBalance ?? 0}
+                  enrollmentId={enrollmentId}
+                  installmentId={openPaymentModal}
+                  onPayWithWallet={handleWalletPayForModal}
+                  onPayWithCard={handlePayWithCard}
+                  isLoading={payingInstallmentId === openPaymentModal}
+                />
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { apiGet, apiPost } from "@/lib/api";
-import { formatNaira } from "@/lib/format";
-import { ArrowLeft } from "lucide-react";
+import { NAIRA_PER_BUBBLE, formatNaira } from "@/lib/format";
+import { ArrowLeft, Info } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -29,7 +29,6 @@ type TopupResponse = {
 // ============================================================================
 
 const PRESET_AMOUNTS = [25, 50, 100, 250, 500, 1000];
-const NAIRA_PER_BUBBLE = 100;
 const MIN_BUBBLES = 25;
 const MAX_BUBBLES = 5000;
 
@@ -39,10 +38,28 @@ const MAX_BUBBLES = 5000;
 
 export default function TopupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Deep-link params: ?prefill=<bubbles>&return_to=<path>
+  const prefillParam = searchParams.get("prefill");
+  const returnTo = searchParams.get("return_to");
+  const prefillAmount = prefillParam ? parseInt(prefillParam, 10) : null;
+
   const [walletChecked, setWalletChecked] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<number | null>(null);
-  const [customAmount, setCustomAmount] = useState("");
+  const [customAmount, setCustomAmount] = useState(
+    prefillAmount && !PRESET_AMOUNTS.includes(prefillAmount)
+      ? String(prefillAmount)
+      : "",
+  );
   const [submitting, setSubmitting] = useState(false);
+
+  // Initialise the preset selector when a prefill amount matches a preset
+  useEffect(() => {
+    if (prefillAmount && PRESET_AMOUNTS.includes(prefillAmount)) {
+      setSelectedPreset(prefillAmount);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Ensure user has a wallet before showing topup form
   useEffect(() => {
@@ -64,7 +81,10 @@ export default function TopupPage() {
   const bubbleAmount =
     selectedPreset ?? (customAmount ? parseInt(customAmount, 10) : 0);
   const nairaAmount = bubbleAmount * NAIRA_PER_BUBBLE;
-  const isValid = bubbleAmount >= MIN_BUBBLES && bubbleAmount <= MAX_BUBBLES;
+  const isValid =
+    Number.isFinite(bubbleAmount) &&
+    bubbleAmount >= MIN_BUBBLES &&
+    bubbleAmount <= MAX_BUBBLES;
 
   const handlePresetClick = (amount: number) => {
     setSelectedPreset(amount);
@@ -88,13 +108,14 @@ export default function TopupPage() {
       );
 
       if (result.paystack_authorization_url) {
-        // Store reference for recovery
+        // Persist state for recovery after Paystack redirect
         try {
           localStorage.setItem(
             "wallet_topup_pending",
             JSON.stringify({
               reference: result.reference,
               bubbles_amount: result.bubbles_amount,
+              return_to: returnTo ?? null,
               saved_at: Date.now(),
             }),
           );
@@ -106,6 +127,9 @@ export default function TopupPage() {
         window.location.href = result.paystack_authorization_url;
       } else {
         toast.success("Top-up initiated!");
+        if (returnTo) {
+          router.push(returnTo);
+        }
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Failed to initiate top-up";
@@ -121,13 +145,30 @@ export default function TopupPage() {
     <div className="space-y-4 md:space-y-6 max-w-lg mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link href="/account/wallet">
+        <Link href={returnTo ?? "/account/wallet"}>
           <Button variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
         <h1 className="text-2xl font-bold text-slate-900">Add Bubbles</h1>
       </div>
+
+      {/* Shortfall banner — shown when arriving from a payment screen */}
+      {prefillAmount && prefillAmount > 0 && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <Info className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
+          <div>
+            <p className="text-sm font-semibold text-amber-900">
+              You need {prefillAmount.toLocaleString()} 🫧 to cover your next
+              installment
+            </p>
+            <p className="mt-0.5 text-xs text-amber-700">
+              Top up at least {prefillAmount.toLocaleString()} Bubbles, then
+              return to complete your payment.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Preset amounts */}
       <Card className="p-4 md:p-6">
@@ -192,7 +233,9 @@ export default function TopupPage() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-slate-600">Exchange rate</span>
-              <span className="text-slate-500">1 🫧 = ₦{NAIRA_PER_BUBBLE}</span>
+              <span className="text-slate-500">
+                1 🫧 = ₦{NAIRA_PER_BUBBLE}
+              </span>
             </div>
             <hr className="border-slate-200" />
             <div className="flex justify-between">

@@ -147,11 +147,13 @@ export default function WalletPage() {
 
   useEffect(() => {
     let fallbackReference: string | null = null;
+    let pendingReturnTo: string | null = null;
     try {
       const raw = localStorage.getItem("wallet_topup_pending");
       if (raw) {
         const parsed = JSON.parse(raw) as {
           reference?: string;
+          return_to?: string | null;
           saved_at?: number;
         };
         const stillFresh =
@@ -159,6 +161,7 @@ export default function WalletPage() {
           Date.now() - parsed.saved_at < 24 * 60 * 60 * 1000;
         if (stillFresh && parsed.reference) {
           fallbackReference = parsed.reference;
+          pendingReturnTo = parsed.return_to ?? null;
         }
       }
     } catch {
@@ -212,6 +215,11 @@ export default function WalletPage() {
             localStorage.removeItem("wallet_topup_pending");
           } catch {
             // ignore storage errors
+          }
+          // If the user topped up to cover a payment shortfall, send them back
+          if (pendingReturnTo) {
+            router.replace(pendingReturnTo);
+            return;
           }
         } else if (topup?.status === "failed") {
           toast.error("Payment was not successful. Please try again.");
