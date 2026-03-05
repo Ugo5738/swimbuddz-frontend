@@ -3,6 +3,7 @@
 import { apiGet } from "@/lib/api";
 import { supabase } from "@/lib/auth";
 import {
+  Award,
   Bell,
   BookOpen,
   Briefcase,
@@ -13,6 +14,7 @@ import {
   ChevronRight,
   ClipboardCheck,
   CreditCard,
+  Gift,
   GraduationCap,
   HandHeart,
   Home,
@@ -106,6 +108,8 @@ const navSections: NavSection[] = [
       { href: "/account/profile", label: "My Profile", icon: User },
       { href: "/account/billing", label: "Billing", icon: CreditCard },
       { href: "/account/wallet", label: "Wallet", icon: Wallet },
+      { href: "/account/wallet/referrals", label: "Referrals", icon: Gift },
+      { href: "/account/wallet/rewards", label: "Rewards", icon: Award },
       {
         href: "/account/onboarding",
         label: "Complete Setup",
@@ -161,9 +165,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [member, setMember] = useState<MemberInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [academyEnrollments, setAcademyEnrollments] = useState<
-    AcademyEnrollment[]
-  >([]);
+  const [academyEnrollments, setAcademyEnrollments] = useState<AcademyEnrollment[]>([]);
   const [isCoach, setIsCoach] = useState(false);
 
   const refreshMember = useCallback(async () => {
@@ -204,8 +206,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
   }, [pathname, refreshMember]);
 
   useEffect(() => {
-    const reference =
-      searchParams.get("reference") || searchParams.get("trxref");
+    const reference = searchParams.get("reference") || searchParams.get("trxref");
     if (!reference) return;
 
     // Poll for member updates after payment callback (reference indicates Paystack return)
@@ -235,26 +236,22 @@ export function MemberLayout({ children }: MemberLayoutProps) {
     router.push("/login");
   };
 
+  // Build a set of all nav hrefs so we can find the most specific match
+  const allHrefs = navSections.flatMap((s) => s.items.map((i) => i.href));
+
   const isActive = (href: string) => {
-    if (href === "/account") {
-      return pathname === href;
-    }
-
-    // Avoid overlapping matches between academy browse vs. progress
-    if (href === "/account/academy") {
-      return (
-        pathname === href ||
-        (pathname?.startsWith("/account/academy/") &&
-          !pathname?.startsWith("/account/academy/browse"))
-      );
-    }
-    if (href === "/account/academy/browse") {
-      return (
-        pathname === href || pathname?.startsWith("/account/academy/browse")
-      );
-    }
-
-    return pathname?.startsWith(href);
+    if (!pathname) return false;
+    if (pathname === href) return true;
+    // Only highlight if this href is a prefix of the current path AND
+    // no other, more specific nav href also matches
+    if (!pathname.startsWith(href + "/")) return false;
+    const hasMoreSpecificMatch = allHrefs.some(
+      (other) =>
+        other !== href &&
+        other.startsWith(href + "/") &&
+        (pathname === other || pathname.startsWith(other + "/"))
+    );
+    return !hasMoreSpecificMatch;
   };
 
   const rawTiers =
@@ -266,15 +263,15 @@ export function MemberLayout({ children }: MemberLayoutProps) {
   const now = Date.now();
   const clubActive = Boolean(
     member?.membership?.club_paid_until &&
-    Date.parse(String(member.membership.club_paid_until)) > now,
+    Date.parse(String(member.membership.club_paid_until)) > now
   );
   const academyActive = Boolean(
     member?.membership?.academy_paid_until &&
-    Date.parse(String(member.membership.academy_paid_until)) > now,
+    Date.parse(String(member.membership.academy_paid_until)) > now
   );
   const communityActive = Boolean(
     member?.membership?.community_paid_until &&
-    Date.parse(String(member.membership.community_paid_until)) > now,
+    Date.parse(String(member.membership.community_paid_until)) > now
   );
 
   const tierSet = new Set(rawTiers);
@@ -294,7 +291,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
   // Also add academy tier if user has paid academy enrollment
   // (This handles cases where academy_paid_until isn't set but enrollment exists)
   const hasPaidEnrollment = academyEnrollments.some(
-    (e) => e.payment_status === "paid" || e.status === "enrolled",
+    (e) => e.payment_status === "paid" || e.status === "enrolled"
   );
   if (hasPaidEnrollment) {
     tierSet.add("academy");
@@ -305,7 +302,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
   const memberTiers = Array.from(tierSet);
 
   const requestedTiers = (member?.membership?.requested_tiers || []).map((t) =>
-    String(t).toLowerCase(),
+    String(t).toLowerCase()
   );
   const filteredRequests = requestedTiers.filter(
     (tier) =>
@@ -313,7 +310,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
         memberTiers.includes(tier) ||
         (tier === "club" && clubActive) ||
         (tier === "academy" && academyActive)
-      ),
+      )
   );
   const wantsAcademy = filteredRequests.includes("academy");
   const wantsClub = filteredRequests.includes("club") || wantsAcademy;
@@ -322,7 +319,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
 
   // Check if user has a paid academy enrollment (more reliable than academy_paid_until)
   const hasPaidAcademyEnrollment = academyEnrollments.some(
-    (e) => e.payment_status === "paid" || e.status === "enrolled",
+    (e) => e.payment_status === "paid" || e.status === "enrolled"
   );
 
   // Determine membership label - prioritize active status over pending
@@ -339,9 +336,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
 
   // Check profile_photo_media_id (source of truth) for validation, URL is just for display
   const needsProfileBasics =
-    !member?.profile_photo_media_id ||
-    !member?.profile?.gender ||
-    !member?.profile?.date_of_birth;
+    !member?.profile_photo_media_id || !member?.profile?.gender || !member?.profile?.date_of_birth;
   const needsProfileCore =
     needsProfileBasics ||
     !member?.profile?.country ||
@@ -350,9 +345,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
     !member?.profile?.swim_level;
 
   const needsClubReadiness =
-    (wantsClub ||
-      memberTiers.includes("club") ||
-      memberTiers.includes("academy")) &&
+    (wantsClub || memberTiers.includes("club") || memberTiers.includes("academy")) &&
     (!member?.emergency_contact?.name ||
       !member?.emergency_contact?.contact_relationship ||
       !member?.emergency_contact?.phone ||
@@ -360,16 +353,13 @@ export function MemberLayout({ children }: MemberLayoutProps) {
         member?.availability?.preferred_locations &&
         member.availability.preferred_locations.length > 0
       ) ||
-      !(
-        member?.availability?.preferred_times &&
-        member.availability.preferred_times.length > 0
-      ));
+      !(member?.availability?.preferred_times && member.availability.preferred_times.length > 0));
 
   const assessment = member?.membership?.academy_skill_assessment;
   const hasAssessment =
     assessment &&
     ["canFloat", "headUnderwater", "deepWaterComfort", "canSwim25m"].some((k) =>
-      Object.prototype.hasOwnProperty.call(assessment, k),
+      Object.prototype.hasOwnProperty.call(assessment, k)
     );
   const needsAcademyReadiness =
     (wantsAcademy || memberTiers.includes("academy")) &&
@@ -438,16 +428,10 @@ export function MemberLayout({ children }: MemberLayoutProps) {
           {/* Header with Logo */}
           <div className="flex items-center justify-between border-b border-white/10 p-6">
             <Link href="/account" className="flex items-center gap-3">
-              <img
-                src="/logo.png"
-                alt="SwimBuddz Logo"
-                className="h-10 w-auto"
-              />
+              <img src="/logo.png" alt="SwimBuddz Logo" className="h-10 w-auto" />
               <div className="flex flex-col">
                 <span className="text-xl font-bold text-white">SwimBuddz</span>
-                <span className="text-xs font-medium text-cyan-100">
-                  Member Portal
-                </span>
+                <span className="text-xs font-medium text-cyan-100">Member Portal</span>
               </div>
             </Link>
             <button
@@ -473,12 +457,8 @@ export function MemberLayout({ children }: MemberLayoutProps) {
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-white truncate">
-                  {memberName}
-                </p>
-                <p className="text-xs text-cyan-100 capitalize">
-                  {membershipLabel}
-                </p>
+                <p className="text-sm font-semibold text-white truncate">{memberName}</p>
+                <p className="text-xs text-cyan-100 capitalize">{membershipLabel}</p>
               </div>
             </div>
           </div>
@@ -563,14 +543,8 @@ export function MemberLayout({ children }: MemberLayoutProps) {
               <Menu className="h-6 w-6" />
             </button>
             <div className="flex items-center gap-2">
-              <img
-                src="/logo.png"
-                alt="SwimBuddz Logo"
-                className="h-8 w-auto"
-              />
-              <span className="text-lg font-semibold text-cyan-700">
-                SwimBuddz
-              </span>
+              <img src="/logo.png" alt="SwimBuddz Logo" className="h-8 w-auto" />
+              <span className="text-lg font-semibold text-cyan-700">SwimBuddz</span>
             </div>
             <Link
               href="/announcements"
@@ -585,9 +559,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
         <header className="hidden md:flex sticky top-0 z-30 items-center justify-between border-b border-slate-200 bg-white/95 backdrop-blur-sm px-6 lg:px-8 py-4">
           <div>
             <p className="text-sm text-slate-500">Welcome back,</p>
-            <h1 className="text-lg font-semibold text-slate-900">
-              {memberName}
-            </h1>
+            <h1 className="text-lg font-semibold text-slate-900">{memberName}</h1>
           </div>
           <div className="flex items-center gap-4">
             <Link
@@ -614,9 +586,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-8">
-          {children}
-        </main>
+        <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-8">{children}</main>
       </div>
     </div>
   );

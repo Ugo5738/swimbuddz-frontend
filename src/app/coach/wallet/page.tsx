@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
+import { AnimatedBubbleCounter } from "@/components/wallet/AnimatedBubbleCounter";
 import { apiGet, apiPost } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import { ArrowDownLeft, ArrowUpRight, Plus, Receipt } from "lucide-react";
@@ -102,8 +103,7 @@ export default function CoachWalletPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const returnReference =
-    searchParams.get("reference") || searchParams.get("trxref");
+  const returnReference = searchParams.get("reference") || searchParams.get("trxref");
   const returnTopupId = searchParams.get("topup");
   const showWelcomeParam = searchParams.get("welcome") === "1";
   const [wallet, setWallet] = useState<WalletData | null>(null);
@@ -113,8 +113,7 @@ export default function CoachWalletPage() {
   const [creating, setCreating] = useState(false);
   const [reconcilingReturn, setReconcilingReturn] = useState(false);
   const [showWelcomeIntro, setShowWelcomeIntro] = useState(false);
-  const [welcomeIntroContext, setWelcomeIntroContext] =
-    useState<WalletIntroContext | null>(null);
+  const [welcomeIntroContext, setWelcomeIntroContext] = useState<WalletIntroContext | null>(null);
   const handledReturnKeyRef = useRef<string | null>(null);
 
   const loadWallet = useCallback(async () => {
@@ -155,8 +154,7 @@ export default function CoachWalletPage() {
           saved_at?: number;
         };
         const stillFresh =
-          typeof parsed.saved_at !== "number" ||
-          Date.now() - parsed.saved_at < 24 * 60 * 60 * 1000;
+          typeof parsed.saved_at !== "number" || Date.now() - parsed.saved_at < 24 * 60 * 60 * 1000;
         if (stillFresh && parsed.reference) {
           fallbackReference = parsed.reference;
         }
@@ -187,12 +185,12 @@ export default function CoachWalletPage() {
             topup = await apiPost<TopupReconcileResponse>(
               `/api/v1/wallet/topups/reconcile/${encodeURIComponent(topupReference)}`,
               undefined,
-              { auth: true },
+              { auth: true }
             );
           } else if (returnTopupId) {
             topup = await apiGet<TopupReconcileResponse>(
               `/api/v1/wallet/topup/${encodeURIComponent(returnTopupId)}`,
-              { auth: true },
+              { auth: true }
             );
           }
 
@@ -230,9 +228,7 @@ export default function CoachWalletPage() {
         ]);
       } catch (e) {
         if (!cancelled) {
-          toast.error(
-            e instanceof Error ? e.message : "Could not confirm top-up yet.",
-          );
+          toast.error(e instanceof Error ? e.message : "Could not confirm top-up yet.");
           router.replace(pathname);
           await loadWallet();
         }
@@ -260,10 +256,7 @@ export default function CoachWalletPage() {
       const parsed = JSON.parse(raw) as WalletIntroContext & {
         created_at?: number;
       };
-      if (
-        parsed.created_at &&
-        Date.now() - parsed.created_at > 24 * 60 * 60 * 1000
-      ) {
+      if (parsed.created_at && Date.now() - parsed.created_at > 24 * 60 * 60 * 1000) {
         localStorage.removeItem("wallet_intro_pending");
         return;
       }
@@ -308,9 +301,7 @@ export default function CoachWalletPage() {
         <h1 className="text-2xl font-bold text-slate-900">Wallet</h1>
         <Card className="p-8 text-center">
           <div className="text-5xl mb-4">🫧</div>
-          <h2 className="text-xl font-semibold text-slate-900 mb-2">
-            Create Your Bubble Wallet
-          </h2>
+          <h2 className="text-xl font-semibold text-slate-900 mb-2">Create Your Bubble Wallet</h2>
           <p className="text-slate-600 mb-6 max-w-md mx-auto">
             Use Bubbles to pay for sessions, academy programs, events, and more.
           </p>
@@ -338,8 +329,7 @@ export default function CoachWalletPage() {
                 Use Bubbles for sessions, events, and store purchases.
               </p>
               <p className="text-xs text-emerald-700">
-                Start here: check your balance, view transactions, or add more
-                Bubbles.
+                Start here: check your balance, view transactions, or add more Bubbles.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -393,16 +383,14 @@ export default function CoachWalletPage() {
           <div>
             <p className="text-sm font-medium text-cyan-600">Bubble Balance</p>
             <p className="mt-1 text-3xl md:text-4xl font-bold text-slate-900">
-              {wallet?.balance?.toLocaleString() ?? 0}
+              <AnimatedBubbleCounter value={wallet?.balance ?? 0} />
               <span className="text-lg ml-1">🫧</span>
             </p>
             <p className="text-xs text-slate-500 mt-1">
               ≈ ₦{((wallet?.balance ?? 0) * 100).toLocaleString()}
             </p>
           </div>
-          <Badge variant={statusBadgeVariant(wallet?.status ?? "")}>
-            {wallet?.status}
-          </Badge>
+          <Badge variant={statusBadgeVariant(wallet?.status ?? "")}>{wallet?.status}</Badge>
         </div>
       </Card>
 
@@ -431,9 +419,7 @@ export default function CoachWalletPage() {
       {/* Recent Transactions */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Recent Transactions
-          </h2>
+          <h2 className="text-lg font-semibold text-slate-900">Recent Transactions</h2>
           <Link
             href="/coach/wallet/transactions"
             className="text-sm text-cyan-600 hover:text-cyan-700"
@@ -454,10 +440,9 @@ export default function CoachWalletPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`rounded-full p-2 ${txn.direction === "credit"
-                          ? "bg-emerald-100"
-                          : "bg-red-100"
-                        }`}
+                      className={`rounded-full p-2 ${
+                        txn.direction === "credit" ? "bg-emerald-100" : "bg-red-100"
+                      }`}
                     >
                       {txn.direction === "credit" ? (
                         <ArrowDownLeft className="h-4 w-4 text-emerald-600" />
@@ -466,20 +451,16 @@ export default function CoachWalletPage() {
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-slate-900">
-                        {txn.description}
-                      </p>
+                      <p className="text-sm font-medium text-slate-900">{txn.description}</p>
                       <p className="text-xs text-slate-500">
-                        {transactionTypeLabel(txn.transaction_type)} ·{" "}
-                        {formatDate(txn.created_at)}
+                        {transactionTypeLabel(txn.transaction_type)} · {formatDate(txn.created_at)}
                       </p>
                     </div>
                   </div>
                   <p
-                    className={`text-sm font-semibold ${txn.direction === "credit"
-                        ? "text-emerald-600"
-                        : "text-red-600"
-                      }`}
+                    className={`text-sm font-semibold ${
+                      txn.direction === "credit" ? "text-emerald-600" : "text-red-600"
+                    }`}
                   >
                     {txn.direction === "credit" ? "+" : "-"}
                     {txn.amount} 🫧

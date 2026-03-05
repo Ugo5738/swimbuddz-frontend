@@ -5,6 +5,7 @@ import { getCoachApplicationStatus, type AgreementStatus } from "@/lib/coach";
 import { AgreementApi } from "@/lib/coaches";
 import { MembersApi } from "@/lib/members";
 import {
+  Award,
   Bell,
   BookOpen,
   Calendar,
@@ -12,6 +13,7 @@ import {
   ChevronRight,
   CreditCard,
   FileSignature,
+  Gift,
   GraduationCap,
   Home,
   LayoutDashboard,
@@ -70,6 +72,8 @@ const baseNavSections: NavSection[] = [
     title: "Payments",
     items: [
       { href: "/coach/wallet", label: "Bubble Wallet", icon: Wallet },
+      { href: "/coach/wallet/referrals", label: "Referrals", icon: Gift },
+      { href: "/coach/wallet/rewards", label: "Rewards", icon: Award },
       { href: "/coach/payouts", label: "Payout History", icon: CreditCard },
       { href: "/coach/bank-account", label: "Bank Account", icon: CreditCard },
     ],
@@ -95,15 +99,10 @@ export function CoachLayout({ children }: CoachLayoutProps) {
   const [coachName, setCoachName] = useState("Coach");
   const [loading, setLoading] = useState(true);
   const [coachStatus, setCoachStatus] = useState<string | null>(null);
-  const [agreementStatus, setAgreementStatus] =
-    useState<AgreementStatus | null>(null);
+  const [agreementStatus, setAgreementStatus] = useState<AgreementStatus | null>(null);
 
   // Pages exempt from gating redirects (to prevent infinite loops)
-  const ONBOARDING_EXEMPT_PATHS = [
-    "/coach/onboarding",
-    "/coach/agreement",
-    "/coach/handbook",
-  ];
+  const ONBOARDING_EXEMPT_PATHS = ["/coach/onboarding", "/coach/agreement", "/coach/handbook"];
   const AGREEMENT_EXEMPT_PATHS = ["/coach/agreement", "/coach/handbook"];
 
   useEffect(() => {
@@ -117,9 +116,7 @@ export function CoachLayout({ children }: CoachLayoutProps) {
         try {
           const member = await MembersApi.getMe();
           if (member?.first_name) {
-            setCoachName(
-              `${member.first_name}${member.last_name ? ` ${member.last_name}` : ""}`,
-            );
+            setCoachName(`${member.first_name}${member.last_name ? ` ${member.last_name}` : ""}`);
           } else if (user?.email) {
             setCoachName(user.email.split("@")[0]);
           }
@@ -141,9 +138,7 @@ export function CoachLayout({ children }: CoachLayoutProps) {
 
         // HARD REDIRECT: "approved" coaches must complete onboarding first
         if (status.status === "approved") {
-          const isExempt = ONBOARDING_EXEMPT_PATHS.some((p) =>
-            pathname?.startsWith(p),
-          );
+          const isExempt = ONBOARDING_EXEMPT_PATHS.some((p) => pathname?.startsWith(p));
           if (!isExempt) {
             router.push("/coach/onboarding");
             return;
@@ -158,9 +153,7 @@ export function CoachLayout({ children }: CoachLayoutProps) {
 
             // HARD REDIRECT: active coaches must sign current agreement
             if (!agreement.has_signed_current_version) {
-              const isExempt = AGREEMENT_EXEMPT_PATHS.some((p) =>
-                pathname?.startsWith(p),
-              );
+              const isExempt = AGREEMENT_EXEMPT_PATHS.some((p) => pathname?.startsWith(p));
               if (!isExempt) {
                 router.push("/coach/agreement");
                 return;
@@ -186,13 +179,6 @@ export function CoachLayout({ children }: CoachLayoutProps) {
     router.push("/login");
   };
 
-  const isActive = (href: string) => {
-    if (href === "/coach/dashboard") {
-      return pathname === href;
-    }
-    return pathname?.startsWith(href);
-  };
-
   // Coach needs onboarding if status is "approved" (not yet "active")
   const needsCoachOnboarding = coachStatus === "approved";
 
@@ -205,6 +191,24 @@ export function CoachLayout({ children }: CoachLayoutProps) {
     return { ...section, items };
   });
 
+  // Build a set of all nav hrefs so we can find the most specific match
+  const allNavHrefs = navSections.flatMap((s) => s.items.map((i) => i.href));
+
+  const isActive = (href: string) => {
+    if (!pathname) return false;
+    if (pathname === href) return true;
+    // Only highlight if this href is a prefix of the current path AND
+    // no other, more specific nav href also matches
+    if (!pathname.startsWith(href + "/")) return false;
+    const hasMoreSpecificMatch = allNavHrefs.some(
+      (other) =>
+        other !== href &&
+        other.startsWith(href + "/") &&
+        (pathname === other || pathname.startsWith(other + "/"))
+    );
+    return !hasMoreSpecificMatch;
+  };
+
   const initials = coachName.slice(0, 2).toUpperCase();
 
   if (loading) {
@@ -212,9 +216,7 @@ export function CoachLayout({ children }: CoachLayoutProps) {
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-4">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-cyan-200 border-t-cyan-600" />
-          <p className="text-lg font-medium text-slate-600">
-            Loading coach dashboard...
-          </p>
+          <p className="text-lg font-medium text-slate-600">Loading coach dashboard...</p>
         </div>
       </div>
     );
@@ -240,16 +242,10 @@ export function CoachLayout({ children }: CoachLayoutProps) {
           {/* Header with Logo */}
           <div className="flex items-center justify-between border-b border-white/10 p-6">
             <Link href="/coach/dashboard" className="flex items-center gap-3">
-              <img
-                src="/logo.png"
-                alt="SwimBuddz Logo"
-                className="h-10 w-auto"
-              />
+              <img src="/logo.png" alt="SwimBuddz Logo" className="h-10 w-auto" />
               <div className="flex flex-col">
                 <span className="text-xl font-bold text-white">SwimBuddz</span>
-                <span className="text-xs font-medium text-emerald-100">
-                  Coach Portal
-                </span>
+                <span className="text-xs font-medium text-emerald-100">Coach Portal</span>
               </div>
             </Link>
             <button
@@ -267,9 +263,7 @@ export function CoachLayout({ children }: CoachLayoutProps) {
                 {initials}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-white truncate">
-                  {coachName}
-                </p>
+                <p className="text-sm font-semibold text-white truncate">{coachName}</p>
                 <p className="text-xs text-emerald-100">Coach</p>
               </div>
             </div>
@@ -346,14 +340,8 @@ export function CoachLayout({ children }: CoachLayoutProps) {
               <Menu className="h-6 w-6" />
             </button>
             <div className="flex items-center gap-2">
-              <img
-                src="/logo.png"
-                alt="SwimBuddz Logo"
-                className="h-8 w-auto"
-              />
-              <span className="text-lg font-semibold text-emerald-700">
-                SwimBuddz
-              </span>
+              <img src="/logo.png" alt="SwimBuddz Logo" className="h-8 w-auto" />
+              <span className="text-lg font-semibold text-emerald-700">SwimBuddz</span>
             </div>
             <Link
               href="/announcements"
@@ -368,9 +356,7 @@ export function CoachLayout({ children }: CoachLayoutProps) {
         <header className="hidden lg:flex sticky top-0 z-30 items-center justify-between border-b border-slate-200 bg-white/95 backdrop-blur-sm px-8 py-4">
           <div>
             <p className="text-sm text-slate-500">Coach Dashboard</p>
-            <h1 className="text-lg font-semibold text-slate-900">
-              Welcome back, {coachName}
-            </h1>
+            <h1 className="text-lg font-semibold text-slate-900">Welcome back, {coachName}</h1>
           </div>
           <div className="flex items-center gap-4">
             <Link
@@ -386,9 +372,7 @@ export function CoachLayout({ children }: CoachLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-8">
-          {children}
-        </main>
+        <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-8">{children}</main>
       </div>
     </div>
   );

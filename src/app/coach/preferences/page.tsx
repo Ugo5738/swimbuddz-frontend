@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Input } from "@/components/ui/Input";
 import { LoadingCard } from "@/components/ui/LoadingCard";
+import { RewardNotificationPreferences } from "@/components/wallet/RewardNotificationPreferences";
 import { getCoachProfile, updateCoachPreferences } from "@/lib/coach";
 import { locationOptions } from "@/lib/options";
 import { Loader2, Save } from "lucide-react";
@@ -27,9 +28,7 @@ export default function CoachPreferencesPage() {
   const [poolsSupported, setPoolsSupported] = useState<string[]>([]);
   const [canTravel, setCanTravel] = useState(false);
   const [travelRadius, setTravelRadius] = useState<number | undefined>();
-  const [preferredCohortTypes, setPreferredCohortTypes] = useState<string[]>(
-    [],
-  );
+  const [preferredCohortTypes, setPreferredCohortTypes] = useState<string[]>([]);
   const [maxSwimmers, setMaxSwimmers] = useState(10);
   const [showInDirectory, setShowInDirectory] = useState(true);
 
@@ -68,15 +67,13 @@ export default function CoachPreferencesPage() {
     setPoolsSupported((prev) => {
       const withoutRemote = prev.filter((v) => v !== "remote_global");
       const alreadySelected = withoutRemote.includes(value);
-      return alreadySelected
-        ? withoutRemote.filter((v) => v !== value)
-        : [...withoutRemote, value];
+      return alreadySelected ? withoutRemote.filter((v) => v !== value) : [...withoutRemote, value];
     });
   };
 
   const toggleCohortType = (value: string) => {
     setPreferredCohortTypes((prev) =>
-      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value],
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
     );
   };
 
@@ -94,9 +91,7 @@ export default function CoachPreferencesPage() {
         can_travel_between_pools: canTravel,
         travel_radius_km: canTravel ? travelRadius : undefined,
         preferred_cohort_types: preferredCohortTypes,
-        max_swimmers_per_session: preferredCohortTypes.some(
-          (t) => t === "group" || t === "academy",
-        )
+        max_swimmers_per_session: preferredCohortTypes.some((t) => t === "group" || t === "academy")
           ? maxSwimmers
           : undefined,
         show_in_directory: showInDirectory,
@@ -117,21 +112,15 @@ export default function CoachPreferencesPage() {
   }
 
   const isRemoteOnly = poolsSupported.includes("remote_global");
-  const hasPhysicalLocation = poolsSupported.some(
-    (loc) => loc !== "remote_global",
-  );
-  const hasGroupCohorts = preferredCohortTypes.some(
-    (v) => v === "group" || v === "academy",
-  );
+  const hasPhysicalLocation = poolsSupported.some((loc) => loc !== "remote_global");
+  const hasGroupCohorts = preferredCohortTypes.some((v) => v === "group" || v === "academy");
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Preferences</h1>
-        <p className="text-slate-600 mt-1">
-          Update your coaching availability and preferences.
-        </p>
+        <p className="text-slate-600 mt-1">Update your coaching availability and preferences.</p>
       </div>
 
       {error && <Alert variant="error">{error}</Alert>}
@@ -151,14 +140,11 @@ export default function CoachPreferencesPage() {
         <div className="space-y-4">
           <h2 className="text-lg font-semibold text-slate-900">Locations</h2>
           <fieldset className="space-y-2">
-            <legend className="text-sm font-medium text-slate-700">
-              Where can you coach?
-            </legend>
+            <legend className="text-sm font-medium text-slate-700">Where can you coach?</legend>
             <div className="flex flex-wrap gap-2">
               {locationOptions.map((opt) => {
                 const isSelected = poolsSupported.includes(opt.value);
-                const isDisabled =
-                  isRemoteOnly && opt.value !== "remote_global";
+                const isDisabled = isRemoteOnly && opt.value !== "remote_global";
                 return (
                   <label
                     key={opt.value}
@@ -200,11 +186,7 @@ export default function CoachPreferencesPage() {
               className="w-32"
               value={travelRadius ?? ""}
               onChange={(e) =>
-                setTravelRadius(
-                  e.target.value === ""
-                    ? undefined
-                    : parseFloat(e.target.value),
-                )
+                setTravelRadius(e.target.value === "" ? undefined : parseFloat(e.target.value))
               }
             />
           )}
@@ -212,9 +194,7 @@ export default function CoachPreferencesPage() {
 
         {/* Session Types */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Session Types
-          </h2>
+          <h2 className="text-lg font-semibold text-slate-900">Session Types</h2>
           <OptionPillGroup
             label="What types of sessions do you offer?"
             options={cohortTypeOptions}
@@ -252,6 +232,9 @@ export default function CoachPreferencesPage() {
           </Button>
         </div>
       </Card>
+
+      {/* Reward Notification Preferences */}
+      <RewardNotificationPreferences />
     </div>
   );
 }

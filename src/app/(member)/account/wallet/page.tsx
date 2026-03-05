@@ -4,9 +4,19 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
+import { AnimatedBubbleCounter } from "@/components/wallet/AnimatedBubbleCounter";
 import { apiGet, apiPost } from "@/lib/api";
 import { formatDate } from "@/lib/format";
-import { ArrowDownLeft, ArrowUpRight, Plus, Receipt } from "lucide-react";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  Award,
+  Gift,
+  Plus,
+  Receipt,
+  Trophy,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -102,8 +112,7 @@ export default function WalletPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const returnReference =
-    searchParams.get("reference") || searchParams.get("trxref");
+  const returnReference = searchParams.get("reference") || searchParams.get("trxref");
   const returnTopupId = searchParams.get("topup");
   const showWelcomeParam = searchParams.get("welcome") === "1";
   const [wallet, setWallet] = useState<WalletData | null>(null);
@@ -113,8 +122,10 @@ export default function WalletPage() {
   const [creating, setCreating] = useState(false);
   const [reconcilingReturn, setReconcilingReturn] = useState(false);
   const [showWelcomeIntro, setShowWelcomeIntro] = useState(false);
-  const [welcomeIntroContext, setWelcomeIntroContext] =
-    useState<WalletIntroContext | null>(null);
+  const [welcomeIntroContext, setWelcomeIntroContext] = useState<WalletIntroContext | null>(null);
+  const [rewardsEarned, setRewardsEarned] = useState(0);
+  const [isAmbassador, setIsAmbassador] = useState(false);
+  const [showReferralCTA, setShowReferralCTA] = useState(true);
   const handledReturnKeyRef = useRef<string | null>(null);
 
   const loadWallet = useCallback(async () => {
@@ -129,6 +140,21 @@ export default function WalletPage() {
       setWallet(walletData);
       setTransactions(txnData.transactions);
       setNoWallet(false);
+
+      // Fetch rewards data in background (non-blocking)
+      Promise.allSettled([
+        apiGet<{ history: { bubbles_awarded: number }[]; total: number }>(
+          "/api/v1/wallet/rewards/history?limit=100",
+          { auth: true }
+        ).then((res) => {
+          setRewardsEarned(res.history.reduce((sum, h) => sum + h.bubbles_awarded, 0));
+        }),
+        apiGet<{ is_ambassador: boolean }>("/api/v1/wallet/referral/ambassador", {
+          auth: true,
+        }).then((res) => {
+          setIsAmbassador(res.is_ambassador);
+        }),
+      ]);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "";
       if (msg.includes("not found") || msg.includes("404")) {
@@ -157,8 +183,7 @@ export default function WalletPage() {
           saved_at?: number;
         };
         const stillFresh =
-          typeof parsed.saved_at !== "number" ||
-          Date.now() - parsed.saved_at < 24 * 60 * 60 * 1000;
+          typeof parsed.saved_at !== "number" || Date.now() - parsed.saved_at < 24 * 60 * 60 * 1000;
         if (stillFresh && parsed.reference) {
           fallbackReference = parsed.reference;
           pendingReturnTo = parsed.return_to ?? null;
@@ -190,12 +215,12 @@ export default function WalletPage() {
             topup = await apiPost<TopupReconcileResponse>(
               `/api/v1/wallet/topups/reconcile/${encodeURIComponent(topupReference)}`,
               undefined,
-              { auth: true },
+              { auth: true }
             );
           } else if (returnTopupId) {
             topup = await apiGet<TopupReconcileResponse>(
               `/api/v1/wallet/topup/${encodeURIComponent(returnTopupId)}`,
-              { auth: true },
+              { auth: true }
             );
           }
 
@@ -238,9 +263,7 @@ export default function WalletPage() {
         ]);
       } catch (e) {
         if (!cancelled) {
-          toast.error(
-            e instanceof Error ? e.message : "Could not confirm top-up yet.",
-          );
+          toast.error(e instanceof Error ? e.message : "Could not confirm top-up yet.");
           router.replace(pathname);
           await loadWallet();
         }
@@ -259,6 +282,16 @@ export default function WalletPage() {
   }, [loadWallet, pathname, returnReference, returnTopupId, router]);
 
   useEffect(() => {
+    try {
+      if (localStorage.getItem("wallet_referral_cta_dismissed")) {
+        setShowReferralCTA(false);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
     if (showWelcomeParam) {
       setShowWelcomeIntro(true);
     }
@@ -268,10 +301,7 @@ export default function WalletPage() {
       const parsed = JSON.parse(raw) as WalletIntroContext & {
         created_at?: number;
       };
-      if (
-        parsed.created_at &&
-        Date.now() - parsed.created_at > 24 * 60 * 60 * 1000
-      ) {
+      if (parsed.created_at && Date.now() - parsed.created_at > 24 * 60 * 60 * 1000) {
         localStorage.removeItem("wallet_intro_pending");
         return;
       }
@@ -316,9 +346,7 @@ export default function WalletPage() {
         <h1 className="text-2xl font-bold text-slate-900">Wallet</h1>
         <Card className="p-8 text-center">
           <div className="text-5xl mb-4">🫧</div>
-          <h2 className="text-xl font-semibold text-slate-900 mb-2">
-            Create Your Bubble Wallet
-          </h2>
+          <h2 className="text-xl font-semibold text-slate-900 mb-2">Create Your Bubble Wallet</h2>
           <p className="text-slate-600 mb-6 max-w-md mx-auto">
             Use Bubbles to pay for sessions, academy programs, events, and more.
           </p>
@@ -346,8 +374,7 @@ export default function WalletPage() {
                 Use Bubbles for sessions, events, and store purchases.
               </p>
               <p className="text-xs text-emerald-700">
-                Start here: check your balance, view transactions, or add more
-                Bubbles.
+                Start here: check your balance, view transactions, or add more Bubbles.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -401,21 +428,19 @@ export default function WalletPage() {
           <div>
             <p className="text-sm font-medium text-cyan-600">Bubble Balance</p>
             <p className="mt-1 text-3xl md:text-4xl font-bold text-slate-900">
-              {wallet?.balance?.toLocaleString() ?? 0}
+              <AnimatedBubbleCounter value={wallet?.balance ?? 0} />
               <span className="text-lg ml-1">🫧</span>
             </p>
             <p className="text-xs text-slate-500 mt-1">
               ≈ ₦{((wallet?.balance ?? 0) * 100).toLocaleString()}
             </p>
           </div>
-          <Badge variant={statusBadgeVariant(wallet?.status ?? "")}>
-            {wallet?.status}
-          </Badge>
+          <Badge variant={statusBadgeVariant(wallet?.status ?? "")}>{wallet?.status}</Badge>
         </div>
       </Card>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="p-3 md:p-4 text-center">
           <p className="text-xs text-slate-500">Purchased</p>
           <p className="text-lg font-semibold text-slate-900">
@@ -434,14 +459,81 @@ export default function WalletPage() {
             {wallet?.lifetime_bubbles_received?.toLocaleString() ?? 0}
           </p>
         </Card>
+        <Card className="p-3 md:p-4 text-center">
+          <p className="text-xs text-slate-500">Rewards</p>
+          <p className="text-lg font-semibold text-emerald-600">{rewardsEarned.toLocaleString()}</p>
+        </Card>
+      </div>
+
+      {/* Ambassador Badge */}
+      {isAmbassador && (
+        <div className="flex items-center gap-2 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 px-4 py-3">
+          <div className="rounded-full bg-amber-400 p-1.5">
+            <Trophy className="h-5 w-5 text-amber-900" />
+          </div>
+          <p className="font-semibold text-amber-900">Ambassador</p>
+        </div>
+      )}
+
+      {/* Referral CTA */}
+      {showReferralCTA && (
+        <Card className="p-4 md:p-5 bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-emerald-200 p-2 shrink-0">
+                <Gift className="h-5 w-5 text-emerald-700" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-emerald-900">Refer a friend, earn 15 🫧</p>
+                <p className="text-xs text-emerald-700">
+                  Share your code and earn Bubbles when friends join
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link href="/account/wallet/referrals">
+                <Button size="sm">Get Referral Code</Button>
+              </Link>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setShowReferralCTA(false);
+                  try {
+                    localStorage.setItem("wallet_referral_cta_dismissed", "1");
+                  } catch {
+                    // ignore
+                  }
+                }}
+                className="text-emerald-600"
+              >
+                Dismiss
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Quick Links */}
+      <div className="flex flex-wrap gap-2">
+        <Link href="/account/wallet/rewards">
+          <Button variant="outline" size="sm">
+            <Award className="h-4 w-4 mr-1.5" />
+            My Rewards
+          </Button>
+        </Link>
+        <Link href="/account/wallet/referrals">
+          <Button variant="outline" size="sm">
+            <Users className="h-4 w-4 mr-1.5" />
+            Referrals
+          </Button>
+        </Link>
       </div>
 
       {/* Recent Transactions */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Recent Transactions
-          </h2>
+          <h2 className="text-lg font-semibold text-slate-900">Recent Transactions</h2>
           <Link
             href="/account/wallet/transactions"
             className="text-sm text-cyan-600 hover:text-cyan-700"
@@ -462,10 +554,9 @@ export default function WalletPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`rounded-full p-2 ${txn.direction === "credit"
-                          ? "bg-emerald-100"
-                          : "bg-red-100"
-                        }`}
+                      className={`rounded-full p-2 ${
+                        txn.direction === "credit" ? "bg-emerald-100" : "bg-red-100"
+                      }`}
                     >
                       {txn.direction === "credit" ? (
                         <ArrowDownLeft className="h-4 w-4 text-emerald-600" />
@@ -474,20 +565,16 @@ export default function WalletPage() {
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-slate-900">
-                        {txn.description}
-                      </p>
+                      <p className="text-sm font-medium text-slate-900">{txn.description}</p>
                       <p className="text-xs text-slate-500">
-                        {transactionTypeLabel(txn.transaction_type)} ·{" "}
-                        {formatDate(txn.created_at)}
+                        {transactionTypeLabel(txn.transaction_type)} · {formatDate(txn.created_at)}
                       </p>
                     </div>
                   </div>
                   <p
-                    className={`text-sm font-semibold ${txn.direction === "credit"
-                        ? "text-emerald-600"
-                        : "text-red-600"
-                      }`}
+                    className={`text-sm font-semibold ${
+                      txn.direction === "credit" ? "text-emerald-600" : "text-red-600"
+                    }`}
                   >
                     {txn.direction === "credit" ? "+" : "-"}
                     {txn.amount} 🫧

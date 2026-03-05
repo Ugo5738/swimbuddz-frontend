@@ -2,6 +2,9 @@
 
 import { supabase } from "@/lib/auth";
 import {
+  AlertTriangle,
+  Award,
+  BarChart3,
   Calendar,
   CalendarDays,
   Car,
@@ -45,9 +48,7 @@ type NavSection = {
 const navSections: NavSection[] = [
   {
     title: "Overview",
-    items: [
-      { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    ],
+    items: [{ href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard }],
   },
   {
     title: "Core Management",
@@ -58,7 +59,24 @@ const navSections: NavSection[] = [
       { href: "/admin/discounts", label: "Discounts", icon: Trophy },
       { href: "/admin/transport", label: "Transport", icon: Car },
       { href: "/admin/attendance", label: "Attendance", icon: ClipboardCheck },
-      { href: "/admin/wallet", label: "Wallet", icon: Wallet },
+    ],
+  },
+  {
+    title: "Wallet & Rewards",
+    items: [
+      { href: "/admin/wallet", label: "Wallets", icon: Wallet },
+      { href: "/admin/wallet/rewards", label: "Reward Rules", icon: Award },
+      { href: "/admin/wallet/referrals", label: "Referrals", icon: Users },
+      {
+        href: "/admin/wallet/rewards/alerts",
+        label: "Alerts",
+        icon: AlertTriangle,
+      },
+      {
+        href: "/admin/wallet/rewards/analytics",
+        label: "Analytics",
+        icon: BarChart3,
+      },
     ],
   },
   {
@@ -107,9 +125,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string>("");
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
-    new Set(),
-  );
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     async function getUserEmail() {
@@ -133,11 +149,22 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     router.push("/login");
   };
 
+  // Build a set of all nav hrefs so we can find the most specific match
+  const allHrefs = navSections.flatMap((s) => s.items.map((i) => i.href));
+
   const isActive = (href: string) => {
-    if (href === "/admin/dashboard") {
-      return pathname === href;
-    }
-    return pathname?.startsWith(href);
+    if (!pathname) return false;
+    if (pathname === href) return true;
+    // Only highlight if this href is a prefix of the current path AND
+    // no other, more specific nav href also matches
+    if (!pathname.startsWith(href + "/")) return false;
+    const hasMoreSpecificMatch = allHrefs.some(
+      (other) =>
+        other !== href &&
+        other.startsWith(href + "/") &&
+        (pathname === other || pathname.startsWith(other + "/"))
+    );
+    return !hasMoreSpecificMatch;
   };
 
   const toggleSection = (title: string) => {
@@ -178,19 +205,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <div className="flex h-full flex-col">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-slate-700 p-4 lg:p-6">
-            <Link
-              href="/admin/dashboard"
-              className="flex items-center gap-2 lg:gap-3"
-            >
-              <img
-                src="/logo.png"
-                alt="SwimBuddz Logo"
-                className="h-8 lg:h-10 w-auto"
-              />
+            <Link href="/admin/dashboard" className="flex items-center gap-2 lg:gap-3">
+              <img src="/logo.png" alt="SwimBuddz Logo" className="h-8 lg:h-10 w-auto" />
               <div className="flex flex-col">
-                <span className="text-lg lg:text-xl font-bold text-cyan-400">
-                  SwimBuddz
-                </span>
+                <span className="text-lg lg:text-xl font-bold text-cyan-400">SwimBuddz</span>
                 <span className="text-[10px] lg:text-xs font-medium text-slate-400">
                   Admin Panel
                 </span>
@@ -270,12 +288,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               <div className="flex items-center gap-2 lg:gap-3 px-3 py-2 rounded-lg bg-slate-700/30">
                 <Mail className="h-4 lg:h-5 w-4 lg:w-5 text-slate-400 shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] lg:text-xs font-medium text-slate-400">
-                    Logged in as
-                  </p>
-                  <p className="text-xs lg:text-sm font-medium text-white truncate">
-                    {userEmail}
-                  </p>
+                  <p className="text-[10px] lg:text-xs font-medium text-slate-400">Logged in as</p>
+                  <p className="text-xs lg:text-sm font-medium text-white truncate">{userEmail}</p>
                 </div>
               </div>
             )}
@@ -303,14 +317,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               <Menu className="h-6 w-6" />
             </button>
             <Link href="/admin/dashboard" className="flex items-center gap-2">
-              <img
-                src="/logo.png"
-                alt="SwimBuddz Logo"
-                className="h-7 w-auto"
-              />
-              <span className="text-base font-semibold text-cyan-700">
-                Admin
-              </span>
+              <img src="/logo.png" alt="SwimBuddz Logo" className="h-7 w-auto" />
+              <span className="text-base font-semibold text-cyan-700">Admin</span>
             </Link>
             {/* User avatar or placeholder for balance */}
             <div className="p-2 -mr-2">

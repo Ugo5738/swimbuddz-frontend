@@ -2,7 +2,7 @@
 
 Complete reference for all routes in the SwimBuddz Next.js application.
 
-**Total Pages:** 103
+**Total Pages:** 118
 
 ---
 
@@ -10,18 +10,18 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 
 | Group                               | Pages | Description                                     |
 | ----------------------------------- | ----- | ----------------------------------------------- |
-| [Public Routes](#public-routes)     | 19    | Accessible without authentication               |
+| [Public Routes](#public-routes)     | 21    | Accessible without authentication               |
 | [Auth Routes](#auth-routes)         | 7     | Authentication flows (login, register, confirm) |
-| [Member Routes](#member-routes)     | 26    | Authenticated member dashboards and features    |
-| [Coach Routes](#coach-routes)       | 2     | Coach application and onboarding                |
+| [Member Routes](#member-routes)     | 29    | Authenticated member dashboards and features    |
+| [Coach Routes](#coach-routes)       | 5     | Coach application, onboarding, and wallet       |
 | [Sessions Routes](#sessions-routes) | 1     | Public sessions list                            |
-| [Admin Routes](#admin-routes)       | 48    | Administrative tools and management             |
+| [Admin Routes](#admin-routes)       | 55    | Administrative tools and management             |
 
 ---
 
 ## Public Routes
 
-**19 pages** - Accessible to all visitors
+**21 pages** - Accessible to all visitors
 
 ### Landing & Info Pages
 
@@ -66,6 +66,13 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 | -------------- | --------------------------------------- | -------------------------- |
 | `/verify/[id]` | `src/app/(public)/verify/[id]/page.tsx` | Email verification handler |
 
+### Referral & Community
+
+| Route                    | File                                              | Purpose                                             |
+| ------------------------ | ------------------------------------------------- | --------------------------------------------------- |
+| `/join`                  | `src/app/(public)/join/page.tsx`                  | Referral landing page — validate code, drive signup |
+| `/community/leaderboard` | `src/app/(public)/community/leaderboard/page.tsx` | Public referral leaderboard (anonymized top-10)     |
+
 ---
 
 ## Auth Routes
@@ -93,7 +100,7 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 
 ## Member Routes
 
-**26 pages** - Authenticated member features
+**29 pages** - Authenticated member features
 
 ### Dashboards
 
@@ -137,6 +144,14 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 | `/account/orders/[id]` | `src/app/(member)/account/orders/[id]/page.tsx` | Order detail page                |
 | `/checkout`            | `src/app/(member)/checkout/page.tsx`            | General checkout flow            |
 
+### Wallet & Rewards (Member)
+
+| Route                             | File                                                       | Purpose                                         |
+| --------------------------------- | ---------------------------------------------------------- | ----------------------------------------------- |
+| `/account/wallet/referrals`       | `src/app/(member)/account/wallet/referrals/page.tsx`       | Referral hub — code, stats, ambassador, records |
+| `/account/wallet/rewards`         | `src/app/(member)/account/wallet/rewards/page.tsx`         | Rewards dashboard — rules, recent rewards       |
+| `/account/wallet/rewards/history` | `src/app/(member)/account/wallet/rewards/history/page.tsx` | Full reward history with filter and CSV export  |
+
 ### Community Features
 
 | Route                                      | File                                                                | Purpose                                                |
@@ -165,12 +180,22 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 
 ## Coach Routes
 
-**2 pages** - Coach-specific features
+**5 pages** - Coach-specific features
+
+### Application & Onboarding
 
 | Route               | File                                        | Purpose                |
 | ------------------- | ------------------------------------------- | ---------------------- |
 | `/coach/apply`      | `src/app/(coach)/coach/apply/page.tsx`      | Coach application form |
 | `/coach/onboarding` | `src/app/(coach)/coach/onboarding/page.tsx` | Coach onboarding flow  |
+
+### Wallet & Rewards (Coach)
+
+| Route                           | File                                            | Purpose                                         |
+| ------------------------------- | ----------------------------------------------- | ----------------------------------------------- |
+| `/coach/wallet/referrals`       | `src/app/coach/wallet/referrals/page.tsx`       | Coach referral hub — code, stats, records       |
+| `/coach/wallet/rewards`         | `src/app/coach/wallet/rewards/page.tsx`         | Coach rewards dashboard — rules, recent rewards |
+| `/coach/wallet/rewards/history` | `src/app/coach/wallet/rewards/history/page.tsx` | Coach reward history with filter and CSV export |
 
 ---
 
@@ -186,7 +211,7 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 
 ## Admin Routes
 
-**48 pages** - Administrative tools (requires admin role)
+**55 pages** - Administrative tools (requires admin role)
 
 ### Admin Dashboard
 
@@ -232,6 +257,17 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 | Route              | File                                       | Purpose               |
 | ------------------ | ------------------------------------------ | --------------------- |
 | `/admin/discounts` | `src/app/(admin)/admin/discounts/page.tsx` | Manage discount codes |
+
+### Wallet Rewards Management (Admin)
+
+| Route                                   | File                                                            | Purpose                                                |
+| --------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------ |
+| `/admin/wallet/rewards`                 | `src/app/(admin)/admin/wallet/rewards/page.tsx`                 | Reward rules list — filters, toggle active, stats      |
+| `/admin/wallet/rewards/[ruleId]`        | `src/app/(admin)/admin/wallet/rewards/[ruleId]/page.tsx`        | Rule detail/edit — bubble amount, caps, toggle active  |
+| `/admin/wallet/rewards/alerts`          | `src/app/(admin)/admin/wallet/rewards/alerts/page.tsx`          | Anti-abuse alerts dashboard — status tabs, actions     |
+| `/admin/wallet/rewards/analytics`       | `src/app/(admin)/admin/wallet/rewards/analytics/page.tsx`       | Rewards analytics — period summary, category breakdown |
+| `/admin/wallet/rewards/member/[authId]` | `src/app/(admin)/admin/wallet/rewards/member/[authId]/page.tsx` | Admin member reward history with CSV export            |
+| `/admin/wallet/referrals`               | `src/app/(admin)/admin/wallet/referrals/page.tsx`               | Admin referrals — stats, leaderboard, all codes        |
 
 ### Coaches Management
 
@@ -370,4 +406,4 @@ When adding a new route:
 
 ---
 
-_Last updated: January 2026_
+_Last updated: February 2026_

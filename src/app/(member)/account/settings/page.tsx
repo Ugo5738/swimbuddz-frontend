@@ -2,6 +2,7 @@
 
 import { Alert } from "@/components/ui/Alert";
 import { Card } from "@/components/ui/Card";
+import { RewardNotificationPreferences } from "@/components/wallet/RewardNotificationPreferences";
 import { apiEndpoints } from "@/lib/config";
 import {
   Bell,
@@ -103,8 +104,7 @@ function PreferenceRow({
 }
 
 export default function NotificationSettingsPage() {
-  const [preferences, setPreferences] =
-    useState<NotificationPreferences | null>(null);
+  const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -116,9 +116,7 @@ export default function NotificationSettingsPage() {
 
   const fetchPreferences = async () => {
     try {
-      const response = await fetch(
-        `${apiEndpoints.baseUrl}/api/v1/preferences/me`,
-      );
+      const response = await fetch(`${apiEndpoints.baseUrl}/api/v1/preferences/me`);
       if (response.ok) {
         const data = await response.json();
         setPreferences(data);
@@ -133,10 +131,7 @@ export default function NotificationSettingsPage() {
     }
   };
 
-  const updatePreference = async (
-    key: keyof NotificationPreferences,
-    value: boolean,
-  ) => {
+  const updatePreference = async (key: keyof NotificationPreferences, value: boolean) => {
     if (!preferences) return;
 
     setSaving(true);
@@ -147,14 +142,11 @@ export default function NotificationSettingsPage() {
     setPreferences({ ...preferences, [key]: value });
 
     try {
-      const response = await fetch(
-        `${apiEndpoints.baseUrl}/api/v1/preferences/me`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ [key]: value }),
-        },
-      );
+      const response = await fetch(`${apiEndpoints.baseUrl}/api/v1/preferences/me`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [key]: value }),
+      });
 
       if (response.ok) {
         const data = await response.json();
@@ -195,9 +187,7 @@ export default function NotificationSettingsPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <header>
-        <h1 className="text-2xl font-bold text-slate-900">
-          Notification Settings
-        </h1>
+        <h1 className="text-2xl font-bold text-slate-900">Notification Settings</h1>
         <p className="text-slate-600 mt-1">
           Choose how you want to be notified about activity on SwimBuddz.
         </p>
@@ -215,9 +205,7 @@ export default function NotificationSettingsPage() {
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <Mail className="h-5 w-5 text-cyan-600" />
-          <h2 className="text-lg font-semibold text-slate-900">
-            Email Notifications
-          </h2>
+          <h2 className="text-lg font-semibold text-slate-900">Email Notifications</h2>
         </div>
 
         <div className="space-y-0">
@@ -276,13 +264,10 @@ export default function NotificationSettingsPage() {
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <Waves className="h-5 w-5 text-cyan-600" />
-          <h2 className="text-lg font-semibold text-slate-900">
-            Session Alerts
-          </h2>
+          <h2 className="text-lg font-semibold text-slate-900">Session Alerts</h2>
         </div>
         <p className="text-sm text-slate-500 mb-4">
-          Choose which types of sessions you want to be notified about when they
-          are published.
+          Choose which types of sessions you want to be notified about when they are published.
         </p>
 
         <div className="space-y-0">
@@ -291,9 +276,7 @@ export default function NotificationSettingsPage() {
             title="Community Sessions"
             description="Open swims and social sessions"
             enabled={preferences.subscribe_community_sessions}
-            onChange={(v) =>
-              updatePreference("subscribe_community_sessions", v)
-            }
+            onChange={(v) => updatePreference("subscribe_community_sessions", v)}
             saving={saving}
           />
           <PreferenceRow
@@ -319,9 +302,7 @@ export default function NotificationSettingsPage() {
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <Clock className="h-5 w-5 text-cyan-600" />
-          <h2 className="text-lg font-semibold text-slate-900">
-            Reminder Timing
-          </h2>
+          <h2 className="text-lg font-semibold text-slate-900">Reminder Timing</h2>
         </div>
         <p className="text-sm text-slate-500 mb-4">
           Control when you receive session reminders before the start time.
@@ -351,9 +332,7 @@ export default function NotificationSettingsPage() {
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <Smartphone className="h-5 w-5 text-cyan-600" />
-          <h2 className="text-lg font-semibold text-slate-900">
-            Push Notifications
-          </h2>
+          <h2 className="text-lg font-semibold text-slate-900">Push Notifications</h2>
           <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
             Coming Soon
           </span>
@@ -394,6 +373,9 @@ export default function NotificationSettingsPage() {
           />
         </div>
       </Card>
+
+      {/* Reward Notifications */}
+      <RewardNotificationPreferences />
 
       {/* Digest */}
       <Card className="p-6">

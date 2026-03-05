@@ -22,8 +22,7 @@ const whoSwimBudzIsFor = [
   },
   {
     title: "Competitive / Ocean Curious",
-    description:
-      "Explore more advanced training, challenges and open-water goals over time.",
+    description: "Explore more advanced training, challenges and open-water goals over time.",
     icon: "🏊",
     gradient: "from-purple-400 to-indigo-500",
   },
@@ -32,8 +31,7 @@ const whoSwimBudzIsFor = [
 const tiers = [
   {
     name: "Community",
-    description:
-      "Join a welcoming space to connect with other swimming enthusiasts.",
+    description: "Join a welcoming space to connect with other swimming enthusiasts.",
     benefits: [
       "Access to Global Community Network of swimmers",
       "Access to Community Events & Socials",
@@ -67,8 +65,7 @@ const tiers = [
   },
   {
     name: "Academy",
-    description:
-      "A formal training program with a curriculum, assessments, and certification.",
+    description: "A formal training program with a curriculum, assessments, and certification.",
     benefits: [
       "Structured curriculum/milestones",
       "Coach-assigned drills and goals",
@@ -93,8 +90,7 @@ const howItWorks = [
   {
     step: "2",
     title: "Pick Your Path",
-    description:
-      "Join Club training sessions or enroll in Academy cohorts when you're ready.",
+    description: "Join Club training sessions or enroll in Academy cohorts when you're ready.",
   },
   {
     step: "3",
@@ -104,15 +100,13 @@ const howItWorks = [
   {
     step: "4",
     title: "Grow With the Pod",
-    description:
-      "Take on challenges, volunteer, and be part of building SwimBuddz.",
+    description: "Take on challenges, volunteer, and be part of building SwimBuddz.",
   },
 ];
 
 const testimonials = [
   {
-    quote:
-      "I went from being afraid of water to swimming across the pool confidently.",
+    quote: "I went from being afraid of water to swimming across the pool confidently.",
     author: "SwimBuddz Member",
   },
   {
@@ -120,8 +114,7 @@ const testimonials = [
     author: "Club Member",
   },
   {
-    quote:
-      "SwimBuddz gave me the structure I needed to finally learn how to swim properly.",
+    quote: "SwimBuddz gave me the structure I needed to finally learn how to swim properly.",
     author: "Academy Graduate",
   },
 ];
@@ -134,13 +127,7 @@ const defaultHeroImages = [
 ];
 
 // Wave SVG component for decorative borders
-function WaveDecoration({
-  className = "",
-  flip = false,
-}: {
-  className?: string;
-  flip?: boolean;
-}) {
+function WaveDecoration({ className = "", flip = false }: { className?: string; flip?: boolean }) {
   return (
     <svg
       viewBox="0 0 1200 120"
@@ -186,10 +173,7 @@ export default function HomePage() {
         if (response.ok) {
           const assets = await response.json();
           const bannerUrls = assets
-            .filter(
-              (a: any) =>
-                a.key.startsWith("homepage_banner_") && a.media_item?.file_url,
-            )
+            .filter((a: any) => a.key.startsWith("homepage_banner_") && a.media_item?.file_url)
             .sort((a: any, b: any) => {
               const orderA = parseInt(a.key.split("_").pop() || "0");
               const orderB = parseInt(b.key.split("_").pop() || "0");
@@ -225,10 +209,7 @@ export default function HomePage() {
         if (response.ok) {
           const assets = await response.json();
           const communityPhotos = assets
-            .filter(
-              (a: any) =>
-                a.key.startsWith("community_photo_") && a.media_item?.file_url,
-            )
+            .filter((a: any) => a.key.startsWith("community_photo_") && a.media_item?.file_url)
             .sort((a: any, b: any) => {
               const orderA = parseInt(a.key.split("_").pop() || "0");
               const orderB = parseInt(b.key.split("_").pop() || "0");
@@ -317,8 +298,8 @@ export default function HomePage() {
             </h1>
 
             <p className="text-lg text-slate-200 max-w-2xl md:text-xl">
-              SwimBuddz connects beginners, fitness swimmers, and competitors in
-              a structured but friendly swim community.
+              SwimBuddz connects beginners, fitness swimmers, and competitors in a structured but
+              friendly swim community.
             </p>
 
             <div className="flex flex-col gap-4 sm:flex-row pt-2">
@@ -359,9 +340,7 @@ export default function HomePage() {
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
             For Everyone
           </p>
-          <h2 className="text-3xl font-bold text-slate-900 md:text-4xl">
-            Who SwimBuddz Is For
-          </h2>
+          <h2 className="text-3xl font-bold text-slate-900 md:text-4xl">Who SwimBuddz Is For</h2>
         </div>
         <div className="grid gap-6 md:grid-cols-3">
           {whoSwimBudzIsFor.map((audience) => (
@@ -376,9 +355,7 @@ export default function HomePage() {
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 text-4xl shadow-sm">
                   {audience.icon}
                 </div>
-                <h3 className="text-xl font-semibold text-slate-900">
-                  {audience.title}
-                </h3>
+                <h3 className="text-xl font-semibold text-slate-900">{audience.title}</h3>
                 <p className="text-slate-600">{audience.description}</p>
               </div>
             </Card>
@@ -396,8 +373,8 @@ export default function HomePage() {
             Choose Your Level of Commitment
           </h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Start with Community, upgrade to Club for consistent training, or
-            join Academy for structured learning.
+            Start with Community, upgrade to Club for consistent training, or join Academy for
+            structured learning.
           </p>
         </div>
         <div className="grid gap-6 md:grid-cols-3">
@@ -405,9 +382,7 @@ export default function HomePage() {
             <Card
               key={tier.name}
               className={`relative overflow-hidden transition-all hover:shadow-lg ${
-                tier.featured
-                  ? "ring-2 ring-cyan-500 shadow-lg md:-translate-y-2"
-                  : ""
+                tier.featured ? "ring-2 ring-cyan-500 shadow-lg md:-translate-y-2" : ""
               }`}
             >
               {tier.featured && (
@@ -415,17 +390,11 @@ export default function HomePage() {
                   Most Popular
                 </div>
               )}
-              <div
-                className={`space-y-6 ${tier.featured ? "pt-10" : "pt-6"} p-6`}
-              >
+              <div className={`space-y-6 ${tier.featured ? "pt-10" : "pt-6"} p-6`}>
                 <div>
-                  <h3 className="text-2xl font-bold text-cyan-700">
-                    {tier.name}
-                  </h3>
+                  <h3 className="text-2xl font-bold text-cyan-700">{tier.name}</h3>
                   <p className="text-slate-600 mt-2">{tier.description}</p>
-                  <p className="text-sm font-semibold text-slate-500 mt-3">
-                    {tier.pricing}
-                  </p>
+                  <p className="text-sm font-semibold text-slate-500 mt-3">{tier.pricing}</p>
                 </div>
                 <ul className="space-y-3">
                   {tier.benefits.map((benefit, idx) => (
@@ -469,12 +438,9 @@ export default function HomePage() {
       <section className="space-y-6 rounded-2xl bg-gradient-to-br from-cyan-50 to-white border border-cyan-100 p-8 md:p-10">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900">
-              SwimBuddz Gear
-            </h2>
+            <h2 className="text-2xl font-bold text-slate-900">SwimBuddz Gear</h2>
             <p className="text-slate-600 mt-2">
-              Browse our collection of swim essentials — goggles, caps, training
-              equipment and more.
+              Browse our collection of swim essentials — goggles, caps, training equipment and more.
             </p>
           </div>
           {/* <Link
@@ -488,34 +454,26 @@ export default function HomePage() {
           </Link> */}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {["🥽 Goggles", "🏊 Caps", "🎽 Swimwear", "🏋️ Training"].map(
-            (item, idx) => (
-              <Link
-                key={idx}
-                href="/store"
-                className="group bg-white rounded-xl p-6 text-center border border-slate-100 hover:border-cyan-200 hover:shadow-md transition-all"
-              >
-                <span className="text-3xl block mb-2">
-                  {item.split(" ")[0]}
-                </span>
-                <span className="text-sm font-medium text-slate-700 group-hover:text-cyan-700">
-                  {item.split(" ").slice(1).join(" ")}
-                </span>
-              </Link>
-            ),
-          )}
+          {["🥽 Goggles", "🏊 Caps", "🎽 Swimwear", "🏋️ Training"].map((item, idx) => (
+            <Link
+              key={idx}
+              href="/store"
+              className="group bg-white rounded-xl p-6 text-center border border-slate-100 hover:border-cyan-200 hover:shadow-md transition-all"
+            >
+              <span className="text-3xl block mb-2">{item.split(" ")[0]}</span>
+              <span className="text-sm font-medium text-slate-700 group-hover:text-cyan-700">
+                {item.split(" ").slice(1).join(" ")}
+              </span>
+            </Link>
+          ))}
         </div>
       </section>
 
       {/* 4. SESSIONS & EVENTS PREVIEW */}
       <section className="space-y-6 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 p-8 md:p-10">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">
-            Upcoming Sessions & Events
-          </h2>
-          <p className="text-slate-600 mt-2">
-            Join training sessions or RSVP to community events.
-          </p>
+          <h2 className="text-2xl font-bold text-slate-900">Upcoming Sessions & Events</h2>
+          <p className="text-slate-600 mt-2">Join training sessions or RSVP to community events.</p>
         </div>
         <Card className="p-8 text-center bg-white/80 backdrop-blur">
           <p className="text-slate-600 mb-6">
@@ -526,18 +484,8 @@ export default function HomePage() {
             className="inline-flex items-center gap-2 rounded-full bg-cyan-600 px-8 py-3.5 font-semibold text-white hover:bg-cyan-500 transition-all hover:scale-105 hover:shadow-lg hover:shadow-cyan-500/25"
           >
             View Full Calendar
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </Link>
         </Card>
@@ -553,8 +501,7 @@ export default function HomePage() {
             Building a Culture Together
           </h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            We&apos;re building a culture of consistency, safety and fun in and
-            out of the pool.
+            We&apos;re building a culture of consistency, safety and fun in and out of the pool.
           </p>
         </div>
 
@@ -602,18 +549,8 @@ export default function HomePage() {
             className="inline-flex items-center gap-2 rounded-full border-2 border-cyan-600 px-8 py-3.5 font-semibold text-cyan-700 hover:bg-cyan-50 transition-all hover:scale-105"
           >
             Browse Gallery
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </Link>
         </div>
@@ -625,16 +562,11 @@ export default function HomePage() {
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
             Simple Process
           </p>
-          <h2 className="text-3xl font-bold text-slate-900 md:text-4xl">
-            How It Works
-          </h2>
+          <h2 className="text-3xl font-bold text-slate-900 md:text-4xl">How It Works</h2>
         </div>
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           {howItWorks.map((step, idx) => (
-            <div
-              key={step.step}
-              className="relative space-y-4 text-center md:text-left"
-            >
+            <div key={step.step} className="relative space-y-4 text-center md:text-left">
               {/* Connector line for desktop */}
               {idx < howItWorks.length - 1 && (
                 <div className="hidden lg:block absolute top-6 left-[60%] w-full h-0.5 bg-gradient-to-r from-cyan-200 to-transparent" />
@@ -642,9 +574,7 @@ export default function HomePage() {
               <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-cyan-600 text-xl font-bold text-white shadow-lg shadow-cyan-500/25 mx-auto md:mx-0">
                 {step.step}
               </div>
-              <h3 className="text-lg font-semibold text-slate-900">
-                {step.title}
-              </h3>
+              <h3 className="text-lg font-semibold text-slate-900">{step.title}</h3>
               <p className="text-sm text-slate-600">{step.description}</p>
             </div>
           ))}
@@ -657,33 +587,73 @@ export default function HomePage() {
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
             Member Stories
           </p>
-          <h2 className="text-3xl font-bold text-slate-900 md:text-4xl">
-            What Our Swimmers Say
-          </h2>
+          <h2 className="text-3xl font-bold text-slate-900 md:text-4xl">What Our Swimmers Say</h2>
         </div>
         <div className="grid gap-6 md:grid-cols-3">
           {testimonials.map((testimonial, idx) => (
-            <Card
-              key={idx}
-              className="relative overflow-hidden text-center md:text-left"
-            >
+            <Card key={idx} className="relative overflow-hidden text-center md:text-left">
               <div className="absolute top-0 left-0 text-6xl text-cyan-100 font-serif leading-none">
                 &quot;
               </div>
               <div className="relative space-y-4 p-6 pt-8">
-                <p className="text-slate-700 italic text-lg">
-                  &quot;{testimonial.quote}&quot;
-                </p>
-                <p className="text-sm font-semibold text-cyan-700">
-                  — {testimonial.author}
-                </p>
+                <p className="text-slate-700 italic text-lg">&quot;{testimonial.quote}&quot;</p>
+                <p className="text-sm font-semibold text-cyan-700">— {testimonial.author}</p>
               </div>
             </Card>
           ))}
         </div>
       </section>
 
-      {/* 8. FINAL CTA STRIP */}
+      {/* 8. EARN BUBBLES SECTION */}
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-50 via-cyan-50 to-emerald-50 px-6 py-16 md:px-12 md:py-20">
+        <div className="relative z-10 max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl font-bold text-slate-900 md:text-4xl mb-3">
+            Earn Bubbles Every Time You Swim
+          </h2>
+          <p className="text-lg text-slate-600 max-w-2xl mx-auto mb-10">
+            Bubbles are our reward currency. Earn them by being active, then spend them on sessions,
+            events, and gear.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+            <Card className="p-5 bg-white/80 backdrop-blur-sm text-center hover:shadow-lg transition-shadow">
+              <div className="text-3xl mb-2">🏊</div>
+              <p className="font-semibold text-slate-900 mb-1">Attend Sessions</p>
+              <p className="text-sm text-slate-600">
+                Earn Bubbles for every swim session you attend
+              </p>
+            </Card>
+            <Card className="p-5 bg-white/80 backdrop-blur-sm text-center hover:shadow-lg transition-shadow">
+              <div className="text-3xl mb-2">👥</div>
+              <p className="font-semibold text-slate-900 mb-1">Refer Friends</p>
+              <p className="text-sm text-slate-600">
+                Get rewarded when your friends join SwimBuddz
+              </p>
+            </Card>
+            <Card className="p-5 bg-white/80 backdrop-blur-sm text-center hover:shadow-lg transition-shadow">
+              <div className="text-3xl mb-2">🎓</div>
+              <p className="font-semibold text-slate-900 mb-1">Graduate Academy</p>
+              <p className="text-sm text-slate-600">
+                Complete academy programs to earn bonus Bubbles
+              </p>
+            </Card>
+            <Card className="p-5 bg-white/80 backdrop-blur-sm text-center hover:shadow-lg transition-shadow">
+              <div className="text-3xl mb-2">🤝</div>
+              <p className="font-semibold text-slate-900 mb-1">Volunteer</p>
+              <p className="text-sm text-slate-600">Help the community and get rewarded for it</p>
+            </Card>
+          </div>
+
+          <Link
+            href="/register"
+            className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 px-8 py-4 text-lg font-semibold text-white transition-all hover:scale-105 hover:shadow-xl hover:shadow-emerald-500/25"
+          >
+            Join SwimBuddz
+          </Link>
+        </div>
+      </section>
+
+      {/* 9. FINAL CTA STRIP */}
       <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-6 py-16 text-center text-white shadow-2xl md:px-12 md:py-20">
         {/* Decorative elements */}
         <div className="absolute inset-0 overflow-hidden">

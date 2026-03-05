@@ -147,6 +147,7 @@ function RegisterContent() {
   const searchParams = useSearchParams();
   const isUpgrade = searchParams.get("upgrade") === "true";
   const isCoachRegistration = searchParams.get("coach") === "true";
+  const referralCode = searchParams.get("ref") || "";
 
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>(initialFormData);
@@ -171,7 +172,7 @@ function RegisterContent() {
                 : ["community"]
           ).map((t: string) => t.toLowerCase());
           const normalizedTiers = rawTiers.filter((t) =>
-            ["community", "club", "academy"].includes(t),
+            ["community", "club", "academy"].includes(t)
           ) as Tier[];
           setCurrentTiers(normalizedTiers);
           setCurrentTier(normalizedTiers[0] || null);
@@ -193,19 +194,16 @@ function RegisterContent() {
             discoverySource: profile.discovery_source || "",
             profilePhotoUrl: profile.profile_photo_url || "",
             emergencyContactName: profile.emergency_contact_name || "",
-            emergencyContactRelationship:
-              profile.emergency_contact_relationship || "",
+            emergencyContactRelationship: profile.emergency_contact_relationship || "",
             emergencyContactPhone: profile.emergency_contact_phone || "",
             medicalInfo: profile.medical_info || "",
             locationPreference: profile.location_preference || [],
             timeOfDayAvailability: profile.time_of_day_availability || [],
             consentPhoto: profile.consent_photo || "yes",
             academySkillAssessment:
-              profile.academy_skill_assessment ||
-              initialFormData.academySkillAssessment,
+              profile.academy_skill_assessment || initialFormData.academySkillAssessment,
             academyGoals: profile.academy_goals || "",
-            academyPreferredCoachGender:
-              profile.academy_preferred_coach_gender || "",
+            academyPreferredCoachGender: profile.academy_preferred_coach_gender || "",
             academyLessonPreference: profile.academy_lesson_preference || "",
             volunteerInterest: profile.volunteer_interest || [],
             interestTags: profile.interest_tags || [],
@@ -282,7 +280,7 @@ function RegisterContent() {
           formData.state &&
           formData.city &&
           formData.country &&
-          formData.swimLevel,
+          formData.swimLevel
         );
 
       case "confirm":
@@ -327,7 +325,7 @@ function RegisterContent() {
           {
             requested_membership_tiers: requestedTiers,
           },
-          { auth: true },
+          { auth: true }
         );
 
         // Redirect to onboarding with the appropriate step
@@ -356,6 +354,8 @@ function RegisterContent() {
           membership_tiers: ["community"],
           roles: ["coach"],
           community_rules_accepted: true,
+          // Pass referral code so the backend can apply it during registration completion
+          ...(referralCode ? { referral_code: referralCode } : {}),
         };
 
         await createPendingRegistration(coachRegistrationPayload as any);
@@ -364,8 +364,7 @@ function RegisterContent() {
       }
 
       const selectedTier = formData.membershipTier!;
-      const requestedTiers =
-        selectedTier === "community" ? undefined : expandTier(selectedTier);
+      const requestedTiers = selectedTier === "community" ? undefined : expandTier(selectedTier);
 
       const registrationPayload = {
         email: formData.email,
@@ -382,16 +381,15 @@ function RegisterContent() {
         membership_tiers: ["community"],
         requested_membership_tiers: requestedTiers,
         community_rules_accepted: true,
+        // Pass referral code so the backend can apply it during registration completion
+        ...(referralCode ? { referral_code: referralCode } : {}),
       };
 
       await createPendingRegistration(registrationPayload as any);
 
       router.push("/register/success");
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Unable to complete registration.";
+      const message = error instanceof Error ? error.message : "Unable to complete registration.";
       setErrorMessage(message);
     } finally {
       setSubmitting(false);
@@ -478,6 +476,17 @@ function RegisterContent() {
           </p>
         </div>
 
+        {/* Referral Banner */}
+        {referralCode && !isUpgrade && (
+          <div className="flex items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            <span className="text-lg">🎁</span>
+            <span>
+              Referral code <span className="font-mono font-bold">{referralCode}</span> will be
+              applied — you&apos;ll both earn Bubbles!
+            </span>
+          </div>
+        )}
+
         {/* Progress Bar */}
         <div className="relative">
           <div className="absolute left-0 top-1/2 -z-10 h-0.5 w-full bg-slate-200" />
@@ -487,10 +496,7 @@ function RegisterContent() {
               const isCompleted = index < currentStep;
 
               return (
-                <div
-                  key={step.key}
-                  className="flex flex-col items-center gap-2 bg-slate-50 px-2"
-                >
+                <div key={step.key} className="flex flex-col items-center gap-2 bg-slate-50 px-2">
                   <div
                     className={clsx(
                       "flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-colors",
@@ -498,7 +504,7 @@ function RegisterContent() {
                         ? "bg-cyan-600 text-white ring-4 ring-cyan-100"
                         : isCompleted
                           ? "bg-cyan-600 text-white"
-                          : "bg-slate-200 text-slate-500",
+                          : "bg-slate-200 text-slate-500"
                     )}
                   >
                     {isCompleted ? "✓" : index + 1}
@@ -506,11 +512,7 @@ function RegisterContent() {
                   <span
                     className={clsx(
                       "hidden text-xs font-medium sm:block",
-                      isActive
-                        ? "text-cyan-700"
-                        : isCompleted
-                          ? "text-cyan-600"
-                          : "text-slate-500",
+                      isActive ? "text-cyan-700" : isCompleted ? "text-cyan-600" : "text-slate-500"
                     )}
                   >
                     {step.title}
@@ -543,11 +545,7 @@ function RegisterContent() {
 
           {/* Navigation Buttons */}
           <div className="mt-8 flex justify-between gap-4">
-            <Button
-              onClick={goBack}
-              variant="secondary"
-              disabled={currentStep === 0}
-            >
+            <Button onClick={goBack} variant="secondary" disabled={currentStep === 0}>
               Back
             </Button>
 
