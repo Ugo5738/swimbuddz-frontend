@@ -6,7 +6,7 @@ import { apiGet } from "@/lib/api";
 import { CheckCircle, Gift, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 // ============================================================================
 // Types
@@ -22,7 +22,7 @@ type CodeValidation = {
 // Component
 // ============================================================================
 
-export default function JoinPage() {
+function JoinPageContent() {
   const searchParams = useSearchParams();
   const refCode = searchParams.get("ref") || "";
   const [validation, setValidation] = useState<CodeValidation | null>(null);
@@ -147,5 +147,13 @@ export default function JoinPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function JoinPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-b from-cyan-50 to-white" />}>
+      <JoinPageContent />
+    </Suspense>
   );
 }
