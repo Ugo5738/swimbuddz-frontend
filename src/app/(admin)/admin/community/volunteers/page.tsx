@@ -117,7 +117,7 @@ export default function AdminVolunteersPage() {
         VolunteersApi.admin.getDashboard(),
         VolunteersApi.listRoles(false),
         VolunteersApi.admin.listProfiles({ active_only: false }),
-        VolunteersApi.listOpportunities({ status: undefined }),
+        VolunteersApi.admin.listOpportunities({ status: undefined }),
       ]);
 
       if (dashData.status === "fulfilled") {
@@ -282,7 +282,7 @@ export default function AdminVolunteersPage() {
         opportunity_type: "open_claim",
         min_tier: "tier_1",
       });
-      const oppsData = await VolunteersApi.listOpportunities({
+      const oppsData = await VolunteersApi.admin.listOpportunities({
         status: undefined,
       });
       setOpportunities(oppsData);
@@ -294,7 +294,7 @@ export default function AdminVolunteersPage() {
   const handlePublish = async (oppId: string) => {
     try {
       await VolunteersApi.admin.publishOpportunity(oppId);
-      const oppsData = await VolunteersApi.listOpportunities({
+      const oppsData = await VolunteersApi.admin.listOpportunities({
         status: undefined,
       });
       setOpportunities(oppsData);

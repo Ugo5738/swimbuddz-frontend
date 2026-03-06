@@ -257,13 +257,7 @@ export const CATEGORY_GROUPS: Record<
 > = {
   session: {
     label: "Session Roles",
-    categories: [
-      "session_lead",
-      "warmup_lead",
-      "lane_marshal",
-      "checkin",
-      "safety",
-    ],
+    categories: ["session_lead", "warmup_lead", "lane_marshal", "checkin", "safety"],
   },
   community: {
     label: "Community Roles",
@@ -323,14 +317,12 @@ const VA = "/api/v1/admin/volunteers";
 
 export const VolunteersApi = {
   // Roles (public)
-  listRoles: (activeOnly = true) =>
-    apiGet<VolunteerRole[]>(`${V}/roles?active_only=${activeOnly}`),
+  listRoles: (activeOnly = true) => apiGet<VolunteerRole[]>(`${V}/roles?active_only=${activeOnly}`),
 
   getRole: (id: string) => apiGet<VolunteerRole>(`${V}/roles/${id}`),
 
   // Profile (member)
-  getMyProfile: () =>
-    apiGet<VolunteerProfile>(`${V}/profile/me`, { auth: true }),
+  getMyProfile: () => apiGet<VolunteerProfile>(`${V}/profile/me`, { auth: true }),
 
   registerAsVolunteer: (data: {
     preferred_roles?: string[];
@@ -357,24 +349,16 @@ export const VolunteersApi = {
     if (params?.from_date) search.set("from_date", params.from_date);
     if (params?.to_date) search.set("to_date", params.to_date);
     const qs = search.toString();
-    return apiGet<VolunteerOpportunity[]>(
-      `${V}/opportunities${qs ? `?${qs}` : ""}`,
-    );
+    return apiGet<VolunteerOpportunity[]>(`${V}/opportunities${qs ? `?${qs}` : ""}`);
   },
 
-  listUpcomingOpportunities: () =>
-    apiGet<VolunteerOpportunity[]>(`${V}/opportunities/upcoming`),
+  listUpcomingOpportunities: () => apiGet<VolunteerOpportunity[]>(`${V}/opportunities/upcoming`),
 
-  getOpportunity: (id: string) =>
-    apiGet<VolunteerOpportunity>(`${V}/opportunities/${id}`),
+  getOpportunity: (id: string) => apiGet<VolunteerOpportunity>(`${V}/opportunities/${id}`),
 
   // Slot claiming
   claimSlot: (opportunityId: string) =>
-    apiPost<VolunteerSlot>(
-      `${V}/opportunities/${opportunityId}/claim`,
-      undefined,
-      { auth: true },
-    ),
+    apiPost<VolunteerSlot>(`${V}/opportunities/${opportunityId}/claim`, undefined, { auth: true }),
 
   cancelClaim: (opportunityId: string) =>
     apiDelete<void>(`${V}/opportunities/${opportunityId}/claim`, {
@@ -382,11 +366,9 @@ export const VolunteersApi = {
     }),
 
   // Hours
-  getMyHours: () =>
-    apiGet<VolunteerHoursLog[]>(`${V}/hours/me`, { auth: true }),
+  getMyHours: () => apiGet<VolunteerHoursLog[]>(`${V}/hours/me`, { auth: true }),
 
-  getMyHoursSummary: () =>
-    apiGet<HoursSummary>(`${V}/hours/me/summary`, { auth: true }),
+  getMyHoursSummary: () => apiGet<HoursSummary>(`${V}/hours/me/summary`, { auth: true }),
 
   getLeaderboard: (period: "all_time" | "this_month" = "all_time") =>
     apiGet<LeaderboardEntry[]>(`${V}/hours/leaderboard?period=${period}`),
@@ -395,8 +377,7 @@ export const VolunteersApi = {
   getSpotlight: () => apiGet<SpotlightData>(`${V}/spotlight`),
 
   // Rewards
-  getMyRewards: () =>
-    apiGet<VolunteerReward[]>(`${V}/rewards/me`, { auth: true }),
+  getMyRewards: () => apiGet<VolunteerReward[]>(`${V}/rewards/me`, { auth: true }),
 
   redeemReward: (rewardId: string) =>
     apiPost<VolunteerReward>(`${V}/rewards/${rewardId}/redeem`, undefined, {
@@ -413,18 +394,13 @@ export const VolunteersApi = {
     updateRole: (id: string, data: Partial<VolunteerRole>) =>
       apiPatch<VolunteerRole>(`${VA}/roles/${id}`, data, { auth: true }),
 
-    deactivateRole: (id: string) =>
-      apiDelete<void>(`${VA}/roles/${id}`, { auth: true }),
+    deactivateRole: (id: string) => apiDelete<void>(`${VA}/roles/${id}`, { auth: true }),
 
     // Profiles
-    listProfiles: (params?: {
-      tier?: VolunteerTier;
-      active_only?: boolean;
-    }) => {
+    listProfiles: (params?: { tier?: VolunteerTier; active_only?: boolean }) => {
       const search = new URLSearchParams();
       if (params?.tier) search.set("tier", params.tier);
-      if (params?.active_only !== undefined)
-        search.set("active_only", String(params.active_only));
+      if (params?.active_only !== undefined) search.set("active_only", String(params.active_only));
       const qs = search.toString();
       return apiGet<VolunteerProfile[]>(`${VA}/profiles${qs ? `?${qs}` : ""}`, {
         auth: true,
@@ -440,6 +416,23 @@ export const VolunteersApi = {
       }),
 
     // Opportunities
+    listOpportunities: (params?: {
+      status?: OpportunityStatus;
+      role_id?: string;
+      from_date?: string;
+      to_date?: string;
+    }) => {
+      const search = new URLSearchParams();
+      if (params?.status) search.set("status", params.status);
+      if (params?.role_id) search.set("role_id", params.role_id);
+      if (params?.from_date) search.set("from_date", params.from_date);
+      if (params?.to_date) search.set("to_date", params.to_date);
+      const qs = search.toString();
+      return apiGet<VolunteerOpportunity[]>(`${VA}/opportunities${qs ? `?${qs}` : ""}`, {
+        auth: true,
+      });
+    },
+
     createOpportunity: (data: Partial<VolunteerOpportunity>) =>
       apiPost<VolunteerOpportunity>(`${VA}/opportunities`, data, {
         auth: true,
@@ -449,7 +442,7 @@ export const VolunteersApi = {
       apiPost<VolunteerOpportunity[]>(
         `${VA}/opportunities/bulk`,
         { opportunities },
-        { auth: true },
+        { auth: true }
       ),
 
     updateOpportunity: (id: string, data: Partial<VolunteerOpportunity>) =>
@@ -457,15 +450,10 @@ export const VolunteersApi = {
         auth: true,
       }),
 
-    cancelOpportunity: (id: string) =>
-      apiDelete<void>(`${VA}/opportunities/${id}`, { auth: true }),
+    cancelOpportunity: (id: string) => apiDelete<void>(`${VA}/opportunities/${id}`, { auth: true }),
 
     publishOpportunity: (id: string) =>
-      apiPost<VolunteerOpportunity>(
-        `${VA}/opportunities/${id}/publish`,
-        undefined,
-        { auth: true },
-      ),
+      apiPost<VolunteerOpportunity>(`${VA}/opportunities/${id}/publish`, undefined, { auth: true }),
 
     // Slots
     listSlots: (opportunityId: string) =>
@@ -473,20 +461,15 @@ export const VolunteersApi = {
         auth: true,
       }),
 
-    updateSlot: (
-      slotId: string,
-      data: { status?: SlotStatus; admin_notes?: string },
-    ) => apiPatch<VolunteerSlot>(`${VA}/slots/${slotId}`, data, { auth: true }),
+    updateSlot: (slotId: string, data: { status?: SlotStatus; admin_notes?: string }) =>
+      apiPatch<VolunteerSlot>(`${VA}/slots/${slotId}`, data, { auth: true }),
 
     checkinSlot: (slotId: string) =>
       apiPost<VolunteerSlot>(`${VA}/slots/${slotId}/checkin`, undefined, {
         auth: true,
       }),
 
-    checkoutSlot: (
-      slotId: string,
-      data?: { hours?: number; admin_notes?: string },
-    ) =>
+    checkoutSlot: (slotId: string, data?: { hours?: number; admin_notes?: string }) =>
       apiPost<VolunteerSlot>(`${VA}/slots/${slotId}/checkout`, data, {
         auth: true,
       }),
@@ -500,7 +483,7 @@ export const VolunteersApi = {
       apiPost<VolunteerSlot[]>(
         `${VA}/slots/bulk-complete`,
         { slot_ids: slotIds, hours },
-        { auth: true },
+        { auth: true }
       ),
 
     // Hours
@@ -510,8 +493,7 @@ export const VolunteersApi = {
       date: string;
       role_id?: string;
       notes?: string;
-    }) =>
-      apiPost<VolunteerHoursLog>(`${VA}/hours/manual`, data, { auth: true }),
+    }) => apiPost<VolunteerHoursLog>(`${VA}/hours/manual`, data, { auth: true }),
 
     // Rewards
     grantReward: (
@@ -519,15 +501,13 @@ export const VolunteersApi = {
         member_id: string;
         reward_type: RewardType;
         title: string;
-      },
+      }
     ) => apiPost<VolunteerReward>(`${VA}/rewards`, data, { auth: true }),
 
-    listAllRewards: () =>
-      apiGet<VolunteerReward[]>(`${VA}/rewards/all`, { auth: true }),
+    listAllRewards: () => apiGet<VolunteerReward[]>(`${VA}/rewards/all`, { auth: true }),
 
     // Dashboard
-    getDashboard: () =>
-      apiGet<DashboardSummary>(`${VA}/dashboard`, { auth: true }),
+    getDashboard: () => apiGet<DashboardSummary>(`${VA}/dashboard`, { auth: true }),
 
     getReliabilityReport: () =>
       apiGet<VolunteerProfile[]>(`${VA}/reliability-report`, { auth: true }),
@@ -535,7 +515,7 @@ export const VolunteersApi = {
     // Spotlight management
     featureVolunteer: (
       memberId: string,
-      data: { spotlight_quote?: string; featured_until?: string },
+      data: { spotlight_quote?: string; featured_until?: string }
     ) =>
       apiPost<VolunteerProfile>(`${VA}/profiles/${memberId}/feature`, data, {
         auth: true,
