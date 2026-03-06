@@ -48,6 +48,13 @@ import { useEffect, useState } from "react";
 
 type Tab = "dashboard" | "roles" | "volunteers" | "opportunities";
 
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+  return fallback;
+}
+
 export default function AdminVolunteersPage() {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [loading, setLoading] = useState(true);
@@ -57,9 +64,7 @@ export default function AdminVolunteersPage() {
   const [dashboard, setDashboard] = useState<DashboardSummary | null>(null);
   const [roles, setRoles] = useState<VolunteerRole[]>([]);
   const [profiles, setProfiles] = useState<VolunteerProfile[]>([]);
-  const [opportunities, setOpportunities] = useState<VolunteerOpportunity[]>(
-    [],
-  );
+  const [opportunities, setOpportunities] = useState<VolunteerOpportunity[]>([]);
 
   // Modals
   const [showCreateRole, setShowCreateRole] = useState(false);
@@ -94,9 +99,7 @@ export default function AdminVolunteersPage() {
 
   // Spotlight feature
   const [showFeatureModal, setShowFeatureModal] = useState(false);
-  const [featureTarget, setFeatureTarget] = useState<VolunteerProfile | null>(
-    null,
-  );
+  const [featureTarget, setFeatureTarget] = useState<VolunteerProfile | null>(null);
   const [featureForm, setFeatureForm] = useState({
     spotlight_quote: "",
     featured_until: "",
@@ -110,18 +113,41 @@ export default function AdminVolunteersPage() {
     setLoading(true);
     setError(null);
     try {
-      const [dashData, rolesData, profilesData, oppsData] = await Promise.all([
+      const [dashData, rolesData, profilesData, oppsData] = await Promise.allSettled([
         VolunteersApi.admin.getDashboard(),
         VolunteersApi.listRoles(false),
         VolunteersApi.admin.listProfiles({ active_only: false }),
         VolunteersApi.listOpportunities({ status: undefined }),
       ]);
-      setDashboard(dashData);
-      setRoles(rolesData);
-      setProfiles(profilesData);
-      setOpportunities(oppsData);
-    } catch {
-      setError("Failed to load volunteer data.");
+
+      if (dashData.status === "fulfilled") {
+        setDashboard(dashData.value);
+      }
+      if (rolesData.status === "fulfilled") {
+        setRoles(rolesData.value);
+      }
+      if (profilesData.status === "fulfilled") {
+        setProfiles(profilesData.value);
+      }
+      if (oppsData.status === "fulfilled") {
+        setOpportunities(oppsData.value);
+      }
+
+      const failures = [dashData, rolesData, profilesData, oppsData].filter(
+        (result): result is PromiseRejectedResult => result.status === "rejected"
+      );
+
+      if (failures.length > 0) {
+        const firstFailure = failures[0];
+        setError(
+          failures.length === 1
+            ? getErrorMessage(firstFailure.reason, "Failed to load volunteer data.")
+            : `${failures.length} volunteer requests failed. ${getErrorMessage(
+                firstFailure.reason,
+                "Please try again."
+              )}`
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -163,8 +189,8 @@ export default function AdminVolunteersPage() {
       setRoleForm(emptyRoleForm);
       const rolesData = await VolunteersApi.listRoles(false);
       setRoles(rolesData);
-    } catch {
-      setError("Failed to create role.");
+    } catch (error) {
+      setError(getErrorMessage(error, "Failed to create role."));
     }
   };
 
@@ -210,8 +236,8 @@ export default function AdminVolunteersPage() {
       setRoleForm(emptyRoleForm);
       const rolesData = await VolunteersApi.listRoles(false);
       setRoles(rolesData);
-    } catch {
-      setError("Failed to update role.");
+    } catch (error) {
+      setError(getErrorMessage(error, "Failed to update role."));
     }
   };
 
@@ -222,8 +248,8 @@ export default function AdminVolunteersPage() {
       });
       const rolesData = await VolunteersApi.listRoles(false);
       setRoles(rolesData);
-    } catch {
-      setError("Failed to update role.");
+    } catch (error) {
+      setError(getErrorMessage(error, "Failed to update role."));
     }
   };
 
@@ -260,8 +286,8 @@ export default function AdminVolunteersPage() {
         status: undefined,
       });
       setOpportunities(oppsData);
-    } catch {
-      setError("Failed to create opportunity.");
+    } catch (error) {
+      setError(getErrorMessage(error, "Failed to create opportunity."));
     }
   };
 
@@ -272,8 +298,8 @@ export default function AdminVolunteersPage() {
         status: undefined,
       });
       setOpportunities(oppsData);
-    } catch {
-      setError("Failed to publish opportunity.");
+    } catch (error) {
+      setError(getErrorMessage(error, "Failed to publish opportunity."));
     }
   };
 
@@ -292,8 +318,8 @@ export default function AdminVolunteersPage() {
         active_only: false,
       });
       setProfiles(profilesData);
-    } catch {
-      setError("Failed to feature volunteer.");
+    } catch (error) {
+      setError(getErrorMessage(error, "Failed to feature volunteer."));
     }
   };
 
@@ -304,27 +330,23 @@ export default function AdminVolunteersPage() {
         active_only: false,
       });
       setProfiles(profilesData);
-    } catch {
-      setError("Failed to unfeature volunteer.");
+    } catch (error) {
+      setError(getErrorMessage(error, "Failed to unfeature volunteer."));
     }
   };
 
   if (loading) return <LoadingPage text="Loading volunteer management..." />;
 
   const pendingApprovals = opportunities.filter(
-    (o) => o.status === "open" && o.opportunity_type === "approval_required",
+    (o) => o.status === "open" && o.opportunity_type === "approval_required"
   ).length;
 
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <header className="space-y-1">
-        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
-          Volunteers
-        </h1>
-        <p className="text-sm text-slate-600">
-          Manage roles, opportunities, and volunteer roster
-        </p>
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Volunteers</h1>
+        <p className="text-sm text-slate-600">Manage roles, opportunities, and volunteer roster</p>
       </header>
 
       {error && <Alert variant="error">{error}</Alert>}
@@ -377,9 +399,7 @@ export default function AdminVolunteersPage() {
               {t.count !== undefined && (
                 <span
                   className={`ml-1.5 px-1.5 py-0.5 rounded-full text-xs ${
-                    tab === t.key
-                      ? "bg-cyan-100 text-cyan-700"
-                      : "bg-slate-100 text-slate-500"
+                    tab === t.key ? "bg-cyan-100 text-cyan-700" : "bg-slate-100 text-slate-500"
                   }`}
                 >
                   {t.count}
@@ -464,13 +484,7 @@ export default function AdminVolunteersPage() {
                       className="flex items-center gap-3 rounded-lg px-3 py-2 bg-slate-50"
                     >
                       <span className="text-lg w-6 text-center">
-                        {i === 0
-                          ? "🥇"
-                          : i === 1
-                            ? "🥈"
-                            : i === 2
-                              ? "🥉"
-                              : `${i + 1}`}
+                        {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`}
                       </span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-slate-900 truncate">
@@ -481,9 +495,7 @@ export default function AdminVolunteersPage() {
                         <span className="text-sm font-bold text-slate-900">
                           {v.total_hours.toFixed(0)}h
                         </span>
-                        <span className="text-xs text-slate-400 ml-1">
-                          ({v.total_sessions})
-                        </span>
+                        <span className="text-xs text-slate-400 ml-1">({v.total_sessions})</span>
                       </div>
                     </div>
                   ))}
@@ -498,10 +510,7 @@ export default function AdminVolunteersPage() {
       {tab === "opportunities" && (
         <div className="space-y-4">
           <div className="flex justify-end">
-            <Button
-              onClick={() => setShowCreateOpp(true)}
-              className="flex items-center gap-2"
-            >
+            <Button onClick={() => setShowCreateOpp(true)} className="flex items-center gap-2">
               <Plus className="h-4 w-4" /> Create Opportunity
             </Button>
           </div>
@@ -509,14 +518,8 @@ export default function AdminVolunteersPage() {
           {opportunities.length === 0 ? (
             <Card className="py-12 text-center">
               <Calendar className="mx-auto h-10 w-10 text-slate-300" />
-              <p className="mt-3 text-sm text-slate-500">
-                No opportunities created yet.
-              </p>
-              <Button
-                className="mt-4"
-                size="sm"
-                onClick={() => setShowCreateOpp(true)}
-              >
+              <p className="mt-3 text-sm text-slate-500">No opportunities created yet.</p>
+              <Button className="mt-4" size="sm" onClick={() => setShowCreateOpp(true)}>
                 Create your first opportunity
               </Button>
             </Card>
@@ -529,16 +532,12 @@ export default function AdminVolunteersPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-medium text-slate-900 text-sm">
-                            {opp.title}
-                          </h3>
+                          <h3 className="font-medium text-slate-900 text-sm">{opp.title}</h3>
                           <OppStatusBadge status={opp.status} />
                         </div>
                         <div className="flex flex-wrap gap-2 text-xs text-slate-500">
                           <span>{formatDate(opp.date)}</span>
-                          {opp.start_time && (
-                            <span>{opp.start_time.slice(0, 5)}</span>
-                          )}
+                          {opp.start_time && <span>{opp.start_time.slice(0, 5)}</span>}
                           {opp.location_name && (
                             <span className="flex items-center gap-0.5">
                               <MapPin className="h-3 w-3" />
@@ -550,9 +549,7 @@ export default function AdminVolunteersPage() {
                           <span className="text-slate-500">
                             {opp.slots_filled}/{opp.slots_needed} filled
                           </span>
-                          {opp.role_title && (
-                            <Badge variant="outline">{opp.role_title}</Badge>
-                          )}
+                          {opp.role_title && <Badge variant="outline">{opp.role_title}</Badge>}
                         </div>
                       </div>
                     </div>
@@ -562,9 +559,7 @@ export default function AdminVolunteersPage() {
                           Publish
                         </Button>
                       )}
-                      <Link
-                        href={`/admin/community/volunteers/opportunities/${opp.id}`}
-                      >
+                      <Link href={`/admin/community/volunteers/opportunities/${opp.id}`}>
                         <Button size="sm" variant="secondary">
                           Manage
                         </Button>
@@ -593,9 +588,7 @@ export default function AdminVolunteersPage() {
                       <TableRow key={opp.id}>
                         <TableCell>
                           <div>
-                            <p className="font-medium text-slate-900">
-                              {opp.title}
-                            </p>
+                            <p className="font-medium text-slate-900">{opp.title}</p>
                             {opp.location_name && (
                               <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
                                 <MapPin className="h-3 w-3" />
@@ -605,9 +598,7 @@ export default function AdminVolunteersPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <span className="text-sm">
-                            {formatDate(opp.date)}
-                          </span>
+                          <span className="text-sm">{formatDate(opp.date)}</span>
                           {opp.start_time && (
                             <span className="text-xs text-slate-400 block">
                               {opp.start_time.slice(0, 5)}
@@ -635,9 +626,7 @@ export default function AdminVolunteersPage() {
                         </TableCell>
                         <TableCell>
                           <span className="text-xs text-slate-500">
-                            {opp.opportunity_type === "approval_required"
-                              ? "Approval"
-                              : "Open"}
+                            {opp.opportunity_type === "approval_required" ? "Approval" : "Open"}
                           </span>
                         </TableCell>
                         <TableCell>
@@ -646,16 +635,11 @@ export default function AdminVolunteersPage() {
                         <TableCell>
                           <div className="flex gap-2 justify-end">
                             {opp.status === "draft" && (
-                              <Button
-                                size="sm"
-                                onClick={() => handlePublish(opp.id)}
-                              >
+                              <Button size="sm" onClick={() => handlePublish(opp.id)}>
                                 Publish
                               </Button>
                             )}
-                            <Link
-                              href={`/admin/community/volunteers/opportunities/${opp.id}`}
-                            >
+                            <Link href={`/admin/community/volunteers/opportunities/${opp.id}`}>
                               <Button size="sm" variant="ghost">
                                 <Eye className="h-4 w-4" />
                               </Button>
@@ -680,18 +664,14 @@ export default function AdminVolunteersPage() {
               <Input
                 label="Title"
                 value={oppForm.title}
-                onChange={(e) =>
-                  setOppForm({ ...oppForm, title: e.target.value })
-                }
+                onChange={(e) => setOppForm({ ...oppForm, title: e.target.value })}
                 required
                 placeholder="e.g., Saturday Session Volunteers"
               />
               <Textarea
                 label="Description"
                 value={oppForm.description}
-                onChange={(e) =>
-                  setOppForm({ ...oppForm, description: e.target.value })
-                }
+                onChange={(e) => setOppForm({ ...oppForm, description: e.target.value })}
                 rows={2}
                 placeholder="Optional details..."
               />
@@ -699,9 +679,7 @@ export default function AdminVolunteersPage() {
                 <Select
                   label="Role"
                   value={oppForm.role_id}
-                  onChange={(e) =>
-                    setOppForm({ ...oppForm, role_id: e.target.value })
-                  }
+                  onChange={(e) => setOppForm({ ...oppForm, role_id: e.target.value })}
                 >
                   <option value="">Any role</option>
                   {roles
@@ -717,9 +695,7 @@ export default function AdminVolunteersPage() {
                   type="number"
                   min={1}
                   value={oppForm.slots_needed}
-                  onChange={(e) =>
-                    setOppForm({ ...oppForm, slots_needed: e.target.value })
-                  }
+                  onChange={(e) => setOppForm({ ...oppForm, slots_needed: e.target.value })}
                   required
                 />
               </div>
@@ -728,17 +704,13 @@ export default function AdminVolunteersPage() {
                   label="Date"
                   type="date"
                   value={oppForm.date}
-                  onChange={(e) =>
-                    setOppForm({ ...oppForm, date: e.target.value })
-                  }
+                  onChange={(e) => setOppForm({ ...oppForm, date: e.target.value })}
                   required
                 />
                 <Input
                   label="Location"
                   value={oppForm.location_name}
-                  onChange={(e) =>
-                    setOppForm({ ...oppForm, location_name: e.target.value })
-                  }
+                  onChange={(e) => setOppForm({ ...oppForm, location_name: e.target.value })}
                   placeholder="e.g., Yaba Pool"
                 />
               </div>
@@ -747,24 +719,18 @@ export default function AdminVolunteersPage() {
                   label="Start Time"
                   type="time"
                   value={oppForm.start_time}
-                  onChange={(e) =>
-                    setOppForm({ ...oppForm, start_time: e.target.value })
-                  }
+                  onChange={(e) => setOppForm({ ...oppForm, start_time: e.target.value })}
                 />
                 <Input
                   label="End Time"
                   type="time"
                   value={oppForm.end_time}
-                  onChange={(e) =>
-                    setOppForm({ ...oppForm, end_time: e.target.value })
-                  }
+                  onChange={(e) => setOppForm({ ...oppForm, end_time: e.target.value })}
                 />
               </div>
 
               <div className="border-t border-slate-200 pt-4">
-                <h4 className="text-sm font-medium text-slate-700 mb-3">
-                  Settings
-                </h4>
+                <h4 className="text-sm font-medium text-slate-700 mb-3">Settings</h4>
                 <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                   <Select
                     label="Claim Type"
@@ -772,9 +738,7 @@ export default function AdminVolunteersPage() {
                     onChange={(e) =>
                       setOppForm({
                         ...oppForm,
-                        opportunity_type: e.target.value as
-                          | "open_claim"
-                          | "approval_required",
+                        opportunity_type: e.target.value as "open_claim" | "approval_required",
                       })
                     }
                   >
@@ -787,10 +751,7 @@ export default function AdminVolunteersPage() {
                     onChange={(e) =>
                       setOppForm({
                         ...oppForm,
-                        min_tier: e.target.value as
-                          | "tier_1"
-                          | "tier_2"
-                          | "tier_3",
+                        min_tier: e.target.value as "tier_1" | "tier_2" | "tier_3",
                       })
                     }
                   >
@@ -802,11 +763,7 @@ export default function AdminVolunteersPage() {
               </div>
 
               <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setShowCreateOpp(false)}
-                >
+                <Button type="button" variant="secondary" onClick={() => setShowCreateOpp(false)}>
                   Cancel
                 </Button>
                 <Button type="submit">Create as Draft</Button>
@@ -822,9 +779,7 @@ export default function AdminVolunteersPage() {
           {profiles.length === 0 ? (
             <Card className="py-12 text-center">
               <Users className="mx-auto h-10 w-10 text-slate-300" />
-              <p className="mt-3 text-sm text-slate-500">
-                No volunteers registered yet.
-              </p>
+              <p className="mt-3 text-sm text-slate-500">No volunteers registered yet.</p>
             </Card>
           ) : (
             <>
@@ -837,9 +792,7 @@ export default function AdminVolunteersPage() {
                         {p.member_name || "Unknown"}
                       </p>
                       <TierBadge tier={p.tier} />
-                      {p.recognition_tier && (
-                        <RecognitionBadge tier={p.recognition_tier} />
-                      )}
+                      {p.recognition_tier && <RecognitionBadge tier={p.recognition_tier} />}
                       {p.is_featured && (
                         <Badge variant="info">
                           <Star className="h-3 w-3 inline mr-0.5" /> Featured
@@ -858,9 +811,7 @@ export default function AdminVolunteersPage() {
                         </span>
                       )}
                     </div>
-                    {p.member_email && (
-                      <p className="text-xs text-slate-400">{p.member_email}</p>
-                    )}
+                    {p.member_email && <p className="text-xs text-slate-400">{p.member_email}</p>}
                     <div className="pt-1">
                       {p.is_featured ? (
                         <Button
@@ -920,9 +871,7 @@ export default function AdminVolunteersPage() {
                                 {p.member_name || "Unknown"}
                               </p>
                               {p.member_email && (
-                                <p className="text-xs text-slate-400">
-                                  {p.member_email}
-                                </p>
+                                <p className="text-xs text-slate-400">{p.member_email}</p>
                               )}
                             </div>
                             {p.is_featured && (
@@ -934,9 +883,7 @@ export default function AdminVolunteersPage() {
                           <TierBadge tier={p.tier} />
                         </TableCell>
                         <TableCell>
-                          <span className="font-medium">
-                            {p.total_hours.toFixed(1)}
-                          </span>
+                          <span className="font-medium">{p.total_hours.toFixed(1)}</span>
                         </TableCell>
                         <TableCell>{p.total_sessions_volunteered}</TableCell>
                         <TableCell>
@@ -944,9 +891,7 @@ export default function AdminVolunteersPage() {
                         </TableCell>
                         <TableCell>
                           {p.total_no_shows > 0 ? (
-                            <span className="text-rose-600 font-medium">
-                              {p.total_no_shows}
-                            </span>
+                            <span className="text-rose-600 font-medium">{p.total_no_shows}</span>
                           ) : (
                             <span className="text-slate-300">0</span>
                           )}
@@ -1036,13 +981,11 @@ export default function AdminVolunteersPage() {
             label="Featured Until (optional)"
             type="date"
             value={featureForm.featured_until}
-            onChange={(e) =>
-              setFeatureForm({ ...featureForm, featured_until: e.target.value })
-            }
+            onChange={(e) => setFeatureForm({ ...featureForm, featured_until: e.target.value })}
           />
           <p className="text-xs text-slate-400 -mt-3">
-            Leave empty for indefinite featuring. The currently featured
-            volunteer (if any) will be replaced.
+            Leave empty for indefinite featuring. The currently featured volunteer (if any) will be
+            replaced.
           </p>
 
           <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
@@ -1065,10 +1008,7 @@ export default function AdminVolunteersPage() {
       {tab === "roles" && (
         <div className="space-y-6">
           <div className="flex justify-end">
-            <Button
-              onClick={() => setShowCreateRole(true)}
-              className="flex items-center gap-2"
-            >
+            <Button onClick={() => setShowCreateRole(true)} className="flex items-center gap-2">
               <Plus className="h-4 w-4" /> Create Role
             </Button>
           </div>
@@ -1076,15 +1016,11 @@ export default function AdminVolunteersPage() {
           {roles.length === 0 ? (
             <Card className="py-12 text-center">
               <Settings className="mx-auto h-10 w-10 text-slate-300" />
-              <p className="mt-3 text-sm text-slate-500">
-                No roles created yet.
-              </p>
+              <p className="mt-3 text-sm text-slate-500">No roles created yet.</p>
             </Card>
           ) : (
             Object.entries(CATEGORY_GROUPS).map(([groupKey, group]) => {
-              const groupRoles = roles.filter((r) =>
-                group.categories.includes(r.category),
-              );
+              const groupRoles = roles.filter((r) => group.categories.includes(r.category));
               if (groupRoles.length === 0) return null;
 
               return (
@@ -1112,11 +1048,9 @@ export default function AdminVolunteersPage() {
           {/* Ungrouped / "Other" roles */}
           {(() => {
             const allGroupedCategories = Object.values(CATEGORY_GROUPS).flatMap(
-              (g) => g.categories,
+              (g) => g.categories
             );
-            const ungrouped = roles.filter(
-              (r) => !allGroupedCategories.includes(r.category),
-            );
+            const ungrouped = roles.filter((r) => !allGroupedCategories.includes(r.category));
             if (ungrouped.length === 0) return null;
             return (
               <div>
@@ -1147,18 +1081,14 @@ export default function AdminVolunteersPage() {
               <Input
                 label="Title"
                 value={roleForm.title}
-                onChange={(e) =>
-                  setRoleForm({ ...roleForm, title: e.target.value })
-                }
+                onChange={(e) => setRoleForm({ ...roleForm, title: e.target.value })}
                 required
                 placeholder="e.g., Media Volunteer"
               />
               <Textarea
                 label="Description"
                 value={roleForm.description}
-                onChange={(e) =>
-                  setRoleForm({ ...roleForm, description: e.target.value })
-                }
+                onChange={(e) => setRoleForm({ ...roleForm, description: e.target.value })}
                 rows={3}
                 placeholder="Describe the role and responsibilities..."
               />
@@ -1182,9 +1112,7 @@ export default function AdminVolunteersPage() {
                 <Input
                   label="Icon (emoji)"
                   value={roleForm.icon}
-                  onChange={(e) =>
-                    setRoleForm({ ...roleForm, icon: e.target.value })
-                  }
+                  onChange={(e) => setRoleForm({ ...roleForm, icon: e.target.value })}
                   placeholder="e.g., 📸"
                 />
               </div>
@@ -1248,9 +1176,7 @@ export default function AdminVolunteersPage() {
                   <Textarea
                     label="Best For"
                     value={roleForm.best_for}
-                    onChange={(e) =>
-                      setRoleForm({ ...roleForm, best_for: e.target.value })
-                    }
+                    onChange={(e) => setRoleForm({ ...roleForm, best_for: e.target.value })}
                     rows={2}
                     placeholder="e.g., People who like organising and being the go-to person."
                   />
@@ -1258,11 +1184,7 @@ export default function AdminVolunteersPage() {
               </div>
 
               <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setShowCreateRole(false)}
-                >
+                <Button type="button" variant="secondary" onClick={() => setShowCreateRole(false)}>
                   Cancel
                 </Button>
                 <Button type="submit">Create Role</Button>
@@ -1277,25 +1199,19 @@ export default function AdminVolunteersPage() {
               setShowEditRole(false);
               setEditingRole(null);
             }}
-            title={
-              editingRole ? `Edit: ${editingRole.title}` : "Edit Volunteer Role"
-            }
+            title={editingRole ? `Edit: ${editingRole.title}` : "Edit Volunteer Role"}
           >
             <form onSubmit={handleEditRole} className="space-y-4">
               <Input
                 label="Title"
                 value={roleForm.title}
-                onChange={(e) =>
-                  setRoleForm({ ...roleForm, title: e.target.value })
-                }
+                onChange={(e) => setRoleForm({ ...roleForm, title: e.target.value })}
                 required
               />
               <Textarea
                 label="Description"
                 value={roleForm.description}
-                onChange={(e) =>
-                  setRoleForm({ ...roleForm, description: e.target.value })
-                }
+                onChange={(e) => setRoleForm({ ...roleForm, description: e.target.value })}
                 rows={3}
                 placeholder="Describe the role and responsibilities..."
               />
@@ -1319,9 +1235,7 @@ export default function AdminVolunteersPage() {
                 <Input
                   label="Icon (emoji)"
                   value={roleForm.icon}
-                  onChange={(e) =>
-                    setRoleForm({ ...roleForm, icon: e.target.value })
-                  }
+                  onChange={(e) => setRoleForm({ ...roleForm, icon: e.target.value })}
                   placeholder="e.g., 📸"
                 />
               </div>
@@ -1385,9 +1299,7 @@ export default function AdminVolunteersPage() {
                   <Textarea
                     label="Best For"
                     value={roleForm.best_for}
-                    onChange={(e) =>
-                      setRoleForm({ ...roleForm, best_for: e.target.value })
-                    }
+                    onChange={(e) => setRoleForm({ ...roleForm, best_for: e.target.value })}
                     rows={2}
                     placeholder="e.g., People who like organising and being the go-to person."
                   />
@@ -1404,10 +1316,7 @@ export default function AdminVolunteersPage() {
                   <span>Sort: {editingRole.sort_order}</span>
                   <span>·</span>
                   <span>
-                    Created{" "}
-                    {new Date(editingRole.created_at).toLocaleDateString(
-                      "en-NG",
-                    )}
+                    Created {new Date(editingRole.created_at).toLocaleDateString("en-NG")}
                   </span>
                 </div>
               )}
@@ -1435,8 +1344,7 @@ export default function AdminVolunteersPage() {
 // ── Helper Components ─────────────────────────────────────────────
 
 function TierBadge({ tier }: { tier: string }) {
-  const variant =
-    tier === "tier_3" ? "warning" : tier === "tier_2" ? "success" : "default";
+  const variant = tier === "tier_3" ? "warning" : tier === "tier_2" ? "success" : "default";
   return (
     <Badge variant={variant}>
       {TIER_SHORT_LABELS[tier as keyof typeof TIER_SHORT_LABELS] || tier}
@@ -1455,19 +1363,12 @@ function RecognitionBadge({ tier }: { tier: string }) {
 
 function ReliabilityText({ score }: { score: number }) {
   const color =
-    score < 70
-      ? "text-rose-600 font-medium"
-      : score < 85
-        ? "text-amber-600"
-        : "text-emerald-600";
+    score < 70 ? "text-rose-600 font-medium" : score < 85 ? "text-amber-600" : "text-emerald-600";
   return <span className={color}>{score}%</span>;
 }
 
 function OppStatusBadge({ status }: { status: string }) {
-  const map: Record<
-    string,
-    "success" | "default" | "warning" | "info" | "danger"
-  > = {
+  const map: Record<string, "success" | "default" | "warning" | "info" | "danger"> = {
     open: "success",
     draft: "default",
     filled: "warning",
@@ -1505,9 +1406,7 @@ function RoleCard({
           <span className="text-2xl flex-shrink-0">{role.icon || "🙋"}</span>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h4 className="font-semibold text-slate-900 text-sm">
-                {role.title}
-              </h4>
+              <h4 className="font-semibold text-slate-900 text-sm">{role.title}</h4>
               {!role.is_active && <Badge variant="default">Inactive</Badge>}
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
@@ -1518,9 +1417,7 @@ function RoleCard({
         </div>
 
         {/* Description */}
-        <p className="text-xs text-slate-500 line-clamp-2">
-          {role.description}
-        </p>
+        <p className="text-xs text-slate-500 line-clamp-2">{role.description}</p>
 
         {/* Meta row */}
         <div className="flex items-center justify-between pt-2 border-t border-slate-100">
@@ -1528,10 +1425,7 @@ function RoleCard({
             <span>Min: {TIER_SHORT_LABELS[role.min_tier]}</span>
             <span>{role.active_volunteers_count} active</span>
             {!hasDetails && (
-              <span
-                className="text-amber-500"
-                title="No detailed role info defined"
-              >
+              <span className="text-amber-500" title="No detailed role info defined">
                 ⚠
               </span>
             )}
