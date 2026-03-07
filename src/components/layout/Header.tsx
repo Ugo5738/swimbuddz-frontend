@@ -42,12 +42,16 @@ const navGroups = [
         label: "Meet Our Coaches",
         description: "View coach profiles & expertise",
       },
+      {
+        href: "/volunteer",
+        label: "Volunteer",
+        description: "Give back to the swimming community",
+      },
     ],
   },
   { href: "/sessions-and-events", label: "Sessions", type: "link" as const },
-  { href: "/tips", label: "Tips", type: "link" as const },
-  // { href: "/store", label: "Shop", type: "link" as const },
-  { href: "/gallery", label: "Gallery", type: "link" as const },
+  { href: "/tips", label: "Resources", type: "link" as const },
+  { href: "/store", label: "Store", type: "link" as const },
 ];
 
 type NavItem = (typeof navGroups)[number];
@@ -224,9 +228,9 @@ export function Header() {
 
       // Desktop dropdown
       return (
-        <div key={item.label} className="relative" ref={dropdownRef}>
+        <div key={item.label} className="relative" ref={dropdownRef} onMouseLeave={() => setActiveDropdown(null)}>
           <button
-            onClick={() => toggleDropdown(item.label)}
+            onClick={() => setActiveDropdown(item.label)}
             onMouseEnter={() => setActiveDropdown(item.label)}
             className={`flex items-center gap-1 px-3 py-2.5 rounded-lg transition-colors min-h-[44px] ${
               dropdownActive || activeDropdown === item.label
@@ -245,7 +249,6 @@ export function Header() {
           {activeDropdown === item.label && (
             <div
               className="absolute top-full left-0 mt-1 w-64 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50"
-              onMouseLeave={() => setActiveDropdown(null)}
             >
               {item.items.map((subItem) => (
                 <Link
@@ -436,7 +439,7 @@ export function Header() {
                     onClick={closeMobileMenu}
                     className="block mt-2 rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-500 px-6 py-3.5 text-center text-white font-semibold hover:from-cyan-500 hover:to-cyan-400 transition-colors"
                   >
-                    Join SwimBuddz
+                    Join
                   </Link>
                 </>
               )}
