@@ -601,9 +601,9 @@ export default function HomePage() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-          {/* Gallery video as first item */}
+          {/* Gallery video — spans 2 columns for visual prominence */}
           {galleryVideo && (
-            <div className="group relative aspect-square rounded-2xl overflow-hidden bg-slate-900">
+            <div className="group relative aspect-[2/1] md:aspect-auto md:row-span-1 col-span-2 rounded-2xl overflow-hidden bg-slate-900">
               <video
                 src={galleryVideo}
                 autoPlay
@@ -615,10 +615,10 @@ export default function HomePage() {
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
           )}
-          {/* Photos — show 5 if video exists, else 6 */}
+          {/* Photos — show all when video present */}
           {galleryPhotos.length > 0
             ? galleryPhotos
-                .slice(0, galleryVideo ? 5 : 6)
+                .slice(0, galleryVideo ? 7 : 6)
                 .map((photo, idx) => (
                   <div
                     key={photo.id}
@@ -658,18 +658,25 @@ export default function HomePage() {
                   <div className="absolute inset-0 bg-gradient-to-t from-cyan-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
               ))}
-        </div>
-
-        <div className="text-center">
-          <Link
-            href="/gallery"
-            className="inline-flex items-center gap-2 text-cyan-700 font-medium hover:text-cyan-600 transition-colors"
-          >
-            Browse full gallery
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
+          {/* Browse Gallery CTA card — fills remaining grid cell */}
+          {(galleryPhotos.length > 0 || galleryVideo) && (
+            <Link
+              href="/gallery"
+              className="group relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-cyan-50 to-cyan-100 flex flex-col items-center justify-center gap-3 hover:from-cyan-100 hover:to-cyan-200 transition-all"
+            >
+              <div className="w-12 h-12 rounded-full bg-cyan-200 group-hover:bg-cyan-300 flex items-center justify-center transition-colors">
+                <svg className="w-6 h-6 text-cyan-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+              </div>
+              <span className="text-sm font-semibold text-cyan-700 group-hover:text-cyan-800">
+                Browse Full Gallery
+              </span>
+              <svg className="w-4 h-4 text-cyan-600 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          )}
         </div>
       </section>
 

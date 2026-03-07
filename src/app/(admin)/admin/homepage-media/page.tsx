@@ -6,6 +6,7 @@ import { getCurrentAccessToken } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
 import {
   AlertCircle,
+  Check,
   Film,
   GripVertical,
   Image as ImageIcon,
@@ -56,6 +57,7 @@ export default function AdminHomepageMediaPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [savedSlots, setSavedSlots] = useState<Set<number>>(new Set());
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const communityInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const galleryVideoInputRef = useRef<HTMLInputElement>(null);
@@ -435,11 +437,19 @@ export default function AdminHomepageMediaPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            media_item_id: video.id,
             description,
           }),
         },
       );
+      // Show "Saved" indicator briefly
+      setSavedSlots((prev) => new Set(prev).add(slot));
+      setTimeout(() => {
+        setSavedSlots((prev) => {
+          const next = new Set(prev);
+          next.delete(slot);
+          return next;
+        });
+      }, 2000);
     } catch (err) {
       console.error("Meta save error:", err);
       setError("Failed to save testimonial info");
@@ -936,6 +946,13 @@ export default function AdminHomepageMediaPage() {
 
                     {/* Name & Role fields */}
                     <div className="p-4 space-y-3 bg-slate-50">
+                      {/* Saved indicator */}
+                      {savedSlots.has(slot) && (
+                        <div className="flex items-center gap-1.5 text-emerald-600 text-xs font-medium animate-pulse">
+                          <Check className="h-3.5 w-3.5" />
+                          Saved
+                        </div>
+                      )}
                       <div>
                         <label className="block text-xs font-medium text-slate-500 mb-1">
                           Member Name
@@ -976,6 +993,9 @@ export default function AdminHomepageMediaPage() {
                           className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                         />
                       </div>
+                      <p className="text-xs text-slate-400">
+                        Auto-saves when you click away
+                      </p>
                     </div>
                   </Card>
                 );
