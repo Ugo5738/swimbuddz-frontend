@@ -242,11 +242,20 @@ type GalleryPhoto = {
   title?: string;
 };
 
+type VideoTestimonial = {
+  id: string;
+  file_url: string;
+  name: string;
+  role: string;
+};
+
 // ── Main Page ───────────────────────────────────────────────────────
 
 export default function HomePage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([]);
+  const [galleryVideo, setGalleryVideo] = useState<string | null>(null);
+  const [videoTestimonials, setVideoTestimonials] = useState<VideoTestimonial[]>([]);
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
   const [heroImages, setHeroImages] = useState<string[]>(defaultHeroImages);
   const [spotlight, setSpotlight] = useState<SpotlightData | null>(null);
@@ -290,7 +299,7 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [heroImages.length]);
 
-  // Fetch community showcase photos
+  // Fetch community showcase photos, gallery video, and video testimonials
   useEffect(() => {
     const fetchPhotos = async () => {
       try {
@@ -313,6 +322,47 @@ export default function HomePage() {
 
           if (communityPhotos.length > 0) {
             setGalleryPhotos(communityPhotos);
+          }
+
+          // Gallery video
+          const galleryVideoAsset = assets.find(
+            (a: any) => a.key === "homepage_gallery_video" && a.media_item?.file_url,
+          );
+          if (galleryVideoAsset) {
+            setGalleryVideo(galleryVideoAsset.media_item.file_url);
+          }
+
+          // Video testimonials
+          const videoTestimonialAssets = assets
+            .filter(
+              (a: any) =>
+                a.key.startsWith("homepage_video_testimonial_") && a.media_item?.file_url,
+            )
+            .sort((a: any, b: any) => {
+              const orderA = parseInt(a.key.split("_").pop() || "0");
+              const orderB = parseInt(b.key.split("_").pop() || "0");
+              return orderA - orderB;
+            })
+            .map((a: any) => {
+              let name = "SwimBuddz Member";
+              let role = "";
+              if (a.description?.includes("|")) {
+                const parts = a.description.split("|").map((s: string) => s.trim());
+                name = parts[0] || name;
+                role = parts[1] || "";
+              } else if (a.description) {
+                name = a.description;
+              }
+              return {
+                id: a.id,
+                file_url: a.media_item.file_url,
+                name,
+                role,
+              };
+            });
+
+          if (videoTestimonialAssets.length > 0) {
+            setVideoTestimonials(videoTestimonialAssets);
           }
         }
       } catch (error) {
@@ -551,35 +601,53 @@ export default function HomePage() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+          {/* Gallery video as first item */}
+          {galleryVideo && (
+            <div className="group relative aspect-square rounded-2xl overflow-hidden bg-slate-900">
+              <video
+                src={galleryVideo}
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+          )}
+          {/* Photos — show 5 if video exists, else 6 */}
           {galleryPhotos.length > 0
-            ? galleryPhotos.map((photo, idx) => (
-                <div
-                  key={photo.id}
-                  className="group relative aspect-square rounded-2xl overflow-hidden bg-slate-100"
-                >
-                  {!loadedImages.has(photo.id) && (
-                    <div className="absolute inset-0 bg-gradient-to-br from-cyan-100 to-cyan-200 animate-pulse flex items-center justify-center">
-                      <span className="text-4xl">🏊</span>
-                    </div>
-                  )}
-                  <img
-                    src={photo.file_url || photo.thumbnail_url}
-                    alt={photo.title || "SwimBuddz community"}
-                    className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${
-                      loadedImages.has(photo.id) ? "opacity-100" : "opacity-0"
-                    }`}
-                    onLoad={() => handleImageLoad(photo.id)}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  {/* Captions on first 2 photos */}
-                  {galleryCaptions[idx] && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-                      <p className="text-white text-xs font-medium">{galleryCaptions[idx]}</p>
-                    </div>
-                  )}
-                </div>
-              ))
-            : [1, 2, 3, 4, 5, 6].map((i) => (
+            ? galleryPhotos
+                .slice(0, galleryVideo ? 5 : 6)
+                .map((photo, idx) => (
+                  <div
+                    key={photo.id}
+                    className="group relative aspect-square rounded-2xl overflow-hidden bg-slate-100"
+                  >
+                    {!loadedImages.has(photo.id) && (
+                      <div className="absolute inset-0 bg-gradient-to-br from-cyan-100 to-cyan-200 animate-pulse flex items-center justify-center">
+                        <span className="text-4xl">🏊</span>
+                      </div>
+                    )}
+                    <img
+                      src={photo.file_url || photo.thumbnail_url}
+                      alt={photo.title || "SwimBuddz community"}
+                      className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${
+                        loadedImages.has(photo.id) ? "opacity-100" : "opacity-0"
+                      }`}
+                      onLoad={() => handleImageLoad(photo.id)}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    {/* Captions on first 2 photos */}
+                    {galleryCaptions[idx] && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                        <p className="text-white text-xs font-medium">{galleryCaptions[idx]}</p>
+                      </div>
+                    )}
+                  </div>
+                ))
+            : !galleryVideo &&
+              [1, 2, 3, 4, 5, 6].map((i) => (
                 <div
                   key={i}
                   className="group relative aspect-square rounded-2xl bg-gradient-to-br from-cyan-100 to-cyan-200 flex items-center justify-center overflow-hidden transition-all hover:shadow-lg"
@@ -779,7 +847,43 @@ export default function HomePage() {
           </p>
           <h2 className="text-3xl font-bold text-slate-900 md:text-4xl">What Our Swimmers Say</h2>
         </div>
-        <div className="grid gap-6 md:grid-cols-3">
+        <div
+          className={`grid gap-6 ${
+            videoTestimonials.length > 0 ? "md:grid-cols-2 lg:grid-cols-3" : "md:grid-cols-3"
+          }`}
+        >
+          {/* Video testimonials first */}
+          {videoTestimonials.map((vt) => (
+            <Card key={vt.id} className="relative overflow-hidden h-full">
+              <div className="flex flex-col h-full">
+                <div className="relative aspect-video bg-slate-900">
+                  <video
+                    src={vt.file_url}
+                    controls
+                    preload="metadata"
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="p-4 flex items-center gap-3 mt-auto">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                    {vt.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-cyan-700">{vt.name}</p>
+                    {vt.role && <p className="text-xs text-slate-500">{vt.role}</p>}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ))}
+
+          {/* Text testimonials */}
           {testimonials.map((testimonial, idx) => (
             <Card key={idx} className="relative overflow-hidden text-center md:text-left h-full">
               <div className="absolute top-0 left-0 text-6xl text-cyan-100 font-serif leading-none">
