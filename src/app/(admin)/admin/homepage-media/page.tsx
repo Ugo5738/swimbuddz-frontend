@@ -44,12 +44,12 @@ export default function AdminHomepageMediaPage() {
   const [banners, setBanners] = useState<MediaAsset[]>([]);
   const [communityPhotos, setCommunityPhotos] = useState<MediaAsset[]>([]);
   const [galleryVideo, setGalleryVideo] = useState<VideoAsset | null>(null);
-  const [videoTestimonials, setVideoTestimonials] = useState<
-    (VideoAsset | null)[]
-  >([null, null, null]);
-  const [testimonialMeta, setTestimonialMeta] = useState<
-    VideoTestimonialMeta[]
-  >([
+  const [videoTestimonials, setVideoTestimonials] = useState<(VideoAsset | null)[]>([
+    null,
+    null,
+    null,
+  ]);
+  const [testimonialMeta, setTestimonialMeta] = useState<VideoTestimonialMeta[]>([
     { name: "", role: "" },
     { name: "", role: "" },
     { name: "", role: "" },
@@ -57,6 +57,7 @@ export default function AdminHomepageMediaPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [savingSlots, setSavingSlots] = useState<Set<number>>(new Set());
   const [savedSlots, setSavedSlots] = useState<Set<number>>(new Set());
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const communityInputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -104,9 +105,7 @@ export default function AdminHomepageMediaPage() {
           .sort((a: MediaAsset, b: MediaAsset) => a.order - b.order);
 
         // Parse gallery video
-        const galleryVideoAsset = assets.find(
-          (a: any) => a.key === "homepage_gallery_video",
-        );
+        const galleryVideoAsset = assets.find((a: any) => a.key === "homepage_gallery_video");
         if (galleryVideoAsset?.media_item?.file_url) {
           setGalleryVideo({
             id: galleryVideoAsset.id,
@@ -126,10 +125,7 @@ export default function AdminHomepageMediaPage() {
           { name: "", role: "" },
         ];
         for (let i = 1; i <= 3; i++) {
-          const asset = assets.find(
-            (a: any) =>
-              a.key === `homepage_video_testimonial_${i}`,
-          );
+          const asset = assets.find((a: any) => a.key === `homepage_video_testimonial_${i}`);
           if (asset?.media_item?.file_url) {
             newTestimonials[i - 1] = {
               id: asset.id,
@@ -139,9 +135,7 @@ export default function AdminHomepageMediaPage() {
             };
             // Parse "Name | Role" from description
             if (asset.description?.includes("|")) {
-              const [name, role] = asset.description
-                .split("|")
-                .map((s: string) => s.trim());
+              const [name, role] = asset.description.split("|").map((s: string) => s.trim());
               newMeta[i - 1] = { name: name || "", role: role || "" };
             } else if (asset.description) {
               newMeta[i - 1] = { name: asset.description, role: "" };
@@ -167,7 +161,7 @@ export default function AdminHomepageMediaPage() {
     assetKey: string,
     title: string,
     isUpdate: boolean = false,
-    mediaType: "IMAGE" | "VIDEO" = "IMAGE",
+    mediaType: "IMAGE" | "VIDEO" = "IMAGE"
   ) => {
     const token = await getCurrentAccessToken();
 
@@ -233,7 +227,7 @@ export default function AdminHomepageMediaPage() {
         files[0],
         `homepage_banner_${nextOrder}`,
         `Homepage Banner ${nextOrder}`,
-        false,
+        false
       );
       await fetchAssets();
     } catch (err) {
@@ -250,13 +244,10 @@ export default function AdminHomepageMediaPage() {
 
     try {
       const token = await getCurrentAccessToken();
-      await fetch(
-        `${API_BASE_URL}/api/v1/media/assets/homepage_banner_${banner.order}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      await fetch(`${API_BASE_URL}/api/v1/media/assets/homepage_banner_${banner.order}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setBanners((prev) => prev.filter((b) => b.id !== banner.id));
     } catch (err) {
       console.error("Delete error:", err);
@@ -265,10 +256,7 @@ export default function AdminHomepageMediaPage() {
   };
 
   // Community photo handlers
-  const handleCommunityUpload = async (
-    slot: number,
-    files: FileList | null,
-  ) => {
+  const handleCommunityUpload = async (slot: number, files: FileList | null) => {
     if (!files || files.length === 0) return;
 
     setUploading(`community_${slot}`);
@@ -280,7 +268,7 @@ export default function AdminHomepageMediaPage() {
         files[0],
         `community_photo_${slot}`,
         `Community Photo ${slot}`,
-        !!existingPhoto,
+        !!existingPhoto
       );
       await fetchAssets();
     } catch (err) {
@@ -296,13 +284,10 @@ export default function AdminHomepageMediaPage() {
 
     try {
       const token = await getCurrentAccessToken();
-      await fetch(
-        `${API_BASE_URL}/api/v1/media/assets/community_photo_${slot}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      await fetch(`${API_BASE_URL}/api/v1/media/assets/community_photo_${slot}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setCommunityPhotos((prev) => prev.filter((p) => p.order !== slot));
     } catch (err) {
       console.error("Delete error:", err);
@@ -323,7 +308,7 @@ export default function AdminHomepageMediaPage() {
         "homepage_gallery_video",
         "Homepage Gallery Video",
         !!galleryVideo,
-        "VIDEO",
+        "VIDEO"
       );
       await fetchAssets();
     } catch (err) {
@@ -331,8 +316,7 @@ export default function AdminHomepageMediaPage() {
       setError(err instanceof Error ? err.message : "Video upload failed");
     } finally {
       setUploading(null);
-      if (galleryVideoInputRef.current)
-        galleryVideoInputRef.current.value = "";
+      if (galleryVideoInputRef.current) galleryVideoInputRef.current.value = "";
     }
   };
 
@@ -341,13 +325,10 @@ export default function AdminHomepageMediaPage() {
 
     try {
       const token = await getCurrentAccessToken();
-      await fetch(
-        `${API_BASE_URL}/api/v1/media/assets/homepage_gallery_video`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      await fetch(`${API_BASE_URL}/api/v1/media/assets/homepage_gallery_video`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setGalleryVideo(null);
     } catch (err) {
       console.error("Delete error:", err);
@@ -355,10 +336,7 @@ export default function AdminHomepageMediaPage() {
     }
   };
 
-  const handleTestimonialUpload = async (
-    slot: number,
-    files: FileList | null,
-  ) => {
+  const handleTestimonialUpload = async (slot: number, files: FileList | null) => {
     if (!files || files.length === 0) return;
 
     setUploading(`testimonial_${slot}`);
@@ -375,7 +353,7 @@ export default function AdminHomepageMediaPage() {
         `homepage_video_testimonial_${slot}`,
         description,
         !!videoTestimonials[slot - 1],
-        "VIDEO",
+        "VIDEO"
       );
       await fetchAssets();
     } catch (err) {
@@ -387,20 +365,14 @@ export default function AdminHomepageMediaPage() {
   };
 
   const handleTestimonialDelete = async (slot: number) => {
-    if (
-      !confirm("Are you sure you want to remove this video testimonial?")
-    )
-      return;
+    if (!confirm("Are you sure you want to remove this video testimonial?")) return;
 
     try {
       const token = await getCurrentAccessToken();
-      await fetch(
-        `${API_BASE_URL}/api/v1/media/assets/homepage_video_testimonial_${slot}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      await fetch(`${API_BASE_URL}/api/v1/media/assets/homepage_video_testimonial_${slot}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setVideoTestimonials((prev) => {
         const next = [...prev];
         next[slot - 1] = null;
@@ -426,21 +398,19 @@ export default function AdminHomepageMediaPage() {
       ? `${meta.name}${meta.role ? ` | ${meta.role}` : ""}`
       : `Video Testimonial ${slot}`;
 
+    setSavingSlots((prev) => new Set(prev).add(slot));
     try {
       const token = await getCurrentAccessToken();
-      await fetch(
-        `${API_BASE_URL}/api/v1/media/assets/homepage_video_testimonial_${slot}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            description,
-          }),
+      await fetch(`${API_BASE_URL}/api/v1/media/assets/homepage_video_testimonial_${slot}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify({
+          description,
+        }),
+      });
       // Show "Saved" indicator briefly
       setSavedSlots((prev) => new Set(prev).add(slot));
       setTimeout(() => {
@@ -453,11 +423,16 @@ export default function AdminHomepageMediaPage() {
     } catch (err) {
       console.error("Meta save error:", err);
       setError("Failed to save testimonial info");
+    } finally {
+      setSavingSlots((prev) => {
+        const next = new Set(prev);
+        next.delete(slot);
+        return next;
+      });
     }
   };
 
-  const getCommunityPhotoForSlot = (slot: number) =>
-    communityPhotos.find((p) => p.order === slot);
+  const getCommunityPhotoForSlot = (slot: number) => communityPhotos.find((p) => p.order === slot);
 
   if (loading) {
     return (
@@ -570,12 +545,8 @@ export default function AdminHomepageMediaPage() {
           {banners.length === 0 ? (
             <Card className="p-12 text-center">
               <ImageIcon className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                No banners yet
-              </h3>
-              <p className="text-slate-600 mb-4">
-                Upload your first homepage banner image.
-              </p>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">No banners yet</h3>
+              <p className="text-slate-600 mb-4">Upload your first homepage banner image.</p>
               <Button onClick={() => bannerInputRef.current?.click()}>
                 <Upload className="h-4 w-4 mr-2" />
                 Upload First Banner
@@ -635,9 +606,7 @@ export default function AdminHomepageMediaPage() {
                 <p className="font-medium text-cyan-900">Photo Guidelines</p>
                 <ul className="text-sm text-cyan-700 mt-1 space-y-1">
                   <li>• Recommended size: 800×800 pixels (square)</li>
-                  <li>
-                    • Use photos of swimmers, sessions, or community moments
-                  </li>
+                  <li>• Use photos of swimmers, sessions, or community moments</li>
                   <li>• Photos display in a 3×2 grid on desktop</li>
                 </ul>
               </div>
@@ -660,9 +629,7 @@ export default function AdminHomepageMediaPage() {
                       }}
                       accept="image/*"
                       className="hidden"
-                      onChange={(e) =>
-                        handleCommunityUpload(slot, e.target.files)
-                      }
+                      onChange={(e) => handleCommunityUpload(slot, e.target.files)}
                     />
 
                     {photo?.file_url ? (
@@ -674,9 +641,7 @@ export default function AdminHomepageMediaPage() {
                         />
                         <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                           <button
-                            onClick={() =>
-                              communityInputRefs.current[slot]?.click()
-                            }
+                            onClick={() => communityInputRefs.current[slot]?.click()}
                             className="p-2 bg-white text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
                             title="Replace photo"
                           >
@@ -693,9 +658,7 @@ export default function AdminHomepageMediaPage() {
                       </>
                     ) : (
                       <button
-                        onClick={() =>
-                          communityInputRefs.current[slot]?.click()
-                        }
+                        onClick={() => communityInputRefs.current[slot]?.click()}
                         disabled={isUploading}
                         className="w-full h-full flex flex-col items-center justify-center gap-3 text-slate-400 hover:text-cyan-600 hover:bg-slate-50 transition-colors"
                       >
@@ -704,9 +667,7 @@ export default function AdminHomepageMediaPage() {
                         ) : (
                           <>
                             <Plus className="h-12 w-12" />
-                            <span className="text-sm font-medium">
-                              Add Photo
-                            </span>
+                            <span className="text-sm font-medium">Add Photo</span>
                           </>
                         )}
                       </button>
@@ -735,12 +696,10 @@ export default function AdminHomepageMediaPage() {
           {/* ── Gallery Video ─────────────────────────────────────── */}
           <div className="space-y-4">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">
-                Gallery Video
-              </h2>
+              <h2 className="text-lg font-semibold text-slate-900">Gallery Video</h2>
               <p className="text-sm text-slate-600 mt-0.5">
-                A short auto-playing video that appears as the first item in the
-                community gallery on the homepage.
+                A short auto-playing video that appears as the first item in the community gallery
+                on the homepage.
               </p>
             </div>
 
@@ -748,9 +707,7 @@ export default function AdminHomepageMediaPage() {
               <div className="flex items-start gap-3">
                 <Film className="h-5 w-5 text-cyan-600 mt-0.5" />
                 <div>
-                  <p className="font-medium text-cyan-900">
-                    Gallery Video Guidelines
-                  </p>
+                  <p className="font-medium text-cyan-900">Gallery Video Guidelines</p>
                   <ul className="text-sm text-cyan-700 mt-1 space-y-1">
                     <li>• Keep it short: 5–10 seconds works best</li>
                     <li>• Square or 16:9 aspect ratio</li>
@@ -783,9 +740,7 @@ export default function AdminHomepageMediaPage() {
                   </div>
                 </div>
                 <div className="p-4 flex items-center justify-between">
-                  <span className="text-sm text-slate-600">
-                    Current gallery video
-                  </span>
+                  <span className="text-sm text-slate-600">Current gallery video</span>
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
@@ -809,9 +764,7 @@ export default function AdminHomepageMediaPage() {
             ) : (
               <Card className="p-12 text-center">
                 <Video className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                  No gallery video yet
-                </h3>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">No gallery video yet</h3>
                 <p className="text-slate-600 mb-4">
                   Upload a short clip to showcase in the homepage gallery.
                 </p>
@@ -838,12 +791,10 @@ export default function AdminHomepageMediaPage() {
           {/* ── Video Testimonials ────────────────────────────────── */}
           <div className="space-y-4">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">
-                Video Testimonials
-              </h2>
+              <h2 className="text-lg font-semibold text-slate-900">Video Testimonials</h2>
               <p className="text-sm text-slate-600 mt-0.5">
-                Short member clips (15–30 seconds) displayed alongside text
-                testimonials on the homepage.
+                Short member clips (15–30 seconds) displayed alongside text testimonials on the
+                homepage.
               </p>
             </div>
 
@@ -851,9 +802,7 @@ export default function AdminHomepageMediaPage() {
               <div className="flex items-start gap-3">
                 <Film className="h-5 w-5 text-cyan-600 mt-0.5" />
                 <div>
-                  <p className="font-medium text-cyan-900">
-                    Testimonial Video Guidelines
-                  </p>
+                  <p className="font-medium text-cyan-900">Testimonial Video Guidelines</p>
                   <ul className="text-sm text-cyan-700 mt-1 space-y-1">
                     <li>• 15–30 seconds recommended</li>
                     <li>• Include the member&apos;s name and role below</li>
@@ -879,9 +828,7 @@ export default function AdminHomepageMediaPage() {
                       }}
                       accept="video/*"
                       className="hidden"
-                      onChange={(e) =>
-                        handleTestimonialUpload(slot, e.target.files)
-                      }
+                      onChange={(e) => handleTestimonialUpload(slot, e.target.files)}
                     />
 
                     <div className="relative aspect-video bg-slate-900">
@@ -895,9 +842,7 @@ export default function AdminHomepageMediaPage() {
                           />
                           <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                             <button
-                              onClick={() =>
-                                testimonialInputRefs.current[slot]?.click()
-                              }
+                              onClick={() => testimonialInputRefs.current[slot]?.click()}
                               className="p-2 bg-white text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
                               title="Replace video"
                             >
@@ -914,9 +859,7 @@ export default function AdminHomepageMediaPage() {
                         </>
                       ) : (
                         <button
-                          onClick={() =>
-                            testimonialInputRefs.current[slot]?.click()
-                          }
+                          onClick={() => testimonialInputRefs.current[slot]?.click()}
                           disabled={isUploading}
                           className="w-full h-full flex flex-col items-center justify-center gap-3 text-slate-400 hover:text-cyan-400 transition-colors"
                         >
@@ -925,9 +868,7 @@ export default function AdminHomepageMediaPage() {
                           ) : (
                             <>
                               <Video className="h-12 w-12" />
-                              <span className="text-sm font-medium">
-                                Add Video
-                              </span>
+                              <span className="text-sm font-medium">Add Video</span>
                             </>
                           )}
                         </button>
@@ -946,13 +887,6 @@ export default function AdminHomepageMediaPage() {
 
                     {/* Name & Role fields */}
                     <div className="p-4 space-y-3 bg-slate-50">
-                      {/* Saved indicator */}
-                      {savedSlots.has(slot) && (
-                        <div className="flex items-center gap-1.5 text-emerald-600 text-xs font-medium animate-pulse">
-                          <Check className="h-3.5 w-3.5" />
-                          Saved
-                        </div>
-                      )}
                       <div>
                         <label className="block text-xs font-medium text-slate-500 mb-1">
                           Member Name
@@ -968,7 +902,6 @@ export default function AdminHomepageMediaPage() {
                             };
                             setTestimonialMeta(next);
                           }}
-                          onBlur={() => handleTestimonialMetaSave(slot)}
                           placeholder="e.g. Uche"
                           className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                         />
@@ -988,14 +921,29 @@ export default function AdminHomepageMediaPage() {
                             };
                             setTestimonialMeta(next);
                           }}
-                          onBlur={() => handleTestimonialMetaSave(slot)}
                           placeholder="e.g. Academy Graduate"
                           className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                         />
                       </div>
-                      <p className="text-xs text-slate-400">
-                        Auto-saves when you click away
-                      </p>
+                      <button
+                        onClick={() => handleTestimonialMetaSave(slot)}
+                        disabled={savingSlots.has(slot) || (!meta.name && !meta.role)}
+                        className="w-full flex items-center justify-center gap-2 rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {savingSlots.has(slot) ? (
+                          <>
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                            Saving...
+                          </>
+                        ) : savedSlots.has(slot) ? (
+                          <>
+                            <Check className="h-4 w-4" />
+                            Saved
+                          </>
+                        ) : (
+                          "Save Details"
+                        )}
+                      </button>
                     </div>
                   </Card>
                 );

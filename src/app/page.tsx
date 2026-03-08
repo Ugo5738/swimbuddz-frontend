@@ -326,7 +326,7 @@ export default function HomePage() {
 
           // Gallery video
           const galleryVideoAsset = assets.find(
-            (a: any) => a.key === "homepage_gallery_video" && a.media_item?.file_url,
+            (a: any) => a.key === "homepage_gallery_video" && a.media_item?.file_url
           );
           if (galleryVideoAsset) {
             setGalleryVideo(galleryVideoAsset.media_item.file_url);
@@ -335,8 +335,7 @@ export default function HomePage() {
           // Video testimonials
           const videoTestimonialAssets = assets
             .filter(
-              (a: any) =>
-                a.key.startsWith("homepage_video_testimonial_") && a.media_item?.file_url,
+              (a: any) => a.key.startsWith("homepage_video_testimonial_") && a.media_item?.file_url
             )
             .sort((a: any, b: any) => {
               const orderA = parseInt(a.key.split("_").pop() || "0");
@@ -603,49 +602,46 @@ export default function HomePage() {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
           {/* Gallery video — spans 2 columns for visual prominence */}
           {galleryVideo && (
-            <div className="group relative aspect-[2/1] md:aspect-auto md:row-span-1 col-span-2 rounded-2xl overflow-hidden bg-slate-900">
+            <div className="group relative aspect-[2/1] col-span-2 rounded-2xl overflow-hidden bg-slate-900 flex items-center justify-center">
               <video
                 src={galleryVideo}
                 autoPlay
                 muted
                 loop
                 playsInline
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
           )}
           {/* Photos — show all when video present */}
           {galleryPhotos.length > 0
-            ? galleryPhotos
-                .slice(0, galleryVideo ? 7 : 6)
-                .map((photo, idx) => (
-                  <div
-                    key={photo.id}
-                    className="group relative aspect-square rounded-2xl overflow-hidden bg-slate-100"
-                  >
-                    {!loadedImages.has(photo.id) && (
-                      <div className="absolute inset-0 bg-gradient-to-br from-cyan-100 to-cyan-200 animate-pulse flex items-center justify-center">
-                        <span className="text-4xl">🏊</span>
-                      </div>
-                    )}
-                    <img
-                      src={photo.file_url || photo.thumbnail_url}
-                      alt={photo.title || "SwimBuddz community"}
-                      className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${
-                        loadedImages.has(photo.id) ? "opacity-100" : "opacity-0"
-                      }`}
-                      onLoad={() => handleImageLoad(photo.id)}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    {/* Captions on first 2 photos */}
-                    {galleryCaptions[idx] && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-                        <p className="text-white text-xs font-medium">{galleryCaptions[idx]}</p>
-                      </div>
-                    )}
-                  </div>
-                ))
+            ? galleryPhotos.slice(0, galleryVideo ? 7 : 6).map((photo, idx) => (
+                <div
+                  key={photo.id}
+                  className="group relative aspect-square rounded-2xl overflow-hidden bg-slate-100"
+                >
+                  {!loadedImages.has(photo.id) && (
+                    <div className="absolute inset-0 bg-gradient-to-br from-cyan-100 to-cyan-200 animate-pulse flex items-center justify-center">
+                      <span className="text-4xl">🏊</span>
+                    </div>
+                  )}
+                  <img
+                    src={photo.file_url || photo.thumbnail_url}
+                    alt={photo.title || "SwimBuddz community"}
+                    className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${
+                      loadedImages.has(photo.id) ? "opacity-100" : "opacity-0"
+                    }`}
+                    onLoad={() => handleImageLoad(photo.id)}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  {/* Captions on first 2 photos */}
+                  {galleryCaptions[idx] && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                      <p className="text-white text-xs font-medium">{galleryCaptions[idx]}</p>
+                    </div>
+                  )}
+                </div>
+              ))
             : !galleryVideo &&
               [1, 2, 3, 4, 5, 6].map((i) => (
                 <div
@@ -665,15 +661,35 @@ export default function HomePage() {
               className="group relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-cyan-50 to-cyan-100 flex flex-col items-center justify-center gap-3 hover:from-cyan-100 hover:to-cyan-200 transition-all"
             >
               <div className="w-12 h-12 rounded-full bg-cyan-200 group-hover:bg-cyan-300 flex items-center justify-center transition-colors">
-                <svg className="w-6 h-6 text-cyan-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                <svg
+                  className="w-6 h-6 text-cyan-700"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                  />
                 </svg>
               </div>
               <span className="text-sm font-semibold text-cyan-700 group-hover:text-cyan-800">
                 Browse Full Gallery
               </span>
-              <svg className="w-4 h-4 text-cyan-600 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <svg
+                className="w-4 h-4 text-cyan-600 group-hover:translate-x-0.5 transition-transform"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </Link>
           )}
@@ -855,36 +871,34 @@ export default function HomePage() {
           <h2 className="text-3xl font-bold text-slate-900 md:text-4xl">What Our Swimmers Say</h2>
         </div>
         <div
-          className={`grid gap-6 ${
+          className={`grid gap-6 items-start ${
             videoTestimonials.length > 0 ? "md:grid-cols-2 lg:grid-cols-3" : "md:grid-cols-3"
           }`}
         >
           {/* Video testimonials first */}
           {videoTestimonials.map((vt) => (
-            <Card key={vt.id} className="relative overflow-hidden h-full">
-              <div className="flex flex-col h-full">
-                <div className="relative aspect-video bg-slate-900">
-                  <video
-                    src={vt.file_url}
-                    controls
-                    preload="metadata"
-                    playsInline
-                    className="w-full h-full object-cover"
-                  />
+            <Card key={vt.id} className="relative overflow-hidden">
+              <div className="relative aspect-video bg-slate-900 flex items-center justify-center">
+                <video
+                  src={vt.file_url}
+                  controls
+                  preload="metadata"
+                  playsInline
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <div className="p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                  {vt.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase()}
                 </div>
-                <div className="p-4 flex items-center gap-3 mt-auto">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                    {vt.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")
-                      .slice(0, 2)
-                      .toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-cyan-700">{vt.name}</p>
-                    {vt.role && <p className="text-xs text-slate-500">{vt.role}</p>}
-                  </div>
+                <div>
+                  <p className="text-sm font-semibold text-cyan-700">{vt.name}</p>
+                  {vt.role && <p className="text-xs text-slate-500">{vt.role}</p>}
                 </div>
               </div>
             </Card>
@@ -892,14 +906,12 @@ export default function HomePage() {
 
           {/* Text testimonials */}
           {testimonials.map((testimonial, idx) => (
-            <Card key={idx} className="relative overflow-hidden text-center md:text-left h-full">
+            <Card key={idx} className="relative overflow-hidden text-center md:text-left">
               <div className="absolute top-0 left-0 text-6xl text-cyan-100 font-serif leading-none">
                 &quot;
               </div>
-              <div className="relative flex flex-col p-6 pt-8 h-full">
-                <p className="text-slate-700 italic text-lg flex-1">
-                  &quot;{testimonial.quote}&quot;
-                </p>
+              <div className="relative flex flex-col p-6 pt-8">
+                <p className="text-slate-700 italic text-lg">&quot;{testimonial.quote}&quot;</p>
                 <div className="flex items-center gap-3 justify-center md:justify-start mt-4">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
                     {testimonial.initials}
