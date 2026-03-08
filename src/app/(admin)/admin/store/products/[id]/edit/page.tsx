@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { toast } from "sonner";
-import { apiGet, apiPatch, apiPost, apiDelete } from "@/lib/api";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { MediaInput } from "@/components/ui/MediaInput";
+import { apiGet, apiPatch } from "@/lib/api";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface Category {
   id: string;
@@ -78,8 +78,8 @@ export default function EditProductPage() {
     const loadData = async () => {
       try {
         const [cats, prod] = await Promise.all([
-          apiGet<Category[]>("/api/v1/store/admin/categories", { auth: true }),
-          apiGet<Product>(`/api/v1/store/admin/products/${productId}`, {
+          apiGet<Category[]>("/api/v1/admin/store/categories", { auth: true }),
+          apiGet<Product>(`/api/v1/admin/store/products/${productId}`, {
             auth: true,
           }),
         ]);
@@ -93,15 +93,11 @@ export default function EditProductPage() {
           description: prod.description || "",
           short_description: prod.short_description || "",
           base_price_ngn: String(prod.base_price_ngn),
-          compare_at_price_ngn: prod.compare_at_price_ngn
-            ? String(prod.compare_at_price_ngn)
-            : "",
+          compare_at_price_ngn: prod.compare_at_price_ngn ? String(prod.compare_at_price_ngn) : "",
           status: prod.status,
           is_featured: prod.is_featured,
           sourcing_type: prod.sourcing_type,
-          preorder_lead_days: prod.preorder_lead_days
-            ? String(prod.preorder_lead_days)
-            : "",
+          preorder_lead_days: prod.preorder_lead_days ? String(prod.preorder_lead_days) : "",
           has_variants: prod.has_variants,
           requires_size_chart_ack: prod.requires_size_chart_ack,
           size_chart_url: prod.size_chart_url || "",
@@ -117,16 +113,11 @@ export default function EditProductPage() {
   }, [productId]);
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const target = e.target;
     const name = target.name;
-    const value =
-      target.type === "checkbox"
-        ? (target as HTMLInputElement).checked
-        : target.value;
+    const value = target.type === "checkbox" ? (target as HTMLInputElement).checked : target.value;
 
     setFormData((prev) => (prev ? { ...prev, [name]: value } : null));
   };
@@ -154,14 +145,12 @@ export default function EditProductPage() {
         category_id: formData.category_id || null,
       };
 
-      await apiPatch(`/api/v1/store/admin/products/${productId}`, payload, {
+      await apiPatch(`/api/v1/admin/store/products/${productId}`, payload, {
         auth: true,
       });
       toast.success("Product updated successfully");
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to update product",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to update product");
     } finally {
       setSaving(false);
     }
@@ -207,9 +196,7 @@ export default function EditProductPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Slug
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Slug</label>
                 <input
                   type="text"
                   name="slug"
@@ -221,9 +208,7 @@ export default function EditProductPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Category
-              </label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
               <select
                 name="category_id"
                 value={formData.category_id}
@@ -254,9 +239,7 @@ export default function EditProductPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Description
-              </label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
               <textarea
                 name="description"
                 value={formData.description}
@@ -268,9 +251,7 @@ export default function EditProductPage() {
 
             {/* Pricing */}
             <div className="pt-4 border-t border-slate-200">
-              <h3 className="text-lg font-medium text-slate-900 mb-4">
-                Pricing
-              </h3>
+              <h3 className="text-lg font-medium text-slate-900 mb-4">Pricing</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -306,14 +287,10 @@ export default function EditProductPage() {
 
             {/* Settings */}
             <div className="pt-4 border-t border-slate-200">
-              <h3 className="text-lg font-medium text-slate-900 mb-4">
-                Settings
-              </h3>
+              <h3 className="text-lg font-medium text-slate-900 mb-4">Settings</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Status
-                  </label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
                   <select
                     name="status"
                     value={formData.status}
@@ -366,9 +343,7 @@ export default function EditProductPage() {
                     onChange={handleChange}
                     className="rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
                   />
-                  <span className="text-sm text-slate-700">
-                    Featured product
-                  </span>
+                  <span className="text-sm text-slate-700">Featured product</span>
                 </label>
                 <label className="flex items-center gap-2">
                   <input
@@ -378,9 +353,7 @@ export default function EditProductPage() {
                     onChange={handleChange}
                     className="rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
                   />
-                  <span className="text-sm text-slate-700">
-                    Require size chart acknowledgment
-                  </span>
+                  <span className="text-sm text-slate-700">Require size chart acknowledgment</span>
                 </label>
               </div>
 
@@ -399,7 +372,7 @@ export default function EditProductPage() {
                               size_chart_media_id: mediaId || "",
                               size_chart_url: fileUrl || "",
                             }
-                          : null,
+                          : null
                       )
                     }
                   />
@@ -430,9 +403,7 @@ export default function EditProductPage() {
         {/* Variants Sidebar */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-            <h3 className="font-medium text-slate-900 mb-4">
-              Variants & Inventory
-            </h3>
+            <h3 className="font-medium text-slate-900 mb-4">Variants & Inventory</h3>
             {variants.length === 0 ? (
               <p className="text-sm text-slate-500">No variants yet.</p>
             ) : (

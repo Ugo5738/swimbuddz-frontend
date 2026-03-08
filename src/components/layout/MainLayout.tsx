@@ -17,6 +17,9 @@ export function MainLayout({ children }: MainLayoutProps) {
     (pathname === "/coach" || pathname?.startsWith("/coach/")) &&
     !pathname?.startsWith("/coach/apply");
 
+  // Store routes use their own dedicated layout (header, footer, cart provider)
+  const isStoreRoute = pathname?.startsWith("/store");
+
   // Member/coach portal routes should use their own layouts without the public chrome
   const isMemberPortalRoute =
     pathname?.startsWith("/account") ||
@@ -31,7 +34,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     pathname?.startsWith("/sessions/") ||
     pathname === "/sessions";
 
-  if (isAdminRoute || isMemberPortalRoute || isCoachRoute) {
+  if (isAdminRoute || isMemberPortalRoute || isCoachRoute || isStoreRoute) {
     return <>{children}</>;
   }
 

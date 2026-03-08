@@ -33,20 +33,22 @@ interface CheckoutResponse {
   order_id: string;
   order_number: string;
   total_ngn: number;
+  delivery_fee_ngn: number;
   requires_payment: boolean;
   bubbles_applied: number | null;
-  payment_url: string | null;
+  bubbles_amount_ngn: number | null;
+  paystack_amount_ngn: number | null;
+}
+
+interface PaymentInitResponse {
   payment_reference: string;
+  authorization_url: string | null;
+  access_code: string | null;
 }
 
 export default function StoreCheckoutPage() {
   const router = useRouter();
-  const {
-    cart,
-    loading: cartLoading,
-    clearCart,
-    isAuthenticated,
-  } = useStoreCart();
+  const { cart, loading: cartLoading, clearCart, isAuthenticated } = useStoreCart();
 
   const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
   const [storeCredit, setStoreCredit] = useState<StoreCredit | null>(null);
@@ -55,9 +57,7 @@ export default function StoreCheckoutPage() {
   const [processing, setProcessing] = useState(false);
 
   // Form state
-  const [fulfillmentType, setFulfillmentType] = useState<"pickup" | "delivery">(
-    "pickup",
-  );
+  const [fulfillmentType, setFulfillmentType] = useState<"pickup" | "delivery">("pickup");
   const [selectedLocationId, setSelectedLocationId] = useState<string>("");
   const [deliveryAddress, setDeliveryAddress] = useState({
     street: "",
@@ -67,7 +67,7 @@ export default function StoreCheckoutPage() {
   });
   const [customerNotes, setCustomerNotes] = useState("");
   const [useStoreCredit, setUseStoreCredit] = useState(false);
-  const [payWithBubbles, setPayWithBubbles] = useState(false);
+  const [bubblesToApply, setBubblesToApply] = useState<number>(0);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -120,11 +120,7 @@ export default function StoreCheckoutPage() {
     }
 
     if (fulfillmentType === "delivery") {
-      if (
-        !deliveryAddress.street ||
-        !deliveryAddress.city ||
-        !deliveryAddress.phone
-      ) {
+      if (!deliveryAddress.street || !deliveryAddress.city || !deliveryAddress.phone) {
         toast.error("Please fill in all delivery fields");
         return;
       }
@@ -135,19 +131,17 @@ export default function StoreCheckoutPage() {
       // Step 1: Create the order
       const checkoutPayload = {
         fulfillment_type: fulfillmentType,
-        pickup_location_id:
-          fulfillmentType === "pickup" ? selectedLocationId : undefined,
-        delivery_address:
-          fulfillmentType === "delivery" ? deliveryAddress : undefined,
+        pickup_location_id: fulfillmentType === "pickup" ? selectedLocationId : undefined,
+        delivery_address: fulfillmentType === "delivery" ? deliveryAddress : undefined,
         customer_notes: customerNotes || undefined,
         apply_store_credit: useStoreCredit,
-        pay_with_bubbles: payWithBubbles,
+        bubbles_to_apply: effectiveBubbles > 0 ? effectiveBubbles : undefined,
       };
 
       const orderResult = await apiPost<CheckoutResponse>(
         "/api/v1/store/checkout/start",
         checkoutPayload,
-        { auth: true },
+        { auth: true }
       );
 
       // If bubbles fully covered the order — no Paystack needed
@@ -161,26 +155,20 @@ export default function StoreCheckoutPage() {
         return;
       }
 
-      // Step 2: Remaining balance — create Paystack intent
-      const paymentResult = await apiPost<{
-        checkout_url: string | null;
-        reference: string;
-      }>(
-        "/api/v1/payments/intents",
-        {
-          purpose: "STORE_ORDER",
-          order_id: orderResult.order_id,
-        },
-        { auth: true },
+      // Step 2: Initialize Paystack payment via store checkout endpoint
+      const paymentResult = await apiPost<PaymentInitResponse>(
+        "/api/v1/store/checkout/payment",
+        { order_id: orderResult.order_id },
+        { auth: true }
       );
 
-      if (paymentResult.checkout_url) {
+      if (paymentResult.authorization_url) {
         clearCart();
-        window.location.href = paymentResult.checkout_url;
+        window.location.href = paymentResult.authorization_url;
         return;
       }
 
-      // Fallback: intent created but no URL
+      // Fallback: payment created but no URL
       toast.success(`Order ${orderResult.order_number} created!`);
       clearCart();
       router.push(`/account/orders/${orderResult.order_number}`);
@@ -214,15 +202,15 @@ export default function StoreCheckoutPage() {
   }
 
   const creditBalance = storeCredit?.balance_ngn || 0;
-  const creditToApply = useStoreCredit
-    ? Math.min(creditBalance, cart.total_ngn)
-    : 0;
-  const afterCredit = cart.total_ngn - creditToApply;
-  const bubblesNeeded = Math.ceil(afterCredit / 100); // ₦100 = 1 Bubble
-  const canPayWithBubbles =
-    walletBalance !== null && walletBalance >= bubblesNeeded && afterCredit > 0;
-  const bubblesApplied = payWithBubbles && canPayWithBubbles ? bubblesNeeded : 0;
-  const finalTotal = Math.max(0, afterCredit - bubblesApplied * 100);
+  const creditToApply = useStoreCredit ? Math.min(creditBalance, cart.total_ngn) : 0;
+  const afterCredit = Math.max(0, cart.total_ngn - creditToApply);
+
+  // Partial Bubbles calculations
+  const maxBubbles = walletBalance ?? 0;
+  const maxBubblesNeeded = Math.ceil(afterCredit / 100); // ₦100 = 1 Bubble
+  const effectiveBubbles = Math.min(bubblesToApply, maxBubbles, maxBubblesNeeded);
+  const bubblesValueNgn = effectiveBubbles * 100;
+  const paystackAmount = Math.max(0, afterCredit - bubblesValueNgn);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -269,12 +257,8 @@ export default function StoreCheckoutPage() {
                 <div className="flex items-center gap-3">
                   <Package className="w-6 h-6 text-cyan-600" />
                   <div>
-                    <span className="font-medium text-slate-900">
-                      Pool Pickup
-                    </span>
-                    <p className="text-sm text-slate-500">
-                      Free • Pick up at a pool session
-                    </p>
+                    <span className="font-medium text-slate-900">Pool Pickup</span>
+                    <p className="text-sm text-slate-500">Free • Pick up at a pool session</p>
                   </div>
                 </div>
               </label>
@@ -297,12 +281,8 @@ export default function StoreCheckoutPage() {
                 <div className="flex items-center gap-3">
                   <Truck className="w-6 h-6 text-cyan-600" />
                   <div>
-                    <span className="font-medium text-slate-900">
-                      Home Delivery
-                    </span>
-                    <p className="text-sm text-slate-500">
-                      Fee may apply • Lagos only
-                    </p>
+                    <span className="font-medium text-slate-900">Home Delivery</span>
+                    <p className="text-sm text-slate-500">Fee may apply • Lagos only</p>
                   </div>
                 </div>
               </label>
@@ -335,18 +315,12 @@ export default function StoreCheckoutPage() {
                       className="mt-1"
                     />
                     <div>
-                      <span className="font-medium text-slate-900">
-                        {location.name}
-                      </span>
+                      <span className="font-medium text-slate-900">{location.name}</span>
                       {location.address && (
-                        <p className="text-sm text-slate-500">
-                          {location.address}
-                        </p>
+                        <p className="text-sm text-slate-500">{location.address}</p>
                       )}
                       {location.description && (
-                        <p className="text-sm text-slate-500 mt-1">
-                          {location.description}
-                        </p>
+                        <p className="text-sm text-slate-500 mt-1">{location.description}</p>
                       )}
                     </div>
                   </label>
@@ -382,9 +356,7 @@ export default function StoreCheckoutPage() {
                 </div>
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                      City *
-                    </label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">City *</label>
                     <input
                       type="text"
                       value={deliveryAddress.city}
@@ -399,9 +371,7 @@ export default function StoreCheckoutPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Phone *
-                    </label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Phone *</label>
                     <input
                       type="tel"
                       value={deliveryAddress.phone}
@@ -438,102 +408,97 @@ export default function StoreCheckoutPage() {
           {afterCredit > 0 && (
             <Card className="p-6 space-y-4">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Payment Method</h2>
-                <p className="text-xs text-slate-500 mt-0.5">Choose how to pay for your order</p>
+                <h2 className="text-lg font-semibold text-slate-900">Payment</h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {paystackAmount > 0 ? "Card payment via Paystack" : "Fully covered by Bubbles"}
+                </p>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                {/* Card / Paystack */}
-                <div
-                  onClick={() => setPayWithBubbles(false)}
-                  className={`cursor-pointer rounded-xl border-2 p-4 transition-all ${
-                    !payWithBubbles
-                      ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-300"
-                      : "border-slate-200 bg-white hover:border-cyan-200 hover:bg-cyan-50/40"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`flex-shrink-0 rounded-lg p-2 ${!payWithBubbles ? "bg-cyan-100" : "bg-slate-100"}`}>
-                      <CreditCard className={`w-5 h-5 ${!payWithBubbles ? "text-cyan-600" : "text-slate-400"}`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-slate-900">Card Payment</p>
-                        {!payWithBubbles && (
-                          <span className="text-xs font-medium px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded-full">Selected</span>
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-500 mt-0.5">Paystack · Card, bank, USSD</p>
-                    </div>
-                  </div>
-                  <p className="mt-3 text-xl font-bold text-slate-900">₦{afterCredit.toLocaleString()}</p>
-                  <p className="text-xs text-slate-400 mt-1">🔒 Secure payment</p>
+              {/* Card payment info */}
+              <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4">
+                <div className="flex-shrink-0 rounded-lg p-2 bg-slate-100">
+                  <CreditCard className="w-5 h-5 text-slate-500" />
                 </div>
-
-                {/* Bubbles */}
-                <div
-                  onClick={() => { if (canPayWithBubbles) setPayWithBubbles(true); }}
-                  className={`rounded-xl border-2 p-4 transition-all ${
-                    payWithBubbles
-                      ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-300 cursor-pointer"
-                      : canPayWithBubbles
-                        ? "border-slate-200 bg-white hover:border-cyan-200 hover:bg-cyan-50/40 cursor-pointer"
-                        : "border-slate-200 bg-white cursor-default"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`flex-shrink-0 rounded-lg p-2 text-xl leading-none ${payWithBubbles ? "bg-cyan-100" : "bg-slate-100"}`}>
-                      🫧
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-slate-900">Pay with Bubbles</p>
-                        {payWithBubbles && (
-                          <span className="text-xs font-medium px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded-full">Selected</span>
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-500 mt-0.5">SwimBuddz wallet</p>
-                    </div>
-                  </div>
-
-                  <p className="mt-3 text-xl font-bold text-slate-900">
-                    {bubblesNeeded} <span className="text-sm font-normal text-slate-500">Bubbles</span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-slate-900">
+                    {paystackAmount > 0
+                      ? `₦${paystackAmount.toLocaleString()} via Paystack`
+                      : "No card payment needed"}
                   </p>
-
-                  {walletBalance !== null ? (
-                    <div className="mt-2 space-y-1.5">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-500">Your balance</span>
-                        <span className={`font-semibold ${canPayWithBubbles ? "text-emerald-600" : "text-red-500"}`}>
-                          {walletBalance.toLocaleString()} 🫧 {canPayWithBubbles ? "✓" : ""}
-                        </span>
-                      </div>
-                      {!canPayWithBubbles && (
-                        <Link
-                          href="/account/wallet/topup"
-                          className="mt-2 flex items-center justify-center gap-1 w-full text-xs font-semibold text-white bg-cyan-500 hover:bg-cyan-600 rounded-lg py-1.5 transition-colors"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          Top Up {bubblesNeeded - walletBalance} more Bubbles →
-                        </Link>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="mt-2">
-                      <p className="text-xs text-slate-500">
-                        <Link
-                          href="/account/wallet"
-                          className="text-cyan-600 font-medium underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          Set up your wallet
-                        </Link>{" "}
-                        to pay with Bubbles
-                      </p>
-                    </div>
-                  )}
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {paystackAmount > 0
+                      ? "Card, bank transfer, or USSD"
+                      : "Bubbles cover the full amount"}
+                  </p>
                 </div>
               </div>
+
+              {/* Bubbles slider */}
+              {walletBalance !== null && maxBubbles > 0 ? (
+                <div className="rounded-xl border-2 border-cyan-200 bg-cyan-50/50 p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl leading-none">🫧</span>
+                      <p className="font-semibold text-slate-900">Apply Bubbles</p>
+                    </div>
+                    <span className="text-xs text-slate-500">
+                      Balance: {maxBubbles.toLocaleString()} 🫧
+                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <input
+                      type="range"
+                      min={0}
+                      max={Math.min(maxBubbles, maxBubblesNeeded)}
+                      value={effectiveBubbles}
+                      onChange={(e) => setBubblesToApply(Number(e.target.value))}
+                      className="w-full accent-cyan-500"
+                    />
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-semibold text-cyan-700">
+                        {effectiveBubbles} 🫧 = ₦{bubblesValueNgn.toLocaleString()}
+                      </span>
+                      <span className="text-slate-500">
+                        of {Math.min(maxBubbles, maxBubblesNeeded)} max
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Quick-apply buttons */}
+                  <div className="flex gap-2">
+                    {[0, 25, 50, 100].map((pct) => {
+                      const amount =
+                        pct === 0
+                          ? 0
+                          : Math.ceil((Math.min(maxBubbles, maxBubblesNeeded) * pct) / 100);
+                      return (
+                        <button
+                          key={pct}
+                          type="button"
+                          onClick={() => setBubblesToApply(amount)}
+                          className={`flex-1 text-xs font-medium py-1.5 rounded-lg transition-colors ${
+                            effectiveBubbles === amount
+                              ? "bg-cyan-500 text-white"
+                              : "bg-white text-slate-600 border border-slate-200 hover:border-cyan-300"
+                          }`}
+                        >
+                          {pct === 0 ? "None" : `${pct}%`}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : walletBalance === null ? (
+                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                  <p className="text-sm text-slate-500">
+                    <Link href="/account/wallet" className="text-cyan-600 font-medium underline">
+                      Set up your wallet
+                    </Link>{" "}
+                    to pay with Bubbles and save
+                  </p>
+                </div>
+              ) : null}
             </Card>
           )}
         </div>
@@ -541,9 +506,7 @@ export default function StoreCheckoutPage() {
         {/* Order Summary */}
         <div className="lg:col-span-1">
           <Card className="p-6 sticky top-24">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">
-              Order Summary
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Order Summary</h2>
 
             {/* Items */}
             <div className="space-y-2 text-sm pb-4 border-b border-slate-100">
@@ -562,9 +525,7 @@ export default function StoreCheckoutPage() {
             <div className="space-y-3 text-sm pt-4">
               <div className="flex justify-between">
                 <span className="text-slate-600">Subtotal</span>
-                <span className="text-slate-900">
-                  ₦{cart.subtotal_ngn.toLocaleString()}
-                </span>
+                <span className="text-slate-900">₦{cart.subtotal_ngn.toLocaleString()}</span>
               </div>
 
               {cart.discount_amount_ngn > 0 && (
@@ -598,17 +559,19 @@ export default function StoreCheckoutPage() {
               )}
 
               {/* Bubbles deduction */}
-              {payWithBubbles && bubblesApplied > 0 && (
+              {effectiveBubbles > 0 && (
                 <div className="flex justify-between text-cyan-600 font-medium pt-2">
-                  <span className="flex items-center gap-1">🫧 {bubblesApplied} Bubbles</span>
-                  <span>-₦{(bubblesApplied * 100).toLocaleString()}</span>
+                  <span className="flex items-center gap-1">🫧 {effectiveBubbles} Bubbles</span>
+                  <span>-₦{bubblesValueNgn.toLocaleString()}</span>
                 </div>
               )}
 
               <div className="pt-3 border-t border-slate-200 flex justify-between text-base font-semibold">
                 <span className="text-slate-900">Total</span>
                 <span className="text-cyan-600">
-                  ₦{finalTotal.toLocaleString()}
+                  {paystackAmount <= 0
+                    ? `${effectiveBubbles} 🫧`
+                    : `₦${paystackAmount.toLocaleString()}`}
                 </span>
               </div>
             </div>
@@ -624,24 +587,24 @@ export default function StoreCheckoutPage() {
                 "Processing..."
               ) : (
                 <span className="flex items-center justify-center gap-2">
-                  {payWithBubbles && bubblesApplied > 0 ? (
+                  {paystackAmount <= 0 ? (
                     <span className="text-lg leading-none">🫧</span>
                   ) : (
                     <CreditCard className="w-5 h-5" />
                   )}
-                  {finalTotal <= 0
-                    ? `Pay ${bubblesApplied} Bubbles`
-                    : payWithBubbles && bubblesApplied > 0
-                      ? `Pay ₦${finalTotal.toLocaleString()} + ${bubblesApplied} 🫧`
-                      : `Pay ₦${finalTotal.toLocaleString()}`}
+                  {paystackAmount <= 0
+                    ? `Pay with ${effectiveBubbles} Bubbles`
+                    : effectiveBubbles > 0
+                      ? `Pay ₦${paystackAmount.toLocaleString()} + ${effectiveBubbles} 🫧`
+                      : `Pay ₦${paystackAmount.toLocaleString()}`}
                 </span>
               )}
             </Button>
 
             <p className="mt-4 text-xs text-center text-slate-500">
-              {finalTotal <= 0
+              {paystackAmount <= 0
                 ? "🫧 Fully covered by your Bubbles wallet"
-                : payWithBubbles && bubblesApplied > 0
+                : effectiveBubbles > 0
                   ? "🫧 Bubbles applied · remaining paid via Paystack"
                   : "🔒 Secure payment via Paystack"}
             </p>

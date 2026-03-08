@@ -20,10 +20,12 @@ import {
   Mail,
   Megaphone,
   Menu,
+  ShoppingBag,
   Trophy,
   UserCheck,
   Users,
   Wallet,
+  Waves,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -108,6 +110,13 @@ const navSections: NavSection[] = [
         label: "Challenges",
         icon: Trophy,
       },
+    ],
+  },
+  {
+    title: "Operations",
+    items: [
+      { href: "/admin/store", label: "Store", icon: ShoppingBag },
+      { href: "/admin/pools", label: "Pool Registry", icon: Waves },
     ],
   },
   {

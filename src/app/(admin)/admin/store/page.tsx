@@ -5,10 +5,13 @@ import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet } from "@/lib/api";
 import {
   AlertTriangle,
+  BarChart3,
   DollarSign,
   Package,
   ShoppingBag,
+  Trash2,
   TrendingUp,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -52,14 +55,11 @@ export default function StoreDashboardPage() {
               low_stock_count: 0,
               total_revenue_ngn: 0,
               orders_today: 0,
-            }) as DashboardStats,
+            }) as DashboardStats
         ),
-        apiGet<{ items: RecentOrder[] }>(
-          "/api/v1/admin/store/orders?page_size=5",
-          {
-            auth: true,
-          },
-        ).catch(() => ({ items: [] })),
+        apiGet<{ items: RecentOrder[] }>("/api/v1/admin/store/orders?page_size=5", {
+          auth: true,
+        }).catch(() => ({ items: [] })),
       ]);
 
       setStats(statsData);
@@ -110,7 +110,7 @@ export default function StoreDashboardPage() {
       subtext: "All time",
       icon: DollarSign,
       color: "bg-emerald-500",
-      href: "/admin/store/orders",
+      href: "/admin/store/reports",
     },
   ];
 
@@ -119,9 +119,7 @@ export default function StoreDashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Store Dashboard</h1>
-          <p className="text-slate-500">
-            Manage your products, orders, and inventory
-          </p>
+          <p className="text-slate-500">Manage your products, orders, and inventory</p>
         </div>
         <Link
           href="/admin/store/products/new"
@@ -139,9 +137,7 @@ export default function StoreDashboardPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-slate-500">{stat.label}</p>
-                  <p className="text-2xl font-bold text-slate-900 mt-1">
-                    {stat.value}
-                  </p>
+                  <p className="text-2xl font-bold text-slate-900 mt-1">{stat.value}</p>
                   <p className="text-xs text-slate-400 mt-1">{stat.subtext}</p>
                 </div>
                 <div className={`p-3 rounded-lg ${stat.color}`}>
@@ -190,17 +186,25 @@ export default function StoreDashboardPage() {
         <Link href="/admin/store/inventory">
           <Card className="p-4 text-center hover:shadow-md transition-shadow">
             <TrendingUp className="w-8 h-8 mx-auto text-cyan-600 mb-2" />
-            <span className="text-sm font-medium text-slate-700">
-              Inventory
-            </span>
+            <span className="text-sm font-medium text-slate-700">Inventory</span>
           </Card>
         </Link>
-        <Link href="/admin/store/categories">
+        <Link href="/admin/store/reports">
           <Card className="p-4 text-center hover:shadow-md transition-shadow">
-            <DollarSign className="w-8 h-8 mx-auto text-cyan-600 mb-2" />
-            <span className="text-sm font-medium text-slate-700">
-              Categories
-            </span>
+            <BarChart3 className="w-8 h-8 mx-auto text-cyan-600 mb-2" />
+            <span className="text-sm font-medium text-slate-700">Reports</span>
+          </Card>
+        </Link>
+        <Link href="/admin/store/suppliers">
+          <Card className="p-4 text-center hover:shadow-md transition-shadow">
+            <Users className="w-8 h-8 mx-auto text-cyan-600 mb-2" />
+            <span className="text-sm font-medium text-slate-700">Suppliers</span>
+          </Card>
+        </Link>
+        <Link href="/admin/store/maintenance">
+          <Card className="p-4 text-center hover:shadow-md transition-shadow">
+            <Trash2 className="w-8 h-8 mx-auto text-cyan-600 mb-2" />
+            <span className="text-sm font-medium text-slate-700">Maintenance</span>
           </Card>
         </Link>
       </div>
@@ -208,13 +212,8 @@ export default function StoreDashboardPage() {
       {/* Recent Orders */}
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Recent Orders
-          </h2>
-          <Link
-            href="/admin/store/orders"
-            className="text-sm text-cyan-600 hover:underline"
-          >
+          <h2 className="text-lg font-semibold text-slate-900">Recent Orders</h2>
+          <Link href="/admin/store/orders" className="text-sm text-cyan-600 hover:underline">
             View All →
           </Link>
         </div>
@@ -233,10 +232,7 @@ export default function StoreDashboardPage() {
               </thead>
               <tbody>
                 {recentOrders.map((order) => (
-                  <tr
-                    key={order.id}
-                    className="border-b border-slate-50 hover:bg-slate-50"
-                  >
+                  <tr key={order.id} className="border-b border-slate-50 hover:bg-slate-50">
                     <td className="py-3">
                       <Link
                         href={`/admin/store/orders/${order.id}`}
@@ -245,9 +241,7 @@ export default function StoreDashboardPage() {
                         {order.order_number}
                       </Link>
                     </td>
-                    <td className="py-3 text-slate-700">
-                      {order.customer_name}
-                    </td>
+                    <td className="py-3 text-slate-700">{order.customer_name}</td>
                     <td className="py-3 text-slate-900 font-medium">
                       ₦{order.total_ngn.toLocaleString()}
                     </td>
@@ -297,9 +291,7 @@ function OrderStatusBadge({ status }: { status: string }) {
   };
 
   return (
-    <span
-      className={`px-2 py-1 text-xs font-medium rounded-full ${config.className}`}
-    >
+    <span className={`px-2 py-1 text-xs font-medium rounded-full ${config.className}`}>
       {config.label}
     </span>
   );

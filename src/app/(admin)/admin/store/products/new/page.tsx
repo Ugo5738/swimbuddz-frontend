@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { apiGet, apiPost, apiPatch } from "@/lib/api";
 import { MediaInput } from "@/components/ui/MediaInput";
+import { apiGet, apiPost } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface Category {
   id: string;
@@ -58,7 +58,7 @@ export default function NewProductPage() {
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const cats = await apiGet<Category[]>("/api/v1/store/admin/categories");
+        const cats = await apiGet<Category[]>("/api/v1/admin/store/categories", { auth: true });
         setCategories(cats);
       } catch {
         toast.error("Failed to load categories");
@@ -77,16 +77,11 @@ export default function NewProductPage() {
   };
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const target = e.target;
     const name = target.name;
-    const value =
-      target.type === "checkbox"
-        ? (target as HTMLInputElement).checked
-        : target.value;
+    const value = target.type === "checkbox" ? (target as HTMLInputElement).checked : target.value;
 
     setFormData((prev) => {
       const updated = { ...prev, [name]: value };
@@ -120,17 +115,13 @@ export default function NewProductPage() {
         category_id: formData.category_id || null,
       };
 
-      const result = await apiPost<{ id: string }>(
-        "/api/v1/store/admin/products",
-        payload,
-        { auth: true },
-      );
+      const result = await apiPost<{ id: string }>("/api/v1/admin/store/products", payload, {
+        auth: true,
+      });
       toast.success("Product created successfully");
       router.push(`/admin/store/products/${result.id}/edit`);
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to create product",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to create product");
     } finally {
       setSaving(false);
     }
@@ -164,9 +155,7 @@ export default function NewProductPage() {
         {/* Basic Info */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Product Name *
-            </label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Product Name *</label>
             <input
               type="text"
               name="name"
@@ -177,9 +166,7 @@ export default function NewProductPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Slug
-            </label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Slug</label>
             <input
               type="text"
               name="slug"
@@ -191,9 +178,7 @@ export default function NewProductPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Category
-          </label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
           <select
             name="category_id"
             value={formData.category_id}
@@ -210,9 +195,7 @@ export default function NewProductPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Short Description
-          </label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Short Description</label>
           <input
             type="text"
             name="short_description"
@@ -224,9 +207,7 @@ export default function NewProductPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Description
-          </label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
           <textarea
             name="description"
             value={formData.description}
@@ -241,9 +222,7 @@ export default function NewProductPage() {
           <h3 className="text-lg font-medium text-slate-900 mb-4">Pricing</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Price (₦) *
-              </label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Price (₦) *</label>
               <input
                 type="number"
                 name="base_price_ngn"
@@ -268,9 +247,7 @@ export default function NewProductPage() {
                 step="100"
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
               />
-              <p className="text-xs text-slate-500 mt-1">
-                Original price for sale display
-              </p>
+              <p className="text-xs text-slate-500 mt-1">Original price for sale display</p>
             </div>
           </div>
         </div>
@@ -280,9 +257,7 @@ export default function NewProductPage() {
           <h3 className="text-lg font-medium text-slate-900 mb-4">Settings</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Status
-              </label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
               <select
                 name="status"
                 value={formData.status}
@@ -295,9 +270,7 @@ export default function NewProductPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Sourcing Type
-              </label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Sourcing Type</label>
               <select
                 name="sourcing_type"
                 value={formData.sourcing_type}
@@ -345,9 +318,7 @@ export default function NewProductPage() {
                 onChange={handleChange}
                 className="rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
               />
-              <span className="text-sm text-slate-700">
-                Has size/color variants
-              </span>
+              <span className="text-sm text-slate-700">Has size/color variants</span>
             </label>
             <label className="flex items-center gap-2">
               <input
@@ -357,9 +328,7 @@ export default function NewProductPage() {
                 onChange={handleChange}
                 className="rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
               />
-              <span className="text-sm text-slate-700">
-                Require size chart acknowledgment
-              </span>
+              <span className="text-sm text-slate-700">Require size chart acknowledgment</span>
             </label>
           </div>
 

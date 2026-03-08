@@ -28,21 +28,16 @@ interface ProductCardProps {
   memberDiscountPercent?: number;
 }
 
-export function ProductCard({
-  product,
-  memberDiscountPercent = 0,
-}: ProductCardProps) {
+export function ProductCard({ product, memberDiscountPercent = 0 }: ProductCardProps) {
   const { addItem } = useStoreCart();
   const [adding, setAdding] = useState(false);
 
   const images = product.images || [];
   const primaryImage = images.find((img) => img.is_primary) || images[0];
   // Validate image URL - must start with http/https and be a valid URL
-  const hasValidImage =
-    primaryImage?.url && primaryImage.url.startsWith("http");
+  const hasValidImage = primaryImage?.url && primaryImage.url.startsWith("http");
   const hasDiscount =
-    product.compare_at_price_ngn &&
-    product.compare_at_price_ngn > product.base_price_ngn;
+    product.compare_at_price_ngn && product.compare_at_price_ngn > product.base_price_ngn;
   const isPreorder = product.sourcing_type === "preorder";
 
   const finalPrice =
@@ -87,12 +82,7 @@ export function ProductCard({
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-slate-400">
-            <svg
-              className="w-16 h-16"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -127,14 +117,10 @@ export function ProductCard({
           <button
             onClick={handleQuickAdd}
             disabled={adding}
-            className="absolute bottom-2 right-2 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-cyan-500 hover:text-white disabled:opacity-50"
+            className="absolute bottom-2 right-2 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:bg-cyan-500 hover:text-white disabled:opacity-50"
           >
             {adding ? (
-              <svg
-                className="w-5 h-5 animate-spin"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle
                   className="opacity-25"
                   cx="12"
@@ -150,12 +136,7 @@ export function ProductCard({
                 />
               </svg>
             ) : (
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -174,14 +155,10 @@ export function ProductCard({
           {product.name}
         </h3>
         {product.short_description && (
-          <p className="text-sm text-slate-500 mt-1 line-clamp-2">
-            {product.short_description}
-          </p>
+          <p className="text-sm text-slate-500 mt-1 line-clamp-2">{product.short_description}</p>
         )}
         <div className="mt-3 flex items-baseline gap-2">
-          <span className="text-lg font-bold text-slate-900">
-            ₦{finalPrice.toLocaleString()}
-          </span>
+          <span className="text-lg font-bold text-slate-900">₦{finalPrice.toLocaleString()}</span>
           {(hasDiscount || memberDiscountPercent > 0) && (
             <span className="text-sm text-slate-400 line-through">
               ₦{product.base_price_ngn.toLocaleString()}

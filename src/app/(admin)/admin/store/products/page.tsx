@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet } from "@/lib/api";
-import { Eye, Package, Pencil, Plus, Search } from "lucide-react";
+import { ArrowLeft, Eye, Package, Pencil, Plus, Search } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -50,7 +50,7 @@ export default function AdminProductsPage() {
         `/api/v1/admin/store/products?${params.toString()}`,
         {
           auth: true,
-        },
+        }
       );
       setProducts(data.items);
       setTotal(data.total);
@@ -71,6 +71,13 @@ export default function AdminProductsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
+          <Link
+            href="/admin/store"
+            className="text-slate-500 hover:text-slate-700 text-sm flex items-center gap-1 mb-1"
+          >
+            <ArrowLeft className="w-3 h-3" />
+            Back to Store
+          </Link>
           <h1 className="text-2xl font-bold text-slate-900">Products</h1>
           <p className="text-slate-500">{total} products total</p>
         </div>
@@ -134,14 +141,10 @@ export default function AdminProductsPage() {
             <tbody>
               {products.map((product) => {
                 const primaryImage =
-                  product.images.find((img) => img.is_primary) ||
-                  product.images[0];
+                  product.images.find((img) => img.is_primary) || product.images[0];
 
                 return (
-                  <tr
-                    key={product.id}
-                    className="border-b border-slate-100 hover:bg-slate-50"
-                  >
+                  <tr key={product.id} className="border-b border-slate-100 hover:bg-slate-50">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="relative w-12 h-12 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
@@ -159,21 +162,15 @@ export default function AdminProductsPage() {
                           )}
                         </div>
                         <div>
-                          <p className="font-medium text-slate-900">
-                            {product.name}
-                          </p>
+                          <p className="font-medium text-slate-900">{product.name}</p>
                           <p className="text-sm text-slate-500">
-                            {product.sourcing_type === "preorder"
-                              ? "Pre-order"
-                              : "In Stock"}
+                            {product.sourcing_type === "preorder" ? "Pre-order" : "In Stock"}
                             {product.is_featured && " • Featured"}
                           </p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-slate-600">
-                      {product.category?.name || "—"}
-                    </td>
+                    <td className="px-6 py-4 text-slate-600">{product.category?.name || "—"}</td>
                     <td className="px-6 py-4 font-medium text-slate-900">
                       ₦{product.base_price_ngn.toLocaleString()}
                     </td>
@@ -191,7 +188,7 @@ export default function AdminProductsPage() {
                           <Eye className="w-4 h-4" />
                         </Link>
                         <Link
-                          href={`/admin/store/products/${product.id}`}
+                          href={`/admin/store/products/${product.id}/edit`}
                           className="p-2 text-slate-400 hover:text-cyan-600 transition-colors"
                           title="Edit"
                         >
@@ -263,10 +260,6 @@ function StatusBadge({ status }: { status: string }) {
   };
 
   return (
-    <span
-      className={`px-2 py-1 text-xs font-medium rounded-full ${c.className}`}
-    >
-      {c.label}
-    </span>
+    <span className={`px-2 py-1 text-xs font-medium rounded-full ${c.className}`}>{c.label}</span>
   );
 }
