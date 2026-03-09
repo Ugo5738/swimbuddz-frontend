@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { trackAssessmentCTA, trackAssessmentShared } from "@/lib/analytics";
 import {
   calculateResults,
   getCtaHref,
@@ -126,11 +127,13 @@ function ShareButtons({ score, level }: { score: number; level: string }) {
   const url = typeof window !== "undefined" ? window.location.href : "";
 
   const shareWhatsApp = () => {
+    trackAssessmentShared("whatsapp");
     const text = `I scored ${score}/100 on the SwimBuddz Swim Assessment — I'm a ${level}! Can you beat my score? Take the quiz: ${url}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   };
 
   const shareTwitter = () => {
+    trackAssessmentShared("twitter");
     const text = `I scored ${score}/100 on the @SwimBuddz Swim Assessment — I'm a ${level}! Can you beat my score?`;
     window.open(
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
@@ -139,6 +142,7 @@ function ShareButtons({ score, level }: { score: number; level: string }) {
   };
 
   const copyLink = () => {
+    trackAssessmentShared("copy_link");
     navigator.clipboard.writeText(url);
     toast.success("Link copied!");
   };
@@ -364,7 +368,10 @@ export default function ResultsContent({ assessmentId }: { assessmentId?: string
           Join hundreds of swimmers building skills and confidence together.
         </p>
         <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-          <Link href={cta.href}>
+          <Link
+            href={cta.href}
+            onClick={() => trackAssessmentCTA({ level: result.level, destination: cta.href })}
+          >
             <Button
               variant="secondary"
               size="lg"
@@ -373,7 +380,12 @@ export default function ResultsContent({ assessmentId }: { assessmentId?: string
               {cta.text}
             </Button>
           </Link>
-          <Link href={cta.secondaryHref}>
+          <Link
+            href={cta.secondaryHref}
+            onClick={() =>
+              trackAssessmentCTA({ level: result.level, destination: cta.secondaryHref })
+            }
+          >
             <Button variant="ghost" size="md" className="text-white hover:bg-cyan-500/20">
               {cta.secondaryText}
             </Button>

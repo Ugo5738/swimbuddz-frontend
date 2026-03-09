@@ -3,11 +3,12 @@
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { trackAssessmentCompleted, trackAssessmentStarted } from "@/lib/analytics";
 import { ASSESSMENT_QUESTIONS } from "@/lib/assessment";
 import { submitAssessment } from "@/lib/assessment-api";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const TOTAL = ASSESSMENT_QUESTIONS.length;
 
@@ -17,6 +18,11 @@ export default function AssessmentQuizPage() {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Track quiz start
+  useEffect(() => {
+    trackAssessmentStarted();
+  }, []);
 
   const question = ASSESSMENT_QUESTIONS[current];
   const selectedScore = answers[question.id];
@@ -52,6 +58,7 @@ export default function AssessmentQuizPage() {
     setError(null);
     try {
       const result = await submitAssessment(answers);
+      trackAssessmentCompleted({ score: result.total_score, level: result.level });
       router.push(`/assessment/results?id=${result.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
