@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet, apiPatch } from "@/lib/api";
-import { Eye, Package, Search } from "lucide-react";
+import { ArrowLeft, Eye, Package, Search } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -60,12 +60,9 @@ export default function AdminOrdersPage() {
       if (search) params.set("search", search);
       if (statusFilter) params.set("status", statusFilter);
 
-      const data = await apiGet<OrdersResponse>(
-        `/api/v1/admin/store/orders?${params.toString()}`,
-        {
-          auth: true,
-        },
-      );
+      const data = await apiGet<OrdersResponse>(`/api/v1/admin/store/orders?${params.toString()}`, {
+        auth: true,
+      });
       setOrders(data.items);
       setTotal(data.total);
     } catch (e) {
@@ -84,7 +81,7 @@ export default function AdminOrdersPage() {
       await apiPatch(
         `/api/v1/admin/store/orders/${orderId}`,
         { status: newStatus },
-        { auth: true },
+        { auth: true }
       );
       toast.success("Order status updated");
       loadOrders();
@@ -99,6 +96,13 @@ export default function AdminOrdersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
+          <Link
+            href="/admin/store"
+            className="text-slate-500 hover:text-slate-700 text-sm flex items-center gap-1 mb-1"
+          >
+            <ArrowLeft className="w-3 h-3" />
+            Back to Store
+          </Link>
           <h1 className="text-2xl font-bold text-slate-900">Orders</h1>
           <p className="text-slate-500">{total} orders total</p>
         </div>
@@ -158,23 +162,16 @@ export default function AdminOrdersPage() {
             </thead>
             <tbody>
               {orders.map((order) => (
-                <tr
-                  key={order.id}
-                  className="border-b border-slate-100 hover:bg-slate-50"
-                >
+                <tr key={order.id} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className="px-6 py-4">
                     <div>
-                      <p className="font-medium text-slate-900">
-                        #{order.order_number}
-                      </p>
+                      <p className="font-medium text-slate-900">#{order.order_number}</p>
                       <p className="text-sm text-slate-500">
                         {new Date(order.created_at).toLocaleDateString()}
                       </p>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-slate-600">
-                    {order.member?.email || "—"}
-                  </td>
+                  <td className="px-6 py-4 text-slate-600">{order.member?.email || "—"}</td>
                   <td className="px-6 py-4 font-medium text-slate-900">
                     ₦{order.total_ngn.toLocaleString()}
                   </td>
@@ -198,9 +195,7 @@ export default function AdminOrdersPage() {
                     >
                       {STATUSES.map((s) => (
                         <option key={s} value={s}>
-                          {s
-                            .replace(/_/g, " ")
-                            .replace(/\b\w/g, (l) => l.toUpperCase())}
+                          {s.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
                         </option>
                       ))}
                     </select>

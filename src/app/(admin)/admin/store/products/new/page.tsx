@@ -12,10 +12,24 @@ interface Category {
   slug: string;
 }
 
+interface Supplier {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface SuppliersResponse {
+  items: Supplier[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
 interface ProductFormData {
   name: string;
   slug: string;
   category_id: string;
+  supplier_id: string;
   description: string;
   short_description: string;
   base_price_ngn: string;
@@ -34,6 +48,7 @@ const initialFormData: ProductFormData = {
   name: "",
   slug: "",
   category_id: "",
+  supplier_id: "",
   description: "",
   short_description: "",
   base_price_ngn: "",
@@ -51,22 +66,27 @@ const initialFormData: ProductFormData = {
 export default function NewProductPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [formData, setFormData] = useState<ProductFormData>(initialFormData);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadCategories = async () => {
+    const loadFormData = async () => {
       try {
-        const cats = await apiGet<Category[]>("/api/v1/admin/store/categories", { auth: true });
+        const [cats, suppData] = await Promise.all([
+          apiGet<Category[]>("/api/v1/admin/store/categories", { auth: true }),
+          apiGet<SuppliersResponse>("/api/v1/admin/store/suppliers?page_size=100", { auth: true }),
+        ]);
         setCategories(cats);
+        setSuppliers(suppData.items);
       } catch {
-        toast.error("Failed to load categories");
+        toast.error("Failed to load form data");
       } finally {
         setLoading(false);
       }
     };
-    loadCategories();
+    loadFormData();
   }, []);
 
   const generateSlug = (name: string) => {
@@ -113,6 +133,9 @@ export default function NewProductPage() {
           ? parseInt(formData.preorder_lead_days)
           : null,
         category_id: formData.category_id || null,
+        supplier_id: formData.supplier_id || null,
+        size_chart_media_id: formData.size_chart_media_id || null,
+        size_chart_url: formData.size_chart_url || null,
       };
 
       const result = await apiPost<{ id: string }>("/api/v1/admin/store/products", payload, {
@@ -177,21 +200,40 @@ export default function NewProductPage() {
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
-          <select
-            name="category_id"
-            value={formData.category_id}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-          >
-            <option value="">No category</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
+            <select
+              name="category_id"
+              value={formData.category_id}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+            >
+              <option value="">No category</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Supplier</label>
+            <select
+              name="supplier_id"
+              value={formData.supplier_id}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+            >
+              <option value="">No supplier</option>
+              {suppliers.map((sup) => (
+                <option key={sup.id} value={sup.id}>
+                  {sup.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-slate-500 mt-1">Third-party supplier for this product</p>
+          </div>
         </div>
 
         <div>

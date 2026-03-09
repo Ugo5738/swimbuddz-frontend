@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { toast } from "sonner";
-import { apiGet, apiPatch } from "@/lib/api";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
-import { Package, AlertTriangle, Search, RefreshCw } from "lucide-react";
+import { apiGet, apiPatch } from "@/lib/api";
+import { AlertTriangle, ArrowLeft, Package, RefreshCw, Search } from "lucide-react";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface InventoryItem {
   id: string;
@@ -51,10 +52,10 @@ export default function InventoryPage() {
     setLoading(true);
     try {
       const [invData, lowStockData] = await Promise.all([
-        apiGet<InventoryItem[]>("/api/v1/store/admin/inventory", {
+        apiGet<InventoryItem[]>("/api/v1/admin/store/inventory", {
           auth: true,
         }),
-        apiGet<LowStockItem[]>("/api/v1/store/admin/inventory/low-stock", {
+        apiGet<LowStockItem[]>("/api/v1/admin/store/inventory/low-stock", {
           auth: true,
         }),
       ]);
@@ -72,7 +73,7 @@ export default function InventoryPage() {
     loadData();
   }, [loadData]);
 
-  const handleAdjust = async (variantId: string) => {
+  const handleAdjust = async (inventoryItemId: string) => {
     const amount = parseInt(adjustAmount);
     if (isNaN(amount) || amount === 0) {
       toast.error("Enter a valid quantity adjustment");
@@ -81,12 +82,12 @@ export default function InventoryPage() {
 
     try {
       await apiPatch(
-        `/api/v1/store/admin/inventory/${variantId}`,
+        `/api/v1/admin/store/inventory/${inventoryItemId}`,
         {
           quantity: amount,
           notes: adjustNotes || undefined,
         },
-        { auth: true },
+        { auth: true }
       );
       toast.success("Inventory adjusted");
       setAdjusting(null);
@@ -116,6 +117,13 @@ export default function InventoryPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
+          <Link
+            href="/admin/store"
+            className="text-slate-500 hover:text-slate-700 text-sm flex items-center gap-1 mb-1"
+          >
+            <ArrowLeft className="w-3 h-3" />
+            Back to Store
+          </Link>
           <h1 className="text-2xl font-bold text-slate-900">Inventory</h1>
           <p className="text-slate-500">{inventory.length} variants tracked</p>
         </div>
@@ -141,15 +149,12 @@ export default function InventoryPage() {
               <div className="mt-2 space-y-1">
                 {lowStock.slice(0, 5).map((item) => (
                   <p key={item.variant_id} className="text-sm text-amber-800">
-                    • {item.product_name}{" "}
-                    {item.variant_name ? `(${item.variant_name})` : ""} -{" "}
+                    • {item.product_name} {item.variant_name ? `(${item.variant_name})` : ""} -{" "}
                     {item.quantity_available} left
                   </p>
                 ))}
                 {lowStock.length > 5 && (
-                  <p className="text-sm text-amber-600">
-                    ... and {lowStock.length - 5} more
-                  </p>
+                  <p className="text-sm text-amber-600">... and {lowStock.length - 5} more</p>
                 )}
               </div>
             </div>
@@ -242,23 +247,17 @@ export default function InventoryPage() {
               <tr key={item.id} className="hover:bg-slate-50">
                 <td className="px-4 py-3">
                   <div className="font-medium text-slate-900">
-                    {item.variant.product.name}
+                    {item.variant?.product?.name || "Unknown Product"}
                   </div>
-                  {item.variant.name && (
-                    <div className="text-sm text-slate-500">
-                      {item.variant.name}
-                    </div>
+                  {item.variant?.name && (
+                    <div className="text-sm text-slate-500">{item.variant.name}</div>
                   )}
                 </td>
                 <td className="px-4 py-3 text-sm text-slate-600 font-mono">
-                  {item.variant.sku}
+                  {item.variant?.sku || "\u2014"}
                 </td>
-                <td className="px-4 py-3 text-center font-medium">
-                  {item.quantity_on_hand}
-                </td>
-                <td className="px-4 py-3 text-center text-slate-500">
-                  {item.quantity_reserved}
-                </td>
+                <td className="px-4 py-3 text-center font-medium">{item.quantity_on_hand}</td>
+                <td className="px-4 py-3 text-center text-slate-500">{item.quantity_reserved}</td>
                 <td className="px-4 py-3 text-center">
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -273,7 +272,7 @@ export default function InventoryPage() {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-center">
-                  {adjusting === item.variant_id ? (
+                  {adjusting === item.id ? (
                     <div className="flex items-center gap-2 justify-center">
                       <input
                         type="number"
@@ -283,7 +282,7 @@ export default function InventoryPage() {
                         className="w-20 px-2 py-1 text-sm border rounded"
                       />
                       <button
-                        onClick={() => handleAdjust(item.variant_id)}
+                        onClick={() => handleAdjust(item.id)}
                         className="px-3 py-1 text-sm bg-cyan-600 text-white rounded hover:bg-cyan-700"
                       >
                         Save
@@ -300,7 +299,7 @@ export default function InventoryPage() {
                     </div>
                   ) : (
                     <button
-                      onClick={() => setAdjusting(item.variant_id)}
+                      onClick={() => setAdjusting(item.id)}
                       className="px-3 py-1 text-sm border border-slate-300 rounded hover:bg-slate-50"
                     >
                       Adjust
@@ -311,10 +310,7 @@ export default function InventoryPage() {
             ))}
             {filteredInventory.length === 0 && (
               <tr>
-                <td
-                  colSpan={6}
-                  className="px-4 py-8 text-center text-slate-500"
-                >
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
                   No inventory items found
                 </td>
               </tr>

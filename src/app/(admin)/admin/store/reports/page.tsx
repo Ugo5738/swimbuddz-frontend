@@ -363,26 +363,26 @@ export default function StoreReportsPage() {
                     className="border-b border-slate-50 hover:bg-slate-50"
                   >
                     <td className="py-3 font-medium text-slate-900">{supplier.supplier_name}</td>
-                    <td className="py-3 text-right text-slate-700">{supplier.total_orders}</td>
+                    <td className="py-3 text-right text-slate-700">{supplier.total_orders ?? 0}</td>
                     <td className="py-3 text-right text-slate-900 font-medium">
-                      ₦{supplier.total_revenue_ngn.toLocaleString()}
+                      ₦{(supplier.total_revenue_ngn ?? 0).toLocaleString()}
                     </td>
                     <td className="py-3 text-right text-slate-700">
-                      ₦{supplier.total_payouts_ngn.toLocaleString()}
+                      ₦{(supplier.total_payouts_ngn ?? 0).toLocaleString()}
                     </td>
                     <td className="py-3 text-right">
                       <span
                         className={
-                          supplier.pending_payouts_ngn > 0
+                          (supplier.pending_payouts_ngn ?? 0) > 0
                             ? "text-amber-600 font-medium"
                             : "text-slate-400"
                         }
                       >
-                        ₦{supplier.pending_payouts_ngn.toLocaleString()}
+                        ₦{(supplier.pending_payouts_ngn ?? 0).toLocaleString()}
                       </span>
                     </td>
                     <td className="py-3 text-right text-emerald-600 font-medium">
-                      ₦{supplier.commission_earned_ngn.toLocaleString()}
+                      ₦{(supplier.commission_earned_ngn ?? 0).toLocaleString()}
                     </td>
                   </tr>
                 ))}

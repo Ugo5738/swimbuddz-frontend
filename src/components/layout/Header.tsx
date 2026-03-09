@@ -2,12 +2,15 @@
 
 import { supabase } from "@/lib/auth";
 import {
+  Activity,
   ChevronDown,
   ChevronRight,
+  ClipboardList,
   LayoutDashboard,
   LogOut,
   Menu,
   User,
+  Video,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -47,6 +50,37 @@ const navGroups = [
         label: "Volunteer",
         description: "Give back to the swimming community",
       },
+      {
+        href: "/coach/apply",
+        label: "Become a Coach",
+        description: "Apply to coach with SwimBuddz",
+      },
+    ],
+  },
+  {
+    label: "Swim Tools",
+    type: "dropdown" as const,
+    items: [
+      {
+        href: "/assessment",
+        label: "Swim Assessment",
+        description: "Find out your swim level in 2 minutes",
+        icon: Activity,
+      },
+      {
+        href: "/training-plan",
+        label: "Training Plan",
+        description: "AI-powered personalised swim plans",
+        icon: ClipboardList,
+        badge: "Coming Soon",
+      },
+      {
+        href: "/stroke-analyzer",
+        label: "Stroke Analyzer",
+        description: "Video analysis of your technique",
+        icon: Video,
+        badge: "Coming Soon",
+      },
     ],
   },
   { href: "/sessions-and-events", label: "Sessions", type: "link" as const },
@@ -55,7 +89,13 @@ const navGroups = [
 ];
 
 type NavItem = (typeof navGroups)[number];
-type DropdownItem = { href: string; label: string; description: string };
+type DropdownItem = {
+  href: string;
+  label: string;
+  description: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  badge?: string;
+};
 
 // Check if user is admin by email
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
@@ -67,7 +107,9 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
   const mobileNavRef = useRef<HTMLElement>(null);
 
   // Determine if current user is admin
@@ -81,7 +123,7 @@ export function Header() {
   const effectiveNavGroups = navGroups.map((item) =>
     item.type === "link" && item.href === "/sessions-and-events" && session
       ? { ...item, href: "/sessions" }
-      : item,
+      : item
   );
 
   useEffect(() => {
@@ -109,19 +151,23 @@ export function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Close mobile menu on route change
+  // Close menus on route change
   useEffect(() => {
     setMobileMenuOpen(false);
     setActiveDropdown(null);
+    setProfileOpen(false);
   }, [pathname]);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
       if (dropdownRef.current?.contains(target)) return;
       if (mobileNavRef.current?.contains(target)) return;
       setActiveDropdown(null);
+      if (!profileDropdownRef.current?.contains(target)) {
+        setProfileOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -228,7 +274,12 @@ export function Header() {
 
       // Desktop dropdown
       return (
-        <div key={item.label} className="relative" ref={dropdownRef} onMouseLeave={() => setActiveDropdown(null)}>
+        <div
+          key={item.label}
+          className="relative"
+          ref={dropdownRef}
+          onMouseLeave={() => setActiveDropdown(null)}
+        >
           <button
             onClick={() => setActiveDropdown(item.label)}
             onMouseEnter={() => setActiveDropdown(item.label)}
@@ -247,31 +298,49 @@ export function Header() {
           </button>
 
           {activeDropdown === item.label && (
-            <div
-              className="absolute top-full left-0 mt-1 w-64 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50"
-            >
-              {item.items.map((subItem) => (
-                <Link
-                  key={subItem.href}
-                  href={subItem.href}
-                  className={`block px-4 py-3 transition-colors ${
-                    isActive(subItem.href) ? "bg-cyan-50" : "hover:bg-slate-50"
-                  }`}
-                >
-                  <span
-                    className={`font-medium ${
-                      isActive(subItem.href)
-                        ? "text-cyan-700"
-                        : "text-slate-900"
+            <div className="absolute top-full left-0 mt-1 w-72 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50">
+              {item.items.map((subItem: DropdownItem) => {
+                const Icon = subItem.icon;
+                return (
+                  <Link
+                    key={subItem.href}
+                    href={subItem.badge ? "#" : subItem.href}
+                    onClick={subItem.badge ? (e) => e.preventDefault() : undefined}
+                    className={`flex items-start gap-3 px-4 py-3 transition-colors ${
+                      subItem.badge
+                        ? "opacity-60 cursor-default"
+                        : isActive(subItem.href)
+                          ? "bg-cyan-50"
+                          : "hover:bg-slate-50"
                     }`}
                   >
-                    {subItem.label}
-                  </span>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {subItem.description}
-                  </p>
-                </Link>
-              ))}
+                    {Icon && (
+                      <Icon
+                        className={`h-5 w-5 mt-0.5 flex-shrink-0 ${
+                          isActive(subItem.href) ? "text-cyan-600" : "text-slate-400"
+                        }`}
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`font-medium ${
+                            isActive(subItem.href) ? "text-cyan-700" : "text-slate-900"
+                          }`}
+                        >
+                          {subItem.label}
+                        </span>
+                        {subItem.badge && (
+                          <span className="text-[10px] font-semibold uppercase tracking-wide bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">
+                            {subItem.badge}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">{subItem.description}</p>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           )}
         </div>
@@ -307,11 +376,7 @@ export function Header() {
           className="md:hidden p-2 rounded-xl text-slate-600 hover:text-cyan-700 hover:bg-slate-100 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           aria-label="Toggle menu"
         >
-          {mobileMenuOpen ? (
-            <X className="h-6 w-6" />
-          ) : (
-            <Menu className="h-6 w-6" />
-          )}
+          {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
 
         {/* Desktop Navigation */}
@@ -321,40 +386,59 @@ export function Header() {
           {/* Auth Actions */}
           <div className="flex items-center gap-2 ml-2 pl-2 border-l border-slate-200">
             {session ? (
-              <>
-                <Link
-                  href={dashboardUrl}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-cyan-600 to-cyan-500 text-white font-medium hover:from-cyan-500 hover:to-cyan-400 transition-all hover:shadow-lg hover:shadow-cyan-500/25"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href="/account/profile"
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors ${
-                    isActive("/profile")
-                      ? "text-cyan-700 bg-cyan-50"
-                      : "text-slate-600 hover:text-cyan-700 hover:bg-slate-50"
-                  }`}
-                >
-                  <User className="h-4 w-4" />
-                  Profile
-                </Link>
+              <div
+                className="relative"
+                ref={profileDropdownRef}
+                onMouseLeave={() => setProfileOpen(false)}
+              >
                 <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-slate-600 hover:text-red-600 hover:bg-red-50 transition-colors"
+                  onClick={() => setProfileOpen(!profileOpen)}
+                  onMouseEnter={() => setProfileOpen(true)}
+                  className={`flex items-center justify-center w-10 h-10 rounded-full transition-all ${
+                    profileOpen
+                      ? "bg-cyan-100 text-cyan-700 ring-2 ring-cyan-500"
+                      : "bg-slate-100 text-slate-600 hover:bg-cyan-50 hover:text-cyan-700"
+                  }`}
+                  aria-label="Account menu"
                 >
-                  <LogOut className="h-4 w-4" />
-                  Logout
+                  <User className="h-5 w-5" />
                 </button>
-              </>
+
+                {profileOpen && (
+                  <div className="absolute top-full right-0 mt-1 w-56 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50">
+                    {session.user?.email && (
+                      <div className="px-4 py-2 border-b border-slate-100">
+                        <p className="text-xs text-slate-500 truncate">{session.user.email}</p>
+                      </div>
+                    )}
+                    <Link
+                      href={dashboardUrl}
+                      className="flex items-center gap-3 px-4 py-2.5 text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      <LayoutDashboard className="h-4 w-4 text-slate-400" />
+                      <span className="font-medium">Dashboard</span>
+                    </Link>
+                    <Link
+                      href="/account/profile"
+                      className="flex items-center gap-3 px-4 py-2.5 text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      <User className="h-4 w-4 text-slate-400" />
+                      <span className="font-medium">Profile</span>
+                    </Link>
+                    <div className="border-t border-slate-100 mt-1 pt-1">
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        <span className="font-medium">Log out</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             ) : (
               <>
-                <Link
-                  href="/coach/apply"
-                  className="px-3 py-2 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors font-medium"
-                >
-                  Become a Coach
-                </Link>
                 <Link
                   href="/login"
                   className="px-3 py-2 rounded-lg text-cyan-700 hover:bg-cyan-50 transition-colors"
@@ -415,18 +499,11 @@ export function Header() {
                     className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-red-600 hover:bg-red-50 transition-colors"
                   >
                     <LogOut className="h-5 w-5" />
-                    Logout
+                    Log out
                   </button>
                 </>
               ) : (
                 <>
-                  <Link
-                    href="/coach/apply"
-                    onClick={closeMobileMenu}
-                    className="block px-4 py-3 rounded-xl text-emerald-600 hover:bg-emerald-50 transition-colors font-medium"
-                  >
-                    Become a Coach
-                  </Link>
                   <Link
                     href="/login"
                     onClick={closeMobileMenu}
