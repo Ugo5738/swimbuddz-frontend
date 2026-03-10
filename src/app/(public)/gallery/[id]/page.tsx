@@ -3,7 +3,7 @@
 import { PhotoModal } from "@/components/gallery/PhotoModal";
 import { Card } from "@/components/ui/Card";
 import { apiEndpoints } from "@/lib/config";
-import { ArrowLeft, ImageOff, Images } from "lucide-react";
+import { ArrowLeft, ImageOff, Images, Play } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -15,6 +15,7 @@ type Photo = {
   caption: string | null;
   description: string | null;
   created_at: string;
+  media_type?: string;
 };
 
 type Album = {
@@ -162,9 +163,7 @@ export default function AlbumDetailPage() {
               <ImageOff className="h-12 w-12 text-slate-400" />
             </div>
             <div className="space-y-2">
-              <h2 className="text-xl font-semibold text-slate-900">
-                Album not found
-              </h2>
+              <h2 className="text-xl font-semibold text-slate-900">Album not found</h2>
               <p className="text-slate-600 max-w-sm">
                 This album may have been removed or the link is incorrect.
               </p>
@@ -203,9 +202,7 @@ export default function AlbumDetailPage() {
         </div>
 
         {album.description && (
-          <p className="text-lg text-slate-600 max-w-3xl">
-            {album.description}
-          </p>
+          <p className="text-lg text-slate-600 max-w-3xl">{album.description}</p>
         )}
 
         <div className="flex items-center gap-2 text-sm text-slate-500">
@@ -224,12 +221,8 @@ export default function AlbumDetailPage() {
               <Images className="h-12 w-12 text-cyan-400" />
             </div>
             <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-slate-900">
-                No photos yet
-              </h3>
-              <p className="text-slate-600">
-                Photos will appear here once they&apos;re uploaded.
-              </p>
+              <h3 className="text-lg font-semibold text-slate-900">No photos yet</h3>
+              <p className="text-slate-600">Photos will appear here once they&apos;re uploaded.</p>
             </div>
           </div>
         </Card>
@@ -246,14 +239,35 @@ export default function AlbumDetailPage() {
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-200 to-slate-100 animate-pulse" />
               )}
 
-              <img
-                src={photo.thumbnail_url || photo.file_url}
-                alt={photo.caption || photo.description || "Photo"}
-                className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-105 ${
-                  loadedImages.has(photo.id) ? "opacity-100" : "opacity-0"
-                }`}
-                onLoad={() => handleImageLoad(photo.id)}
-              />
+              {photo.media_type === "VIDEO" || photo.file_url?.match(/\.(mp4|mov|webm|avi)$/i) ? (
+                <>
+                  <video
+                    src={photo.file_url}
+                    poster={photo.thumbnail_url || undefined}
+                    className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-105 ${
+                      loadedImages.has(photo.id) ? "opacity-100" : "opacity-0"
+                    }`}
+                    muted
+                    preload="metadata"
+                    onLoadedData={() => handleImageLoad(photo.id)}
+                  />
+                  {/* Video play indicator */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Play className="w-6 h-6 text-white ml-0.5" />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <img
+                  src={photo.thumbnail_url || photo.file_url}
+                  alt={photo.caption || photo.description || "Photo"}
+                  className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-105 ${
+                    loadedImages.has(photo.id) ? "opacity-100" : "opacity-0"
+                  }`}
+                  onLoad={() => handleImageLoad(photo.id)}
+                />
+              )}
 
               {/* Hover overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

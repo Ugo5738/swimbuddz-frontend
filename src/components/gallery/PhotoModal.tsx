@@ -8,6 +8,7 @@ type Photo = {
   file_url: string;
   caption: string | null;
   description?: string | null;
+  media_type?: string;
 };
 
 type PhotoModalProps = {
@@ -106,6 +107,8 @@ export function PhotoModal({
   };
 
   const caption = photo.caption || photo.description;
+  const isVideo =
+    photo.media_type === "VIDEO" || photo.file_url?.match(/\.(mp4|mov|webm|avi|mkv)$/i);
 
   return (
     <div
@@ -117,10 +120,7 @@ export function PhotoModal({
       onTouchEnd={handleTouchEnd}
     >
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/95 backdrop-blur-sm"
-        onClick={handleClose}
-      />
+      <div className="absolute inset-0 bg-black/95 backdrop-blur-sm" onClick={handleClose} />
 
       {/* Top bar with close and counter */}
       <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 z-10">
@@ -134,22 +134,19 @@ export function PhotoModal({
         )}
 
         {/* Spacer if no counter */}
-        {(typeof currentIndex !== "number" ||
-          typeof totalCount !== "number") && <div />}
+        {(typeof currentIndex !== "number" || typeof totalCount !== "number") && <div />}
 
         {/* Close and zoom buttons */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsZoomed((prev) => !prev)}
-            className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors backdrop-blur-sm"
-            aria-label={isZoomed ? "Zoom out" : "Zoom in"}
-          >
-            {isZoomed ? (
-              <ZoomOut className="h-5 w-5" />
-            ) : (
-              <ZoomIn className="h-5 w-5" />
-            )}
-          </button>
+          {!isVideo && (
+            <button
+              onClick={() => setIsZoomed((prev) => !prev)}
+              className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors backdrop-blur-sm"
+              aria-label={isZoomed ? "Zoom out" : "Zoom in"}
+            >
+              {isZoomed ? <ZoomOut className="h-5 w-5" /> : <ZoomIn className="h-5 w-5" />}
+            </button>
+          )}
           <button
             onClick={handleClose}
             className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors backdrop-blur-sm"
@@ -174,14 +171,14 @@ export function PhotoModal({
         </button>
       )}
 
-      {/* Photo Container */}
+      {/* Photo / Video Container */}
       <div
         className={`relative flex flex-col items-center max-w-[90vw] max-h-[85vh] transition-transform duration-300 ${
           isVisible ? "scale-100" : "scale-95"
-        } ${isZoomed ? "cursor-zoom-out" : "cursor-zoom-in"}`}
+        } ${!isVideo && isZoomed ? "cursor-zoom-out" : !isVideo ? "cursor-zoom-in" : ""}`}
         onClick={(e) => {
           e.stopPropagation();
-          setIsZoomed((prev) => !prev);
+          if (!isVideo) setIsZoomed((prev) => !prev);
         }}
       >
         {/* Loading spinner */}
@@ -191,28 +188,37 @@ export function PhotoModal({
           </div>
         )}
 
-        <img
-          src={photo.file_url}
-          alt={caption || "Photo"}
-          className={`max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl transition-all duration-300 ${
-            isZoomed ? "scale-150 cursor-zoom-out" : "scale-100"
-          } ${isLoaded ? "opacity-100" : "opacity-0"}`}
-          onLoad={() => setIsLoaded(true)}
-          draggable={false}
-        />
+        {isVideo ? (
+          // eslint-disable-next-line jsx-a11y/media-has-caption
+          <video
+            src={photo.file_url}
+            controls
+            autoPlay
+            className={`max-w-full max-h-[75vh] rounded-lg shadow-2xl transition-all duration-300 ${
+              isLoaded ? "opacity-100" : "opacity-0"
+            }`}
+            onLoadedData={() => setIsLoaded(true)}
+          />
+        ) : (
+          <img
+            src={photo.file_url}
+            alt={caption || "Photo"}
+            className={`max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl transition-all duration-300 ${
+              isZoomed ? "scale-150 cursor-zoom-out" : "scale-100"
+            } ${isLoaded ? "opacity-100" : "opacity-0"}`}
+            onLoad={() => setIsLoaded(true)}
+            draggable={false}
+          />
+        )}
 
         {/* Caption */}
         {caption && isLoaded && (
           <div
             className={`mt-4 px-6 py-3 bg-white/10 rounded-xl backdrop-blur-sm max-w-2xl transition-all duration-300 ${
-              isVisible
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 translate-y-4"
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
-            <p className="text-white text-center text-sm md:text-base">
-              {caption}
-            </p>
+            <p className="text-white text-center text-sm md:text-base">{caption}</p>
           </div>
         )}
       </div>

@@ -19,6 +19,7 @@ interface MediaInputProps {
     | "category_image"
     | "collection_image"
     | "product_image"
+    | "product_video"
     | "content_image"
     | "general";
   /** Display mode - upload-only shows just upload, both shows tabs */
@@ -68,6 +69,8 @@ export function MediaInput({
       case "collection_image":
       case "product_image":
         return "image/*";
+      case "product_video":
+        return "video/*";
       case "size_chart":
         return "image/*,.pdf";
       case "milestone_evidence":
@@ -90,8 +93,8 @@ export function MediaInput({
       try {
         const mediaItem = await uploadMedia(file, purpose);
 
-        // Set preview for images
-        if (file.type.startsWith("image/")) {
+        // Set preview for images and videos
+        if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
           setPreviewUrl(URL.createObjectURL(file));
         }
 
@@ -102,7 +105,7 @@ export function MediaInput({
         setIsUploading(false);
       }
     },
-    [purpose, onChange],
+    [purpose, onChange]
   );
 
   const handleDrop = useCallback(
@@ -113,7 +116,7 @@ export function MediaInput({
       const file = e.dataTransfer.files[0];
       if (file) handleFileSelect(file);
     },
-    [disabled, isUploading, handleFileSelect],
+    [disabled, isUploading, handleFileSelect]
   );
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,14 +132,8 @@ export function MediaInput({
 
     try {
       const mediaType =
-        urlInput.includes("youtube") || urlInput.includes("youtu.be")
-          ? "video"
-          : "link";
-      const mediaItem = await registerMediaUrl(
-        urlInput.trim(),
-        purpose,
-        mediaType,
-      );
+        urlInput.includes("youtube") || urlInput.includes("youtu.be") ? "video" : "link";
+      const mediaItem = await registerMediaUrl(urlInput.trim(), purpose, mediaType);
 
       setPreviewUrl(urlInput);
       onChange(mediaItem.id, mediaItem.file_url);
@@ -163,11 +160,7 @@ export function MediaInput({
 
   return (
     <div className={`media-input ${className}`}>
-      {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          {label}
-        </label>
-      )}
+      {label && <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>}
 
       {/* Tabs */}
       {showTabs && (
@@ -203,9 +196,7 @@ export function MediaInput({
       {value && (
         <div className="flex items-center gap-2 mb-3 p-2 bg-green-50 border border-green-200 rounded-lg">
           <Check className="w-4 h-4 text-green-600" />
-          <span className="text-sm text-green-700 flex-1">
-            Media uploaded successfully
-          </span>
+          <span className="text-sm text-green-700 flex-1">Media uploaded successfully</span>
           <button
             type="button"
             onClick={handleClear}
@@ -220,17 +211,13 @@ export function MediaInput({
       {/* Preview */}
       {showPreview && previewUrl && !value && (
         <div className="mb-3">
-          {previewUrl.startsWith("blob:") ||
-          previewUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-            <img
-              src={previewUrl}
-              alt="Preview"
-              className="max-h-32 rounded-lg object-cover"
-            />
+          {previewUrl.match(/\.(mp4|mov|webm|avi|mkv)$/i) ||
+          (previewUrl.startsWith("blob:") && purpose === "product_video") ? (
+            <video src={previewUrl} controls className="max-h-32 rounded-lg" />
+          ) : previewUrl.startsWith("blob:") || previewUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+            <img src={previewUrl} alt="Preview" className="max-h-32 rounded-lg object-cover" />
           ) : (
-            <div className="text-sm text-gray-500 p-2 bg-gray-50 rounded">
-              {previewUrl}
-            </div>
+            <div className="text-sm text-gray-500 p-2 bg-gray-50 rounded">{previewUrl}</div>
           )}
         </div>
       )}
@@ -293,11 +280,7 @@ export function MediaInput({
               disabled={!urlInput.trim() || disabled || isUploading}
               className="px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-medium hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isUploading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                "Add"
-              )}
+              {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add"}
             </button>
           </div>
           <p className="text-xs text-gray-500">

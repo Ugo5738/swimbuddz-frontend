@@ -13,6 +13,7 @@ import {
   MapPin,
   Minus,
   Package,
+  Play,
   Plus,
   Shield,
   ShoppingCart,
@@ -48,6 +49,26 @@ interface ProductImage {
   sort_order: number;
 }
 
+interface ProductVideo {
+  id: string;
+  url: string;
+  thumbnail_url: string | null;
+  title: string | null;
+  is_processed: boolean;
+  sort_order: number;
+}
+
+/** Unified media item for the gallery (image or video). */
+interface GalleryItem {
+  id: string;
+  url: string;
+  alt_text: string | null;
+  is_primary: boolean;
+  sort_order: number;
+  type: "image" | "video";
+  thumbnail_url?: string | null;
+}
+
 interface ProductDetail {
   id: string;
   name: string;
@@ -64,6 +85,7 @@ interface ProductDetail {
   size_chart_url: string | null;
   variant_options: Record<string, string[]> | null;
   images: ProductImage[];
+  videos: ProductVideo[];
   variants: ProductVariant[];
   category?: {
     id: string;
@@ -209,7 +231,28 @@ export default function ProductDetailPage() {
   if (!product) return null;
 
   /* ---- derived values ---- */
-  const sortedImages = [...product.images].sort((a, b) => {
+  // Merge images and videos into a unified gallery (images first, then videos)
+  const galleryItems: GalleryItem[] = [
+    ...product.images.map((img) => ({
+      id: img.id,
+      url: img.url,
+      alt_text: img.alt_text,
+      is_primary: img.is_primary,
+      sort_order: img.sort_order,
+      type: "image" as const,
+    })),
+    ...(product.videos || [])
+      .filter((v) => v.is_processed)
+      .map((vid) => ({
+        id: vid.id,
+        url: vid.url,
+        alt_text: vid.title,
+        is_primary: false,
+        sort_order: 1000 + vid.sort_order, // Videos after images
+        type: "video" as const,
+        thumbnail_url: vid.thumbnail_url,
+      })),
+  ].sort((a, b) => {
     if (a.is_primary && !b.is_primary) return -1;
     if (!a.is_primary && b.is_primary) return 1;
     return a.sort_order - b.sort_order;
@@ -261,7 +304,7 @@ export default function ProductDetailPage() {
         {/* ---------------------------------------------------------- */}
         <div className="flex flex-col-reverse sm:flex-row gap-3">
           {/* Vertical Thumbnail Strip (left side on desktop, bottom on mobile) */}
-          {sortedImages.length > 1 && (
+          {galleryItems.length > 1 && (
             <div className="sm:flex sm:flex-col items-center gap-1.5 flex-shrink-0">
               {/* Scroll up button (desktop only) */}
               <button
@@ -279,9 +322,9 @@ export default function ProductDetailPage() {
                 ref={thumbStripRef}
                 className="flex sm:flex-col gap-2 overflow-x-auto sm:overflow-y-auto sm:overflow-x-hidden sm:max-h-[420px] pb-1 sm:pb-0 scrollbar-hide"
               >
-                {sortedImages.map((img, idx) => (
+                {galleryItems.map((item, idx) => (
                   <button
-                    key={img.id}
+                    key={item.id}
                     onClick={() => setSelectedImage(idx)}
                     onMouseEnter={() => setSelectedImage(idx)}
                     className={`relative w-16 h-16 sm:w-[72px] sm:h-[72px] flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
@@ -290,13 +333,36 @@ export default function ProductDetailPage() {
                         : "border-slate-200 hover:border-slate-400"
                     }`}
                   >
-                    <Image
-                      src={img.url}
-                      alt={img.alt_text || `${product.name} ${idx + 1}`}
-                      fill
-                      unoptimized
-                      className="object-cover"
-                    />
+                    {item.type === "video" ? (
+                      <>
+                        {item.thumbnail_url ? (
+                          <Image
+                            src={item.thumbnail_url}
+                            alt={item.alt_text || `Video ${idx + 1}`}
+                            fill
+                            unoptimized
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-slate-800 flex items-center justify-center">
+                            <Play className="w-5 h-5 text-white" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                          <div className="w-5 h-5 rounded-full bg-white/90 flex items-center justify-center">
+                            <Play className="w-3 h-3 text-slate-900 ml-0.5" />
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <Image
+                        src={item.url}
+                        alt={item.alt_text || `${product.name} ${idx + 1}`}
+                        fill
+                        unoptimized
+                        className="object-cover"
+                      />
+                    )}
                   </button>
                 ))}
               </div>
@@ -314,17 +380,28 @@ export default function ProductDetailPage() {
             </div>
           )}
 
-          {/* Main Image */}
+          {/* Main Image / Video */}
           <div className="relative aspect-square bg-slate-100 rounded-2xl overflow-hidden group flex-1 min-w-0">
-            {sortedImages.length > 0 ? (
-              <Image
-                src={sortedImages[selectedImage]?.url}
-                alt={sortedImages[selectedImage]?.alt_text || product.name}
-                fill
-                unoptimized
-                className="object-cover transition-transform duration-500 group-hover:scale-105"
-                priority
-              />
+            {galleryItems.length > 0 ? (
+              galleryItems[selectedImage]?.type === "video" ? (
+                // eslint-disable-next-line jsx-a11y/media-has-caption
+                <video
+                  key={galleryItems[selectedImage]?.id}
+                  src={galleryItems[selectedImage]?.url}
+                  controls
+                  className="w-full h-full object-contain bg-black"
+                  poster={galleryItems[selectedImage]?.thumbnail_url || undefined}
+                />
+              ) : (
+                <Image
+                  src={galleryItems[selectedImage]?.url}
+                  alt={galleryItems[selectedImage]?.alt_text || product.name}
+                  fill
+                  unoptimized
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  priority
+                />
+              )
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center text-slate-300">
                 <Package className="w-20 h-20" />
@@ -333,23 +410,23 @@ export default function ProductDetailPage() {
             )}
 
             {/* Prev / Next Arrows */}
-            {sortedImages.length > 1 && (
+            {galleryItems.length > 1 && (
               <>
                 <button
                   onClick={() =>
-                    setSelectedImage((prev) => (prev === 0 ? sortedImages.length - 1 : prev - 1))
+                    setSelectedImage((prev) => (prev === 0 ? galleryItems.length - 1 : prev - 1))
                   }
                   className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow-md hover:bg-white transition-colors opacity-0 group-hover:opacity-100"
-                  aria-label="Previous image"
+                  aria-label="Previous"
                 >
                   <ChevronLeft className="w-5 h-5 text-slate-700" />
                 </button>
                 <button
                   onClick={() =>
-                    setSelectedImage((prev) => (prev === sortedImages.length - 1 ? 0 : prev + 1))
+                    setSelectedImage((prev) => (prev === galleryItems.length - 1 ? 0 : prev + 1))
                   }
                   className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow-md hover:bg-white transition-colors opacity-0 group-hover:opacity-100"
-                  aria-label="Next image"
+                  aria-label="Next"
                 >
                   <ChevronRight className="w-5 h-5 text-slate-700" />
                 </button>
@@ -375,10 +452,10 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Image counter */}
-            {sortedImages.length > 1 && (
+            {/* Media counter */}
+            {galleryItems.length > 1 && (
               <div className="absolute bottom-3 right-3 px-2.5 py-1 bg-black/50 backdrop-blur-sm rounded-full text-white text-xs font-medium">
-                {selectedImage + 1} / {sortedImages.length}
+                {selectedImage + 1} / {galleryItems.length}
               </div>
             )}
           </div>

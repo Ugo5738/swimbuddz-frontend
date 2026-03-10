@@ -1,5 +1,6 @@
 "use client";
 
+import { AudioOverlayPanel } from "@/components/media/AudioOverlayPanel";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { MediaInput } from "@/components/ui/MediaInput";
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
@@ -45,6 +46,15 @@ interface ProductImage {
   sort_order: number;
 }
 
+interface ProductVideo {
+  id: string;
+  url: string;
+  thumbnail_url: string | null;
+  title: string | null;
+  is_processed: boolean;
+  media_item_id: string | null;
+}
+
 interface Product {
   id: string;
   name: string;
@@ -65,6 +75,7 @@ interface Product {
   size_chart_media_id: string | null;
   variants: Variant[];
   images: ProductImage[];
+  videos: ProductVideo[];
 }
 
 interface ProductFormData {
@@ -117,6 +128,13 @@ export default function EditProductPage() {
   const [savingImage, setSavingImage] = useState(false);
   const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
 
+  // Video management state
+  const [videos, setVideos] = useState<ProductVideo[]>([]);
+  const [showVideoForm, setShowVideoForm] = useState(false);
+  const [savingVideo, setSavingVideo] = useState(false);
+  const [deletingVideoId, setDeletingVideoId] = useState<string | null>(null);
+  const [audioOverlayVideoId, setAudioOverlayVideoId] = useState<string | null>(null);
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -132,6 +150,7 @@ export default function EditProductPage() {
         setProduct(prod);
         setVariants(prod.variants || []);
         setImages(prod.images || []);
+        setVideos(prod.videos || []);
         setFormData({
           name: prod.name,
           slug: prod.slug,
@@ -304,6 +323,52 @@ export default function EditProductPage() {
       toast.error(err instanceof Error ? err.message : "Failed to remove image");
     } finally {
       setDeletingImageId(null);
+    }
+  };
+
+  const handleVideoUploaded = async (mediaId: string | null, fileUrl?: string) => {
+    if (!fileUrl) return;
+
+    setSavingVideo(true);
+    try {
+      const payload = {
+        url: fileUrl,
+        thumbnail_url: null,
+        title: null,
+        sort_order: videos.length,
+        media_item_id: mediaId || null,
+      };
+
+      const newVideo = await apiPost<ProductVideo>(
+        `/api/v1/admin/store/products/${productId}/videos`,
+        payload,
+        { auth: true }
+      );
+
+      setVideos((prev) => [...prev, newVideo]);
+      setShowVideoForm(false);
+      toast.success("Video added");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to add video");
+    } finally {
+      setSavingVideo(false);
+    }
+  };
+
+  const handleDeleteVideo = async (videoId: string) => {
+    if (!confirm("Remove this video?")) return;
+
+    setDeletingVideoId(videoId);
+    try {
+      await apiDelete(`/api/v1/admin/store/products/${productId}/videos/${videoId}`, {
+        auth: true,
+      });
+      setVideos((prev) => prev.filter((v) => v.id !== videoId));
+      toast.success("Video removed");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to remove video");
+    } finally {
+      setDeletingVideoId(null);
     }
   };
 
@@ -812,6 +877,107 @@ export default function EditProductPage() {
                     >
                       {deletingImageId === img.id ? "..." : "×"}
                     </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Videos Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-medium text-slate-900">
+                Videos <span className="text-slate-400 font-normal">({videos.length})</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowVideoForm(!showVideoForm)}
+                className="text-xs px-2.5 py-1 bg-cyan-50 text-cyan-700 rounded-md hover:bg-cyan-100 font-medium"
+              >
+                {showVideoForm ? "Cancel" : "+ Add"}
+              </button>
+            </div>
+
+            {/* Add Video via MediaInput */}
+            {showVideoForm && (
+              <div className="mb-4 p-3 bg-cyan-50/50 border border-cyan-100 rounded-lg">
+                {savingVideo ? (
+                  <p className="text-sm text-slate-500 text-center py-2">Saving to product...</p>
+                ) : (
+                  <MediaInput
+                    purpose="product_video"
+                    mode="both"
+                    onChange={handleVideoUploaded}
+                    showPreview={false}
+                  />
+                )}
+              </div>
+            )}
+
+            {/* Existing Videos */}
+            {videos.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                No videos yet. Add product demos or features.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {videos.map((vid) => (
+                  <div key={vid.id} className="space-y-2">
+                    <div className="relative group rounded-lg overflow-hidden border border-slate-200">
+                      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                      <video
+                        src={vid.url}
+                        className="w-full aspect-video object-cover bg-black"
+                        controls
+                        preload="metadata"
+                      />
+                      {!vid.is_processed && (
+                        <span className="absolute top-1 left-1 text-[10px] px-1.5 py-0.5 bg-amber-500 text-white rounded font-medium">
+                          Processing...
+                        </span>
+                      )}
+                      {vid.title && (
+                        <p className="px-2 py-1 text-xs text-slate-600 truncate">{vid.title}</p>
+                      )}
+                      <div className="absolute top-1 right-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {vid.is_processed && vid.media_item_id && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setAudioOverlayVideoId(audioOverlayVideoId === vid.id ? null : vid.id)
+                            }
+                            className={`w-5 h-5 flex items-center justify-center rounded-full text-xs transition-colors ${
+                              audioOverlayVideoId === vid.id
+                                ? "bg-cyan-500 text-white"
+                                : "bg-slate-700/70 text-white hover:bg-cyan-600"
+                            }`}
+                            title="Audio overlay"
+                          >
+                            ♫
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteVideo(vid.id)}
+                          disabled={deletingVideoId === vid.id}
+                          className="w-5 h-5 flex items-center justify-center bg-red-500 text-white rounded-full text-xs hover:bg-red-600 disabled:opacity-50"
+                          title="Remove video"
+                        >
+                          {deletingVideoId === vid.id ? "..." : "×"}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Audio overlay panel for this video */}
+                    {audioOverlayVideoId === vid.id && vid.media_item_id && (
+                      <AudioOverlayPanel
+                        mediaId={vid.media_item_id}
+                        onApplied={() => {
+                          toast.success("Audio overlay queued for processing");
+                          setAudioOverlayVideoId(null);
+                        }}
+                      />
+                    )}
                   </div>
                 ))}
               </div>

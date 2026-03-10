@@ -8,6 +8,7 @@ import {
   BarChart3,
   DollarSign,
   FolderTree,
+  Layers,
   Package,
   ShoppingBag,
   Trash2,
@@ -200,6 +201,12 @@ export default function StoreDashboardPage() {
           <Card className="p-4 text-center hover:shadow-md transition-shadow">
             <FolderTree className="w-8 h-8 mx-auto text-cyan-600 mb-2" />
             <span className="text-sm font-medium text-slate-700">Categories</span>
+          </Card>
+        </Link>
+        <Link href="/admin/store/collections">
+          <Card className="p-4 text-center hover:shadow-md transition-shadow">
+            <Layers className="w-8 h-8 mx-auto text-cyan-600 mb-2" />
+            <span className="text-sm font-medium text-slate-700">Collections</span>
           </Card>
         </Link>
         <Link href="/admin/store/suppliers">

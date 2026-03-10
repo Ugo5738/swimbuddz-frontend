@@ -1,5 +1,6 @@
 "use client";
 
+import { AudioOverlayPanel } from "@/components/media/AudioOverlayPanel";
 import { Card } from "@/components/ui/Card";
 import { supabase } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
@@ -12,13 +13,15 @@ import {
   Image,
   Images,
   Loader2,
+  Music,
+  Play,
   Trash2,
   Upload,
   X,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 type Photo = {
   id: string;
@@ -27,6 +30,7 @@ type Photo = {
   title: string | null;
   description: string | null;
   alt_text: string | null;
+  media_type?: string;
 };
 
 type FilePreview = {
@@ -49,6 +53,7 @@ export default function AlbumUploadPage() {
   const [caption, setCaption] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
+  const [audioOverlayPhotoId, setAudioOverlayPhotoId] = useState<string | null>(null);
 
   const getAuthToken = async () => {
     const {
@@ -72,9 +77,7 @@ export default function AlbumUploadPage() {
 
   const fetchAlbum = async () => {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/v1/media/albums/${albumId}`,
-      );
+      const response = await fetch(`${API_BASE_URL}/api/v1/media/albums/${albumId}`);
       if (response.ok) {
         const data = await response.json();
         setAlbumTitle(data.title);
@@ -95,17 +98,14 @@ export default function AlbumUploadPage() {
         return;
       }
 
-      const response = await fetch(
-        `${API_BASE_URL}/api/v1/media/albums/${albumId}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ cover_media_id: photoId }),
+      const response = await fetch(`${API_BASE_URL}/api/v1/media/albums/${albumId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify({ cover_media_id: photoId }),
+      });
 
       if (response.ok) {
         setCoverMediaId(photoId);
@@ -134,8 +134,8 @@ export default function AlbumUploadPage() {
     e.preventDefault();
     setIsDragOver(false);
 
-    const files = Array.from(e.dataTransfer.files).filter((f) =>
-      f.type.startsWith("image/"),
+    const files = Array.from(e.dataTransfer.files).filter(
+      (f) => f.type.startsWith("image/") || f.type.startsWith("video/")
     );
     addFiles(files);
   }, []);
@@ -173,11 +173,7 @@ export default function AlbumUploadPage() {
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      selectedFiles.length === 0 ||
-      selectedFiles.every((f) => f.status === "success")
-    )
-      return;
+    if (selectedFiles.length === 0 || selectedFiles.every((f) => f.status === "success")) return;
     if (!albumId) {
       alert("Missing album");
       return;
@@ -200,15 +196,14 @@ export default function AlbumUploadPage() {
 
         // Update status to uploading
         setSelectedFiles((prev) =>
-          prev.map((f, idx) =>
-            idx === i ? { ...f, status: "uploading", progress: 0 } : f,
-          ),
+          prev.map((f, idx) => (idx === i ? { ...f, status: "uploading", progress: 0 } : f))
         );
 
+        const isVideo = filePreview.file.type.startsWith("video/");
         const formData = new FormData();
         formData.append("file", filePreview.file);
         formData.append("album_id", albumId);
-        formData.append("media_type", "IMAGE");
+        formData.append("media_type", isVideo ? "VIDEO" : "IMAGE");
         if (caption) formData.append("description", caption);
 
         try {
@@ -222,22 +217,16 @@ export default function AlbumUploadPage() {
 
           if (response.ok) {
             setSelectedFiles((prev) =>
-              prev.map((f, idx) =>
-                idx === i ? { ...f, status: "success", progress: 100 } : f,
-              ),
+              prev.map((f, idx) => (idx === i ? { ...f, status: "success", progress: 100 } : f))
             );
           } else {
             setSelectedFiles((prev) =>
-              prev.map((f, idx) =>
-                idx === i ? { ...f, status: "error", progress: 0 } : f,
-              ),
+              prev.map((f, idx) => (idx === i ? { ...f, status: "error", progress: 0 } : f))
             );
           }
         } catch {
           setSelectedFiles((prev) =>
-            prev.map((f, idx) =>
-              idx === i ? { ...f, status: "error", progress: 0 } : f,
-            ),
+            prev.map((f, idx) => (idx === i ? { ...f, status: "error", progress: 0 } : f))
           );
         }
       }
@@ -263,15 +252,12 @@ export default function AlbumUploadPage() {
         return;
       }
 
-      const response = await fetch(
-        `${API_BASE_URL}/api/v1/media/media/${photoId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      const response = await fetch(`${API_BASE_URL}/api/v1/media/media/${photoId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      );
+      });
 
       if (response.ok) {
         setPhotos(photos.filter((p) => p.id !== photoId));
@@ -288,11 +274,9 @@ export default function AlbumUploadPage() {
     setLoadedImages((prev) => new Set(prev).add(photoId));
   };
 
-  const successCount = selectedFiles.filter(
-    (f) => f.status === "success",
-  ).length;
+  const successCount = selectedFiles.filter((f) => f.status === "success").length;
   const pendingCount = selectedFiles.filter(
-    (f) => f.status === "pending" || f.status === "error",
+    (f) => f.status === "pending" || f.status === "error"
   ).length;
 
   return (
@@ -313,12 +297,8 @@ export default function AlbumUploadPage() {
               <Upload className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">
-                {albumTitle || "Upload Photos"}
-              </h1>
-              <p className="text-slate-600 mt-1">
-                Upload and manage photos for this album
-              </p>
+              <h1 className="text-3xl font-bold text-slate-900">{albumTitle || "Upload Photos"}</h1>
+              <p className="text-slate-600 mt-1">Upload and manage photos for this album</p>
             </div>
           </div>
 
@@ -351,7 +331,7 @@ export default function AlbumUploadPage() {
               type="file"
               id="file-input"
               multiple
-              accept="image/*"
+              accept="image/*,video/*"
               onChange={handleFileSelect}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
@@ -366,14 +346,12 @@ export default function AlbumUploadPage() {
               </div>
               <div className="space-y-1">
                 <p className="text-lg font-semibold text-slate-900">
-                  {isDragOver ? "Drop images here" : "Drag and drop images"}
+                  {isDragOver ? "Drop files here" : "Drag and drop images or videos"}
                 </p>
-                <p className="text-sm text-slate-500">
-                  or click to browse from your device
-                </p>
+                <p className="text-sm text-slate-500">or click to browse from your device</p>
               </div>
               <p className="text-xs text-slate-400">
-                Supports JPEG, PNG, GIF, WebP
+                Supports JPEG, PNG, GIF, WebP, MP4, MOV, WebM
               </p>
             </div>
           </div>
@@ -386,9 +364,7 @@ export default function AlbumUploadPage() {
                   {selectedFiles.length} file
                   {selectedFiles.length !== 1 ? "s" : ""} selected
                   {successCount > 0 && (
-                    <span className="ml-2 text-green-600">
-                      ({successCount} uploaded)
-                    </span>
+                    <span className="ml-2 text-green-600">({successCount} uploaded)</span>
                   )}
                 </p>
                 <button
@@ -406,11 +382,19 @@ export default function AlbumUploadPage() {
                     key={index}
                     className="relative group aspect-square rounded-xl overflow-hidden bg-slate-100"
                   >
-                    <img
-                      src={filePreview.preview}
-                      alt={filePreview.file.name}
-                      className="w-full h-full object-cover"
-                    />
+                    {filePreview.file.type.startsWith("video/") ? (
+                      <video
+                        src={filePreview.preview}
+                        className="w-full h-full object-cover"
+                        muted
+                      />
+                    ) : (
+                      <img
+                        src={filePreview.preview}
+                        alt={filePreview.file.name}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
 
                     {/* Status overlay */}
                     {filePreview.status === "uploading" && (
@@ -434,16 +418,15 @@ export default function AlbumUploadPage() {
                     )}
 
                     {/* Remove button */}
-                    {filePreview.status !== "uploading" &&
-                      filePreview.status !== "success" && (
-                        <button
-                          type="button"
-                          onClick={() => removeFile(index)}
-                          className="absolute top-1.5 right-1.5 p-1.5 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      )}
+                    {filePreview.status !== "uploading" && filePreview.status !== "success" && (
+                      <button
+                        type="button"
+                        onClick={() => removeFile(index)}
+                        className="absolute top-1.5 right-1.5 p-1.5 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -452,10 +435,7 @@ export default function AlbumUploadPage() {
 
           {/* Caption */}
           <div className="space-y-2">
-            <label
-              htmlFor="caption"
-              className="block text-sm font-semibold text-slate-900"
-            >
+            <label htmlFor="caption" className="block text-sm font-semibold text-slate-900">
               Caption (optional)
             </label>
             <input
@@ -484,8 +464,8 @@ export default function AlbumUploadPage() {
                 <Upload className="h-5 w-5" />
                 Upload{" "}
                 {pendingCount > 0
-                  ? `${pendingCount} Photo${pendingCount !== 1 ? "s" : ""} `
-                  : "Photos"}
+                  ? `${pendingCount} File${pendingCount !== 1 ? "s" : ""} `
+                  : "Files"}
               </>
             )}
           </button>
@@ -510,9 +490,7 @@ export default function AlbumUploadPage() {
                 <Images className="h-12 w-12 text-cyan-400" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-slate-900">
-                  No photos yet
-                </h3>
+                <h3 className="text-lg font-semibold text-slate-900">No photos yet</h3>
                 <p className="text-slate-600">
                   Use the upload form above to add photos to this album.
                 </p>
@@ -525,62 +503,115 @@ export default function AlbumUploadPage() {
               const isCover = coverMediaId === photo.id;
               const isSettingThis = settingCover === photo.id;
 
+              const isVideo =
+                photo.media_type === "VIDEO" || !!photo.file_url?.match(/\.(mp4|mov|webm|avi)$/i);
+
               return (
-                <div
-                  key={photo.id}
-                  className={`group relative aspect-square rounded-xl overflow-hidden bg-slate-100 ${isCover ? "ring-2 ring-cyan-500 ring-offset-2" : ""}`}
-                >
-                  {/* Loading placeholder */}
-                  {!loadedImages.has(photo.id) && (
-                    <div className="absolute inset-0 bg-gradient-to-br from-slate-200 to-slate-100 animate-pulse flex items-center justify-center">
-                      <Camera className="h-8 w-8 text-slate-300" />
-                    </div>
-                  )}
+                <React.Fragment key={photo.id}>
+                  <div
+                    className={`group relative aspect-square rounded-xl overflow-hidden bg-slate-100 ${isCover ? "ring-2 ring-cyan-500 ring-offset-2" : ""}`}
+                  >
+                    {/* Loading placeholder */}
+                    {!loadedImages.has(photo.id) && (
+                      <div className="absolute inset-0 bg-gradient-to-br from-slate-200 to-slate-100 animate-pulse flex items-center justify-center">
+                        <Camera className="h-8 w-8 text-slate-300" />
+                      </div>
+                    )}
 
-                  <img
-                    src={photo.thumbnail_url || photo.file_url}
-                    alt={photo.title || photo.description || "Photo"}
-                    className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-105 ${loadedImages.has(photo.id) ? "opacity-100" : "opacity-0"}`}
-                    onLoad={() => handleImageLoad(photo.id)}
-                  />
+                    {isVideo ? (
+                      <>
+                        <video
+                          src={photo.file_url}
+                          poster={photo.thumbnail_url || undefined}
+                          className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-105 ${loadedImages.has(photo.id) ? "opacity-100" : "opacity-0"}`}
+                          muted
+                          preload="metadata"
+                          onLoadedData={() => handleImageLoad(photo.id)}
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center">
+                            <Play className="w-5 h-5 text-white ml-0.5" />
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <img
+                        src={photo.thumbnail_url || photo.file_url}
+                        alt={photo.title || photo.description || "Photo"}
+                        className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-105 ${loadedImages.has(photo.id) ? "opacity-100" : "opacity-0"}`}
+                        onLoad={() => handleImageLoad(photo.id)}
+                      />
+                    )}
 
-                  {/* Cover badge */}
-                  {isCover && (
-                    <div className="absolute top-2 left-2 px-2 py-1 rounded-full bg-cyan-500 text-white text-xs font-semibold flex items-center gap-1">
-                      <Image className="h-3 w-3" />
-                      Cover
-                    </div>
-                  )}
+                    {/* Cover badge */}
+                    {isCover && (
+                      <div className="absolute top-2 left-2 px-2 py-1 rounded-full bg-cyan-500 text-white text-xs font-semibold flex items-center gap-1">
+                        <Image className="h-3 w-3" />
+                        Cover
+                      </div>
+                    )}
 
-                  {/* Hover overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    {/* Hover overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                  {/* Actions */}
-                  <div className="absolute inset-x-0 bottom-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                    <div className="flex items-center justify-between gap-2">
-                      {!isCover && (
+                    {/* Actions */}
+                    <div className="absolute inset-x-0 bottom-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                      <div className="flex items-center justify-between gap-2">
+                        {!isCover && (
+                          <button
+                            onClick={() => setAsCover(photo.id)}
+                            disabled={isSettingThis}
+                            className="p-2 rounded-full bg-cyan-500 hover:bg-cyan-600 text-white transition-colors flex-shrink-0 disabled:opacity-50"
+                            title="Set as album cover"
+                          >
+                            {isSettingThis ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Image className="h-4 w-4" />
+                            )}
+                          </button>
+                        )}
+                        {/* Audio overlay button for videos */}
+                        {isVideo && (
+                          <button
+                            onClick={() =>
+                              setAudioOverlayPhotoId(
+                                audioOverlayPhotoId === photo.id ? null : photo.id
+                              )
+                            }
+                            className={`p-2 rounded-full transition-colors flex-shrink-0 ${
+                              audioOverlayPhotoId === photo.id
+                                ? "bg-cyan-600 text-white"
+                                : "bg-slate-700/70 hover:bg-cyan-500 text-white"
+                            }`}
+                            title="Audio overlay"
+                          >
+                            <Music className="h-4 w-4" />
+                          </button>
+                        )}
                         <button
-                          onClick={() => setAsCover(photo.id)}
-                          disabled={isSettingThis}
-                          className="p-2 rounded-full bg-cyan-500 hover:bg-cyan-600 text-white transition-colors flex-shrink-0 disabled:opacity-50"
-                          title="Set as album cover"
+                          onClick={() => deletePhoto(photo.id)}
+                          className="p-2 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors flex-shrink-0 ml-auto"
                         >
-                          {isSettingThis ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Image className="h-4 w-4" />
-                          )}
+                          <Trash2 className="h-4 w-4" />
                         </button>
-                      )}
-                      <button
-                        onClick={() => deletePhoto(photo.id)}
-                        className="p-2 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors flex-shrink-0 ml-auto"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      </div>
                     </div>
                   </div>
-                </div>
+
+                  {/* Audio overlay panel for this video */}
+                  {audioOverlayPhotoId === photo.id && (
+                    <div className="col-span-full">
+                      <AudioOverlayPanel
+                        mediaId={photo.id}
+                        onApplied={() => {
+                          setAudioOverlayPhotoId(null);
+                          fetchAlbum();
+                        }}
+                      />
+                    </div>
+                  )}
+                </React.Fragment>
               );
             })}
           </div>

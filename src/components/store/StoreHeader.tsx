@@ -1,13 +1,13 @@
 "use client";
 
 import { useStoreCart } from "@/lib/storeCart";
-import { ArrowLeft, Search, ShoppingCart, X } from "lucide-react";
+import { ArrowLeft, Search, ShoppingCart, User, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 
 export function StoreHeader() {
-  const { itemCount } = useStoreCart();
+  const { itemCount, isAuthenticated } = useStoreCart();
   const router = useRouter();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
@@ -109,6 +109,32 @@ export function StoreHeader() {
             >
               <Search className="w-5 h-5" />
             </button>
+
+            {/* Auth */}
+            {isAuthenticated ? (
+              <Link
+                href="/account"
+                className="p-2 text-slate-500 hover:text-cyan-600 transition-colors"
+                title="My Account"
+              >
+                <User className="w-5 h-5" />
+              </Link>
+            ) : (
+              <div className="flex items-center gap-1">
+                <Link
+                  href="/login"
+                  className="px-2.5 py-1.5 text-sm text-cyan-700 hover:bg-cyan-50 rounded-lg transition-colors"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/register"
+                  className="hidden sm:inline-flex rounded-full bg-gradient-to-r from-cyan-600 to-cyan-500 px-4 py-1.5 text-sm text-white font-semibold hover:from-cyan-500 hover:to-cyan-400 transition-all hover:shadow-md hover:shadow-cyan-500/20"
+                >
+                  Join
+                </Link>
+              </div>
+            )}
 
             {/* Cart */}
             <Link
