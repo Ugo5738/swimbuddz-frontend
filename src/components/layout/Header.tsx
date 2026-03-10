@@ -108,7 +108,7 @@ export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const desktopNavRef = useRef<HTMLElement>(null);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const mobileNavRef = useRef<HTMLElement>(null);
 
@@ -162,7 +162,7 @@ export function Header() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (dropdownRef.current?.contains(target)) return;
+      if (desktopNavRef.current?.contains(target)) return;
       if (mobileNavRef.current?.contains(target)) return;
       setActiveDropdown(null);
       if (!profileDropdownRef.current?.contains(target)) {
@@ -274,12 +274,7 @@ export function Header() {
 
       // Desktop dropdown
       return (
-        <div
-          key={item.label}
-          className="relative"
-          ref={dropdownRef}
-          onMouseLeave={() => setActiveDropdown(null)}
-        >
+        <div key={item.label} className="relative" onMouseLeave={() => setActiveDropdown(null)}>
           <button
             onClick={() => setActiveDropdown(item.label)}
             onMouseEnter={() => setActiveDropdown(item.label)}
@@ -380,7 +375,7 @@ export function Header() {
         </button>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-1 text-sm font-medium">
+        <nav ref={desktopNavRef} className="hidden md:flex items-center gap-1 text-sm font-medium">
           {effectiveNavGroups.map((item) => renderNavItem(item))}
 
           {/* Auth Actions */}
