@@ -28,42 +28,66 @@ interface Member {
   first_name: string;
   last_name: string;
   email: string;
-  phone: string;
-  swim_level: string;
-  location_preference: string[];
+  phone?: string;
+  swim_level?: string;
+  location_preference?: string[];
   registration_complete: boolean;
   is_active: boolean;
   approval_status: "pending" | "approved" | "rejected";
   approved_at?: string;
   approved_by?: string;
   approval_notes?: string;
+  profile_photo_url?: string;
 
-  // Additional comprehensive fields
-  membership_tier?: string;
+  // Flattened from profile
   city?: string;
   country?: string;
-  time_zone?: string;
-  deep_water_comfort?: string;
-  goals_narrative?: string;
-  emergency_contact_name?: string;
-  emergency_contact_phone?: string;
-  medical_info?: string;
-  profile_photo_url?: string;
-  date_of_birth?: string;
   gender?: string;
-
-  // Vetting fields
+  date_of_birth?: string;
   occupation?: string;
   area_in_lagos?: string;
   how_found_us?: string;
   previous_communities?: string;
   hopes_from_swimbuddz?: string;
+  goals_narrative?: string;
 
-  // Upgrade flow
+  // Flattened from membership
+  primary_tier?: string;
+  active_tiers?: string[];
+  requested_tiers?: string[];
+  community_paid_until?: string;
+  club_paid_until?: string;
+  academy_paid_until?: string;
+
+  // Flattened from emergency contact
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  medical_info?: string;
+
+  // Legacy compat
+  membership_tier?: string;
   requested_membership_tiers?: string[];
 }
 
-type FilterTab = "all" | "pending" | "approved" | "rejected" | "upgrades";
+type PaymentStatus = "paid" | "expired" | "unpaid";
+
+function getTierPaymentStatus(paidUntil?: string): PaymentStatus {
+  if (!paidUntil) return "unpaid";
+  return new Date(paidUntil) > new Date() ? "paid" : "expired";
+}
+
+function getMemberPaymentStatus(member: Member): PaymentStatus {
+  const statuses = [
+    getTierPaymentStatus(member.community_paid_until),
+    getTierPaymentStatus(member.club_paid_until),
+    getTierPaymentStatus(member.academy_paid_until),
+  ];
+  if (statuses.includes("paid")) return "paid";
+  if (statuses.includes("expired")) return "expired";
+  return "unpaid";
+}
+
+type FilterTab = "all" | "pending" | "approved" | "rejected" | "upgrades" | "paid" | "unpaid";
 
 export default function AdminMembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
@@ -82,16 +106,12 @@ export default function AdminMembersPage() {
   const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
   const [approvingMember, setApprovingMember] = useState<Member | null>(null);
   const [approvalNotes, setApprovalNotes] = useState("");
-  const [approvalAction, setApprovalAction] = useState<
-    "approve" | "reject" | "upgrade"
-  >("approve"); // Added upgrade
+  const [approvalAction, setApprovalAction] = useState<"approve" | "reject" | "upgrade">("approve"); // Added upgrade
 
   // Delete Modal State
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingMember, setDeletingMember] = useState<Member | null>(null);
-  const [deletingMemberIds, setDeletingMemberIds] = useState<Set<string>>(
-    new Set(),
-  );
+  const [deletingMemberIds, setDeletingMemberIds] = useState<Set<string>>(new Set());
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -144,9 +164,7 @@ export default function AdminMembersPage() {
     fetchMembers();
   }, []);
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -196,10 +214,7 @@ export default function AdminMembersPage() {
     setIsEditModalOpen(true);
   };
 
-  const openApprovalModal = (
-    member: Member,
-    action: "approve" | "reject" | "upgrade",
-  ) => {
+  const openApprovalModal = (member: Member, action: "approve" | "reject" | "upgrade") => {
     setApprovingMember(member);
     setApprovalAction(action);
     setApprovalNotes("");
@@ -266,17 +281,14 @@ export default function AdminMembersPage() {
       } = await supabase.auth.getSession();
       const token = session?.access_token;
 
-      const res = await fetch(
-        `${API_BASE_URL}/api/v1/members/${editingMember.id}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
+      const res = await fetch(`${API_BASE_URL}/api/v1/members/${editingMember.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify(payload),
+      });
 
       if (!res.ok) {
         const errorData = await res.json();
@@ -324,9 +336,7 @@ export default function AdminMembersPage() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(
-          errorData.detail || `Failed to ${approvalAction} member`,
-        );
+        throw new Error(errorData.detail || `Failed to ${approvalAction} member`);
       }
 
       await fetchMembers();
@@ -334,11 +344,7 @@ export default function AdminMembersPage() {
       setApprovingMember(null);
       setApprovalNotes("");
     } catch (err) {
-      alert(
-        err instanceof Error
-          ? err.message
-          : `Failed to ${approvalAction} member`,
-      );
+      alert(err instanceof Error ? err.message : `Failed to ${approvalAction} member`);
     } finally {
       setIsSubmitting(false);
     }
@@ -352,12 +358,9 @@ export default function AdminMembersPage() {
   const handleDeleteMember = async (
     memberId: string,
     memberName: string,
-    mode: "soft" | "hard",
+    mode: "soft" | "hard"
   ) => {
-    if (
-      mode === "hard" &&
-      !confirm(`Hard delete ${memberName}? This cannot be undone.`)
-    ) {
+    if (mode === "hard" && !confirm(`Hard delete ${memberName}? This cannot be undone.`)) {
       return;
     }
 
@@ -368,26 +371,21 @@ export default function AdminMembersPage() {
     });
     setIsDeleteModalOpen(false);
     setDeletingMember(null);
-    toast.message(
-      `${mode === "hard" ? "Hard delete" : "Soft delete"} started for ${memberName}.`,
-    );
+    toast.message(`${mode === "hard" ? "Hard delete" : "Soft delete"} started for ${memberName}.`);
     try {
       const {
         data: { session },
       } = await supabase.auth.getSession();
       const token = session?.access_token;
 
-      const res = await fetch(
-        `${API_BASE_URL}/api/v1/admin/cleanup/members/${memberId}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ mode }),
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/cleanup/members/${memberId}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify({ mode }),
+      });
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
@@ -397,9 +395,7 @@ export default function AdminMembersPage() {
       await fetchMembers();
       toast.success(`${memberName} deleted.`);
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to delete member",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to delete member");
     } finally {
       setDeletingMemberIds((prev) => {
         const next = new Set(prev);
@@ -413,24 +409,26 @@ export default function AdminMembersPage() {
   const filteredMembers = members.filter((member) => {
     if (filterTab === "all") return true;
     if (filterTab === "upgrades") {
-      return (
-        member.requested_membership_tiers &&
-        member.requested_membership_tiers.length > 0
-      );
+      const tiers = member.requested_tiers || member.requested_membership_tiers;
+      return tiers && tiers.length > 0;
     }
+    if (filterTab === "paid") return getMemberPaymentStatus(member) === "paid";
+    if (filterTab === "unpaid") return getMemberPaymentStatus(member) !== "paid";
     return member.approval_status === filterTab;
   });
 
   // Count for each status
-  const counts = {
+  const counts: Record<FilterTab, number> = {
     all: members.length,
     pending: members.filter((m) => m.approval_status === "pending").length,
     approved: members.filter((m) => m.approval_status === "approved").length,
     rejected: members.filter((m) => m.approval_status === "rejected").length,
-    upgrades: members.filter(
-      (m) =>
-        m.requested_membership_tiers && m.requested_membership_tiers.length > 0,
-    ).length,
+    upgrades: members.filter((m) => {
+      const tiers = m.requested_tiers || m.requested_membership_tiers;
+      return tiers && tiers.length > 0;
+    }).length,
+    paid: members.filter((m) => getMemberPaymentStatus(m) === "paid").length,
+    unpaid: members.filter((m) => getMemberPaymentStatus(m) !== "paid").length,
   };
 
   const getStatusBadge = (status: string) => {
@@ -459,6 +457,39 @@ export default function AdminMembersPage() {
     }
   };
 
+  const getPaymentBadges = (member: Member) => {
+    const tiers: { key: string; label: string; field: keyof Member }[] = [
+      { key: "community", label: "C", field: "community_paid_until" },
+      { key: "club", label: "Cl", field: "club_paid_until" },
+      { key: "academy", label: "A", field: "academy_paid_until" },
+    ];
+    const activeTiers = member.active_tiers || [member.primary_tier || "community"];
+    return (
+      <div className="flex items-center gap-1">
+        {tiers
+          .filter((t) => activeTiers.includes(t.key))
+          .map((t) => {
+            const status = getTierPaymentStatus(member[t.field] as string | undefined);
+            const colors =
+              status === "paid"
+                ? "bg-green-100 text-green-700"
+                : status === "expired"
+                  ? "bg-amber-100 text-amber-700"
+                  : "bg-red-100 text-red-700";
+            return (
+              <span
+                key={t.key}
+                className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold ${colors}`}
+                title={`${t.key}: ${status}${member[t.field] ? ` (until ${new Date(member[t.field] as string).toLocaleDateString()})` : ""}`}
+              >
+                {t.label}
+              </span>
+            );
+          })}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Header - Responsive layout */}
@@ -467,9 +498,7 @@ export default function AdminMembersPage() {
           <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] sm:tracking-[0.3em] text-cyan-600">
             Admin
           </p>
-          <h1 className="text-2xl sm:text-4xl font-bold text-slate-900">
-            Members
-          </h1>
+          <h1 className="text-2xl sm:text-4xl font-bold text-slate-900">Members</h1>
           <p className="text-xs sm:text-sm text-slate-600">
             Manage community members and approve registrations.
           </p>
@@ -487,29 +516,19 @@ export default function AdminMembersPage() {
       <div className="relative -mx-3 sm:mx-0">
         <div className="flex gap-1 sm:gap-2 border-b border-slate-200 overflow-x-auto px-3 sm:px-0 scrollbar-hide">
           {(
-            [
-              "all",
-              "pending",
-              "approved",
-              "rejected",
-              "upgrades",
-            ] as FilterTab[]
+            ["all", "pending", "approved", "rejected", "paid", "unpaid", "upgrades"] as FilterTab[]
           ).map((tab) => (
             <button
               key={tab}
               onClick={() => setFilterTab(tab)}
               className={`px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
-                filterTab === tab
-                  ? "text-cyan-700"
-                  : "text-slate-500 hover:text-slate-700"
+                filterTab === tab ? "text-cyan-700" : "text-slate-500 hover:text-slate-700"
               }`}
             >
               <span className="capitalize">{tab}</span>
               <span
                 className={`ml-1.5 sm:ml-2 px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs ${
-                  filterTab === tab
-                    ? "bg-cyan-100 text-cyan-700"
-                    : "bg-slate-100 text-slate-500"
+                  filterTab === tab ? "bg-cyan-100 text-cyan-700" : "bg-slate-100 text-slate-500"
                 }`}
               >
                 {counts[tab]}
@@ -578,24 +597,23 @@ export default function AdminMembersPage() {
                         >
                           {member.first_name} {member.last_name}
                         </Link>
-                        <p className="text-xs text-slate-500 truncate mt-0.5">
-                          {member.email}
-                        </p>
+                        <p className="text-xs text-slate-500 truncate mt-0.5">{member.email}</p>
                       </div>
                       {getStatusBadge(member.approval_status)}
                     </div>
 
-                    <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
+                    <div className="flex items-center gap-2 mt-2 text-xs text-slate-500 flex-wrap">
                       <span className="capitalize bg-slate-100 px-2 py-0.5 rounded">
-                        {member.membership_tier || "community"}
+                        {member.primary_tier || member.membership_tier || "community"}
                       </span>
-                      <span>{member.swim_level}</span>
-                      {member.requested_membership_tiers &&
-                        member.requested_membership_tiers.length > 0 && (
-                          <span className="text-purple-600 font-medium">
-                            ➞ {member.requested_membership_tiers.join(", ")}
-                          </span>
-                        )}
+                      {getPaymentBadges(member)}
+                      {member.swim_level && <span>{member.swim_level}</span>}
+                      {(() => {
+                        const tiers = member.requested_tiers || member.requested_membership_tiers;
+                        return tiers && tiers.length > 0 ? (
+                          <span className="text-purple-600 font-medium">➞ {tiers.join(", ")}</span>
+                        ) : null;
+                      })()}
                     </div>
 
                     {/* Mobile Actions */}
@@ -633,8 +651,9 @@ export default function AdminMembersPage() {
                         </>
                       )}
                       {member.approval_status === "approved" &&
-                        member.requested_membership_tiers &&
-                        member.requested_membership_tiers.length > 0 && (
+                        (member.requested_tiers || member.requested_membership_tiers) &&
+                        (member.requested_tiers || member.requested_membership_tiers)!.length >
+                          0 && (
                           <button
                             onClick={() => openApprovalModal(member, "upgrade")}
                             className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-purple-100 text-purple-700 text-xs font-medium hover:bg-purple-200 transition"
@@ -668,6 +687,7 @@ export default function AdminMembersPage() {
                     <th className="px-4 py-3 font-semibold">Name</th>
                     <th className="px-4 py-3 font-semibold">Contact</th>
                     <th className="px-4 py-3 font-semibold">Tier</th>
+                    <th className="px-4 py-3 font-semibold">Payment</th>
                     <th className="px-4 py-3 font-semibold">Level</th>
                     <th className="px-4 py-3 font-semibold">Status</th>
                     <th className="px-4 py-3 font-semibold">Actions</th>
@@ -680,9 +700,7 @@ export default function AdminMembersPage() {
                       <tr
                         key={member.id}
                         className={
-                          isDeletingMember
-                            ? "bg-slate-50 opacity-60"
-                            : "hover:bg-slate-50"
+                          isDeletingMember ? "bg-slate-50 opacity-60" : "hover:bg-slate-50"
                         }
                       >
                         <td className="px-4 py-3 font-medium text-slate-900">
@@ -692,8 +710,9 @@ export default function AdminMembersPage() {
                           >
                             {member.first_name} {member.last_name}
                           </Link>
-                          {member.requested_membership_tiers &&
-                            member.requested_membership_tiers.length > 0 && (
+                          {(member.requested_tiers || member.requested_membership_tiers) &&
+                            (member.requested_tiers || member.requested_membership_tiers)!.length >
+                              0 && (
                               <span className="ml-2 inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800">
                                 Upgrade Requested
                               </span>
@@ -707,26 +726,24 @@ export default function AdminMembersPage() {
                         <td className="px-4 py-3">
                           <div className="flex flex-col">
                             <span>{member.email}</span>
-                            <span className="text-xs text-slate-400">
-                              {member.phone}
-                            </span>
+                            <span className="text-xs text-slate-400">{member.phone}</span>
                           </div>
                         </td>
                         <td className="px-4 py-3">
                           <span className="capitalize">
-                            {member.membership_tier || "community"}
+                            {member.primary_tier || member.membership_tier || "community"}
                           </span>
-                          {member.requested_membership_tiers &&
-                            member.requested_membership_tiers.length > 0 && (
-                              <div className="text-xs text-purple-600">
-                                ➞ {member.requested_membership_tiers.join(", ")}
-                              </div>
-                            )}
+                          {(() => {
+                            const tiers =
+                              member.requested_tiers || member.requested_membership_tiers;
+                            return tiers && tiers.length > 0 ? (
+                              <div className="text-xs text-purple-600">➞ {tiers.join(", ")}</div>
+                            ) : null;
+                          })()}
                         </td>
-                        <td className="px-4 py-3">{member.swim_level}</td>
-                        <td className="px-4 py-3">
-                          {getStatusBadge(member.approval_status)}
-                        </td>
+                        <td className="px-4 py-3">{getPaymentBadges(member)}</td>
+                        <td className="px-4 py-3">{member.swim_level || "—"}</td>
+                        <td className="px-4 py-3">{getStatusBadge(member.approval_status)}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <Link
@@ -748,18 +765,14 @@ export default function AdminMembersPage() {
                             {member.approval_status === "pending" && (
                               <>
                                 <button
-                                  onClick={() =>
-                                    openApprovalModal(member, "approve")
-                                  }
+                                  onClick={() => openApprovalModal(member, "approve")}
                                   className="p-1.5 rounded hover:bg-green-50 text-green-600 hover:text-green-700"
                                   title="Approve"
                                 >
                                   <CheckCircle className="h-4 w-4" />
                                 </button>
                                 <button
-                                  onClick={() =>
-                                    openApprovalModal(member, "reject")
-                                  }
+                                  onClick={() => openApprovalModal(member, "reject")}
                                   className="p-1.5 rounded hover:bg-red-50 text-red-500 hover:text-red-600"
                                   title="Reject"
                                 >
@@ -770,12 +783,11 @@ export default function AdminMembersPage() {
 
                             {/* Approve Upgrade button */}
                             {member.approval_status === "approved" &&
-                              member.requested_membership_tiers &&
-                              member.requested_membership_tiers.length > 0 && (
+                              (member.requested_tiers || member.requested_membership_tiers) &&
+                              (member.requested_tiers || member.requested_membership_tiers)!
+                                .length > 0 && (
                                 <button
-                                  onClick={() =>
-                                    openApprovalModal(member, "upgrade")
-                                  }
+                                  onClick={() => openApprovalModal(member, "upgrade")}
                                   className="p-1.5 rounded hover:bg-purple-50 text-purple-600 hover:text-purple-700"
                                   title="Approve Upgrade"
                                 >
@@ -823,7 +835,7 @@ export default function AdminMembersPage() {
             {approvalAction === "approve"
               ? `Are you sure you want to approve ${approvingMember?.first_name} ${approvingMember?.last_name}?`
               : approvalAction === "upgrade"
-                ? `Approve ${approvingMember?.first_name} ${approvingMember?.last_name}'s upgrade from ${approvingMember?.membership_tier || "community"} to ${(approvingMember?.requested_membership_tiers || []).join(", ") || "the requested tier"}?`
+                ? `Approve ${approvingMember?.first_name} ${approvingMember?.last_name}'s upgrade from ${approvingMember?.primary_tier || approvingMember?.membership_tier || "community"} to ${(approvingMember?.requested_tiers || approvingMember?.requested_membership_tiers || []).join(", ") || "the requested tier"}?`
                 : `Are you sure you want to reject ${approvingMember?.first_name} ${approvingMember?.last_name}?`}
           </p>
 
@@ -853,8 +865,11 @@ export default function AdminMembersPage() {
                     <p>{approvingMember.email}</p>
                     <p>{approvingMember.phone}</p>
                     <p className="capitalize text-cyan-700 font-medium">
-                      {approvingMember.membership_tier || "Community"} Member •{" "}
-                      {approvingMember.swim_level}
+                      {approvingMember.primary_tier ||
+                        approvingMember.membership_tier ||
+                        "Community"}{" "}
+                      Member
+                      {approvingMember.swim_level ? ` • ${approvingMember.swim_level}` : ""}
                     </p>
                   </div>
                 </div>
@@ -868,30 +883,21 @@ export default function AdminMembersPage() {
                   </h4>
                   <div className="space-y-2 text-sm">
                     <div>
-                      <span className="text-slate-500 block text-xs">
-                        Location
-                      </span>
+                      <span className="text-slate-500 block text-xs">Location</span>
                       <span className="text-slate-900">
-                        {approvingMember.city || "N/A"},{" "}
-                        {approvingMember.country || "Nigeria"}
+                        {approvingMember.city || "N/A"}, {approvingMember.country || "Nigeria"}
                       </span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block text-xs">
-                        Date of Birth
-                      </span>
+                      <span className="text-slate-500 block text-xs">Date of Birth</span>
                       <span className="text-slate-900">
                         {approvingMember.date_of_birth
-                          ? new Date(
-                              approvingMember.date_of_birth,
-                            ).toLocaleDateString()
+                          ? new Date(approvingMember.date_of_birth).toLocaleDateString()
                           : "N/A"}
                       </span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block text-xs">
-                        Gender
-                      </span>
+                      <span className="text-slate-500 block text-xs">Gender</span>
                       <span className="text-slate-900 capitalize">
                         {approvingMember.gender || "N/A"}
                       </span>
@@ -912,17 +918,13 @@ export default function AdminMembersPage() {
                       </span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block text-xs">
-                        Phone
-                      </span>
+                      <span className="text-slate-500 block text-xs">Phone</span>
                       <span className="text-slate-900">
                         {approvingMember.emergency_contact_phone || "N/A"}
                       </span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block text-xs">
-                        Medical Info
-                      </span>
+                      <span className="text-slate-500 block text-xs">Medical Info</span>
                       <span className="text-slate-900">
                         {approvingMember.medical_info || "None provided"}
                       </span>
@@ -938,28 +940,16 @@ export default function AdminMembersPage() {
                 </h4>
                 <div className="grid grid-cols-1 gap-3 text-sm bg-slate-50 p-3 rounded-lg">
                   <div>
-                    <span className="text-slate-500 font-medium">
-                      Occupation:{" "}
-                    </span>
-                    <span className="text-slate-900">
-                      {approvingMember.occupation || "N/A"}
-                    </span>
+                    <span className="text-slate-500 font-medium">Occupation: </span>
+                    <span className="text-slate-900">{approvingMember.occupation || "N/A"}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500 font-medium">
-                      Area in Lagos:{" "}
-                    </span>
-                    <span className="text-slate-900">
-                      {approvingMember.area_in_lagos || "N/A"}
-                    </span>
+                    <span className="text-slate-500 font-medium">Area in Lagos: </span>
+                    <span className="text-slate-900">{approvingMember.area_in_lagos || "N/A"}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500 font-medium">
-                      How found us:{" "}
-                    </span>
-                    <span className="text-slate-900">
-                      {approvingMember.how_found_us || "N/A"}
-                    </span>
+                    <span className="text-slate-500 font-medium">How found us: </span>
+                    <span className="text-slate-900">{approvingMember.how_found_us || "N/A"}</span>
                   </div>
                   {approvingMember.hopes_from_swimbuddz && (
                     <div className="pt-1">
@@ -973,9 +963,7 @@ export default function AdminMembersPage() {
                   )}
                   {approvingMember.goals_narrative && (
                     <div className="pt-1">
-                      <span className="text-slate-500 font-medium block mb-1">
-                        Swimming Goals:
-                      </span>
+                      <span className="text-slate-500 font-medium block mb-1">Swimming Goals:</span>
                       <p className="text-slate-900 bg-white p-2 rounded border border-slate-100 italic">
                         "{approvingMember.goals_narrative}"
                       </p>
@@ -1010,11 +998,7 @@ export default function AdminMembersPage() {
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setIsApprovalModalOpen(false)}
-            >
+            <Button type="button" variant="secondary" onClick={() => setIsApprovalModalOpen(false)}>
               Cancel
             </Button>
             <Button
@@ -1054,9 +1038,8 @@ export default function AdminMembersPage() {
         title="Delete member"
       >
         <p className="text-slate-600">
-          Choose how to remove {deletingMember?.first_name}{" "}
-          {deletingMember?.last_name}. Soft delete deactivates the account, hard
-          delete permanently removes data.
+          Choose how to remove {deletingMember?.first_name} {deletingMember?.last_name}. Soft delete
+          deactivates the account, hard delete permanently removes data.
         </p>
         <div className="flex flex-wrap gap-3">
           <Button
@@ -1066,7 +1049,7 @@ export default function AdminMembersPage() {
               handleDeleteMember(
                 deletingMember.id,
                 `${deletingMember.first_name} ${deletingMember.last_name}`,
-                "soft",
+                "soft"
               );
             }}
           >
@@ -1079,7 +1062,7 @@ export default function AdminMembersPage() {
               handleDeleteMember(
                 deletingMember.id,
                 `${deletingMember.first_name} ${deletingMember.last_name}`,
-                "hard",
+                "hard"
               );
             }}
           >
@@ -1170,11 +1153,7 @@ export default function AdminMembersPage() {
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full sm:w-auto"
-            >
+            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
               {isSubmitting ? "Creating..." : "Create Member"}
             </Button>
           </div>
@@ -1182,11 +1161,7 @@ export default function AdminMembersPage() {
       </Modal>
 
       {/* Edit Modal */}
-      <Modal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        title="Edit Member"
-      >
+      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Member">
         <form onSubmit={handleUpdateMember} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <Input
@@ -1247,16 +1222,9 @@ export default function AdminMembersPage() {
 
           {/* Location Details */}
           <div className="border-t pt-4">
-            <h3 className="text-sm font-semibold mb-3 text-slate-700">
-              Location
-            </h3>
+            <h3 className="text-sm font-semibold mb-3 text-slate-700">Location</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <Input
-                label="City"
-                name="city"
-                value={formData.city}
-                onChange={handleInputChange}
-              />
+              <Input label="City" name="city" value={formData.city} onChange={handleInputChange} />
               <Input
                 label="Country"
                 name="country"
@@ -1268,9 +1236,7 @@ export default function AdminMembersPage() {
 
           {/* Emergency Contact */}
           <div className="border-t pt-4">
-            <h3 className="text-sm font-semibold mb-3 text-slate-700">
-              Emergency Contact
-            </h3>
+            <h3 className="text-sm font-semibold mb-3 text-slate-700">Emergency Contact</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <Input
                 label="Contact Name"
@@ -1296,11 +1262,7 @@ export default function AdminMembersPage() {
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full sm:w-auto"
-            >
+            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
               {isSubmitting ? "Saving..." : "Save Changes"}
             </Button>
           </div>
