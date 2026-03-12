@@ -3,10 +3,7 @@
 import { Alert } from "@/components/ui/Alert";
 import { Card } from "@/components/ui/Card";
 import { supabase } from "@/lib/auth";
-import {
-  completePendingRegistrationOnBackend,
-  getPostAuthRedirectPath,
-} from "@/lib/registration";
+import { completePendingRegistrationOnBackend, getPostAuthRedirectPath } from "@/lib/registration";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -14,9 +11,7 @@ import { useEffect, useRef, useState } from "react";
 function getParam(name: string) {
   if (typeof window === "undefined") return null;
   const searchParams = new URLSearchParams(window.location.search);
-  const hashParams = new URLSearchParams(
-    window.location.hash.replace(/^#/, ""),
-  );
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
   return hashParams.get(name) ?? searchParams.get(name);
 }
 
@@ -55,25 +50,15 @@ export default function ConfirmPage() {
       if (tokenHash && type) {
         const { error: verifyError } = await supabase.auth.verifyOtp({
           token_hash: tokenHash,
-          type: type as
-            | "signup"
-            | "email"
-            | "recovery"
-            | "invite"
-            | "magiclink"
-            | "email_change",
+          type: type as "signup" | "email" | "recovery" | "invite" | "magiclink" | "email_change",
         });
 
         if (verifyError) {
           // Handle specific error cases
           if (verifyError.message.includes("expired")) {
-            setError(
-              "This confirmation link has expired. Please request a new one.",
-            );
+            setError("This confirmation link has expired. Please request a new one.");
           } else if (verifyError.message.includes("already")) {
-            setError(
-              "This email has already been confirmed. You can log in now.",
-            );
+            setError("This email has already been confirmed. You can log in now.");
           } else {
             setError(verifyError.message);
           }
@@ -103,9 +88,7 @@ export default function ConfirmPage() {
 
         if (sessionError) {
           if (sessionError.message.includes("expired")) {
-            setError(
-              "This confirmation link has expired. Please request a new one.",
-            );
+            setError("This confirmation link has expired. Please request a new one.");
           } else {
             setError(sessionError.message);
           }
@@ -138,7 +121,7 @@ export default function ConfirmPage() {
 
       // No tokens and not logged in
       setError(
-        "Confirmation tokens are missing. The link may have been truncated or expired. Please request a new confirmation email.",
+        "Confirmation tokens are missing. The link may have been truncated or expired. Please request a new confirmation email."
       );
       setIsProcessing(false);
     }
@@ -147,7 +130,7 @@ export default function ConfirmPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="flex min-h-[60vh] items-center justify-center p-4">
       <div className="w-full max-w-lg">
         <Card className="space-y-4 p-6" aria-busy={isProcessing && !error}>
           <h1 className="text-2xl font-semibold text-slate-900">
@@ -178,8 +161,7 @@ export default function ConfirmPage() {
             </>
           ) : (
             <p className="text-sm text-slate-600">
-              Please hold while we verify your email and prepare your SwimBuddz
-              profile.
+              Please hold while we verify your email and prepare your SwimBuddz profile.
             </p>
           )}
         </Card>

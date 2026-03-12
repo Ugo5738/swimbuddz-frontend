@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
 import { supabase } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Card } from "@/components/ui/Card";
-import { Alert } from "@/components/ui/Alert";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 interface PickupLocationInput {
   name: string;
@@ -35,14 +35,13 @@ export default function NewRideAreaPage() {
   const [areaSlug, setAreaSlug] = useState("");
 
   // Step 2: Pickup Locations
-  const [pickupLocations, setPickupLocations] = useState<PickupLocationInput[]>(
-    [],
-  );
+  const [pickupLocations, setPickupLocations] = useState<PickupLocationInput[]>([]);
   const [newLocation, setNewLocation] = useState<PickupLocationInput>({
     name: "",
     description: "",
     address: "",
   });
+  const [showLocationForm, setShowLocationForm] = useState(true);
 
   const handleNameChange = (value: string) => {
     setAreaName(value);
@@ -50,7 +49,7 @@ export default function NewRideAreaPage() {
       value
         .toLowerCase()
         .replace(/\s+/g, "_")
-        .replace(/[^a-z0-9_]/g, ""),
+        .replace(/[^a-z0-9_]/g, "")
     );
   };
 
@@ -61,6 +60,7 @@ export default function NewRideAreaPage() {
     }
     setPickupLocations([...pickupLocations, { ...newLocation }]);
     setNewLocation({ name: "", description: "", address: "" });
+    setShowLocationForm(false);
     setError("");
   };
 
@@ -116,21 +116,18 @@ export default function NewRideAreaPage() {
 
       // Step 2: Create pickup locations
       for (const loc of pickupLocations) {
-        const locRes = await fetch(
-          `${API_BASE_URL}/api/v1/transport/areas/${area.id}/locations`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              name: loc.name,
-              description: loc.description || undefined,
-              address: loc.address || undefined,
-            }),
+        const locRes = await fetch(`${API_BASE_URL}/api/v1/transport/areas/${area.id}/locations`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
-        );
+          body: JSON.stringify({
+            name: loc.name,
+            description: loc.description || undefined,
+            address: loc.address || undefined,
+          }),
+        });
 
         if (!locRes.ok) {
           console.error("Failed to create pickup location:", loc.name);
@@ -141,9 +138,7 @@ export default function NewRideAreaPage() {
       router.push("/admin/transport");
     } catch (err) {
       console.error(err);
-      setError(
-        err instanceof Error ? err.message : "Failed to create ride area",
-      );
+      setError(err instanceof Error ? err.message : "Failed to create ride area");
     } finally {
       setLoading(false);
     }
@@ -156,9 +151,7 @@ export default function NewRideAreaPage() {
           Admin · Transport
         </p>
         <h1 className="text-3xl font-bold text-slate-900">Create Ride Area</h1>
-        <p className="text-slate-600 mt-1">
-          Set up a new ride share area with pickup locations
-        </p>
+        <p className="text-slate-600 mt-1">Set up a new ride share area with pickup locations</p>
       </div>
 
       {/* Step Indicator */}
@@ -174,9 +167,7 @@ export default function NewRideAreaPage() {
                   : "border-slate-200 bg-white text-slate-500"
             }`}
           >
-            <span className="text-xs font-semibold uppercase">
-              Step {index + 1}
-            </span>
+            <span className="text-xs font-semibold uppercase">Step {index + 1}</span>
             <span className="font-semibold">{s.title}</span>
             <span className="text-xs">{s.description}</span>
           </div>
@@ -189,14 +180,10 @@ export default function NewRideAreaPage() {
         {/* Step 1: Area Details */}
         {step === 0 && (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-slate-900">
-              Area Details
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900">Area Details</h2>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Area Name *
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Area Name *</label>
                 <Input
                   placeholder="e.g., Victoria Island"
                   value={areaName}
@@ -210,15 +197,10 @@ export default function NewRideAreaPage() {
                 <Input
                   placeholder="victoria_island"
                   value={areaSlug}
-                  onChange={(e) =>
-                    setAreaSlug(
-                      e.target.value.toLowerCase().replace(/\s+/g, "_"),
-                    )
-                  }
+                  onChange={(e) => setAreaSlug(e.target.value.toLowerCase().replace(/\s+/g, "_"))}
                 />
                 <p className="text-xs text-slate-500 mt-1">
-                  Auto-generated from name. Use lowercase letters, numbers, and
-                  underscores.
+                  Auto-generated from name. Use lowercase letters, numbers, and underscores.
                 </p>
               </div>
             </div>
@@ -228,12 +210,9 @@ export default function NewRideAreaPage() {
         {/* Step 2: Pickup Locations */}
         {step === 1 && (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-slate-900">
-              Pickup Locations
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900">Pickup Locations</h2>
             <p className="text-sm text-slate-600">
-              Add pickup points where riders will be collected in{" "}
-              {areaName || "this area"}.
+              Add pickup points where riders will be collected in {areaName || "this area"}.
             </p>
 
             {/* Added locations list */}
@@ -249,18 +228,12 @@ export default function NewRideAreaPage() {
                       className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"
                     >
                       <div>
-                        <span className="font-medium text-slate-900">
-                          {loc.name}
-                        </span>
+                        <span className="font-medium text-slate-900">{loc.name}</span>
                         {loc.description && (
-                          <span className="text-sm text-slate-600 ml-2">
-                            — {loc.description}
-                          </span>
+                          <span className="text-sm text-slate-600 ml-2">— {loc.description}</span>
                         )}
                         {loc.address && (
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            📍 {loc.address}
-                          </p>
+                          <p className="text-xs text-slate-500 mt-0.5">📍 {loc.address}</p>
                         )}
                       </div>
                       <Button
@@ -277,54 +250,75 @@ export default function NewRideAreaPage() {
             )}
 
             {/* Add new location form */}
-            <Card className="p-4 bg-slate-50 space-y-3">
-              <h3 className="text-sm font-semibold text-slate-800">
-                Add New Location
-              </h3>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <Input
-                    placeholder="Location name (e.g., Gate 1, Shoprite)"
-                    value={newLocation.name}
-                    onChange={(e) =>
-                      setNewLocation({ ...newLocation, name: e.target.value })
-                    }
-                  />
+            {showLocationForm ? (
+              <Card className="p-4 bg-slate-50 space-y-3">
+                <h3 className="text-sm font-semibold text-slate-800">
+                  {pickupLocations.length === 0 ? "Add Pickup Location" : "Add Another Location"}
+                </h3>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <Input
+                      placeholder="Location name (e.g., Gate 1, Shoprite)"
+                      value={newLocation.name}
+                      onChange={(e) => setNewLocation({ ...newLocation, name: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Input
+                      placeholder="Description (optional)"
+                      value={newLocation.description}
+                      onChange={(e) =>
+                        setNewLocation({
+                          ...newLocation,
+                          description: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Input
+                      placeholder="Street address (optional)"
+                      value={newLocation.address}
+                      onChange={(e) =>
+                        setNewLocation({
+                          ...newLocation,
+                          address: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Input
-                    placeholder="Description (optional)"
-                    value={newLocation.description}
-                    onChange={(e) =>
-                      setNewLocation({
-                        ...newLocation,
-                        description: e.target.value,
-                      })
-                    }
-                  />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={addPickupLocation}>
+                    Save Location
+                  </Button>
+                  {pickupLocations.length > 0 && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        setShowLocationForm(false);
+                        setNewLocation({ name: "", description: "", address: "" });
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  )}
                 </div>
-                <div>
-                  <Input
-                    placeholder="Street address (optional)"
-                    value={newLocation.address}
-                    onChange={(e) =>
-                      setNewLocation({
-                        ...newLocation,
-                        address: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-              <Button variant="outline" size="sm" onClick={addPickupLocation}>
-                + Add Location
-              </Button>
-            </Card>
+              </Card>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowLocationForm(true)}
+                className="w-full rounded-lg border-2 border-dashed border-slate-300 py-3 text-sm font-medium text-slate-500 hover:border-cyan-400 hover:text-cyan-600 transition-colors"
+              >
+                + Add Another Location
+              </button>
+            )}
 
             {pickupLocations.length === 0 && (
               <p className="text-sm text-amber-600 italic">
-                💡 Tip: Add at least one pickup location to make this area
-                useful.
+                💡 Tip: Add at least one pickup location to make this area useful.
               </p>
             )}
           </div>
@@ -333,18 +327,12 @@ export default function NewRideAreaPage() {
         {/* Step 3: Review & Create */}
         {step === 2 && (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-slate-900">
-              Review & Create
-            </h2>
-            <p className="text-sm text-slate-600">
-              Review the ride area details before creating.
-            </p>
+            <h2 className="text-xl font-semibold text-slate-900">Review & Create</h2>
+            <p className="text-sm text-slate-600">Review the ride area details before creating.</p>
 
             <div className="space-y-4">
               <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-                <h3 className="text-sm font-semibold text-slate-800 mb-2">
-                  Area Details
-                </h3>
+                <h3 className="text-sm font-semibold text-slate-800 mb-2">Area Details</h3>
                 <div className="text-sm text-slate-700 space-y-1">
                   <p>
                     <strong>Name:</strong> {areaName}
@@ -366,17 +354,13 @@ export default function NewRideAreaPage() {
                         <strong>{loc.name}</strong>
                         {loc.description && ` — ${loc.description}`}
                         {loc.address && (
-                          <span className="text-slate-500 block text-xs">
-                            📍 {loc.address}
-                          </span>
+                          <span className="text-slate-500 block text-xs">📍 {loc.address}</span>
                         )}
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-slate-500 italic">
-                    No pickup locations added.
-                  </p>
+                  <p className="text-sm text-slate-500 italic">No pickup locations added.</p>
                 )}
               </div>
             </div>
@@ -387,9 +371,7 @@ export default function NewRideAreaPage() {
         <div className="flex justify-between pt-4 border-t border-slate-200">
           <Button
             variant="secondary"
-            onClick={
-              step === 0 ? () => router.push("/admin/transport") : prevStep
-            }
+            onClick={step === 0 ? () => router.push("/admin/transport") : prevStep}
             disabled={loading}
           >
             {step === 0 ? "Cancel" : "Back"}

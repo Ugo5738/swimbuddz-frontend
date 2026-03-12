@@ -144,11 +144,7 @@ export interface SessionUpdate {
 // --- API Functions ---
 export const SessionsApi = {
   // List sessions with optional filters
-  listSessions: (params?: {
-    types?: string;
-    cohort_id?: string;
-    include_drafts?: boolean;
-  }) => {
+  listSessions: (params?: { types?: string; cohort_id?: string; include_drafts?: boolean }) => {
     const query = new URLSearchParams();
     if (params?.types) query.set("types", params.types);
     if (params?.cohort_id) query.set("cohort_id", params.cohort_id);
@@ -160,10 +156,7 @@ export const SessionsApi = {
   },
 
   // Get sessions for a specific cohort
-  getCohortSessions: (
-    cohortId: string,
-    options?: { includeDrafts?: boolean },
-  ) => {
+  getCohortSessions: (cohortId: string, options?: { includeDrafts?: boolean }) => {
     const query = new URLSearchParams({ cohort_id: cohortId });
     if (options?.includeDrafts) query.set("include_drafts", "true");
     return apiGet<Session[]>(`/api/v1/sessions?${query.toString()}`, {
@@ -183,19 +176,14 @@ export const SessionsApi = {
     apiPatch<Session>(`/api/v1/sessions/${id}`, data, { auth: true }),
 
   // Delete session
-  deleteSession: (id: string) =>
-    apiDelete<void>(`/api/v1/sessions/${id}`, { auth: true }),
+  deleteSession: (id: string) => apiDelete<void>(`/api/v1/sessions/${id}`, { auth: true }),
 
   // Publish a draft session (transitions DRAFT → SCHEDULED, triggers notifications)
   publishSession: (id: string, shortNoticeMessage?: string) => {
     const query = shortNoticeMessage
       ? `?short_notice_message=${encodeURIComponent(shortNoticeMessage)}`
       : "";
-    return apiPost<Session>(
-      `/api/v1/sessions/${id}/publish${query}`,
-      {},
-      { auth: true },
-    );
+    return apiPost<Session>(`/api/v1/sessions/${id}/publish${query}`, {}, { auth: true });
   },
 
   // Cancel a session (triggers cancellation notifications)
@@ -203,17 +191,60 @@ export const SessionsApi = {
     const query = cancellationReason
       ? `?cancellation_reason=${encodeURIComponent(cancellationReason)}`
       : "";
-    return apiPost<Session>(
-      `/api/v1/sessions/${id}/cancel${query}`,
-      {},
-      { auth: true },
-    );
+    return apiPost<Session>(`/api/v1/sessions/${id}/cancel${query}`, {}, { auth: true });
   },
 
   // Get session stats
-  getStats: () =>
-    apiGet<{ upcoming_sessions_count: number }>("/api/v1/sessions/stats"),
+  getStats: () => apiGet<{ upcoming_sessions_count: number }>("/api/v1/sessions/stats"),
 };
+
+// --- Display Helpers ---
+
+/** Friendly labels for session locations (shared across admin + member pages). */
+export const LOCATION_LABELS: Record<string, string> = {
+  sunfit_pool: "Sunfit Pool",
+  rowe_park_pool: "Rowe Park Pool",
+  federal_palace_pool: "Federal Palace Pool",
+  open_water: "Open Water",
+};
+
+/** Get a human-readable location name, falling back through available fields. */
+export function getLocationDisplayName(location?: string, locationName?: string): string {
+  if (locationName) return locationName;
+  if (location) return LOCATION_LABELS[location] || location;
+  return "TBA";
+}
+
+/** Friendly labels for session types. */
+export const SESSION_TYPE_LABELS: Record<string, string> = {
+  club: "Club",
+  academy: "Academy",
+  community: "Community",
+  cohort_class: "Academy",
+  one_on_one: "1-on-1",
+  group_booking: "Group",
+  event: "Event",
+};
+
+/** Tailwind color classes for session type badges. */
+export const SESSION_TYPE_COLORS: Record<string, string> = {
+  club: "bg-cyan-50 text-cyan-700",
+  community: "bg-purple-50 text-purple-700",
+  cohort_class: "bg-orange-50 text-orange-700",
+  one_on_one: "bg-emerald-50 text-emerald-700",
+  group_booking: "bg-blue-50 text-blue-700",
+  event: "bg-rose-50 text-rose-700",
+};
+
+/** Get display label for a session type. */
+export function getSessionTypeLabel(type: string): string {
+  return SESSION_TYPE_LABELS[type] || type;
+}
+
+/** Get Tailwind color classes for a session type badge. */
+export function getSessionTypeColor(type: string): string {
+  return SESSION_TYPE_COLORS[type] || "bg-slate-100 text-slate-600";
+}
 
 // --- Session API exports ---
 
@@ -249,7 +280,7 @@ interface SignInToSessionParams {
  * Sign in to a session with optional ride share booking
  */
 export const signInToSession = async (
-  params: SignInToSessionParams,
+  params: SignInToSessionParams
 ): Promise<{ success: boolean; message?: string }> => {
   const payload: Record<string, unknown> = {
     status: params.status || "present",
@@ -266,15 +297,12 @@ export const signInToSession = async (
   }
 
   try {
-    await apiPost(
-      `/api/v1/attendance/sessions/${params.sessionId}/sign-in`,
-      payload,
-      { auth: true },
-    );
+    await apiPost(`/api/v1/attendance/sessions/${params.sessionId}/sign-in`, payload, {
+      auth: true,
+    });
     return { success: true };
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to sign in to session";
+    const message = error instanceof Error ? error.message : "Failed to sign in to session";
     throw new Error(message);
   }
 };

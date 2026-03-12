@@ -12,6 +12,11 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { supabase } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
+import {
+  LOCATION_LABELS as SHARED_LOCATION_LABELS,
+  SESSION_TYPE_COLORS as SHARED_TYPE_CLR,
+  SESSION_TYPE_LABELS as SHARED_TYPE_LABELS,
+} from "@/lib/sessions";
 import type { DateSelectArg, EventClickArg, EventInput } from "@fullcalendar/core";
 import {
   Calendar,
@@ -99,22 +104,9 @@ const PER_PAGE = 20;
 
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-const LOCATION_LABELS: Record<string, string> = {
-  sunfit_pool: "Sunfit Pool",
-  rowe_park_pool: "Rowe Park Pool",
-  federal_palace_pool: "Federal Palace Pool",
-  open_water: "Open Water",
-};
+const LOCATION_LABELS = SHARED_LOCATION_LABELS;
 
-const TYPE_LABELS: Record<SessionType, string> = {
-  club: "Club",
-  academy: "Academy",
-  community: "Community",
-  cohort_class: "Academy",
-  one_on_one: "1-on-1",
-  group_booking: "Group",
-  event: "Event",
-};
+const TYPE_LABELS: Record<SessionType, string> = SHARED_TYPE_LABELS as Record<SessionType, string>;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -168,14 +160,7 @@ function locationLabel(loc: string) {
 // Small presentational pieces
 // ---------------------------------------------------------------------------
 
-const TYPE_CLR: Record<string, string> = {
-  club: "bg-cyan-50 text-cyan-700",
-  community: "bg-purple-50 text-purple-700",
-  cohort_class: "bg-orange-50 text-orange-700",
-  one_on_one: "bg-emerald-50 text-emerald-700",
-  group_booking: "bg-blue-50 text-blue-700",
-  event: "bg-rose-50 text-rose-700",
-};
+const TYPE_CLR = SHARED_TYPE_CLR;
 
 function TypeBadge({ t }: { t: string }) {
   const label = TYPE_LABELS[t as SessionType] || t;
@@ -1126,7 +1111,7 @@ function SessionFormModal({
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
-            label="Pool Fee (N)"
+            label="Pool Fee (₦)"
             type="number"
             value={form.pool_fee}
             onChange={(e) => setForm({ ...form, pool_fee: parseInt(e.target.value) || 0 })}
