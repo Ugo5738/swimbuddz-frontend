@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  type DateSelectArg,
-  type EventClickArg,
-  type EventInput,
-} from "@fullcalendar/core";
+import { type DateSelectArg, type EventClickArg, type EventInput } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
@@ -61,35 +57,65 @@ export function SessionCalendar({
         eventClick={onEventClick}
         eventDrop={onEventDrop}
         eventContent={(eventInfo) => {
-          const sessionType =
-            eventInfo.event.extendedProps.session_type || "Club";
-          const isRecurring =
-            eventInfo.event.extendedProps.is_recurring_instance;
+          const isRecurring = eventInfo.event.extendedProps.is_recurring_instance;
+          const isDraft = eventInfo.event.extendedProps.status === "draft";
+          const isCancelled = eventInfo.event.extendedProps.status === "cancelled";
 
           return (
             <div className="px-1 py-0.5 text-xs">
-              {isRecurring && <span className="mr-1">🔁</span>}
-              <strong>{eventInfo.timeText}</strong>
-              <div>{eventInfo.event.title}</div>
+              <div className="flex items-center gap-1">
+                {isRecurring && <span>🔁</span>}
+                {isDraft && (
+                  <span className="rounded bg-white/30 px-1 text-[10px] font-bold uppercase leading-tight">
+                    Draft
+                  </span>
+                )}
+                {isCancelled && (
+                  <span className="rounded bg-red-900/40 px-1 text-[10px] font-bold uppercase leading-tight">
+                    Cancelled
+                  </span>
+                )}
+                <strong>{eventInfo.timeText}</strong>
+              </div>
+              <div className={isCancelled ? "line-through" : ""}>{eventInfo.event.title}</div>
             </div>
           );
         }}
         height="auto"
         eventClassNames={(arg) => {
-          const sessionType = arg.event.extendedProps.session_type || "Club";
-          const baseClasses =
-            "cursor-pointer transition-opacity hover:opacity-80";
+          const sessionType = arg.event.extendedProps.session_type || "club";
+          const sessionStatus = arg.event.extendedProps.status;
+          const baseClasses = "cursor-pointer transition-opacity hover:opacity-80";
+          const draftClasses =
+            sessionStatus === "draft" ? "!opacity-60 !border-dashed !border-2" : "";
+          const cancelledClasses = sessionStatus === "cancelled" ? "!opacity-40 !line-through" : "";
 
+          let typeClasses: string;
           switch (sessionType) {
-            case "Club":
-              return `${baseClasses} !bg-cyan-600 !border-cyan-700`;
-            case "Meetup":
-              return `${baseClasses} !bg-purple-600 !border-purple-700`;
-            case "Academy":
-              return `${baseClasses} !bg-orange-600 !border-orange-700`;
+            case "club":
+              typeClasses = "!bg-cyan-600 !border-cyan-700";
+              break;
+            case "community":
+              typeClasses = "!bg-purple-600 !border-purple-700";
+              break;
+            case "cohort_class":
+              typeClasses = "!bg-orange-600 !border-orange-700";
+              break;
+            case "one_on_one":
+              typeClasses = "!bg-emerald-600 !border-emerald-700";
+              break;
+            case "group_booking":
+              typeClasses = "!bg-blue-600 !border-blue-700";
+              break;
+            case "event":
+              typeClasses = "!bg-rose-600 !border-rose-700";
+              break;
             default:
-              return `${baseClasses} !bg-slate-600 !border-slate-700`;
+              typeClasses = "!bg-slate-600 !border-slate-700";
+              break;
           }
+
+          return `${baseClasses} ${typeClasses} ${draftClasses} ${cancelledClasses}`;
         }}
       />
 

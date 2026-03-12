@@ -140,8 +140,8 @@ export default function AdminSessionsPage() {
 
       const headers = { Authorization: `Bearer ${token}` };
 
-      // Fetch sessions
-      const sessionsRes = await fetch(`${API_BASE_URL}/api/v1/sessions/`, {
+      // Fetch sessions (include drafts so admins can see and manage all sessions)
+      const sessionsRes = await fetch(`${API_BASE_URL}/api/v1/sessions/?include_drafts=true`, {
         headers,
       });
       if (sessionsRes.ok) {
@@ -489,6 +489,7 @@ export default function AdminSessionsPage() {
     end: session.ends_at,
     extendedProps: {
       session_type: session.session_type || "club",
+      status: session.status,
       location: session.location,
       pool_fee: session.pool_fee,
       capacity: session.capacity,
