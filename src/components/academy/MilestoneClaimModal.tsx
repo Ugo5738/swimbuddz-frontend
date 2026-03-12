@@ -2,7 +2,7 @@
 
 import { MediaInput } from "@/components/ui/MediaInput";
 import { useMediaUrl } from "@/hooks/useMediaUrl";
-import { AcademyApi, Milestone, MilestoneClaimRequest } from "@/lib/academy";
+import { AcademyApi, Milestone, MilestoneClaimRequest, RequiredEvidence } from "@/lib/academy";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -22,9 +22,15 @@ export function MilestoneClaimModal({
   onSuccess,
 }: MilestoneClaimModalProps) {
   const [evidenceMediaId, setEvidenceMediaId] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [studentNotes, setStudentNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [milestoneVideoUrl] = useMediaUrl(milestone.video_media_id);
+
+  const requiresVideo =
+    milestone.required_evidence === RequiredEvidence.VIDEO ||
+    milestone.required_evidence === RequiredEvidence.TIME_TRIAL;
+  const canSubmit = !isSubmitting && !uploadError && (!requiresVideo || !!evidenceMediaId);
 
   if (!isOpen) return null;
 
@@ -75,16 +81,12 @@ export function MilestoneClaimModal({
         className="w-full max-w-lg mx-4 rounded-lg bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-xl font-bold text-slate-900 mb-2">
-          Claim Milestone
-        </h2>
+        <h2 className="text-xl font-bold text-slate-900 mb-2">Claim Milestone</h2>
 
         {/* Milestone Info */}
         <div className="mb-6 p-4 bg-cyan-50 rounded-lg border border-cyan-100">
           <h3 className="font-semibold text-cyan-900">{milestone.name}</h3>
-          {milestone.criteria && (
-            <p className="mt-1 text-sm text-cyan-700">{milestone.criteria}</p>
-          )}
+          {milestone.criteria && <p className="mt-1 text-sm text-cyan-700">{milestone.criteria}</p>}
           {milestoneVideoUrl && (
             <a
               href={milestoneVideoUrl}
@@ -92,12 +94,7 @@ export function MilestoneClaimModal({
               rel="noopener noreferrer"
               className="mt-2 inline-flex items-center text-xs text-cyan-600 hover:text-cyan-700"
             >
-              <svg
-                className="mr-1 h-3 w-3"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
+              <svg className="mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -123,22 +120,32 @@ export function MilestoneClaimModal({
               purpose="milestone_evidence"
               mode="both"
               value={evidenceMediaId}
-              onChange={(mediaId) => setEvidenceMediaId(mediaId)}
-              label="Evidence (Video or Image)"
+              onChange={(mediaId) => {
+                setEvidenceMediaId(mediaId);
+                if (mediaId) setUploadError(null);
+              }}
+              onError={(err) => setUploadError(err)}
+              label={requiresVideo ? "Evidence (Required)" : "Evidence (Video or Image)"}
               showPreview={true}
             />
-            <p className="mt-1 text-xs text-slate-500">
-              Upload a video showing your achievement, or paste a YouTube/link
-              URL
-            </p>
+            {requiresVideo && !evidenceMediaId && !uploadError && (
+              <p className="mt-1 text-xs text-amber-600">
+                This milestone requires video evidence before you can submit.
+              </p>
+            )}
+            {uploadError && (
+              <p className="mt-2 text-sm font-medium text-red-600">Upload failed: {uploadError}</p>
+            )}
+            {!requiresVideo && !uploadError && (
+              <p className="mt-1 text-xs text-slate-500">
+                Upload a video showing your achievement, or paste a YouTube/link URL
+              </p>
+            )}
           </div>
 
           {/* Student Notes */}
           <div>
-            <label
-              htmlFor="studentNotes"
-              className="block text-sm font-medium text-slate-700 mb-1"
-            >
+            <label htmlFor="studentNotes" className="block text-sm font-medium text-slate-700 mb-1">
               Notes (Optional)
             </label>
             <textarea
@@ -165,7 +172,7 @@ export function MilestoneClaimModal({
             <button
               type="submit"
               className="flex-1 rounded bg-cyan-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-cyan-700 disabled:opacity-50"
-              disabled={isSubmitting}
+              disabled={!canSubmit}
             >
               {isSubmitting ? "Submitting..." : "Submit Claim"}
             </button>

@@ -28,6 +28,8 @@ interface MediaInputProps {
   value?: string | null;
   /** Callback when media is uploaded/registered, returns media_id */
   onChange: (mediaId: string | null, fileUrl?: string) => void;
+  /** Callback when upload fails, exposes error to parent */
+  onError?: (error: string | null) => void;
   /** Optional label */
   label?: string;
   /** Accept attribute for file input */
@@ -45,6 +47,7 @@ export function MediaInput({
   mode = "upload-only",
   value,
   onChange,
+  onError,
   label,
   accept,
   showPreview = true,
@@ -88,6 +91,7 @@ export function MediaInput({
   const handleFileSelect = useCallback(
     async (file: File) => {
       setError(null);
+      onError?.(null);
       setIsUploading(true);
 
       try {
@@ -100,12 +104,14 @@ export function MediaInput({
 
         onChange(mediaItem.id, mediaItem.file_url);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Upload failed");
+        const errorMsg = err instanceof Error ? err.message : "Upload failed";
+        setError(errorMsg);
+        onError?.(errorMsg);
       } finally {
         setIsUploading(false);
       }
     },
-    [purpose, onChange]
+    [purpose, onChange, onError]
   );
 
   const handleDrop = useCallback(
@@ -128,6 +134,7 @@ export function MediaInput({
     if (!urlInput.trim()) return;
 
     setError(null);
+    onError?.(null);
     setIsUploading(true);
 
     try {
@@ -139,7 +146,9 @@ export function MediaInput({
       onChange(mediaItem.id, mediaItem.file_url);
       setUrlInput("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to register URL");
+      const errorMsg = err instanceof Error ? err.message : "Failed to register URL";
+      setError(errorMsg);
+      onError?.(errorMsg);
     } finally {
       setIsUploading(false);
     }

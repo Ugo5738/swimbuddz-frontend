@@ -10,19 +10,26 @@ import { supabase } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
 import {
   CheckCircle,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   Eye,
   Pencil,
+  Search,
   Trash2,
   TrendingUp,
   UserPlus,
+  Users,
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-// Define Member type based on backend response
+// ---------------------------------------------------------------------------
+// Types & constants
+// ---------------------------------------------------------------------------
+
 interface Member {
   id: string;
   first_name: string;
@@ -38,8 +45,6 @@ interface Member {
   approved_by?: string;
   approval_notes?: string;
   profile_photo_url?: string;
-
-  // Flattened from profile
   city?: string;
   country?: string;
   gender?: string;
@@ -50,490 +55,470 @@ interface Member {
   previous_communities?: string;
   hopes_from_swimbuddz?: string;
   goals_narrative?: string;
-
-  // Flattened from membership
   primary_tier?: string;
   active_tiers?: string[];
   requested_tiers?: string[];
   community_paid_until?: string;
   club_paid_until?: string;
   academy_paid_until?: string;
-
-  // Flattened from emergency contact
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
   medical_info?: string;
-
-  // Legacy compat
   membership_tier?: string;
   requested_membership_tiers?: string[];
 }
 
-type PaymentStatus = "paid" | "expired" | "unpaid";
+type FilterTab = "all" | "pending" | "active" | "unpaid" | "upgrades";
+type ApprovalAction = "approve" | "reject" | "upgrade";
+const PER_PAGE = 20;
 
-function getTierPaymentStatus(paidUntil?: string): PaymentStatus {
-  if (!paidUntil) return "unpaid";
-  return new Date(paidUntil) > new Date() ? "paid" : "expired";
+const EMPTY_FORM = {
+  first_name: "",
+  last_name: "",
+  email: "",
+  phone: "",
+  swim_level: "Beginner",
+  location_preference: "Ikoyi",
+  membership_tier: "community",
+  city: "",
+  country: "Nigeria",
+  emergency_contact_name: "",
+  emergency_contact_phone: "",
+  medical_info: "",
+  goals_narrative: "",
+};
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function tierPaid(d?: string) {
+  return d ? new Date(d) > new Date() : false;
+}
+function isPaid(m: Member) {
+  return (
+    tierPaid(m.community_paid_until) ||
+    tierPaid(m.club_paid_until) ||
+    tierPaid(m.academy_paid_until)
+  );
+}
+function hasUpgrade(m: Member) {
+  const t = m.requested_tiers || m.requested_membership_tiers;
+  return !!t && t.length > 0;
+}
+function tier(m: Member) {
+  return m.primary_tier || m.membership_tier || "community";
+}
+function upgradeTiers(m: Member) {
+  return (m.requested_tiers || m.requested_membership_tiers || []).join(", ");
 }
 
-function getMemberPaymentStatus(member: Member): PaymentStatus {
-  const statuses = [
-    getTierPaymentStatus(member.community_paid_until),
-    getTierPaymentStatus(member.club_paid_until),
-    getTierPaymentStatus(member.academy_paid_until),
-  ];
-  if (statuses.includes("paid")) return "paid";
-  if (statuses.includes("expired")) return "expired";
-  return "unpaid";
+async function apiFetch(path: string, opts: RequestInit = {}) {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error("Not authenticated");
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    ...opts,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      ...opts.headers,
+    },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.detail || `Request failed (${res.status})`);
+  }
+  return res;
 }
 
-type FilterTab = "all" | "pending" | "approved" | "rejected" | "upgrades" | "paid" | "unpaid";
+// ---------------------------------------------------------------------------
+// Small presentational pieces
+// ---------------------------------------------------------------------------
+
+const TIER_CLR: Record<string, string> = {
+  community: "bg-blue-50 text-blue-700",
+  club: "bg-green-50 text-green-700",
+  academy: "bg-purple-50 text-purple-700",
+};
+
+function TierBadge({ t }: { t: string }) {
+  return (
+    <span
+      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium capitalize ${TIER_CLR[t] || "bg-slate-100 text-slate-600"}`}
+    >
+      {t}
+    </span>
+  );
+}
+
+function StatusBadge({ s }: { s: string }) {
+  if (s === "approved")
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
+        <CheckCircle className="h-3 w-3" />
+        Approved
+      </span>
+    );
+  if (s === "rejected")
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
+        <XCircle className="h-3 w-3" />
+        Rejected
+      </span>
+    );
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+      <Clock className="h-3 w-3" />
+      Pending
+    </span>
+  );
+}
+
+function PayText({ m }: { m: Member }) {
+  const p = isPaid(m);
+  return (
+    <span className={`text-xs font-medium ${p ? "text-green-600" : "text-red-500"}`}>
+      {p ? "Paid" : "Unpaid"}
+    </span>
+  );
+}
+
+function Av({ m }: { m: Member }) {
+  if (m.profile_photo_url)
+    return (
+      <img
+        src={m.profile_photo_url}
+        alt=""
+        className="h-8 w-8 shrink-0 rounded-full object-cover"
+      />
+    );
+  return (
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-xs font-semibold text-cyan-700">
+      {(m.first_name[0] || "") + (m.last_name[0] || "")}
+    </span>
+  );
+}
+
+function IBtn({
+  children,
+  href,
+  title,
+  className = "text-slate-500 hover:bg-slate-100",
+  onClick,
+  disabled,
+}: {
+  children: React.ReactNode;
+  href?: string;
+  title: string;
+  className?: string;
+  onClick?: () => void;
+  disabled?: boolean;
+}) {
+  const cls = `rounded p-1.5 transition ${className} disabled:opacity-40`;
+  if (href)
+    return (
+      <Link href={href} className={cls} title={title}>
+        {children}
+      </Link>
+    );
+  return (
+    <button onClick={onClick} className={cls} title={title} disabled={disabled}>
+      {children}
+    </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main page component
+// ---------------------------------------------------------------------------
 
 export default function AdminMembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
   const [filterTab, setFilterTab] = useState<FilterTab>("all");
+  const [page, setPage] = useState(1);
 
-  // Create Modal State
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-
-  // Edit Modal State
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  // Modal state
+  const [formModal, setFormModal] = useState<"create" | "edit" | null>(null);
+  const [approvalModal, setApprovalModal] = useState<{
+    member: Member;
+    action: ApprovalAction;
+  } | null>(null);
+  const [deleteModal, setDeleteModal] = useState<Member | null>(null);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
-
-  // Approval Modal State
-  const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
-  const [approvingMember, setApprovingMember] = useState<Member | null>(null);
+  const [formData, setFormData] = useState(EMPTY_FORM);
   const [approvalNotes, setApprovalNotes] = useState("");
-  const [approvalAction, setApprovalAction] = useState<"approve" | "reject" | "upgrade">("approve"); // Added upgrade
-
-  // Delete Modal State
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [deletingMember, setDeletingMember] = useState<Member | null>(null);
-  const [deletingMemberIds, setDeletingMemberIds] = useState<Set<string>>(new Set());
-
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 
-  // Form state
-  const [formData, setFormData] = useState({
-    first_name: "",
-    last_name: "",
-    email: "",
-    phone: "",
-    swim_level: "Beginner",
-    location_preference: "Ikoyi",
-    membership_tier: "community",
-    city: "",
-    country: "Nigeria",
-    emergency_contact_name: "",
-    emergency_contact_phone: "",
-    medical_info: "",
-    goals_narrative: "",
-  });
-
-  const fetchMembers = async () => {
+  // ---- Fetch ----
+  const fetchMembers = useCallback(async () => {
     try {
       setIsLoading(true);
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const token = session?.access_token;
-
-      if (!token) {
-        setError("Not authenticated");
-        return;
-      }
-
-      const res = await fetch(`${API_BASE_URL}/api/v1/members/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Failed to fetch members");
-      const data = await res.json();
-      setMembers(data);
+      const res = await apiFetch("/api/v1/members/");
+      setMembers(await res.json());
       setError(null);
     } catch (err) {
-      console.error(err);
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(err instanceof Error ? err.message : "Failed to load members");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchMembers();
-  }, []);
+  }, [fetchMembers]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  // ---- Derived data ----
+  const counts = useMemo(() => {
+    const c = { all: 0, pending: 0, active: 0, unpaid: 0, upgrades: 0 };
+    for (const m of members) {
+      c.all++;
+      if (m.approval_status === "pending") c.pending++;
+      if (m.approval_status === "approved") c.active++;
+      if (!isPaid(m)) c.unpaid++;
+      if (hasUpgrade(m)) c.upgrades++;
+    }
+    return c;
+  }, [members]);
+
+  const filtered = useMemo(() => {
+    let list = members;
+    if (filterTab === "pending") list = list.filter((m) => m.approval_status === "pending");
+    else if (filterTab === "active") list = list.filter((m) => m.approval_status === "approved");
+    else if (filterTab === "unpaid") list = list.filter((m) => !isPaid(m));
+    else if (filterTab === "upgrades") list = list.filter(hasUpgrade);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (m) =>
+          `${m.first_name} ${m.last_name}`.toLowerCase().includes(q) ||
+          m.email.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [members, filterTab, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const safePage = Math.min(page, totalPages);
+  const pageItems = filtered.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
+  useEffect(() => {
+    setPage(1);
+  }, [filterTab, search]);
+
+  // ---- Form helpers ----
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
-
-  const resetForm = () => {
+  const openCreate = () => {
+    setFormData(EMPTY_FORM);
+    setEditingMember(null);
+    setFormModal("create");
+  };
+  const openEdit = (m: Member) => {
+    setEditingMember(m);
     setFormData({
-      first_name: "",
-      last_name: "",
-      email: "",
-      phone: "",
-      swim_level: "Beginner",
-      location_preference: "Ikoyi",
-      membership_tier: "community",
-      city: "",
-      country: "Nigeria",
-      emergency_contact_name: "",
-      emergency_contact_phone: "",
-      medical_info: "",
-      goals_narrative: "",
+      first_name: m.first_name,
+      last_name: m.last_name,
+      email: m.email,
+      phone: m.phone || "",
+      swim_level: m.swim_level || "Beginner",
+      location_preference: Array.isArray(m.location_preference)
+        ? m.location_preference[0]
+        : m.location_preference || "Ikoyi",
+      membership_tier: m.membership_tier || "community",
+      city: m.city || "",
+      country: m.country || "Nigeria",
+      emergency_contact_name: m.emergency_contact_name || "",
+      emergency_contact_phone: m.emergency_contact_phone || "",
+      medical_info: m.medical_info || "",
+      goals_narrative: m.goals_narrative || "",
     });
+    setFormModal("edit");
   };
-
-  const openCreateModal = () => {
-    resetForm();
-    setIsCreateModalOpen(true);
-  };
-
-  const openEditModal = (member: Member) => {
-    setEditingMember(member);
-    setFormData({
-      first_name: member.first_name,
-      last_name: member.last_name,
-      email: member.email,
-      phone: member.phone || "",
-      swim_level: member.swim_level || "Beginner",
-      location_preference: Array.isArray(member.location_preference)
-        ? member.location_preference[0]
-        : member.location_preference || "Ikoyi",
-      membership_tier: member.membership_tier || "community",
-      city: member.city || "",
-      country: member.country || "Nigeria",
-      emergency_contact_name: member.emergency_contact_name || "",
-      emergency_contact_phone: member.emergency_contact_phone || "",
-      medical_info: member.medical_info || "",
-      goals_narrative: member.goals_narrative || "",
-    });
-    setIsEditModalOpen(true);
-  };
-
-  const openApprovalModal = (member: Member, action: "approve" | "reject" | "upgrade") => {
-    setApprovingMember(member);
-    setApprovalAction(action);
+  const openApproval = (member: Member, action: ApprovalAction) => {
+    setApprovalModal({ member, action });
     setApprovalNotes("");
-    setIsApprovalModalOpen(true);
   };
 
-  const handleCreateMember = async (e: React.FormEvent) => {
+  // ---- API actions ----
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      // Generate a placeholder auth_id since this is admin-created
-      const auth_id = `admin-created-${crypto.randomUUID()}`;
-
-      const payload = {
-        ...formData,
-        auth_id,
-        location_preference: [formData.location_preference], // Backend expects list
-        registration_complete: true,
-        approval_status: "approved", // Admin-created members are auto-approved
-      };
-
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const token = session?.access_token;
-
-      const res = await fetch(`${API_BASE_URL}/api/v1/members/`, {
+      await apiFetch("/api/v1/members/", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          ...formData,
+          auth_id: `admin-created-${crypto.randomUUID()}`,
+          location_preference: [formData.location_preference],
+          registration_complete: true,
+          approval_status: "approved",
+        }),
       });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || "Failed to create member");
-      }
-
+      toast.success("Member created");
+      setFormModal(null);
       await fetchMembers();
-      setIsCreateModalOpen(false);
-      resetForm();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to create member");
+      toast.error(err instanceof Error ? err.message : "Failed to create member");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleUpdateMember = async (e: React.FormEvent) => {
+  const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingMember) return;
-
     setIsSubmitting(true);
     try {
-      const payload = {
-        ...formData,
-        location_preference: [formData.location_preference], // Backend expects list
-      };
-
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const token = session?.access_token;
-
-      const res = await fetch(`${API_BASE_URL}/api/v1/members/${editingMember.id}`, {
+      await apiFetch(`/api/v1/admin/members/${editingMember.id}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...formData, location_preference: [formData.location_preference] }),
       });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || "Failed to update member");
-      }
-
+      toast.success("Member updated");
+      setFormModal(null);
       await fetchMembers();
-      setIsEditModalOpen(false);
-      setEditingMember(null);
-      resetForm();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to update member");
+      toast.error(err instanceof Error ? err.message : "Failed to update member");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleApprovalAction = async () => {
-    if (!approvingMember) return;
-
+  const handleApproval = async () => {
+    if (!approvalModal) return;
+    const { member, action } = approvalModal;
     setIsSubmitting(true);
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const token = session?.access_token;
-
-      let endpoint = "";
-      if (approvalAction === "approve") {
-        endpoint = `${API_BASE_URL}/api/v1/admin/members/${approvingMember.id}/approve`;
-      } else if (approvalAction === "reject") {
-        endpoint = `${API_BASE_URL}/api/v1/admin/members/${approvingMember.id}/reject`;
-      } else if (approvalAction === "upgrade") {
-        endpoint = `${API_BASE_URL}/api/v1/admin/members/${approvingMember.id}/approve-upgrade`;
-      }
-
-      const res = await fetch(endpoint, {
+      const paths: Record<ApprovalAction, string> = {
+        approve: `/api/v1/admin/members/${member.id}/approve`,
+        reject: `/api/v1/admin/members/${member.id}/reject`,
+        upgrade: `/api/v1/admin/members/${member.id}/approve-upgrade`,
+      };
+      await apiFetch(paths[action], {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify({ notes: approvalNotes }),
       });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || `Failed to ${approvalAction} member`);
-      }
-
+      toast.success(
+        { approve: "Member approved", reject: "Member rejected", upgrade: "Upgrade approved" }[
+          action
+        ]
+      );
+      setApprovalModal(null);
       await fetchMembers();
-      setIsApprovalModalOpen(false);
-      setApprovingMember(null);
-      setApprovalNotes("");
     } catch (err) {
-      alert(err instanceof Error ? err.message : `Failed to ${approvalAction} member`);
+      toast.error(err instanceof Error ? err.message : `Failed to ${action}`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const openDeleteModal = (member: Member) => {
-    setDeletingMember(member);
-    setIsDeleteModalOpen(true);
-  };
-
-  const handleDeleteMember = async (
-    memberId: string,
-    memberName: string,
-    mode: "soft" | "hard"
-  ) => {
-    if (mode === "hard" && !confirm(`Hard delete ${memberName}? This cannot be undone.`)) {
-      return;
-    }
-
-    setDeletingMemberIds((prev) => {
-      const next = new Set(prev);
-      next.add(memberId);
-      return next;
-    });
-    setIsDeleteModalOpen(false);
-    setDeletingMember(null);
-    toast.message(`${mode === "hard" ? "Hard delete" : "Soft delete"} started for ${memberName}.`);
+  const handleDelete = async (mode: "soft" | "hard") => {
+    if (!deleteModal) return;
+    const { id, first_name, last_name } = deleteModal;
+    const name = `${first_name} ${last_name}`;
+    if (mode === "hard" && !confirm(`Permanently delete ${name}? This cannot be undone.`)) return;
+    setDeletingIds((prev) => new Set(prev).add(id));
+    setDeleteModal(null);
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const token = session?.access_token;
-
-      const res = await fetch(`${API_BASE_URL}/api/v1/admin/cleanup/members/${memberId}`, {
+      await apiFetch(`/api/v1/admin/cleanup/members/${id}`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({ mode }),
       });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.detail || "Failed to delete member");
-      }
-
+      toast.success(`${name} deleted`);
       await fetchMembers();
-      toast.success(`${memberName} deleted.`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete member");
+      toast.error(err instanceof Error ? err.message : "Delete failed");
     } finally {
-      setDeletingMemberIds((prev) => {
-        const next = new Set(prev);
-        next.delete(memberId);
-        return next;
+      setDeletingIds((prev) => {
+        const n = new Set(prev);
+        n.delete(id);
+        return n;
       });
     }
   };
 
-  // Filter members based on selected tab
-  const filteredMembers = members.filter((member) => {
-    if (filterTab === "all") return true;
-    if (filterTab === "upgrades") {
-      const tiers = member.requested_tiers || member.requested_membership_tiers;
-      return tiers && tiers.length > 0;
-    }
-    if (filterTab === "paid") return getMemberPaymentStatus(member) === "paid";
-    if (filterTab === "unpaid") return getMemberPaymentStatus(member) !== "paid";
-    return member.approval_status === filterTab;
-  });
+  // ---- Tab config ----
+  const tabs: { key: FilterTab; label: string }[] = [
+    { key: "all", label: "All" },
+    { key: "pending", label: "Pending" },
+    { key: "active", label: "Active" },
+    { key: "unpaid", label: "Unpaid" },
+    { key: "upgrades", label: "Upgrades" },
+  ];
 
-  // Count for each status
-  const counts: Record<FilterTab, number> = {
-    all: members.length,
-    pending: members.filter((m) => m.approval_status === "pending").length,
-    approved: members.filter((m) => m.approval_status === "approved").length,
-    rejected: members.filter((m) => m.approval_status === "rejected").length,
-    upgrades: members.filter((m) => {
-      const tiers = m.requested_tiers || m.requested_membership_tiers;
-      return tiers && tiers.length > 0;
-    }).length,
-    paid: members.filter((m) => getMemberPaymentStatus(m) === "paid").length,
-    unpaid: members.filter((m) => getMemberPaymentStatus(m) !== "paid").length,
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "approved":
-        return (
-          <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
-            <CheckCircle className="h-3 w-3" />
-            Approved
-          </span>
-        );
-      case "rejected":
-        return (
-          <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700">
-            <XCircle className="h-3 w-3" />
-            Rejected
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
-            <Clock className="h-3 w-3" />
-            Pending
-          </span>
-        );
-    }
-  };
-
-  const getPaymentBadges = (member: Member) => {
-    const tiers: { key: string; label: string; field: keyof Member }[] = [
-      { key: "community", label: "C", field: "community_paid_until" },
-      { key: "club", label: "Cl", field: "club_paid_until" },
-      { key: "academy", label: "A", field: "academy_paid_until" },
-    ];
-    const activeTiers = member.active_tiers || [member.primary_tier || "community"];
-    return (
-      <div className="flex items-center gap-1">
-        {tiers
-          .filter((t) => activeTiers.includes(t.key))
-          .map((t) => {
-            const status = getTierPaymentStatus(member[t.field] as string | undefined);
-            const colors =
-              status === "paid"
-                ? "bg-green-100 text-green-700"
-                : status === "expired"
-                  ? "bg-amber-100 text-amber-700"
-                  : "bg-red-100 text-red-700";
-            return (
-              <span
-                key={t.key}
-                className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold ${colors}`}
-                title={`${t.key}: ${status}${member[t.field] ? ` (until ${new Date(member[t.field] as string).toLocaleDateString()})` : ""}`}
-              >
-                {t.label}
-              </span>
-            );
-          })}
-      </div>
-    );
-  };
-
+  // ---- Render ----
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Header - Responsive layout */}
+    <div className="space-y-6">
+      {/* Header */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1 sm:space-y-2">
-          <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] sm:tracking-[0.3em] text-cyan-600">
-            Admin
-          </p>
-          <h1 className="text-2xl sm:text-4xl font-bold text-slate-900">Members</h1>
-          <p className="text-xs sm:text-sm text-slate-600">
-            Manage community members and approve registrations.
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-600">Admin</p>
+          <h1 className="text-2xl font-bold text-slate-900 sm:text-4xl">Members</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Manage registrations, approvals, and membership tiers.
           </p>
         </div>
-        <Button
-          onClick={openCreateModal}
-          className="flex items-center justify-center gap-2 w-full sm:w-auto"
-        >
-          <UserPlus className="h-4 w-4" />
-          <span className="sm:inline">Create Member</span>
+        <Button onClick={openCreate} className="flex items-center gap-2">
+          <UserPlus className="h-4 w-4" /> Create Member
         </Button>
       </header>
 
-      {/* Filter Tabs - Horizontally scrollable on mobile */}
-      <div className="relative -mx-3 sm:mx-0">
-        <div className="flex gap-1 sm:gap-2 border-b border-slate-200 overflow-x-auto px-3 sm:px-0 scrollbar-hide">
-          {(
-            ["all", "pending", "approved", "rejected", "paid", "unpaid", "upgrades"] as FilterTab[]
-          ).map((tab) => (
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatCard
+          label="Total Members"
+          value={counts.all}
+          icon={<Users className="h-5 w-5 text-slate-400" />}
+        />
+        <StatCard
+          label="Pending Approval"
+          value={counts.pending}
+          icon={<Clock className="h-5 w-5 text-amber-500" />}
+          accent={counts.pending > 0}
+        />
+        <StatCard
+          label="Active Members"
+          value={counts.active}
+          icon={<CheckCircle className="h-5 w-5 text-green-500" />}
+        />
+        <StatCard
+          label="Unpaid"
+          value={counts.unpaid}
+          icon={<XCircle className="h-5 w-5 text-red-400" />}
+          accent={counts.unpaid > 0}
+        />
+      </div>
+
+      {/* Search + tabs */}
+      <div className="space-y-3">
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search by name or email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+          />
+        </div>
+        <div className="flex gap-1 overflow-x-auto border-b border-slate-200 pb-px">
+          {tabs.map(({ key, label }) => (
             <button
-              key={tab}
-              onClick={() => setFilterTab(tab)}
-              className={`px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
-                filterTab === tab ? "text-cyan-700" : "text-slate-500 hover:text-slate-700"
-              }`}
+              key={key}
+              onClick={() => setFilterTab(key)}
+              className={`relative shrink-0 px-3 py-2 text-sm font-medium transition ${filterTab === key ? "text-cyan-700" : "text-slate-500 hover:text-slate-700"}`}
             >
-              <span className="capitalize">{tab}</span>
+              {label}
               <span
-                className={`ml-1.5 sm:ml-2 px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs ${
-                  filterTab === tab ? "bg-cyan-100 text-cyan-700" : "bg-slate-100 text-slate-500"
-                }`}
+                className={`ml-1.5 rounded-full px-1.5 py-0.5 text-xs ${filterTab === key ? "bg-cyan-100 text-cyan-700" : "bg-slate-100 text-slate-500"}`}
               >
-                {counts[tab]}
+                {counts[key]}
               </span>
-              {filterTab === tab && (
+              {filterTab === key && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-600" />
               )}
             </button>
@@ -541,135 +526,81 @@ export default function AdminMembersPage() {
         </div>
       </div>
 
-      {/* Pending Approval/Upgrade Alert */}
-      {((counts.pending > 0 && filterTab !== "pending") ||
-        (counts.upgrades > 0 && filterTab !== "upgrades")) && (
-        <div className="p-4 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Clock className="h-5 w-5 text-amber-600" />
-            <span className="text-amber-800">
-              {counts.pending > 0 && (
-                <span>
-                  <strong>{counts.pending}</strong> new registration(s)
-                </span>
-              )}
-              {counts.pending > 0 && counts.upgrades > 0 && <span> and </span>}
-              {counts.upgrades > 0 && (
-                <span>
-                  <strong>{counts.upgrades}</strong> upgrade request(s)
-                </span>
-              )}
-              <span> awaiting action.</span>
-            </span>
-          </div>
-        </div>
-      )}
-
-      <Card className="overflow-hidden">
+      {/* Table / list */}
+      <Card className="overflow-hidden p-0">
         {isLoading ? (
-          <div className="flex min-h-[300px] sm:min-h-[400px] items-center justify-center">
+          <div className="flex min-h-[300px] items-center justify-center">
             <LoadingSpinner size="lg" text="Loading members..." />
           </div>
         ) : error ? (
-          <div className="p-4 text-center text-red-500">Error: {error}</div>
-        ) : filteredMembers.length === 0 ? (
-          <div className="p-6 sm:p-8 text-center text-slate-500">
-            {filterTab === "all"
-              ? "No members found. Create one to get started."
-              : `No ${filterTab} members found.`}
+          <div className="p-6 text-center text-red-500">{error}</div>
+        ) : filtered.length === 0 ? (
+          <div className="p-8 text-center text-slate-500">
+            {search
+              ? "No members match your search."
+              : `No ${filterTab === "all" ? "" : filterTab + " "}members found.`}
           </div>
         ) : (
           <>
-            {/* Mobile Card View */}
+            {/* ---- Mobile list ---- */}
             <div className="divide-y divide-slate-100 sm:hidden">
-              {filteredMembers.map((member) => {
-                const isDeletingMember = deletingMemberIds.has(member.id);
+              {pageItems.map((m) => {
+                const del = deletingIds.has(m.id);
                 return (
-                  <div
-                    key={member.id}
-                    className={`p-4 ${isDeletingMember ? "bg-slate-50 opacity-60" : ""}`}
-                  >
+                  <div key={m.id} className={`p-4 ${del ? "opacity-50" : ""}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <Link
-                          href={`/admin/members/${member.id}`}
-                          className="font-medium text-slate-900 hover:text-cyan-700 block truncate"
+                          href={`/admin/members/${m.id}`}
+                          className="block truncate font-medium text-slate-900 hover:text-cyan-700"
                         >
-                          {member.first_name} {member.last_name}
+                          {m.first_name} {m.last_name}
                         </Link>
-                        <p className="text-xs text-slate-500 truncate mt-0.5">{member.email}</p>
+                        <p className="mt-0.5 truncate text-xs text-slate-500">{m.email}</p>
                       </div>
-                      {getStatusBadge(member.approval_status)}
+                      <StatusBadge s={m.approval_status} />
                     </div>
-
-                    <div className="flex items-center gap-2 mt-2 text-xs text-slate-500 flex-wrap">
-                      <span className="capitalize bg-slate-100 px-2 py-0.5 rounded">
-                        {member.primary_tier || member.membership_tier || "community"}
-                      </span>
-                      {getPaymentBadges(member)}
-                      {member.swim_level && <span>{member.swim_level}</span>}
-                      {(() => {
-                        const tiers = member.requested_tiers || member.requested_membership_tiers;
-                        return tiers && tiers.length > 0 ? (
-                          <span className="text-purple-600 font-medium">➞ {tiers.join(", ")}</span>
-                        ) : null;
-                      })()}
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                      <TierBadge t={tier(m)} />
+                      <PayText m={m} />
+                      {hasUpgrade(m) && (
+                        <span className="font-medium text-purple-600">
+                          Upgrade: {upgradeTiers(m)}
+                        </span>
+                      )}
                     </div>
-
-                    {/* Mobile Actions */}
-                    <div className="flex items-center gap-1 mt-3 pt-3 border-t border-slate-100">
-                      <Link
-                        href={`/admin/members/${member.id}`}
-                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium hover:bg-slate-200 transition"
-                      >
+                    <div className="mt-3 flex items-center gap-1 border-t border-slate-100 pt-3">
+                      <MobileBtn href={`/admin/members/${m.id}`}>
                         <Eye className="h-3.5 w-3.5" />
                         View
-                      </Link>
-                      <button
-                        onClick={() => openEditModal(member)}
-                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium hover:bg-slate-200 transition"
-                      >
+                      </MobileBtn>
+                      <MobileBtn onClick={() => openEdit(m)}>
                         <Pencil className="h-3.5 w-3.5" />
                         Edit
-                      </button>
-                      {member.approval_status === "pending" && (
+                      </MobileBtn>
+                      {m.approval_status === "pending" && (
                         <>
-                          <button
-                            onClick={() => openApprovalModal(member, "approve")}
-                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-green-100 text-green-700 text-xs font-medium hover:bg-green-200 transition"
-                          >
+                          <MobileBtn onClick={() => openApproval(m, "approve")} color="green">
                             <CheckCircle className="h-3.5 w-3.5" />
                             Approve
-                          </button>
-                          <button
-                            onClick={() => openApprovalModal(member, "reject")}
-                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-red-100 text-red-700 text-xs font-medium hover:bg-red-200 transition"
-                          >
+                          </MobileBtn>
+                          <MobileBtn onClick={() => openApproval(m, "reject")} color="red">
                             <XCircle className="h-3.5 w-3.5" />
                             Reject
-                          </button>
+                          </MobileBtn>
                         </>
                       )}
-                      {member.approval_status === "approved" &&
-                        (member.requested_tiers || member.requested_membership_tiers) &&
-                        (member.requested_tiers || member.requested_membership_tiers)!.length >
-                          0 && (
-                          <button
-                            onClick={() => openApprovalModal(member, "upgrade")}
-                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-purple-100 text-purple-700 text-xs font-medium hover:bg-purple-200 transition"
-                          >
-                            <TrendingUp className="h-3.5 w-3.5" />
-                            Upgrade
-                          </button>
-                        )}
+                      {m.approval_status === "approved" && hasUpgrade(m) && (
+                        <MobileBtn onClick={() => openApproval(m, "upgrade")} color="purple">
+                          <TrendingUp className="h-3.5 w-3.5" />
+                          Upgrade
+                        </MobileBtn>
+                      )}
                       <button
-                        onClick={() => {
-                          if (isDeletingMember) return;
-                          openDeleteModal(member);
-                        }}
-                        className="p-2 rounded-lg bg-slate-100 text-slate-400 hover:bg-red-100 hover:text-red-600 transition disabled:opacity-50"
-                        disabled={isDeletingMember}
+                        onClick={() => !del && setDeleteModal(m)}
+                        disabled={del}
                         aria-label="Delete"
+                        className="rounded-lg bg-slate-100 p-2 text-slate-400 hover:bg-red-100 hover:text-red-600 disabled:opacity-40"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -679,133 +610,98 @@ export default function AdminMembersPage() {
               })}
             </div>
 
-            {/* Desktop Table View */}
-            <div className="hidden sm:block overflow-x-auto">
-              <table className="w-full text-left text-sm text-slate-600">
+            {/* ---- Desktop table ---- */}
+            <div className="hidden overflow-x-auto sm:block">
+              <table className="w-full text-left text-sm">
                 <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
                   <tr>
                     <th className="px-4 py-3 font-semibold">Name</th>
-                    <th className="px-4 py-3 font-semibold">Contact</th>
+                    <th className="px-4 py-3 font-semibold">Email</th>
                     <th className="px-4 py-3 font-semibold">Tier</th>
-                    <th className="px-4 py-3 font-semibold">Payment</th>
-                    <th className="px-4 py-3 font-semibold">Level</th>
                     <th className="px-4 py-3 font-semibold">Status</th>
-                    <th className="px-4 py-3 font-semibold">Actions</th>
+                    <th className="px-4 py-3 font-semibold">Payment</th>
+                    <th className="px-4 py-3 font-semibold text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {filteredMembers.map((member) => {
-                    const isDeletingMember = deletingMemberIds.has(member.id);
+                <tbody className="divide-y divide-slate-100">
+                  {pageItems.map((m) => {
+                    const del = deletingIds.has(m.id);
                     return (
                       <tr
-                        key={member.id}
-                        className={
-                          isDeletingMember ? "bg-slate-50 opacity-60" : "hover:bg-slate-50"
-                        }
+                        key={m.id}
+                        className={del ? "bg-slate-50 opacity-50" : "hover:bg-slate-50"}
                       >
-                        <td className="px-4 py-3 font-medium text-slate-900">
-                          <Link
-                            href={`/admin/members/${member.id}`}
-                            className="hover:underline hover:text-cyan-700"
-                          >
-                            {member.first_name} {member.last_name}
-                          </Link>
-                          {(member.requested_tiers || member.requested_membership_tiers) &&
-                            (member.requested_tiers || member.requested_membership_tiers)!.length >
-                              0 && (
-                              <span className="ml-2 inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800">
-                                Upgrade Requested
-                              </span>
-                            )}
-                          {isDeletingMember && (
-                            <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-                              Deleting...
-                            </span>
-                          )}
-                        </td>
                         <td className="px-4 py-3">
-                          <div className="flex flex-col">
-                            <span>{member.email}</span>
-                            <span className="text-xs text-slate-400">{member.phone}</span>
+                          <div className="flex items-center gap-3">
+                            <Av m={m} />
+                            <div className="min-w-0">
+                              <Link
+                                href={`/admin/members/${m.id}`}
+                                className="block truncate font-medium text-slate-900 hover:text-cyan-700"
+                              >
+                                {m.first_name} {m.last_name}
+                              </Link>
+                              {hasUpgrade(m) && (
+                                <span className="text-[10px] font-medium text-purple-600">
+                                  Upgrade requested
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </td>
+                        <td className="px-4 py-3 text-slate-600">{m.email}</td>
                         <td className="px-4 py-3">
-                          <span className="capitalize">
-                            {member.primary_tier || member.membership_tier || "community"}
-                          </span>
-                          {(() => {
-                            const tiers =
-                              member.requested_tiers || member.requested_membership_tiers;
-                            return tiers && tiers.length > 0 ? (
-                              <div className="text-xs text-purple-600">➞ {tiers.join(", ")}</div>
-                            ) : null;
-                          })()}
+                          <TierBadge t={tier(m)} />
                         </td>
-                        <td className="px-4 py-3">{getPaymentBadges(member)}</td>
-                        <td className="px-4 py-3">{member.swim_level || "—"}</td>
-                        <td className="px-4 py-3">{getStatusBadge(member.approval_status)}</td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <Link
-                              href={`/admin/members/${member.id}`}
-                              className="p-1.5 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-700"
-                              title="View"
-                            >
+                          <StatusBadge s={m.approval_status} />
+                        </td>
+                        <td className="px-4 py-3">
+                          <PayText m={m} />
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-1">
+                            <IBtn href={`/admin/members/${m.id}`} title="View">
                               <Eye className="h-4 w-4" />
-                            </Link>
-                            <button
-                              onClick={() => openEditModal(member)}
-                              className="p-1.5 rounded hover:bg-slate-100 text-slate-500 hover:text-cyan-600"
-                              title="Edit"
-                            >
+                            </IBtn>
+                            <IBtn onClick={() => openEdit(m)} title="Edit">
                               <Pencil className="h-4 w-4" />
-                            </button>
-
-                            {/* Approve/Reject buttons for pending members */}
-                            {member.approval_status === "pending" && (
+                            </IBtn>
+                            {m.approval_status === "pending" && (
                               <>
-                                <button
-                                  onClick={() => openApprovalModal(member, "approve")}
-                                  className="p-1.5 rounded hover:bg-green-50 text-green-600 hover:text-green-700"
+                                <IBtn
+                                  onClick={() => openApproval(m, "approve")}
                                   title="Approve"
+                                  className="text-green-600 hover:bg-green-50"
                                 >
                                   <CheckCircle className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={() => openApprovalModal(member, "reject")}
-                                  className="p-1.5 rounded hover:bg-red-50 text-red-500 hover:text-red-600"
+                                </IBtn>
+                                <IBtn
+                                  onClick={() => openApproval(m, "reject")}
                                   title="Reject"
+                                  className="text-red-500 hover:bg-red-50"
                                 >
                                   <XCircle className="h-4 w-4" />
-                                </button>
+                                </IBtn>
                               </>
                             )}
-
-                            {/* Approve Upgrade button */}
-                            {member.approval_status === "approved" &&
-                              (member.requested_tiers || member.requested_membership_tiers) &&
-                              (member.requested_tiers || member.requested_membership_tiers)!
-                                .length > 0 && (
-                                <button
-                                  onClick={() => openApprovalModal(member, "upgrade")}
-                                  className="p-1.5 rounded hover:bg-purple-50 text-purple-600 hover:text-purple-700"
-                                  title="Approve Upgrade"
-                                >
-                                  <TrendingUp className="h-4 w-4" />
-                                </button>
-                              )}
-
-                            <button
-                              onClick={() => {
-                                if (isDeletingMember) return;
-                                openDeleteModal(member);
-                              }}
-                              className="p-1.5 rounded hover:bg-red-50 text-slate-400 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                            {m.approval_status === "approved" && hasUpgrade(m) && (
+                              <IBtn
+                                onClick={() => openApproval(m, "upgrade")}
+                                title="Approve Upgrade"
+                                className="text-purple-600 hover:bg-purple-50"
+                              >
+                                <TrendingUp className="h-4 w-4" />
+                              </IBtn>
+                            )}
+                            <IBtn
+                              onClick={() => !del && setDeleteModal(m)}
                               title="Delete"
-                              disabled={isDeletingMember}
+                              className="text-slate-400 hover:bg-red-50 hover:text-red-600"
+                              disabled={del}
                             >
                               <Trash2 className="h-4 w-4" />
-                            </button>
+                            </IBtn>
                           </div>
                         </td>
                       </tr>
@@ -814,460 +710,346 @@ export default function AdminMembersPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 text-sm text-slate-600">
+                <span>
+                  {(safePage - 1) * PER_PAGE + 1}&ndash;
+                  {Math.min(safePage * PER_PAGE, filtered.length)} of {filtered.length}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={safePage <= 1}
+                    className="rounded p-1.5 hover:bg-slate-100 disabled:opacity-40"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <span className="px-2 font-medium">
+                    {safePage} / {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={safePage >= totalPages}
+                    className="rounded p-1.5 hover:bg-slate-100 disabled:opacity-40"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </>
         )}
       </Card>
 
-      {/* Approval Modal */}
+      {/* ==== Modals ==== */}
+
+      {/* Approval modal */}
       <Modal
-        isOpen={isApprovalModalOpen}
-        onClose={() => setIsApprovalModalOpen(false)}
+        isOpen={!!approvalModal}
+        onClose={() => setApprovalModal(null)}
         title={
-          approvalAction === "upgrade"
-            ? "Approve Upgrade"
-            : approvalAction === "approve"
-              ? "Approve Member"
-              : "Reject Member"
+          { approve: "Approve Member", reject: "Reject Member", upgrade: "Approve Upgrade" }[
+            approvalModal?.action || "approve"
+          ]
         }
       >
-        <div className="space-y-4">
-          <p className="text-slate-600">
-            {approvalAction === "approve"
-              ? `Are you sure you want to approve ${approvingMember?.first_name} ${approvingMember?.last_name}?`
-              : approvalAction === "upgrade"
-                ? `Approve ${approvingMember?.first_name} ${approvingMember?.last_name}'s upgrade from ${approvingMember?.primary_tier || approvingMember?.membership_tier || "community"} to ${(approvingMember?.requested_tiers || approvingMember?.requested_membership_tiers || []).join(", ") || "the requested tier"}?`
-                : `Are you sure you want to reject ${approvingMember?.first_name} ${approvingMember?.last_name}?`}
-          </p>
-
-          {/* Member Details */}
-          {approvingMember && (
-            <div className="space-y-4">
-              {/* Profile Header */}
-              <div className="flex items-start gap-4 p-4 bg-slate-50 rounded-lg border border-slate-100">
-                <div className="h-16 w-16 rounded-full bg-slate-200 overflow-hidden flex-shrink-0 border-2 border-white shadow-sm">
-                  {approvingMember.profile_photo_url ? (
-                    <img
-                      src={approvingMember.profile_photo_url}
-                      alt={`${approvingMember.first_name}'s profile`}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center text-slate-400">
-                      <UserPlus className="h-8 w-8" />
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-slate-900 text-lg">
-                    {approvingMember.first_name} {approvingMember.last_name}
-                  </h3>
-                  <div className="text-sm text-slate-500 space-y-1">
-                    <p>{approvingMember.email}</p>
-                    <p>{approvingMember.phone}</p>
-                    <p className="capitalize text-cyan-700 font-medium">
-                      {approvingMember.primary_tier ||
-                        approvingMember.membership_tier ||
-                        "Community"}{" "}
-                      Member
-                      {approvingMember.swim_level ? ` • ${approvingMember.swim_level}` : ""}
+        {approvalModal &&
+          (() => {
+            const { member: am, action } = approvalModal;
+            const colors: Record<ApprovalAction, string> = {
+              approve: "bg-green-600 hover:bg-green-700",
+              reject: "bg-red-600 hover:bg-red-700",
+              upgrade: "bg-purple-600 hover:bg-purple-700",
+            };
+            const labels: Record<ApprovalAction, [string, string]> = {
+              approve: ["Approving...", "Approve Member"],
+              reject: ["Rejecting...", "Reject Member"],
+              upgrade: ["Approving...", "Approve Upgrade"],
+            };
+            return (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 rounded-lg bg-slate-50 p-3">
+                  <Av m={am} />
+                  <div>
+                    <p className="font-medium text-slate-900">
+                      {am.first_name} {am.last_name}
                     </p>
+                    <p className="text-xs text-slate-500">{am.email}</p>
+                    <p className="mt-0.5 text-xs capitalize text-cyan-700">{tier(am)} member</p>
                   </div>
+                </div>
+                <p className="text-sm text-slate-600">
+                  {action === "upgrade"
+                    ? `Approve upgrade from ${tier(am)} to ${upgradeTiers(am) || "requested tier"}?`
+                    : action === "approve"
+                      ? `Approve ${am.first_name} ${am.last_name}?`
+                      : `Reject ${am.first_name} ${am.last_name}?`}
+                </p>
+                {(action === "approve" || action === "reject") && (
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg bg-slate-50 p-3 text-xs">
+                    <KV k="Location" v={am.city || am.area_in_lagos} />
+                    <KV k="Occupation" v={am.occupation} />
+                    <KV k="How found us" v={am.how_found_us} />
+                    <KV k="Swim level" v={am.swim_level} />
+                    {am.emergency_contact_name && (
+                      <KV k="Emergency" v={am.emergency_contact_name} />
+                    )}
+                    {am.medical_info && <KV k="Medical" v={am.medical_info} />}
+                  </div>
+                )}
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">
+                    Notes (optional)
+                  </label>
+                  <textarea
+                    value={approvalNotes}
+                    onChange={(e) => setApprovalNotes(e.target.value)}
+                    rows={2}
+                    placeholder={action === "reject" ? "Reason for rejection..." : "Any notes..."}
+                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                  />
+                </div>
+                <div className="flex justify-end gap-3 pt-2">
+                  <Button variant="secondary" onClick={() => setApprovalModal(null)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleApproval}
+                    disabled={isSubmitting}
+                    className={colors[action]}
+                  >
+                    {isSubmitting ? labels[action][0] : labels[action][1]}
+                  </Button>
                 </div>
               </div>
+            );
+          })()}
+      </Modal>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Personal Info */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 border-b pb-1">
-                    Personal Info
-                  </h4>
-                  <div className="space-y-2 text-sm">
-                    <div>
-                      <span className="text-slate-500 block text-xs">Location</span>
-                      <span className="text-slate-900">
-                        {approvingMember.city || "N/A"}, {approvingMember.country || "Nigeria"}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block text-xs">Date of Birth</span>
-                      <span className="text-slate-900">
-                        {approvingMember.date_of_birth
-                          ? new Date(approvingMember.date_of_birth).toLocaleDateString()
-                          : "N/A"}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block text-xs">Gender</span>
-                      <span className="text-slate-900 capitalize">
-                        {approvingMember.gender || "N/A"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Emergency Contact */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 border-b pb-1">
-                    Emergency Contact
-                  </h4>
-                  <div className="space-y-2 text-sm">
-                    <div>
-                      <span className="text-slate-500 block text-xs">Name</span>
-                      <span className="text-slate-900">
-                        {approvingMember.emergency_contact_name || "N/A"}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block text-xs">Phone</span>
-                      <span className="text-slate-900">
-                        {approvingMember.emergency_contact_phone || "N/A"}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block text-xs">Medical Info</span>
-                      <span className="text-slate-900">
-                        {approvingMember.medical_info || "None provided"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Vetting / Application Details */}
-              <div className="space-y-3 pt-2">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 border-b pb-1">
-                  Application Details
-                </h4>
-                <div className="grid grid-cols-1 gap-3 text-sm bg-slate-50 p-3 rounded-lg">
-                  <div>
-                    <span className="text-slate-500 font-medium">Occupation: </span>
-                    <span className="text-slate-900">{approvingMember.occupation || "N/A"}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 font-medium">Area in Lagos: </span>
-                    <span className="text-slate-900">{approvingMember.area_in_lagos || "N/A"}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 font-medium">How found us: </span>
-                    <span className="text-slate-900">{approvingMember.how_found_us || "N/A"}</span>
-                  </div>
-                  {approvingMember.hopes_from_swimbuddz && (
-                    <div className="pt-1">
-                      <span className="text-slate-500 font-medium block mb-1">
-                        Hopes from SwimBuddz:
-                      </span>
-                      <p className="text-slate-900 bg-white p-2 rounded border border-slate-100 italic">
-                        "{approvingMember.hopes_from_swimbuddz}"
-                      </p>
-                    </div>
-                  )}
-                  {approvingMember.goals_narrative && (
-                    <div className="pt-1">
-                      <span className="text-slate-500 font-medium block mb-1">Swimming Goals:</span>
-                      <p className="text-slate-900 bg-white p-2 rounded border border-slate-100 italic">
-                        "{approvingMember.goals_narrative}"
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
+      {/* Delete modal */}
+      <Modal isOpen={!!deleteModal} onClose={() => setDeleteModal(null)} title="Delete Member">
+        {deleteModal && (
+          <div className="space-y-4">
+            <p className="text-sm text-slate-600">
+              Choose how to remove{" "}
+              <strong>
+                {deleteModal.first_name} {deleteModal.last_name}
+              </strong>
+              . Soft delete deactivates the account. Hard delete permanently removes all data.
+            </p>
+            <div className="flex gap-3">
+              <Button variant="secondary" onClick={() => handleDelete("soft")}>
+                Soft Delete
+              </Button>
+              <Button variant="danger" onClick={() => handleDelete("hard")}>
+                Hard Delete
+              </Button>
+              <Button variant="outline" onClick={() => setDeleteModal(null)}>
+                Cancel
+              </Button>
             </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              {approvalAction === "approve"
-                ? "Approval notes (optional)"
-                : approvalAction === "upgrade"
-                  ? "Upgrade notes (optional)"
-                  : "Reason for rejection (optional)"}
-            </label>
-            <textarea
-              value={approvalNotes}
-              onChange={(e) => setApprovalNotes(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"
-              rows={3}
-              placeholder={
-                approvalAction === "approve"
-                  ? "Any notes about this approval..."
-                  : approvalAction === "upgrade"
-                    ? "Any notes about this upgrade..."
-                    : "Reason for rejection..."
-              }
-            />
           </div>
-
-          <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="secondary" onClick={() => setIsApprovalModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleApprovalAction}
-              disabled={isSubmitting}
-              className={
-                approvalAction === "approve"
-                  ? "bg-green-600 hover:bg-green-700"
-                  : approvalAction === "upgrade"
-                    ? "bg-purple-600 hover:bg-purple-700"
-                    : "bg-red-600 hover:bg-red-700"
-              }
-            >
-              {isSubmitting
-                ? approvalAction === "approve"
-                  ? "Approving..."
-                  : approvalAction === "upgrade"
-                    ? "Approving upgrade..."
-                    : "Rejecting..."
-                : approvalAction === "approve"
-                  ? "Approve Member"
-                  : approvalAction === "upgrade"
-                    ? "Approve Upgrade"
-                    : "Reject Member"}
-            </Button>
-          </div>
-        </div>
+        )}
       </Modal>
 
-      {/* Delete Modal */}
+      {/* Create modal */}
       <Modal
-        isOpen={isDeleteModalOpen}
-        onClose={() => {
-          setIsDeleteModalOpen(false);
-          setDeletingMember(null);
-        }}
-        title="Delete member"
-      >
-        <p className="text-slate-600">
-          Choose how to remove {deletingMember?.first_name} {deletingMember?.last_name}. Soft delete
-          deactivates the account, hard delete permanently removes data.
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <Button
-            variant="secondary"
-            onClick={() => {
-              if (!deletingMember) return;
-              handleDeleteMember(
-                deletingMember.id,
-                `${deletingMember.first_name} ${deletingMember.last_name}`,
-                "soft"
-              );
-            }}
-          >
-            Soft delete
-          </Button>
-          <Button
-            variant="danger"
-            onClick={() => {
-              if (!deletingMember) return;
-              handleDeleteMember(
-                deletingMember.id,
-                `${deletingMember.first_name} ${deletingMember.last_name}`,
-                "hard"
-              );
-            }}
-          >
-            Hard delete
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setIsDeleteModalOpen(false);
-              setDeletingMember(null);
-            }}
-          >
-            Cancel
-          </Button>
-        </div>
-      </Modal>
-
-      {/* Create Modal */}
-      <Modal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
+        isOpen={formModal === "create"}
+        onClose={() => setFormModal(null)}
         title="Create New Member"
       >
-        <form onSubmit={handleCreateMember} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <Input
-              label="First Name"
-              name="first_name"
-              value={formData.first_name}
-              onChange={handleInputChange}
-              required
-            />
-            <Input
-              label="Last Name"
-              name="last_name"
-              value={formData.last_name}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-          <Input
-            label="Email"
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleInputChange}
-            required
-          />
-          <Input
-            label="Phone"
-            type="tel"
-            name="phone"
-            value={formData.phone}
-            onChange={handleInputChange}
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <Select
-              label="Swim Level"
-              name="swim_level"
-              value={formData.swim_level}
-              onChange={handleInputChange}
-            >
-              <option value="Beginner">Beginner</option>
-              <option value="Intermediate">Intermediate</option>
-              <option value="Advanced">Advanced</option>
-              <option value="Pro">Pro</option>
-            </Select>
-            <Select
-              label="Membership Tier"
-              name="membership_tier"
-              value={formData.membership_tier}
-              onChange={handleInputChange}
-            >
-              <option value="community">Community</option>
-              <option value="club">Club</option>
-              <option value="academy">Academy</option>
-            </Select>
-          </div>
-          <p className="text-xs text-slate-500 bg-slate-50 p-2 rounded">
-            Note: Admin-created members are automatically approved.
-          </p>
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-4">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setIsCreateModalOpen(false)}
-              className="w-full sm:w-auto"
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-              {isSubmitting ? "Creating..." : "Create Member"}
-            </Button>
-          </div>
-        </form>
+        <MemberForm
+          data={formData}
+          onChange={handleInput}
+          onSubmit={handleCreate}
+          onCancel={() => setFormModal(null)}
+          submitting={isSubmitting}
+          label="Create Member"
+          note="Admin-created members are automatically approved."
+        />
       </Modal>
 
-      {/* Edit Modal */}
-      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Member">
-        <form onSubmit={handleUpdateMember} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <Input
-              label="First Name"
-              name="first_name"
-              value={formData.first_name}
-              onChange={handleInputChange}
-              required
-            />
-            <Input
-              label="Last Name"
-              name="last_name"
-              value={formData.last_name}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-          <Input
-            label="Email"
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleInputChange}
-            required
-            disabled
-            hint="Email cannot be changed"
-          />
-          <Input
-            label="Phone"
-            type="tel"
-            name="phone"
-            value={formData.phone}
-            onChange={handleInputChange}
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <Select
-              label="Swim Level"
-              name="swim_level"
-              value={formData.swim_level}
-              onChange={handleInputChange}
-            >
-              <option value="Beginner">Beginner</option>
-              <option value="Intermediate">Intermediate</option>
-              <option value="Advanced">Advanced</option>
-              <option value="Pro">Pro</option>
-            </Select>
-            <Select
-              label="Membership Tier"
-              name="membership_tier"
-              value={formData.membership_tier}
-              onChange={handleInputChange}
-            >
-              <option value="community">Community</option>
-              <option value="club">Club</option>
-              <option value="academy">Academy</option>
-            </Select>
-          </div>
-
-          {/* Location Details */}
-          <div className="border-t pt-4">
-            <h3 className="text-sm font-semibold mb-3 text-slate-700">Location</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <Input label="City" name="city" value={formData.city} onChange={handleInputChange} />
-              <Input
-                label="Country"
-                name="country"
-                value={formData.country}
-                onChange={handleInputChange}
-              />
-            </div>
-          </div>
-
-          {/* Emergency Contact */}
-          <div className="border-t pt-4">
-            <h3 className="text-sm font-semibold mb-3 text-slate-700">Emergency Contact</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <Input
-                label="Contact Name"
-                name="emergency_contact_name"
-                value={formData.emergency_contact_name}
-                onChange={handleInputChange}
-              />
-              <Input
-                label="Contact Phone"
-                name="emergency_contact_phone"
-                value={formData.emergency_contact_phone}
-                onChange={handleInputChange}
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-4">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setIsEditModalOpen(false)}
-              className="w-full sm:w-auto"
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-              {isSubmitting ? "Saving..." : "Save Changes"}
-            </Button>
-          </div>
-        </form>
+      {/* Edit modal */}
+      <Modal isOpen={formModal === "edit"} onClose={() => setFormModal(null)} title="Edit Member">
+        <MemberForm
+          data={formData}
+          onChange={handleInput}
+          onSubmit={handleUpdate}
+          onCancel={() => setFormModal(null)}
+          submitting={isSubmitting}
+          label="Save Changes"
+          isEdit
+        />
       </Modal>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+function StatCard({
+  label,
+  value,
+  icon,
+  accent,
+}: {
+  label: string;
+  value: number;
+  icon: React.ReactNode;
+  accent?: boolean;
+}) {
+  return (
+    <Card className={`flex items-center gap-3 p-4 ${accent ? "ring-1 ring-amber-200" : ""}`}>
+      {icon}
+      <div>
+        <p className="text-2xl font-bold text-slate-900">{value}</p>
+        <p className="text-xs text-slate-500">{label}</p>
+      </div>
+    </Card>
+  );
+}
+
+function KV({ k, v }: { k: string; v?: string | null }) {
+  return (
+    <div>
+      <span className="text-slate-500">{k}</span>
+      <p className="font-medium text-slate-900">{v || "N/A"}</p>
+    </div>
+  );
+}
+
+const MOBILE_CLR: Record<string, string> = {
+  green: "bg-green-100 text-green-700 hover:bg-green-200",
+  red: "bg-red-100 text-red-700 hover:bg-red-200",
+  purple: "bg-purple-100 text-purple-700 hover:bg-purple-200",
+};
+
+function MobileBtn({
+  children,
+  href,
+  onClick,
+  color,
+}: {
+  children: React.ReactNode;
+  href?: string;
+  onClick?: () => void;
+  color?: string;
+}) {
+  const cls = `flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-2 text-xs font-medium transition ${color ? MOBILE_CLR[color] : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`;
+  if (href)
+    return (
+      <Link href={href} className={cls}>
+        {children}
+      </Link>
+    );
+  return (
+    <button onClick={onClick} className={cls}>
+      {children}
+    </button>
+  );
+}
+
+function MemberForm({
+  data,
+  onChange,
+  onSubmit,
+  onCancel,
+  submitting,
+  label,
+  isEdit,
+  note,
+}: {
+  data: typeof EMPTY_FORM;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  onCancel: () => void;
+  submitting: boolean;
+  label: string;
+  isEdit?: boolean;
+  note?: string;
+}) {
+  return (
+    <form onSubmit={onSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <Input
+          label="First Name"
+          name="first_name"
+          value={data.first_name}
+          onChange={onChange}
+          required
+        />
+        <Input
+          label="Last Name"
+          name="last_name"
+          value={data.last_name}
+          onChange={onChange}
+          required
+        />
+      </div>
+      <Input
+        label="Email"
+        type="email"
+        name="email"
+        value={data.email}
+        onChange={onChange}
+        required
+        disabled={isEdit}
+        hint={isEdit ? "Email cannot be changed" : undefined}
+      />
+      <Input label="Phone" type="tel" name="phone" value={data.phone} onChange={onChange} />
+      <div className="grid grid-cols-2 gap-3">
+        <Select label="Swim Level" name="swim_level" value={data.swim_level} onChange={onChange}>
+          <option value="Beginner">Beginner</option>
+          <option value="Intermediate">Intermediate</option>
+          <option value="Advanced">Advanced</option>
+          <option value="Pro">Pro</option>
+        </Select>
+        <Select
+          label="Tier"
+          name="membership_tier"
+          value={data.membership_tier}
+          onChange={onChange}
+        >
+          <option value="community">Community</option>
+          <option value="club">Club</option>
+          <option value="academy">Academy</option>
+        </Select>
+      </div>
+      {isEdit && (
+        <>
+          <div className="grid grid-cols-2 gap-3 border-t border-slate-100 pt-4">
+            <Input label="City" name="city" value={data.city} onChange={onChange} />
+            <Input label="Country" name="country" value={data.country} onChange={onChange} />
+          </div>
+          <div className="grid grid-cols-2 gap-3 border-t border-slate-100 pt-4">
+            <Input
+              label="Emergency Name"
+              name="emergency_contact_name"
+              value={data.emergency_contact_name}
+              onChange={onChange}
+            />
+            <Input
+              label="Emergency Phone"
+              name="emergency_contact_phone"
+              value={data.emergency_contact_phone}
+              onChange={onChange}
+            />
+          </div>
+        </>
+      )}
+      {note && <p className="rounded bg-slate-50 p-2 text-xs text-slate-500">{note}</p>}
+      <div className="flex justify-end gap-3 pt-2">
+        <Button type="button" variant="secondary" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={submitting}>
+          {submitting ? "Saving..." : label}
+        </Button>
+      </div>
+    </form>
   );
 }

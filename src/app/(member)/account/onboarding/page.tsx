@@ -99,14 +99,7 @@ function formatDateForInput(value?: string | null) {
   return new Date(ms).toISOString().split("T")[0] || "";
 }
 
-type StepKey =
-  | "core"
-  | "safety"
-  | "swim"
-  | "club"
-  | "academy"
-  | "signals"
-  | "review";
+type StepKey = "core" | "safety" | "swim" | "club" | "academy" | "signals" | "review";
 type Step = { key: StepKey; title: string; required: boolean };
 
 const ONBOARDING_DRAFT_VERSION = 2;
@@ -233,19 +226,14 @@ export default function DashboardOnboardingPage() {
   }, [member, now]);
 
   const requestedTiers = useMemo(
-    () =>
-      (member?.membership?.requested_tiers || []).map((t: string) =>
-        String(t).toLowerCase(),
-      ),
-    [member],
+    () => (member?.membership?.requested_tiers || []).map((t: string) => String(t).toLowerCase()),
+    [member]
   );
   const wantsAcademy = requestedTiers.includes("academy");
   const wantsClub = requestedTiers.includes("club") || wantsAcademy;
 
   const clubContext =
-    wantsClub ||
-    approvedTiers.includes("club") ||
-    approvedTiers.includes("academy");
+    wantsClub || approvedTiers.includes("club") || approvedTiers.includes("academy");
   const academyContext = wantsAcademy || approvedTiers.includes("academy");
 
   const needsCoreProfile = useMemo(() => {
@@ -273,33 +261,22 @@ export default function DashboardOnboardingPage() {
       !emergency?.name ||
       !emergency?.contact_relationship ||
       !emergency?.phone ||
-      !(
-        availability?.preferred_locations &&
-        availability.preferred_locations.length > 0
-      ) ||
-      !(
-        availability?.preferred_times && availability.preferred_times.length > 0
-      )
+      !(availability?.preferred_locations && availability.preferred_locations.length > 0) ||
+      !(availability?.preferred_times && availability.preferred_times.length > 0)
     );
   }, [member]);
 
   const needsSwimBackground = useMemo(() => {
     if (!member) return false;
     const profile = member.profile;
-    return (
-      !profile?.swim_level ||
-      !profile?.deep_water_comfort ||
-      !profile?.personal_goals
-    );
+    return !profile?.swim_level || !profile?.deep_water_comfort || !profile?.personal_goals;
   }, [member]);
 
   const needsClubReadiness = useMemo(() => {
     if (!member) return false;
     if (!clubContext) return false;
     const availability = member.availability;
-    return !(
-      availability?.available_days && availability.available_days.length > 0
-    );
+    return !(availability?.available_days && availability.available_days.length > 0);
   }, [member, clubContext]);
 
   const needsAcademyReadiness = useMemo(() => {
@@ -309,8 +286,8 @@ export default function DashboardOnboardingPage() {
     const assessment = membership?.academy_skill_assessment;
     const hasAssessment =
       assessment &&
-      ["canFloat", "headUnderwater", "deepWaterComfort", "canSwim25m"].some(
-        (k) => Object.prototype.hasOwnProperty.call(assessment, k),
+      ["canFloat", "headUnderwater", "deepWaterComfort", "canSwim25m"].some((k) =>
+        Object.prototype.hasOwnProperty.call(assessment, k)
       );
     return (
       !hasAssessment ||
@@ -377,7 +354,7 @@ export default function DashboardOnboardingPage() {
 
   const draftKey = useMemo(
     () => (member ? getDraftKey(member) : null),
-    [member?.id, member?.email],
+    [member?.id, member?.email]
   );
 
   const clearDraft = useCallback(() => {
@@ -440,8 +417,7 @@ export default function DashboardOnboardingPage() {
         canSwim25m: false,
       },
       academyGoals: membership?.academy_goals || "",
-      academyPreferredCoachGender:
-        membership?.academy_preferred_coach_gender || "",
+      academyPreferredCoachGender: membership?.academy_preferred_coach_gender || "",
       academyLessonPreference: membership?.academy_lesson_preference || "",
     });
     setSignalsForm({
@@ -452,16 +428,14 @@ export default function DashboardOnboardingPage() {
 
   const toggleClubMulti = (
     field: "locationPreference" | "timeOfDayAvailability",
-    option: string,
+    option: string
   ) => {
     setClubForm((prev) => {
       const current = prev[field];
       const exists = current.includes(option);
       return {
         ...prev,
-        [field]: exists
-          ? current.filter((x) => x !== option)
-          : [...current, option],
+        [field]: exists ? current.filter((x) => x !== option) : [...current, option],
       };
     });
   };
@@ -483,9 +457,7 @@ export default function DashboardOnboardingPage() {
       const exists = prev.strokes.includes(stroke);
       return {
         ...prev,
-        strokes: exists
-          ? prev.strokes.filter((x) => x !== stroke)
-          : [...prev.strokes, stroke],
+        strokes: exists ? prev.strokes.filter((x) => x !== stroke) : [...prev.strokes, stroke],
       };
     });
   };
@@ -493,9 +465,7 @@ export default function DashboardOnboardingPage() {
   const toggleGoal = (goal: string) => {
     setSwimForm((prev) => {
       const exists = prev.goals.includes(goal);
-      const nextGoals = exists
-        ? prev.goals.filter((x) => x !== goal)
-        : [...prev.goals, goal];
+      const nextGoals = exists ? prev.goals.filter((x) => x !== goal) : [...prev.goals, goal];
       return {
         ...prev,
         goals: nextGoals,
@@ -504,18 +474,13 @@ export default function DashboardOnboardingPage() {
     });
   };
 
-  const toggleSignalsMulti = (
-    field: "interests" | "volunteerInterest",
-    value: string,
-  ) => {
+  const toggleSignalsMulti = (field: "interests" | "volunteerInterest", value: string) => {
     setSignalsForm((prev) => {
       const current = prev[field];
       const exists = current.includes(value);
       return {
         ...prev,
-        [field]: exists
-          ? current.filter((x) => x !== value)
-          : [...current, value],
+        [field]: exists ? current.filter((x) => x !== value) : [...current, value],
       };
     });
   };
@@ -530,7 +495,7 @@ export default function DashboardOnboardingPage() {
     coreForm.gender &&
     coreForm.dateOfBirth &&
     (coreForm.profilePhotoMediaId || coreForm.profilePhotoUrl) &&
-    coreForm.timeZone,
+    coreForm.timeZone
   );
 
   const safetyFormValid = Boolean(
@@ -538,7 +503,7 @@ export default function DashboardOnboardingPage() {
     clubForm.emergencyContactRelationship &&
     clubForm.emergencyContactPhone &&
     clubForm.locationPreference.length > 0 &&
-    clubForm.timeOfDayAvailability.length > 0,
+    clubForm.timeOfDayAvailability.length > 0
   );
 
   const swimFormValid = Boolean(
@@ -546,16 +511,15 @@ export default function DashboardOnboardingPage() {
     swimForm.deepWaterComfort &&
     swimForm.goals.length > 0 &&
     (!swimForm.goals.includes(OTHER_GOAL_VALUE) ||
-      Boolean(swimForm.otherGoals && swimForm.otherGoals.trim())),
+      Boolean(swimForm.otherGoals && swimForm.otherGoals.trim()))
   );
 
-  const clubReadinessValid =
-    !clubContext || clubReadinessForm.availabilitySlots.length > 0;
+  const clubReadinessValid = !clubContext || clubReadinessForm.availabilitySlots.length > 0;
 
   const academyFormValid = Boolean(
     academyForm.academyGoals &&
     academyForm.academyPreferredCoachGender &&
-    academyForm.academyLessonPreference,
+    academyForm.academyLessonPreference
   );
 
   const steps = useMemo<Step[]>(() => {
@@ -565,10 +529,8 @@ export default function DashboardOnboardingPage() {
       { key: "swim", title: "Swimming background", required: true },
     ];
 
-    if (clubContext)
-      base.push({ key: "club", title: "Club readiness", required: true });
-    if (academyContext)
-      base.push({ key: "academy", title: "Academy readiness", required: true });
+    if (clubContext) base.push({ key: "club", title: "Club readiness", required: true });
+    if (academyContext) base.push({ key: "academy", title: "Academy readiness", required: true });
 
     base.push({ key: "signals", title: "Community signals", required: false });
     base.push({ key: "review", title: "Finish", required: true });
@@ -578,8 +540,7 @@ export default function DashboardOnboardingPage() {
   const stepIndex = steps.findIndex((s) => s.key === currentStep);
   const stepCount = Math.max(steps.length, 1);
   const currentNumber = stepIndex >= 0 ? stepIndex + 1 : 1;
-  const currentStepTitle =
-    stepIndex >= 0 ? steps[stepIndex].title : "Onboarding";
+  const currentStepTitle = stepIndex >= 0 ? steps[stepIndex].title : "Onboarding";
 
   const requiredStepCount = steps.filter((s) => s.required).length;
   const completedRequiredCount = [
@@ -591,9 +552,7 @@ export default function DashboardOnboardingPage() {
     { complete: currentStep === "review" },
   ].filter((item) => item.complete).length;
   const progressPercent =
-    requiredStepCount > 0
-      ? Math.round((completedRequiredCount / requiredStepCount) * 100)
-      : 100;
+    requiredStepCount > 0 ? Math.round((completedRequiredCount / requiredStepCount) * 100) : 100;
 
   function firstIncompleteStep(): StepKey {
     if (needsCoreProfile) return "core";
@@ -613,9 +572,7 @@ export default function DashboardOnboardingPage() {
     const requestedStep = searchParams.get("step") as StepKey | null;
     const allowedSteps = new Set(steps.map((s) => s.key));
 
-    const draft = safeParseDraft(
-      draftKey ? localStorage.getItem(draftKey) : null,
-    );
+    const draft = safeParseDraft(draftKey ? localStorage.getItem(draftKey) : null);
     if (draft) {
       setCoreForm((prev) => ({
         ...prev,
@@ -633,9 +590,7 @@ export default function DashboardOnboardingPage() {
         setCurrentStep(requestedStep);
       } else {
         setCurrentStep(
-          allowedSteps.has(draft.currentStep)
-            ? draft.currentStep
-            : firstIncompleteStep(),
+          allowedSteps.has(draft.currentStep) ? draft.currentStep : firstIncompleteStep()
         );
         toast.message("Restored your in-progress onboarding");
       }
@@ -669,8 +624,7 @@ export default function DashboardOnboardingPage() {
 
     draftSaveTimer.current = window.setTimeout(() => {
       const profilePhotoUrlToPersist =
-        coreForm.profilePhotoUrl &&
-        !coreForm.profilePhotoUrl.startsWith("data:")
+        coreForm.profilePhotoUrl && !coreForm.profilePhotoUrl.startsWith("data:")
           ? coreForm.profilePhotoUrl
           : "";
 
@@ -707,10 +661,7 @@ export default function DashboardOnboardingPage() {
     swimForm,
   ]);
 
-  function isStepSatisfied(
-    step: StepKey,
-    opts?: { assumeSatisfied?: StepKey },
-  ) {
+  function isStepSatisfied(step: StepKey, opts?: { assumeSatisfied?: StepKey }) {
     if (opts?.assumeSatisfied && step === opts.assumeSatisfied) return true;
     if (step === "core") return !needsCoreProfile;
     if (step === "safety") return !needsSafetyLogistics;
@@ -722,10 +673,7 @@ export default function DashboardOnboardingPage() {
     return false;
   }
 
-  function nextStepFrom(
-    step: StepKey,
-    opts?: { assumeSatisfied?: StepKey },
-  ): StepKey {
+  function nextStepFrom(step: StepKey, opts?: { assumeSatisfied?: StepKey }): StepKey {
     const idx = steps.findIndex((s) => s.key === step);
     for (let i = Math.max(idx + 1, 0); i < steps.length; i++) {
       const key = steps[i].key;
@@ -737,8 +685,7 @@ export default function DashboardOnboardingPage() {
 
   const missingRequiredSteps = useMemo(() => {
     return steps.filter(
-      (step) =>
-        step.required && step.key !== "review" && !isStepSatisfied(step.key),
+      (step) => step.required && step.key !== "review" && !isStepSatisfied(step.key)
     );
   }, [
     steps,
@@ -757,11 +704,7 @@ export default function DashboardOnboardingPage() {
   const isClubUpgradeFlow = upgradeStepFromUrl === "club";
 
   const activationTarget =
-    wantsClub || wantsAcademy || isClubUpgradeFlow
-      ? "club"
-      : !communityActive
-        ? "community"
-        : null;
+    wantsClub || wantsAcademy || isClubUpgradeFlow ? "club" : !communityActive ? "community" : null;
   const showBillingCta = Boolean(activationTarget);
   const billingHref =
     activationTarget === "club"
@@ -805,7 +748,7 @@ export default function DashboardOnboardingPage() {
             time_zone: coreForm.timeZone,
           },
         },
-        { auth: true },
+        { auth: true }
       );
       toast.success("Core profile saved");
       clearDraft();
@@ -837,7 +780,7 @@ export default function DashboardOnboardingPage() {
             preferred_times: clubForm.timeOfDayAvailability,
           },
         },
-        { auth: true },
+        { auth: true }
       );
       toast.success("Safety & logistics saved");
       clearDraft();
@@ -862,13 +805,10 @@ export default function DashboardOnboardingPage() {
             swim_level: swimForm.swimLevel,
             deep_water_comfort: swimForm.deepWaterComfort,
             strokes: swimForm.strokes,
-            personal_goals: buildGoalsNarrative(
-              swimForm.goals,
-              swimForm.otherGoals,
-            ),
+            personal_goals: buildGoalsNarrative(swimForm.goals, swimForm.otherGoals),
           },
         },
-        { auth: true },
+        { auth: true }
       );
       toast.success("Swimming background saved");
       clearDraft();
@@ -897,7 +837,7 @@ export default function DashboardOnboardingPage() {
             club_notes: clubReadinessForm.clubNotes || undefined,
           },
         },
-        { auth: true },
+        { auth: true }
       );
       toast.success("Club readiness saved");
       clearDraft();
@@ -920,13 +860,13 @@ export default function DashboardOnboardingPage() {
         "/api/v1/members/me",
         {
           membership: {
+            academy_skill_assessment: academyForm.academySkillAssessment,
             academy_goals: academyForm.academyGoals,
-            academy_preferred_coach_gender:
-              academyForm.academyPreferredCoachGender,
+            academy_preferred_coach_gender: academyForm.academyPreferredCoachGender,
             academy_lesson_preference: academyForm.academyLessonPreference,
           },
         },
-        { auth: true },
+        { auth: true }
       );
       toast.success("Academy readiness saved");
       clearDraft();
@@ -954,7 +894,7 @@ export default function DashboardOnboardingPage() {
             volunteer_interest: signalsForm.volunteerInterest,
           },
         },
-        { auth: true },
+        { auth: true }
       );
 
       // Also create/update volunteer profile in volunteer service
@@ -964,9 +904,7 @@ export default function DashboardOnboardingPage() {
           const allRoles = await VolunteersApi.listRoles();
           const roleIds = signalsForm.volunteerInterest
             .map((cat) => {
-              const match = allRoles.find(
-                (r) => r.category.toLowerCase() === cat.toLowerCase(),
-              );
+              const match = allRoles.find((r) => r.category.toLowerCase() === cat.toLowerCase());
               return match?.id;
             })
             .filter(Boolean) as string[];
@@ -1073,8 +1011,7 @@ export default function DashboardOnboardingPage() {
     if (currentStep === "signals") {
       const hasAnything =
         (signalsForm.interests && signalsForm.interests.length > 0) ||
-        (signalsForm.volunteerInterest &&
-          signalsForm.volunteerInterest.length > 0);
+        (signalsForm.volunteerInterest && signalsForm.volunteerInterest.length > 0);
       if (hasAnything) await saveSignals();
       setCurrentStep("review");
       return;
@@ -1101,15 +1038,11 @@ export default function DashboardOnboardingPage() {
       <Card className="p-4 space-y-3">
         <div className="flex items-center justify-between gap-4">
           <div className="text-sm text-slate-600">
-            Step {currentNumber} of {stepCount} • {currentStepTitle} •{" "}
-            {progressPercent}% complete
+            Step {currentNumber} of {stepCount} • {currentStepTitle} • {progressPercent}% complete
           </div>
         </div>
         <div className="h-2 w-full rounded-full bg-slate-100">
-          <div
-            className="h-2 rounded-full bg-cyan-600"
-            style={{ width: `${progressPercent}%` }}
-          />
+          <div className="h-2 rounded-full bg-cyan-600" style={{ width: `${progressPercent}%` }} />
         </div>
       </Card>
 
@@ -1117,12 +1050,10 @@ export default function DashboardOnboardingPage() {
       member?.membership?.requested_tiers &&
       member.membership.requested_tiers.length > 0 ? (
         <Card className="p-4 space-y-1">
-          <p className="text-sm font-medium text-slate-900">
-            Your selection is saved
-          </p>
+          <p className="text-sm font-medium text-slate-900">Your selection is saved</p>
           <p className="text-sm text-slate-600">
-            You selected Academy during signup. Completing readiness here helps
-            us support you and speed up the next steps.
+            You selected Academy during signup. Completing readiness here helps us support you and
+            speed up the next steps.
           </p>
         </Card>
       ) : null}
@@ -1131,9 +1062,7 @@ export default function DashboardOnboardingPage() {
         {currentStep === "core" ? (
           <div className="space-y-6">
             <div className="space-y-2">
-              <h2 className="text-xl font-semibold text-slate-900">
-                Core profile
-              </h2>
+              <h2 className="text-xl font-semibold text-slate-900">Core profile</h2>
               <p className="text-sm text-slate-600">
                 Basic identity and contact details so we can support you safely.
               </p>
@@ -1166,9 +1095,7 @@ export default function DashboardOnboardingPage() {
                         ) : (
                           <>
                             <Camera className="h-7 w-7" />
-                            <span className="text-xs font-medium">
-                              Add photo
-                            </span>
+                            <span className="text-xs font-medium">Add photo</span>
                           </>
                         )}
                       </div>
@@ -1187,10 +1114,7 @@ export default function DashboardOnboardingPage() {
 
                       setSaving(true);
                       try {
-                        const mediaItem = await uploadMedia(
-                          file,
-                          "profile_photo",
-                        );
+                        const mediaItem = await uploadMedia(file, "profile_photo");
                         setCoreForm((prev) => ({
                           ...prev,
                           profilePhotoMediaId: mediaItem.id,
@@ -1198,11 +1122,7 @@ export default function DashboardOnboardingPage() {
                         }));
                         toast.success("Photo uploaded!");
                       } catch (err) {
-                        toast.error(
-                          err instanceof Error
-                            ? err.message
-                            : "Failed to upload photo",
-                        );
+                        toast.error(err instanceof Error ? err.message : "Failed to upload photo");
                       } finally {
                         setSaving(false);
                       }
@@ -1216,9 +1136,7 @@ export default function DashboardOnboardingPage() {
                 </label>
                 <div className="flex-1 space-y-2">
                   <p className="text-sm text-slate-700 font-medium">
-                    {coreForm.profilePhotoUrl
-                      ? "Tap to change photo"
-                      : "Tap the circle to upload"}
+                    {coreForm.profilePhotoUrl ? "Tap to change photo" : "Tap the circle to upload"}
                   </p>
                   <p className="text-xs text-slate-500">
                     JPG/PNG/GIF. This helps members recognize you.
@@ -1256,9 +1174,7 @@ export default function DashboardOnboardingPage() {
                 state: coreForm.state,
                 country: coreForm.country,
               }}
-              onUpdate={(field, value) =>
-                setCoreForm((prev) => ({ ...prev, [field]: value }))
-              }
+              onUpdate={(field, value) => setCoreForm((prev) => ({ ...prev, [field]: value }))}
             />
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -1266,9 +1182,7 @@ export default function DashboardOnboardingPage() {
                 label="Gender"
                 name="gender"
                 value={coreForm.gender}
-                onChange={(e) =>
-                  setCoreForm((prev) => ({ ...prev, gender: e.target.value }))
-                }
+                onChange={(e) => setCoreForm((prev) => ({ ...prev, gender: e.target.value }))}
                 required
               >
                 <option value="">Select gender</option>
@@ -1294,9 +1208,7 @@ export default function DashboardOnboardingPage() {
             <TimezoneCombobox
               label="Time zone"
               value={coreForm.timeZone}
-              onChange={(value) =>
-                setCoreForm((prev) => ({ ...prev, timeZone: value }))
-              }
+              onChange={(value) => setCoreForm((prev) => ({ ...prev, timeZone: value }))}
               required
               name="timeZone"
             />
@@ -1308,14 +1220,9 @@ export default function DashboardOnboardingPage() {
             mode="onboarding"
             includeNotesField={false}
             formData={clubForm}
-            onUpdate={(field, value) =>
-              setClubForm((prev) => ({ ...prev, [field]: value as any }))
-            }
+            onUpdate={(field, value) => setClubForm((prev) => ({ ...prev, [field]: value as any }))}
             onToggleMulti={(field, option) => {
-              if (
-                field === "locationPreference" ||
-                field === "timeOfDayAvailability"
-              ) {
+              if (field === "locationPreference" || field === "timeOfDayAvailability") {
                 toggleClubMulti(field, option);
               }
             }}
@@ -1325,9 +1232,7 @@ export default function DashboardOnboardingPage() {
         {currentStep === "swim" ? (
           <SwimBackgroundStep
             formData={swimForm}
-            onUpdate={(field, value) =>
-              setSwimForm((prev) => ({ ...prev, [field]: value as any }))
-            }
+            onUpdate={(field, value) => setSwimForm((prev) => ({ ...prev, [field]: value as any }))}
             onToggleStroke={toggleStroke}
             onToggleGoal={toggleGoal}
           />
@@ -1363,11 +1268,7 @@ export default function DashboardOnboardingPage() {
                   Light preferences so we can personalize your experience.
                 </p>
               </div>
-              <Button
-                variant="outline"
-                type="button"
-                onClick={() => setCurrentStep("review")}
-              >
+              <Button variant="outline" type="button" onClick={() => setCurrentStep("review")}>
                 Skip
               </Button>
             </div>
@@ -1383,21 +1284,14 @@ export default function DashboardOnboardingPage() {
           <div className="space-y-4 text-center">
             {hasMissingRequiredSteps ? (
               <>
-                <h2 className="text-xl font-semibold text-slate-900">
-                  Almost there
-                </h2>
+                <h2 className="text-xl font-semibold text-slate-900">Almost there</h2>
                 <p className="text-sm text-slate-600">
-                  Finish{" "}
-                  {missingRequiredSteps.map((step) => step.title).join(", ")} to
-                  complete setup.
+                  Finish {missingRequiredSteps.map((step) => step.title).join(", ")} to complete
+                  setup.
                 </p>
                 <div className="flex justify-center gap-3">
                   {firstMissingRequiredStep ? (
-                    <Button
-                      onClick={() =>
-                        setCurrentStep(firstMissingRequiredStep.key)
-                      }
-                    >
+                    <Button onClick={() => setCurrentStep(firstMissingRequiredStep.key)}>
                       Continue {firstMissingRequiredStep.title}
                     </Button>
                   ) : null}
@@ -1408,9 +1302,7 @@ export default function DashboardOnboardingPage() {
               </>
             ) : (
               <>
-                <h2 className="text-xl font-semibold text-slate-900">
-                  Onboarding complete
-                </h2>
+                <h2 className="text-xl font-semibold text-slate-900">Onboarding complete</h2>
                 <p className="text-sm text-slate-600">{reviewDescription}</p>
                 <div className="flex justify-center gap-3">
                   {showBillingCta ? (
@@ -1441,11 +1333,7 @@ export default function DashboardOnboardingPage() {
 
         {currentStep !== "review" ? (
           <div className="flex items-center justify-between pt-2">
-            <Button
-              variant="outline"
-              onClick={goBack}
-              disabled={!canGoBack || saving}
-            >
+            <Button variant="outline" onClick={goBack} disabled={!canGoBack || saving}>
               Back
             </Button>
             <Button
@@ -1459,11 +1347,7 @@ export default function DashboardOnboardingPage() {
                 (currentStep === "academy" && !academyFormValid)
               }
             >
-              {saving
-                ? "Saving..."
-                : currentStep === "signals"
-                  ? "Continue"
-                  : "Save & continue"}
+              {saving ? "Saving..." : currentStep === "signals" ? "Continue" : "Save & continue"}
             </Button>
           </div>
         ) : null}
