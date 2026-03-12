@@ -5,6 +5,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
+import { Repeat } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface SessionCalendarProps {
@@ -64,7 +65,7 @@ export function SessionCalendar({
           return (
             <div className="px-1 py-0.5 text-xs">
               <div className="flex items-center gap-1">
-                {isRecurring && <span>🔁</span>}
+                {isRecurring && <Repeat className="h-3 w-3 shrink-0" />}
                 {isDraft && (
                   <span className="rounded bg-white/30 px-1 text-[10px] font-bold uppercase leading-tight">
                     Draft
