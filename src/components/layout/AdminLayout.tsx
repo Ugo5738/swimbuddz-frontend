@@ -1,10 +1,12 @@
 "use client";
 
 import { supabase } from "@/lib/auth";
+import { apiGet } from "@/lib/api";
 import {
   AlertTriangle,
   Award,
   BarChart3,
+  Bell,
   Calendar,
   CalendarDays,
   Car,
@@ -30,7 +32,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 type AdminLayoutProps = {
   children: ReactNode;
@@ -135,6 +137,42 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string>("");
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [newOrderCount, setNewOrderCount] = useState(0);
+  const prevCountRef = useRef(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const fetchNewOrderCount = useCallback(async () => {
+    try {
+      const data = await apiGet<{ new_count: number }>(
+        "/api/v1/admin/store/orders/new-count",
+        { auth: true },
+      );
+      const count = data.new_count;
+
+      // Play sound + browser notification if count increased (skip initial load)
+      if (prevCountRef.current >= 0 && count > prevCountRef.current) {
+        try {
+          if (!audioRef.current) {
+            audioRef.current = new Audio("/notification.wav");
+            audioRef.current.volume = 0.5;
+          }
+          audioRef.current.play().catch(() => {});
+        } catch {}
+
+        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+          new Notification("New Store Order", {
+            body: `You have ${count} order${count > 1 ? "s" : ""} awaiting processing`,
+            icon: "/logo.png",
+          });
+        }
+      }
+
+      prevCountRef.current = count;
+      setNewOrderCount(count);
+    } catch {
+      // Silently fail — admin endpoint may not be reachable
+    }
+  }, []);
 
   useEffect(() => {
     async function getUserEmail() {
@@ -146,7 +184,22 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       }
     }
     getUserEmail();
+
+    // Request notification permission
+    if (typeof Notification !== "undefined" && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
   }, []);
+
+  // Poll for new orders every 30 seconds
+  useEffect(() => {
+    // -1 means "initial load" — fetchNewOrderCount skips sound when prevCountRef < 0
+    prevCountRef.current = -1;
+    fetchNewOrderCount();
+
+    const interval = setInterval(fetchNewOrderCount, 30_000);
+    return () => clearInterval(interval);
+  }, [fetchNewOrderCount]);
 
   // Close sidebar when route changes on mobile
   useEffect(() => {
@@ -280,7 +333,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                             }`}
                           >
                             <Icon className="h-5 w-5 shrink-0" />
-                            <span className="truncate">{item.label}</span>
+                            <span className="truncate flex-1">{item.label}</span>
+                            {item.href === "/admin/store" && newOrderCount > 0 && (
+                              <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
+                                {newOrderCount > 99 ? "99+" : newOrderCount}
+                              </span>
+                            )}
                           </Link>
                         </li>
                       );
@@ -329,13 +387,41 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               <img src="/logo.png" alt="SwimBuddz Logo" className="h-7 w-auto" />
               <span className="text-base font-semibold text-cyan-700">Admin</span>
             </Link>
-            {/* User avatar or placeholder for balance */}
-            <div className="p-2 -mr-2">
-              <div className="h-6 w-6 rounded-full bg-cyan-100 flex items-center justify-center">
-                <span className="text-xs font-semibold text-cyan-700">
-                  {userEmail ? userEmail[0].toUpperCase() : "A"}
+            <Link
+              href="/admin/store/orders"
+              className="relative p-2 -mr-2 text-slate-600 hover:text-cyan-700 transition"
+            >
+              <Bell className="h-6 w-6" />
+              {newOrderCount > 0 && (
+                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
+                  {newOrderCount > 9 ? "9+" : newOrderCount}
                 </span>
-              </div>
+              )}
+            </Link>
+          </div>
+        </header>
+
+        {/* Desktop Top Bar */}
+        <header className="hidden lg:flex sticky top-0 z-30 items-center justify-between border-b border-slate-200 bg-white/95 backdrop-blur-sm px-6 lg:px-8 py-4">
+          <div>
+            <p className="text-sm text-slate-500">Admin Panel</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/admin/store/orders"
+              className="relative p-2 rounded-full text-slate-500 hover:text-cyan-700 hover:bg-slate-100 transition"
+            >
+              <Bell className="h-5 w-5" />
+              {newOrderCount > 0 && (
+                <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
+                  {newOrderCount > 9 ? "9+" : newOrderCount}
+                </span>
+              )}
+            </Link>
+            <div className="h-8 w-8 rounded-full bg-cyan-100 flex items-center justify-center">
+              <span className="text-xs font-semibold text-cyan-700">
+                {userEmail ? userEmail[0].toUpperCase() : "A"}
+              </span>
             </div>
           </div>
         </header>
