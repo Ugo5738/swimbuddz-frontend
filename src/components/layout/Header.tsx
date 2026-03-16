@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // Grouped navigation structure
 const navGroups = [
@@ -111,6 +111,27 @@ export function Header() {
   const desktopNavRef = useRef<HTMLElement>(null);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const mobileNavRef = useRef<HTMLElement>(null);
+  const dropdownTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const profileTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Hover-intent helpers: delay close so users can move to dropdown panel
+  const openDropdown = useCallback((label: string) => {
+    if (dropdownTimeoutRef.current) clearTimeout(dropdownTimeoutRef.current);
+    setActiveDropdown(label);
+  }, []);
+
+  const closeDropdownDelayed = useCallback(() => {
+    dropdownTimeoutRef.current = setTimeout(() => setActiveDropdown(null), 150);
+  }, []);
+
+  const openProfile = useCallback(() => {
+    if (profileTimeoutRef.current) clearTimeout(profileTimeoutRef.current);
+    setProfileOpen(true);
+  }, []);
+
+  const closeProfileDelayed = useCallback(() => {
+    profileTimeoutRef.current = setTimeout(() => setProfileOpen(false), 150);
+  }, []);
 
   // Determine if current user is admin
   const isAdmin =
@@ -149,6 +170,14 @@ export function Header() {
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Clean up timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (dropdownTimeoutRef.current) clearTimeout(dropdownTimeoutRef.current);
+      if (profileTimeoutRef.current) clearTimeout(profileTimeoutRef.current);
+    };
   }, []);
 
   // Close menus on route change
@@ -274,10 +303,15 @@ export function Header() {
 
       // Desktop dropdown
       return (
-        <div key={item.label} className="relative" onMouseLeave={() => setActiveDropdown(null)}>
+        <div
+          key={item.label}
+          className="relative"
+          onMouseLeave={closeDropdownDelayed}
+          onMouseEnter={() => openDropdown(item.label)}
+        >
           <button
-            onClick={() => setActiveDropdown(item.label)}
-            onMouseEnter={() => setActiveDropdown(item.label)}
+            onClick={() => setActiveDropdown(activeDropdown === item.label ? null : item.label)}
+            onMouseEnter={() => openDropdown(item.label)}
             className={`flex items-center gap-1 px-3 py-2.5 rounded-lg transition-colors min-h-[44px] ${
               dropdownActive || activeDropdown === item.label
                 ? "text-cyan-700 bg-cyan-50"
@@ -384,11 +418,12 @@ export function Header() {
               <div
                 className="relative"
                 ref={profileDropdownRef}
-                onMouseLeave={() => setProfileOpen(false)}
+                onMouseLeave={closeProfileDelayed}
+                onMouseEnter={openProfile}
               >
                 <button
                   onClick={() => setProfileOpen(!profileOpen)}
-                  onMouseEnter={() => setProfileOpen(true)}
+                  onMouseEnter={openProfile}
                   className={`flex items-center justify-center w-10 h-10 rounded-full transition-all ${
                     profileOpen
                       ? "bg-cyan-100 text-cyan-700 ring-2 ring-cyan-500"

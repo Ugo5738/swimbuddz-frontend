@@ -44,6 +44,7 @@ interface ProductImage {
   alt_text: string | null;
   is_primary: boolean;
   sort_order: number;
+  variant_id: string | null;
 }
 
 interface ProductVideo {
@@ -73,6 +74,8 @@ interface Product {
   requires_size_chart_ack: boolean;
   size_chart_url: string | null;
   size_chart_media_id: string | null;
+  variant_options: Record<string, unknown> | null;
+  cost_price_ngn: number | null;
   variants: Variant[];
   images: ProductImage[];
   videos: ProductVideo[];
@@ -95,6 +98,7 @@ interface ProductFormData {
   requires_size_chart_ack: boolean;
   size_chart_url: string;
   size_chart_media_id: string;
+  cost_price_ngn: string;
 }
 
 export default function EditProductPage() {
@@ -135,6 +139,15 @@ export default function EditProductPage() {
   const [deletingVideoId, setDeletingVideoId] = useState<string | null>(null);
   const [audioOverlayVideoId, setAudioOverlayVideoId] = useState<string | null>(null);
 
+  // Variant options editor state
+  const [variantOptions, setVariantOptions] = useState<Record<string, string[]>>({});
+  const [colorSwatches, setColorSwatches] = useState<Record<string, string>>({});
+  const [newDimensionName, setNewDimensionName] = useState("");
+  const [newValueInputs, setNewValueInputs] = useState<Record<string, string>>({});
+
+  // Image ↔ variant linking state
+  const [linkingImageId, setLinkingImageId] = useState<string | null>(null);
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -151,6 +164,27 @@ export default function EditProductPage() {
         setVariants(prod.variants || []);
         setImages(prod.images || []);
         setVideos(prod.videos || []);
+
+        // Parse variant_options: separate _color_swatches from real dimensions
+        if (prod.variant_options && typeof prod.variant_options === "object") {
+          const opts: Record<string, string[]> = {};
+          let swatches: Record<string, string> = {};
+          for (const [key, val] of Object.entries(prod.variant_options)) {
+            if (
+              key === "_color_swatches" &&
+              val &&
+              typeof val === "object" &&
+              !Array.isArray(val)
+            ) {
+              swatches = val as Record<string, string>;
+            } else if (Array.isArray(val)) {
+              opts[key] = val as string[];
+            }
+          }
+          setVariantOptions(opts);
+          setColorSwatches(swatches);
+        }
+
         setFormData({
           name: prod.name,
           slug: prod.slug,
@@ -168,6 +202,7 @@ export default function EditProductPage() {
           requires_size_chart_ack: prod.requires_size_chart_ack,
           size_chart_url: prod.size_chart_url || "",
           size_chart_media_id: prod.size_chart_media_id || "",
+          cost_price_ngn: prod.cost_price_ngn ? String(prod.cost_price_ngn) : "",
         });
       } catch {
         toast.error("Failed to load product");
@@ -199,12 +234,22 @@ export default function EditProductPage() {
 
     setSaving(true);
     try {
+      // Build variant_options JSONB: merge real dimensions + _color_swatches
+      let builtVariantOptions: Record<string, unknown> | null = null;
+      if (Object.keys(variantOptions).length > 0) {
+        builtVariantOptions = { ...variantOptions };
+        if (Object.keys(colorSwatches).length > 0) {
+          builtVariantOptions._color_swatches = colorSwatches;
+        }
+      }
+
       const payload = {
         ...formData,
         base_price_ngn: parseFloat(formData.base_price_ngn),
         compare_at_price_ngn: formData.compare_at_price_ngn
           ? parseFloat(formData.compare_at_price_ngn)
           : null,
+        cost_price_ngn: formData.cost_price_ngn ? parseFloat(formData.cost_price_ngn) : null,
         preorder_lead_days: formData.preorder_lead_days
           ? parseInt(formData.preorder_lead_days)
           : null,
@@ -212,6 +257,7 @@ export default function EditProductPage() {
         supplier_id: formData.supplier_id || null,
         size_chart_media_id: formData.size_chart_media_id || null,
         size_chart_url: formData.size_chart_url || null,
+        variant_options: builtVariantOptions,
       };
 
       await apiPatch(`/api/v1/admin/store/products/${productId}`, payload, {
@@ -277,6 +323,92 @@ export default function EditProductPage() {
       toast.error(err instanceof Error ? err.message : "Failed to create variant");
     } finally {
       setSavingVariant(false);
+    }
+  };
+
+  // ─── Variant Options Handlers ───
+  const handleAddDimension = () => {
+    const name = newDimensionName.trim();
+    if (!name) return;
+    if (variantOptions[name]) {
+      toast.error(`Dimension "${name}" already exists`);
+      return;
+    }
+    setVariantOptions((prev) => ({ ...prev, [name]: [] }));
+    setNewDimensionName("");
+  };
+
+  const handleRemoveDimension = (dim: string) => {
+    if (!confirm(`Remove dimension "${dim}" and all its values?`)) return;
+    setVariantOptions((prev) => {
+      const next = { ...prev };
+      delete next[dim];
+      return next;
+    });
+    // Clean up swatches for this dimension if it was Color
+    if (dim.toLowerCase() === "color") {
+      setColorSwatches({});
+    }
+    setNewValueInputs((prev) => {
+      const next = { ...prev };
+      delete next[dim];
+      return next;
+    });
+  };
+
+  const handleAddValue = (dim: string) => {
+    const val = (newValueInputs[dim] || "").trim();
+    if (!val) return;
+    if (variantOptions[dim]?.includes(val)) {
+      toast.error(`"${val}" already exists in ${dim}`);
+      return;
+    }
+    setVariantOptions((prev) => ({
+      ...prev,
+      [dim]: [...(prev[dim] || []), val],
+    }));
+    setNewValueInputs((prev) => ({ ...prev, [dim]: "" }));
+  };
+
+  const handleRemoveValue = (dim: string, val: string) => {
+    setVariantOptions((prev) => ({
+      ...prev,
+      [dim]: (prev[dim] || []).filter((v) => v !== val),
+    }));
+    // Clean up swatch if removing a color value
+    if (dim.toLowerCase() === "color") {
+      setColorSwatches((prev) => {
+        const next = { ...prev };
+        delete next[val];
+        return next;
+      });
+    }
+  };
+
+  const handleSwatchChange = (colorName: string, url: string) => {
+    setColorSwatches((prev) => {
+      if (!url) {
+        const next = { ...prev };
+        delete next[colorName];
+        return next;
+      }
+      return { ...prev, [colorName]: url };
+    });
+  };
+
+  // ─── Image ↔ Variant Linking ───
+  const handleLinkImageToVariant = async (imageId: string, variantId: string | null) => {
+    try {
+      const updated = await apiPatch<ProductImage>(
+        `/api/v1/admin/store/products/${productId}/images/${imageId}`,
+        { variant_id: variantId },
+        { auth: true }
+      );
+      setImages((prev) => prev.map((img) => (img.id === imageId ? updated : img)));
+      setLinkingImageId(null);
+      toast.success(variantId ? "Image linked to variant" : "Image unlinked");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to link image");
     }
   };
 
@@ -504,7 +636,7 @@ export default function EditProductPage() {
             {/* Pricing */}
             <div className="pt-4 border-t border-slate-200">
               <h3 className="text-lg font-medium text-slate-900 mb-4">Pricing</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     Price (₦) *
@@ -533,6 +665,21 @@ export default function EditProductPage() {
                     step="100"
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Cost Price (₦)
+                  </label>
+                  <input
+                    type="number"
+                    name="cost_price_ngn"
+                    value={formData.cost_price_ngn}
+                    onChange={handleChange}
+                    min="0"
+                    step="100"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">COGS — internal only</p>
                 </div>
               </div>
             </div>
@@ -600,6 +747,16 @@ export default function EditProductPage() {
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
+                    name="has_variants"
+                    checked={formData.has_variants}
+                    onChange={handleChange}
+                    className="rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                  />
+                  <span className="text-sm text-slate-700">Has variants</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
                     name="requires_size_chart_ack"
                     checked={formData.requires_size_chart_ack}
                     onChange={handleChange}
@@ -631,6 +788,149 @@ export default function EditProductPage() {
                 </div>
               )}
             </div>
+
+            {/* Variant Options Editor (visible when has_variants is checked) */}
+            {formData.has_variants && (
+              <div className="pt-4 border-t border-slate-200">
+                <h3 className="text-lg font-medium text-slate-900 mb-1">Variant Options</h3>
+                <p className="text-sm text-slate-500 mb-4">
+                  Define dimensions (e.g. Color, Size) and their possible values. These are saved as
+                  product-level metadata.
+                </p>
+
+                {/* Existing dimensions */}
+                <div className="space-y-4">
+                  {Object.entries(variantOptions).map(([dim, values]) => (
+                    <div key={dim} className="border border-slate-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium text-slate-800">{dim}</h4>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveDimension(dim)}
+                          className="text-xs text-red-500 hover:text-red-700"
+                        >
+                          Remove
+                        </button>
+                      </div>
+
+                      {/* Value tags */}
+                      <div className="flex flex-wrap gap-1.5 mb-3">
+                        {values.map((val) => (
+                          <span
+                            key={val}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-700 rounded-md text-sm"
+                          >
+                            {dim.toLowerCase() === "color" && colorSwatches[val] && (
+                              <span
+                                className="w-3 h-3 rounded-full border border-slate-300 inline-block"
+                                style={{
+                                  backgroundImage: `url(${colorSwatches[val]})`,
+                                  backgroundSize: "cover",
+                                }}
+                              />
+                            )}
+                            {val}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveValue(dim, val)}
+                              className="text-slate-400 hover:text-red-500 ml-0.5"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                        {values.length === 0 && (
+                          <span className="text-xs text-slate-400 italic">No values yet</span>
+                        )}
+                      </div>
+
+                      {/* Add value input */}
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newValueInputs[dim] || ""}
+                          onChange={(e) =>
+                            setNewValueInputs((prev) => ({ ...prev, [dim]: e.target.value }))
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleAddValue(dim);
+                            }
+                          }}
+                          placeholder={`Add ${dim.toLowerCase()} value...`}
+                          className="flex-1 px-2.5 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleAddValue(dim)}
+                          className="px-3 py-1.5 text-sm bg-slate-100 text-slate-700 rounded-md hover:bg-slate-200 font-medium"
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      {/* Color swatches sub-section */}
+                      {dim.toLowerCase() === "color" && values.length > 0 && (
+                        <div className="mt-4 pt-3 border-t border-slate-100">
+                          <p className="text-xs font-medium text-slate-600 mb-2">
+                            Color Swatches (optional image URLs)
+                          </p>
+                          <div className="space-y-2">
+                            {values.map((colorName) => (
+                              <div key={colorName} className="flex items-center gap-2">
+                                <span className="text-xs text-slate-600 w-16 shrink-0 truncate">
+                                  {colorName}:
+                                </span>
+                                {colorSwatches[colorName] && (
+                                  /* eslint-disable-next-line @next/next/no-img-element */
+                                  <img
+                                    src={colorSwatches[colorName]}
+                                    alt={colorName}
+                                    className="w-6 h-6 rounded border border-slate-200 object-cover shrink-0"
+                                  />
+                                )}
+                                <input
+                                  type="text"
+                                  value={colorSwatches[colorName] || ""}
+                                  onChange={(e) => handleSwatchChange(colorName, e.target.value)}
+                                  placeholder="https://..."
+                                  className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded-md focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Add new dimension */}
+                <div className="mt-4 flex gap-2">
+                  <input
+                    type="text"
+                    value={newDimensionName}
+                    onChange={(e) => setNewDimensionName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddDimension();
+                      }
+                    }}
+                    placeholder="New dimension name (e.g. Color, Size)"
+                    className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddDimension}
+                    className="px-4 py-2 text-sm bg-cyan-50 text-cyan-700 rounded-lg hover:bg-cyan-100 font-medium whitespace-nowrap"
+                  >
+                    + Add Dimension
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="pt-6 border-t border-slate-200 flex gap-3">
@@ -852,33 +1152,95 @@ export default function EditProductPage() {
               <p className="text-sm text-slate-500">No images yet.</p>
             ) : (
               <div className="grid grid-cols-2 gap-2">
-                {images.map((img) => (
-                  <div
-                    key={img.id}
-                    className="relative group rounded-lg overflow-hidden border border-slate-200"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={img.url}
-                      alt={img.alt_text || "Product image"}
-                      className="w-full aspect-square object-cover"
-                    />
-                    {img.is_primary && (
-                      <span className="absolute top-1 left-1 text-[10px] px-1.5 py-0.5 bg-cyan-600 text-white rounded font-medium">
-                        Primary
-                      </span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteImage(img.id)}
-                      disabled={deletingImageId === img.id}
-                      className="absolute top-1 right-1 w-5 h-5 flex items-center justify-center bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 disabled:opacity-50"
-                      title="Remove image"
+                {images.map((img) => {
+                  const linkedVariant = img.variant_id
+                    ? variants.find((v) => v.id === img.variant_id)
+                    : null;
+                  const linkedColorName = linkedVariant?.options?.Color || linkedVariant?.name;
+                  return (
+                    <div
+                      key={img.id}
+                      className="relative group rounded-lg overflow-hidden border border-slate-200"
                     >
-                      {deletingImageId === img.id ? "..." : "×"}
-                    </button>
-                  </div>
-                ))}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={img.url}
+                        alt={img.alt_text || "Product image"}
+                        className="w-full aspect-square object-cover"
+                      />
+                      {img.is_primary && (
+                        <span className="absolute top-1 left-1 text-[10px] px-1.5 py-0.5 bg-cyan-600 text-white rounded font-medium">
+                          Primary
+                        </span>
+                      )}
+
+                      {/* Variant link badge */}
+                      {linkedColorName && linkingImageId !== img.id && (
+                        <span className="absolute bottom-1 left-1 text-[10px] px-1.5 py-0.5 bg-purple-600 text-white rounded font-medium max-w-[calc(100%-2.5rem)] truncate">
+                          {linkedColorName}
+                        </span>
+                      )}
+
+                      {/* Action buttons (hover) */}
+                      <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {variants.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setLinkingImageId(linkingImageId === img.id ? null : img.id)
+                            }
+                            className={`w-5 h-5 flex items-center justify-center rounded-full text-[10px] ${
+                              linkingImageId === img.id
+                                ? "bg-purple-500 text-white"
+                                : "bg-slate-700/70 text-white hover:bg-purple-500"
+                            }`}
+                            title="Link to variant"
+                          >
+                            🔗
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteImage(img.id)}
+                          disabled={deletingImageId === img.id}
+                          className="w-5 h-5 flex items-center justify-center bg-red-500 text-white rounded-full text-xs hover:bg-red-600 disabled:opacity-50"
+                          title="Remove image"
+                        >
+                          {deletingImageId === img.id ? "..." : "×"}
+                        </button>
+                      </div>
+
+                      {/* Variant linking dropdown */}
+                      {linkingImageId === img.id && (
+                        <div className="absolute inset-x-0 bottom-0 bg-white/95 border-t border-slate-200 p-1.5 space-y-0.5 max-h-32 overflow-y-auto">
+                          <button
+                            type="button"
+                            onClick={() => handleLinkImageToVariant(img.id, null)}
+                            className={`w-full text-left text-[11px] px-2 py-1 rounded hover:bg-slate-100 ${
+                              !img.variant_id ? "font-semibold text-slate-900" : "text-slate-600"
+                            }`}
+                          >
+                            No variant (unlinked)
+                          </button>
+                          {variants.map((v) => (
+                            <button
+                              key={v.id}
+                              type="button"
+                              onClick={() => handleLinkImageToVariant(img.id, v.id)}
+                              className={`w-full text-left text-[11px] px-2 py-1 rounded hover:bg-purple-50 ${
+                                img.variant_id === v.id
+                                  ? "font-semibold text-purple-700 bg-purple-50"
+                                  : "text-slate-600"
+                              }`}
+                            >
+                              {v.options?.Color || v.name || v.sku}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

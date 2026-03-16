@@ -44,10 +44,10 @@ export default function OrdersPage() {
   const loadOrders = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await apiGet<OrdersResponse>("/api/v1/store/orders/me", {
+      const data = await apiGet<Order[]>("/api/v1/store/orders", {
         auth: true,
       });
-      setOrders(data.items);
+      setOrders(data);
     } catch (e) {
       console.error("Failed to load orders:", e);
     } finally {
@@ -93,9 +93,7 @@ export default function OrdersPage() {
                     <p className="text-sm text-slate-600">
                       {order.items.length} item
                       {order.items.length !== 1 ? "s" : ""} •{" "}
-                      {order.fulfillment_type === "pickup"
-                        ? "Pool Pickup"
-                        : "Delivery"}
+                      {order.fulfillment_type === "pickup" ? "Pool Pickup" : "Delivery"}
                     </p>
                   </div>
                   <div className="text-right">
@@ -116,9 +114,7 @@ export default function OrdersPage() {
                       </span>
                     ))}
                     {order.items.length > 3 && (
-                      <span className="text-slate-400">
-                        +{order.items.length - 3} more
-                      </span>
+                      <span className="text-slate-400">+{order.items.length - 3} more</span>
                     )}
                   </div>
                 </div>
@@ -131,12 +127,8 @@ export default function OrdersPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
             <ShoppingBag className="w-8 h-8 text-slate-400" />
           </div>
-          <h2 className="text-lg font-medium text-slate-900 mb-2">
-            No orders yet
-          </h2>
-          <p className="text-slate-500 mb-6">
-            Start shopping to see your orders here
-          </p>
+          <h2 className="text-lg font-medium text-slate-900 mb-2">No orders yet</h2>
+          <p className="text-slate-500 mb-6">Start shopping to see your orders here</p>
           <Link
             href="/store"
             className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
@@ -178,9 +170,7 @@ function OrderStatusBadge({ status }: { status: string }) {
   };
 
   return (
-    <span
-      className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${config.className}`}
-    >
+    <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${config.className}`}>
       {config.label}
     </span>
   );

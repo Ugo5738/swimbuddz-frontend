@@ -5,7 +5,6 @@ import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { useStoreCart } from "@/lib/storeCart";
 import { ArrowLeft, Minus, Plus, ShoppingBag, Tag, Trash2 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -71,92 +70,78 @@ export default function CartPage() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4">
-            {items.map((item) => {
-              const product = item.variant?.product;
-              const primaryImage =
-                product?.images?.find((img) => img.is_primary) || product?.images?.[0];
+            {items.map((item) => (
+              <Card key={item.id} className="p-5">
+                <div className="flex gap-5">
+                  {/* Image */}
+                  <div className="relative w-28 h-28 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
+                    {item.image_url ? (
+                      <img
+                        src={item.image_url}
+                        alt={item.product_name || "Product"}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-300">
+                        <ShoppingBag className="w-8 h-8" />
+                      </div>
+                    )}
+                  </div>
 
-              return (
-                <Card key={item.id} className="p-5">
-                  <div className="flex gap-5">
-                    {/* Image */}
-                    <div className="relative w-28 h-28 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
-                      {primaryImage ? (
-                        <Image
-                          src={primaryImage.url}
-                          alt={product?.name || "Product"}
-                          fill
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-300">
-                          <ShoppingBag className="w-8 h-8" />
-                        </div>
-                      )}
+                  {/* Details */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-medium text-slate-900 text-base">
+                          {item.product_name || "Product"}
+                        </h3>
+                        {item.variant_name && (
+                          <p className="text-sm text-slate-500 mt-0.5">{item.variant_name}</p>
+                        )}
+                        {item.sku && <p className="text-xs text-slate-400 mt-0.5">{item.sku}</p>}
+                        {item.quantity > 1 && (
+                          <p className="text-xs text-slate-400 mt-1">
+                            ₦{item.unit_price_ngn.toLocaleString()} each
+                          </p>
+                        )}
+                      </div>
+                      <span className="font-semibold text-slate-900 text-base ml-4 whitespace-nowrap">
+                        ₦{(item.unit_price_ngn * item.quantity).toLocaleString()}
+                      </span>
                     </div>
 
-                    {/* Details */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-medium text-slate-900 text-base">
-                            {product?.name || "Product"}
-                          </h3>
-                          {item.variant?.name && (
-                            <p className="text-sm text-slate-500 mt-0.5">{item.variant.name}</p>
-                          )}
-                          {item.variant?.options &&
-                            Object.keys(item.variant.options).length > 0 && (
-                              <p className="text-sm text-slate-500 mt-0.5">
-                                {Object.entries(item.variant.options)
-                                  .map(([k, v]) => `${k}: ${v}`)
-                                  .join(", ")}
-                              </p>
-                            )}
-                          {item.quantity > 1 && (
-                            <p className="text-xs text-slate-400 mt-1">
-                              ₦{item.unit_price_ngn.toLocaleString()} each
-                            </p>
-                          )}
-                        </div>
-                        <span className="font-semibold text-slate-900 text-base ml-4 whitespace-nowrap">
-                          ₦{(item.unit_price_ngn * item.quantity).toLocaleString()}
-                        </span>
-                      </div>
-
-                      {/* Quantity Controls */}
-                      <div className="flex items-center justify-between mt-4">
-                        <div className="flex items-center border border-slate-200 rounded-lg">
-                          <button
-                            onClick={() => updateItem(item.id, Math.max(1, item.quantity - 1))}
-                            className="p-2 hover:bg-slate-50 transition-colors rounded-l-lg"
-                          >
-                            <Minus className="w-4 h-4" />
-                          </button>
-                          <span className="w-10 text-center text-sm font-medium">
-                            {item.quantity}
-                          </span>
-                          <button
-                            onClick={() => updateItem(item.id, item.quantity + 1)}
-                            className="p-2 hover:bg-slate-50 transition-colors rounded-r-lg"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        </div>
-
+                    {/* Quantity Controls */}
+                    <div className="flex items-center justify-between mt-4">
+                      <div className="flex items-center border border-slate-200 rounded-lg">
                         <button
-                          onClick={() => removeItem(item.id)}
-                          className="p-2 text-slate-400 hover:text-rose-500 transition-colors"
-                          title="Remove item"
+                          onClick={() => updateItem(item.id, Math.max(1, item.quantity - 1))}
+                          className="p-2 hover:bg-slate-50 transition-colors rounded-l-lg"
                         >
-                          <Trash2 className="w-5 h-5" />
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <span className="w-10 text-center text-sm font-medium">
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() => updateItem(item.id, item.quantity + 1)}
+                          className="p-2 hover:bg-slate-50 transition-colors rounded-r-lg"
+                        >
+                          <Plus className="w-4 h-4" />
                         </button>
                       </div>
+
+                      <button
+                        onClick={() => removeItem(item.id)}
+                        className="p-2 text-slate-400 hover:text-rose-500 transition-colors"
+                        title="Remove item"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
                     </div>
                   </div>
-                </Card>
-              );
-            })}
+                </div>
+              </Card>
+            ))}
           </div>
 
           {/* Order Summary */}
@@ -233,7 +218,7 @@ export default function CartPage() {
                   </Link>
                 ) : (
                   <>
-                    <Link href="/auth/login?redirect=/store/checkout" className="block">
+                    <Link href="/login?redirect=/store/checkout" className="block">
                       <Button size="lg" className="w-full">
                         Login to Checkout
                       </Button>

@@ -21,6 +21,7 @@ interface Product {
     id: string;
     sku: string;
   };
+  variant_options?: Record<string, unknown> | null;
 }
 
 interface ProductCardProps {
@@ -39,6 +40,18 @@ export function ProductCard({ product, memberDiscountPercent = 0 }: ProductCardP
   const hasDiscount =
     product.compare_at_price_ngn && product.compare_at_price_ngn > product.base_price_ngn;
   const isPreorder = product.sourcing_type === "preorder";
+
+  // Extract color options for dot indicators
+  const colorOptions =
+    product.variant_options && Array.isArray(product.variant_options.Color)
+      ? (product.variant_options.Color as string[])
+      : [];
+  const colorSwatches =
+    product.variant_options &&
+    typeof product.variant_options._color_swatches === "object" &&
+    product.variant_options._color_swatches
+      ? (product.variant_options._color_swatches as Record<string, string>)
+      : null;
 
   const finalPrice =
     memberDiscountPercent > 0
@@ -71,14 +84,14 @@ export function ProductCard({ product, memberDiscountPercent = 0 }: ProductCardP
       className="group block bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-slate-100"
     >
       {/* Image */}
-      <div className="relative aspect-square bg-slate-100 overflow-hidden">
+      <div className="relative aspect-square bg-white overflow-hidden">
         {hasValidImage ? (
           <Image
             src={primaryImage.url}
             alt={product.name}
             fill
             unoptimized // Bypass Next.js image optimization for external URLs
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            className="object-contain group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-slate-400">
@@ -111,6 +124,40 @@ export function ProductCard({ product, memberDiscountPercent = 0 }: ProductCardP
             </span>
           )}
         </div>
+
+        {/* Color indicators */}
+        {colorOptions.length > 1 && (
+          <div className="absolute bottom-2 left-2 flex items-center gap-1">
+            {colorOptions.slice(0, 5).map((color) => {
+              const swatchUrl = colorSwatches?.[color];
+              return (
+                <div
+                  key={color}
+                  className="w-5 h-5 rounded-full border border-white shadow-sm overflow-hidden bg-slate-200"
+                  title={color}
+                >
+                  {swatchUrl ? (
+                    <Image
+                      src={swatchUrl}
+                      alt={color}
+                      width={20}
+                      height={20}
+                      unoptimized
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-slate-300" />
+                  )}
+                </div>
+              );
+            })}
+            {colorOptions.length > 5 && (
+              <span className="text-[10px] font-medium text-slate-500 ml-0.5">
+                +{colorOptions.length - 5}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Quick Add Button */}
         {product.default_variant && (

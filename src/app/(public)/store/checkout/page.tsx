@@ -104,7 +104,7 @@ export default function StoreCheckoutPage() {
   // Redirect if not logged in
   useEffect(() => {
     if (!isAuthenticated && !cartLoading) {
-      router.push("/auth/login?redirect=/store/checkout");
+      router.push("/login?redirect=/store/checkout");
     }
   }, [isAuthenticated, cartLoading, router]);
 
@@ -213,7 +213,7 @@ export default function StoreCheckoutPage() {
   const paystackAmount = Math.max(0, afterCredit - bubblesValueNgn);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
       {/* Back Link */}
       <Link
         href="/store/cart"
@@ -513,7 +513,7 @@ export default function StoreCheckoutPage() {
               {cart.items.map((item) => (
                 <div key={item.id} className="flex justify-between">
                   <span className="text-slate-600 truncate max-w-[180px]">
-                    {item.variant?.product?.name} × {item.quantity}
+                    {item.product_name} × {item.quantity}
                   </span>
                   <span className="text-slate-900">
                     ₦{(item.unit_price_ngn * item.quantity).toLocaleString()}

@@ -3,33 +3,18 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
 import { supabase } from "@/lib/auth";
 import { User } from "@supabase/supabase-js";
-import React, {
-  createContext,
-  ReactNode,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from "react";
 
-// Types matching backend schemas
+// Types matching backend CartItemResponse schema
 export interface CartItem {
   id: string;
   variant_id: string;
   quantity: number;
   unit_price_ngn: number;
-  variant?: {
-    id: string;
-    sku: string;
-    name: string | null;
-    options: Record<string, string>;
-    product?: {
-      id: string;
-      name: string;
-      slug: string;
-      images?: { url: string; is_primary: boolean }[];
-    };
-  };
+  product_name: string | null;
+  variant_name: string | null;
+  sku: string | null;
+  image_url: string | null;
 }
 
 export interface Cart {
@@ -52,16 +37,12 @@ interface StoreCartContextType {
   addItem: (variantId: string, quantity?: number) => Promise<void>;
   updateItem: (itemId: string, quantity: number) => Promise<void>;
   removeItem: (itemId: string) => Promise<void>;
-  applyDiscount: (
-    code: string,
-  ) => Promise<{ success: boolean; message?: string }>;
+  applyDiscount: (code: string) => Promise<{ success: boolean; message?: string }>;
   removeDiscount: () => Promise<void>;
   clearCart: () => void;
 }
 
-const StoreCartContext = createContext<StoreCartContextType | undefined>(
-  undefined,
-);
+const StoreCartContext = createContext<StoreCartContextType | undefined>(undefined);
 
 const SESSION_KEY = "swimbuddz_store_session";
 
@@ -75,14 +56,19 @@ function getSessionId(): string {
   return sessionId;
 }
 
+/** Rotate session_id so the current guest cart can't re-merge on future logins. */
+function rotateSessionId(): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(SESSION_KEY, crypto.randomUUID());
+}
+
 export function StoreCartProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const itemCount =
-    cart?.items.reduce((sum, item) => sum + item.quantity, 0) || 0;
+  const itemCount = cart?.items.reduce((sum, item) => sum + item.quantity, 0) || 0;
   const isAuthenticated = !!user;
 
   // Initialize auth state
@@ -132,6 +118,12 @@ export function StoreCartProvider({ children }: { children: ReactNode }) {
         auth: !!user,
       }).catch(() => null);
 
+      // After authenticated fetch, rotate session_id so the now-merged
+      // guest cart cannot re-merge on the next login cycle.
+      if (user) {
+        rotateSessionId();
+      }
+
       setCart(cartData);
     } catch (e) {
       console.error("Failed to load cart:", e);
@@ -156,11 +148,11 @@ export function StoreCartProvider({ children }: { children: ReactNode }) {
       await apiPost(
         `/api/v1/store/cart/items${sessionParam}`,
         { variant_id: variantId, quantity },
-        { auth: !!user },
+        { auth: !!user }
       );
       await refreshCart();
     },
-    [user, refreshCart],
+    [user, refreshCart]
   );
 
   const updateItem = useCallback(
@@ -171,11 +163,11 @@ export function StoreCartProvider({ children }: { children: ReactNode }) {
       await apiPatch(
         `/api/v1/store/cart/items/${itemId}${sessionParam}`,
         { quantity },
-        { auth: !!user },
+        { auth: !!user }
       );
       await refreshCart();
     },
-    [user, refreshCart],
+    [user, refreshCart]
   );
 
   const removeItem = useCallback(
@@ -188,7 +180,7 @@ export function StoreCartProvider({ children }: { children: ReactNode }) {
       });
       await refreshCart();
     },
-    [user, refreshCart],
+    [user, refreshCart]
   );
 
   const applyDiscount = useCallback(
@@ -197,20 +189,15 @@ export function StoreCartProvider({ children }: { children: ReactNode }) {
       const sessionParam = sessionId ? `?session_id=${sessionId}` : "";
 
       try {
-        await apiPost(
-          `/api/v1/store/cart/discount${sessionParam}`,
-          { code },
-          { auth: !!user },
-        );
+        await apiPost(`/api/v1/store/cart/discount${sessionParam}`, { code }, { auth: !!user });
         await refreshCart();
         return { success: true, message: `Discount "${code}" applied` };
       } catch (e) {
-        const message =
-          e instanceof Error ? e.message : "Invalid discount code";
+        const message = e instanceof Error ? e.message : "Invalid discount code";
         return { success: false, message };
       }
     },
-    [user, refreshCart],
+    [user, refreshCart]
   );
 
   const removeDiscount = useCallback(async () => {

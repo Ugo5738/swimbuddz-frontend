@@ -73,12 +73,9 @@ export default function OrderDetailPage() {
   const loadOrder = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await apiGet<OrderDetail>(
-        `/api/v1/store/orders/me/${orderNumber}`,
-        {
-          auth: true,
-        },
-      );
+      const data = await apiGet<OrderDetail>(`/api/v1/store/orders/${orderNumber}`, {
+        auth: true,
+      });
       setOrder(data);
     } catch (e) {
       console.error("Failed to load order:", e);
@@ -99,9 +96,7 @@ export default function OrderDetailPage() {
   if (error || !order) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-xl font-semibold text-slate-900 mb-2">
-          Order not found
-        </h2>
+        <h2 className="text-xl font-semibold text-slate-900 mb-2">Order not found</h2>
         <p className="text-slate-500 mb-4">{error}</p>
         <Link href="/account/orders">
           <Button variant="secondary">Back to Orders</Button>
@@ -124,9 +119,7 @@ export default function OrderDetailPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">
-            Order #{order.order_number}
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-900">Order #{order.order_number}</h1>
           <p className="text-slate-500">
             Placed on{" "}
             {new Date(order.created_at).toLocaleDateString("en-NG", {
@@ -145,21 +138,15 @@ export default function OrderDetailPage() {
         {/* Order Items */}
         <div className="lg:col-span-2 space-y-4">
           <Card className="p-6">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">
-              Order Items
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Order Items</h2>
             <div className="divide-y divide-slate-100">
               {order.items.map((item) => {
                 const primaryImage =
-                  item.variant?.product?.images?.find(
-                    (img) => img.is_primary,
-                  ) || item.variant?.product?.images?.[0];
+                  item.variant?.product?.images?.find((img) => img.is_primary) ||
+                  item.variant?.product?.images?.[0];
 
                 return (
-                  <div
-                    key={item.id}
-                    className="flex gap-4 py-4 first:pt-0 last:pb-0"
-                  >
+                  <div key={item.id} className="flex gap-4 py-4 first:pt-0 last:pb-0">
                     <div className="relative w-16 h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
                       {primaryImage ? (
                         <Image
@@ -175,25 +162,19 @@ export default function OrderDetailPage() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-slate-900">
-                        {item.variant?.product?.name}
-                      </p>
+                      <p className="font-medium text-slate-900">{item.variant?.product?.name}</p>
                       {item.variant?.name && (
+                        <p className="text-sm text-slate-500">{item.variant.name}</p>
+                      )}
+                      {item.variant?.options && Object.keys(item.variant.options).length > 0 && (
                         <p className="text-sm text-slate-500">
-                          {item.variant.name}
+                          {Object.entries(item.variant.options)
+                            .map(([k, v]) => `${k}: ${v}`)
+                            .join(" • ")}
                         </p>
                       )}
-                      {item.variant?.options &&
-                        Object.keys(item.variant.options).length > 0 && (
-                          <p className="text-sm text-slate-500">
-                            {Object.entries(item.variant.options)
-                              .map(([k, v]) => `${k}: ${v}`)
-                              .join(" • ")}
-                          </p>
-                        )}
                       <p className="text-sm text-slate-600 mt-1">
-                        Qty: {item.quantity} × ₦
-                        {item.unit_price_ngn.toLocaleString()}
+                        Qty: {item.quantity} × ₦{item.unit_price_ngn.toLocaleString()}
                       </p>
                     </div>
                     <div className="text-right">
@@ -225,13 +206,9 @@ export default function OrderDetailPage() {
 
             {order.fulfillment_type === "pickup" && order.pickup_location && (
               <div>
-                <p className="font-medium text-slate-900">
-                  {order.pickup_location.name}
-                </p>
+                <p className="font-medium text-slate-900">{order.pickup_location.name}</p>
                 {order.pickup_location.address && (
-                  <p className="text-slate-500">
-                    {order.pickup_location.address}
-                  </p>
+                  <p className="text-slate-500">{order.pickup_location.address}</p>
                 )}
                 {order.status === "ready_for_pickup" && (
                   <p className="mt-3 p-3 bg-emerald-50 text-emerald-700 rounded-lg text-sm">
@@ -241,45 +218,35 @@ export default function OrderDetailPage() {
               </div>
             )}
 
-            {order.fulfillment_type === "delivery" &&
-              order.delivery_address && (
-                <div>
-                  <p className="text-slate-900">
-                    {order.delivery_address.street}
-                  </p>
-                  <p className="text-slate-500">
-                    {order.delivery_address.city},{" "}
-                    {order.delivery_address.state}
-                  </p>
-                  <p className="text-slate-500">
-                    {order.delivery_address.phone}
-                  </p>
+            {order.fulfillment_type === "delivery" && order.delivery_address && (
+              <div>
+                <p className="text-slate-900">{order.delivery_address.street}</p>
+                <p className="text-slate-500">
+                  {order.delivery_address.city}, {order.delivery_address.state}
+                </p>
+                <p className="text-slate-500">{order.delivery_address.phone}</p>
 
-                  {order.tracking_number && (
-                    <div className="mt-4 pt-4 border-t border-slate-100">
-                      <p className="text-sm text-slate-600">
-                        Tracking: {order.tracking_number}
-                      </p>
-                      {order.tracking_url && (
-                        <a
-                          href={order.tracking_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-cyan-600 hover:underline"
-                        >
-                          Track Package →
-                        </a>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
+                {order.tracking_number && (
+                  <div className="mt-4 pt-4 border-t border-slate-100">
+                    <p className="text-sm text-slate-600">Tracking: {order.tracking_number}</p>
+                    {order.tracking_url && (
+                      <a
+                        href={order.tracking_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-cyan-600 hover:underline"
+                      >
+                        Track Package →
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {order.customer_notes && (
               <div className="mt-4 pt-4 border-t border-slate-100">
-                <p className="text-sm font-medium text-slate-700">
-                  Your notes:
-                </p>
+                <p className="text-sm font-medium text-slate-700">Your notes:</p>
                 <p className="text-sm text-slate-500">{order.customer_notes}</p>
               </div>
             )}
@@ -289,16 +256,12 @@ export default function OrderDetailPage() {
         {/* Order Summary */}
         <div className="lg:col-span-1">
           <Card className="p-6 sticky top-24">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">
-              Order Summary
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Order Summary</h2>
 
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-600">Subtotal</span>
-                <span className="text-slate-900">
-                  ₦{order.subtotal_ngn.toLocaleString()}
-                </span>
+                <span className="text-slate-900">₦{order.subtotal_ngn.toLocaleString()}</span>
               </div>
 
               {order.discount_amount_ngn > 0 && (
@@ -314,31 +277,21 @@ export default function OrderDetailPage() {
               {order.delivery_fee_ngn > 0 && (
                 <div className="flex justify-between">
                   <span className="text-slate-600">Delivery</span>
-                  <span className="text-slate-900">
-                    ₦{order.delivery_fee_ngn.toLocaleString()}
-                  </span>
+                  <span className="text-slate-900">₦{order.delivery_fee_ngn.toLocaleString()}</span>
                 </div>
               )}
 
               <div className="pt-3 border-t border-slate-200 flex justify-between font-semibold">
                 <span className="text-slate-900">Total</span>
-                <span className="text-cyan-600">
-                  ₦{order.total_ngn.toLocaleString()}
-                </span>
+                <span className="text-cyan-600">₦{order.total_ngn.toLocaleString()}</span>
               </div>
             </div>
 
             {/* Order Timeline */}
             <div className="mt-6 pt-6 border-t border-slate-100">
-              <h3 className="text-sm font-medium text-slate-900 mb-3">
-                Timeline
-              </h3>
+              <h3 className="text-sm font-medium text-slate-900 mb-3">Timeline</h3>
               <div className="space-y-2 text-sm">
-                <TimelineItem
-                  label="Order placed"
-                  date={order.created_at}
-                  done={true}
-                />
+                <TimelineItem label="Order placed" date={order.created_at} done={true} />
                 <TimelineItem
                   label="Payment received"
                   date={order.paid_at}
@@ -360,14 +313,8 @@ export default function OrderDetailPage() {
                 ) : (
                   <TimelineItem
                     label="Ready for pickup"
-                    date={
-                      order.status === "ready_for_pickup"
-                        ? new Date().toISOString()
-                        : null
-                    }
-                    done={["ready_for_pickup", "picked_up"].includes(
-                      order.status,
-                    )}
+                    date={order.status === "ready_for_pickup" ? new Date().toISOString() : null}
+                    done={["ready_for_pickup", "picked_up"].includes(order.status)}
                   />
                 )}
               </div>
@@ -375,9 +322,7 @@ export default function OrderDetailPage() {
 
             {/* Need Help */}
             <div className="mt-6 pt-6 border-t border-slate-100 text-center">
-              <p className="text-sm text-slate-500">
-                Need help with your order?
-              </p>
+              <p className="text-sm text-slate-500">Need help with your order?</p>
               <a
                 href="mailto:hello@swimbuddz.com"
                 className="text-sm text-cyan-600 hover:underline"
@@ -420,9 +365,7 @@ function OrderStatusBadge({ status }: { status: string }) {
   };
 
   return (
-    <span
-      className={`px-3 py-1 text-sm font-medium rounded-full ${config.className}`}
-    >
+    <span className={`px-3 py-1 text-sm font-medium rounded-full ${config.className}`}>
       {config.label}
     </span>
   );
@@ -439,14 +382,8 @@ function TimelineItem({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <div
-        className={`w-2 h-2 rounded-full ${
-          done ? "bg-emerald-500" : "bg-slate-200"
-        }`}
-      />
-      <span className={done ? "text-slate-900" : "text-slate-400"}>
-        {label}
-      </span>
+      <div className={`w-2 h-2 rounded-full ${done ? "bg-emerald-500" : "bg-slate-200"}`} />
+      <span className={done ? "text-slate-900" : "text-slate-400"}>{label}</span>
       {date && done && (
         <span className="text-slate-400 ml-auto text-xs">
           {new Date(date).toLocaleDateString("en-NG", {

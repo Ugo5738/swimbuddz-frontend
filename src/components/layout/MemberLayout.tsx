@@ -21,6 +21,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Package,
   ShoppingBag,
   User,
   Users,
@@ -49,6 +50,7 @@ type NavSection = {
 };
 
 type MemberInfo = {
+  id?: string;
   first_name?: string;
   last_name?: string;
   profile_photo_url?: string;
@@ -107,6 +109,7 @@ const navSections: NavSection[] = [
     items: [
       { href: "/account/profile", label: "My Profile", icon: User },
       { href: "/account/billing", label: "Billing", icon: CreditCard },
+      { href: "/account/orders", label: "Orders", icon: Package },
       { href: "/account/wallet", label: "Wallet", icon: Wallet },
       { href: "/account/wallet/referrals", label: "Referrals", icon: Gift },
       { href: "/account/wallet/rewards", label: "Rewards", icon: Award },
@@ -167,6 +170,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
   const [loading, setLoading] = useState(true);
   const [academyEnrollments, setAcademyEnrollments] = useState<AcademyEnrollment[]>([]);
   const [isCoach, setIsCoach] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const refreshMember = useCallback(async () => {
     try {
@@ -230,6 +234,17 @@ export function MemberLayout({ children }: MemberLayoutProps) {
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, [refreshMember, searchParams]);
+
+  // Fetch unread announcement count when member id is available
+  useEffect(() => {
+    if (!member?.id) return;
+    apiGet<{ unread_count: number }>(
+      `/api/v1/communications/announcements/unread-count?member_id=${member.id}`,
+      { auth: true }
+    )
+      .then((res) => setUnreadCount(res.unread_count))
+      .catch(() => setUnreadCount(0));
+  }, [member?.id]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -548,9 +563,14 @@ export function MemberLayout({ children }: MemberLayoutProps) {
             </div>
             <Link
               href="/announcements"
-              className="text-slate-600 hover:text-cyan-700 transition min-w-[44px] min-h-[44px] flex items-center justify-center -mr-2"
+              className="relative text-slate-600 hover:text-cyan-700 transition min-w-[44px] min-h-[44px] flex items-center justify-center -mr-2"
             >
               <Bell className="h-6 w-6" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
             </Link>
           </div>
         </header>
@@ -567,7 +587,11 @@ export function MemberLayout({ children }: MemberLayoutProps) {
               className="relative p-2 rounded-full text-slate-500 hover:text-cyan-700 hover:bg-slate-100 transition"
             >
               <Bell className="h-5 w-5" />
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-rose-500" />
+              {unreadCount > 0 && (
+                <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
             </Link>
             <Link href="/account/profile" className="flex items-center gap-2">
               {member?.profile_photo_url ? (

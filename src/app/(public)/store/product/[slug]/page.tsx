@@ -47,6 +47,7 @@ interface ProductImage {
   alt_text: string | null;
   is_primary: boolean;
   sort_order: number;
+  variant_id: string | null;
 }
 
 interface ProductVideo {
@@ -67,6 +68,7 @@ interface GalleryItem {
   sort_order: number;
   type: "image" | "video";
   thumbnail_url?: string | null;
+  variant_id?: string | null;
 }
 
 interface ProductDetail {
@@ -83,7 +85,7 @@ interface ProductDetail {
   preorder_lead_days: number | null;
   requires_size_chart_ack: boolean;
   size_chart_url: string | null;
-  variant_options: Record<string, string[]> | null;
+  variant_options: (Record<string, string[]> & { _color_swatches?: Record<string, string> }) | null;
   images: ProductImage[];
   videos: ProductVideo[];
   variants: ProductVariant[];
@@ -139,11 +141,15 @@ export default function ProductDetailPage() {
       const data = await apiGet<ProductDetail>(`/api/v1/store/products/${slug}`);
       setProduct(data);
 
-      // Set initial options from first active variant
-      if (data.variants.length > 0) {
-        const firstVariant = data.variants.find((v) => v.is_active) || data.variants[0];
-        setSelectedVariant(firstVariant);
-        setSelectedOptions(firstVariant.options);
+      // Auto-select only if exactly one variant (no choice needed)
+      if (data.variants.length === 1) {
+        const onlyVariant = data.variants[0];
+        setSelectedVariant(onlyVariant);
+        setSelectedOptions(onlyVariant.options);
+      } else if (data.variants.length > 1) {
+        // Don't auto-select — user must choose options
+        setSelectedVariant(null);
+        setSelectedOptions({});
       }
 
       // Load related products from same category
@@ -185,7 +191,7 @@ export default function ProductDetailPage() {
     loadProduct();
   }, [loadProduct]);
 
-  // Update selected variant when options change
+  // Update selected variant when options change + jump gallery to variant image
   useEffect(() => {
     if (!product) return;
     const matchingVariant = product.variants.find((v) =>
@@ -193,6 +199,18 @@ export default function ProductDetailPage() {
     );
     if (matchingVariant) {
       setSelectedVariant(matchingVariant);
+
+      // Jump gallery to the first image linked to this variant
+      const variantImageIdx = product.images
+        .sort((a, b) => {
+          if (a.is_primary && !b.is_primary) return -1;
+          if (!a.is_primary && b.is_primary) return 1;
+          return a.sort_order - b.sort_order;
+        })
+        .findIndex((img) => img.variant_id === matchingVariant.id);
+      if (variantImageIdx >= 0) {
+        setSelectedImage(variantImageIdx);
+      }
     }
   }, [selectedOptions, product]);
 
@@ -200,9 +218,17 @@ export default function ProductDetailPage() {
     setSelectedOptions((prev) => ({ ...prev, [optionName]: value }));
   };
 
+  // Check if all variant options have been selected
+  const requiredOptions = product
+    ? Object.keys(product.variant_options || {}).filter((k) => !k.startsWith("_"))
+    : [];
+  const allOptionsSelected =
+    requiredOptions.length === 0 || requiredOptions.every((key) => selectedOptions[key]);
+  const missingOptions = requiredOptions.filter((key) => !selectedOptions[key]);
+
   const handleAddToCart = async () => {
-    if (!selectedVariant) {
-      toast.error("Please select options");
+    if (!selectedVariant || !allOptionsSelected) {
+      toast.error(`Please select ${missingOptions.join(" and ")}`);
       return;
     }
     if (product?.requires_size_chart_ack && !sizeChartAcked) {
@@ -240,6 +266,7 @@ export default function ProductDetailPage() {
       is_primary: img.is_primary,
       sort_order: img.sort_order,
       type: "image" as const,
+      variant_id: img.variant_id,
     })),
     ...(product.videos || [])
       .filter((v) => v.is_processed)
@@ -381,7 +408,7 @@ export default function ProductDetailPage() {
           )}
 
           {/* Main Image / Video */}
-          <div className="relative aspect-square bg-slate-100 rounded-2xl overflow-hidden group flex-1 min-w-0">
+          <div className="relative aspect-square bg-white rounded-2xl overflow-hidden group flex-1 min-w-0">
             {galleryItems.length > 0 ? (
               galleryItems[selectedImage]?.type === "video" ? (
                 // eslint-disable-next-line jsx-a11y/media-has-caption
@@ -398,7 +425,7 @@ export default function ProductDetailPage() {
                   alt={galleryItems[selectedImage]?.alt_text || product.name}
                   fill
                   unoptimized
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  className="object-contain transition-transform duration-500 group-hover:scale-105"
                   priority
                 />
               )
@@ -546,42 +573,120 @@ export default function ProductDetailPage() {
           {/* Variant Options */}
           {product.variant_options && Object.keys(product.variant_options).length > 0 && (
             <div className="space-y-4 mb-5">
-              {Object.entries(product.variant_options).map(([optionName, values]) => (
-                <div key={optionName}>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    {optionName}
-                    {selectedOptions[optionName] && (
-                      <span className="text-slate-400 font-normal ml-1">
-                        — {selectedOptions[optionName]}
-                      </span>
-                    )}
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {values.map((value) => {
-                      const isSelected = selectedOptions[optionName] === value;
-                      const isAvailable = product.variants.some(
-                        (v) => v.options[optionName] === value && v.is_active
-                      );
-                      return (
-                        <button
-                          key={value}
-                          onClick={() => handleOptionChange(optionName, value)}
-                          disabled={!isAvailable}
-                          className={`px-4 py-2 text-sm rounded-lg border-2 font-medium transition-all ${
-                            isSelected
-                              ? "bg-cyan-600 text-white border-cyan-600 shadow-sm"
-                              : isAvailable
-                                ? "bg-white text-slate-700 border-slate-200 hover:border-cyan-400 hover:text-cyan-700"
-                                : "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed line-through"
-                          }`}
-                        >
-                          {value}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
+              {Object.entries(product.variant_options)
+                .filter(([key]) => !key.startsWith("_"))
+                .map(([optionName, values]) => {
+                  const isColorOption = optionName.toLowerCase() === "color";
+                  const swatches =
+                    isColorOption && product.variant_options
+                      ? ((product.variant_options as Record<string, unknown>)._color_swatches as
+                          | Record<string, string>
+                          | undefined)
+                      : undefined;
+
+                  return (
+                    <div key={optionName}>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        {optionName}
+                        {selectedOptions[optionName] && (
+                          <span className="text-slate-400 font-normal ml-1">
+                            — {selectedOptions[optionName]}
+                          </span>
+                        )}
+                      </label>
+
+                      {isColorOption ? (
+                        /* ── Temu-style color swatch selector ── */
+                        <div className="flex flex-wrap gap-2">
+                          {(values as string[]).map((value) => {
+                            const isSelected = selectedOptions[optionName] === value;
+                            const isAvailable = product.variants.some(
+                              (v) => v.options[optionName] === value && v.is_active
+                            );
+                            const swatchUrl = swatches?.[value];
+
+                            return (
+                              <button
+                                key={value}
+                                onClick={() => handleOptionChange(optionName, value)}
+                                disabled={!isAvailable}
+                                title={value}
+                                className={`relative flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
+                                  isSelected
+                                    ? "border-cyan-500 ring-2 ring-cyan-200 shadow-sm"
+                                    : isAvailable
+                                      ? "border-slate-200 hover:border-cyan-400"
+                                      : "border-slate-100 opacity-40 cursor-not-allowed"
+                                } ${swatchUrl ? "w-16 h-16" : "px-4 py-2"}`}
+                              >
+                                {swatchUrl ? (
+                                  <Image
+                                    src={swatchUrl}
+                                    alt={value}
+                                    fill
+                                    unoptimized
+                                    className="object-cover"
+                                  />
+                                ) : (
+                                  <span
+                                    className={`text-sm font-medium ${
+                                      isSelected ? "text-cyan-700" : "text-slate-700"
+                                    }`}
+                                  >
+                                    {value}
+                                  </span>
+                                )}
+                                {isSelected && swatchUrl && (
+                                  <div className="absolute bottom-0.5 right-0.5 w-4 h-4 bg-cyan-500 rounded-full flex items-center justify-center">
+                                    <svg
+                                      className="w-2.5 h-2.5 text-white"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={3}
+                                        d="M5 13l4 4L19 7"
+                                      />
+                                    </svg>
+                                  </div>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        /* ── Text button selector (Size, etc.) ── */
+                        <div className="flex flex-wrap gap-2">
+                          {(values as string[]).map((value) => {
+                            const isSelected = selectedOptions[optionName] === value;
+                            const isAvailable = product.variants.some(
+                              (v) => v.options[optionName] === value && v.is_active
+                            );
+                            return (
+                              <button
+                                key={value}
+                                onClick={() => handleOptionChange(optionName, value)}
+                                disabled={!isAvailable}
+                                className={`px-4 py-2 text-sm rounded-lg border-2 font-medium transition-all ${
+                                  isSelected
+                                    ? "bg-cyan-600 text-white border-cyan-600 shadow-sm"
+                                    : isAvailable
+                                      ? "bg-white text-slate-700 border-slate-200 hover:border-cyan-400 hover:text-cyan-700"
+                                      : "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed line-through"
+                                }`}
+                              >
+                                {value}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
             </div>
           )}
 
@@ -639,7 +744,7 @@ export default function ProductDetailPage() {
 
             <button
               onClick={handleAddToCart}
-              disabled={adding || !inStock}
+              disabled={adding || !inStock || !allOptionsSelected}
               className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-cyan-600 text-white rounded-xl font-semibold text-sm hover:bg-cyan-700 active:bg-cyan-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
               {adding ? (
@@ -661,6 +766,8 @@ export default function ProductDetailPage() {
                   </svg>
                   Adding...
                 </span>
+              ) : !allOptionsSelected ? (
+                <>Select {missingOptions.join(" & ")}</>
               ) : (
                 <>
                   <ShoppingCart className="w-5 h-5" />
@@ -781,12 +888,16 @@ export default function ProductDetailPage() {
                   </dd>
                 </div>
                 {product.variant_options &&
-                  Object.entries(product.variant_options).map(([key, values]) => (
-                    <div key={key} className="py-3 flex justify-between text-sm">
-                      <dt className="text-slate-500">{key}</dt>
-                      <dd className="text-slate-900">{values.join(", ")}</dd>
-                    </div>
-                  ))}
+                  Object.entries(product.variant_options)
+                    .filter(([key]) => !key.startsWith("_"))
+                    .map(([key, values]) => (
+                      <div key={key} className="py-3 flex justify-between text-sm">
+                        <dt className="text-slate-500">{key}</dt>
+                        <dd className="text-slate-900">
+                          {Array.isArray(values) ? values.join(", ") : ""}
+                        </dd>
+                      </div>
+                    ))}
                 <div className="py-3 flex justify-between text-sm">
                   <dt className="text-slate-500">Fulfillment</dt>
                   <dd className="text-slate-900">Pool pickup or Lagos delivery</dd>
