@@ -791,7 +791,11 @@ export default function HomePage() {
 
             {/* Top contributors - cards with larger avatars */}
             {spotlight.top_volunteers
-              ?.filter((v) => getDisplayName(v.member_name) !== "Volunteer")
+              ?.filter(
+                (v) =>
+                  getDisplayName(v.member_name) !== "Volunteer" &&
+                  v.member_id !== spotlight.featured_volunteer?.member_id
+              )
               .slice(0, spotlight.featured_volunteer ? 2 : 4)
               .map((volunteer, idx) => (
                 <Card
