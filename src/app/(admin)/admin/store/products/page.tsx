@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet } from "@/lib/api";
-import { ArrowLeft, Eye, Package, Pencil, Plus, Search } from "lucide-react";
+import { ArrowLeft, Eye, Package, Plus, Search } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -148,7 +148,7 @@ export default function AdminProductsPage() {
                 <th className="px-6 py-3">Category</th>
                 <th className="px-6 py-3">Price</th>
                 <th className="px-6 py-3">Status</th>
-                <th className="px-6 py-3 text-right">Actions</th>
+                <th className="px-6 py-3 text-right"></th>
               </tr>
             </thead>
             <tbody>
@@ -176,7 +176,12 @@ export default function AdminProductsPage() {
                           )}
                         </div>
                         <div>
-                          <p className="font-medium text-slate-900">{product.name}</p>
+                          <Link
+                            href={`/admin/store/products/${product.id}/edit`}
+                            className="font-medium text-slate-900 hover:text-cyan-600 transition-colors"
+                          >
+                            {product.name}
+                          </Link>
                           <p className="text-sm text-slate-500">
                             {product.sourcing_type === "preorder" ? "Pre-order" : "In Stock"}
                             {product.is_featured && " • Featured"}
@@ -197,16 +202,9 @@ export default function AdminProductsPage() {
                           href={`/store/product/${product.slug}`}
                           target="_blank"
                           className="p-2 text-slate-400 hover:text-cyan-600 transition-colors"
-                          title="View"
+                          title="View in store"
                         >
                           <Eye className="w-4 h-4" />
-                        </Link>
-                        <Link
-                          href={`/admin/store/products/${product.id}/edit`}
-                          className="p-2 text-slate-400 hover:text-cyan-600 transition-colors"
-                          title="Edit"
-                        >
-                          <Pencil className="w-4 h-4" />
                         </Link>
                       </div>
                     </td>
