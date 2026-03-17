@@ -22,7 +22,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 /* ------------------------------------------------------------------ */
@@ -191,6 +191,37 @@ export default function ProductDetailPage() {
     loadProduct();
   }, [loadProduct]);
 
+  // Build gallery items once (images + videos, sorted) for display and variant switching
+  const galleryItems: GalleryItem[] = useMemo(() => {
+    if (!product) return [];
+    return [
+      ...product.images.map((img) => ({
+        id: img.id,
+        url: img.url,
+        alt_text: img.alt_text,
+        is_primary: img.is_primary,
+        sort_order: img.sort_order,
+        type: "image" as const,
+        variant_id: img.variant_id,
+      })),
+      ...(product.videos || [])
+        .filter((v) => v.is_processed)
+        .map((vid) => ({
+          id: vid.id,
+          url: vid.url,
+          alt_text: vid.title,
+          is_primary: false,
+          sort_order: 1000 + vid.sort_order,
+          type: "video" as const,
+          thumbnail_url: vid.thumbnail_url,
+        })),
+    ].sort((a, b) => {
+      if (a.is_primary && !b.is_primary) return -1;
+      if (!a.is_primary && b.is_primary) return 1;
+      return a.sort_order - b.sort_order;
+    });
+  }, [product]);
+
   // Update selected variant when options change + jump gallery to variant image
   useEffect(() => {
     if (!product) return;
@@ -201,18 +232,14 @@ export default function ProductDetailPage() {
       setSelectedVariant(matchingVariant);
 
       // Jump gallery to the first image linked to this variant
-      const variantImageIdx = product.images
-        .sort((a, b) => {
-          if (a.is_primary && !b.is_primary) return -1;
-          if (!a.is_primary && b.is_primary) return 1;
-          return a.sort_order - b.sort_order;
-        })
-        .findIndex((img) => img.variant_id === matchingVariant.id);
+      const variantImageIdx = galleryItems.findIndex(
+        (item) => item.variant_id === matchingVariant.id
+      );
       if (variantImageIdx >= 0) {
         setSelectedImage(variantImageIdx);
       }
     }
-  }, [selectedOptions, product]);
+  }, [selectedOptions, product, galleryItems]);
 
   const handleOptionChange = (optionName: string, value: string) => {
     setSelectedOptions((prev) => ({ ...prev, [optionName]: value }));
@@ -257,33 +284,6 @@ export default function ProductDetailPage() {
   if (!product) return null;
 
   /* ---- derived values ---- */
-  // Merge images and videos into a unified gallery (images first, then videos)
-  const galleryItems: GalleryItem[] = [
-    ...product.images.map((img) => ({
-      id: img.id,
-      url: img.url,
-      alt_text: img.alt_text,
-      is_primary: img.is_primary,
-      sort_order: img.sort_order,
-      type: "image" as const,
-      variant_id: img.variant_id,
-    })),
-    ...(product.videos || [])
-      .filter((v) => v.is_processed)
-      .map((vid) => ({
-        id: vid.id,
-        url: vid.url,
-        alt_text: vid.title,
-        is_primary: false,
-        sort_order: 1000 + vid.sort_order, // Videos after images
-        type: "video" as const,
-        thumbnail_url: vid.thumbnail_url,
-      })),
-  ].sort((a, b) => {
-    if (a.is_primary && !b.is_primary) return -1;
-    if (!a.is_primary && b.is_primary) return 1;
-    return a.sort_order - b.sort_order;
-  });
 
   const basePrice = selectedVariant?.price_override_ngn ?? product.base_price_ngn;
   const finalPrice = memberDiscount > 0 ? basePrice * (1 - memberDiscount / 100) : basePrice;

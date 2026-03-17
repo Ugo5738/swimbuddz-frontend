@@ -7,7 +7,7 @@ import { apiGet } from "@/lib/api";
 import { ArrowLeft, Eye, Package, Pencil, Plus, Search } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface Product {
   id: string;
@@ -35,7 +35,20 @@ export default function AdminProductsPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounce search input
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [search]);
 
   const loadProducts = useCallback(async () => {
     setLoading(true);
@@ -43,8 +56,8 @@ export default function AdminProductsPage() {
       const params = new URLSearchParams();
       params.set("page", String(page));
       params.set("page_size", "20");
-      if (search) params.set("search", search);
-      if (statusFilter) params.set("status", statusFilter);
+      if (debouncedSearch) params.set("search", debouncedSearch);
+      if (statusFilter) params.set("status_filter", statusFilter);
 
       const data = await apiGet<ProductsResponse>(
         `/api/v1/admin/store/products?${params.toString()}`,
@@ -59,7 +72,7 @@ export default function AdminProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, statusFilter]);
+  }, [page, debouncedSearch, statusFilter]);
 
   useEffect(() => {
     loadProducts();
@@ -153,6 +166,7 @@ export default function AdminProductsPage() {
                               src={primaryImage.url}
                               alt={product.name}
                               fill
+                              unoptimized
                               className="object-cover"
                             />
                           ) : (

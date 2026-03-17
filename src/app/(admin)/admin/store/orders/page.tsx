@@ -16,11 +16,9 @@ interface Order {
   fulfillment_type: string;
   total_ngn: number;
   created_at: string;
-  member?: {
-    id: string;
-    auth_id: string;
-    email?: string;
-  };
+  customer_name: string | null;
+  customer_email: string | null;
+  customer_phone: string | null;
   items_count?: number;
 }
 
@@ -171,7 +169,9 @@ export default function AdminOrdersPage() {
                       </p>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-slate-600">{order.member?.email || "—"}</td>
+                  <td className="px-6 py-4 text-slate-600">
+                    {order.customer_name || order.customer_email || "—"}
+                  </td>
                   <td className="px-6 py-4 font-medium text-slate-900">
                     ₦{order.total_ngn.toLocaleString()}
                   </td>

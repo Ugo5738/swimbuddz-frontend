@@ -48,14 +48,10 @@ interface OrderDetail {
   shipped_at: string | null;
   delivered_at: string | null;
   items: OrderItem[];
-  member?: {
-    id: string;
-    auth_id: string;
-    profile?: {
-      first_name: string;
-      last_name: string;
-    };
-  };
+  customer_name: string | null;
+  customer_email: string | null;
+  customer_phone: string | null;
+  member_id?: string | null;
   pickup_location?: {
     id: string;
     name: string;
@@ -97,12 +93,9 @@ export default function AdminOrderDetailPage() {
   const loadOrder = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await apiGet<OrderDetail>(
-        `/api/v1/admin/store/orders/${orderId}`,
-        {
-          auth: true,
-        },
-      );
+      const data = await apiGet<OrderDetail>(`/api/v1/admin/store/orders/${orderId}`, {
+        auth: true,
+      });
       setOrder(data);
       setAdminNotes(data.admin_notes || "");
       setTrackingNumber(data.tracking_number || "");
@@ -142,9 +135,7 @@ export default function AdminOrderDetailPage() {
     return null;
   }
 
-  const customerName = order.member?.profile
-    ? `${order.member.profile.first_name} ${order.member.profile.last_name}`
-    : "Guest";
+  const customerName = order.customer_name || order.customer_email || "Guest";
 
   return (
     <div className="space-y-6">
@@ -160,9 +151,7 @@ export default function AdminOrderDetailPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">
-            Order #{order.order_number}
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-900">Order #{order.order_number}</h1>
           <p className="text-slate-500">
             {new Date(order.created_at).toLocaleDateString("en-NG", {
               year: "numeric",
@@ -191,27 +180,22 @@ export default function AdminOrderDetailPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Order Items */}
           <Card className="p-6">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">
-              Order Items
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Order Items</h2>
             <div className="divide-y divide-slate-100">
               {order.items.map((item) => {
                 const primaryImage =
-                  item.variant?.product?.images?.find(
-                    (img) => img.is_primary,
-                  ) || item.variant?.product?.images?.[0];
+                  item.variant?.product?.images?.find((img) => img.is_primary) ||
+                  item.variant?.product?.images?.[0];
 
                 return (
-                  <div
-                    key={item.id}
-                    className="flex gap-4 py-4 first:pt-0 last:pb-0"
-                  >
+                  <div key={item.id} className="flex gap-4 py-4 first:pt-0 last:pb-0">
                     <div className="relative w-16 h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
                       {primaryImage ? (
                         <Image
                           src={primaryImage.url}
                           alt={item.variant?.product?.name || "Product"}
                           fill
+                          unoptimized
                           className="object-cover"
                         />
                       ) : (
@@ -221,23 +205,17 @@ export default function AdminOrderDetailPage() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-slate-900">
-                        {item.variant?.product?.name}
-                      </p>
-                      <p className="text-sm text-slate-500">
-                        SKU: {item.variant?.sku}
-                      </p>
-                      {item.variant?.options &&
-                        Object.keys(item.variant.options).length > 0 && (
-                          <p className="text-sm text-slate-500">
-                            {Object.entries(item.variant.options)
-                              .map(([k, v]) => `${k}: ${v}`)
-                              .join(" • ")}
-                          </p>
-                        )}
+                      <p className="font-medium text-slate-900">{item.variant?.product?.name}</p>
+                      <p className="text-sm text-slate-500">SKU: {item.variant?.sku}</p>
+                      {item.variant?.options && Object.keys(item.variant.options).length > 0 && (
+                        <p className="text-sm text-slate-500">
+                          {Object.entries(item.variant.options)
+                            .map(([k, v]) => `${k}: ${v}`)
+                            .join(" • ")}
+                        </p>
+                      )}
                       <p className="text-sm text-slate-600 mt-1">
-                        Qty: {item.quantity} × ₦
-                        {item.unit_price_ngn.toLocaleString()}
+                        Qty: {item.quantity} × ₦{item.unit_price_ngn.toLocaleString()}
                       </p>
                     </div>
                     <div className="text-right">
@@ -258,9 +236,15 @@ export default function AdminOrderDetailPage() {
               Customer
             </h2>
             <p className="font-medium text-slate-900">{customerName}</p>
-            {order.member?.id && (
+            {order.customer_email && order.customer_name && (
+              <p className="text-sm text-slate-500">{order.customer_email}</p>
+            )}
+            {order.customer_phone && (
+              <p className="text-sm text-slate-500">{order.customer_phone}</p>
+            )}
+            {order.member_id && (
               <Link
-                href={`/admin/members/${order.member.id}`}
+                href={`/admin/members/${order.member_id}`}
                 className="text-sm text-cyan-600 hover:underline"
               >
                 View Member Profile →
@@ -286,58 +270,46 @@ export default function AdminOrderDetailPage() {
 
             {order.fulfillment_type === "pickup" && order.pickup_location && (
               <div>
-                <p className="font-medium text-slate-900">
-                  {order.pickup_location.name}
-                </p>
+                <p className="font-medium text-slate-900">{order.pickup_location.name}</p>
                 {order.pickup_location.address && (
-                  <p className="text-slate-500">
-                    {order.pickup_location.address}
-                  </p>
+                  <p className="text-slate-500">{order.pickup_location.address}</p>
                 )}
               </div>
             )}
 
-            {order.fulfillment_type === "delivery" &&
-              order.delivery_address && (
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-slate-900">
-                      {order.delivery_address.street}
-                    </p>
-                    <p className="text-slate-500">
-                      {order.delivery_address.city},{" "}
-                      {order.delivery_address.state}
-                    </p>
-                    <p className="text-slate-500">
-                      {order.delivery_address.phone}
-                    </p>
-                  </div>
+            {order.fulfillment_type === "delivery" && order.delivery_address && (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-slate-900">{order.delivery_address.street}</p>
+                  <p className="text-slate-500">
+                    {order.delivery_address.city}, {order.delivery_address.state}
+                  </p>
+                  <p className="text-slate-500">{order.delivery_address.phone}</p>
+                </div>
 
-                  <div className="pt-4 border-t border-slate-100">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Tracking Number
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={trackingNumber}
-                        onChange={(e) => setTrackingNumber(e.target.value)}
-                        placeholder="Enter tracking number"
-                        className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-cyan-400"
-                      />
-                      <Button
-                        variant="secondary"
-                        onClick={() =>
-                          updateOrder({ tracking_number: trackingNumber })
-                        }
-                        disabled={saving}
-                      >
-                        {saving ? "..." : "Save"}
-                      </Button>
-                    </div>
+                <div className="pt-4 border-t border-slate-100">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Tracking Number
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={trackingNumber}
+                      onChange={(e) => setTrackingNumber(e.target.value)}
+                      placeholder="Enter tracking number"
+                      className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-cyan-400"
+                    />
+                    <Button
+                      variant="secondary"
+                      onClick={() => updateOrder({ tracking_number: trackingNumber })}
+                      disabled={saving}
+                    >
+                      {saving ? "..." : "Save"}
+                    </Button>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
           </Card>
 
           {/* Notes */}
@@ -346,9 +318,7 @@ export default function AdminOrderDetailPage() {
 
             {order.customer_notes && (
               <div className="mb-4 p-3 bg-slate-50 rounded-lg">
-                <p className="text-sm font-medium text-slate-700">
-                  Customer Notes
-                </p>
+                <p className="text-sm font-medium text-slate-700">Customer Notes</p>
                 <p className="text-sm text-slate-600">{order.customer_notes}</p>
               </div>
             )}
@@ -380,16 +350,12 @@ export default function AdminOrderDetailPage() {
         {/* Sidebar */}
         <div className="lg:col-span-1">
           <Card className="p-6 sticky top-24">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">
-              Order Summary
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Order Summary</h2>
 
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-600">Subtotal</span>
-                <span className="text-slate-900">
-                  ₦{order.subtotal_ngn.toLocaleString()}
-                </span>
+                <span className="text-slate-900">₦{order.subtotal_ngn.toLocaleString()}</span>
               </div>
 
               {order.discount_amount_ngn > 0 && (
@@ -405,25 +371,19 @@ export default function AdminOrderDetailPage() {
               {order.delivery_fee_ngn > 0 && (
                 <div className="flex justify-between">
                   <span className="text-slate-600">Delivery</span>
-                  <span className="text-slate-900">
-                    ₦{order.delivery_fee_ngn.toLocaleString()}
-                  </span>
+                  <span className="text-slate-900">₦{order.delivery_fee_ngn.toLocaleString()}</span>
                 </div>
               )}
 
               <div className="pt-3 border-t border-slate-200 flex justify-between font-semibold">
                 <span className="text-slate-900">Total</span>
-                <span className="text-cyan-600">
-                  ₦{order.total_ngn.toLocaleString()}
-                </span>
+                <span className="text-cyan-600">₦{order.total_ngn.toLocaleString()}</span>
               </div>
             </div>
 
             {/* Quick Actions */}
             <div className="mt-6 pt-6 border-t border-slate-100 space-y-2">
-              <h3 className="text-sm font-medium text-slate-900 mb-3">
-                Quick Actions
-              </h3>
+              <h3 className="text-sm font-medium text-slate-900 mb-3">Quick Actions</h3>
 
               {order.status === "paid" && (
                 <Button
@@ -437,31 +397,29 @@ export default function AdminOrderDetailPage() {
                 </Button>
               )}
 
-              {order.status === "processing" &&
-                order.fulfillment_type === "pickup" && (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => updateOrder({ status: "ready_for_pickup" })}
-                    disabled={saving}
-                  >
-                    Mark Ready for Pickup
-                  </Button>
-                )}
+              {order.status === "processing" && order.fulfillment_type === "pickup" && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => updateOrder({ status: "ready_for_pickup" })}
+                  disabled={saving}
+                >
+                  Mark Ready for Pickup
+                </Button>
+              )}
 
-              {order.status === "processing" &&
-                order.fulfillment_type === "delivery" && (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => updateOrder({ status: "shipped" })}
-                    disabled={saving}
-                  >
-                    Mark as Shipped
-                  </Button>
-                )}
+              {order.status === "processing" && order.fulfillment_type === "delivery" && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => updateOrder({ status: "shipped" })}
+                  disabled={saving}
+                >
+                  Mark as Shipped
+                </Button>
+              )}
 
               {order.status === "ready_for_pickup" && (
                 <Button
@@ -487,9 +445,7 @@ export default function AdminOrderDetailPage() {
                 </Button>
               )}
 
-              {!["cancelled", "refunded", "picked_up", "delivered"].includes(
-                order.status,
-              ) && (
+              {!["cancelled", "refunded", "picked_up", "delivered"].includes(order.status) && (
                 <Button
                   variant="secondary"
                   size="sm"

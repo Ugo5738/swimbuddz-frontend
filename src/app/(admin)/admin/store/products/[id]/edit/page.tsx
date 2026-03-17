@@ -131,6 +131,7 @@ export default function EditProductPage() {
   const [showImageForm, setShowImageForm] = useState(false);
   const [savingImage, setSavingImage] = useState(false);
   const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
+  const [replacingImageId, setReplacingImageId] = useState<string | null>(null);
 
   // Video management state
   const [videos, setVideos] = useState<ProductVideo[]>([]);
@@ -455,6 +456,26 @@ export default function EditProductPage() {
       toast.error(err instanceof Error ? err.message : "Failed to remove image");
     } finally {
       setDeletingImageId(null);
+    }
+  };
+
+  const handleReplaceImage = async (_mediaId: string | null, fileUrl?: string) => {
+    if (!fileUrl || !replacingImageId) return;
+
+    setSavingImage(true);
+    try {
+      const updated = await apiPatch<ProductImage>(
+        `/api/v1/admin/store/products/${productId}/images/${replacingImageId}`,
+        { url: fileUrl },
+        { auth: true }
+      );
+      setImages((prev) => prev.map((img) => (img.id === replacingImageId ? updated : img)));
+      setReplacingImageId(null);
+      toast.success("Image replaced");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to replace image");
+    } finally {
+      setSavingImage(false);
     }
   };
 
@@ -1183,6 +1204,20 @@ export default function EditProductPage() {
 
                       {/* Action buttons (hover) */}
                       <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setReplacingImageId(replacingImageId === img.id ? null : img.id)
+                          }
+                          className={`w-5 h-5 flex items-center justify-center rounded-full text-[10px] ${
+                            replacingImageId === img.id
+                              ? "bg-blue-500 text-white"
+                              : "bg-slate-700/70 text-white hover:bg-blue-500"
+                          }`}
+                          title="Replace image"
+                        >
+                          ↻
+                        </button>
                         {variants.length > 0 && (
                           <button
                             type="button"
@@ -1209,6 +1244,24 @@ export default function EditProductPage() {
                           {deletingImageId === img.id ? "..." : "×"}
                         </button>
                       </div>
+
+                      {/* Replace image panel */}
+                      {replacingImageId === img.id && (
+                        <div className="absolute inset-x-0 bottom-0 bg-white/95 border-t border-slate-200 p-2">
+                          {savingImage ? (
+                            <p className="text-[11px] text-slate-500 text-center py-1">
+                              Replacing...
+                            </p>
+                          ) : (
+                            <MediaInput
+                              purpose="product_image"
+                              mode="both"
+                              onChange={handleReplaceImage}
+                              showPreview={false}
+                            />
+                          )}
+                        </div>
+                      )}
 
                       {/* Variant linking dropdown */}
                       {linkingImageId === img.id && (
