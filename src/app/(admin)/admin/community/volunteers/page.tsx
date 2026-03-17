@@ -95,6 +95,16 @@ export default function AdminVolunteersPage() {
     slots_needed: "1",
     opportunity_type: "open_claim" as "open_claim" | "approval_required",
     min_tier: "tier_1" as "tier_1" | "tier_2" | "tier_3",
+    qr_checkin_enabled: false,
+  });
+
+  // Manual hours
+  const [showHoursModal, setShowHoursModal] = useState(false);
+  const [hoursTarget, setHoursTarget] = useState<VolunteerProfile | null>(null);
+  const [hoursForm, setHoursForm] = useState({
+    hours: "",
+    date: new Date().toISOString().slice(0, 10),
+    notes: "",
   });
 
   // Spotlight feature
@@ -267,6 +277,7 @@ export default function AdminVolunteersPage() {
         slots_needed: parseInt(oppForm.slots_needed),
         opportunity_type: oppForm.opportunity_type,
         min_tier: oppForm.min_tier,
+        qr_checkin_enabled: oppForm.qr_checkin_enabled,
         status: "draft",
       } as Partial<VolunteerOpportunity>);
       setShowCreateOpp(false);
@@ -281,6 +292,7 @@ export default function AdminVolunteersPage() {
         slots_needed: "1",
         opportunity_type: "open_claim",
         min_tier: "tier_1",
+        qr_checkin_enabled: false,
       });
       const oppsData = await VolunteersApi.admin.listOpportunities({
         status: undefined,
@@ -300,6 +312,34 @@ export default function AdminVolunteersPage() {
       setOpportunities(oppsData);
     } catch (error) {
       setError(getErrorMessage(error, "Failed to publish opportunity."));
+    }
+  };
+
+  const handleLogHours = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!hoursTarget) return;
+    const hours = parseFloat(hoursForm.hours);
+    if (isNaN(hours) || hours <= 0) {
+      setError("Please enter a valid number of hours.");
+      return;
+    }
+    try {
+      await VolunteersApi.admin.addManualHours({
+        member_id: hoursTarget.member_id,
+        hours,
+        date: hoursForm.date,
+        notes: hoursForm.notes || undefined,
+      });
+      setShowHoursModal(false);
+      setHoursTarget(null);
+      setHoursForm({ hours: "", date: new Date().toISOString().slice(0, 10), notes: "" });
+      // Refresh profiles to show updated hours
+      const profilesData = await VolunteersApi.admin.listProfiles({
+        active_only: false,
+      });
+      setProfiles(profilesData);
+    } catch (error) {
+      setError(getErrorMessage(error, "Failed to log hours."));
     }
   };
 
@@ -760,6 +800,22 @@ export default function AdminVolunteersPage() {
                     <option value="tier_3">Tier 3 — Lead</option>
                   </Select>
                 </div>
+                <label className="flex items-center gap-3 mt-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={oppForm.qr_checkin_enabled}
+                    onChange={(e) =>
+                      setOppForm({ ...oppForm, qr_checkin_enabled: e.target.checked })
+                    }
+                    className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-slate-700">Enable QR Check-in</span>
+                    <p className="text-xs text-slate-500">
+                      Volunteers scan a QR code at the pool to self check-in
+                    </p>
+                  </div>
+                </label>
               </div>
 
               <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
@@ -812,7 +868,24 @@ export default function AdminVolunteersPage() {
                       )}
                     </div>
                     {p.member_email && <p className="text-xs text-slate-400">{p.member_email}</p>}
-                    <div className="pt-1">
+                    <div className="pt-1 flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setHoursTarget(p);
+                          setHoursForm({
+                            hours: "",
+                            date: new Date().toISOString().slice(0, 10),
+                            notes: "",
+                          });
+                          setShowHoursModal(true);
+                        }}
+                        className="text-xs"
+                      >
+                        <Clock className="h-3 w-3 mr-1" />
+                        Log Hours
+                      </Button>
                       {p.is_featured ? (
                         <Button
                           size="sm"
@@ -858,7 +931,7 @@ export default function AdminVolunteersPage() {
                       <TableHeaderCell>Reliability</TableHeaderCell>
                       <TableHeaderCell>No-Shows</TableHeaderCell>
                       <TableHeaderCell>Recognition</TableHeaderCell>
-                      <TableHeaderCell>Spotlight</TableHeaderCell>
+                      <TableHeaderCell>Actions</TableHeaderCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -904,32 +977,50 @@ export default function AdminVolunteersPage() {
                           )}
                         </TableCell>
                         <TableCell>
-                          {p.is_featured ? (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleUnfeature(p.member_id)}
-                            >
-                              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400 mr-1" />
-                              Unfeature
-                            </Button>
-                          ) : (
+                          <div className="flex gap-1">
                             <Button
                               size="sm"
                               variant="ghost"
                               onClick={() => {
-                                setFeatureTarget(p);
-                                setFeatureForm({
-                                  spotlight_quote: p.spotlight_quote || "",
-                                  featured_until: "",
+                                setHoursTarget(p);
+                                setHoursForm({
+                                  hours: "",
+                                  date: new Date().toISOString().slice(0, 10),
+                                  notes: "",
                                 });
-                                setShowFeatureModal(true);
+                                setShowHoursModal(true);
                               }}
                             >
-                              <Star className="h-3.5 w-3.5 mr-1" />
-                              Feature
+                              <Clock className="h-3.5 w-3.5 mr-1" />
+                              Log Hours
                             </Button>
-                          )}
+                            {p.is_featured ? (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleUnfeature(p.member_id)}
+                              >
+                                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400 mr-1" />
+                                Unfeature
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setFeatureTarget(p);
+                                  setFeatureForm({
+                                    spotlight_quote: p.spotlight_quote || "",
+                                    featured_until: "",
+                                  });
+                                  setShowFeatureModal(true);
+                                }}
+                              >
+                                <Star className="h-3.5 w-3.5 mr-1" />
+                                Feature
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -1000,6 +1091,73 @@ export default function AdminVolunteersPage() {
               Cancel
             </Button>
             <Button type="submit">Feature Volunteer</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Log Manual Hours Modal */}
+      <Modal
+        isOpen={showHoursModal}
+        onClose={() => {
+          setShowHoursModal(false);
+          setHoursTarget(null);
+        }}
+        title="Log Volunteer Hours"
+      >
+        <form onSubmit={handleLogHours} className="space-y-4">
+          <div className="flex items-center gap-3 rounded-lg bg-teal-50 px-4 py-3">
+            <Clock className="h-5 w-5 text-teal-600 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-slate-900">
+                {hoursTarget?.member_name || "Unknown"}
+              </p>
+              <p className="text-xs text-slate-500">
+                Current total: {hoursTarget?.total_hours.toFixed(1)}h across{" "}
+                {hoursTarget?.total_sessions_volunteered} sessions
+              </p>
+            </div>
+          </div>
+
+          <Input
+            label="Hours"
+            type="number"
+            step="0.5"
+            min="0.5"
+            max="24"
+            value={hoursForm.hours}
+            onChange={(e) => setHoursForm({ ...hoursForm, hours: e.target.value })}
+            placeholder="e.g. 2.5"
+            required
+          />
+
+          <Input
+            label="Date"
+            type="date"
+            value={hoursForm.date}
+            onChange={(e) => setHoursForm({ ...hoursForm, date: e.target.value })}
+            required
+          />
+
+          <Textarea
+            label="Notes (optional)"
+            value={hoursForm.notes}
+            onChange={(e) => setHoursForm({ ...hoursForm, notes: e.target.value })}
+            rows={2}
+            placeholder="e.g. Warm-up lead for Saturday session, media editing..."
+          />
+
+          <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setShowHoursModal(false);
+                setHoursTarget(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="submit">Log Hours</Button>
           </div>
         </form>
       </Modal>

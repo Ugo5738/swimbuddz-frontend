@@ -1,32 +1,39 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
-import Link from "next/link";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
-import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { Alert } from "@/components/ui/Alert";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import {
-  ArrowLeft,
-  Calendar,
-  Clock,
-  MapPin,
-  Users,
-  CheckCircle,
-  XCircle,
-  LogIn,
-  LogOut,
-  AlertTriangle,
-} from "lucide-react";
-import {
-  VolunteersApi,
   SLOT_STATUS_LABELS,
-  TIER_SHORT_LABELS,
+  VolunteersApi,
   type VolunteerOpportunity,
   type VolunteerSlot,
 } from "@/lib/volunteers";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Calendar,
+  CheckCircle,
+  Clock,
+  LogIn,
+  LogOut,
+  MapPin,
+  Printer,
+  QrCode,
+  Users,
+  XCircle,
+} from "lucide-react";
+import dynamic from "next/dynamic";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+
+const QRCodeCanvas = dynamic(() => import("qrcode.react").then((mod) => mod.QRCodeCanvas), {
+  ssr: false,
+  loading: () => <div className="h-48 w-48 animate-pulse rounded bg-slate-200" />,
+});
 
 export default function AdminOpportunityDetailPage() {
   const params = useParams();
@@ -162,9 +169,7 @@ export default function AdminOpportunityDetailPage() {
     }
   };
 
-  const activeSlots = slots.filter((s) =>
-    ["claimed", "approved"].includes(s.status),
-  );
+  const activeSlots = slots.filter((s) => ["claimed", "approved"].includes(s.status));
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 py-4 md:py-8">
@@ -198,13 +203,15 @@ export default function AdminOpportunityDetailPage() {
               >
                 {opp.status}
               </Badge>
-              {opp.role_title && (
-                <Badge variant="outline">{opp.role_title}</Badge>
+              {opp.qr_checkin_enabled && (
+                <Badge variant="info">
+                  <QrCode className="mr-1 h-3 w-3 inline" />
+                  QR Check-in
+                </Badge>
               )}
+              {opp.role_title && <Badge variant="outline">{opp.role_title}</Badge>}
             </div>
-            {opp.description && (
-              <p className="text-sm text-slate-600">{opp.description}</p>
-            )}
+            {opp.description && <p className="text-sm text-slate-600">{opp.description}</p>}
             <div className="flex flex-wrap gap-4 text-sm text-slate-500">
               <span className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
@@ -246,11 +253,7 @@ export default function AdminOpportunityDetailPage() {
               </Button>
             )}
             {activeSlots.length > 0 && (
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={handleBulkComplete}
-              >
+              <Button size="sm" variant="secondary" onClick={handleBulkComplete}>
                 Complete All ({activeSlots.length})
               </Button>
             )}
@@ -258,18 +261,78 @@ export default function AdminOpportunityDetailPage() {
         </div>
       </Card>
 
+      {/* QR Code Card */}
+      {opp.qr_checkin_enabled && opp.qr_token && (
+        <Card>
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <div className="rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
+              <QRCodeCanvas
+                value={`${process.env.NEXT_PUBLIC_BASE_URL || "https://swimbuddz.com"}/community/volunteers/qr-checkin?token=${opp.qr_token}`}
+                size={180}
+                level="H"
+                includeMargin={false}
+                bgColor="#ffffff"
+                fgColor="#1e293b"
+              />
+            </div>
+            <div className="flex-1 text-center sm:text-left space-y-2">
+              <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2 justify-center sm:justify-start">
+                <QrCode className="h-5 w-5 text-teal-600" />
+                QR Code Check-in
+              </h3>
+              <p className="text-sm text-slate-600">
+                Print this QR code and display it at the pool. Volunteers scan it with their phone
+                camera to check in automatically.
+              </p>
+              <p className="text-xs text-slate-400">
+                Check-in opens 15 minutes before start time and closes 30 minutes after.
+              </p>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  const printWindow = window.open("", "_blank");
+                  if (!printWindow) return;
+                  const qrUrl = `${process.env.NEXT_PUBLIC_BASE_URL || "https://swimbuddz.com"}/community/volunteers/qr-checkin?token=${opp.qr_token}`;
+                  printWindow.document.write(`
+                    <html>
+                      <head><title>QR Check-in — ${opp.title}</title></head>
+                      <body style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,sans-serif;margin:0;padding:2rem;">
+                        <h1 style="font-size:1.5rem;margin-bottom:0.25rem;">${opp.title}</h1>
+                        <p style="color:#64748b;margin-bottom:1.5rem;">Scan to check in as a volunteer</p>
+                        <div id="qr" style="padding:1rem;background:white;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.1);"></div>
+                        <p style="margin-top:1rem;color:#94a3b8;font-size:0.875rem;">
+                          ${opp.date} ${opp.start_time ? "• " + opp.start_time.slice(0, 5) : ""} ${opp.location_name ? "• " + opp.location_name : ""}
+                        </p>
+                        <script src="https://cdn.jsdelivr.net/npm/qrcode@1/build/qrcode.min.js"><\/script>
+                        <script>
+                          QRCode.toCanvas(document.createElement('canvas'), '${qrUrl}', {width:300,margin:0,errorCorrectionLevel:'H'}, function(err, canvas) {
+                            if (!err) document.getElementById('qr').appendChild(canvas);
+                            window.print();
+                          });
+                        <\/script>
+                      </body>
+                    </html>
+                  `);
+                  printWindow.document.close();
+                }}
+              >
+                <Printer className="mr-1 h-4 w-4" />
+                Print QR Code
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Slots */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-slate-900">
-          Volunteer Slots ({slots.length})
-        </h2>
+        <h2 className="text-lg font-semibold text-slate-900">Volunteer Slots ({slots.length})</h2>
 
         {slots.length === 0 ? (
           <Card className="py-8 text-center">
             <Users className="mx-auto h-8 w-8 text-slate-400" />
-            <p className="mt-2 text-sm text-slate-600">
-              No volunteers have signed up yet.
-            </p>
+            <p className="mt-2 text-sm text-slate-600">No volunteers have signed up yet.</p>
           </Card>
         ) : (
           <div className="space-y-3">
@@ -295,32 +358,27 @@ export default function AdminOpportunityDetailPage() {
                       </Badge>
                     </div>
                     <div className="flex flex-wrap gap-3 text-xs text-slate-500">
-                      <span>
-                        Claimed:{" "}
-                        {new Date(slot.claimed_at).toLocaleString("en-NG")}
-                      </span>
+                      <span>Claimed: {new Date(slot.claimed_at).toLocaleString("en-NG")}</span>
                       {slot.checked_in_at && (
                         <span className="text-emerald-600">
                           In:{" "}
-                          {new Date(slot.checked_in_at).toLocaleTimeString(
-                            "en-NG",
-                            { hour: "2-digit", minute: "2-digit" },
-                          )}
+                          {new Date(slot.checked_in_at).toLocaleTimeString("en-NG", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </span>
                       )}
                       {slot.checked_out_at && (
                         <span className="text-emerald-600">
                           Out:{" "}
-                          {new Date(slot.checked_out_at).toLocaleTimeString(
-                            "en-NG",
-                            { hour: "2-digit", minute: "2-digit" },
-                          )}
+                          {new Date(slot.checked_out_at).toLocaleTimeString("en-NG", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </span>
                       )}
                       {slot.hours_logged != null && (
-                        <span className="font-medium">
-                          {slot.hours_logged.toFixed(1)}h logged
-                        </span>
+                        <span className="font-medium">{slot.hours_logged.toFixed(1)}h logged</span>
                       )}
                     </div>
                   </div>
@@ -348,8 +406,7 @@ export default function AdminOpportunityDetailPage() {
                     )}
 
                     {/* Check-in for approved */}
-                    {(slot.status === "approved" ||
-                      slot.status === "claimed") &&
+                    {(slot.status === "approved" || slot.status === "claimed") &&
                       !slot.checked_in_at && (
                         <Button
                           size="sm"
@@ -362,17 +419,15 @@ export default function AdminOpportunityDetailPage() {
                       )}
 
                     {/* Check-out for checked-in */}
-                    {slot.checked_in_at &&
-                      !slot.checked_out_at &&
-                      slot.status !== "no_show" && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleCheckout(slot.id)}
-                          className="flex items-center gap-1"
-                        >
-                          <LogOut className="h-3 w-3" /> Check Out
-                        </Button>
-                      )}
+                    {slot.checked_in_at && !slot.checked_out_at && slot.status !== "no_show" && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleCheckout(slot.id)}
+                        className="flex items-center gap-1"
+                      >
+                        <LogOut className="h-3 w-3" /> Check Out
+                      </Button>
+                    )}
 
                     {/* No-show for active slots */}
                     {["claimed", "approved"].includes(slot.status) && (

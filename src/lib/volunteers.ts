@@ -119,10 +119,18 @@ export interface VolunteerOpportunity {
   min_tier: VolunteerTier;
   cancellation_deadline_hours: number;
   created_by: string | null;
+  qr_checkin_enabled: boolean;
+  qr_token: string | null;
   created_at: string;
   updated_at: string;
   role_title: string | null;
   role_category: string | null;
+}
+
+export interface QrCheckinResponse {
+  slot: VolunteerSlot;
+  opportunity_title: string;
+  message: string;
 }
 
 export interface VolunteerSlot {
@@ -364,6 +372,10 @@ export const VolunteersApi = {
     apiDelete<void>(`${V}/opportunities/${opportunityId}/claim`, {
       auth: true,
     }),
+
+  // QR code self check-in
+  qrCheckin: (token: string) =>
+    apiPost<QrCheckinResponse>(`${V}/qr-checkin`, { token }, { auth: true }),
 
   // Hours
   getMyHours: () => apiGet<VolunteerHoursLog[]>(`${V}/hours/me`, { auth: true }),

@@ -1,12 +1,12 @@
 "use client";
 
 import { supabase } from "@/lib/auth";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { getCoachApplicationStatus, type AgreementStatus } from "@/lib/coach";
 import { AgreementApi } from "@/lib/coaches";
 import { MembersApi } from "@/lib/members";
 import {
   Award,
-  Bell,
   BookOpen,
   Calendar,
   CheckCircle,
@@ -97,6 +97,7 @@ export function CoachLayout({ children }: CoachLayoutProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [coachName, setCoachName] = useState("Coach");
+  const [memberId, setMemberId] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
   const [coachStatus, setCoachStatus] = useState<string | null>(null);
   const [agreementStatus, setAgreementStatus] = useState<AgreementStatus | null>(null);
@@ -115,6 +116,7 @@ export function CoachLayout({ children }: CoachLayoutProps) {
         // Fetch member profile for real name
         try {
           const member = await MembersApi.getMe();
+          if (member?.id) setMemberId(member.id);
           if (member?.first_name) {
             setCoachName(`${member.first_name}${member.last_name ? ` ${member.last_name}` : ""}`);
           } else if (user?.email) {
@@ -343,12 +345,11 @@ export function CoachLayout({ children }: CoachLayoutProps) {
               <img src="/logo.png" alt="SwimBuddz Logo" className="h-8 w-auto" />
               <span className="text-lg font-semibold text-emerald-700">SwimBuddz</span>
             </div>
-            <Link
-              href="/announcements"
-              className="text-slate-600 hover:text-emerald-700 transition"
-            >
-              <Bell className="h-6 w-6" />
-            </Link>
+            <NotificationBell
+              memberId={memberId}
+              iconSize="h-6 w-6"
+              hoverColor="hover:text-emerald-700"
+            />
           </div>
         </header>
 
@@ -359,12 +360,10 @@ export function CoachLayout({ children }: CoachLayoutProps) {
             <h1 className="text-lg font-semibold text-slate-900">Welcome back, {coachName}</h1>
           </div>
           <div className="flex items-center gap-4">
-            <Link
-              href="/announcements"
-              className="relative p-2 rounded-full text-slate-500 hover:text-emerald-700 hover:bg-slate-100 transition"
-            >
-              <Bell className="h-5 w-5" />
-            </Link>
+            <NotificationBell
+              memberId={memberId}
+              hoverColor="hover:text-emerald-700"
+            />
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-700">
               {initials}
             </div>

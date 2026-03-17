@@ -1,10 +1,9 @@
 "use client";
 
-import { apiGet } from "@/lib/api";
 import { supabase } from "@/lib/auth";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import {
   Award,
-  Bell,
   BookOpen,
   Briefcase,
   Calendar,
@@ -170,7 +169,6 @@ export function MemberLayout({ children }: MemberLayoutProps) {
   const [loading, setLoading] = useState(true);
   const [academyEnrollments, setAcademyEnrollments] = useState<AcademyEnrollment[]>([]);
   const [isCoach, setIsCoach] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
 
   const refreshMember = useCallback(async () => {
     try {
@@ -234,17 +232,6 @@ export function MemberLayout({ children }: MemberLayoutProps) {
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, [refreshMember, searchParams]);
-
-  // Fetch unread announcement count when member id is available
-  useEffect(() => {
-    if (!member?.id) return;
-    apiGet<{ unread_count: number }>(
-      `/api/v1/communications/announcements/unread-count?member_id=${member.id}`,
-      { auth: true }
-    )
-      .then((res) => setUnreadCount(res.unread_count))
-      .catch(() => setUnreadCount(0));
-  }, [member?.id]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -561,17 +548,11 @@ export function MemberLayout({ children }: MemberLayoutProps) {
               <img src="/logo.png" alt="SwimBuddz Logo" className="h-8 w-auto" />
               <span className="text-lg font-semibold text-cyan-700">SwimBuddz</span>
             </div>
-            <Link
-              href="/announcements"
-              className="relative text-slate-600 hover:text-cyan-700 transition min-w-[44px] min-h-[44px] flex items-center justify-center -mr-2"
-            >
-              <Bell className="h-6 w-6" />
-              {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
-            </Link>
+            <NotificationBell
+              memberId={member?.id}
+              iconSize="h-6 w-6"
+              hoverColor="hover:text-cyan-700"
+            />
           </div>
         </header>
 
@@ -582,17 +563,10 @@ export function MemberLayout({ children }: MemberLayoutProps) {
             <h1 className="text-lg font-semibold text-slate-900">{memberName}</h1>
           </div>
           <div className="flex items-center gap-4">
-            <Link
-              href="/announcements"
-              className="relative p-2 rounded-full text-slate-500 hover:text-cyan-700 hover:bg-slate-100 transition"
-            >
-              <Bell className="h-5 w-5" />
-              {unreadCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
-            </Link>
+            <NotificationBell
+              memberId={member?.id}
+              hoverColor="hover:text-cyan-700"
+            />
             <Link href="/account/profile" className="flex items-center gap-2">
               {member?.profile_photo_url ? (
                 <img

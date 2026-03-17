@@ -5,19 +5,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
-import {
-  TIER_SHORT_LABELS,
-  VolunteersApi,
-  type VolunteerOpportunity,
-} from "@/lib/volunteers";
-import {
-  ArrowLeft,
-  Calendar,
-  CheckCircle,
-  Clock,
-  MapPin,
-  Users,
-} from "lucide-react";
+import { TIER_SHORT_LABELS, VolunteersApi, type VolunteerOpportunity } from "@/lib/volunteers";
+import { ArrowLeft, Calendar, CheckCircle, Clock, MapPin, QrCode, Users } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -60,12 +49,11 @@ export default function OpportunityDetailPage() {
       setActionMsg(
         slot.status === "approved"
           ? "You're confirmed! See you there."
-          : "Your request has been submitted. An admin will review it.",
+          : "Your request has been submitted. An admin will review it."
       );
       await loadOpportunity();
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Failed to claim slot.";
+      const message = err instanceof Error ? err.message : "Failed to claim slot.";
       setError(message);
     } finally {
       setClaiming(false);
@@ -82,8 +70,7 @@ export default function OpportunityDetailPage() {
       setActionMsg("Your claim has been cancelled.");
       await loadOpportunity();
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Failed to cancel claim.";
+      const message = err instanceof Error ? err.message : "Failed to cancel claim.";
       setError(message);
     } finally {
       setCancelling(false);
@@ -130,7 +117,15 @@ export default function OpportunityDetailPage() {
             {opp.status.replace("_", " ")}
           </Badge>
         </div>
-        {opp.role_title && <Badge variant="default">{opp.role_title}</Badge>}
+        <div className="flex items-center gap-2 flex-wrap">
+          {opp.role_title && <Badge variant="default">{opp.role_title}</Badge>}
+          {opp.qr_checkin_enabled && (
+            <Badge variant="info">
+              <QrCode className="mr-1 h-3 w-3 inline" />
+              QR Check-in
+            </Badge>
+          )}
+        </div>
       </div>
 
       {error && <Alert variant="error">{error}</Alert>}
@@ -181,9 +176,7 @@ export default function OpportunityDetailPage() {
         {/* Extra info */}
         <div className="flex flex-wrap gap-3 pt-2 border-t border-slate-100">
           {opp.min_tier !== "tier_1" && (
-            <Badge variant="outline">
-              Min tier: {TIER_SHORT_LABELS[opp.min_tier]}
-            </Badge>
+            <Badge variant="outline">Min tier: {TIER_SHORT_LABELS[opp.min_tier]}</Badge>
           )}
           {opp.opportunity_type === "approval_required" && (
             <Badge variant="warning">Requires admin approval</Badge>
@@ -201,16 +194,9 @@ export default function OpportunityDetailPage() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center gap-2 text-emerald-700">
                 <CheckCircle className="h-5 w-5" />
-                <span className="font-medium">
-                  You&apos;ve signed up for this opportunity
-                </span>
+                <span className="font-medium">You&apos;ve signed up for this opportunity</span>
               </div>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={handleCancel}
-                disabled={cancelling}
-              >
+              <Button variant="danger" size="sm" onClick={handleCancel} disabled={cancelling}>
                 {cancelling ? "Cancelling..." : "Cancel My Spot"}
               </Button>
             </div>
@@ -224,8 +210,7 @@ export default function OpportunityDetailPage() {
                 </p>
                 {!isFull && opp.opportunity_type === "approval_required" && (
                   <p className="text-sm text-slate-600 mt-1">
-                    Your request will be reviewed by an admin before
-                    confirmation.
+                    Your request will be reviewed by an admin before confirmation.
                   </p>
                 )}
               </div>
@@ -240,6 +225,22 @@ export default function OpportunityDetailPage() {
               </Button>
             </div>
           )}
+        </Card>
+      )}
+
+      {/* QR Check-in Note */}
+      {opp.qr_checkin_enabled && hasClaimed && (
+        <Card className="border-teal-200 bg-teal-50">
+          <div className="flex items-start gap-3">
+            <QrCode className="h-5 w-5 text-teal-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-teal-900">QR Code Check-in Available</p>
+              <p className="text-sm text-teal-700 mt-1">
+                When you arrive at the pool, scan the QR code displayed there to check in
+                automatically. Check-in opens 15 minutes before the session starts.
+              </p>
+            </div>
+          </div>
         </Card>
       )}
     </div>

@@ -2,11 +2,11 @@
 
 import { supabase } from "@/lib/auth";
 import { apiGet } from "@/lib/api";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import {
   AlertTriangle,
   Award,
   BarChart3,
-  Bell,
   Calendar,
   CalendarDays,
   Car,
@@ -136,6 +136,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string>("");
+  const [adminMemberId, setAdminMemberId] = useState<string | undefined>();
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [newOrderCount, setNewOrderCount] = useState(0);
   const prevCountRef = useRef(0);
@@ -175,15 +176,22 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   }, []);
 
   useEffect(() => {
-    async function getUserEmail() {
+    async function getUserInfo() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (user?.email) {
         setUserEmail(user.email);
       }
+      // Fetch member ID for announcement notifications
+      try {
+        const member = await apiGet<{ id: string }>("/api/v1/members/me", { auth: true });
+        if (member?.id) setAdminMemberId(member.id);
+      } catch {
+        // Admin may not have a member record
+      }
     }
-    getUserEmail();
+    getUserInfo();
 
     // Request notification permission
     if (typeof Notification !== "undefined" && Notification.permission === "default") {
@@ -387,17 +395,25 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               <img src="/logo.png" alt="SwimBuddz Logo" className="h-7 w-auto" />
               <span className="text-base font-semibold text-cyan-700">Admin</span>
             </Link>
-            <Link
-              href="/admin/store/orders"
-              className="relative p-2 -mr-2 text-slate-600 hover:text-cyan-700 transition"
-            >
-              <Bell className="h-6 w-6" />
-              {newOrderCount > 0 && (
-                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
-                  {newOrderCount > 9 ? "9+" : newOrderCount}
-                </span>
-              )}
-            </Link>
+            <div className="flex items-center gap-1 -mr-2">
+              <NotificationBell
+                memberId={adminMemberId}
+                iconSize="h-6 w-6"
+                hoverColor="hover:text-cyan-700"
+              />
+              <Link
+                href="/admin/store/orders"
+                className="relative p-2 text-slate-600 hover:text-cyan-700 transition"
+                title="Store orders"
+              >
+                <ShoppingBag className="h-6 w-6" />
+                {newOrderCount > 0 && (
+                  <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
+                    {newOrderCount > 9 ? "9+" : newOrderCount}
+                  </span>
+                )}
+              </Link>
+            </div>
           </div>
         </header>
 
@@ -407,11 +423,16 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             <p className="text-sm text-slate-500">Admin Panel</p>
           </div>
           <div className="flex items-center gap-4">
+            <NotificationBell
+              memberId={adminMemberId}
+              hoverColor="hover:text-cyan-700"
+            />
             <Link
               href="/admin/store/orders"
               className="relative p-2 rounded-full text-slate-500 hover:text-cyan-700 hover:bg-slate-100 transition"
+              title="Store orders"
             >
-              <Bell className="h-5 w-5" />
+              <ShoppingBag className="h-5 w-5" />
               {newOrderCount > 0 && (
                 <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
                   {newOrderCount > 9 ? "9+" : newOrderCount}
