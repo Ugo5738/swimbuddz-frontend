@@ -1,9 +1,11 @@
 "use client";
 
-import { supabase } from "@/lib/auth";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { apiGet } from "@/lib/api";
+import { supabase } from "@/lib/auth";
 import {
   Award,
+  Bell,
   BookOpen,
   Briefcase,
   Calendar,
@@ -107,6 +109,7 @@ const navSections: NavSection[] = [
     title: "My Account",
     items: [
       { href: "/account/profile", label: "My Profile", icon: User },
+      { href: "/account/notifications", label: "Notifications", icon: Bell },
       { href: "/account/billing", label: "Billing", icon: CreditCard },
       { href: "/account/orders", label: "Orders", icon: Package },
       { href: "/account/wallet", label: "Wallet", icon: Wallet },
@@ -563,10 +566,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
             <h1 className="text-lg font-semibold text-slate-900">{memberName}</h1>
           </div>
           <div className="flex items-center gap-4">
-            <NotificationBell
-              memberId={member?.id}
-              hoverColor="hover:text-cyan-700"
-            />
+            <NotificationBell memberId={member?.id} hoverColor="hover:text-cyan-700" />
             <Link href="/account/profile" className="flex items-center gap-2">
               {member?.profile_photo_url ? (
                 <img
