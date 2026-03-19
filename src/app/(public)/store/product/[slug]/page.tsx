@@ -191,11 +191,18 @@ export default function ProductDetailPage() {
     loadProduct();
   }, [loadProduct]);
 
-  // Build gallery items once (images + videos, sorted) for display and variant switching
+  // Build gallery items once (images + videos, sorted) for display and variant switching.
+  // Order: Primary → Detail images (no variant) → Variant images → Videos
   const galleryItems: GalleryItem[] = useMemo(() => {
     if (!product) return [];
-    return [
-      ...product.images.map((img) => ({
+
+    // Categorise images
+    const primary: GalleryItem[] = [];
+    const details: GalleryItem[] = [];
+    const variants: GalleryItem[] = [];
+
+    for (const img of product.images) {
+      const item: GalleryItem = {
         id: img.id,
         url: img.url,
         alt_text: img.alt_text,
@@ -203,23 +210,33 @@ export default function ProductDetailPage() {
         sort_order: img.sort_order,
         type: "image" as const,
         variant_id: img.variant_id,
-      })),
-      ...(product.videos || [])
-        .filter((v) => v.is_processed)
-        .map((vid) => ({
-          id: vid.id,
-          url: vid.url,
-          alt_text: vid.title,
-          is_primary: false,
-          sort_order: 1000 + vid.sort_order,
-          type: "video" as const,
-          thumbnail_url: vid.thumbnail_url,
-        })),
-    ].sort((a, b) => {
-      if (a.is_primary && !b.is_primary) return -1;
-      if (!a.is_primary && b.is_primary) return 1;
-      return a.sort_order - b.sort_order;
-    });
+      };
+      if (img.is_primary) primary.push(item);
+      else if (img.variant_id) variants.push(item);
+      else details.push(item);
+    }
+
+    // Sort each group by sort_order
+    const bySortOrder = (a: GalleryItem, b: GalleryItem) => a.sort_order - b.sort_order;
+    primary.sort(bySortOrder);
+    details.sort(bySortOrder);
+    variants.sort(bySortOrder);
+
+    // Videos always last
+    const videos: GalleryItem[] = (product.videos || [])
+      .filter((v) => v.is_processed)
+      .map((vid) => ({
+        id: vid.id,
+        url: vid.url,
+        alt_text: vid.title,
+        is_primary: false,
+        sort_order: vid.sort_order,
+        type: "video" as const,
+        thumbnail_url: vid.thumbnail_url,
+      }))
+      .sort(bySortOrder);
+
+    return [...primary, ...details, ...variants, ...videos];
   }, [product]);
 
   // Update selected variant when options change + jump gallery to variant image
