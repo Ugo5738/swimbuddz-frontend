@@ -5,8 +5,20 @@ import { LoadingCard } from "@/components/ui/LoadingCard";
 import { MediaInput } from "@/components/ui/MediaInput";
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+
+// DnD Kit imports for image reordering
+import {
+  DndContext,
+  DragEndEvent,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface Category {
   id: string;
@@ -101,6 +113,48 @@ interface ProductFormData {
   cost_price_ngn: string;
 }
 
+/* ── Sortable wrapper for image cards in the DnD grid ── */
+function SortableImageWrapper({ id, children }: { id: string; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative group/drag">
+      {/* Drag handle – visible on hover in top-left area */}
+      <button
+        {...attributes}
+        {...listeners}
+        type="button"
+        className="absolute top-1 left-1 z-20 cursor-grab active:cursor-grabbing w-5 h-5 flex items-center justify-center rounded-full bg-slate-700/70 text-white opacity-0 group-hover/drag:opacity-100 transition-opacity"
+        title="Drag to reorder"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+        >
+          <circle cx="9" cy="5" r="1.5" />
+          <circle cx="15" cy="5" r="1.5" />
+          <circle cx="9" cy="12" r="1.5" />
+          <circle cx="15" cy="12" r="1.5" />
+          <circle cx="9" cy="19" r="1.5" />
+          <circle cx="15" cy="19" r="1.5" />
+        </svg>
+      </button>
+      {children}
+    </div>
+  );
+}
+
 export default function EditProductPage() {
   const router = useRouter();
   const params = useParams();
@@ -149,6 +203,11 @@ export default function EditProductPage() {
   // Image ↔ variant linking state
   const [linkingImageId, setLinkingImageId] = useState<string | null>(null);
 
+  // DnD sensors for image reordering
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -163,7 +222,11 @@ export default function EditProductPage() {
         setSuppliers(suppData.items);
         setProduct(prod);
         setVariants(prod.variants || []);
-        setImages(prod.images || []);
+        setImages(
+          (prod.images || [])
+            .slice()
+            .sort((a: ProductImage, b: ProductImage) => a.sort_order - b.sort_order)
+        );
         setVideos(prod.videos || []);
 
         // Parse variant_options: separate _color_swatches from real dimensions
@@ -396,6 +459,40 @@ export default function EditProductPage() {
       return { ...prev, [colorName]: url };
     });
   };
+
+  // ─── Image Drag-to-Reorder ───
+  const handleImageDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const oldIndex = images.findIndex((img) => img.id === active.id);
+      const newIndex = images.findIndex((img) => img.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      // Optimistically reorder in UI
+      const reordered = arrayMove(images, oldIndex, newIndex);
+      setImages(reordered);
+
+      // Persist new sort_order values to backend
+      try {
+        await Promise.all(
+          reordered.map((img, idx) =>
+            apiPatch(
+              `/api/v1/admin/store/products/${productId}/images/${img.id}`,
+              { sort_order: idx },
+              { auth: true }
+            )
+          )
+        );
+        toast.success("Image order updated");
+      } catch (error) {
+        console.error("Failed to reorder images", error);
+        toast.error("Failed to save image order");
+      }
+    },
+    [images, productId]
+  );
 
   // ─── Image ↔ Variant Linking ───
   const handleLinkImageToVariant = async (imageId: string, variantId: string | null) => {
@@ -1172,129 +1269,138 @@ export default function EditProductPage() {
             {images.length === 0 ? (
               <p className="text-sm text-slate-500">No images yet.</p>
             ) : (
-              <div className="grid grid-cols-2 gap-2">
-                {images.map((img) => {
-                  const linkedVariant = img.variant_id
-                    ? variants.find((v) => v.id === img.variant_id)
-                    : null;
-                  const linkedColorName = linkedVariant?.options?.Color || linkedVariant?.name;
-                  return (
-                    <div
-                      key={img.id}
-                      className="relative group rounded-lg overflow-hidden border border-slate-200"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={img.url}
-                        alt={img.alt_text || "Product image"}
-                        className="w-full aspect-square object-cover"
-                      />
-                      {img.is_primary && (
-                        <span className="absolute top-1 left-1 text-[10px] px-1.5 py-0.5 bg-cyan-600 text-white rounded font-medium">
-                          Primary
-                        </span>
-                      )}
-
-                      {/* Variant link badge */}
-                      {linkedColorName && linkingImageId !== img.id && (
-                        <span className="absolute bottom-1 left-1 text-[10px] px-1.5 py-0.5 bg-purple-600 text-white rounded font-medium max-w-[calc(100%-2.5rem)] truncate">
-                          {linkedColorName}
-                        </span>
-                      )}
-
-                      {/* Action buttons (hover) */}
-                      <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setReplacingImageId(replacingImageId === img.id ? null : img.id)
-                          }
-                          className={`w-5 h-5 flex items-center justify-center rounded-full text-[10px] ${
-                            replacingImageId === img.id
-                              ? "bg-blue-500 text-white"
-                              : "bg-slate-700/70 text-white hover:bg-blue-500"
-                          }`}
-                          title="Replace image"
-                        >
-                          ↻
-                        </button>
-                        {variants.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setLinkingImageId(linkingImageId === img.id ? null : img.id)
-                            }
-                            className={`w-5 h-5 flex items-center justify-center rounded-full text-[10px] ${
-                              linkingImageId === img.id
-                                ? "bg-purple-500 text-white"
-                                : "bg-slate-700/70 text-white hover:bg-purple-500"
-                            }`}
-                            title="Link to variant"
-                          >
-                            🔗
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteImage(img.id)}
-                          disabled={deletingImageId === img.id}
-                          className="w-5 h-5 flex items-center justify-center bg-red-500 text-white rounded-full text-xs hover:bg-red-600 disabled:opacity-50"
-                          title="Remove image"
-                        >
-                          {deletingImageId === img.id ? "..." : "×"}
-                        </button>
-                      </div>
-
-                      {/* Replace image panel */}
-                      {replacingImageId === img.id && (
-                        <div className="absolute inset-x-0 bottom-0 bg-white/95 border-t border-slate-200 p-2">
-                          {savingImage ? (
-                            <p className="text-[11px] text-slate-500 text-center py-1">
-                              Replacing...
-                            </p>
-                          ) : (
-                            <MediaInput
-                              purpose="product_image"
-                              mode="both"
-                              onChange={handleReplaceImage}
-                              showPreview={false}
+              <DndContext
+                sensors={dndSensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleImageDragEnd}
+              >
+                <SortableContext items={images.map((img) => img.id)} strategy={rectSortingStrategy}>
+                  <div className="grid grid-cols-2 gap-2">
+                    {images.map((img) => {
+                      const linkedVariant = img.variant_id
+                        ? variants.find((v) => v.id === img.variant_id)
+                        : null;
+                      const linkedColorName = linkedVariant?.options?.Color || linkedVariant?.name;
+                      return (
+                        <SortableImageWrapper key={img.id} id={img.id}>
+                          <div className="relative group rounded-lg overflow-hidden border border-slate-200">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={img.url}
+                              alt={img.alt_text || "Product image"}
+                              className="w-full aspect-square object-cover"
                             />
-                          )}
-                        </div>
-                      )}
+                            {img.is_primary && (
+                              <span className="absolute top-7 left-1 text-[10px] px-1.5 py-0.5 bg-cyan-600 text-white rounded font-medium">
+                                Primary
+                              </span>
+                            )}
 
-                      {/* Variant linking dropdown */}
-                      {linkingImageId === img.id && (
-                        <div className="absolute inset-x-0 bottom-0 bg-white/95 border-t border-slate-200 p-1.5 space-y-0.5 max-h-32 overflow-y-auto">
-                          <button
-                            type="button"
-                            onClick={() => handleLinkImageToVariant(img.id, null)}
-                            className={`w-full text-left text-[11px] px-2 py-1 rounded hover:bg-slate-100 ${
-                              !img.variant_id ? "font-semibold text-slate-900" : "text-slate-600"
-                            }`}
-                          >
-                            No variant (unlinked)
-                          </button>
-                          {variants.map((v) => (
-                            <button
-                              key={v.id}
-                              type="button"
-                              onClick={() => handleLinkImageToVariant(img.id, v.id)}
-                              className={`w-full text-left text-[11px] px-2 py-1 rounded hover:bg-purple-50 ${
-                                img.variant_id === v.id
-                                  ? "font-semibold text-purple-700 bg-purple-50"
-                                  : "text-slate-600"
-                              }`}
-                            >
-                              {v.options?.Color || v.name || v.sku}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                            {/* Variant link badge */}
+                            {linkedColorName && linkingImageId !== img.id && (
+                              <span className="absolute bottom-1 left-1 text-[10px] px-1.5 py-0.5 bg-purple-600 text-white rounded font-medium max-w-[calc(100%-2.5rem)] truncate">
+                                {linkedColorName}
+                              </span>
+                            )}
+
+                            {/* Action buttons (hover) */}
+                            <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setReplacingImageId(replacingImageId === img.id ? null : img.id)
+                                }
+                                className={`w-5 h-5 flex items-center justify-center rounded-full text-[10px] ${
+                                  replacingImageId === img.id
+                                    ? "bg-blue-500 text-white"
+                                    : "bg-slate-700/70 text-white hover:bg-blue-500"
+                                }`}
+                                title="Replace image"
+                              >
+                                ↻
+                              </button>
+                              {variants.length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setLinkingImageId(linkingImageId === img.id ? null : img.id)
+                                  }
+                                  className={`w-5 h-5 flex items-center justify-center rounded-full text-[10px] ${
+                                    linkingImageId === img.id
+                                      ? "bg-purple-500 text-white"
+                                      : "bg-slate-700/70 text-white hover:bg-purple-500"
+                                  }`}
+                                  title="Link to variant"
+                                >
+                                  🔗
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteImage(img.id)}
+                                disabled={deletingImageId === img.id}
+                                className="w-5 h-5 flex items-center justify-center bg-red-500 text-white rounded-full text-xs hover:bg-red-600 disabled:opacity-50"
+                                title="Remove image"
+                              >
+                                {deletingImageId === img.id ? "..." : "×"}
+                              </button>
+                            </div>
+
+                            {/* Replace image panel */}
+                            {replacingImageId === img.id && (
+                              <div className="absolute inset-x-0 bottom-0 bg-white/95 border-t border-slate-200 p-2">
+                                {savingImage ? (
+                                  <p className="text-[11px] text-slate-500 text-center py-1">
+                                    Replacing...
+                                  </p>
+                                ) : (
+                                  <MediaInput
+                                    purpose="product_image"
+                                    mode="both"
+                                    onChange={handleReplaceImage}
+                                    showPreview={false}
+                                  />
+                                )}
+                              </div>
+                            )}
+
+                            {/* Variant linking dropdown */}
+                            {linkingImageId === img.id && (
+                              <div className="absolute inset-x-0 bottom-0 bg-white/95 border-t border-slate-200 p-1.5 space-y-0.5 max-h-32 overflow-y-auto">
+                                <button
+                                  type="button"
+                                  onClick={() => handleLinkImageToVariant(img.id, null)}
+                                  className={`w-full text-left text-[11px] px-2 py-1 rounded hover:bg-slate-100 ${
+                                    !img.variant_id
+                                      ? "font-semibold text-slate-900"
+                                      : "text-slate-600"
+                                  }`}
+                                >
+                                  No variant (unlinked)
+                                </button>
+                                {variants.map((v) => (
+                                  <button
+                                    key={v.id}
+                                    type="button"
+                                    onClick={() => handleLinkImageToVariant(img.id, v.id)}
+                                    className={`w-full text-left text-[11px] px-2 py-1 rounded hover:bg-purple-50 ${
+                                      img.variant_id === v.id
+                                        ? "font-semibold text-purple-700 bg-purple-50"
+                                        : "text-slate-600"
+                                    }`}
+                                  >
+                                    {v.options?.Color || v.name || v.sku}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </SortableImageWrapper>
+                      );
+                    })}
+                  </div>
+                </SortableContext>
+              </DndContext>
             )}
           </div>
 
