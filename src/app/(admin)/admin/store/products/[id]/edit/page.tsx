@@ -556,6 +556,20 @@ export default function EditProductPage() {
     }
   };
 
+  const handleSetPrimary = async (imageId: string) => {
+    try {
+      await apiPatch(
+        `/api/v1/admin/store/products/${productId}/images/${imageId}`,
+        { is_primary: true },
+        { auth: true }
+      );
+      setImages((prev) => prev.map((img) => ({ ...img, is_primary: img.id === imageId })));
+      toast.success("Primary image updated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to set primary image");
+    }
+  };
+
   const handleReplaceImage = async (_mediaId: string | null, fileUrl?: string) => {
     if (!fileUrl || !replacingImageId) return;
 
@@ -1305,6 +1319,16 @@ export default function EditProductPage() {
 
                             {/* Action buttons (hover) */}
                             <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {!img.is_primary && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSetPrimary(img.id)}
+                                  className="w-5 h-5 flex items-center justify-center rounded-full bg-slate-700/70 text-white hover:bg-amber-500 text-[10px]"
+                                  title="Set as primary image"
+                                >
+                                  ★
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 onClick={() =>
