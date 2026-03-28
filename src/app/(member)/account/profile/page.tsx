@@ -33,8 +33,12 @@ import {
   volunteerInterestOptions,
 } from "@/lib/options";
 import { completePendingRegistrationOnBackend } from "@/lib/registration";
+import { Country } from "country-state-city";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
+import type { Country as PhoneCountry } from "react-phone-number-input";
+import PhoneInput from "react-phone-number-input";
+import "react-phone-number-input/style.css";
 
 const levelLabels: Record<string, string> = {
   beginner: "Beginner",
@@ -67,7 +71,7 @@ const membershipTierLabels: Record<string, string> = {
 };
 
 const discoverySourceLabels: Record<string, string> = Object.fromEntries(
-  discoverySourceOptions.map((opt) => [opt.value, opt.label]),
+  discoverySourceOptions.map((opt) => [opt.value, opt.label])
 );
 
 const tokenOverrides: Record<string, string> = {
@@ -151,8 +155,7 @@ const mockProfile: Profile = {
   joinedAt: "2024-01-01",
   email: "ada@example.com",
   phone: "+234 801 234 5678",
-  profilePhotoUrl:
-    "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=400&q=80",
+  profilePhotoUrl: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=400&q=80",
   city: "Lagos",
   country: "Nigeria",
   timeZone: "Africa/Lagos",
@@ -162,8 +165,7 @@ const mockProfile: Profile = {
   deepWaterComfort: "comfortable",
   strokes: ["freestyle", "backstroke", "open_water"],
   interests: ["fitness", "open_water", "volunteering"],
-  goalsNarrative:
-    "Build endurance for open-water races and help mentor new swimmers.",
+  goalsNarrative: "Build endurance for open-water races and help mentor new swimmers.",
 
   availabilitySlots: ["weekday_evening", "weekend_morning"],
   timeOfDayAvailability: ["early_morning", "evening"],
@@ -439,9 +441,7 @@ function ProfileContent() {
           <p className="text-sm font-medium text-cyan-100 uppercase tracking-wider mb-1">
             My Profile
           </p>
-          <h1 className="text-3xl md:text-4xl font-bold text-white">
-            {profile?.name ?? "Member"}
-          </h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-white">{profile?.name ?? "Member"}</h1>
           <div className="flex flex-wrap items-center gap-3 mt-2">
             {profile?.membershipTiers.map((tier: string) => (
               <span
@@ -480,11 +480,7 @@ function ProfileContent() {
       <div className="space-y-6">
         {headerMarkup}
         <LoadingCard
-          text={
-            completingRegistration
-              ? "Finalizing your registration..."
-              : "Loading profile..."
-          }
+          text={completingRegistration ? "Finalizing your registration..." : "Loading profile..."}
         />
       </div>
     );
@@ -519,11 +515,7 @@ function ProfileContent() {
               <div className="mb-4" id="membership-card">
                 <MembershipCard
                   name={profile.name}
-                  tier={
-                    profile.membershipTiers.includes("academy")
-                      ? "academy"
-                      : "club"
-                  }
+                  tier={profile.membershipTiers.includes("academy") ? "academy" : "club"}
                   memberId={profile.id}
                   joinedAt={profile.joinedAt}
                   photoUrl={profile.profilePhotoUrl}
@@ -537,32 +529,22 @@ function ProfileContent() {
             )}
 
             {/* Pending Upgrade Alert */}
-            {profile.requestedMembershipTiers &&
-              profile.requestedMembershipTiers.length > 0 && (
-                <Alert variant="info" title="Upgrade Request Pending">
-                  <p>
-                    You have requested an upgrade to{" "}
-                    <strong>
-                      {profile.requestedMembershipTiers.join(", ")}
-                    </strong>
-                    . Complete readiness and pay to activate the new tier. You
-                    will retain your current access until then.
-                  </p>
-                </Alert>
-              )}
+            {profile.requestedMembershipTiers && profile.requestedMembershipTiers.length > 0 && (
+              <Alert variant="info" title="Upgrade Request Pending">
+                <p>
+                  You have requested an upgrade to{" "}
+                  <strong>{profile.requestedMembershipTiers.join(", ")}</strong>. Complete readiness
+                  and pay to activate the new tier. You will retain your current access until then.
+                </p>
+              </Alert>
+            )}
 
             <div className="flex flex-wrap gap-2">
               {profile.membershipTiers.length ? (
                 profile.membershipTiers.map((tier) => (
                   <Badge
                     key={tier}
-                    variant={
-                      tier === "academy"
-                        ? "success"
-                        : tier === "club"
-                          ? "info"
-                          : "default"
-                    }
+                    variant={tier === "academy" ? "success" : tier === "club" ? "info" : "default"}
                   >
                     {membershipTierLabels[tier] ?? formatToken(tier)}
                   </Badge>
@@ -581,8 +563,8 @@ function ProfileContent() {
                     Community WhatsApp Access
                   </div>
                   <p className="text-sm text-cyan-900/80">
-                    Thanks for activating your membership. Join the members-only
-                    WhatsApp group to stay updated.
+                    Thanks for activating your membership. Join the members-only WhatsApp group to
+                    stay updated.
                   </p>
                   <a
                     href={WHATSAPP_GROUP_URL}
@@ -607,9 +589,7 @@ function ProfileContent() {
           </Card>
 
           <Card className="space-y-4">
-            <h2 className="text-lg font-semibold text-slate-900">
-              Upcoming Sessions
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-900">Upcoming Sessions</h2>
             <UpcomingSessions />
           </Card>
         </div>
@@ -618,37 +598,23 @@ function ProfileContent() {
         <div className="space-y-6 lg:col-span-2">
           <Card className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-slate-900">
-                Contact & Location
-              </h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setEditing((prev) => !prev)}
-              >
+              <h2 className="text-lg font-semibold text-slate-900">Contact & Location</h2>
+              <Button variant="ghost" size="sm" onClick={() => setEditing((prev) => !prev)}>
                 {editing ? "Cancel" : "Edit"}
               </Button>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <Detail label="Email" value={profile.email} />
               <Detail label="Phone" value={profile.phone} />
-              <Detail
-                label="Location"
-                value={`${profile.city}, ${profile.country}`}
-              />
+              <Detail label="Location" value={`${profile.city}, ${profile.country}`} />
               <Detail label="Time zone" value={profile.timeZone} />
               <Detail label="Occupation" value={profile.occupation || "--"} />
-              <Detail
-                label="Area in Lagos"
-                value={profile.areaInLagos || "--"}
-              />
+              <Detail label="Area in Lagos" value={profile.areaInLagos || "--"} />
             </div>
           </Card>
 
           <Card className="space-y-4">
-            <h2 className="text-lg font-semibold text-slate-900">
-              Swim profile
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-900">Swim profile</h2>
             {editing ? (
               <ProfileEditForm
                 profile={profile}
@@ -667,23 +633,14 @@ function ProfileContent() {
                   />
                   <Detail
                     label="Deep-water comfort"
-                    value={
-                      deepWaterLabels[profile.deepWaterComfort] ??
-                      profile.deepWaterComfort
-                    }
+                    value={deepWaterLabels[profile.deepWaterComfort] ?? profile.deepWaterComfort}
                   />
-                  <Detail
-                    label="Goals"
-                    value={profile.goalsNarrative}
-                    fullSpan
-                  />
+                  <Detail label="Goals" value={profile.goalsNarrative} fullSpan />
                 </div>
                 <Detail
                   label="Interests"
                   value={
-                    profile.interests.length
-                      ? profile.interests.map(formatToken).join(", ")
-                      : "--"
+                    profile.interests.length ? profile.interests.map(formatToken).join(", ") : "--"
                   }
                   fullSpan
                 />
@@ -695,9 +652,7 @@ function ProfileContent() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-slate-600">
-                      No strokes shared yet
-                    </p>
+                    <p className="text-sm text-slate-600">No strokes shared yet</p>
                   )}
                 </Detail>
               </>
@@ -709,9 +664,7 @@ function ProfileContent() {
               {(profile.membershipTiers.includes("club") ||
                 profile.membershipTiers.includes("academy")) && (
                 <Card className="space-y-4">
-                  <h2 className="text-lg font-semibold text-slate-900">
-                    Logistics & availability
-                  </h2>
+                  <h2 className="text-lg font-semibold text-slate-900">Logistics & availability</h2>
                   <div className="grid gap-4 md:grid-cols-2">
                     <Detail label="Weekly availability" fullSpan>
                       {profile.availabilitySlots.length
@@ -720,17 +673,13 @@ function ProfileContent() {
                     </Detail>
                     <Detail label="Time of day">
                       {profile.timeOfDayAvailability.length
-                        ? profile.timeOfDayAvailability
-                            .map(formatToken)
-                            .join(", ")
+                        ? profile.timeOfDayAvailability.map(formatToken).join(", ")
                         : "--"}
                     </Detail>
                     <Detail label="Preferred locations" fullSpan>
                       {profile.locationPreference.length ? (
                         <span>
-                          {profile.locationPreference
-                            .map(formatToken)
-                            .join(", ")}
+                          {profile.locationPreference.map(formatToken).join(", ")}
                           {profile.locationPreferenceOther
                             ? ` • ${profile.locationPreferenceOther}`
                             : ""}
@@ -749,34 +698,24 @@ function ProfileContent() {
                     <Detail label="Facility access">
                       {profile.facilityAccess.length
                         ? `${profile.facilityAccess.map(formatToken).join(", ")}${
-                            profile.facilityAccessOther
-                              ? ` • ${profile.facilityAccessOther}`
-                              : ""
+                            profile.facilityAccessOther ? ` • ${profile.facilityAccessOther}` : ""
                           }`
                         : profile.facilityAccessOther || "--"}
                     </Detail>
                     <Detail label="Equipment needs">
                       {profile.equipmentNeeds.length
                         ? `${profile.equipmentNeeds.map(formatToken).join(", ")}${
-                            profile.equipmentNeedsOther
-                              ? ` • ${profile.equipmentNeedsOther}`
-                              : ""
+                            profile.equipmentNeedsOther ? ` • ${profile.equipmentNeedsOther}` : ""
                           }`
                         : profile.equipmentNeedsOther || "--"}
                     </Detail>
-                    <Detail
-                      label="Travel notes"
-                      value={profile.travelNotes || "--"}
-                      fullSpan
-                    />
+                    <Detail label="Travel notes" value={profile.travelNotes || "--"} fullSpan />
                   </div>
                 </Card>
               )}
 
               <Card className="space-y-4">
-                <h2 className="text-lg font-semibold text-slate-900">
-                  Community & preferences
-                </h2>
+                <h2 className="text-lg font-semibold text-slate-900">Community & preferences</h2>
                 <div className="grid gap-4 md:grid-cols-2">
                   <Detail
                     label="Discovery source"
@@ -828,14 +767,8 @@ function ProfileContent() {
                       "--"
                     )}
                   </Detail>
-                  <Detail
-                    label="Volunteer roles"
-                    value={profile.volunteerRolesDetail || "--"}
-                  />
-                  <Detail
-                    label="Language"
-                    value={profile.languagePreference || "english"}
-                  />
+                  <Detail label="Volunteer roles" value={profile.volunteerRolesDetail || "--"} />
+                  <Detail label="Language" value={profile.languagePreference || "english"} />
                   <Detail
                     label="Comms preference"
                     value={formatToken(profile.commsPreference || "whatsapp")}
@@ -853,15 +786,9 @@ function ProfileContent() {
                   />
                   <Detail
                     label="Photo consent"
-                    value={
-                      profile.consentPhoto === "yes" ? "Consented" : "No media"
-                    }
+                    value={profile.consentPhoto === "yes" ? "Consented" : "No media"}
                   />
-                  <Detail
-                    label="Payment notes"
-                    value={profile.paymentNotes || "--"}
-                    fullSpan
-                  />
+                  <Detail label="Payment notes" value={profile.paymentNotes || "--"} fullSpan />
                   {profile.membershipTiers.includes("academy") && (
                     <>
                       {profile.academyFocusAreas.length ? (
@@ -874,11 +801,7 @@ function ProfileContent() {
                         </Detail>
                       ) : null}
                       {profile.academyFocus ? (
-                        <Detail
-                          label="Academy notes"
-                          value={profile.academyFocus}
-                          fullSpan
-                        />
+                        <Detail label="Academy notes" value={profile.academyFocus} fullSpan />
                       ) : null}
                     </>
                   )}
@@ -890,8 +813,7 @@ function ProfileContent() {
                 <Alert variant="info" title="Emergency & safety">
                   <p>
                     Emergency contact: {profile.emergencyContactName} (
-                    {profile.emergencyContactRelationship}) –{" "}
-                    {profile.emergencyContactPhone}
+                    {profile.emergencyContactRelationship}) – {profile.emergencyContactPhone}
                   </p>
                   <p>Region: {profile.emergencyContactRegion}</p>
                   <p>Medical info: {profile.medicalInfo || "--"}</p>
@@ -913,6 +835,7 @@ type ProfileEditFormProps = {
 };
 
 type FormState = {
+  phone: string;
   city: string;
   country: string;
   timeZone: string;
@@ -959,12 +882,9 @@ type FormState = {
   paymentNotes: string;
 };
 
-function ProfileEditForm({
-  profile,
-  onSuccess,
-  onCancel,
-}: ProfileEditFormProps) {
+function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps) {
   const [formState, setFormState] = useState<FormState>({
+    phone: profile.phone,
     city: profile.city,
     country: profile.country,
     timeZone: profile.timeZone,
@@ -1013,9 +933,17 @@ function ProfileEditForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const allCountries = Country.getAllCountries();
+  const phoneCountryCode = useMemo<PhoneCountry>(() => {
+    const c = formState.country;
+    if (!c) return "NG";
+    const match =
+      allCountries.find((co) => co.name === c) || allCountries.find((co) => co.isoCode === c);
+    return (match?.isoCode as PhoneCountry) || "NG";
+  }, [formState.country]);
+
   const isClub =
-    profile.membershipTiers.includes("club") ||
-    profile.membershipTiers.includes("academy");
+    profile.membershipTiers.includes("club") || profile.membershipTiers.includes("academy");
   const isAcademy = profile.membershipTiers.includes("academy");
 
   async function handleSave() {
@@ -1024,14 +952,14 @@ function ProfileEditForm({
 
     const updatedProfile: Profile = {
       ...profile,
+      phone: formState.phone,
       city: formState.city,
       country: formState.country,
       timeZone: formState.timeZone,
       occupation: formState.occupation,
       areaInLagos: formState.areaInLagos,
       profilePhotoUrl: formState.profilePhotoUrl,
-      profilePhotoMediaId:
-        formState.profilePhotoMediaId || profile.profilePhotoMediaId || "",
+      profilePhotoMediaId: formState.profilePhotoMediaId || profile.profilePhotoMediaId || "",
       swimLevel: formState.swimLevel,
       deepWaterComfort: formState.deepWaterComfort,
       strokes: formState.strokes,
@@ -1076,56 +1004,58 @@ function ProfileEditForm({
         "/api/v1/members/me",
         {
           profile_photo_media_id: formState.profilePhotoMediaId || null,
-          city: formState.city,
-          country: formState.country,
-          time_zone: formState.timeZone,
-          occupation: formState.occupation,
-          area_in_lagos: formState.areaInLagos,
-          swim_level: formState.swimLevel,
-          deep_water_comfort: formState.deepWaterComfort,
-          strokes: updatedProfile.strokes,
-          interests: updatedProfile.interests,
-          goals: formState.goalsNarrative,
-
-          availability_slots: updatedProfile.availabilitySlots,
-          time_of_day_availability: updatedProfile.timeOfDayAvailability,
-          location_preference: updatedProfile.locationPreference,
-          location_preference_other: formState.locationPreferenceOther,
-          travel_flexibility: formState.travelFlexibility,
-          facility_access: updatedProfile.facilityAccess,
-          facility_access_other: formState.facilityAccessOther,
-          equipment_needs: updatedProfile.equipmentNeeds,
-          equipment_needs_other: formState.equipmentNeedsOther,
-          travel_notes: formState.travelNotes,
-          emergency_contact_name: formState.emergencyContactName,
-          emergency_contact_relationship:
-            formState.emergencyContactRelationship,
-          emergency_contact_phone: formState.emergencyContactPhone,
-          emergency_contact_region: formState.emergencyContactRegion,
-          medical_info: formState.medicalInfo,
-          safety_notes: formState.safetyNotes,
-          volunteer_interest: updatedProfile.volunteerInterest,
-          volunteer_roles_detail: formState.volunteerRolesDetail,
-          discovery_source: formState.discoverySource,
-          social_instagram: formState.socialInstagram,
-          social_linkedin: formState.socialLinkedIn,
-          social_other: formState.socialOther,
-          language_preference: formState.languagePreference,
-          comms_preference: formState.commsPreference,
-          payment_readiness: formState.paymentReadiness,
-          currency_preference: formState.currencyPreference,
-          consent_photo: formState.consentPhoto,
-          membership_tiers: updatedProfile.membershipTiers,
-          academy_focus_areas: updatedProfile.academyFocusAreas,
-          academy_focus: formState.academyFocus,
-          payment_notes: formState.paymentNotes,
+          profile: {
+            phone: formState.phone || undefined,
+            city: formState.city || undefined,
+            country: formState.country || undefined,
+            time_zone: formState.timeZone || undefined,
+            occupation: formState.occupation || undefined,
+            area_in_lagos: formState.areaInLagos || undefined,
+            swim_level: formState.swimLevel || undefined,
+            deep_water_comfort: formState.deepWaterComfort || undefined,
+            strokes: updatedProfile.strokes,
+            interests: updatedProfile.interests,
+            personal_goals: formState.goalsNarrative || undefined,
+            social_instagram: formState.socialInstagram || undefined,
+            social_linkedin: formState.socialLinkedIn || undefined,
+            social_other: formState.socialOther || undefined,
+          },
+          emergency_contact: {
+            name: formState.emergencyContactName || undefined,
+            contact_relationship: formState.emergencyContactRelationship || undefined,
+            phone: formState.emergencyContactPhone || undefined,
+            region: formState.emergencyContactRegion || undefined,
+            medical_info: formState.medicalInfo || undefined,
+            safety_notes: formState.safetyNotes || undefined,
+          },
+          availability: {
+            available_days: updatedProfile.availabilitySlots,
+            preferred_times: updatedProfile.timeOfDayAvailability,
+            preferred_locations: updatedProfile.locationPreference,
+            travel_flexibility: formState.travelFlexibility || undefined,
+            accessible_facilities: updatedProfile.facilityAccess,
+            equipment_needed: updatedProfile.equipmentNeeds,
+          },
+          membership: {
+            academy_goals: formState.academyFocus || undefined,
+            academy_focus_areas: updatedProfile.academyFocusAreas,
+          },
+          preferences: {
+            volunteer_interest: updatedProfile.volunteerInterest,
+            volunteer_roles_detail: formState.volunteerRolesDetail || undefined,
+            discovery_source: formState.discoverySource || undefined,
+            language_preference: formState.languagePreference || undefined,
+            comms_preference: formState.commsPreference || undefined,
+            payment_readiness: formState.paymentReadiness || undefined,
+            currency_preference: formState.currencyPreference || undefined,
+            consent_photo: formState.consentPhoto || undefined,
+          },
         },
-        { auth: true },
+        { auth: true }
       );
       onSuccess(updatedProfile);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unable to save profile.";
+      const message = error instanceof Error ? error.message : "Unable to save profile.";
       setError(message);
     } finally {
       setSaving(false);
@@ -1160,40 +1090,41 @@ function ProfileEditForm({
         <div className="md:col-span-2 space-y-4">
           <h3 className="font-medium text-slate-900">Contact & Location</h3>
           <div className="grid gap-4 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Phone Number</label>
+              <PhoneInput
+                key={phoneCountryCode}
+                placeholder="Enter phone number"
+                value={formState.phone}
+                onChange={(value) => setFormState({ ...formState, phone: value || "" })}
+                defaultCountry={phoneCountryCode}
+                className="flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2"
+              />
+            </div>
             <Input
               label="City"
               value={formState.city}
-              onChange={(e) =>
-                setFormState({ ...formState, city: e.target.value })
-              }
+              onChange={(e) => setFormState({ ...formState, city: e.target.value })}
             />
             <Input
               label="Country"
               value={formState.country}
-              onChange={(e) =>
-                setFormState({ ...formState, country: e.target.value })
-              }
+              onChange={(e) => setFormState({ ...formState, country: e.target.value })}
             />
             <TimezoneCombobox
               label="Time zone"
               value={formState.timeZone}
-              onChange={(value) =>
-                setFormState({ ...formState, timeZone: value })
-              }
+              onChange={(value) => setFormState({ ...formState, timeZone: value })}
             />
             <Input
               label="Occupation"
               value={formState.occupation}
-              onChange={(e) =>
-                setFormState({ ...formState, occupation: e.target.value })
-              }
+              onChange={(e) => setFormState({ ...formState, occupation: e.target.value })}
             />
             <Input
               label="Area in Lagos"
               value={formState.areaInLagos}
-              onChange={(e) =>
-                setFormState({ ...formState, areaInLagos: e.target.value })
-              }
+              onChange={(e) => setFormState({ ...formState, areaInLagos: e.target.value })}
             />
           </div>
         </div>
@@ -1201,9 +1132,7 @@ function ProfileEditForm({
           <Select
             label="Swimming level"
             value={formState.swimLevel}
-            onChange={(e) =>
-              setFormState({ ...formState, swimLevel: e.target.value })
-            }
+            onChange={(e) => setFormState({ ...formState, swimLevel: e.target.value })}
           >
             <option value="">Select level</option>
             {Object.entries(levelLabels).map(([value, label]) => (
@@ -1217,9 +1146,7 @@ function ProfileEditForm({
           <Select
             label="Deep-water comfort"
             value={formState.deepWaterComfort}
-            onChange={(e) =>
-              setFormState({ ...formState, deepWaterComfort: e.target.value })
-            }
+            onChange={(e) => setFormState({ ...formState, deepWaterComfort: e.target.value })}
           >
             <option value="">Select comfort level</option>
             <option value="Comfortable">Comfortable</option>
@@ -1256,9 +1183,7 @@ function ProfileEditForm({
           <Textarea
             label="Narrative goals"
             value={formState.goalsNarrative}
-            onChange={(e) =>
-              setFormState({ ...formState, goalsNarrative: e.target.value })
-            }
+            onChange={(e) => setFormState({ ...formState, goalsNarrative: e.target.value })}
           />
         </div>
 
@@ -1283,9 +1208,7 @@ function ProfileEditForm({
                 options={timeOfDayOptions}
                 selected={formState.timeOfDayAvailability}
                 onToggle={(value) => {
-                  const newTimes = formState.timeOfDayAvailability.includes(
-                    value,
-                  )
+                  const newTimes = formState.timeOfDayAvailability.includes(value)
                     ? formState.timeOfDayAvailability.filter((t) => t !== value)
                     : [...formState.timeOfDayAvailability, value];
                   setFormState({
@@ -1325,9 +1248,7 @@ function ProfileEditForm({
                 label="Travel readiness"
                 options={travelFlexibilityOptions}
                 value={formState.travelFlexibility}
-                onChange={(value) =>
-                  setFormState({ ...formState, travelFlexibility: value })
-                }
+                onChange={(value) => setFormState({ ...formState, travelFlexibility: value })}
               />
             </div>
             <div className="md:col-span-2">
@@ -1384,9 +1305,7 @@ function ProfileEditForm({
               <Textarea
                 label="Travel notes"
                 value={formState.travelNotes}
-                onChange={(e) =>
-                  setFormState({ ...formState, travelNotes: e.target.value })
-                }
+                onChange={(e) => setFormState({ ...formState, travelNotes: e.target.value })}
               />
             </div>
             <div className="md:col-span-2">
@@ -1441,18 +1360,14 @@ function ProfileEditForm({
               <Textarea
                 label="Medical info"
                 value={formState.medicalInfo}
-                onChange={(e) =>
-                  setFormState({ ...formState, medicalInfo: e.target.value })
-                }
+                onChange={(e) => setFormState({ ...formState, medicalInfo: e.target.value })}
               />
             </div>
             <div className="md:col-span-2">
               <Textarea
                 label="Safety notes"
                 value={formState.safetyNotes}
-                onChange={(e) =>
-                  setFormState({ ...formState, safetyNotes: e.target.value })
-                }
+                onChange={(e) => setFormState({ ...formState, safetyNotes: e.target.value })}
               />
             </div>
           </>
@@ -1487,9 +1402,7 @@ function ProfileEditForm({
             <Select
               label="Discovery source"
               value={formState.discoverySource || "other"}
-              onChange={(e) =>
-                setFormState({ ...formState, discoverySource: e.target.value })
-              }
+              onChange={(e) => setFormState({ ...formState, discoverySource: e.target.value })}
             >
               <option value="">Select an option</option>
               {discoverySourceOptions.map((option) => (
@@ -1503,27 +1416,21 @@ function ProfileEditForm({
             <Input
               label="Instagram handle"
               value={formState.socialInstagram}
-              onChange={(e) =>
-                setFormState({ ...formState, socialInstagram: e.target.value })
-              }
+              onChange={(e) => setFormState({ ...formState, socialInstagram: e.target.value })}
             />
           </div>
           <div className="md:col-span-2">
             <Input
               label="LinkedIn / professional link"
               value={formState.socialLinkedIn}
-              onChange={(e) =>
-                setFormState({ ...formState, socialLinkedIn: e.target.value })
-              }
+              onChange={(e) => setFormState({ ...formState, socialLinkedIn: e.target.value })}
             />
           </div>
           <div className="md:col-span-2">
             <Input
               label="Other social link"
               value={formState.socialOther}
-              onChange={(e) =>
-                setFormState({ ...formState, socialOther: e.target.value })
-              }
+              onChange={(e) => setFormState({ ...formState, socialOther: e.target.value })}
             />
           </div>
           <div className="md:col-span-2">
@@ -1548,9 +1455,7 @@ function ProfileEditForm({
             <Select
               label="Comms preference"
               value={formState.commsPreference}
-              onChange={(e) =>
-                setFormState({ ...formState, commsPreference: e.target.value })
-              }
+              onChange={(e) => setFormState({ ...formState, commsPreference: e.target.value })}
             >
               <option value="whatsapp">WhatsApp</option>
               <option value="email">Email</option>
@@ -1562,13 +1467,10 @@ function ProfileEditForm({
               label="Payment readiness"
               options={paymentReadinessOptions}
               value={formState.paymentReadiness}
-              onChange={(value) =>
-                setFormState({ ...formState, paymentReadiness: value })
-              }
+              onChange={(value) => setFormState({ ...formState, paymentReadiness: value })}
             />
             <p className="mt-1 text-xs text-slate-500">
-              Helps admins plan billing (ready now, need notice, or sponsor
-              support).
+              Helps admins plan billing (ready now, need notice, or sponsor support).
             </p>
           </div>
           <div className="md:col-span-2">
@@ -1593,9 +1495,7 @@ function ProfileEditForm({
             <Select
               label="Photo consent"
               value={formState.consentPhoto}
-              onChange={(e) =>
-                setFormState({ ...formState, consentPhoto: e.target.value })
-              }
+              onChange={(e) => setFormState({ ...formState, consentPhoto: e.target.value })}
             >
               <option value="yes">Yes</option>
               <option value="no">No</option>
@@ -1605,9 +1505,7 @@ function ProfileEditForm({
             <Textarea
               label="Payment notes"
               value={formState.paymentNotes}
-              onChange={(e) =>
-                setFormState({ ...formState, paymentNotes: e.target.value })
-              }
+              onChange={(e) => setFormState({ ...formState, paymentNotes: e.target.value })}
               hint="Add billing preferences (e.g., needs invoice/receipt, company reimburses)."
             />
           </div>
@@ -1632,21 +1530,14 @@ function ProfileEditForm({
               <Textarea
                 label="Academy focus"
                 value={formState.academyFocus}
-                onChange={(e) =>
-                  setFormState({ ...formState, academyFocus: e.target.value })
-                }
+                onChange={(e) => setFormState({ ...formState, academyFocus: e.target.value })}
               />
             </div>
           </>
         )}
       </div>
       <div className="flex flex-wrap gap-3">
-        <Button
-          variant="secondary"
-          type="button"
-          onClick={onCancel}
-          disabled={saving}
-        >
+        <Button variant="secondary" type="button" onClick={onCancel} disabled={saving}>
           Cancel
         </Button>
         <Button type="button" onClick={handleSave} disabled={saving}>

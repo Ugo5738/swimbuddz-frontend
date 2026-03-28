@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { LoadingCard } from "@/components/ui/LoadingCard";
+import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { apiGet, apiPost } from "@/lib/api";
 import {
@@ -18,15 +19,7 @@ import {
   type Milestone,
 } from "@/lib/coach";
 import { formatDate } from "@/lib/format";
-import {
-  Calendar,
-  CheckCircle,
-  Mail,
-  MapPin,
-  Send,
-  Users,
-  XCircle,
-} from "lucide-react";
+import { Calendar, CheckCircle, Clock, Mail, MapPin, Send, Users, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -51,8 +44,7 @@ export default function CoachCohortDetailPage() {
   const [cohort, setCohort] = useState<Cohort | null>(null);
   const [students, setStudents] = useState<Enrollment[]>([]);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
-  const [attendanceSummary, setAttendanceSummary] =
-    useState<AttendanceSummary | null>(null);
+  const [attendanceSummary, setAttendanceSummary] = useState<AttendanceSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,6 +55,14 @@ export default function CoachCohortDetailPage() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [messageSuccess, setMessageSuccess] = useState<string | null>(null);
 
+  // Extension request state
+  const [showExtensionModal, setShowExtensionModal] = useState(false);
+  const [extensionWeeks, setExtensionWeeks] = useState("1");
+  const [extensionReason, setExtensionReason] = useState("");
+  const [submittingExtension, setSubmittingExtension] = useState(false);
+  const [extensionRequests, setExtensionRequests] = useState<any[]>([]);
+  const [extensionSuccess, setExtensionSuccess] = useState<string | null>(null);
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -70,21 +70,24 @@ export default function CoachCohortDetailPage() {
         setCohort(cohortData);
 
         // Load students, milestones, and attendance in parallel
-        const [studentsData, milestonesData, attendanceData] =
-          await Promise.all([
-            getCohortStudents(cohortId).catch(() => []),
-            cohortData.program_id
-              ? getProgramMilestones(cohortData.program_id).catch(() => [])
-              : Promise.resolve([]),
-            apiGet<AttendanceSummary>(
-              `/api/v1/attendance/cohorts/${cohortId}/attendance/summary`,
-              { auth: true },
-            ).catch(() => null),
-          ]);
+        const [studentsData, milestonesData, attendanceData] = await Promise.all([
+          getCohortStudents(cohortId).catch(() => []),
+          cohortData.program_id
+            ? getProgramMilestones(cohortData.program_id).catch(() => [])
+            : Promise.resolve([]),
+          apiGet<AttendanceSummary>(`/api/v1/attendance/cohorts/${cohortId}/attendance/summary`, {
+            auth: true,
+          }).catch(() => null),
+        ]);
 
         setStudents(studentsData);
         setMilestones(milestonesData);
         setAttendanceSummary(attendanceData);
+
+        // Load extension requests for this cohort
+        apiGet<any[]>(`/api/v1/academy/extension-requests/cohorts/${cohortId}`, { auth: true })
+          .then(setExtensionRequests)
+          .catch(() => {});
       } catch (err) {
         console.error("Failed to load cohort", err);
         setError("Failed to load cohort details. Please try again.");
@@ -106,7 +109,7 @@ export default function CoachCohortDetailPage() {
       const result = await apiPost<{ message: string }>(
         `/api/v1/messages/cohorts/${cohortId}`,
         { subject: messageSubject, body: messageBody },
-        { auth: true },
+        { auth: true }
       );
 
       setMessageSuccess(result.message || "Message sent successfully!");
@@ -123,6 +126,37 @@ export default function CoachCohortDetailPage() {
       setSendingMessage(false);
     }
   };
+
+  const handleRequestExtension = async () => {
+    if (!extensionReason.trim() || extensionReason.length < 10) return;
+    setSubmittingExtension(true);
+    setExtensionSuccess(null);
+    try {
+      const result = await apiPost<any>(
+        `/api/v1/academy/extension-requests/cohorts/${cohortId}`,
+        {
+          weeks_requested: parseInt(extensionWeeks),
+          reason: extensionReason,
+        },
+        { auth: true }
+      );
+      setExtensionRequests((prev) => [result, ...prev]);
+      setExtensionSuccess("Extension request submitted successfully!");
+      setExtensionReason("");
+      setExtensionWeeks("1");
+      setTimeout(() => {
+        setShowExtensionModal(false);
+        setExtensionSuccess(null);
+      }, 2000);
+    } catch (err: any) {
+      const msg = err?.message || "Failed to submit extension request.";
+      setExtensionSuccess(msg);
+    } finally {
+      setSubmittingExtension(false);
+    }
+  };
+
+  const hasPendingExtension = extensionRequests.some((r) => r.status === "pending");
 
   if (loading) {
     return <LoadingCard text="Loading cohort details..." />;
@@ -146,17 +180,14 @@ export default function CoachCohortDetailPage() {
           : "warning";
 
   const enrolledStudents = students.filter(
-    (s) => s.status === "enrolled" || s.status === "completed",
+    (s) => s.status === "enrolled" || s.status === "completed"
   );
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <header>
-        <Link
-          href="/coach/cohorts"
-          className="text-sm text-slate-500 hover:text-slate-700"
-        >
+        <Link href="/coach/cohorts" className="text-sm text-slate-500 hover:text-slate-700">
           ← Back to cohorts
         </Link>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mt-2">
@@ -165,20 +196,13 @@ export default function CoachCohortDetailPage() {
               <h1 className="text-3xl font-bold text-slate-900">
                 {cohort.name || "Unnamed Cohort"}
               </h1>
-              <Badge variant={statusVariant}>
-                {cohort.status.toUpperCase()}
-              </Badge>
+              <Badge variant={statusVariant}>{cohort.status.toUpperCase()}</Badge>
             </div>
             {cohort.program && (
-              <p className="text-emerald-700 font-medium mt-1">
-                {cohort.program.name}
-              </p>
+              <p className="text-emerald-700 font-medium mt-1">{cohort.program.name}</p>
             )}
           </div>
-          <Button
-            onClick={() => setShowMessageModal(true)}
-            className="flex items-center gap-2"
-          >
+          <Button onClick={() => setShowMessageModal(true)} className="flex items-center gap-2">
             <Mail className="h-4 w-4" />
             Message Students
           </Button>
@@ -189,9 +213,7 @@ export default function CoachCohortDetailPage() {
       {showMessageModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-lg p-6">
-            <h2 className="text-xl font-semibold text-slate-900 mb-4">
-              Message All Students
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900 mb-4">Message All Students</h2>
             <div className="space-y-4">
               <Input
                 label="Subject"
@@ -200,9 +222,7 @@ export default function CoachCohortDetailPage() {
                 placeholder="e.g., Important: Session time change"
               />
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Message
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Message</label>
                 <Textarea
                   value={messageBody}
                   onChange={(e) => setMessageBody(e.target.value)}
@@ -212,11 +232,7 @@ export default function CoachCohortDetailPage() {
               </div>
 
               {messageSuccess && (
-                <Alert
-                  variant={
-                    messageSuccess.includes("Failed") ? "error" : "success"
-                  }
-                >
+                <Alert variant={messageSuccess.includes("Failed") ? "error" : "success"}>
                   {messageSuccess}
                 </Alert>
               )}
@@ -234,11 +250,7 @@ export default function CoachCohortDetailPage() {
                 </Button>
                 <Button
                   onClick={handleSendMessage}
-                  disabled={
-                    sendingMessage ||
-                    !messageSubject.trim() ||
-                    !messageBody.trim()
-                  }
+                  disabled={sendingMessage || !messageSubject.trim() || !messageBody.trim()}
                   className="flex items-center gap-2"
                 >
                   <Send className="h-4 w-4" />
@@ -270,9 +282,7 @@ export default function CoachCohortDetailPage() {
           </div>
           <div>
             <p className="text-sm text-slate-500">Location</p>
-            <p className="font-medium text-slate-900">
-              {cohort.location_name || "Not specified"}
-            </p>
+            <p className="font-medium text-slate-900">{cohort.location_name || "Not specified"}</p>
           </div>
         </Card>
 
@@ -289,6 +299,119 @@ export default function CoachCohortDetailPage() {
         </Card>
       </div>
 
+      {/* Extension Request Section */}
+      {(cohort.status === "active" || cohort.status === "open") && (
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-purple-100">
+                <Clock className="h-5 w-5 text-purple-700" />
+              </div>
+              <div>
+                <p className="font-medium text-slate-900">Cohort Extension</p>
+                <p className="text-sm text-slate-500">
+                  {hasPendingExtension
+                    ? "Extension request pending admin approval"
+                    : "Request up to 4 extra weeks if needed"}
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowExtensionModal(true)}
+              disabled={hasPendingExtension}
+            >
+              {hasPendingExtension ? "Pending..." : "Request Extension"}
+            </Button>
+          </div>
+
+          {extensionRequests.length > 0 && (
+            <div className="mt-3 border-t border-slate-100 pt-3 space-y-2">
+              {extensionRequests.map((req) => (
+                <div key={req.id} className="flex items-center justify-between text-sm">
+                  <span className="text-slate-600">
+                    +{req.weeks_requested} week{req.weeks_requested > 1 ? "s" : ""} requested
+                  </span>
+                  <Badge
+                    variant={
+                      req.status === "approved"
+                        ? "success"
+                        : req.status === "rejected"
+                          ? "danger"
+                          : "warning"
+                    }
+                  >
+                    {req.status.toUpperCase()}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* Extension Request Modal */}
+      {showExtensionModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-lg p-6">
+            <h2 className="text-xl font-semibold text-slate-900 mb-4">Request Cohort Extension</h2>
+            {extensionSuccess && (
+              <Alert
+                variant={extensionSuccess.includes("success") ? "success" : "error"}
+                className="mb-4"
+              >
+                {extensionSuccess}
+              </Alert>
+            )}
+            <div className="space-y-4">
+              <Select
+                label="Extension Duration"
+                name="weeks"
+                value={extensionWeeks}
+                onChange={(e) => setExtensionWeeks(e.target.value)}
+              >
+                <option value="1">1 week</option>
+                <option value="2">2 weeks</option>
+                <option value="3">3 weeks</option>
+                <option value="4">4 weeks (maximum)</option>
+              </Select>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Reason for Extension
+                </label>
+                <Textarea
+                  value={extensionReason}
+                  onChange={(e) => setExtensionReason(e.target.value)}
+                  placeholder="Explain why this cohort needs an extension (e.g., weather disruptions, student catch-up needed, facility closure)..."
+                  rows={4}
+                />
+                <p className="text-xs text-slate-500 mt-1">
+                  Minimum 10 characters. This will be reviewed by an admin.
+                </p>
+              </div>
+              <div className="flex justify-end gap-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setShowExtensionModal(false);
+                    setExtensionSuccess(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleRequestExtension}
+                  disabled={submittingExtension || extensionReason.trim().length < 10}
+                >
+                  {submittingExtension ? "Submitting..." : "Submit Request"}
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
       {/* Students List */}
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
@@ -304,9 +427,7 @@ export default function CoachCohortDetailPage() {
         {enrolledStudents.length === 0 ? (
           <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center">
             <Users className="h-12 w-12 mx-auto text-slate-400 mb-3" />
-            <p className="text-slate-600 font-medium">
-              No students enrolled yet
-            </p>
+            <p className="text-slate-600 font-medium">No students enrolled yet</p>
             <p className="text-sm text-slate-500 mt-1">
               Students will appear here once they enroll in this cohort.
             </p>
@@ -319,9 +440,7 @@ export default function CoachCohortDetailPage() {
                   <th className="text-left py-3 px-4 text-sm font-medium text-slate-500">
                     Student
                   </th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-500">
-                    Status
-                  </th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-500">Status</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-slate-500">
                     Progress
                   </th>
@@ -352,9 +471,7 @@ export default function CoachCohortDetailPage() {
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-xl font-semibold text-slate-900">
-                Attendance
-              </h2>
+              <h2 className="text-xl font-semibold text-slate-900">Attendance</h2>
               <p className="text-sm text-slate-600">
                 {attendanceSummary.total_sessions} session
                 {attendanceSummary.total_sessions !== 1 ? "s" : ""} held
@@ -372,12 +489,8 @@ export default function CoachCohortDetailPage() {
                   <th className="text-left py-3 px-4 text-sm font-medium text-slate-500">
                     Attended
                   </th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-500">
-                    Rate
-                  </th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-500">
-                    Status
-                  </th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-500">Rate</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-500">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -387,17 +500,10 @@ export default function CoachCohortDetailPage() {
                   const isGood = ratePercent >= 80;
 
                   return (
-                    <tr
-                      key={student.member_id}
-                      className="border-b border-slate-100"
-                    >
+                    <tr key={student.member_id} className="border-b border-slate-100">
                       <td className="py-3 px-4">
-                        <p className="font-medium text-slate-900">
-                          {student.member_name}
-                        </p>
-                        <p className="text-sm text-slate-500">
-                          {student.member_email}
-                        </p>
+                        <p className="font-medium text-slate-900">{student.member_name}</p>
+                        <p className="text-sm text-slate-500">{student.member_email}</p>
                       </td>
                       <td className="py-3 px-4 text-sm text-slate-600">
                         {student.sessions_attended} / {student.sessions_total}
@@ -407,18 +513,12 @@ export default function CoachCohortDetailPage() {
                           <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden max-w-[80px]">
                             <div
                               className={`h-full rounded-full ${
-                                isAtRisk
-                                  ? "bg-red-500"
-                                  : isGood
-                                    ? "bg-emerald-500"
-                                    : "bg-amber-500"
+                                isAtRisk ? "bg-red-500" : isGood ? "bg-emerald-500" : "bg-amber-500"
                               }`}
                               style={{ width: `${ratePercent}%` }}
                             />
                           </div>
-                          <span className="text-sm font-medium">
-                            {ratePercent}%
-                          </span>
+                          <span className="text-sm font-medium">{ratePercent}%</span>
                         </div>
                       </td>
                       <td className="py-3 px-4">
@@ -433,9 +533,7 @@ export default function CoachCohortDetailPage() {
                             Good
                           </span>
                         ) : (
-                          <span className="text-sm text-amber-600">
-                            Needs Attention
-                          </span>
+                          <span className="text-sm text-amber-600">Needs Attention</span>
                         )}
                       </td>
                     </tr>
@@ -450,24 +548,17 @@ export default function CoachCohortDetailPage() {
       {/* Program Milestones */}
       {milestones.length > 0 && (
         <Card className="p-6">
-          <h2 className="text-xl font-semibold text-slate-900 mb-4">
-            Program Milestones
-          </h2>
+          <h2 className="text-xl font-semibold text-slate-900 mb-4">Program Milestones</h2>
           <div className="space-y-3">
             {milestones.map((milestone, index) => (
-              <div
-                key={milestone.id}
-                className="flex items-start gap-3 p-3 rounded-lg bg-slate-50"
-              >
+              <div key={milestone.id} className="flex items-start gap-3 p-3 rounded-lg bg-slate-50">
                 <span className="flex items-center justify-center h-6 w-6 rounded-full bg-emerald-100 text-emerald-700 text-sm font-medium">
                   {index + 1}
                 </span>
                 <div>
                   <p className="font-medium text-slate-900">{milestone.name}</p>
                   {milestone.criteria && (
-                    <p className="text-sm text-slate-600 mt-1">
-                      {milestone.criteria}
-                    </p>
+                    <p className="text-sm text-slate-600 mt-1">{milestone.criteria}</p>
                   )}
                 </div>
               </div>
@@ -487,10 +578,7 @@ function StudentRow({
   totalMilestones: number;
 }) {
   const progress = enrollment.progress || [];
-  const progressPercent = calculateProgressPercentage(
-    progress,
-    totalMilestones,
-  );
+  const progressPercent = calculateProgressPercentage(progress, totalMilestones);
   const achievedCount = progress.filter((p) => p.status === "achieved").length;
 
   const statusVariant =
@@ -505,8 +593,7 @@ function StudentRow({
       <td className="py-3 px-4">
         <div>
           <p className="font-medium text-slate-900">
-            {enrollment.member_name ||
-              `Student ${enrollment.member_id.slice(0, 8)}`}
+            {enrollment.member_name || `Student ${enrollment.member_id.slice(0, 8)}`}
           </p>
           {enrollment.member_email && (
             <p className="text-sm text-slate-500">{enrollment.member_email}</p>
@@ -529,9 +616,7 @@ function StudentRow({
           </span>
         </div>
       </td>
-      <td className="py-3 px-4 text-sm text-slate-600">
-        {formatDate(enrollment.created_at)}
-      </td>
+      <td className="py-3 px-4 text-sm text-slate-600">{formatDate(enrollment.created_at)}</td>
       <td className="py-3 px-4 text-right">
         <Link href={`/coach/students/${enrollment.id}`}>
           <Button size="sm" variant="outline">

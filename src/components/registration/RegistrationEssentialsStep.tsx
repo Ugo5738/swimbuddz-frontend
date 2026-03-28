@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Country, State } from "country-state-city";
 import { Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import type { Country as PhoneCountry } from "react-phone-number-input";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 
@@ -35,12 +36,19 @@ export function RegistrationEssentialsStep({
 }: RegistrationEssentialsStepProps) {
   const [showPassword, setShowPassword] = useState(false);
 
+  // Derive phone input country code from the selected country
+  const phoneCountryCode = useMemo<PhoneCountry>(() => {
+    if (!formData.country) return "NG";
+    const match =
+      countries.find((c) => c.name === formData.country) ||
+      countries.find((c) => c.isoCode === formData.country);
+    return (match?.isoCode as PhoneCountry) || "NG";
+  }, [formData.country]);
+
   const selectedCountry =
     countries.find((c) => c.name === formData.country) ||
     countries.find((c) => c.isoCode === formData.country);
-  const states = selectedCountry
-    ? State.getStatesOfCountry(selectedCountry.isoCode) || []
-    : [];
+  const states = selectedCountry ? State.getStatesOfCountry(selectedCountry.isoCode) || [] : [];
   const selectedState =
     states.find((s) => s.name === formData.state) ||
     states.find((s) => s.isoCode === formData.state);
@@ -109,16 +117,10 @@ export function RegistrationEssentialsStep({
               onClick={() => setShowPassword((prev) => !prev)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
             >
-              {showPassword ? (
-                <EyeOff className="h-5 w-5" />
-              ) : (
-                <Eye className="h-5 w-5" />
-              )}
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
           </div>
-          <p className="text-xs text-slate-500">
-            Must be at least 8 characters
-          </p>
+          <p className="text-xs text-slate-500">Must be at least 8 characters</p>
         </div>
       ) : null}
 
@@ -127,10 +129,11 @@ export function RegistrationEssentialsStep({
           Phone Number <span className="text-red-500">*</span>
         </label>
         <PhoneInput
+          key={phoneCountryCode}
           placeholder="Enter phone number"
           value={formData.phone}
-          onChange={(value) => onUpdate("phone", value)}
-          defaultCountry="NG"
+          onChange={(value) => onUpdate("phone", value || "")}
+          defaultCountry={phoneCountryCode}
           className="flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
@@ -142,6 +145,7 @@ export function RegistrationEssentialsStep({
           value={formData.country}
           onChange={(e) => {
             onUpdate("country", e.target.value);
+            onUpdate("phone", "");
             onUpdate("state", "");
             onUpdate("city", "");
           }}
@@ -167,9 +171,7 @@ export function RegistrationEssentialsStep({
             required
             disabled={!selectedCountry}
           >
-            <option value="">
-              {selectedCountry ? "Select state" : "Select a country first"}
-            </option>
+            <option value="">{selectedCountry ? "Select state" : "Select a country first"}</option>
             {states.map((state) => (
               <option key={state.isoCode} value={state.name}>
                 {state.name}
@@ -184,11 +186,7 @@ export function RegistrationEssentialsStep({
             onChange={(e) => onUpdate("state", e.target.value)}
             required
             disabled={!selectedCountry}
-            placeholder={
-              selectedCountry
-                ? "Enter state or region"
-                : "Select a country first"
-            }
+            placeholder={selectedCountry ? "Enter state or region" : "Select a country first"}
           />
         )}
 

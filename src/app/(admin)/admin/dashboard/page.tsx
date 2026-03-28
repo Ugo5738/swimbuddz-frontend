@@ -7,6 +7,7 @@ import { API_BASE_URL } from "@/lib/config";
 import {
   AlertCircle,
   ArrowRight,
+  BarChart3,
   Calendar,
   CalendarDays,
   Clock,
@@ -81,10 +82,7 @@ export default function AdminDashboardPage() {
         };
 
         // Fetch Stats
-        const statsRes = await fetch(
-          `${API_BASE_URL}/api/v1/admin/dashboard-stats`,
-          { headers },
-        );
+        const statsRes = await fetch(`${API_BASE_URL}/api/v1/admin/dashboard-stats`, { headers });
         if (statsRes.ok) {
           const statsData = await statsRes.json();
           setStats(statsData);
@@ -101,9 +99,7 @@ export default function AdminDashboardPage() {
           const upcoming = sessionsData
             .filter((s: any) => new Date(s.starts_at) > now)
             .sort(
-              (a: any, b: any) =>
-                new Date(a.starts_at).getTime() -
-                new Date(b.starts_at).getTime(),
+              (a: any, b: any) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
             )
             .slice(0, 5);
           setSessions(upcoming);
@@ -112,7 +108,7 @@ export default function AdminDashboardPage() {
         // Fetch Announcements (for list)
         const announcementsRes = await fetch(
           `${API_BASE_URL}/api/v1/communications/announcements/`,
-          { headers },
+          { headers }
         );
         if (announcementsRes.ok) {
           const announcementsData = await announcementsRes.json();
@@ -120,10 +116,9 @@ export default function AdminDashboardPage() {
         }
 
         // Fetch Recent Enrollments
-        const enrollmentsRes = await fetch(
-          `${API_BASE_URL}/api/v1/academy/enrollments/`,
-          { headers },
-        );
+        const enrollmentsRes = await fetch(`${API_BASE_URL}/api/v1/academy/enrollments/`, {
+          headers,
+        });
         if (enrollmentsRes.ok) {
           const enrollmentsData = await enrollmentsRes.json();
           setRecentEnrollments(enrollmentsData.slice(0, 5));
@@ -165,9 +160,7 @@ export default function AdminDashboardPage() {
         <p className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-cyan-600">
           Admin Portal
         </p>
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900">
-          Dashboard
-        </h1>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900">Dashboard</h1>
         <p className="text-sm sm:text-base text-slate-600">
           Welcome back! Here's what's happening with SwimBuddz.
         </p>
@@ -179,9 +172,7 @@ export default function AdminDashboardPage() {
         <Card className="col-span-2 lg:col-span-1 overflow-hidden border-l-4 border-l-amber-500 transition-shadow hover:shadow-lg bg-amber-50/50">
           <div className="flex items-start justify-between">
             <div className="space-y-0.5 sm:space-y-1">
-              <p className="text-xs sm:text-sm font-medium text-amber-700">
-                Pending Approvals
-              </p>
+              <p className="text-xs sm:text-sm font-medium text-amber-700">Pending Approvals</p>
               <p className="text-2xl sm:text-3xl font-bold text-amber-900">
                 {stats?.pending_approvals || 0}
               </p>
@@ -198,18 +189,14 @@ export default function AdminDashboardPage() {
               Review now <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Link>
           ) : (
-            <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-amber-600">
-              All caught up!
-            </p>
+            <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-amber-600">All caught up!</p>
           )}
         </Card>
 
         <Card className="overflow-hidden border-l-4 border-l-cyan-500 transition-shadow hover:shadow-lg">
           <div className="flex items-start justify-between">
             <div className="space-y-0.5 sm:space-y-1">
-              <p className="text-xs sm:text-sm font-medium text-slate-600">
-                Total Members
-              </p>
+              <p className="text-xs sm:text-sm font-medium text-slate-600">Total Members</p>
               <p className="text-2xl sm:text-3xl font-bold text-slate-900">
                 {stats?.total_members || 0}
               </p>
@@ -229,9 +216,7 @@ export default function AdminDashboardPage() {
         <Card className="overflow-hidden border-l-4 border-l-green-500 transition-shadow hover:shadow-lg">
           <div className="flex items-start justify-between">
             <div className="space-y-0.5 sm:space-y-1">
-              <p className="text-xs sm:text-sm font-medium text-slate-600">
-                Approved
-              </p>
+              <p className="text-xs sm:text-sm font-medium text-slate-600">Approved</p>
               <p className="text-2xl sm:text-3xl font-bold text-slate-900">
                 {stats?.approved_members || 0}
               </p>
@@ -249,9 +234,7 @@ export default function AdminDashboardPage() {
         <Card className="overflow-hidden border-l-4 border-l-purple-500 transition-shadow hover:shadow-lg">
           <div className="flex items-start justify-between">
             <div className="space-y-0.5 sm:space-y-1">
-              <p className="text-xs sm:text-sm font-medium text-slate-600">
-                Sessions
-              </p>
+              <p className="text-xs sm:text-sm font-medium text-slate-600">Sessions</p>
               <p className="text-2xl sm:text-3xl font-bold text-slate-900">
                 {stats?.upcoming_sessions_count || 0}
               </p>
@@ -271,9 +254,7 @@ export default function AdminDashboardPage() {
         <Card className="overflow-hidden border-l-4 border-l-orange-500 transition-shadow hover:shadow-lg">
           <div className="flex items-start justify-between">
             <div className="space-y-0.5 sm:space-y-1">
-              <p className="text-xs sm:text-sm font-medium text-slate-600">
-                Announcements
-              </p>
+              <p className="text-xs sm:text-sm font-medium text-slate-600">Announcements</p>
               <p className="text-2xl sm:text-3xl font-bold text-slate-900">
                 {stats?.recent_announcements_count || 0}
               </p>
@@ -312,9 +293,7 @@ export default function AdminDashboardPage() {
           <div className="flex-1">
             {sessions.length === 0 ? (
               <div className="flex h-32 items-center justify-center rounded-lg bg-slate-50">
-                <p className="text-sm text-slate-500">
-                  No upcoming sessions scheduled
-                </p>
+                <p className="text-sm text-slate-500">No upcoming sessions scheduled</p>
               </div>
             ) : (
               <ul className="space-y-3">
@@ -335,22 +314,16 @@ export default function AdminDashboardPage() {
                     </div>
                     <div className="ml-3 text-right">
                       <p className="text-sm font-medium text-slate-900">
-                        {new Date(session.starts_at).toLocaleDateString(
-                          "en-US",
-                          {
-                            month: "short",
-                            day: "numeric",
-                          },
-                        )}
+                        {new Date(session.starts_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
                       </p>
                       <p className="text-xs text-slate-500">
-                        {new Date(session.starts_at).toLocaleTimeString(
-                          "en-US",
-                          {
-                            hour: "numeric",
-                            minute: "2-digit",
-                          },
-                        )}
+                        {new Date(session.starts_at).toLocaleTimeString("en-US", {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
                       </p>
                     </div>
                   </li>
@@ -379,9 +352,7 @@ export default function AdminDashboardPage() {
           <div className="flex-1">
             {announcements.length === 0 ? (
               <div className="flex h-32 items-center justify-center rounded-lg bg-slate-50">
-                <p className="text-sm text-slate-500">
-                  No announcements published
-                </p>
+                <p className="text-sm text-slate-500">No announcements published</p>
               </div>
             ) : (
               <ul className="space-y-3">
@@ -394,13 +365,10 @@ export default function AdminDashboardPage() {
                       {announcement.title}
                     </p>
                     <span className="ml-3 text-sm text-slate-500 whitespace-nowrap">
-                      {new Date(announcement.published_at).toLocaleDateString(
-                        "en-US",
-                        {
-                          month: "short",
-                          day: "numeric",
-                        },
-                      )}
+                      {new Date(announcement.published_at).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
                     </span>
                   </li>
                 ))}
@@ -428,19 +396,14 @@ export default function AdminDashboardPage() {
           <div className="flex-1">
             {recentEnrollments.length === 0 ? (
               <div className="flex h-24 sm:h-32 items-center justify-center rounded-lg bg-slate-50">
-                <p className="text-xs sm:text-sm text-slate-500">
-                  No recent enrollments
-                </p>
+                <p className="text-xs sm:text-sm text-slate-500">No recent enrollments</p>
               </div>
             ) : (
               <>
                 {/* Mobile Card View */}
                 <div className="divide-y divide-slate-100 sm:hidden">
                   {recentEnrollments.map((enrollment) => (
-                    <div
-                      key={enrollment.id}
-                      className="py-3 first:pt-0 last:pb-0"
-                    >
+                    <div key={enrollment.id} className="py-3 first:pt-0 last:pb-0">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
                           <p className="font-medium text-slate-900 text-sm truncate">
@@ -464,14 +427,11 @@ export default function AdminDashboardPage() {
                         </span>
                       </div>
                       <p className="text-[10px] text-slate-400 mt-1">
-                        {new Date(enrollment.created_at).toLocaleDateString(
-                          "en-US",
-                          {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          },
-                        )}
+                        {new Date(enrollment.created_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
                       </p>
                     </div>
                   ))}
@@ -491,10 +451,7 @@ export default function AdminDashboardPage() {
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {recentEnrollments.map((enrollment) => (
-                        <tr
-                          key={enrollment.id}
-                          className="text-sm hover:bg-slate-50"
-                        >
+                        <tr key={enrollment.id} className="text-sm hover:bg-slate-50">
                           <td className="py-3 font-medium text-slate-900">
                             {enrollment.member?.full_name || "Unknown"}
                           </td>
@@ -518,14 +475,11 @@ export default function AdminDashboardPage() {
                             </span>
                           </td>
                           <td className="py-3 text-slate-500">
-                            {new Date(enrollment.created_at).toLocaleDateString(
-                              "en-US",
-                              {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              },
-                            )}
+                            {new Date(enrollment.created_at).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
                           </td>
                         </tr>
                       ))}
@@ -536,6 +490,25 @@ export default function AdminDashboardPage() {
             )}
           </div>
         </Card>
+
+        {/* Quarterly Reports Card */}
+        <Link href="/admin/reports">
+          <Card className="p-6 border-cyan-200 bg-gradient-to-r from-cyan-50 to-blue-50 hover:shadow-lg transition-shadow cursor-pointer">
+            <div className="flex items-center gap-4">
+              <div className="rounded-xl bg-cyan-200 p-3">
+                <BarChart3 className="h-6 w-6 text-cyan-700" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-slate-900">Quarterly Reports</h3>
+                <p className="text-sm text-slate-600">
+                  View Q{Math.ceil((new Date().getMonth() + 1) / 3)} {new Date().getFullYear()}{" "}
+                  community performance, member stats, and export data.
+                </p>
+              </div>
+              <ArrowRight className="h-5 w-5 text-slate-400" />
+            </div>
+          </Card>
+        </Link>
       </div>
     </div>
   );

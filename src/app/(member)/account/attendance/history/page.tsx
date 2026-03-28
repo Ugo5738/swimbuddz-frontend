@@ -37,17 +37,44 @@ function formatDate(value: string) {
   });
 }
 
-const statusMap: Record<
-  string,
-  { label: string; variant: React.ComponentProps<typeof Badge>["variant"] }
-> = {
-  confirmed: { label: "Confirmed", variant: "success" },
-  checked_in: { label: "Attended", variant: "success" },
-  registered: { label: "Registered", variant: "info" },
-  pending: { label: "Pending", variant: "info" },
-  no_show: { label: "No-show", variant: "warning" },
-  cancelled: { label: "Cancelled", variant: "default" },
+type StatusDisplay = {
+  label: string;
+  variant: React.ComponentProps<typeof Badge>["variant"];
 };
+
+/**
+ * Resolve display label for an attendance status.
+ * `present` / `registered` / `confirmed` are time-aware:
+ *   - future session → "Booked"
+ *   - past session   → "Attended"
+ */
+function getStatusDisplay(status: string, sessionStartTime?: string | null): StatusDisplay {
+  const isPast = sessionStartTime ? new Date(sessionStartTime) < new Date() : false;
+
+  switch (status) {
+    case "present":
+    case "registered":
+    case "confirmed":
+    case "checked_in":
+      return isPast
+        ? { label: "Attended", variant: "success" }
+        : { label: "Booked", variant: "info" };
+    case "late":
+      return { label: "Late", variant: "warning" };
+    case "absent":
+    case "no_show":
+      return { label: "No-show", variant: "warning" };
+    case "excused":
+      return { label: "Excused", variant: "default" };
+    case "cancelled":
+    case "canceled":
+      return { label: "Cancelled", variant: "default" };
+    case "pending":
+      return { label: "Pending", variant: "info" };
+    default:
+      return { label: status, variant: "default" };
+  }
+}
 
 export default function AttendanceHistoryPage() {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
@@ -63,9 +90,7 @@ export default function AttendanceHistoryPage() {
         setAttendance(data);
       } catch (e) {
         console.error("Failed to load attendance:", e);
-        setError(
-          e instanceof Error ? e.message : "Failed to load attendance history",
-        );
+        setError(e instanceof Error ? e.message : "Failed to load attendance history");
       } finally {
         setLoading(false);
       }
@@ -86,9 +111,7 @@ export default function AttendanceHistoryPage() {
       <div className="space-y-6">
         <header className="space-y-1">
           <h1 className="text-2xl font-bold text-slate-900">Session History</h1>
-          <p className="text-sm text-slate-600">
-            Track your past sessions and attendance.
-          </p>
+          <p className="text-sm text-slate-600">Track your past sessions and attendance.</p>
         </header>
         <Card className="p-6 text-center">
           <p className="text-red-600">{error}</p>
@@ -97,31 +120,28 @@ export default function AttendanceHistoryPage() {
     );
   }
 
-  const confirmedCount = attendance.filter(
-    (a) => a.status === "confirmed" || a.status === "checked_in",
+  const attendedCount = attendance.filter(
+    (a) =>
+      a.status === "confirmed" ||
+      a.status === "checked_in" ||
+      a.status === "registered" ||
+      a.status === "present"
   ).length;
 
   return (
     <div className="space-y-4 md:space-y-6">
       <header className="space-y-1">
-        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
-          Session History
-        </h1>
-        <p className="text-sm text-slate-600">
-          Track your past sessions and attendance.
-        </p>
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Session History</h1>
+        <p className="text-sm text-slate-600">Track your past sessions and attendance.</p>
       </header>
 
       {attendance.length === 0 ? (
         <Card className="p-6 md:p-8 text-center space-y-4">
           <div className="text-5xl">📋</div>
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">
-              No attendance history yet
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-900">No attendance history yet</h2>
             <p className="text-sm text-slate-600 mt-1">
-              Your session attendance will appear here once you start attending
-              sessions.
+              Your session attendance will appear here once you start attending sessions.
             </p>
           </div>
           <Link
@@ -136,16 +156,16 @@ export default function AttendanceHistoryPage() {
           {/* Summary Card */}
           <Card className="p-4">
             <p className="text-base md:text-lg font-semibold text-slate-900">
-              You&apos;ve attended {confirmedCount} session
-              {confirmedCount !== 1 ? "s" : ""}.
+              You&apos;ve attended {attendedCount} session
+              {attendedCount !== 1 ? "s" : ""}.
             </p>
           </Card>
 
           {/* Mobile Card View */}
           <div className="sm:hidden space-y-3">
             {attendance.map((record) => {
-              const status = statusMap[record.status] ?? statusMap.registered;
               const session = record.session;
+              const status = getStatusDisplay(record.status, session?.start_time);
               return (
                 <Card key={record.id} className="p-4">
                   <div className="flex items-start justify-between gap-3">
@@ -154,9 +174,7 @@ export default function AttendanceHistoryPage() {
                         {session?.title || "Session"}
                       </p>
                       <p className="text-xs text-slate-600 mt-1">
-                        {session?.start_time
-                          ? formatDate(session.start_time)
-                          : "—"}
+                        {session?.start_time ? formatDate(session.start_time) : "—"}
                       </p>
                       <p className="text-xs text-slate-500 capitalize">
                         {session?.session_type?.replace("_", " ") || "Session"}
@@ -176,23 +194,18 @@ export default function AttendanceHistoryPage() {
                 <TableRow>
                   <TableHeaderCell>Date</TableHeaderCell>
                   <TableHeaderCell>Session</TableHeaderCell>
-                  <TableHeaderCell className="hidden md:table-cell">
-                    Type
-                  </TableHeaderCell>
+                  <TableHeaderCell className="hidden md:table-cell">Type</TableHeaderCell>
                   <TableHeaderCell>Status</TableHeaderCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {attendance.map((record) => {
-                  const status =
-                    statusMap[record.status] ?? statusMap.registered;
                   const session = record.session;
+                  const status = getStatusDisplay(record.status, session?.start_time);
                   return (
                     <TableRow key={record.id}>
                       <TableCell>
-                        {session?.start_time
-                          ? formatDate(session.start_time)
-                          : "—"}
+                        {session?.start_time ? formatDate(session.start_time) : "—"}
                       </TableCell>
                       <TableCell>{session?.title || "Session"}</TableCell>
                       <TableCell className="hidden md:table-cell capitalize">
