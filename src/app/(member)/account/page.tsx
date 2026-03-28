@@ -4,29 +4,29 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet } from "@/lib/api";
-import {
-  type CachedPaymentIntent,
-  loadPaymentIntentCache,
-} from "@/lib/paymentCache";
+import { type CachedPaymentIntent, loadPaymentIntentCache } from "@/lib/paymentCache";
 import {
   ArrowRight,
+  Award,
   Bell,
   Calendar,
   CheckCircle,
   Circle,
   Clock,
+  Flame,
   Sparkles,
   TrendingUp,
   Users,
+  Wallet,
 } from "lucide-react";
+import { fetchQuarterlyReport, type MemberQuarterlyReport } from "@/lib/reports";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function MemberDashboardPage() {
   const [member, setMember] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [resumePaymentIntent, setResumePaymentIntent] =
-    useState<CachedPaymentIntent | null>(null);
+  const [resumePaymentIntent, setResumePaymentIntent] = useState<CachedPaymentIntent | null>(null);
 
   useEffect(() => {
     apiGet("/api/v1/members/me", { auth: true })
@@ -66,8 +66,7 @@ export default function MemberDashboardPage() {
   const communityPaidUntilMs = membership.community_paid_until
     ? Date.parse(String(membership.community_paid_until))
     : NaN;
-  const communityActive =
-    Number.isFinite(communityPaidUntilMs) && communityPaidUntilMs > now;
+  const communityActive = Number.isFinite(communityPaidUntilMs) && communityPaidUntilMs > now;
   const clubPaidUntilMs = membership.club_paid_until
     ? Date.parse(String(membership.club_paid_until))
     : NaN;
@@ -75,39 +74,33 @@ export default function MemberDashboardPage() {
   const academyPaidUntilMs = membership.academy_paid_until
     ? Date.parse(String(membership.academy_paid_until))
     : NaN;
-  const academyActive =
-    Number.isFinite(academyPaidUntilMs) && academyPaidUntilMs > now;
+  const academyActive = Number.isFinite(academyPaidUntilMs) && academyPaidUntilMs > now;
 
   const memberTiers =
     membership.active_tiers?.map((t: string) => t.toLowerCase()) ||
-    (membership.primary_tier
-      ? [membership.primary_tier.toLowerCase()]
-      : ["community"]);
+    (membership.primary_tier ? [membership.primary_tier.toLowerCase()] : ["community"]);
 
-  const requestedTiers: string[] = (membership.requested_tiers || []).map(
-    (t: any) => String(t).toLowerCase(),
+  const requestedTiers: string[] = (membership.requested_tiers || []).map((t: any) =>
+    String(t).toLowerCase()
   );
   const wantsAcademy = requestedTiers.includes("academy");
   const wantsClub = requestedTiers.includes("club") || wantsAcademy;
 
-  const clubContext =
-    wantsClub ||
-    memberTiers.includes("club") ||
-    memberTiers.includes("academy");
+  const clubContext = wantsClub || memberTiers.includes("club") || memberTiers.includes("academy");
   const academyContext = wantsAcademy || memberTiers.includes("academy");
 
   // Use profile_photo_media_id (source of truth) not profile_photo_url
   const hasProfileBasics = Boolean(
-    member?.profile_photo_media_id && profile.gender && profile.date_of_birth,
+    member?.profile_photo_media_id && profile.gender && profile.date_of_birth
   );
   const hasCoreProfile = Boolean(
-    profile.phone && profile.country && profile.city && profile.time_zone,
+    profile.phone && profile.country && profile.city && profile.time_zone
   );
   const hasSwimBackground = Boolean(
     profile.swim_level &&
     profile.deep_water_comfort &&
     profile.personal_goals &&
-    String(profile.personal_goals).trim(),
+    String(profile.personal_goals).trim()
   );
   const hasSafetyLogistics = Boolean(
     emergency.name &&
@@ -116,10 +109,10 @@ export default function MemberDashboardPage() {
     availability.preferred_locations &&
     availability.preferred_locations.length > 0 &&
     availability.preferred_times &&
-    availability.preferred_times.length > 0,
+    availability.preferred_times.length > 0
   );
   const hasClubAvailability = Boolean(
-    availability.available_days && availability.available_days.length > 0,
+    availability.available_days && availability.available_days.length > 0
   );
   const hasClubReadiness = !clubContext || hasClubAvailability;
 
@@ -137,7 +130,7 @@ export default function MemberDashboardPage() {
   const hasAssessment =
     assessment &&
     ["canFloat", "headUnderwater", "deepWaterComfort", "canSwim25m"].some((k) =>
-      Object.prototype.hasOwnProperty.call(assessment, k),
+      Object.prototype.hasOwnProperty.call(assessment, k)
     );
   const needsAcademyReadiness =
     academyContext &&
@@ -176,10 +169,8 @@ export default function MemberDashboardPage() {
             ? "Club"
             : "Community";
   const resumeCheckoutUrl = resumePaymentIntent?.checkout_url || null;
-  const showPaymentRecoveryBanner =
-    !communityActive && onboardingReadyForPayment;
-  const showCommunityActivationBanner =
-    !communityActive && !onboardingReadyForPayment;
+  const showPaymentRecoveryBanner = !communityActive && onboardingReadyForPayment;
+  const showCommunityActivationBanner = !communityActive && !onboardingReadyForPayment;
 
   return (
     <div className="space-y-8">
@@ -193,16 +184,11 @@ export default function MemberDashboardPage() {
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
                 <Sparkles className="h-5 w-5 text-amber-300" />
-                <span className="text-sm font-medium text-cyan-100">
-                  Complete Your Setup
-                </span>
+                <span className="text-sm font-medium text-cyan-100">Complete Your Setup</span>
               </div>
-              <h2 className="text-2xl font-bold mb-2">
-                You're {progressPercent}% there!
-              </h2>
+              <h2 className="text-2xl font-bold mb-2">You're {progressPercent}% there!</h2>
               <p className="text-cyan-100 text-sm max-w-md">
-                Complete a few quick steps to unlock all features and get the
-                most out of SwimBuddz.
+                Complete a few quick steps to unlock all features and get the most out of SwimBuddz.
               </p>
 
               {/* Progress bar */}
@@ -213,9 +199,7 @@ export default function MemberDashboardPage() {
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
-                <span className="text-sm font-semibold">
-                  {progressPercent}%
-                </span>
+                <span className="text-sm font-semibold">{progressPercent}%</span>
               </div>
 
               {/* Checklist */}
@@ -226,13 +210,7 @@ export default function MemberDashboardPage() {
                   ) : (
                     <CheckCircle className="h-4 w-4 text-emerald-300" />
                   )}
-                  <span
-                    className={
-                      needsProfileCore
-                        ? "text-white"
-                        : "text-cyan-200 line-through"
-                    }
-                  >
+                  <span className={needsProfileCore ? "text-white" : "text-cyan-200 line-through"}>
                     Complete profile, safety, and swim basics
                   </span>
                 </li>
@@ -242,19 +220,11 @@ export default function MemberDashboardPage() {
                   ) : (
                     <CheckCircle className="h-4 w-4 text-emerald-300" />
                   )}
-                  <span
-                    className={
-                      !communityActive
-                        ? "text-white"
-                        : "text-cyan-200 line-through"
-                    }
-                  >
+                  <span className={!communityActive ? "text-white" : "text-cyan-200 line-through"}>
                     Activate Community membership
                   </span>
                 </li>
-                {(wantsClub ||
-                  memberTiers.includes("club") ||
-                  memberTiers.includes("academy")) && (
+                {(wantsClub || memberTiers.includes("club") || memberTiers.includes("academy")) && (
                   <li className="flex items-center gap-2 text-sm">
                     {needsClubReadiness ? (
                       <Circle className="h-4 w-4 text-cyan-200" />
@@ -262,11 +232,7 @@ export default function MemberDashboardPage() {
                       <CheckCircle className="h-4 w-4 text-emerald-300" />
                     )}
                     <span
-                      className={
-                        needsClubReadiness
-                          ? "text-white"
-                          : "text-cyan-200 line-through"
-                      }
+                      className={needsClubReadiness ? "text-white" : "text-cyan-200 line-through"}
                     >
                       Complete Club readiness
                     </span>
@@ -277,10 +243,7 @@ export default function MemberDashboardPage() {
 
             <div className="flex-shrink-0">
               <Link href="/account/onboarding">
-                <Button
-                  variant="secondary"
-                  className="shadow-lg border-white/20"
-                >
+                <Button variant="secondary" className="shadow-lg border-white/20">
                   Continue Setup
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -300,9 +263,7 @@ export default function MemberDashboardPage() {
                   <CheckCircle className="h-5 w-5 text-emerald-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-slate-900 text-sm">
-                    Onboarding complete
-                  </h3>
+                  <h3 className="font-semibold text-slate-900 text-sm">Onboarding complete</h3>
                   <p className="text-xs text-slate-600 mt-0.5">
                     Complete payment to activate your membership
                   </p>
@@ -320,14 +281,8 @@ export default function MemberDashboardPage() {
                   Resume Payment
                 </Button>
               ) : null}
-              <Link
-                href="/account/billing?required=community"
-                className="block"
-              >
-                <Button
-                  variant={resumeCheckoutUrl ? "outline" : "primary"}
-                  className="w-full"
-                >
+              <Link href="/account/billing?required=community" className="block">
+                <Button variant={resumeCheckoutUrl ? "outline" : "primary"} className="w-full">
                   Go to Billing
                 </Button>
               </Link>
@@ -345,15 +300,12 @@ export default function MemberDashboardPage() {
                   Onboarding complete - payment pending
                 </h3>
                 <p className="text-sm text-slate-600 mt-1">
-                  Finish payment to activate your Community membership and
-                  unlock member features.
+                  Finish payment to activate your Community membership and unlock member features.
                 </p>
                 {resumePaymentIntent?.reference ? (
                   <p className="text-xs text-slate-500 mt-2">
                     Last payment reference:{" "}
-                    <span className="font-mono">
-                      {resumePaymentIntent.reference}
-                    </span>
+                    <span className="font-mono">{resumePaymentIntent.reference}</span>
                   </p>
                 ) : null}
               </div>
@@ -368,9 +320,7 @@ export default function MemberDashboardPage() {
                   </Button>
                 ) : null}
                 <Link href="/account/billing?required=community">
-                  <Button variant={resumeCheckoutUrl ? "outline" : "primary"}>
-                    Go to Billing
-                  </Button>
+                  <Button variant={resumeCheckoutUrl ? "outline" : "primary"}>Go to Billing</Button>
                 </Link>
               </div>
             </div>
@@ -384,12 +334,8 @@ export default function MemberDashboardPage() {
           <Card className="p-5 bg-gradient-to-br from-cyan-50 to-white border-cyan-100 hover:shadow-md transition-shadow cursor-pointer">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-cyan-600">
-                  Membership Status
-                </p>
-                <p className="mt-1 text-2xl font-bold text-slate-900">
-                  {tierLabel}
-                </p>
+                <p className="text-sm font-medium text-cyan-600">Membership Status</p>
+                <p className="mt-1 text-2xl font-bold text-slate-900">{tierLabel}</p>
                 <p className="text-sm text-slate-500 mt-1">
                   {communityActive ? "Active" : "Pending activation"}
                 </p>
@@ -405,13 +351,9 @@ export default function MemberDashboardPage() {
           <Card className="p-5 bg-gradient-to-br from-blue-50 to-white border-blue-100 hover:shadow-md transition-shadow cursor-pointer">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-blue-600">
-                  Upcoming Sessions
-                </p>
+                <p className="text-sm font-medium text-blue-600">Upcoming Sessions</p>
                 <p className="mt-1 text-2xl font-bold text-slate-900">0</p>
-                <p className="text-sm text-slate-500 mt-1">
-                  No sessions scheduled
-                </p>
+                <p className="text-sm text-slate-500 mt-1">No sessions scheduled</p>
               </div>
               <div className="rounded-xl bg-blue-100 p-3">
                 <Calendar className="h-6 w-6 text-blue-600" />
@@ -425,12 +367,8 @@ export default function MemberDashboardPage() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm font-medium text-purple-600">Community</p>
-                <p className="mt-1 text-2xl font-bold text-slate-900">
-                  Connect
-                </p>
-                <p className="text-sm text-slate-500 mt-1">
-                  Meet other swimmers
-                </p>
+                <p className="mt-1 text-2xl font-bold text-slate-900">Connect</p>
+                <p className="text-sm text-slate-500 mt-1">Meet other swimmers</p>
               </div>
               <div className="rounded-xl bg-purple-100 p-3">
                 <Users className="h-6 w-6 text-purple-600" />
@@ -448,12 +386,9 @@ export default function MemberDashboardPage() {
               <Clock className="h-6 w-6 text-amber-600" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-slate-900">
-                Activate Your Community Membership
-              </h3>
+              <h3 className="font-semibold text-slate-900">Activate Your Community Membership</h3>
               <p className="text-sm text-slate-600 mt-1">
-                Pay ₦20,000/year to unlock the member directory, events, and
-                community features.
+                Pay ₦20,000/year to unlock the member directory, events, and community features.
               </p>
             </div>
             <Link href="/account/billing">
@@ -475,8 +410,8 @@ export default function MemberDashboardPage() {
                 Your {wantsAcademy ? "Academy" : "Club"} Request is Saved
               </h3>
               <p className="text-sm text-slate-600 mt-1">
-                Complete your readiness to speed up review. Payments happen when
-                you activate a plan.
+                Complete your readiness to speed up review. Payments happen when you activate a
+                plan.
               </p>
             </div>
             <Link href="/account/onboarding">
@@ -489,9 +424,7 @@ export default function MemberDashboardPage() {
       {/* Recent Announcements */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Recent Announcements
-          </h2>
+          <h2 className="text-lg font-semibold text-slate-900">Recent Announcements</h2>
           <Link
             href="/announcements"
             className="text-sm font-medium text-cyan-600 hover:text-cyan-700 flex items-center gap-1"
@@ -505,18 +438,37 @@ export default function MemberDashboardPage() {
               <Bell className="h-5 w-5 text-cyan-600" />
             </div>
             <div>
-              <p className="font-medium text-slate-900">
-                Welcome to SwimBuddz!
-              </p>
+              <p className="font-medium text-slate-900">Welcome to SwimBuddz!</p>
               <p className="text-sm text-slate-600 mt-1">
-                Complete your profile setup to get started and connect with
-                other swimmers in the community.
+                Complete your profile setup to get started and connect with other swimmers in the
+                community.
               </p>
               <p className="text-xs text-slate-400 mt-2">Just now</p>
             </div>
           </div>
         </Card>
       </div>
+
+      {/* Quarterly Report Card — mini stats + direct link */}
+      <QuarterlyReportWidget />
+
+      {/* Community Leaderboard */}
+      <Link href={`/account/reports/q${Math.ceil((new Date().getMonth() + 1) / 3)}-${new Date().getFullYear()}/leaderboard`} className="block">
+        <Card className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-amber-100 p-2">
+                <TrendingUp className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900">Community Leaderboard</h3>
+                <p className="text-xs text-slate-500">See how you rank among other swimmers</p>
+              </div>
+            </div>
+            <ArrowRight className="h-5 w-5 text-amber-400" />
+          </div>
+        </Card>
+      </Link>
 
       {/* Coach Card (if applicable) */}
       {member?.coach_profile && (
@@ -527,9 +479,7 @@ export default function MemberDashboardPage() {
                 <Sparkles className="h-6 w-6 text-purple-700" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-purple-900">
-                  Coach Dashboard
-                </h3>
+                <h3 className="font-semibold text-purple-900">Coach Dashboard</h3>
                 <p className="text-sm text-purple-700">
                   Manage your cohorts and view student progress
                 </p>
@@ -540,5 +490,111 @@ export default function MemberDashboardPage() {
         </Link>
       )}
     </div>
+  );
+}
+
+function QuarterlyReportWidget() {
+  const [report, setReport] = useState<MemberQuarterlyReport | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  const now = new Date();
+  const year = now.getFullYear();
+  const quarter = Math.ceil((now.getMonth() + 1) / 3);
+
+  useEffect(() => {
+    fetchQuarterlyReport(year, quarter)
+      .then(setReport)
+      .catch(() => {})
+      .finally(() => setLoaded(true));
+  }, [year, quarter]);
+
+  const slug = `q${quarter}-${year}`;
+
+  if (!loaded) {
+    return (
+      <Card className="p-6 border-cyan-200 bg-gradient-to-r from-cyan-50 to-blue-50 animate-pulse">
+        <div className="h-20" />
+      </Card>
+    );
+  }
+
+  if (!report) {
+    return (
+      <Link href="/account/reports" className="block">
+        <Card className="p-6 border-cyan-200 bg-gradient-to-r from-cyan-50 to-blue-50 hover:shadow-lg transition-shadow">
+          <div className="flex items-center gap-4">
+            <div className="rounded-xl bg-cyan-200 p-3">
+              <TrendingUp className="h-6 w-6 text-cyan-700" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-cyan-900">
+                Your Quarterly Report
+              </h3>
+              <p className="text-sm text-cyan-700">
+                View your Q{quarter} {year} stats and share your SwimBuddz
+                Wrapped card
+              </p>
+            </div>
+            <ArrowRight className="h-5 w-5 text-cyan-400" />
+          </div>
+        </Card>
+      </Link>
+    );
+  }
+
+  const stats = [
+    {
+      label: "Sessions",
+      value: report.total_sessions_attended,
+      icon: <Calendar className="h-4 w-4 text-cyan-600" />,
+    },
+    {
+      label: "Attendance",
+      value: `${(report.attendance_rate * 100).toFixed(0)}%`,
+      icon: <TrendingUp className="h-4 w-4 text-green-600" />,
+    },
+    {
+      label: "Streak",
+      value: `${report.streak_longest}w`,
+      icon: <Flame className="h-4 w-4 text-orange-500" />,
+    },
+    {
+      label: "Bubbles",
+      value: report.bubbles_earned,
+      icon: <Wallet className="h-4 w-4 text-blue-600" />,
+    },
+  ];
+
+  return (
+    <Link href={`/account/reports/${slug}`} className="block">
+      <Card className="overflow-hidden border-cyan-200 hover:shadow-lg transition-shadow">
+        <div className="bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-cyan-100">
+                Q{quarter} {year} Swim Report
+              </p>
+              <h3 className="text-lg font-bold text-white mt-0.5">
+                Your Quarterly Report
+              </h3>
+            </div>
+            <ArrowRight className="h-5 w-5 text-white/70" />
+          </div>
+        </div>
+        <div className="grid grid-cols-4 divide-x divide-slate-100 bg-white">
+          {stats.map((s) => (
+            <div key={s.label} className="px-4 py-3 text-center">
+              <div className="flex items-center justify-center mb-1">
+                {s.icon}
+              </div>
+              <p className="text-lg font-bold text-slate-900">{s.value}</p>
+              <p className="text-[10px] text-slate-500 uppercase tracking-wide">
+                {s.label}
+              </p>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </Link>
   );
 }

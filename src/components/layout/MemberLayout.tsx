@@ -5,6 +5,7 @@ import { apiGet } from "@/lib/api";
 import { supabase } from "@/lib/auth";
 import {
   Award,
+  BarChart3,
   Bell,
   BookOpen,
   Briefcase,
@@ -115,6 +116,7 @@ const navSections: NavSection[] = [
       { href: "/account/wallet", label: "Wallet", icon: Wallet },
       { href: "/account/wallet/referrals", label: "Referrals", icon: Gift },
       { href: "/account/wallet/rewards", label: "Rewards", icon: Award },
+      { href: "/account/reports", label: "My Reports", icon: BarChart3 },
       {
         href: "/account/onboarding",
         label: "Complete Setup",
@@ -125,8 +127,8 @@ const navSections: NavSection[] = [
   {
     title: "Sessions",
     items: [
-      { href: "/sessions", label: "Browse Sessions", icon: Calendar },
-      { href: "/account/sessions", label: "My Bookings", icon: CalendarCheck },
+      { href: "/sessions", label: "Sessions", icon: Calendar },
+      { href: "/sessions?view=booked", label: "My Sessions", icon: CalendarCheck },
       {
         href: "/account/attendance/history",
         label: "My Attendance",
@@ -246,15 +248,42 @@ export function MemberLayout({ children }: MemberLayoutProps) {
 
   const isActive = (href: string) => {
     if (!pathname) return false;
-    if (pathname === href) return true;
+
+    // Handle hrefs with query params (e.g. /sessions?view=my)
+    const [hrefPath, hrefQuery] = href.split("?");
+    if (hrefQuery) {
+      if (pathname !== hrefPath) return false;
+      const hrefParams = new URLSearchParams(hrefQuery);
+      for (const [key, value] of hrefParams.entries()) {
+        if (searchParams.get(key) !== value) return false;
+      }
+      return true;
+    }
+
+    // For plain path hrefs, also check that no query-param variant is a better match
+    if (pathname === hrefPath) {
+      // If the current URL has a ?view param and there's a nav item for that specific view, don't highlight the base path
+      const hasQueryVariant = allHrefs.some((other) => {
+        const [otherPath, otherQuery] = other.split("?");
+        if (otherPath !== hrefPath || !otherQuery) return false;
+        const otherParams = new URLSearchParams(otherQuery);
+        for (const [key, value] of otherParams.entries()) {
+          if (searchParams.get(key) !== value) return false;
+        }
+        return true;
+      });
+      if (hasQueryVariant) return false;
+      return true;
+    }
+
     // Only highlight if this href is a prefix of the current path AND
     // no other, more specific nav href also matches
-    if (!pathname.startsWith(href + "/")) return false;
+    if (!pathname.startsWith(hrefPath + "/")) return false;
     const hasMoreSpecificMatch = allHrefs.some(
       (other) =>
         other !== href &&
-        other.startsWith(href + "/") &&
-        (pathname === other || pathname.startsWith(other + "/"))
+        other.startsWith(hrefPath + "/") &&
+        (pathname === other.split("?")[0] || pathname.startsWith(other.split("?")[0] + "/"))
     );
     return !hasMoreSpecificMatch;
   };

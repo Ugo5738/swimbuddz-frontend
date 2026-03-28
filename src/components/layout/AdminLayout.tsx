@@ -1,8 +1,8 @@
 "use client";
 
-import { supabase } from "@/lib/auth";
-import { apiGet } from "@/lib/api";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { apiGet } from "@/lib/api";
+import { supabase } from "@/lib/auth";
 import {
   AlertTriangle,
   Award,
@@ -119,6 +119,12 @@ const navSections: NavSection[] = [
     items: [
       { href: "/admin/store", label: "Store", icon: ShoppingBag },
       { href: "/admin/pools", label: "Pool Registry", icon: Waves },
+      { href: "/admin/reports", label: "Quarterly Reports", icon: BarChart3 },
+      {
+        href: "/admin/reports/seasonality",
+        label: "Seasonality",
+        icon: CalendarDays,
+      },
     ],
   },
   {
@@ -144,10 +150,9 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   const fetchNewOrderCount = useCallback(async () => {
     try {
-      const data = await apiGet<{ new_count: number }>(
-        "/api/v1/admin/store/orders/new-count",
-        { auth: true },
-      );
+      const data = await apiGet<{ new_count: number }>("/api/v1/admin/store/orders/new-count", {
+        auth: true,
+      });
       const count = data.new_count;
 
       // Play sound + browser notification if count increased (skip initial load)
@@ -423,10 +428,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             <p className="text-sm text-slate-500">Admin Panel</p>
           </div>
           <div className="flex items-center gap-4">
-            <NotificationBell
-              memberId={adminMemberId}
-              hoverColor="hover:text-cyan-700"
-            />
+            <NotificationBell memberId={adminMemberId} hoverColor="hover:text-cyan-700" />
             <Link
               href="/admin/store/orders"
               className="relative p-2 rounded-full text-slate-500 hover:text-cyan-700 hover:bg-slate-100 transition"
