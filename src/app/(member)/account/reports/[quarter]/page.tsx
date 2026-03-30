@@ -180,7 +180,7 @@ export default function QuarterlyReportPage() {
         {report.volunteer_hours > 0 && (
           <StatsCard
             label="Volunteer Hours"
-            value={`${report.volunteer_hours.toFixed(0)}h`}
+            value={`${report.volunteer_hours >= 1 ? report.volunteer_hours.toFixed(0) : report.volunteer_hours.toFixed(1)}h`}
             icon={<Heart className="h-6 w-6" />}
             color="rose"
           />
