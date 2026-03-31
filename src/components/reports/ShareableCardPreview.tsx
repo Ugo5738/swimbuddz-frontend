@@ -3,7 +3,7 @@
 import { Card } from "@/components/ui/Card";
 import { downloadCardImage, quarterLabel } from "@/lib/reports";
 import { Download, Share2 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type ShareableCardPreviewProps = {
   year: number;
@@ -12,13 +12,33 @@ type ShareableCardPreviewProps = {
 
 export function ShareableCardPreview({ year, quarter }: ShareableCardPreviewProps) {
   const [downloading, setDownloading] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [format, setFormat] = useState<"square" | "story">("square");
   const label = quarterLabel(year, quarter);
+  const cachedBlob = useRef<Blob | null>(null);
+  const cachedFormat = useRef<string>("");
+
+  // Pre-fetch the card image when format changes
+  const prefetch = useCallback(async () => {
+    try {
+      const blob = await downloadCardImage(year, quarter, format);
+      cachedBlob.current = blob;
+      cachedFormat.current = format;
+    } catch {
+      cachedBlob.current = null;
+    }
+  }, [year, quarter, format]);
+
+  useEffect(() => {
+    prefetch();
+  }, [prefetch]);
 
   const handleDownload = async () => {
     setDownloading(true);
     try {
-      const blob = await downloadCardImage(year, quarter, format);
+      const blob = cachedBlob.current && cachedFormat.current === format
+        ? cachedBlob.current
+        : await downloadCardImage(year, quarter, format);
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -35,8 +55,13 @@ export function ShareableCardPreview({ year, quarter }: ShareableCardPreviewProp
   };
 
   const handleShare = async () => {
+    setSharing(true);
     try {
-      const blob = await downloadCardImage(year, quarter, format);
+      // Use pre-fetched blob if available, otherwise fetch now
+      const blob = cachedBlob.current && cachedFormat.current === format
+        ? cachedBlob.current
+        : await downloadCardImage(year, quarter, format);
+
       const file = new File([blob], `swimbuddz-${label.replace(" ", "-")}.png`, {
         type: "image/png",
       });
@@ -48,12 +73,14 @@ export function ShareableCardPreview({ year, quarter }: ShareableCardPreviewProp
           files: [file],
         });
       } else {
-        // Fallback: download instead
         handleDownload();
       }
     } catch (e) {
-      // User cancelled share or it failed
-      console.error("Share failed:", e);
+      if (e instanceof Error && e.name !== "AbortError") {
+        console.error("Share failed:", e);
+      }
+    } finally {
+      setSharing(false);
     }
   };
 
@@ -102,10 +129,11 @@ export function ShareableCardPreview({ year, quarter }: ShareableCardPreviewProp
         </button>
         <button
           onClick={handleShare}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-xl font-medium hover:bg-slate-800 transition-colors"
+          disabled={sharing}
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-xl font-medium hover:bg-slate-800 transition-colors disabled:opacity-50"
         >
           <Share2 className="h-4 w-4" />
-          Share
+          {sharing ? "Sharing..." : "Share"}
         </button>
       </div>
     </Card>
