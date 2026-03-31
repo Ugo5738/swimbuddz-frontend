@@ -421,6 +421,27 @@ export default function MemberDashboardPage() {
         </Card>
       )}
 
+      {/* Quarterly Report Card — mini stats + direct link */}
+      <QuarterlyReportWidget />
+
+      {/* Community Leaderboard */}
+      <Link href={`/account/reports/q${Math.ceil((new Date().getMonth() + 1) / 3)}-${new Date().getFullYear()}/leaderboard`} className="block">
+        <Card className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-amber-100 p-2">
+                <TrendingUp className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900">Community Leaderboard</h3>
+                <p className="text-xs text-slate-500">See how you rank among other swimmers</p>
+              </div>
+            </div>
+            <ArrowRight className="h-5 w-5 text-amber-400" />
+          </div>
+        </Card>
+      </Link>
+
       {/* Recent Announcements */}
       <div>
         <div className="flex items-center justify-between mb-4">
@@ -448,27 +469,6 @@ export default function MemberDashboardPage() {
           </div>
         </Card>
       </div>
-
-      {/* Quarterly Report Card — mini stats + direct link */}
-      <QuarterlyReportWidget />
-
-      {/* Community Leaderboard */}
-      <Link href={`/account/reports/q${Math.ceil((new Date().getMonth() + 1) / 3)}-${new Date().getFullYear()}/leaderboard`} className="block">
-        <Card className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-amber-100 p-2">
-                <TrendingUp className="h-5 w-5 text-amber-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-900">Community Leaderboard</h3>
-                <p className="text-xs text-slate-500">See how you rank among other swimmers</p>
-              </div>
-            </div>
-            <ArrowRight className="h-5 w-5 text-amber-400" />
-          </div>
-        </Card>
-      </Link>
 
       {/* Coach Card (if applicable) */}
       {member?.coach_profile && (
