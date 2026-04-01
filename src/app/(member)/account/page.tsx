@@ -498,7 +498,7 @@ export default function MemberDashboardPage() {
       {ytdStats && <YTDStatsOverview stats={ytdStats} year={currentYear} />}
 
       {/* ── Section 4: Next Session ── */}
-      <NextSessionCard session={nextSession} />
+      <NextSessionCard session={nextSession} isBooked={upcomingBookings.length > 0} />
 
       {/* ── Section 5: Conditional Action Banners ── */}
       {showCommunityActivationBanner && (

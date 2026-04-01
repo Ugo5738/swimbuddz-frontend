@@ -10,7 +10,11 @@ type NextSessionCardProps = {
     session_title: string;
     session_starts_at: string;
     session_location?: string;
+    /** If provided, session is already booked */
+    session_id?: number;
   } | null;
+  /** Whether this session is already booked by the member */
+  isBooked?: boolean;
 };
 
 function formatSessionDate(dateStr: string): string {
@@ -41,7 +45,7 @@ function getCountdown(dateStr: string): string {
   return `in ${diffDays} days`;
 }
 
-export function NextSessionCard({ session }: NextSessionCardProps) {
+export function NextSessionCard({ session, isBooked }: NextSessionCardProps) {
   if (!session) {
     return (
       <div className="rounded-2xl border-2 border-dashed border-slate-200 p-6 text-center">
@@ -65,33 +69,55 @@ export function NextSessionCard({ session }: NextSessionCardProps) {
     : null;
 
   return (
-    <Link href="/sessions?view=booked" className="block">
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-cyan-50 via-blue-50 to-indigo-50 border border-cyan-100 p-5 hover:shadow-md transition-shadow">
-        {/* Countdown badge */}
-        <div className="absolute top-4 right-4">
-          <span className="inline-flex items-center rounded-full bg-cyan-600 px-3 py-1 text-xs font-bold text-white">
-            {getCountdown(session.session_starts_at)}
-          </span>
-        </div>
-
-        <p className="text-xs font-semibold text-cyan-600 uppercase tracking-wider mb-1">
-          Next Session
-        </p>
-        <h3 className="text-lg font-bold text-slate-900 pr-20">{session.session_title}</h3>
-
-        <div className="mt-3 flex items-center gap-4 text-sm text-slate-600">
-          <div className="flex items-center gap-1.5">
-            <Calendar className="h-4 w-4 text-slate-400" />
-            <span>{formatSessionDate(session.session_starts_at)}</span>
-          </div>
-          {locationLabel && (
-            <div className="flex items-center gap-1.5">
-              <MapPin className="h-4 w-4 text-slate-400" />
-              <span>{locationLabel}</span>
-            </div>
-          )}
-        </div>
+    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-cyan-50 via-blue-50 to-indigo-50 border border-cyan-100 p-5">
+      {/* Countdown badge */}
+      <div className="absolute top-4 right-4">
+        <span className="inline-flex items-center rounded-full bg-cyan-600 px-3 py-1 text-xs font-bold text-white">
+          {getCountdown(session.session_starts_at)}
+        </span>
       </div>
-    </Link>
+
+      <p className="text-xs font-semibold text-cyan-600 uppercase tracking-wider mb-1">
+        Next Session
+      </p>
+      <h3 className="text-lg font-bold text-slate-900 pr-20">{session.session_title}</h3>
+
+      <div className="mt-3 flex items-center gap-4 text-sm text-slate-600">
+        <div className="flex items-center gap-1.5">
+          <Calendar className="h-4 w-4 text-slate-400" />
+          <span>{formatSessionDate(session.session_starts_at)}</span>
+        </div>
+        {locationLabel && (
+          <div className="flex items-center gap-1.5">
+            <MapPin className="h-4 w-4 text-slate-400" />
+            <span>{locationLabel}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="mt-4 flex items-center justify-between">
+        {isBooked ? (
+          <Link href="/sessions?view=booked">
+            <Button size="sm" variant="outline">
+              View booking
+            </Button>
+          </Link>
+        ) : (
+          <Link href="/sessions">
+            <Button size="sm">
+              Book now
+              <ArrowRight className="ml-1.5 h-4 w-4" />
+            </Button>
+          </Link>
+        )}
+        <Link
+          href="/sessions"
+          className="text-xs font-medium text-cyan-600 hover:text-cyan-700 flex items-center gap-1"
+        >
+          See all sessions <ArrowRight className="h-3 w-3" />
+        </Link>
+      </div>
+    </div>
   );
 }
