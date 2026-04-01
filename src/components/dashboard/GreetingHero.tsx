@@ -15,6 +15,7 @@ type GreetingHeroProps = {
     location?: string;
   } | null;
   streakCurrent?: number;
+  streakLongest?: number;
 };
 
 const MOTIVATIONAL = [
@@ -45,7 +46,7 @@ function getRelativeTime(dateStr: string): string {
 }
 
 function getSubtitle(props: GreetingHeroProps): string {
-  const { nextSession, streakCurrent } = props;
+  const { nextSession, streakCurrent, streakLongest } = props;
 
   if (nextSession) {
     const sessionDate = new Date(nextSession.starts_at);
@@ -64,8 +65,11 @@ function getSubtitle(props: GreetingHeroProps): string {
     return `Next swim ${getRelativeTime(nextSession.starts_at)} — ${nextSession.title}`;
   }
 
-  if (streakCurrent && streakCurrent > 0) {
-    return `You're on a ${streakCurrent}-week streak — keep it up! 🔥`;
+  const streak = streakCurrent || streakLongest || 0;
+  if (streak > 0) {
+    return streakCurrent && streakCurrent > 0
+      ? `You're on a ${streakCurrent}-week streak — keep it up! 🔥`
+      : `Your best streak this year: ${streakLongest} weeks 🔥`;
   }
 
   return MOTIVATIONAL[Math.floor(Date.now() / 86400000) % MOTIVATIONAL.length];

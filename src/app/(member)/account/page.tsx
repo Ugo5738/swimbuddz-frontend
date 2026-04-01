@@ -96,24 +96,7 @@ export default function MemberDashboardPage() {
           );
         setUpcomingBookings(upcoming);
 
-        // If no booked upcoming sessions, fetch next available session as fallback
-        if (upcoming.length === 0) {
-          SessionsApi.listSessions()
-            .then((sessions: Session[]) => {
-              const futurePublished = sessions
-                .filter((s) => s.status === "scheduled" && new Date(s.starts_at) > new Date())
-                .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
-              if (futurePublished.length > 0) {
-                const s = futurePublished[0];
-                setNextAvailableSession({
-                  session_title: s.title,
-                  session_starts_at: s.starts_at,
-                  session_location: s.location || undefined,
-                });
-              }
-            })
-            .catch(() => {});
-        }
+        // Fallback fetch handled in separate effect once member tier is known
       })
       .catch(() => {
         setAllRecords([]);
@@ -151,6 +134,60 @@ export default function MemberDashboardPage() {
     }
     setResumePaymentIntent(cached || null);
   }, [member]);
+
+  // Fetch next available session (tier-aware) when no booked sessions exist
+  useEffect(() => {
+    if (!member || upcomingBookings.length > 0) return;
+
+    const tiers =
+      member.membership?.active_tiers?.map((t: string) => t.toLowerCase()) ||
+      (member.membership?.primary_tier
+        ? [member.membership.primary_tier.toLowerCase()]
+        : ["community"]);
+    const isAcademy = tiers.includes("academy");
+    const isClub = tiers.includes("club");
+
+    // Map tier to session type priority
+    // Academy without club only sees cohort_class + community (not club sessions)
+    const tierSessionTypes: string[] =
+      isAcademy && isClub
+        ? ["cohort_class", "club", "community"]
+        : isAcademy
+          ? ["cohort_class", "community"]
+          : isClub
+            ? ["club", "community"]
+            : ["community"];
+
+    SessionsApi.listSessions()
+      .then((sessions: Session[]) => {
+        const futurePublished = sessions
+          .filter((s) => s.status === "scheduled" && new Date(s.starts_at) > new Date())
+          .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
+
+        // Find first session matching tier priority
+        for (const type of tierSessionTypes) {
+          const match = futurePublished.find((s) => s.session_type === type);
+          if (match) {
+            setNextAvailableSession({
+              session_title: match.title,
+              session_starts_at: match.starts_at,
+              session_location: match.location || undefined,
+            });
+            return;
+          }
+        }
+        // Fallback to any session
+        if (futurePublished.length > 0) {
+          const s = futurePublished[0];
+          setNextAvailableSession({
+            session_title: s.title,
+            session_starts_at: s.starts_at,
+            session_location: s.location || undefined,
+          });
+        }
+      })
+      .catch(() => {});
+  }, [member, upcomingBookings]);
 
   if (loading) {
     return <DashboardSkeleton />;
@@ -454,6 +491,7 @@ export default function MemberDashboardPage() {
             : null
         }
         streakCurrent={ytdStats?.streak_current}
+        streakLongest={ytdStats?.streak_longest}
       />
 
       {/* ── Section 3: YTD Stats Overview ── */}

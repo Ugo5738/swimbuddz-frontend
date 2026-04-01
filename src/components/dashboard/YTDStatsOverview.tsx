@@ -30,10 +30,10 @@ const tiles = [
   },
   {
     key: "streak",
-    label: "Streak",
+    label: "Best Streak",
     icon: Flame,
     color: "bg-orange-100 text-orange-600",
-    getValue: (s: YTDStats) => `${s.streak_current}w`,
+    getValue: (s: YTDStats) => `${s.streak_longest}w`,
     href: "/account/attendance/history",
   },
   {
