@@ -61,6 +61,7 @@ export function SessionSignIn({ session }: SessionSignInProps) {
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isTierError, setIsTierError] = useState(false);
   const [confirmation, setConfirmation] = useState<boolean>(false);
   const [member, setMember] = useState<{ name: string; email: string } | null>(
     null,
@@ -142,6 +143,9 @@ export function SessionSignIn({ session }: SessionSignInProps) {
             ? error.message
             : "Unable to book this session. Please try again.";
         setError(message);
+        // Detect tier access errors (membership/enrollment messages from backend)
+        const tierKeywords = ["club session", "academy cohort", "active membership", "membership isn't"];
+        setIsTierError(tierKeywords.some((kw) => message.toLowerCase().includes(kw.toLowerCase())));
       } finally {
         setSaving(false);
       }
@@ -179,6 +183,8 @@ export function SessionSignIn({ session }: SessionSignInProps) {
           ? error.message
           : "Unable to process payment. Please try again.";
       setError(message);
+      const tierKeywords = ["club session", "academy cohort", "active membership", "membership isn't"];
+      setIsTierError(tierKeywords.some((kw) => message.toLowerCase().includes(kw.toLowerCase())));
     } finally {
       setSaving(false);
     }
@@ -336,8 +342,16 @@ export function SessionSignIn({ session }: SessionSignInProps) {
       </div>
 
       {error ? (
-        <Alert variant="error" title="Sign-in error">
-          {error}
+        <Alert variant="error" title={isTierError ? "Membership required" : "Sign-in error"}>
+          <p>{error}</p>
+          {isTierError && (
+            <a
+              href="https://swimbuddz.com"
+              className="mt-2 inline-block rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700"
+            >
+              View membership options →
+            </a>
+          )}
         </Alert>
       ) : null}
       {authError ? (
