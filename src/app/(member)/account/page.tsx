@@ -20,6 +20,7 @@ import {
   type MemberQuarterlyReport,
   type YTDStats,
 } from "@/lib/reports";
+import { SessionsApi, type Session } from "@/lib/sessions";
 import {
   ArrowRight,
   Bell,
@@ -61,12 +62,20 @@ export default function MemberDashboardPage() {
   const [resumePaymentIntent, setResumePaymentIntent] = useState<CachedPaymentIntent | null>(null);
   const [allRecords, setAllRecords] = useState<AttendanceRecord[]>([]);
   const [upcomingBookings, setUpcomingBookings] = useState<AttendanceRecord[]>([]);
+  const [nextAvailableSession, setNextAvailableSession] = useState<{
+    session_title: string;
+    session_starts_at: string;
+    session_location?: string;
+  } | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [ytdStats, setYtdStats] = useState<YTDStats | null>(null);
 
   const currentYear = new Date().getFullYear();
   const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
-  const leaderboardSlug = quarterSlug(currentYear, currentQuarter);
+  // Use last completed quarter for leaderboard/report links (current quarter has no data early on)
+  const lastCompletedQuarter = currentQuarter > 1 ? currentQuarter - 1 : 4;
+  const lastCompletedYear = currentQuarter > 1 ? currentYear : currentYear - 1;
+  const leaderboardSlug = quarterSlug(lastCompletedYear, lastCompletedQuarter);
 
   useEffect(() => {
     apiGet("/api/v1/members/me", { auth: true })
@@ -86,6 +95,25 @@ export default function MemberDashboardPage() {
               new Date(a.session_starts_at).getTime() - new Date(b.session_starts_at).getTime()
           );
         setUpcomingBookings(upcoming);
+
+        // If no booked upcoming sessions, fetch next available session as fallback
+        if (upcoming.length === 0) {
+          SessionsApi.listSessions()
+            .then((sessions: Session[]) => {
+              const futurePublished = sessions
+                .filter((s) => s.status === "scheduled" && new Date(s.starts_at) > new Date())
+                .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
+              if (futurePublished.length > 0) {
+                const s = futurePublished[0];
+                setNextAvailableSession({
+                  session_title: s.title,
+                  session_starts_at: s.starts_at,
+                  session_location: s.location || undefined,
+                });
+              }
+            })
+            .catch(() => {});
+        }
       })
       .catch(() => {
         setAllRecords([]);
@@ -231,20 +259,23 @@ export default function MemberDashboardPage() {
   if (academyContext && !needsAcademyReadiness) completedSteps++;
   const progressPercent = Math.round((completedSteps / totalSteps) * 100);
 
-  const tierLabel =
-    wantsAcademy && !academyActive
-      ? "Academy (Pending)"
-      : wantsClub && !clubActive
-        ? "Club (Pending)"
-        : memberTiers.includes("academy")
-          ? "Academy"
-          : memberTiers.includes("club")
-            ? "Club"
-            : "Community";
+  // Tier label — match sidebar logic: prioritize active/enrolled status first
+  const isAcademyMember = academyActive || memberTiers.includes("academy");
+  const isClubMember = clubActive || memberTiers.includes("club");
 
-  const tierVariant: "info" | "success" | "warning" | "default" = memberTiers.includes("academy")
+  const tierLabel = isAcademyMember
+    ? "Academy"
+    : isClubMember
+      ? "Club"
+      : wantsAcademy
+        ? "Academy (Pending)"
+        : wantsClub
+          ? "Club (Pending)"
+          : "Community";
+
+  const tierVariant: "info" | "success" | "warning" | "default" = isAcademyMember
     ? "warning"
-    : memberTiers.includes("club")
+    : isClubMember
       ? "success"
       : "info";
 
@@ -253,7 +284,8 @@ export default function MemberDashboardPage() {
   const showCommunityActivationBanner = !communityActive && !onboardingReadyForPayment;
   const showAcademy = academyContext || memberTiers.includes("academy");
 
-  const nextSession = upcomingBookings.length > 0 ? upcomingBookings[0] : null;
+  // Show booked session first, fall back to next available session
+  const nextSession = upcomingBookings.length > 0 ? upcomingBookings[0] : nextAvailableSession;
 
   return (
     <div className="space-y-6">
@@ -582,6 +614,8 @@ export default function MemberDashboardPage() {
 
 function QuarterlyReportWidget() {
   const [report, setReport] = useState<MemberQuarterlyReport | null>(null);
+  const [reportSlug, setReportSlug] = useState("");
+  const [reportLabel, setReportLabel] = useState("");
   const [loaded, setLoaded] = useState(false);
 
   const now = new Date();
@@ -589,13 +623,34 @@ function QuarterlyReportWidget() {
   const quarter = Math.ceil((now.getMonth() + 1) / 3);
 
   useEffect(() => {
+    // Try current quarter first, fall back to last completed quarter
     fetchQuarterlyReport(year, quarter)
-      .then(setReport)
-      .catch(() => {})
+      .then((r) => {
+        if (r && r.total_sessions_attended > 0) {
+          setReport(r);
+          setReportSlug(`q${quarter}-${year}`);
+          setReportLabel(`Q${quarter} ${year}`);
+        } else {
+          throw new Error("Empty current quarter");
+        }
+      })
+      .catch(() => {
+        // Fall back to last completed quarter
+        const prevQ = quarter > 1 ? quarter - 1 : 4;
+        const prevY = quarter > 1 ? year : year - 1;
+        fetchQuarterlyReport(prevY, prevQ)
+          .then((r) => {
+            setReport(r);
+            setReportSlug(`q${prevQ}-${prevY}`);
+            setReportLabel(`Q${prevQ} ${prevY}`);
+          })
+          .catch(() => {})
+          .finally(() => setLoaded(true));
+      })
       .finally(() => setLoaded(true));
   }, [year, quarter]);
 
-  const slug = `q${quarter}-${year}`;
+  const slug = reportSlug || `q${quarter}-${year}`;
 
   if (!loaded) {
     return (
@@ -656,7 +711,7 @@ function QuarterlyReportWidget() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-cyan-100">
-                Q{quarter} {year} Swim Report
+                {reportLabel || `Q${quarter} ${year}`} Swim Report
               </p>
               <h3 className="text-base font-bold text-white mt-0.5">Your Quarterly Report</h3>
             </div>

@@ -268,8 +268,12 @@ export async function fetchYTDStats(year: number): Promise<YTDStats> {
     { ...EMPTY_YTD }
   );
 
-  // Latest quarter for current values
-  const latest = reports[reports.length - 1];
+  // Use the latest quarter that has actual data (not an empty Q2 at start of quarter)
+  const reportsWithData = reports.filter((r) => r.total_sessions_attended > 0);
+  const latest =
+    reportsWithData.length > 0
+      ? reportsWithData[reportsWithData.length - 1]
+      : reports[reports.length - 1];
   summed.streak_current = latest.streak_current;
   summed.attendance_percentile = latest.attendance_percentile;
   summed.favorite_day = latest.favorite_day;
