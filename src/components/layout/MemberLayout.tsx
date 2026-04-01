@@ -4,19 +4,14 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { apiGet } from "@/lib/api";
 import { supabase } from "@/lib/auth";
 import {
-  Award,
-  BarChart3,
-  Bell,
   BookOpen,
   Briefcase,
   Calendar,
-  CalendarCheck,
   CalendarDays,
   CheckCircle,
   ChevronRight,
   ClipboardCheck,
   CreditCard,
-  Gift,
   GraduationCap,
   HandHeart,
   Home,
@@ -103,32 +98,16 @@ type AcademyEnrollment = {
 
 const navSections: NavSection[] = [
   {
-    title: "Overview",
-    items: [{ href: "/account", label: "Dashboard", icon: LayoutDashboard }],
-  },
-  {
-    title: "My Account",
+    title: "",
     items: [
-      { href: "/account/profile", label: "My Profile", icon: User },
-      { href: "/account/notifications", label: "Notifications", icon: Bell },
-      { href: "/account/billing", label: "Billing", icon: CreditCard },
-      { href: "/account/orders", label: "Orders", icon: Package },
-      { href: "/account/wallet", label: "Wallet", icon: Wallet },
-      { href: "/account/wallet/referrals", label: "Referrals", icon: Gift },
-      { href: "/account/wallet/rewards", label: "Rewards", icon: Award },
-      { href: "/account/reports", label: "My Reports", icon: BarChart3 },
-      {
-        href: "/account/onboarding",
-        label: "Complete Setup",
-        icon: CheckCircle,
-      },
+      { href: "/account", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/account/onboarding", label: "Complete Setup", icon: CheckCircle },
     ],
   },
   {
-    title: "Sessions",
+    title: "Swim",
     items: [
       { href: "/sessions", label: "Sessions", icon: Calendar },
-      { href: "/sessions?view=booked", label: "My Sessions", icon: CalendarCheck },
       {
         href: "/account/attendance/history",
         label: "My Attendance",
@@ -137,22 +116,7 @@ const navSections: NavSection[] = [
     ],
   },
   {
-    title: "Community",
-    items: [
-      { href: "/community/directory", label: "Members", icon: Users },
-      { href: "/community/events", label: "Events", icon: CalendarDays },
-      {
-        href: "/community/volunteers",
-        label: "Volunteer Hub",
-        icon: HandHeart,
-      },
-      { href: "/community/tips", label: "Tips & Articles", icon: BookOpen },
-      { href: "/store", label: "Shop", icon: ShoppingBag },
-    ],
-  },
-  {
-    title: "Academy",
-    // Allow all members to view programs and enroll (even before academy is active)
+    title: "Learn",
     showFor: ["community", "club", "academy"],
     items: [
       {
@@ -161,6 +125,29 @@ const navSections: NavSection[] = [
         icon: BookOpen,
       },
       { href: "/account/academy", label: "My Progress", icon: GraduationCap },
+    ],
+  },
+  {
+    title: "Community",
+    items: [
+      { href: "/community/directory", label: "Members", icon: Users },
+      { href: "/community/events", label: "Events", icon: CalendarDays },
+      { href: "/community/volunteers", label: "Volunteer Hub", icon: HandHeart },
+      { href: "/community/tips", label: "Tips & Articles", icon: BookOpen },
+    ],
+  },
+  {
+    title: "Shop",
+    items: [
+      { href: "/store", label: "Store", icon: ShoppingBag },
+      { href: "/account/orders", label: "Orders", icon: Package },
+    ],
+  },
+  {
+    title: "Finance",
+    items: [
+      { href: "/account/billing", label: "Billing", icon: CreditCard },
+      { href: "/account/wallet", label: "Wallet", icon: Wallet },
     ],
   },
 ];
@@ -405,24 +392,21 @@ export function MemberLayout({ children }: MemberLayoutProps) {
   const needsOnboarding =
     !member || needsProfileCore || needsClubReadiness || needsAcademyReadiness;
 
-  const filteredSections = navSections
+  const visibleSections = navSections
     .map((section) => {
-      if (section.title !== "My Account") return section;
-      const items = needsOnboarding
-        ? section.items
-        : section.items.filter((item) => item.href !== "/account/onboarding");
-      return { ...section, items };
-    })
-    .filter((section) => section.items.length > 0);
-
-  const visibleSections = filteredSections
-    .map((section) => {
-      if (section.title === "Academy") {
+      // Hide Complete Setup when onboarding is done
+      if (section.title === "") {
+        const items = needsOnboarding
+          ? section.items
+          : section.items.filter((item) => item.href !== "/account/onboarding");
+        return { ...section, items };
+      }
+      if (section.title === "Learn") {
         const items = section.items.filter((item) => {
           if (item.href === "/account/academy") {
             return hasPaidAcademyEnrollment;
           }
-          return true; // Keep browse visible for all eligible members
+          return true;
         });
         return { ...section, items };
       }
@@ -500,10 +484,12 @@ export function MemberLayout({ children }: MemberLayoutProps) {
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto px-4 pb-4 space-y-6">
             {visibleSections.map((section) => (
-              <div key={section.title}>
-                <h3 className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-cyan-200/70">
-                  {section.title}
-                </h3>
+              <div key={section.title || "_dashboard"}>
+                {section.title && (
+                  <h3 className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-cyan-200/70">
+                    {section.title}
+                  </h3>
+                )}
                 <ul className="space-y-1">
                   {section.items.map((item) => {
                     const Icon = item.icon;
@@ -537,7 +523,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
           </nav>
 
           {/* Footer Actions */}
-          <div className="border-t border-white/10 p-4 space-y-2">
+          <div className="border-t border-white/10 p-4 space-y-1">
             {isCoach && (
               <Link
                 href="/coach/dashboard"
@@ -547,6 +533,19 @@ export function MemberLayout({ children }: MemberLayoutProps) {
                 <span>Coach Portal</span>
               </Link>
             )}
+            <Link
+              href="/account/profile"
+              onClick={() => setSidebarOpen(false)}
+              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                isActive("/account/profile")
+                  ? "bg-white text-cyan-700 shadow-lg"
+                  : "text-white/80 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              <User className="h-5 w-5 shrink-0" />
+              <span>My Profile</span>
+              {isActive("/account/profile") && <ChevronRight className="ml-auto h-4 w-4" />}
+            </Link>
             <Link
               href="/"
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 transition-all hover:bg-white/10 hover:text-white"

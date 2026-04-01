@@ -17,6 +17,7 @@ import {
 import {
   Award,
   Calendar,
+  ChevronDown,
   Clock,
   Download,
   Flame,
@@ -30,7 +31,7 @@ import {
   Waves,
 } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function QuarterlyReportPage() {
@@ -42,9 +43,9 @@ export default function QuarterlyReportPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
-  const [communityMilestones, setCommunityMilestones] = useState<
-    { icon: string; text: string }[]
-  >([]);
+  const [communityMilestones, setCommunityMilestones] = useState<{ icon: string; text: string }[]>(
+    []
+  );
 
   useEffect(() => {
     if (!parsed) {
@@ -60,7 +61,7 @@ export default function QuarterlyReportPage() {
     // Fetch community milestones
     apiGet<{ community_milestones?: { icon: string; text: string }[] }>(
       `/api/v1/reports/community/quarterly?year=${parsed.year}&quarter=${parsed.quarter}`,
-      { auth: true },
+      { auth: true }
     )
       .then((data) => setCommunityMilestones(data.community_milestones || []))
       .catch(() => {});
@@ -86,6 +87,15 @@ export default function QuarterlyReportPage() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb with quarter switcher */}
+      <div className="flex items-center gap-2 text-sm">
+        <Link href="/account/reports" className="text-cyan-600 hover:text-cyan-700 font-medium">
+          All Reports
+        </Link>
+        <span className="text-slate-400">/</span>
+        <QuarterSwitcher currentSlug={slug} currentLabel={label} />
+      </div>
+
       {/* Hero header */}
       <div className="rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 p-6 text-white">
         <div className="flex items-start justify-between">
@@ -162,8 +172,7 @@ export default function QuarterlyReportPage() {
           icon={<Flame className="h-6 w-6" />}
           color="orange"
         />
-        {(report.milestones_achieved > 0 ||
-          report.member_tier === "academy") && (
+        {(report.milestones_achieved > 0 || report.member_tier === "academy") && (
           <StatsCard
             label="Milestones Achieved"
             value={report.milestones_achieved}
@@ -251,7 +260,8 @@ export default function QuarterlyReportPage() {
             </div>
             <div>
               <p className="font-semibold text-slate-900">
-                {report.cohorts_completed} cohort{report.cohorts_completed > 1 ? "s" : ""} completed!
+                {report.cohorts_completed} cohort{report.cohorts_completed > 1 ? "s" : ""}{" "}
+                completed!
               </p>
               <p className="text-xs text-slate-500">Academy graduation this quarter</p>
             </div>
@@ -268,10 +278,7 @@ export default function QuarterlyReportPage() {
           </h3>
           <div className="space-y-3">
             {communityMilestones.map((m, i) => (
-              <div
-                key={i}
-                className="flex items-start gap-3 rounded-lg bg-cyan-50 p-3"
-              >
+              <div key={i} className="flex items-start gap-3 rounded-lg bg-cyan-50 p-3">
                 <Waves className="h-5 w-5 text-cyan-600 mt-0.5 shrink-0" />
                 <p className="text-sm text-slate-700">{m.text}</p>
               </div>
@@ -281,7 +288,7 @@ export default function QuarterlyReportPage() {
       )}
 
       {/* Community leaderboard link */}
-      <Link href={`/account/reports/${slug}/leaderboard`}>
+      <Link href={`/account/reports/${slug}/leaderboard`} className="block">
         <Card className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200 hover:shadow-lg transition-shadow cursor-pointer">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -300,6 +307,76 @@ export default function QuarterlyReportPage() {
 
       {/* Shareable card */}
       <ShareableCardPreview year={parsed.year} quarter={parsed.quarter} />
+    </div>
+  );
+}
+
+/** Dropdown to switch between quarters without going back to the archive. */
+function QuarterSwitcher({
+  currentSlug,
+  currentLabel,
+}: {
+  currentSlug: string;
+  currentLabel: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const router = useRouter();
+
+  // Generate available quarters: from Q1 of join year (approx) up to current quarter
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentQuarter = Math.ceil((now.getMonth() + 1) / 3);
+
+  const quarters: { slug: string; label: string }[] = [];
+  // Show last 2 years worth of quarters up to current
+  for (let y = currentYear; y >= currentYear - 1; y--) {
+    const maxQ = y === currentYear ? currentQuarter : 4;
+    for (let q = maxQ; q >= 1; q--) {
+      const slug = `q${q}-${y}`;
+      quarters.push({ slug, label: `Q${q} ${y}` });
+    }
+  }
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1 font-semibold text-slate-900 hover:text-cyan-600 transition-colors"
+      >
+        {currentLabel}
+        <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <>
+          {/* Backdrop */}
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          {/* Dropdown */}
+          <div className="absolute top-full left-0 mt-1 z-20 w-40 rounded-lg border border-slate-200 bg-white shadow-lg py-1">
+            {quarters.map((q) => (
+              <button
+                key={q.slug}
+                onClick={() => {
+                  setOpen(false);
+                  if (q.slug !== currentSlug) {
+                    router.push(`/account/reports/${q.slug}`);
+                  }
+                }}
+                className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                  q.slug === currentSlug
+                    ? "bg-cyan-50 text-cyan-700 font-semibold"
+                    : "text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                {q.label}
+                {q.slug === currentSlug && (
+                  <span className="ml-2 text-xs text-cyan-500">Current</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

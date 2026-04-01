@@ -10,9 +10,7 @@ export function UpcomingSessions() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [membership, setMembership] = useState<
-    "community" | "club" | "academy"
-  >("community");
+  const [membership, setMembership] = useState<"community" | "club" | "academy">("community");
 
   useEffect(() => {
     async function load() {
@@ -25,15 +23,9 @@ export function UpcomingSessions() {
           if (profile) {
             const tier =
               profile.membership?.primary_tier ||
-              (profile.membership?.active_tiers &&
-                profile.membership.active_tiers[0]) ||
+              (profile.membership?.active_tiers && profile.membership.active_tiers[0]) ||
               "community";
-            setMembership(
-              (tier as string).toLowerCase() as
-                | "community"
-                | "club"
-                | "academy",
-            );
+            setMembership((tier as string).toLowerCase() as "community" | "club" | "academy");
           }
         } catch {
           setMembership("community");
@@ -42,12 +34,10 @@ export function UpcomingSessions() {
         const data = await getSessions();
         // Filter for future sessions only using starts_at
         const futureSessions = data
-          .filter(
-            (session: Session) => new Date(session.starts_at) >= new Date(),
-          )
+          .filter((session: Session) => new Date(session.starts_at) >= new Date())
           .sort(
             (a: Session, b: Session) =>
-              new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime(),
+              new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
           )
           .slice(0, 3); // Show next 3 sessions
         setSessions(futureSessions);
@@ -69,9 +59,7 @@ export function UpcomingSessions() {
   };
 
   if (loading) {
-    return (
-      <div className="text-sm text-slate-500">Loading upcoming sessions...</div>
-    );
+    return <div className="text-sm text-slate-500">Loading upcoming sessions...</div>;
   }
 
   if (error) {
@@ -82,10 +70,7 @@ export function UpcomingSessions() {
     return (
       <div className="text-sm text-slate-600">
         No upcoming sessions scheduled.{" "}
-        <Link
-          href="/sessions-and-events"
-          className="text-cyan-600 hover:underline"
-        >
+        <Link href="/sessions" className="text-cyan-600 hover:underline">
           View full calendar
         </Link>
       </div>
@@ -111,11 +96,8 @@ export function UpcomingSessions() {
             </p>
           </div>
           {membership === "community" &&
-          (session.session_type === "club" ||
-            session.session_type === "cohort_class") ? (
-            <span className="text-xs font-medium text-amber-700">
-              Club members only
-            </span>
+          (session.session_type === "club" || session.session_type === "cohort_class") ? (
+            <span className="text-xs font-medium text-amber-700">Club members only</span>
           ) : (
             <Link href={`/sessions/${session.id}/book`}>
               <Button size="sm" variant="outline">
@@ -126,10 +108,7 @@ export function UpcomingSessions() {
         </div>
       ))}
       <div className="text-center">
-        <Link
-          href="/sessions-and-events"
-          className="text-xs font-medium text-cyan-600 hover:underline"
-        >
+        <Link href="/sessions" className="text-xs font-medium text-cyan-600 hover:underline">
           View all sessions &rarr;
         </Link>
       </div>

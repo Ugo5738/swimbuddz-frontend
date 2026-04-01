@@ -1,13 +1,27 @@
 "use client";
 
+import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
+import { GreetingHero } from "@/components/dashboard/GreetingHero";
+import { NextSessionCard } from "@/components/dashboard/NextSessionCard";
+import { QuickActions } from "@/components/dashboard/QuickActions";
+import { SwimCalendar } from "@/components/dashboard/SwimCalendar";
+import { YTDStatsOverview } from "@/components/dashboard/YTDStatsOverview";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet } from "@/lib/api";
-import { type CachedPaymentIntent, loadPaymentIntentCache } from "@/lib/paymentCache";
+import type { Announcement } from "@/lib/communications";
+import { formatAnnouncementCategory } from "@/lib/communications";
+import { loadPaymentIntentCache, type CachedPaymentIntent } from "@/lib/paymentCache";
+import {
+  fetchQuarterlyReport,
+  fetchYTDStats,
+  quarterSlug,
+  type MemberQuarterlyReport,
+  type YTDStats,
+} from "@/lib/reports";
 import {
   ArrowRight,
-  Award,
   Bell,
   Calendar,
   CheckCircle,
@@ -16,24 +30,84 @@ import {
   Flame,
   Sparkles,
   TrendingUp,
-  Users,
   Wallet,
 } from "lucide-react";
-import { fetchQuarterlyReport, type MemberQuarterlyReport } from "@/lib/reports";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+
+type AttendanceRecord = {
+  session_id: number;
+  session_title: string;
+  session_starts_at: string;
+  session_location?: string;
+  status: string;
+};
+
+const CATEGORY_BADGE_VARIANT: Record<
+  string,
+  "warning" | "danger" | "info" | "default" | "success"
+> = {
+  rain_update: "warning",
+  schedule_change: "danger",
+  academy_update: "info",
+  event: "success",
+  competition: "info",
+  general: "default",
+};
 
 export default function MemberDashboardPage() {
   const [member, setMember] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [resumePaymentIntent, setResumePaymentIntent] = useState<CachedPaymentIntent | null>(null);
+  const [allRecords, setAllRecords] = useState<AttendanceRecord[]>([]);
+  const [upcomingBookings, setUpcomingBookings] = useState<AttendanceRecord[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [ytdStats, setYtdStats] = useState<YTDStats | null>(null);
+
+  const currentYear = new Date().getFullYear();
+  const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
+  const leaderboardSlug = quarterSlug(currentYear, currentQuarter);
 
   useEffect(() => {
     apiGet("/api/v1/members/me", { auth: true })
       .then((data) => setMember(data))
       .catch((err) => console.error("Failed to load member", err))
       .finally(() => setLoading(false));
-  }, []);
+
+    // Fetch all attendance records (past + future) for heatmap + upcoming
+    apiGet<AttendanceRecord[]>("/api/v1/attendance/me", { auth: true })
+      .then((records) => {
+        setAllRecords(records);
+        const now = new Date();
+        const upcoming = records
+          .filter((r) => new Date(r.session_starts_at) > now)
+          .sort(
+            (a, b) =>
+              new Date(a.session_starts_at).getTime() - new Date(b.session_starts_at).getTime()
+          );
+        setUpcomingBookings(upcoming);
+      })
+      .catch(() => {
+        setAllRecords([]);
+        setUpcomingBookings([]);
+      });
+
+    // Fetch recent announcements
+    apiGet<Announcement[]>("/api/v1/communications/announcements/", { auth: true })
+      .then((data) => {
+        const recent = data
+          .filter((a) => a.status === "published")
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 3);
+        setAnnouncements(recent);
+      })
+      .catch(() => setAnnouncements([]));
+
+    // Fetch YTD stats
+    fetchYTDStats(currentYear)
+      .then(setYtdStats)
+      .catch(() => setYtdStats(null));
+  }, [currentYear]);
 
   useEffect(() => {
     if (!member) return;
@@ -51,7 +125,7 @@ export default function MemberDashboardPage() {
   }, [member]);
 
   if (loading) {
-    return <LoadingCard text="Loading dashboard..." />;
+    return <DashboardSkeleton />;
   }
 
   const firstName = member?.first_name || "Member";
@@ -89,7 +163,6 @@ export default function MemberDashboardPage() {
   const clubContext = wantsClub || memberTiers.includes("club") || memberTiers.includes("academy");
   const academyContext = wantsAcademy || memberTiers.includes("academy");
 
-  // Use profile_photo_media_id (source of truth) not profile_photo_url
   const hasProfileBasics = Boolean(
     member?.profile_photo_media_id && profile.gender && profile.date_of_birth
   );
@@ -168,13 +241,23 @@ export default function MemberDashboardPage() {
           : memberTiers.includes("club")
             ? "Club"
             : "Community";
+
+  const tierVariant: "info" | "success" | "warning" | "default" = memberTiers.includes("academy")
+    ? "warning"
+    : memberTiers.includes("club")
+      ? "success"
+      : "info";
+
   const resumeCheckoutUrl = resumePaymentIntent?.checkout_url || null;
   const showPaymentRecoveryBanner = !communityActive && onboardingReadyForPayment;
   const showCommunityActivationBanner = !communityActive && !onboardingReadyForPayment;
+  const showAcademy = academyContext || memberTiers.includes("academy");
+
+  const nextSession = upcomingBookings.length > 0 ? upcomingBookings[0] : null;
 
   return (
-    <div className="space-y-8">
-      {/* Setup Progress Banner */}
+    <div className="space-y-6">
+      {/* ── Section 1: Conditional Onboarding Banners ── */}
       {needsOnboarding && (
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-cyan-600 via-cyan-500 to-blue-500 p-6 text-white shadow-lg">
           <div className="absolute top-0 right-0 -mt-4 -mr-4 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
@@ -186,12 +269,11 @@ export default function MemberDashboardPage() {
                 <Sparkles className="h-5 w-5 text-amber-300" />
                 <span className="text-sm font-medium text-cyan-100">Complete Your Setup</span>
               </div>
-              <h2 className="text-2xl font-bold mb-2">You're {progressPercent}% there!</h2>
+              <h2 className="text-2xl font-bold mb-2">You&apos;re {progressPercent}% there!</h2>
               <p className="text-cyan-100 text-sm max-w-md">
                 Complete a few quick steps to unlock all features and get the most out of SwimBuddz.
               </p>
 
-              {/* Progress bar */}
               <div className="mt-4 flex items-center gap-3">
                 <div className="flex-1 h-2 bg-white/20 rounded-full overflow-hidden">
                   <div
@@ -202,7 +284,6 @@ export default function MemberDashboardPage() {
                 <span className="text-sm font-semibold">{progressPercent}%</span>
               </div>
 
-              {/* Checklist */}
               <ul className="mt-4 space-y-2">
                 <li className="flex items-center gap-2 text-sm">
                   {needsProfileCore ? (
@@ -255,7 +336,6 @@ export default function MemberDashboardPage() {
 
       {showPaymentRecoveryBanner && (
         <Card className="overflow-hidden border-emerald-200 bg-emerald-50">
-          {/* Mobile: Stacked layout with full-width button */}
           <div className="md:hidden">
             <div className="p-4 pb-3">
               <div className="flex items-start gap-3">
@@ -288,8 +368,6 @@ export default function MemberDashboardPage() {
               </Link>
             </div>
           </div>
-
-          {/* Desktop: Horizontal layout */}
           <div className="hidden md:block p-6">
             <div className="flex items-center gap-4">
               <div className="flex-shrink-0 rounded-xl bg-emerald-100 p-3">
@@ -297,7 +375,7 @@ export default function MemberDashboardPage() {
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-slate-900">
-                  Onboarding complete - payment pending
+                  Onboarding complete — payment pending
                 </h3>
                 <p className="text-sm text-slate-600 mt-1">
                   Finish payment to activate your Community membership and unlock member features.
@@ -328,59 +406,33 @@ export default function MemberDashboardPage() {
         </Card>
       )}
 
-      {/* Quick Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Link href="/account/billing">
-          <Card className="p-5 bg-gradient-to-br from-cyan-50 to-white border-cyan-100 hover:shadow-md transition-shadow cursor-pointer">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-medium text-cyan-600">Membership Status</p>
-                <p className="mt-1 text-2xl font-bold text-slate-900">{tierLabel}</p>
-                <p className="text-sm text-slate-500 mt-1">
-                  {communityActive ? "Active" : "Pending activation"}
-                </p>
-              </div>
-              <div className="rounded-xl bg-cyan-100 p-3">
-                <TrendingUp className="h-6 w-6 text-cyan-600" />
-              </div>
-            </div>
-          </Card>
-        </Link>
+      {/* ── Section 2: Personalized Greeting ── */}
+      <GreetingHero
+        firstName={firstName}
+        profilePhotoMediaId={member?.profile_photo_media_id}
+        tierLabel={tierLabel}
+        tierVariant={tierVariant}
+        nextSession={
+          nextSession
+            ? {
+                title: nextSession.session_title,
+                starts_at: nextSession.session_starts_at,
+                location: nextSession.session_location,
+              }
+            : null
+        }
+        streakCurrent={ytdStats?.streak_current}
+      />
 
-        <Link href="/sessions-and-events">
-          <Card className="p-5 bg-gradient-to-br from-blue-50 to-white border-blue-100 hover:shadow-md transition-shadow cursor-pointer">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-medium text-blue-600">Upcoming Sessions</p>
-                <p className="mt-1 text-2xl font-bold text-slate-900">0</p>
-                <p className="text-sm text-slate-500 mt-1">No sessions scheduled</p>
-              </div>
-              <div className="rounded-xl bg-blue-100 p-3">
-                <Calendar className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-          </Card>
-        </Link>
+      {/* ── Section 3: YTD Stats Overview ── */}
+      {ytdStats && <YTDStatsOverview stats={ytdStats} year={currentYear} />}
 
-        <Link href="/community/directory">
-          <Card className="p-5 bg-gradient-to-br from-purple-50 to-white border-purple-100 hover:shadow-md transition-shadow cursor-pointer">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-medium text-purple-600">Community</p>
-                <p className="mt-1 text-2xl font-bold text-slate-900">Connect</p>
-                <p className="text-sm text-slate-500 mt-1">Meet other swimmers</p>
-              </div>
-              <div className="rounded-xl bg-purple-100 p-3">
-                <Users className="h-6 w-6 text-purple-600" />
-              </div>
-            </div>
-          </Card>
-        </Link>
-      </div>
+      {/* ── Section 4: Next Session ── */}
+      <NextSessionCard session={nextSession} />
 
-      {/* Community Activation Banner (if not active) */}
+      {/* ── Section 5: Conditional Action Banners ── */}
       {showCommunityActivationBanner && (
-        <Card className="p-6 border-amber-200 bg-amber-50">
+        <Card className="p-5 border-amber-200 bg-amber-50">
           <div className="flex flex-col md:flex-row md:items-center gap-4">
             <div className="flex-shrink-0 rounded-xl bg-amber-100 p-3">
               <Clock className="h-6 w-6 text-amber-600" />
@@ -398,9 +450,8 @@ export default function MemberDashboardPage() {
         </Card>
       )}
 
-      {/* Upgrade Request Banner */}
       {(wantsClub || wantsAcademy) && (
-        <Card className="p-6 border-blue-200 bg-blue-50">
+        <Card className="p-5 border-blue-200 bg-blue-50">
           <div className="flex flex-col md:flex-row md:items-center gap-4">
             <div className="flex-shrink-0 rounded-xl bg-blue-100 p-3">
               <TrendingUp className="h-6 w-6 text-blue-600" />
@@ -421,11 +472,73 @@ export default function MemberDashboardPage() {
         </Card>
       )}
 
-      {/* Quarterly Report Card — mini stats + direct link */}
+      {/* ── Section 6: Quick Actions ── */}
+      <QuickActions leaderboardSlug={leaderboardSlug} showAcademy={showAcademy} />
+
+      {/* ── Section 7: Swim Activity Heatmap ── */}
+      <SwimCalendar records={allRecords} />
+
+      {/* ── Section 8: Quarterly Report Widget ── */}
       <QuarterlyReportWidget />
 
-      {/* Community Leaderboard */}
-      <Link href={`/account/reports/q${Math.ceil((new Date().getMonth() + 1) / 3)}-${new Date().getFullYear()}/leaderboard`} className="block">
+      {/* ── Section 9: Recent Announcements ── */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
+            Announcements
+          </h2>
+          <Link
+            href="/account/notifications"
+            className="text-sm font-medium text-cyan-600 hover:text-cyan-700 flex items-center gap-1"
+          >
+            View all <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+        {announcements.length > 0 ? (
+          <div className="space-y-2">
+            {announcements.map((a) => (
+              <Card key={a.id} className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 rounded-full bg-cyan-100 p-2">
+                    <Bell className="h-4 w-4 text-cyan-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium text-slate-900 text-sm">{a.title}</p>
+                      <Badge
+                        variant={CATEGORY_BADGE_VARIANT[a.category] || "default"}
+                        className="text-[9px] px-2 py-0.5"
+                      >
+                        {formatAnnouncementCategory(a.category)}
+                      </Badge>
+                      {a.is_pinned && (
+                        <span className="text-[10px] font-semibold text-amber-600">Pinned</span>
+                      )}
+                    </div>
+                    {a.summary && (
+                      <p className="text-sm text-slate-600 mt-0.5 line-clamp-2">{a.summary}</p>
+                    )}
+                    <p className="text-xs text-slate-400 mt-1">
+                      {new Date(a.published_at || a.created_at).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card className="p-6 text-center">
+            <Bell className="h-8 w-8 text-slate-300 mx-auto mb-2" />
+            <p className="text-sm text-slate-500">No announcements yet</p>
+          </Card>
+        )}
+      </div>
+
+      {/* ── Section 10: Community Leaderboard ── */}
+      <Link href={`/account/reports/${leaderboardSlug}/leaderboard`} className="block">
         <Card className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200 hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -442,38 +555,10 @@ export default function MemberDashboardPage() {
         </Card>
       </Link>
 
-      {/* Recent Announcements */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-900">Recent Announcements</h2>
-          <Link
-            href="/announcements"
-            className="text-sm font-medium text-cyan-600 hover:text-cyan-700 flex items-center gap-1"
-          >
-            View all <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-        <Card className="p-6">
-          <div className="flex items-start gap-4">
-            <div className="flex-shrink-0 rounded-full bg-cyan-100 p-2">
-              <Bell className="h-5 w-5 text-cyan-600" />
-            </div>
-            <div>
-              <p className="font-medium text-slate-900">Welcome to SwimBuddz!</p>
-              <p className="text-sm text-slate-600 mt-1">
-                Complete your profile setup to get started and connect with other swimmers in the
-                community.
-              </p>
-              <p className="text-xs text-slate-400 mt-2">Just now</p>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Coach Card (if applicable) */}
+      {/* ── Section 11: Coach Card (conditional) ── */}
       {member?.coach_profile && (
         <Link href="/coach/dashboard" className="block">
-          <Card className="p-6 border-purple-200 bg-gradient-to-r from-purple-50 to-purple-100/50 hover:shadow-lg transition-shadow">
+          <Card className="p-5 border-purple-200 bg-gradient-to-r from-purple-50 to-purple-100/50 hover:shadow-lg transition-shadow">
             <div className="flex items-center gap-4">
               <div className="rounded-xl bg-purple-200 p-3">
                 <Sparkles className="h-6 w-6 text-purple-700" />
@@ -492,6 +577,8 @@ export default function MemberDashboardPage() {
     </div>
   );
 }
+
+// ── Quarterly Report Widget ──
 
 function QuarterlyReportWidget() {
   const [report, setReport] = useState<MemberQuarterlyReport | null>(null);
@@ -521,18 +608,15 @@ function QuarterlyReportWidget() {
   if (!report) {
     return (
       <Link href="/account/reports" className="block">
-        <Card className="p-6 border-cyan-200 bg-gradient-to-r from-cyan-50 to-blue-50 hover:shadow-lg transition-shadow">
+        <Card className="p-5 border-cyan-200 bg-gradient-to-r from-cyan-50 to-blue-50 hover:shadow-lg transition-shadow">
           <div className="flex items-center gap-4">
             <div className="rounded-xl bg-cyan-200 p-3">
               <TrendingUp className="h-6 w-6 text-cyan-700" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-cyan-900">
-                Your Quarterly Report
-              </h3>
+              <h3 className="font-semibold text-cyan-900">Your Quarterly Report</h3>
               <p className="text-sm text-cyan-700">
-                View your Q{quarter} {year} stats and share your SwimBuddz
-                Wrapped card
+                View your Q{quarter} {year} stats and share your SwimBuddz Wrapped card
               </p>
             </div>
             <ArrowRight className="h-5 w-5 text-cyan-400" />
@@ -568,29 +652,23 @@ function QuarterlyReportWidget() {
   return (
     <Link href={`/account/reports/${slug}`} className="block">
       <Card className="overflow-hidden border-cyan-200 hover:shadow-lg transition-shadow">
-        <div className="bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-4">
+        <div className="bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-3">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-cyan-100">
                 Q{quarter} {year} Swim Report
               </p>
-              <h3 className="text-lg font-bold text-white mt-0.5">
-                Your Quarterly Report
-              </h3>
+              <h3 className="text-base font-bold text-white mt-0.5">Your Quarterly Report</h3>
             </div>
             <ArrowRight className="h-5 w-5 text-white/70" />
           </div>
         </div>
         <div className="grid grid-cols-4 divide-x divide-slate-100 bg-white">
           {stats.map((s) => (
-            <div key={s.label} className="px-4 py-3 text-center">
-              <div className="flex items-center justify-center mb-1">
-                {s.icon}
-              </div>
+            <div key={s.label} className="px-3 py-3 text-center">
+              <div className="flex items-center justify-center mb-1">{s.icon}</div>
               <p className="text-lg font-bold text-slate-900">{s.value}</p>
-              <p className="text-[10px] text-slate-500 uppercase tracking-wide">
-                {s.label}
-              </p>
+              <p className="text-[10px] text-slate-500 uppercase tracking-wide">{s.label}</p>
             </div>
           ))}
         </div>

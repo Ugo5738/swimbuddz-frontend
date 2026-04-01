@@ -401,7 +401,7 @@ export default function AdminSessionsPage() {
 
   // ---- API actions ----
   const handleCreateSession = useCallback(
-    async (sessionData: any, rideConfigs: any[]) => {
+    async (sessionData: any, rideConfigs: any[], publishAfter?: boolean) => {
       setIsSubmitting(true);
       try {
         const res = await apiFetch("/api/v1/sessions/", {
@@ -417,7 +417,13 @@ export default function AdminSessionsPage() {
           }).catch((err) => console.error("Ride config error:", err));
         }
 
-        toast.success("Session created");
+        if (publishAfter) {
+          await apiFetch(`/api/v1/sessions/${created.id}/publish`, { method: "POST" });
+          toast.success("Session created and published");
+        } else {
+          toast.success("Session created as draft");
+        }
+
         setFormModal(null);
         await fetchData();
       } catch (err) {
@@ -981,7 +987,7 @@ function SessionFormModal({
   rideAreas: RideArea[];
   submitting: boolean;
   onClose: () => void;
-  onCreate: (data: any, rideConfigs: any[]) => void;
+  onCreate: (data: any, rideConfigs: any[], publishAfter?: boolean) => void;
   onUpdate: (id: string, data: any, rideConfigs: any[]) => void;
 }) {
   const now = new Date();
@@ -1001,6 +1007,7 @@ function SessionFormModal({
     pool_fee: session?.pool_fee ?? 2000,
     capacity: session?.capacity ?? 20,
     description: session?.description || "",
+    publish_status: "draft" as "draft" | "published",
   });
 
   const [rideConfigs, setRideConfigs] = useState<
@@ -1056,7 +1063,7 @@ function SessionFormModal({
     if (mode === "edit" && session) {
       onUpdate(session.id, sessionData, validRides);
     } else {
-      onCreate(sessionData, validRides);
+      onCreate(sessionData, validRides, form.publish_status === "published");
     }
   };
 
@@ -1130,6 +1137,19 @@ function SessionFormModal({
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
         />
+
+        {mode === "create" && (
+          <Select
+            label="Status"
+            value={form.publish_status}
+            onChange={(e) =>
+              setForm({ ...form, publish_status: e.target.value as "draft" | "published" })
+            }
+          >
+            <option value="draft">Draft</option>
+            <option value="published">Published (visible to members immediately)</option>
+          </Select>
+        )}
 
         {/* Ride Share section */}
         <div className="border-t border-slate-200 pt-4">
