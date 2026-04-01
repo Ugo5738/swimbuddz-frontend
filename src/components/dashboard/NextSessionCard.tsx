@@ -7,11 +7,10 @@ import Link from "next/link";
 
 type NextSessionCardProps = {
   session?: {
+    session_id?: string | number;
     session_title: string;
     session_starts_at: string;
     session_location?: string;
-    /** If provided, session is already booked */
-    session_id?: number;
   } | null;
   /** Whether this session is already booked by the member */
   isBooked?: boolean;
@@ -98,13 +97,17 @@ export function NextSessionCard({ session, isBooked }: NextSessionCardProps) {
       {/* Actions */}
       <div className="mt-4 flex items-center justify-between">
         {isBooked ? (
-          <Link href="/sessions?view=booked">
+          <Link
+            href={
+              session.session_id ? `/sessions/${session.session_id}/book` : "/sessions?view=booked"
+            }
+          >
             <Button size="sm" variant="outline">
               View booking
             </Button>
           </Link>
         ) : (
-          <Link href="/sessions">
+          <Link href={session.session_id ? `/sessions/${session.session_id}/book` : "/sessions"}>
             <Button size="sm">
               Book now
               <ArrowRight className="ml-1.5 h-4 w-4" />

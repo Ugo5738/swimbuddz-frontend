@@ -63,6 +63,7 @@ export default function MemberDashboardPage() {
   const [allRecords, setAllRecords] = useState<AttendanceRecord[]>([]);
   const [upcomingBookings, setUpcomingBookings] = useState<AttendanceRecord[]>([]);
   const [nextAvailableSession, setNextAvailableSession] = useState<{
+    session_id: string;
     session_title: string;
     session_starts_at: string;
     session_location?: string;
@@ -169,6 +170,7 @@ export default function MemberDashboardPage() {
           const match = futurePublished.find((s) => s.session_type === type);
           if (match) {
             setNextAvailableSession({
+              session_id: match.id,
               session_title: match.title,
               session_starts_at: match.starts_at,
               session_location: match.location || undefined,
@@ -180,6 +182,7 @@ export default function MemberDashboardPage() {
         if (futurePublished.length > 0) {
           const s = futurePublished[0];
           setNextAvailableSession({
+            session_id: s.id,
             session_title: s.title,
             session_starts_at: s.starts_at,
             session_location: s.location || undefined,
