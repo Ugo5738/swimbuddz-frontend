@@ -56,15 +56,18 @@ export default function EditProgramPage() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Basic info state
+  // Basic info state.
+  // price_amount here is stored in **naira** for UX; converted to/from
+  // kobo (×100) at load and submit because the backend persists kobo.
   const [formData, setFormData] = useState({
     name: "",
+    slug: "",
     description: "",
     level: ProgramLevel.BEGINNER_1,
     duration_weeks: 4,
     default_capacity: 10,
     currency: "NGN",
-    price_amount: 0,
+    price_amount: 0, // naira
     billing_type: BillingType.ONE_TIME,
     is_published: false,
     cover_image_url: "",
@@ -105,12 +108,14 @@ export default function EditProgramPage() {
         // Populate form data
         setFormData({
           name: program.name || "",
+          slug: program.slug || "",
           description: program.description || "",
           level: program.level || ProgramLevel.BEGINNER_1,
           duration_weeks: program.duration_weeks || 4,
           default_capacity: program.default_capacity || 10,
           currency: program.currency || "NGN",
-          price_amount: program.price_amount || 0, // Stored in naira
+          // Convert kobo → naira for display (backend stores kobo)
+          price_amount: Math.round((program.price_amount || 0) / 100),
           billing_type: program.billing_type || BillingType.ONE_TIME,
           is_published: program.is_published || false,
           cover_image_url: program.cover_image_url || "",
@@ -322,7 +327,11 @@ export default function EditProgramPage() {
       // Update the program
       await AcademyApi.updateProgram(id, {
         ...updateData,
-        price_amount: formData.price_amount, // Stored in naira
+        // Slug must be null (not empty string) so unique constraint allows
+        // multiple unslugged programs
+        slug: formData.slug.trim() || null,
+        // Convert naira → kobo (backend stores kobo)
+        price_amount: formData.price_amount * 100,
         prep_materials: prepMaterialsData,
         curriculum_json: buildCurriculumJson(),
       });
@@ -407,6 +416,29 @@ export default function EditProgramPage() {
                 setFormData({ ...formData, name: e.target.value })
               }
             />
+            <div>
+              <Input
+                label="URL Slug (lowercase, dashes only)"
+                value={formData.slug}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    slug: e.target.value
+                      .toLowerCase()
+                      .replace(/[^a-z0-9-]/g, "-")
+                      .replace(/-+/g, "-"),
+                  })
+                }
+                placeholder="e.g., learn-to-swim-beginner"
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Used in the public URL:{" "}
+                <code className="text-slate-700">
+                  /academy/programs/{formData.slug || "your-slug"}
+                </code>
+                . Leave empty to hide from public index.
+              </p>
+            </div>
             <Textarea
               label="Description"
               value={formData.description}

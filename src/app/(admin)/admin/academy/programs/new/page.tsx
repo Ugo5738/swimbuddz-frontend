@@ -58,15 +58,18 @@ export default function NewProgramPage() {
   const [skills, setSkills] = useState<Skill[]>([]);
   const [loadingSkills, setLoadingSkills] = useState(true);
 
-  // Basic info state
+  // Basic info state.
+  // Note: price_amount here is stored in **naira** for UX; converted to kobo
+  // (multiplied by 100) when submitted because the backend persists kobo.
   const [formData, setFormData] = useState({
     name: "",
+    slug: "",
     description: "",
     level: ProgramLevel.BEGINNER_1,
     duration_weeks: 4,
     default_capacity: 10,
     currency: "NGN",
-    price_amount: 0,
+    price_amount: 0, // naira (multiplied by 100 on submit)
     billing_type: BillingType.ONE_TIME,
     is_published: false,
     cover_image_url: "",
@@ -246,7 +249,11 @@ export default function NewProgramPage() {
 
       const program = await AcademyApi.createProgram({
         ...createData,
-        price_amount: formData.price_amount,
+        // Slug must be null (not empty string) so multiple unslugged programs
+        // don't collide on the unique constraint
+        slug: formData.slug.trim() || null,
+        // Convert naira → kobo (backend stores kobo, smallest NGN unit)
+        price_amount: formData.price_amount * 100,
         prep_materials: formData.prep_materials.trim()
           ? { content: formData.prep_materials }
           : null,
@@ -382,6 +389,30 @@ export default function NewProgramPage() {
               placeholder="e.g., Learn to Swim - Beginner"
               required
             />
+
+            <div>
+              <Input
+                label="URL Slug (lowercase, dashes only)"
+                value={formData.slug}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    slug: e.target.value
+                      .toLowerCase()
+                      .replace(/[^a-z0-9-]/g, "-")
+                      .replace(/-+/g, "-"),
+                  })
+                }
+                placeholder="e.g., learn-to-swim-beginner"
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Used in the public URL:{" "}
+                <code className="text-slate-700">
+                  /academy/programs/{formData.slug || "your-slug"}
+                </code>
+                . Leave empty to hide from public index.
+              </p>
+            </div>
 
             <Textarea
               label="Description"

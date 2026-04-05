@@ -92,7 +92,7 @@ export interface PublicAcademyStats {
 export interface Program {
   id: string;
   name: string;
-  slug?: string;
+  slug?: string | null;
   description?: string;
   cover_image_url?: string;
   cover_image_media_id?: string;
