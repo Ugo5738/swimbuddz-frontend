@@ -1,5 +1,6 @@
 "use client";
 
+import { BubblesSlider } from "@/components/checkout/BubblesSlider";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -131,6 +132,7 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
   // Wallet / bubbles
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [payWithBubbles, setPayWithBubbles] = useState(false);
+  const [bubblesToApply, setBubblesToApply] = useState<number>(0);
 
   // Payment
   const [processing, setProcessing] = useState(false);
@@ -150,6 +152,14 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
   const bubblesNeeded = Math.ceil(total / 100);
   const canPayWithBubbles = total > 0 && walletBalance !== null && walletBalance >= bubblesNeeded;
   const hasRideShareAreas = session?.rideShareAreas && session.rideShareAreas.length > 0;
+
+  // Partial Bubbles: cap slider at min(walletBalance, bubblesNeeded)
+  const sliderMax = Math.min(walletBalance ?? 0, bubblesNeeded);
+  const effectiveBubbles = Math.min(bubblesToApply, sliderMax);
+  const bubblesValueNgn = effectiveBubbles * 100;
+  const paystackAmount = Math.max(0, total - bubblesValueNgn);
+  // Covers full amount with Bubbles → use direct-debit flow (existing sign-in endpoint)
+  const coversFullWithBubbles = effectiveBubbles > 0 && paystackAmount === 0;
 
   // --- Effects ---
 
@@ -342,10 +352,11 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
   };
 
   const handlePayment = async () => {
-    // Free session OR paying with Bubbles → direct sign-in path
-    if (total <= 0 || payWithBubbles) {
+    // Free session OR full Bubbles coverage → direct sign-in path (no Paystack)
+    if (total <= 0 || coversFullWithBubbles || payWithBubbles) {
       setProcessing(true);
       try {
+        const fullBubbles = (payWithBubbles || coversFullWithBubbles) && total > 0;
         if (!isRideOnlyFlow) {
           await apiPost(
             `/api/v1/attendance/sessions/${params.id}/sign-in`,
@@ -354,7 +365,7 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
               ride_share_option: selectedRideAreaId ? "join" : undefined,
               needs_ride: !!selectedRideAreaId,
               pickup_location: selectedPickupLocationId,
-              pay_with_bubbles: payWithBubbles && total > 0,
+              pay_with_bubbles: fullBubbles,
             },
             { auth: true }
           );
@@ -367,7 +378,7 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
             {
               session_ride_config_id: selectedRideAreaId,
               pickup_location_id: selectedPickupLocationId,
-              pay_with_bubbles: payWithBubbles && total > 0,
+              pay_with_bubbles: fullBubbles,
               num_seats: numSeats,
             },
             { auth: true }
@@ -411,6 +422,7 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
           num_seats: numSeats,
           ...(isRideOnlyFlow ? {} : { attendance_status: "present" }),
           discount_code: validatedDiscount?.code || undefined,
+          bubbles_to_apply: effectiveBubbles > 0 ? effectiveBubbles : undefined,
         },
         { auth: true }
       );
@@ -433,8 +445,10 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
   if (verifying) return <LoadingCard text="Verifying payment..." />;
 
   if (paymentSuccess && session) {
-    const bubblesUsed = payWithBubbles && total > 0 ? bubblesNeeded : 0;
-    const paystackAmount = payWithBubbles ? 0 : total;
+    // Compute bubbles actually used: slider value when set, else fall back to toggle logic.
+    const bubblesUsed =
+      effectiveBubbles > 0 ? effectiveBubbles : payWithBubbles && total > 0 ? bubblesNeeded : 0;
+    const paystackAmountDisplay = Math.max(0, total - bubblesUsed * 100);
     return (
       <BookingSuccess
         session={session}
@@ -444,7 +458,7 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
           discountAmount,
           discountCode: validatedDiscount?.code,
           bubblesApplied: bubblesUsed,
-          paystackAmount,
+          paystackAmount: paystackAmountDisplay,
           total,
           reference: paymentReference || undefined,
         }}
@@ -539,15 +553,68 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
             />
           )}
 
-          {/* Payment method - compact segmented control */}
+          {/* Payment method */}
           {total > 0 && (
-            <PaymentMethodPicker
-              payWithBubbles={payWithBubbles}
-              canPayWithBubbles={canPayWithBubbles}
-              walletBalance={walletBalance}
-              bubblesNeeded={bubblesNeeded}
-              onSelectMethod={setPayWithBubbles}
-            />
+            <Card className="p-5 space-y-4">
+              <div>
+                <h2 className="text-base font-semibold text-slate-900">Payment</h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {paystackAmount > 0 ? "Card payment via Paystack" : "Fully covered by Bubbles"}
+                </p>
+              </div>
+
+              {/* Card payment info */}
+              <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4">
+                <div className="flex-shrink-0 rounded-lg p-2 bg-slate-100">
+                  <svg
+                    className="w-5 h-5 text-slate-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-slate-900">
+                    {paystackAmount > 0
+                      ? `${formatCurrency(paystackAmount)} via Paystack`
+                      : "No card payment needed"}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {paystackAmount > 0
+                      ? "Card, bank transfer, or USSD"
+                      : "Bubbles cover the full amount"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Bubbles slider */}
+              {walletBalance !== null && walletBalance > 0 ? (
+                <BubblesSlider
+                  amountDueNgn={total}
+                  walletBalance={walletBalance}
+                  bubblesToApply={effectiveBubbles}
+                  onChange={(v) => {
+                    setBubblesToApply(v);
+                    setPayWithBubbles(v > 0 && v * 100 >= total);
+                  }}
+                />
+              ) : walletBalance === null ? (
+                <PaymentMethodPicker
+                  payWithBubbles={payWithBubbles}
+                  canPayWithBubbles={canPayWithBubbles}
+                  walletBalance={walletBalance}
+                  bubblesNeeded={bubblesNeeded}
+                  onSelectMethod={setPayWithBubbles}
+                />
+              ) : null}
+            </Card>
           )}
 
           {/* Validation message (mobile only, since desktop has it in sidebar) */}
@@ -571,6 +638,8 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
               total={total}
               payWithBubbles={payWithBubbles}
               bubblesNeeded={bubblesNeeded}
+              effectiveBubbles={effectiveBubbles}
+              paystackAmount={paystackAmount}
               isRideOnlyFlow={isRideOnlyFlow}
               formatCurrency={formatCurrency}
               onDiscountInputChange={setDiscountInput}
@@ -600,6 +669,8 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
               total={total}
               payWithBubbles={payWithBubbles}
               bubblesNeeded={bubblesNeeded}
+              effectiveBubbles={effectiveBubbles}
+              paystackAmount={paystackAmount}
               isRideOnlyFlow={isRideOnlyFlow}
               formatCurrency={formatCurrency}
               onDiscountInputChange={setDiscountInput}
@@ -622,6 +693,8 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
         total={total}
         payWithBubbles={payWithBubbles}
         bubblesNeeded={bubblesNeeded}
+        effectiveBubbles={effectiveBubbles}
+        paystackAmount={paystackAmount}
         processing={processing}
         disabled={payDisabled}
         formatCurrency={formatCurrency}

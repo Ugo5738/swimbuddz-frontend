@@ -5,14 +5,25 @@ import { SessionCard, type SessionWithRides } from "@/components/sessions/Sessio
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { LoadingCard } from "@/components/ui/LoadingCard";
-import { apiGet } from "@/lib/api";
+import { apiGet, apiPost } from "@/lib/api";
 import { tierDisplayLabel } from "@/lib/sessionAccess";
 import { getSessionTypeLabel, SessionType } from "@/lib/sessions";
 import { getEffectiveTier, MembershipTier } from "@/lib/tiers";
-import { ArrowRight, Calendar, CheckSquare, ChevronDown, Clock, Filter, MapPin, Waves, X } from "lucide-react";
+import {
+  ArrowRight,
+  Calendar,
+  CheckSquare,
+  ChevronDown,
+  Clock,
+  Filter,
+  MapPin,
+  Waves,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 
 // ── Constants ────────────────────────────────────────────────────────────
 
@@ -486,9 +497,7 @@ function DateGroupedSessions({
                 attendanceStatus={attendanceBySession?.get(session.id)}
                 selectable={selectMode}
                 selected={selectedIds?.has(session.id) ?? false}
-                onToggleSelect={
-                  onToggleSelect ? () => onToggleSelect(session.id) : undefined
-                }
+                onToggleSelect={onToggleSelect ? () => onToggleSelect(session.id) : undefined}
               />
             ))}
           </div>
@@ -680,11 +689,27 @@ function SessionsHub() {
     [selectedSessions]
   );
 
-  const bundleCheckoutHref = useMemo(() => {
-    if (selectedIds.size === 0) return "#";
-    const ids = Array.from(selectedIds).join(",");
-    return `/sessions/checkout?ids=${encodeURIComponent(ids)}`;
-  }, [selectedIds]);
+  // Creates a server-side SessionBundleCart, then navigates the user to
+  // /sessions/bundle/{bundleId}/book to complete checkout.
+  const [creatingBundle, setCreatingBundle] = useState(false);
+  const handleCheckoutBundle = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    setCreatingBundle(true);
+    try {
+      const cart = await apiPost<{ id: string }>(
+        "/api/v1/sessions/bundles",
+        { session_ids: Array.from(selectedIds) },
+        { auth: true }
+      );
+      router.push(`/sessions/bundle/${cart.id}/book`);
+    } catch (err) {
+      console.error("Failed to create bundle cart:", err);
+      const message =
+        err instanceof Error ? err.message : "Could not start bundle checkout. Please try again.";
+      toast.error(message);
+      setCreatingBundle(false);
+    }
+  }, [selectedIds, router]);
 
   // Apply filters to sessions for current tab
   const filteredSessions = useMemo(() => {
@@ -948,8 +973,9 @@ function SessionsHub() {
         <MultiSelectBar
           count={selectedIds.size}
           totalNgn={bundleTotal}
-          checkoutHref={bundleCheckoutHref}
+          onCheckout={handleCheckoutBundle}
           onClear={clearSelection}
+          busy={creatingBundle}
         />
       )}
     </div>
