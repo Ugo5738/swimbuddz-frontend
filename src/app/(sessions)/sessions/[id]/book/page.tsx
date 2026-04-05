@@ -432,7 +432,25 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
 
   if (verifying) return <LoadingCard text="Verifying payment..." />;
 
-  if (paymentSuccess && session) return <BookingSuccess session={session} />;
+  if (paymentSuccess && session) {
+    const bubblesUsed = payWithBubbles && total > 0 ? bubblesNeeded : 0;
+    const paystackAmount = payWithBubbles ? 0 : total;
+    return (
+      <BookingSuccess
+        session={session}
+        breakdown={{
+          poolFee,
+          rideShareFee: rideShareCost,
+          discountAmount,
+          discountCode: validatedDiscount?.code,
+          bubblesApplied: bubblesUsed,
+          paystackAmount,
+          total,
+          reference: paymentReference || undefined,
+        }}
+      />
+    );
+  }
 
   if (paymentError) {
     return <BookingError sessionId={params.id} errorMessage={paymentError} />;

@@ -5,9 +5,28 @@ import Link from "next/link";
 
 type BookingSuccessProps = {
   session: Session;
+  /** Itemized payment breakdown (optional — shown only if provided). */
+  breakdown?: {
+    poolFee?: number;
+    rideShareFee?: number;
+    discountAmount?: number;
+    discountCode?: string;
+    bubblesApplied?: number;
+    paystackAmount?: number;
+    total: number;
+    reference?: string;
+  };
 };
 
-export function BookingSuccess({ session }: BookingSuccessProps) {
+const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+
+export function BookingSuccess({ session, breakdown }: BookingSuccessProps) {
   const startsAt = new Date(session.starts_at);
   const formattedDate = startsAt.toLocaleDateString("en-GB", {
     weekday: "long",
@@ -46,6 +65,62 @@ export function BookingSuccess({ session }: BookingSuccessProps) {
             </div>
           </div>
         </div>
+
+        {/* Itemized payment breakdown */}
+        {breakdown && (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm font-semibold text-slate-900 mb-3">Payment summary</p>
+            <div className="space-y-1.5 text-sm">
+              {typeof breakdown.poolFee === "number" && breakdown.poolFee > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-slate-600">Pool fee</span>
+                  <span className="text-slate-900">{formatCurrency(breakdown.poolFee)}</span>
+                </div>
+              )}
+              {typeof breakdown.rideShareFee === "number" && breakdown.rideShareFee > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-slate-600">Ride share</span>
+                  <span className="text-slate-900">{formatCurrency(breakdown.rideShareFee)}</span>
+                </div>
+              )}
+              {typeof breakdown.discountAmount === "number" && breakdown.discountAmount > 0 && (
+                <div className="flex justify-between text-emerald-700">
+                  <span>
+                    Discount{breakdown.discountCode ? ` (${breakdown.discountCode})` : ""}
+                  </span>
+                  <span>-{formatCurrency(breakdown.discountAmount)}</span>
+                </div>
+              )}
+              {typeof breakdown.bubblesApplied === "number" && breakdown.bubblesApplied > 0 && (
+                <div className="flex justify-between text-cyan-700">
+                  <span>🫧 Bubbles applied</span>
+                  <span>
+                    {breakdown.bubblesApplied} · -
+                    {formatCurrency(breakdown.bubblesApplied * 100)}
+                  </span>
+                </div>
+              )}
+              {typeof breakdown.paystackAmount === "number" && breakdown.paystackAmount > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-slate-600">Paid via card/bank</span>
+                  <span className="text-slate-900">
+                    {formatCurrency(breakdown.paystackAmount)}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between border-t border-slate-200 pt-2 font-semibold">
+                <span className="text-slate-900">Total</span>
+                <span className="text-slate-900">{formatCurrency(breakdown.total)}</span>
+              </div>
+              {breakdown.reference && (
+                <div className="pt-2 text-xs text-slate-500">
+                  Ref:{" "}
+                  <span className="font-mono">{breakdown.reference}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-col gap-3">
           <Link href="/account">

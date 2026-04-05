@@ -1,5 +1,6 @@
 "use client";
 
+import { BubblesSlider } from "@/components/checkout/BubblesSlider";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -435,60 +436,12 @@ export default function StoreCheckoutPage() {
 
               {/* Bubbles slider */}
               {walletBalance !== null && maxBubbles > 0 ? (
-                <div className="rounded-xl border-2 border-cyan-200 bg-cyan-50/50 p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl leading-none">🫧</span>
-                      <p className="font-semibold text-slate-900">Apply Bubbles</p>
-                    </div>
-                    <span className="text-xs text-slate-500">
-                      Balance: {maxBubbles.toLocaleString()} 🫧
-                    </span>
-                  </div>
-
-                  <div className="space-y-2">
-                    <input
-                      type="range"
-                      min={0}
-                      max={Math.min(maxBubbles, maxBubblesNeeded)}
-                      value={effectiveBubbles}
-                      onChange={(e) => setBubblesToApply(Number(e.target.value))}
-                      className="w-full accent-cyan-500"
-                    />
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-semibold text-cyan-700">
-                        {effectiveBubbles} 🫧 = ₦{bubblesValueNgn.toLocaleString()}
-                      </span>
-                      <span className="text-slate-500">
-                        of {Math.min(maxBubbles, maxBubblesNeeded)} max
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Quick-apply buttons */}
-                  <div className="flex gap-2">
-                    {[0, 25, 50, 100].map((pct) => {
-                      const amount =
-                        pct === 0
-                          ? 0
-                          : Math.ceil((Math.min(maxBubbles, maxBubblesNeeded) * pct) / 100);
-                      return (
-                        <button
-                          key={pct}
-                          type="button"
-                          onClick={() => setBubblesToApply(amount)}
-                          className={`flex-1 text-xs font-medium py-1.5 rounded-lg transition-colors ${
-                            effectiveBubbles === amount
-                              ? "bg-cyan-500 text-white"
-                              : "bg-white text-slate-600 border border-slate-200 hover:border-cyan-300"
-                          }`}
-                        >
-                          {pct === 0 ? "None" : `${pct}%`}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                <BubblesSlider
+                  amountDueNgn={afterCredit}
+                  walletBalance={maxBubbles}
+                  bubblesToApply={effectiveBubbles}
+                  onChange={setBubblesToApply}
+                />
               ) : walletBalance === null ? (
                 <div className="rounded-xl border border-slate-200 bg-white p-4">
                   <p className="text-sm text-slate-500">

@@ -1,5 +1,6 @@
 "use client";
 
+import { MultiSelectBar } from "@/components/sessions/MultiSelectBar";
 import { SessionCard, type SessionWithRides } from "@/components/sessions/SessionCard";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
@@ -8,7 +9,7 @@ import { apiGet } from "@/lib/api";
 import { tierDisplayLabel } from "@/lib/sessionAccess";
 import { getSessionTypeLabel, SessionType } from "@/lib/sessions";
 import { getEffectiveTier, MembershipTier } from "@/lib/tiers";
-import { ArrowRight, Calendar, ChevronDown, Clock, Filter, MapPin, Waves, X } from "lucide-react";
+import { ArrowRight, Calendar, CheckSquare, ChevronDown, Clock, Filter, MapPin, Waves, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -24,12 +25,13 @@ const SESSION_TYPES_QUERY = [
   SessionType.EVENT,
 ].join(",");
 
-type ViewTab = "all" | "booked" | "past";
+type ViewTab = "upcoming" | "booked" | "past" | "all";
 
 const TABS: { key: ViewTab; label: string }[] = [
-  { key: "all", label: "All" },
+  { key: "upcoming", label: "Upcoming" },
   { key: "booked", label: "Booked" },
   { key: "past", label: "Past" },
+  { key: "all", label: "All" },
 ];
 
 type DateFilter = "all" | "this_week" | "this_month" | "next_7" | "next_30";
@@ -443,12 +445,18 @@ function DateGroupedSessions({
   membership,
   isPast = false,
   attendanceBySession,
+  selectMode = false,
+  selectedIds,
+  onToggleSelect,
 }: {
   sessions: SessionWithRides[];
   bookedSessionIds: Set<string>;
   membership: MembershipTier;
   isPast?: boolean;
   attendanceBySession?: Map<string, string>;
+  selectMode?: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
 }) {
   const groups = groupByDate(sessions);
 
@@ -476,6 +484,11 @@ function DateGroupedSessions({
                 membership={membership}
                 isPast={isPast}
                 attendanceStatus={attendanceBySession?.get(session.id)}
+                selectable={selectMode}
+                selected={selectedIds?.has(session.id) ?? false}
+                onToggleSelect={
+                  onToggleSelect ? () => onToggleSelect(session.id) : undefined
+                }
               />
             ))}
           </div>
@@ -492,9 +505,15 @@ function SessionsHub() {
   const searchParams = useSearchParams();
   const rawView = searchParams.get("view");
 
-  // Map legacy "my" param to "booked" for backward compat
+  // Map view param to tab. Default is "upcoming". Legacy "my" → "booked".
   const activeTab: ViewTab =
-    rawView === "booked" || rawView === "my" ? "booked" : rawView === "past" ? "past" : "all";
+    rawView === "booked" || rawView === "my"
+      ? "booked"
+      : rawView === "past"
+        ? "past"
+        : rawView === "all"
+          ? "all"
+          : "upcoming";
 
   // ── State ──────────────────────────────────────────────────────────────
   const [sessions, setSessions] = useState<SessionWithRides[]>([]);
@@ -507,6 +526,32 @@ function SessionsHub() {
   // Filters
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [typeFilters, setTypeFilters] = useState<Set<string>>(new Set());
+
+  // Multi-select for bundle booking
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const toggleSelected = useCallback((sessionId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(sessionId)) {
+        next.delete(sessionId);
+      } else {
+        if (next.size >= 10) return prev; // max 10 per bundle
+        next.add(sessionId);
+      }
+      return next;
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
+
+  const exitSelectMode = useCallback(() => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  }, []);
 
   const hasActiveFilters = dateFilter !== "all" || typeFilters.size > 0;
 
@@ -572,12 +617,12 @@ function SessionsHub() {
 
         setSessions(withRides);
 
-        // Fetch past sessions (last 30 days)
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        // Fetch past sessions (last 60 days)
+        const sixtyDaysAgo = new Date();
+        sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
         try {
           const pastData = await apiGet<SessionWithRides[]>(
-            `/api/v1/sessions?types=${encodeURIComponent(SESSION_TYPES_QUERY)}&before=${thirtyDaysAgo.toISOString()}&status=completed`
+            `/api/v1/sessions?types=${encodeURIComponent(SESSION_TYPES_QUERY)}&before=${sixtyDaysAgo.toISOString()}&status=completed`
           );
           setPastSessions(pastData);
         } catch {
@@ -624,15 +669,37 @@ function SessionsHub() {
 
   const nextSession = myUpcomingSessions[0] ?? null;
 
+  // Bundle total and checkout URL for multi-select
+  const selectedSessions = useMemo(
+    () => sessions.filter((s) => selectedIds.has(s.id)),
+    [sessions, selectedIds]
+  );
+
+  const bundleTotal = useMemo(
+    () => selectedSessions.reduce((sum, s) => sum + (s.pool_fee || 0), 0),
+    [selectedSessions]
+  );
+
+  const bundleCheckoutHref = useMemo(() => {
+    if (selectedIds.size === 0) return "#";
+    const ids = Array.from(selectedIds).join(",");
+    return `/sessions/checkout?ids=${encodeURIComponent(ids)}`;
+  }, [selectedIds]);
+
   // Apply filters to sessions for current tab
   const filteredSessions = useMemo(() => {
     let result: SessionWithRides[];
+    const now = new Date();
 
-    if (activeTab === "booked") {
+    if (activeTab === "upcoming") {
+      // Only future sessions (strict filter)
+      result = sessions.filter((s) => new Date(s.starts_at) > now);
+    } else if (activeTab === "booked") {
       result = myUpcomingSessions;
     } else if (activeTab === "past") {
       result = pastSessions;
     } else {
+      // "all" tab — everything, past + future
       result = sessions;
     }
 
@@ -646,7 +713,8 @@ function SessionsHub() {
   const setTab = useCallback(
     (tab: ViewTab) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (tab === "all") {
+      if (tab === "upcoming") {
+        // Upcoming is the default — no param needed
         params.delete("view");
       } else {
         params.set("view", tab);
@@ -685,7 +753,7 @@ function SessionsHub() {
               </button>
             ) : (
               <button
-                onClick={() => setTab("all")}
+                onClick={() => setTab("upcoming")}
                 className="inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-cyan-700 transition-colors"
               >
                 Browse Sessions
@@ -707,7 +775,7 @@ function SessionsHub() {
               <p className="mt-2 text-slate-500">
                 {hasActiveFilters
                   ? "Try adjusting your filters."
-                  : "Past sessions from the last 30 days will appear here."}
+                  : "Past sessions from the last 60 days will appear here."}
               </p>
             </div>
             <Link
@@ -755,6 +823,9 @@ function SessionsHub() {
           membership={membership}
           isPast={activeTab === "past"}
           attendanceBySession={activeTab === "past" ? attendanceBySession : undefined}
+          selectMode={selectMode}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelected}
         />
 
         {activeTab === "past" && (
@@ -812,17 +883,41 @@ function SessionsHub() {
           ))}
         </div>
 
-        {/* Filter button */}
-        {activeTab !== "past" && (
-          <FilterBar
-            dateFilter={dateFilter}
-            setDateFilter={setDateFilter}
-            typeFilters={typeFilters}
-            toggleTypeFilter={toggleTypeFilter}
-            clearFilters={clearFilters}
-            hasActiveFilters={hasActiveFilters}
-          />
-        )}
+        {/* Action buttons */}
+        <div className="flex items-center gap-2">
+          {/* Multi-select toggle — only on upcoming/all tabs */}
+          {(activeTab === "upcoming" || activeTab === "all") && (
+            <button
+              onClick={() => {
+                if (selectMode) {
+                  exitSelectMode();
+                } else {
+                  setSelectMode(true);
+                }
+              }}
+              className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
+                selectMode
+                  ? "border-cyan-600 bg-cyan-50 text-cyan-700"
+                  : "border-slate-200 text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              <CheckSquare className="h-4 w-4" />
+              {selectMode ? "Cancel" : "Book multiple"}
+            </button>
+          )}
+
+          {/* Filter button */}
+          {activeTab !== "past" && (
+            <FilterBar
+              dateFilter={dateFilter}
+              setDateFilter={setDateFilter}
+              typeFilters={typeFilters}
+              toggleTypeFilter={toggleTypeFilter}
+              clearFilters={clearFilters}
+              hasActiveFilters={hasActiveFilters}
+            />
+          )}
+        </div>
       </div>
 
       {/* Active filter chips */}
@@ -847,6 +942,16 @@ function SessionsHub() {
           renderContent()
         )}
       </section>
+
+      {/* Sticky multi-select checkout bar */}
+      {selectMode && (
+        <MultiSelectBar
+          count={selectedIds.size}
+          totalNgn={bundleTotal}
+          checkoutHref={bundleCheckoutHref}
+          onClear={clearSelection}
+        />
+      )}
     </div>
   );
 }

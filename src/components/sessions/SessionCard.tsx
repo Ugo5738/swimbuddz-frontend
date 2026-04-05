@@ -57,6 +57,12 @@ type SessionCardProps = {
   membership: MembershipTier;
   isPast?: boolean;
   attendanceStatus?: string;
+  /** Whether the session is selectable in multi-select mode. */
+  selectable?: boolean;
+  /** Whether the session is currently selected for bundle booking. */
+  selected?: boolean;
+  /** Called when the select checkbox is toggled. */
+  onToggleSelect?: () => void;
 };
 
 // ── Component ────────────────────────────────────────────────────────────
@@ -67,26 +73,72 @@ export function SessionCard({
   membership,
   isPast = false,
   attendanceStatus,
+  selectable = false,
+  selected = false,
+  onToggleSelect,
 }: SessionCardProps) {
   const requiredTier = requiredTierForSessionType(session.session_type);
   const canBook = hasTierAccess(membership, requiredTier);
   const typeColor = getSessionTypeColor(session.session_type);
+  // A session is "ended" if its end time has passed, regardless of which tab we're on.
+  // This prevents users from trying to book past sessions via the All tab.
+  const sessionEnded = new Date(session.ends_at).getTime() < Date.now();
+  const effectivelyPast = isPast || sessionEnded;
+  const canSelect = selectable && !isBooked && !effectivelyPast && canBook;
 
   return (
     <div
       className={`relative flex flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition-all hover:shadow-md ${
-        isBooked
-          ? "border-emerald-200"
-          : !canBook
-            ? "border-slate-100 opacity-75"
-            : isPast
-              ? "border-slate-100 opacity-80"
-              : "border-slate-100 hover:border-cyan-200"
+        selected
+          ? "border-cyan-500 ring-2 ring-cyan-500/20"
+          : isBooked
+            ? "border-emerald-200"
+            : !canBook
+              ? "border-slate-100 opacity-75"
+              : effectivelyPast
+                ? "border-slate-100 opacity-80"
+                : "border-slate-100 hover:border-cyan-200"
       }`}
     >
+      {/* Select checkbox overlay */}
+      {selectable && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            if (canSelect && onToggleSelect) onToggleSelect();
+          }}
+          disabled={!canSelect}
+          aria-label={selected ? "Deselect session" : "Select session"}
+          className={`absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-md border-2 transition-colors ${
+            selected
+              ? "border-cyan-600 bg-cyan-600 text-white"
+              : canSelect
+                ? "border-slate-300 bg-white hover:border-cyan-500"
+                : "border-slate-200 bg-slate-50 cursor-not-allowed"
+          }`}
+        >
+          {selected && (
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={3}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          )}
+        </button>
+      )}
+
       {/* Accent bar */}
       {isBooked && <div className="h-1.5 bg-emerald-500" />}
-      {isPast && !isBooked && <div className="h-1.5 bg-slate-300" />}
+      {effectivelyPast && !isBooked && <div className="h-1.5 bg-slate-300" />}
 
       <div className="flex flex-1 flex-col p-5">
         {/* Badges row */}
@@ -102,7 +154,7 @@ export function SessionCard({
               <CheckCircle2 className="h-3 w-3" />
               Booked
             </span>
-          ) : isPast ? (
+          ) : effectivelyPast ? (
             attendanceStatus ? (
               <Badge variant="default" className="capitalize">
                 {attendanceStatus.replace("_", " ")}
@@ -144,7 +196,7 @@ export function SessionCard({
         </div>
 
         {/* Fees (upcoming only) */}
-        {!isPast && (
+        {!effectivelyPast && (
           <div className="mt-4 flex flex-wrap gap-4 text-sm">
             <div>
               <p className="text-xs uppercase tracking-wide text-slate-500">Pool fee</p>
@@ -162,7 +214,7 @@ export function SessionCard({
         )}
 
         {/* Ride-share areas (upcoming + available only) */}
-        {!isPast && canBook && session.ride_configs && session.ride_configs.length > 0 && (
+        {!effectivelyPast && canBook && session.ride_configs && session.ride_configs.length > 0 && (
           <div className="mt-3 rounded bg-emerald-50 px-3 py-2 space-y-1">
             <p className="text-xs font-semibold text-emerald-900">Ride-share available:</p>
             {session.ride_configs.map((config, idx) => (
@@ -187,7 +239,7 @@ export function SessionCard({
               <CheckCircle2 className="h-4 w-4" />
               View my booking
             </Link>
-          ) : isPast ? null : !canBook ? (
+          ) : effectivelyPast ? null : !canBook ? (
             <div className="space-y-2 text-sm">
               <div className="flex items-center gap-1.5 text-amber-700">
                 <Lock className="h-3.5 w-3.5 shrink-0" />
