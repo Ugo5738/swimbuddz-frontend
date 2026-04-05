@@ -2,6 +2,7 @@
 
 import { Card } from "@/components/ui/Card";
 import { API_BASE_URL } from "@/lib/config";
+import { fetchTestimonials, getTestimonials, type Testimonial } from "@/lib/testimonials";
 import {
   CATEGORY_LABELS,
   SpotlightData,
@@ -135,32 +136,8 @@ const howItWorks = [
   },
 ];
 
-const testimonials = [
-  {
-    quote:
-      "When I joined, I couldn't put my face in the water. 3 months later, I swam my first 50 meters. SwimBuddz changed everything for me.",
-    name: "Uche",
-    role: "Academy Graduate",
-    since: "2025",
-    initials: "UO",
-  },
-  {
-    quote:
-      "The group energy keeps me showing up, even on slow days. I've never been this consistent with anything fitness-related.",
-    name: "Onyinye",
-    role: "Club Member",
-    since: "2025",
-    initials: "OO",
-  },
-  {
-    quote:
-      "I was terrified of deep water my whole life. Now I swim in the deep end every Saturday. The coaches and community made all the difference.",
-    name: "Esther",
-    role: "Community Member",
-    since: "2026",
-    initials: "EA",
-  },
-];
+// Fallback list shown while backend request is in flight / unreachable.
+const fallbackTestimonials = getTestimonials("all");
 
 // Default placeholder hero images (used when no admin-uploaded banners exist)
 const defaultHeroImages = [
@@ -263,6 +240,18 @@ export default function HomePage() {
   const [trustBadgeIndex, setTrustBadgeIndex] = useState(0);
   const [roleMap, setRoleMap] = useState<Record<string, string>>({});
   const [photoMap, setPhotoMap] = useState<Record<string, string>>({});
+  const [testimonials, setTestimonials] = useState<Testimonial[]>(fallbackTestimonials);
+
+  // Fetch published testimonials from backend (falls back to static list)
+  useEffect(() => {
+    let cancelled = false;
+    fetchTestimonials("all").then((list) => {
+      if (!cancelled && list.length > 0) setTestimonials(list);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Fetch admin-uploaded banner images
   useEffect(() => {
