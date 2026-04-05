@@ -25,10 +25,9 @@ function formatStartDate(dateStr: string): string {
   });
 }
 
-/** Format kobo → "₦12,000" (NGN). */
-function formatPrice(kobo: number | undefined, currency: string | undefined): string | null {
-  if (kobo == null || kobo <= 0) return null;
-  const naira = Math.round(kobo / 100);
+/** Format naira → "₦12,000" (NGN). price_amount is stored as naira. */
+function formatPrice(naira: number | undefined, currency: string | undefined): string | null {
+  if (naira == null || naira <= 0) return null;
   const symbol = currency && currency.toUpperCase() !== "NGN" ? currency + " " : "₦";
   return `${symbol}${naira.toLocaleString()}`;
 }
@@ -101,8 +100,8 @@ export function UpcomingCohorts() {
         const ctaDisabled = isActive && !canJoinActive;
 
         // Pricing: cohort override takes precedence over program price
-        const priceKobo = cohort.price_override ?? cohort.program?.price_amount;
-        const priceLabel = formatPrice(priceKobo, cohort.program?.currency);
+        const priceNaira = cohort.price_override ?? cohort.program?.price_amount;
+        const priceLabel = formatPrice(priceNaira, cohort.program?.currency);
 
         // "Last call" scarcity: cohort starts within 7 days and still open
         const isLastCall = !isActive && daysToStart >= 0 && daysToStart <= 7;

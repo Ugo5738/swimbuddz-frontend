@@ -59,8 +59,8 @@ export default function NewProgramPage() {
   const [loadingSkills, setLoadingSkills] = useState(true);
 
   // Basic info state.
-  // Note: price_amount here is stored in **naira** for UX; converted to kobo
-  // (multiplied by 100) when submitted because the backend persists kobo.
+  // price_amount is stored as naira (major NGN unit) throughout the app —
+  // checkout + Paystack integration expect this. Do NOT multiply by 100 here.
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -69,7 +69,7 @@ export default function NewProgramPage() {
     duration_weeks: 4,
     default_capacity: 10,
     currency: "NGN",
-    price_amount: 0, // naira (multiplied by 100 on submit)
+    price_amount: 0, // naira
     billing_type: BillingType.ONE_TIME,
     is_published: false,
     cover_image_url: "",
@@ -252,8 +252,7 @@ export default function NewProgramPage() {
         // Slug must be null (not empty string) so multiple unslugged programs
         // don't collide on the unique constraint
         slug: formData.slug.trim() || null,
-        // Convert naira → kobo (backend stores kobo, smallest NGN unit)
-        price_amount: formData.price_amount * 100,
+        price_amount: formData.price_amount,
         prep_materials: formData.prep_materials.trim()
           ? { content: formData.prep_materials }
           : null,

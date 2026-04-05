@@ -57,8 +57,8 @@ export default function EditProgramPage() {
   const [loading, setLoading] = useState(true);
 
   // Basic info state.
-  // price_amount here is stored in **naira** for UX; converted to/from
-  // kobo (×100) at load and submit because the backend persists kobo.
+  // price_amount is stored as naira (major NGN unit) throughout the app —
+  // checkout + Paystack integration expect this. No ×100 conversion here.
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -114,8 +114,7 @@ export default function EditProgramPage() {
           duration_weeks: program.duration_weeks || 4,
           default_capacity: program.default_capacity || 10,
           currency: program.currency || "NGN",
-          // Convert kobo → naira for display (backend stores kobo)
-          price_amount: Math.round((program.price_amount || 0) / 100),
+          price_amount: program.price_amount || 0,
           billing_type: program.billing_type || BillingType.ONE_TIME,
           is_published: program.is_published || false,
           cover_image_url: program.cover_image_url || "",
@@ -330,8 +329,7 @@ export default function EditProgramPage() {
         // Slug must be null (not empty string) so unique constraint allows
         // multiple unslugged programs
         slug: formData.slug.trim() || null,
-        // Convert naira → kobo (backend stores kobo)
-        price_amount: formData.price_amount * 100,
+        price_amount: formData.price_amount,
         prep_materials: prepMaterialsData,
         curriculum_json: buildCurriculumJson(),
       });

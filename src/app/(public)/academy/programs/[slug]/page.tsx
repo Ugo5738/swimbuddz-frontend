@@ -8,9 +8,8 @@ import Link from "next/link";
 import { notFound, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-function formatPrice(kobo: number | undefined, currency: string | undefined): string | null {
-  if (kobo == null || kobo <= 0) return null;
-  const naira = Math.round(kobo / 100);
+function formatPrice(naira: number | undefined, currency: string | undefined): string | null {
+  if (naira == null || naira <= 0) return null;
   const symbol = currency && currency.toUpperCase() !== "NGN" ? currency + " " : "₦";
   return `${symbol}${naira.toLocaleString()}`;
 }
