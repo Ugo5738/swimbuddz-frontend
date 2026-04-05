@@ -103,3 +103,71 @@ export const CommunicationsApi = {
       auth: true,
     }),
 };
+
+// --- Testimonials ---
+
+export type TestimonialTrack = "academy" | "club" | "community" | "all";
+
+export const TESTIMONIAL_TRACKS: TestimonialTrack[] = [
+  "academy",
+  "club",
+  "community",
+  "all",
+];
+
+export interface AdminTestimonial {
+  id: string;
+  author_name: string;
+  author_role: string;
+  author_since?: string | null;
+  author_initials: string;
+  author_photo_url?: string | null;
+  quote: string;
+  tracks: TestimonialTrack[];
+  is_published: boolean;
+  sort_order: number;
+  consent_note?: string | null;
+}
+
+export interface TestimonialCreate {
+  author_name: string;
+  author_role: string;
+  author_since?: string | null;
+  author_initials: string;
+  author_photo_url?: string | null;
+  quote: string;
+  tracks: TestimonialTrack[];
+  is_published?: boolean;
+  sort_order?: number;
+  consent_note?: string | null;
+}
+
+export type TestimonialUpdate = Partial<TestimonialCreate>;
+
+export const TestimonialsApi = {
+  listAdmin: () =>
+    apiGet<AdminTestimonial[]>(
+      "/api/v1/communications/admin/testimonials",
+      { auth: true },
+    ),
+
+  create: (data: TestimonialCreate) =>
+    apiPost<AdminTestimonial>(
+      "/api/v1/communications/admin/testimonials",
+      data,
+      { auth: true },
+    ),
+
+  update: (id: string, data: TestimonialUpdate) =>
+    apiPatch<AdminTestimonial>(
+      `/api/v1/communications/admin/testimonials/${id}`,
+      data,
+      { auth: true },
+    ),
+
+  delete: (id: string) =>
+    apiDelete<void>(
+      `/api/v1/communications/admin/testimonials/${id}`,
+      { auth: true },
+    ),
+};

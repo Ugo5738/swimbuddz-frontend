@@ -21,6 +21,7 @@ import {
   LogOut,
   Mail,
   Megaphone,
+  MessageSquareQuote,
   Menu,
   ShoppingBag,
   Trophy,
@@ -131,6 +132,7 @@ const navSections: NavSection[] = [
     title: "Content",
     items: [
       { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
+      { href: "/admin/testimonials", label: "Testimonials", icon: MessageSquareQuote },
       { href: "/admin/homepage-media", label: "Homepage Media", icon: Image },
       { href: "/admin/gallery", label: "Gallery", icon: Image },
     ],
