@@ -80,6 +80,15 @@ export enum ProgressStatus {
 
 // --- Types ---
 
+export interface PublicAcademyStats {
+  cohorts_enrolling: number;
+  cohorts_active: number;
+  total_seats_open: number;
+  graduates_all_time: number;
+  graduates_last_90_days: number;
+  completion_rate: number | null;
+}
+
 export interface Program {
   id: string;
   name: string;
@@ -544,13 +553,16 @@ export interface OnboardingInfo {
 export const AcademyApi = {
   // Programs
   listPrograms: () => apiGet<Program[]>("/api/v1/academy/programs"),
+  listPublishedPrograms: () => apiGet<Program[]>("/api/v1/academy/programs?published_only=true"),
+
+  // Public stats (no auth)
+  getPublicStats: () => apiGet<PublicAcademyStats>("/api/v1/academy/stats/public"),
   createProgram: (data: Partial<Program>) =>
     apiPost<Program>("/api/v1/academy/programs", data, { auth: true }),
   getProgram: (id: string) => apiGet<Program>(`/api/v1/academy/programs/${id}`),
   updateProgram: (id: string, data: Partial<Program>) =>
     apiPut<Program>(`/api/v1/academy/programs/${id}`, data, { auth: true }),
-  deleteProgram: (id: string) =>
-    apiDelete<void>(`/api/v1/academy/programs/${id}`, { auth: true }),
+  deleteProgram: (id: string) => apiDelete<void>(`/api/v1/academy/programs/${id}`, { auth: true }),
 
   // Cohorts
   listCohorts: (programId?: string) => {
@@ -566,21 +578,18 @@ export const AcademyApi = {
     apiPost<CohortTimelineShiftPreview>(
       `/api/v1/academy/cohorts/${id}/timeline-shifts/preview`,
       data,
-      { auth: true },
+      { auth: true }
     ),
   applyCohortTimelineShift: (id: string, data: CohortTimelineShiftRequest) =>
-    apiPost<CohortTimelineShiftResult>(
-      `/api/v1/academy/cohorts/${id}/timeline-shifts`,
-      data,
-      { auth: true },
-    ),
+    apiPost<CohortTimelineShiftResult>(`/api/v1/academy/cohorts/${id}/timeline-shifts`, data, {
+      auth: true,
+    }),
   listCohortTimelineShiftLogs: (id: string, limit = 20) =>
     apiGet<CohortTimelineShiftLog[]>(
       `/api/v1/academy/cohorts/${id}/timeline-shifts?limit=${limit}`,
-      { auth: true },
+      { auth: true }
     ),
-  deleteCohort: (id: string) =>
-    apiDelete<void>(`/api/v1/academy/cohorts/${id}`, { auth: true }),
+  deleteCohort: (id: string) => apiDelete<void>(`/api/v1/academy/cohorts/${id}`, { auth: true }),
   listCohortsByCoach: (coachId: string) =>
     apiGet<Cohort[]>(`/api/v1/academy/cohorts/by-coach/${coachId}`),
 
@@ -596,8 +605,7 @@ export const AcademyApi = {
     program_id: string;
     member_id: string;
     preferences?: any;
-  }) =>
-    apiPost<Enrollment>("/api/v1/academy/enrollments", data, { auth: true }),
+  }) => apiPost<Enrollment>("/api/v1/academy/enrollments", data, { auth: true }),
 
   getEnrollment: (id: string) =>
     apiGet<Enrollment>(`/api/v1/academy/my-enrollments/${id}`, { auth: true }),
@@ -612,35 +620,24 @@ export const AcademyApi = {
       auth: true,
     }),
 
-  getMyEnrollments: () =>
-    apiGet<Enrollment[]>("/api/v1/academy/my-enrollments", { auth: true }),
+  getMyEnrollments: () => apiGet<Enrollment[]>("/api/v1/academy/my-enrollments", { auth: true }),
 
   // Progress
-  updateProgress: (
-    enrollmentId: string,
-    milestoneId: string,
-    data: Partial<StudentProgress>,
-  ) =>
+  updateProgress: (enrollmentId: string, milestoneId: string, data: Partial<StudentProgress>) =>
     apiPost<StudentProgress>(
       `/api/v1/academy/progress?enrollment_id=${enrollmentId}&milestone_id=${milestoneId}`,
       data,
-      { auth: true },
+      { auth: true }
     ),
 
   getStudentProgress: (enrollmentId: string) =>
-    apiGet<StudentProgress[]>(
-      `/api/v1/academy/enrollments/${enrollmentId}/progress`,
-    ),
+    apiGet<StudentProgress[]>(`/api/v1/academy/enrollments/${enrollmentId}/progress`),
 
-  claimMilestone: (
-    enrollmentId: string,
-    milestoneId: string,
-    data: MilestoneClaimRequest,
-  ) =>
+  claimMilestone: (enrollmentId: string, milestoneId: string, data: MilestoneClaimRequest) =>
     apiPost<StudentProgress>(
       `/api/v1/academy/enrollments/${enrollmentId}/progress/${milestoneId}/claim`,
       data,
-      { auth: true },
+      { auth: true }
     ),
 
   // Open cohorts
@@ -655,17 +652,13 @@ export const AcademyApi = {
     apiPost<{ message: string }>(
       "/api/v1/academy/admin/tasks/transition-cohort-statuses",
       {},
-      { auth: true },
+      { auth: true }
     ),
 
   /**
    * Request enrollment in a program or specific cohort.
    */
-  selfEnroll: (data: {
-    program_id?: string;
-    cohort_id?: string;
-    preferences?: any;
-  }) =>
+  selfEnroll: (data: { program_id?: string; cohort_id?: string; preferences?: any }) =>
     apiPost<Enrollment>(`/api/v1/academy/enrollments/me`, data, { auth: true }),
 
   listCohortStudents: (cohortId: string) =>
@@ -700,23 +693,19 @@ export const AcademyApi = {
 
   // --- Curriculum ---
   getCurriculum: (programId: string) =>
-    apiGet<ProgramCurriculum>(
-      `/api/v1/academy/programs/${programId}/curriculum`,
-    ),
+    apiGet<ProgramCurriculum>(`/api/v1/academy/programs/${programId}/curriculum`),
   createCurriculum: (programId: string) =>
     apiPost<ProgramCurriculum>(
       `/api/v1/academy/programs/${programId}/curriculum`,
       {},
-      { auth: true },
+      { auth: true }
     ),
 
   // --- Curriculum Weeks ---
   addWeek: (curriculumId: string, data: CurriculumWeekCreate) =>
-    apiPost<CurriculumWeek>(
-      `/api/v1/academy/curricula/${curriculumId}/weeks`,
-      data,
-      { auth: true },
-    ),
+    apiPost<CurriculumWeek>(`/api/v1/academy/curricula/${curriculumId}/weeks`, data, {
+      auth: true,
+    }),
   updateWeek: (weekId: string, data: Partial<CurriculumWeek>) =>
     apiPut<CurriculumWeek>(`/api/v1/academy/curriculum-weeks/${weekId}`, data, {
       auth: true,
@@ -728,20 +717,13 @@ export const AcademyApi = {
 
   // --- Curriculum Lessons ---
   addLesson: (weekId: string, data: CurriculumLessonCreate) =>
-    apiPost<CurriculumLesson>(
-      `/api/v1/academy/curriculum-weeks/${weekId}/lessons`,
-      data,
-      { auth: true },
-    ),
-  updateLesson: (
-    lessonId: string,
-    data: Partial<CurriculumLesson> & { skill_ids?: string[] },
-  ) =>
-    apiPut<CurriculumLesson>(
-      `/api/v1/academy/curriculum-lessons/${lessonId}`,
-      data,
-      { auth: true },
-    ),
+    apiPost<CurriculumLesson>(`/api/v1/academy/curriculum-weeks/${weekId}/lessons`, data, {
+      auth: true,
+    }),
+  updateLesson: (lessonId: string, data: Partial<CurriculumLesson> & { skill_ids?: string[] }) =>
+    apiPut<CurriculumLesson>(`/api/v1/academy/curriculum-lessons/${lessonId}`, data, {
+      auth: true,
+    }),
   deleteLesson: (lessonId: string) =>
     apiDelete<void>(`/api/v1/academy/curriculum-lessons/${lessonId}`, {
       auth: true,
@@ -752,13 +734,13 @@ export const AcademyApi = {
     apiPut<{ message: string }>(
       `/api/v1/academy/curricula/${curriculumId}/weeks/reorder`,
       weekIds,
-      { auth: true },
+      { auth: true }
     ),
   reorderLessons: (weekId: string, lessonIds: string[]) =>
     apiPut<{ message: string }>(
       `/api/v1/academy/curriculum-weeks/${weekId}/lessons/reorder`,
       lessonIds,
-      { auth: true },
+      { auth: true }
     ),
 
   // --- Program Interest (Get Notified) ---
@@ -766,60 +748,48 @@ export const AcademyApi = {
     apiPost<{ message: string; registered: boolean }>(
       `/api/v1/academy/programs/${programId}/interest`,
       {},
-      { auth: true },
+      { auth: true }
     ),
   removeProgramInterest: (programId: string) =>
     apiDelete<{ message: string; registered: boolean }>(
       `/api/v1/academy/programs/${programId}/interest`,
-      { auth: true },
+      { auth: true }
     ),
   checkProgramInterest: (programId: string) =>
-    apiGet<{ registered: boolean }>(
-      `/api/v1/academy/programs/${programId}/interest`,
-      { auth: true },
-    ),
+    apiGet<{ registered: boolean }>(`/api/v1/academy/programs/${programId}/interest`, {
+      auth: true,
+    }),
 
   // --- Cohort Complexity Scoring ---
-  previewComplexityScore: (
-    category: ProgramCategory,
-    dimensionScores: number[],
-  ) =>
+  previewComplexityScore: (category: ProgramCategory, dimensionScores: number[]) =>
     apiPost<ComplexityScoreCalculation>(
       `/api/v1/academy/scoring/calculate`,
       { category, dimension_scores: dimensionScores },
-      { auth: true },
+      { auth: true }
     ),
 
   getDimensionLabels: (category: ProgramCategory) =>
-    apiGet<DimensionLabelsApiResponse>(
-      `/api/v1/academy/scoring/dimensions/${category}`,
-      { auth: true },
-    ),
+    apiGet<DimensionLabelsApiResponse>(`/api/v1/academy/scoring/dimensions/${category}`, {
+      auth: true,
+    }),
 
   getCohortComplexityScore: (cohortId: string) =>
-    apiGet<CohortComplexityScoreResponse>(
-      `/api/v1/academy/cohorts/${cohortId}/complexity-score`,
-      { auth: true },
-    ),
+    apiGet<CohortComplexityScoreResponse>(`/api/v1/academy/cohorts/${cohortId}/complexity-score`, {
+      auth: true,
+    }),
 
-  createCohortComplexityScore: (
-    cohortId: string,
-    data: CohortComplexityScoreCreate,
-  ) =>
+  createCohortComplexityScore: (cohortId: string, data: CohortComplexityScoreCreate) =>
     apiPost<CohortComplexityScoreResponse>(
       `/api/v1/academy/cohorts/${cohortId}/complexity-score`,
       data,
-      { auth: true },
+      { auth: true }
     ),
 
-  updateCohortComplexityScore: (
-    cohortId: string,
-    data: Partial<CohortComplexityScoreCreate>,
-  ) =>
+  updateCohortComplexityScore: (cohortId: string, data: Partial<CohortComplexityScoreCreate>) =>
     apiPut<CohortComplexityScoreResponse>(
       `/api/v1/academy/cohorts/${cohortId}/complexity-score`,
       data,
-      { auth: true },
+      { auth: true }
     ),
 
   deleteCohortComplexityScore: (cohortId: string) =>
@@ -831,28 +801,23 @@ export const AcademyApi = {
     apiPost<{ message: string }>(
       `/api/v1/academy/cohorts/${cohortId}/complexity-score/review`,
       {},
-      { auth: true },
+      { auth: true }
     ),
 
   getEligibleCoaches: (cohortId: string) =>
-    apiGet<EligibleCoach[]>(
-      `/api/v1/academy/cohorts/${cohortId}/eligible-coaches`,
-      { auth: true },
-    ),
+    apiGet<EligibleCoach[]>(`/api/v1/academy/cohorts/${cohortId}/eligible-coaches`, { auth: true }),
 
   // --- AI-Assisted Scoring ---
   aiScoreCohort: (cohortId: string, data: AIScoringRequest = {}) =>
-    apiPost<AIScoringResponse>(
-      `/api/v1/academy/cohorts/${cohortId}/ai-score`,
-      data,
-      { auth: true },
-    ),
+    apiPost<AIScoringResponse>(`/api/v1/academy/cohorts/${cohortId}/ai-score`, data, {
+      auth: true,
+    }),
 
   aiSuggestCoach: (cohortId: string) =>
     apiPost<AICoachSuggestionResponse>(
       `/api/v1/academy/cohorts/${cohortId}/ai-suggest-coach`,
       {},
-      { auth: true },
+      { auth: true }
     ),
 };
 
@@ -929,10 +894,9 @@ export interface CoachReadiness {
 
 export const CoachAssignmentApi = {
   listByCohort: (cohortId: string) =>
-    apiGet<CoachAssignment[]>(
-      `/api/v1/academy/coach-assignments/cohort/${cohortId}`,
-      { auth: true },
-    ),
+    apiGet<CoachAssignment[]>(`/api/v1/academy/coach-assignments/cohort/${cohortId}`, {
+      auth: true,
+    }),
 
   listMyAssignments: () =>
     apiGet<CoachAssignment[]>("/api/v1/academy/coach-assignments/coach/me", {
@@ -940,10 +904,7 @@ export const CoachAssignmentApi = {
     }),
 
   listByCoach: (coachId: string) =>
-    apiGet<CoachAssignment[]>(
-      `/api/v1/academy/coach-assignments/coach/${coachId}`,
-      { auth: true },
-    ),
+    apiGet<CoachAssignment[]>(`/api/v1/academy/coach-assignments/coach/${coachId}`, { auth: true }),
 
   create: (data: CoachAssignmentCreate) =>
     apiPost<CoachAssignment>("/api/v1/academy/coach-assignments/", data, {
@@ -963,19 +924,18 @@ export const CoachAssignmentApi = {
     apiPost<ShadowEvaluation>(
       `/api/v1/academy/coach-assignments/${assignmentId}/evaluations`,
       data,
-      { auth: true },
+      { auth: true }
     ),
 
   listEvaluations: (assignmentId: string) =>
-    apiGet<ShadowEvaluation[]>(
-      `/api/v1/academy/coach-assignments/${assignmentId}/evaluations`,
-      { auth: true },
-    ),
+    apiGet<ShadowEvaluation[]>(`/api/v1/academy/coach-assignments/${assignmentId}/evaluations`, {
+      auth: true,
+    }),
 
   // Readiness
   getReadiness: (coachId: string, targetGrade: string = "grade_1") =>
     apiGet<CoachReadiness>(
       `/api/v1/academy/coach-assignments/readiness/${coachId}?target_grade=${targetGrade}`,
-      { auth: true },
+      { auth: true }
     ),
 };
