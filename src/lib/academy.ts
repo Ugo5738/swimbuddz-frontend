@@ -95,7 +95,7 @@ export interface Program {
   slug?: string | null;
   description?: string;
   cover_image_url?: string;
-  cover_image_media_id?: string;
+  cover_image_media_id?: string | null;
   level: ProgramLevel;
   duration_weeks: number;
   default_capacity?: number;

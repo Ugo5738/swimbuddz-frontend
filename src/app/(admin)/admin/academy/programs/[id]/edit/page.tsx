@@ -50,9 +50,7 @@ export default function EditProgramPage() {
   const params = useParams();
   const id = params.id as string;
 
-  const [step, setStep] = useState<
-    "basics" | "curriculum" | "milestones" | "review"
-  >("basics");
+  const [step, setStep] = useState<"basics" | "curriculum" | "milestones" | "review">("basics");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -125,24 +123,19 @@ export default function EditProgramPage() {
         });
 
         // Populate curriculum from curriculum_json
-        if (
-          program.curriculum_json?.weeks &&
-          Array.isArray(program.curriculum_json.weeks)
-        ) {
-          const weeks: CurriculumWeek[] = program.curriculum_json.weeks.map(
-            (w: any) => ({
-              week: w.week,
-              theme: w.theme || "",
-              objectives: w.objectives || "",
-              lessons: (w.lessons || []).map((l: any, i: number) => ({
-                id: `lesson-${Date.now()}-${i}`,
-                title: l.title || "",
-                description: l.description || "",
-                duration_minutes: l.duration_minutes || 60,
-                video_url: l.video_url || "",
-              })),
-            }),
-          );
+        if (program.curriculum_json?.weeks && Array.isArray(program.curriculum_json.weeks)) {
+          const weeks: CurriculumWeek[] = program.curriculum_json.weeks.map((w: any) => ({
+            week: w.week,
+            theme: w.theme || "",
+            objectives: w.objectives || "",
+            lessons: (w.lessons || []).map((l: any, i: number) => ({
+              id: `lesson-${Date.now()}-${i}`,
+              title: l.title || "",
+              description: l.description || "",
+              duration_minutes: l.duration_minutes || 60,
+              video_url: l.video_url || "",
+            })),
+          }));
           if (weeks.length > 0) setCurriculum(weeks);
         }
 
@@ -158,7 +151,7 @@ export default function EditProgramPage() {
               order_index: m.order_index || 0,
               milestone_type: m.milestone_type || MilestoneType.SKILL,
               required_evidence: m.required_evidence || RequiredEvidence.NONE,
-            })),
+            }))
           );
         }
       } catch (error) {
@@ -201,11 +194,7 @@ export default function EditProgramPage() {
     }
   };
 
-  const updateWeekField = (
-    weekIndex: number,
-    field: "theme" | "objectives",
-    value: string,
-  ) => {
+  const updateWeekField = (weekIndex: number, field: "theme" | "objectives", value: string) => {
     const updated = [...curriculum];
     updated[weekIndex][field] = value;
     setCurriculum(updated);
@@ -227,7 +216,7 @@ export default function EditProgramPage() {
     weekIndex: number,
     lessonIndex: number,
     field: keyof CurriculumLesson,
-    value: string | number,
+    value: string | number
   ) => {
     const updated = [...curriculum];
     (updated[weekIndex].lessons[lessonIndex] as any)[field] = value;
@@ -262,7 +251,7 @@ export default function EditProgramPage() {
   const updateMilestone = (
     index: number,
     field: keyof MilestoneFormItem,
-    value: string | number,
+    value: string | number
   ) => {
     const updated = [...milestones];
     (updated[index] as any)[field] = value;
@@ -291,9 +280,7 @@ export default function EditProgramPage() {
             video_url: l.video_url || undefined,
           })),
       }))
-      .filter(
-        (w) => w.lessons.length > 0 || w.theme.trim() || w.objectives.trim(),
-      );
+      .filter((w) => w.lessons.length > 0 || w.theme.trim() || w.objectives.trim());
     return weeks.length > 0 ? { weeks } : null;
   };
 
@@ -315,9 +302,7 @@ export default function EditProgramPage() {
         try {
           prepMaterialsData = JSON.parse(formData.prep_materials);
         } catch (e) {
-          toast.error(
-            "Invalid JSON in Prep Materials. Please fix syntax to save.",
-          );
+          toast.error("Invalid JSON in Prep Materials. Please fix syntax to save.");
           setSaving(false);
           return;
         }
@@ -329,6 +314,9 @@ export default function EditProgramPage() {
         // Slug must be null (not empty string) so unique constraint allows
         // multiple unslugged programs
         slug: formData.slug.trim() || null,
+        // Coerce empty UUID fields to null — the backend rejects "" as an
+        // invalid UUID (422) and the whole PUT fails
+        cover_image_media_id: updateData.cover_image_media_id || null,
         price_amount: formData.price_amount,
         prep_materials: prepMaterialsData,
         curriculum_json: buildCurriculumJson(),
@@ -349,19 +337,10 @@ export default function EditProgramPage() {
   };
 
   const stepLabels = ["Basic Info", "Curriculum", "Milestones", "Review"];
-  const currentStepIndex = [
-    "basics",
-    "curriculum",
-    "milestones",
-    "review",
-  ].indexOf(step);
+  const currentStepIndex = ["basics", "curriculum", "milestones", "review"].indexOf(step);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        Loading program data...
-      </div>
-    );
+    return <div className="flex items-center justify-center p-12">Loading program data...</div>;
   }
 
   return (
@@ -383,11 +362,7 @@ export default function EditProgramPage() {
         {stepLabels.map((label, idx) => (
           <button
             key={label}
-            onClick={() =>
-              setStep(
-                ["basics", "curriculum", "milestones", "review"][idx] as any,
-              )
-            }
+            onClick={() => setStep(["basics", "curriculum", "milestones", "review"][idx] as any)}
             className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
               idx === currentStepIndex
                 ? "bg-cyan-600 text-white"
@@ -404,15 +379,11 @@ export default function EditProgramPage() {
       <Card>
         {step === "basics" && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-slate-900">
-              Basic Information
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900">Basic Information</h2>
             <Input
               label="Program Name *"
               value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             />
             <div>
               <Input
@@ -440,9 +411,7 @@ export default function EditProgramPage() {
             <Textarea
               label="Description"
               value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             />
 
             <div className="grid grid-cols-2 gap-4">
@@ -511,28 +480,21 @@ export default function EditProgramPage() {
               <Select
                 label="Currency"
                 value={formData.currency}
-                onChange={(e) =>
-                  setFormData({ ...formData, currency: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
               >
                 <option value="NGN">NGN (₦)</option>
                 <option value="USD">USD ($)</option>
               </Select>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Price (₦)
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Price (₦)</label>
                 <input
                   type="text"
                   inputMode="numeric"
-                  value={
-                    formData.price_amount === 0 ? "" : formData.price_amount
-                  }
+                  value={formData.price_amount === 0 ? "" : formData.price_amount}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      price_amount:
-                        parseInt(e.target.value.replace(/\D/g, "")) || 0,
+                      price_amount: parseInt(e.target.value.replace(/\D/g, "")) || 0,
                     })
                   }
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:border-cyan-500"
@@ -544,9 +506,7 @@ export default function EditProgramPage() {
             </div>
 
             <div className="border-t pt-4 mt-4">
-              <h3 className="font-semibold text-slate-900 mb-3">
-                Additional Details
-              </h3>
+              <h3 className="font-semibold text-slate-900 mb-3">Additional Details</h3>
               <MediaInput
                 label="Cover Image"
                 purpose="cover_image"
@@ -563,9 +523,7 @@ export default function EditProgramPage() {
               <Textarea
                 label="Prep Materials"
                 value={formData.prep_materials}
-                onChange={(e) =>
-                  setFormData({ ...formData, prep_materials: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, prep_materials: e.target.value })}
                 placeholder="What students should prepare..."
                 className="mt-4"
               />
@@ -577,9 +535,7 @@ export default function EditProgramPage() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-slate-900">
-                  Curriculum
-                </h2>
+                <h2 className="text-xl font-semibold text-slate-900">Curriculum</h2>
                 <p className="text-sm text-slate-600">
                   Define weekly themes, objectives, and lessons
                 </p>
@@ -592,9 +548,7 @@ export default function EditProgramPage() {
             {curriculum.map((week, weekIndex) => (
               <div key={week.week} className="border rounded-lg p-4 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-slate-900">
-                    Week {week.week}
-                  </h3>
+                  <h3 className="font-semibold text-slate-900">Week {week.week}</h3>
                   {curriculum.length > 1 && (
                     <button
                       onClick={() => removeWeek(weekIndex)}
@@ -608,25 +562,19 @@ export default function EditProgramPage() {
                   <Input
                     label="Theme"
                     value={week.theme}
-                    onChange={(e) =>
-                      updateWeekField(weekIndex, "theme", e.target.value)
-                    }
+                    onChange={(e) => updateWeekField(weekIndex, "theme", e.target.value)}
                     placeholder="e.g., Water Confidence"
                   />
                   <Input
                     label="Objectives"
                     value={week.objectives}
-                    onChange={(e) =>
-                      updateWeekField(weekIndex, "objectives", e.target.value)
-                    }
+                    onChange={(e) => updateWeekField(weekIndex, "objectives", e.target.value)}
                     placeholder="e.g., Floating, breathing"
                   />
                 </div>
                 <div className="border-t pt-3 mt-3">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-medium text-slate-700">
-                      Lessons
-                    </h4>
+                    <h4 className="text-sm font-medium text-slate-700">Lessons</h4>
                     <button
                       onClick={() => addLesson(weekIndex)}
                       className="text-sm text-cyan-600 hover:text-cyan-800"
@@ -635,14 +583,9 @@ export default function EditProgramPage() {
                     </button>
                   </div>
                   {week.lessons.map((lesson, lessonIndex) => (
-                    <div
-                      key={lesson.id}
-                      className="bg-slate-50 rounded-lg p-3 mb-2 space-y-2"
-                    >
+                    <div key={lesson.id} className="bg-slate-50 rounded-lg p-3 mb-2 space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-slate-500">
-                          Lesson {lessonIndex + 1}
-                        </span>
+                        <span className="text-xs text-slate-500">Lesson {lessonIndex + 1}</span>
                         {week.lessons.length > 1 && (
                           <button
                             onClick={() => removeLesson(weekIndex, lessonIndex)}
@@ -657,12 +600,7 @@ export default function EditProgramPage() {
                           label="Title *"
                           value={lesson.title}
                           onChange={(e) =>
-                            updateLesson(
-                              weekIndex,
-                              lessonIndex,
-                              "title",
-                              e.target.value,
-                            )
+                            updateLesson(weekIndex, lessonIndex, "title", e.target.value)
                           }
                         />
                         <Input
@@ -674,7 +612,7 @@ export default function EditProgramPage() {
                               weekIndex,
                               lessonIndex,
                               "duration_minutes",
-                              parseInt(e.target.value) || 60,
+                              parseInt(e.target.value) || 60
                             )
                           }
                         />
@@ -683,24 +621,14 @@ export default function EditProgramPage() {
                         label="Description"
                         value={lesson.description}
                         onChange={(e) =>
-                          updateLesson(
-                            weekIndex,
-                            lessonIndex,
-                            "description",
-                            e.target.value,
-                          )
+                          updateLesson(weekIndex, lessonIndex, "description", e.target.value)
                         }
                       />
                       <Input
                         label="Video URL"
                         value={lesson.video_url}
                         onChange={(e) =>
-                          updateLesson(
-                            weekIndex,
-                            lessonIndex,
-                            "video_url",
-                            e.target.value,
-                          )
+                          updateLesson(weekIndex, lessonIndex, "video_url", e.target.value)
                         }
                         placeholder="https://..."
                       />
@@ -716,12 +644,8 @@ export default function EditProgramPage() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-slate-900">
-                  Milestones
-                </h2>
-                <p className="text-sm text-slate-600">
-                  Define achievement checkpoints
-                </p>
+                <h2 className="text-xl font-semibold text-slate-900">Milestones</h2>
+                <p className="text-sm text-slate-600">Define achievement checkpoints</p>
               </div>
               <Button variant="outline" onClick={addMilestone}>
                 + Add Milestone
@@ -733,14 +657,9 @@ export default function EditProgramPage() {
               </p>
             ) : (
               milestones.map((milestone, index) => (
-                <div
-                  key={milestone.id}
-                  className="border rounded-lg p-4 space-y-3"
-                >
+                <div key={milestone.id} className="border rounded-lg p-4 space-y-3">
                   <div className="flex justify-between items-start">
-                    <h3 className="font-semibold text-slate-900">
-                      Milestone #{index + 1}
-                    </h3>
+                    <h3 className="font-semibold text-slate-900">Milestone #{index + 1}</h3>
                     <button
                       onClick={() => removeMilestone(index)}
                       className="text-sm text-red-500 hover:text-red-700"
@@ -751,33 +670,25 @@ export default function EditProgramPage() {
                   <Input
                     label="Name *"
                     value={milestone.name}
-                    onChange={(e) =>
-                      updateMilestone(index, "name", e.target.value)
-                    }
+                    onChange={(e) => updateMilestone(index, "name", e.target.value)}
                   />
                   <Textarea
                     label="Criteria"
                     value={milestone.criteria}
-                    onChange={(e) =>
-                      updateMilestone(index, "criteria", e.target.value)
-                    }
+                    onChange={(e) => updateMilestone(index, "criteria", e.target.value)}
                   />
                   <MediaInput
                     label="Demo Video"
                     purpose="milestone_video"
                     mode="both"
                     value={milestone.video_media_id || null}
-                    onChange={(mediaId) =>
-                      updateMilestone(index, "video_media_id", mediaId || "")
-                    }
+                    onChange={(mediaId) => updateMilestone(index, "video_media_id", mediaId || "")}
                   />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Select
                       label="Type"
                       value={milestone.milestone_type}
-                      onChange={(e) =>
-                        updateMilestone(index, "milestone_type", e.target.value)
-                      }
+                      onChange={(e) => updateMilestone(index, "milestone_type", e.target.value)}
                     >
                       {Object.values(MilestoneType).map((type) => (
                         <option key={type} value={type}>
@@ -788,13 +699,7 @@ export default function EditProgramPage() {
                     <Select
                       label="Required Evidence"
                       value={milestone.required_evidence}
-                      onChange={(e) =>
-                        updateMilestone(
-                          index,
-                          "required_evidence",
-                          e.target.value,
-                        )
-                      }
+                      onChange={(e) => updateMilestone(index, "required_evidence", e.target.value)}
                     >
                       {Object.values(RequiredEvidence).map((ev) => (
                         <option key={ev} value={ev}>
@@ -811,26 +716,20 @@ export default function EditProgramPage() {
 
         {step === "review" && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-slate-900">
-              Review & Save
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900">Review & Save</h2>
             <div className="space-y-4">
               <div className="border rounded-lg p-4">
-                <h3 className="font-semibold text-slate-900 mb-2">
-                  Basic Info
-                </h3>
+                <h3 className="font-semibold text-slate-900 mb-2">Basic Info</h3>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <span className="text-slate-500">Name:</span>{" "}
-                    {formData.name || "—"}
+                    <span className="text-slate-500">Name:</span> {formData.name || "—"}
                   </div>
                   <div>
-                    <span className="text-slate-500">Level:</span>{" "}
-                    {formData.level}
+                    <span className="text-slate-500">Level:</span> {formData.level}
                   </div>
                   <div>
-                    <span className="text-slate-500">Duration:</span>{" "}
-                    {formData.duration_weeks} weeks
+                    <span className="text-slate-500">Duration:</span> {formData.duration_weeks}{" "}
+                    weeks
                   </div>
                   <div>
                     <span className="text-slate-500">Price:</span> ₦
@@ -839,16 +738,13 @@ export default function EditProgramPage() {
                 </div>
               </div>
               <div className="border rounded-lg p-4">
-                <h3 className="font-semibold text-slate-900 mb-2">
-                  Curriculum
-                </h3>
+                <h3 className="font-semibold text-slate-900 mb-2">Curriculum</h3>
                 <div className="text-sm">
                   {curriculum.map((week) => (
                     <div key={week.week} className="mb-2">
                       <span className="font-medium">Week {week.week}:</span>{" "}
                       {week.theme || "No theme"} -{" "}
-                      {week.lessons.filter((l) => l.title.trim()).length}{" "}
-                      lesson(s)
+                      {week.lessons.filter((l) => l.title.trim()).length} lesson(s)
                     </div>
                   ))}
                 </div>

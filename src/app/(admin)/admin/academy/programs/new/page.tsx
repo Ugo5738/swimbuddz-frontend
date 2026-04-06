@@ -49,9 +49,7 @@ interface MilestoneFormItem {
 
 export default function NewProgramPage() {
   const router = useRouter();
-  const [step, setStep] = useState<
-    "basics" | "curriculum" | "milestones" | "review"
-  >("basics");
+  const [step, setStep] = useState<"basics" | "curriculum" | "milestones" | "review">("basics");
   const [saving, setSaving] = useState(false);
 
   // Skills library - loaded from backend
@@ -144,11 +142,7 @@ export default function NewProgramPage() {
     }
   };
 
-  const updateWeekField = (
-    weekIndex: number,
-    field: "theme" | "objectives",
-    value: string,
-  ) => {
+  const updateWeekField = (weekIndex: number, field: "theme" | "objectives", value: string) => {
     const updated = [...curriculum];
     updated[weekIndex][field] = value;
     setCurriculum(updated);
@@ -171,18 +165,14 @@ export default function NewProgramPage() {
     weekIndex: number,
     lessonIndex: number,
     field: keyof CurriculumLesson,
-    value: string | number | string[],
+    value: string | number | string[]
   ) => {
     const updated = [...curriculum];
     (updated[weekIndex].lessons[lessonIndex] as any)[field] = value;
     setCurriculum(updated);
   };
 
-  const toggleLessonSkill = (
-    weekIndex: number,
-    lessonIndex: number,
-    skillId: string,
-  ) => {
+  const toggleLessonSkill = (weekIndex: number, lessonIndex: number, skillId: string) => {
     const updated = [...curriculum];
     const lesson = updated[weekIndex].lessons[lessonIndex];
     if (lesson.skill_ids.includes(skillId)) {
@@ -221,7 +211,7 @@ export default function NewProgramPage() {
   const updateMilestone = (
     index: number,
     field: keyof MilestoneFormItem,
-    value: string | number,
+    value: string | number
   ) => {
     const updated = [...milestones];
     (updated[index] as any)[field] = value;
@@ -252,6 +242,9 @@ export default function NewProgramPage() {
         // Slug must be null (not empty string) so multiple unslugged programs
         // don't collide on the unique constraint
         slug: formData.slug.trim() || null,
+        // Coerce empty UUID fields to null — the backend rejects "" as an
+        // invalid UUID (422) and the whole POST fails
+        cover_image_media_id: createData.cover_image_media_id || null,
         price_amount: formData.price_amount,
         prep_materials: formData.prep_materials.trim()
           ? { content: formData.prep_materials }
@@ -261,7 +254,7 @@ export default function NewProgramPage() {
 
       // 2. Create curriculum using the new API (dual storage)
       const validWeeks = curriculum.filter(
-        (w) => w.theme.trim() || w.lessons.some((l) => l.title.trim()),
+        (w) => w.theme.trim() || w.lessons.some((l) => l.title.trim())
       );
 
       if (validWeeks.length > 0) {
@@ -285,10 +278,7 @@ export default function NewProgramPage() {
               description: lessonData.description || undefined,
               duration_minutes: lessonData.duration_minutes || undefined,
               video_url: lessonData.video_url || undefined,
-              skill_ids:
-                lessonData.skill_ids.length > 0
-                  ? lessonData.skill_ids
-                  : undefined,
+              skill_ids: lessonData.skill_ids.length > 0 ? lessonData.skill_ids : undefined,
             });
           }
         }
@@ -319,12 +309,7 @@ export default function NewProgramPage() {
   };
 
   const stepLabels = ["Basic Info", "Curriculum", "Milestones", "Review"];
-  const currentStepIndex = [
-    "basics",
-    "curriculum",
-    "milestones",
-    "review",
-  ].indexOf(step);
+  const currentStepIndex = ["basics", "curriculum", "milestones", "review"].indexOf(step);
 
   // Group skills by category for display
   const skillsByCategory = skills.reduce(
@@ -333,7 +318,7 @@ export default function NewProgramPage() {
       acc[skill.category].push(skill);
       return acc;
     },
-    {} as Record<string, Skill[]>,
+    {} as Record<string, Skill[]>
   );
 
   return (
@@ -347,9 +332,7 @@ export default function NewProgramPage() {
           >
             ← Back to Academy
           </button>
-          <h1 className="text-3xl font-bold text-slate-900">
-            Create New Program
-          </h1>
+          <h1 className="text-3xl font-bold text-slate-900">Create New Program</h1>
         </div>
       </header>
 
@@ -375,16 +358,12 @@ export default function NewProgramPage() {
       <Card className="p-6">
         {step === "basics" && (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-slate-900">
-              Basic Information
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900">Basic Information</h2>
 
             <Input
               label="Program Name *"
               value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="e.g., Learn to Swim - Beginner"
               required
             />
@@ -416,9 +395,7 @@ export default function NewProgramPage() {
             <Textarea
               label="Description"
               value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Describe what students will learn..."
             />
 
@@ -488,9 +465,7 @@ export default function NewProgramPage() {
               <Select
                 label="Currency"
                 value={formData.currency}
-                onChange={(e) =>
-                  setFormData({ ...formData, currency: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
               >
                 <option value="NGN">NGN (₦)</option>
                 <option value="USD">USD ($)</option>
@@ -498,16 +473,12 @@ export default function NewProgramPage() {
               </Select>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Price (₦)
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Price (₦)</label>
                 <input
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
-                  value={
-                    formData.price_amount === 0 ? "" : formData.price_amount
-                  }
+                  value={formData.price_amount === 0 ? "" : formData.price_amount}
                   onChange={(e) => {
                     const value = e.target.value.replace(/\D/g, "");
                     setFormData({
@@ -525,9 +496,7 @@ export default function NewProgramPage() {
             </div>
 
             <div className="border-t pt-4 mt-4">
-              <h3 className="font-semibold text-slate-900 mb-3">
-                Additional Details
-              </h3>
+              <h3 className="font-semibold text-slate-900 mb-3">Additional Details</h3>
 
               <MediaInput
                 label="Cover Image"
@@ -546,9 +515,7 @@ export default function NewProgramPage() {
               <Textarea
                 label="Prep Materials"
                 value={formData.prep_materials}
-                onChange={(e) =>
-                  setFormData({ ...formData, prep_materials: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, prep_materials: e.target.value })}
                 placeholder="What students should prepare before starting (optional)..."
                 className="mt-4"
               />
@@ -560,9 +527,7 @@ export default function NewProgramPage() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-slate-900">
-                  Curriculum
-                </h2>
+                <h2 className="text-xl font-semibold text-slate-900">Curriculum</h2>
                 <p className="text-sm text-slate-600">
                   Define weekly themes, objectives, lessons, and skills
                 </p>
@@ -576,8 +541,8 @@ export default function NewProgramPage() {
             {skills.length > 0 && (
               <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-3">
                 <p className="text-sm text-cyan-800">
-                  <strong>Skills Library:</strong> {skills.length} skills
-                  available. Tag lessons with skills to track student progress.
+                  <strong>Skills Library:</strong> {skills.length} skills available. Tag lessons
+                  with skills to track student progress.
                 </p>
               </div>
             )}
@@ -585,9 +550,7 @@ export default function NewProgramPage() {
             {curriculum.map((week, weekIndex) => (
               <div key={week.week} className="border rounded-lg p-4 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-slate-900">
-                    Week {week.week}
-                  </h3>
+                  <h3 className="font-semibold text-slate-900">Week {week.week}</h3>
                   {curriculum.length > 1 && (
                     <button
                       onClick={() => removeWeek(weekIndex)}
@@ -602,17 +565,13 @@ export default function NewProgramPage() {
                   <Input
                     label="Theme"
                     value={week.theme}
-                    onChange={(e) =>
-                      updateWeekField(weekIndex, "theme", e.target.value)
-                    }
+                    onChange={(e) => updateWeekField(weekIndex, "theme", e.target.value)}
                     placeholder="e.g., Water Confidence"
                   />
                   <Input
                     label="Objectives"
                     value={week.objectives}
-                    onChange={(e) =>
-                      updateWeekField(weekIndex, "objectives", e.target.value)
-                    }
+                    onChange={(e) => updateWeekField(weekIndex, "objectives", e.target.value)}
                     placeholder="e.g., Floating, breathing basics"
                   />
                 </div>
@@ -620,9 +579,7 @@ export default function NewProgramPage() {
                 {/* Lessons */}
                 <div className="border-t pt-3 mt-3">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-medium text-slate-700">
-                      Lessons
-                    </h4>
+                    <h4 className="text-sm font-medium text-slate-700">Lessons</h4>
                     <button
                       onClick={() => addLesson(weekIndex)}
                       className="text-sm text-cyan-600 hover:text-cyan-800"
@@ -632,14 +589,9 @@ export default function NewProgramPage() {
                   </div>
 
                   {week.lessons.map((lesson, lessonIndex) => (
-                    <div
-                      key={lesson.id}
-                      className="bg-slate-50 rounded-lg p-3 mb-2 space-y-2"
-                    >
+                    <div key={lesson.id} className="bg-slate-50 rounded-lg p-3 mb-2 space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-slate-500">
-                          Lesson {lessonIndex + 1}
-                        </span>
+                        <span className="text-xs text-slate-500">Lesson {lessonIndex + 1}</span>
                         {week.lessons.length > 1 && (
                           <button
                             onClick={() => removeLesson(weekIndex, lessonIndex)}
@@ -654,12 +606,7 @@ export default function NewProgramPage() {
                           label="Title *"
                           value={lesson.title}
                           onChange={(e) =>
-                            updateLesson(
-                              weekIndex,
-                              lessonIndex,
-                              "title",
-                              e.target.value,
-                            )
+                            updateLesson(weekIndex, lessonIndex, "title", e.target.value)
                           }
                           placeholder="Lesson title"
                         />
@@ -672,7 +619,7 @@ export default function NewProgramPage() {
                               weekIndex,
                               lessonIndex,
                               "duration_minutes",
-                              parseInt(e.target.value) || 60,
+                              parseInt(e.target.value) || 60
                             )
                           }
                         />
@@ -681,12 +628,7 @@ export default function NewProgramPage() {
                         label="Description"
                         value={lesson.description}
                         onChange={(e) =>
-                          updateLesson(
-                            weekIndex,
-                            lessonIndex,
-                            "description",
-                            e.target.value,
-                          )
+                          updateLesson(weekIndex, lessonIndex, "description", e.target.value)
                         }
                         placeholder="What will be covered in this lesson..."
                       />
@@ -694,12 +636,7 @@ export default function NewProgramPage() {
                         label="Model Video URL"
                         value={lesson.video_url}
                         onChange={(e) =>
-                          updateLesson(
-                            weekIndex,
-                            lessonIndex,
-                            "video_url",
-                            e.target.value,
-                          )
+                          updateLesson(weekIndex, lessonIndex, "video_url", e.target.value)
                         }
                         placeholder="https://... (instructional video)"
                       />
@@ -710,13 +647,10 @@ export default function NewProgramPage() {
                           Skills (click to tag)
                         </label>
                         {loadingSkills ? (
-                          <p className="text-xs text-slate-500">
-                            Loading skills...
-                          </p>
+                          <p className="text-xs text-slate-500">Loading skills...</p>
                         ) : skills.length === 0 ? (
                           <p className="text-xs text-slate-500">
-                            No skills in library yet. Create skills in any
-                            program&apos;s{" "}
+                            No skills in library yet. Create skills in any program&apos;s{" "}
                             <span className="text-cyan-600 font-medium">
                               Curriculum Builder → Skills Library
                             </span>{" "}
@@ -728,13 +662,7 @@ export default function NewProgramPage() {
                               <button
                                 key={skill.id}
                                 type="button"
-                                onClick={() =>
-                                  toggleLessonSkill(
-                                    weekIndex,
-                                    lessonIndex,
-                                    skill.id,
-                                  )
-                                }
+                                onClick={() => toggleLessonSkill(weekIndex, lessonIndex, skill.id)}
                                 className={`px-2 py-1 rounded text-xs transition-colors ${
                                   lesson.skill_ids.includes(skill.id)
                                     ? "bg-cyan-600 text-white"
@@ -759,9 +687,7 @@ export default function NewProgramPage() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-slate-900">
-                  Milestones
-                </h2>
+                <h2 className="text-xl font-semibold text-slate-900">Milestones</h2>
                 <p className="text-sm text-slate-600">
                   Define achievement checkpoints for students
                 </p>
@@ -774,19 +700,13 @@ export default function NewProgramPage() {
             {milestones.length === 0 ? (
               <div className="text-center py-8 text-slate-500">
                 <p>No milestones defined yet.</p>
-                <button
-                  onClick={addMilestone}
-                  className="mt-2 text-cyan-600 hover:text-cyan-800"
-                >
+                <button onClick={addMilestone} className="mt-2 text-cyan-600 hover:text-cyan-800">
                   Add your first milestone
                 </button>
               </div>
             ) : (
               milestones.map((milestone, index) => (
-                <div
-                  key={milestone.id}
-                  className="border rounded-lg p-4 space-y-3"
-                >
+                <div key={milestone.id} className="border rounded-lg p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-slate-700">
                       Milestone #{milestone.order_index}
@@ -802,27 +722,21 @@ export default function NewProgramPage() {
                   <Input
                     label="Name *"
                     value={milestone.name}
-                    onChange={(e) =>
-                      updateMilestone(index, "name", e.target.value)
-                    }
+                    onChange={(e) => updateMilestone(index, "name", e.target.value)}
                     placeholder="e.g., Water Confidence"
                   />
 
                   <Textarea
                     label="Description"
                     value={milestone.description}
-                    onChange={(e) =>
-                      updateMilestone(index, "description", e.target.value)
-                    }
+                    onChange={(e) => updateMilestone(index, "description", e.target.value)}
                     placeholder="Describe this milestone..."
                   />
 
                   <Textarea
                     label="Criteria (how to assess)"
                     value={milestone.criteria}
-                    onChange={(e) =>
-                      updateMilestone(index, "criteria", e.target.value)
-                    }
+                    onChange={(e) => updateMilestone(index, "criteria", e.target.value)}
                     placeholder="What needs to be demonstrated..."
                   />
 
@@ -831,43 +745,29 @@ export default function NewProgramPage() {
                     purpose="milestone_video"
                     mode="both"
                     value={milestone.video_media_id || null}
-                    onChange={(mediaId) =>
-                      updateMilestone(index, "video_media_id", mediaId || "")
-                    }
+                    onChange={(mediaId) => updateMilestone(index, "video_media_id", mediaId || "")}
                   />
 
                   <div className="grid grid-cols-2 gap-4">
                     <Select
                       label="Type"
                       value={milestone.milestone_type}
-                      onChange={(e) =>
-                        updateMilestone(index, "milestone_type", e.target.value)
-                      }
+                      onChange={(e) => updateMilestone(index, "milestone_type", e.target.value)}
                     >
                       <option value={MilestoneType.SKILL}>Skill</option>
                       <option value={MilestoneType.ENDURANCE}>Endurance</option>
                       <option value={MilestoneType.TECHNIQUE}>Technique</option>
-                      <option value={MilestoneType.ASSESSMENT}>
-                        Assessment
-                      </option>
+                      <option value={MilestoneType.ASSESSMENT}>Assessment</option>
                     </Select>
 
                     <Select
                       label="Required Evidence"
                       value={milestone.required_evidence}
-                      onChange={(e) =>
-                        updateMilestone(
-                          index,
-                          "required_evidence",
-                          e.target.value,
-                        )
-                      }
+                      onChange={(e) => updateMilestone(index, "required_evidence", e.target.value)}
                     >
                       <option value={RequiredEvidence.NONE}>None</option>
                       <option value={RequiredEvidence.VIDEO}>Video</option>
-                      <option value={RequiredEvidence.TIME_TRIAL}>
-                        Time Trial
-                      </option>
+                      <option value={RequiredEvidence.TIME_TRIAL}>Time Trial</option>
                     </Select>
                   </div>
                 </div>
@@ -878,64 +778,48 @@ export default function NewProgramPage() {
 
         {step === "review" && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-slate-900">
-              Review & Create
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900">Review & Create</h2>
 
             <div className="space-y-4">
               <div className="border rounded-lg p-4">
-                <h3 className="font-semibold text-slate-900 mb-2">
-                  Basic Info
-                </h3>
+                <h3 className="font-semibold text-slate-900 mb-2">Basic Info</h3>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <span className="text-slate-500">Name:</span>{" "}
-                    {formData.name || "—"}
+                    <span className="text-slate-500">Name:</span> {formData.name || "—"}
                   </div>
                   <div>
-                    <span className="text-slate-500">Level:</span>{" "}
-                    {formData.level}
+                    <span className="text-slate-500">Level:</span> {formData.level}
                   </div>
                   <div>
-                    <span className="text-slate-500">Duration:</span>{" "}
-                    {formData.duration_weeks} weeks
+                    <span className="text-slate-500">Duration:</span> {formData.duration_weeks}{" "}
+                    weeks
                   </div>
                   <div>
-                    <span className="text-slate-500">Price:</span>{" "}
-                    {formData.currency} {formData.price_amount}
+                    <span className="text-slate-500">Price:</span> {formData.currency}{" "}
+                    {formData.price_amount}
                   </div>
                 </div>
               </div>
 
               <div className="border rounded-lg p-4">
-                <h3 className="font-semibold text-slate-900 mb-2">
-                  Curriculum
-                </h3>
+                <h3 className="font-semibold text-slate-900 mb-2">Curriculum</h3>
                 <div className="text-sm">
                   {curriculum.map((week) => {
-                    const lessonCount = week.lessons.filter((l) =>
-                      l.title.trim(),
-                    ).length;
-                    const skillCount = week.lessons.reduce(
-                      (sum, l) => sum + l.skill_ids.length,
-                      0,
-                    );
+                    const lessonCount = week.lessons.filter((l) => l.title.trim()).length;
+                    const skillCount = week.lessons.reduce((sum, l) => sum + l.skill_ids.length, 0);
                     return (
                       <div key={week.week} className="mb-2">
                         <span className="font-medium">Week {week.week}:</span>{" "}
                         {week.theme || "No theme"} - {lessonCount} lesson(s)
                         {skillCount > 0 && (
-                          <span className="text-cyan-600 ml-1">
-                            ({skillCount} skills tagged)
-                          </span>
+                          <span className="text-cyan-600 ml-1">({skillCount} skills tagged)</span>
                         )}
                       </div>
                     );
                   })}
                 </div>
                 <p className="text-xs text-cyan-600 mt-2">
-                  ✓ Curriculum will be saved to both normalized tables and JSON
-                  (dual storage)
+                  ✓ Curriculum will be saved to both normalized tables and JSON (dual storage)
                 </p>
               </div>
 
@@ -949,8 +833,7 @@ export default function NewProgramPage() {
                   ) : (
                     milestones.map((m) => (
                       <div key={m.id}>
-                        {m.order_index}. {m.name || "Unnamed"} (
-                        {m.milestone_type})
+                        {m.order_index}. {m.name || "Unnamed"} ({m.milestone_type})
                       </div>
                     ))
                   )}
