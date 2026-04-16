@@ -313,7 +313,7 @@ function FilterBar({
       </button>
 
       {showFilters && (
-        <div className="absolute right-0 top-full z-20 mt-2 w-80 rounded-2xl border border-slate-200 bg-white p-4 shadow-lg space-y-4">
+        <div className="fixed inset-x-3 top-auto z-20 mt-2 sm:absolute sm:inset-x-auto sm:right-0 sm:w-80 rounded-2xl border border-slate-200 bg-white p-4 shadow-lg space-y-4">
           {/* Date filter */}
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
