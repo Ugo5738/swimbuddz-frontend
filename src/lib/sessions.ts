@@ -27,6 +27,25 @@ export enum SessionLocation {
   OTHER = "other",
 }
 
+// --- Cohort identity for session cards ---
+
+export interface CohortInfo {
+  cohortName: string;
+  programName: string;
+  isEnrolled: boolean;
+}
+
+/**
+ * Generate a deterministic HSL color from a cohort ID.
+ * Used for the colored left border on academy session cards so members
+ * can visually distinguish cohorts at a glance.
+ */
+export function getCohortColor(cohortId: string): string {
+  const hash = cohortId.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const hue = hash % 360;
+  return `hsl(${hue}, 65%, 45%)`;
+}
+
 // --- Types ---
 
 export interface Session {

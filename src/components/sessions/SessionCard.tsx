@@ -1,8 +1,15 @@
 import { Badge } from "@/components/ui/Badge";
 import { hasTierAccess, requiredTierForSessionType, tierDisplayLabel } from "@/lib/sessionAccess";
-import { getSessionTypeColor, getSessionTypeLabel, Session } from "@/lib/sessions";
+import {
+  type CohortInfo,
+  getCohortColor,
+  getSessionTypeColor,
+  getSessionTypeLabel,
+  Session,
+  SessionType,
+} from "@/lib/sessions";
 import type { MembershipTier } from "@/lib/tiers";
-import { Calendar, CheckCircle2, Clock, Lock, MapPin } from "lucide-react";
+import { Calendar, CheckCircle2, Clock, Lock, MapPin, Users } from "lucide-react";
 import Link from "next/link";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
@@ -57,6 +64,8 @@ type SessionCardProps = {
   membership: MembershipTier;
   isPast?: boolean;
   attendanceStatus?: string;
+  /** Cohort identity info for academy sessions. */
+  cohortInfo?: CohortInfo;
   /** Whether the session is selectable in multi-select mode. */
   selectable?: boolean;
   /** Whether the session is currently selected for bundle booking. */
@@ -73,6 +82,7 @@ export function SessionCard({
   membership,
   isPast = false,
   attendanceStatus,
+  cohortInfo,
   selectable = false,
   selected = false,
   onToggleSelect,
@@ -86,6 +96,11 @@ export function SessionCard({
   const effectivelyPast = isPast || sessionEnded;
   const canSelect = selectable && !isBooked && !effectivelyPast && canBook;
 
+  const isAcademy = session.session_type === SessionType.COHORT_CLASS;
+  const cohortColor = isAcademy && session.cohort_id ? getCohortColor(session.cohort_id) : null;
+  // De-emphasise academy sessions that don't belong to the member's enrolled cohort
+  const dimmed = isAcademy && cohortInfo && !cohortInfo.isEnrolled && !isBooked && !effectivelyPast;
+
   return (
     <div
       className={`relative flex flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition-all hover:shadow-md ${
@@ -97,7 +112,9 @@ export function SessionCard({
               ? "border-slate-100 opacity-75"
               : effectivelyPast
                 ? "border-slate-100 opacity-80"
-                : "border-slate-100 hover:border-cyan-200"
+                : dimmed
+                  ? "border-slate-100 opacity-60"
+                  : "border-slate-100 hover:border-cyan-200"
       }`}
     >
       {/* Select checkbox overlay */}
@@ -119,12 +136,7 @@ export function SessionCard({
           }`}
         >
           {selected && (
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -136,9 +148,14 @@ export function SessionCard({
         </button>
       )}
 
-      {/* Accent bar */}
-      {isBooked && <div className="h-1.5 bg-emerald-500" />}
-      {effectivelyPast && !isBooked && <div className="h-1.5 bg-slate-300" />}
+      {/* Accent bar — cohort color for academy, else booked/past defaults */}
+      {isAcademy && cohortColor ? (
+        <div className="h-1.5" style={{ backgroundColor: cohortColor }} />
+      ) : isBooked ? (
+        <div className="h-1.5 bg-emerald-500" />
+      ) : effectivelyPast ? (
+        <div className="h-1.5 bg-slate-300" />
+      ) : null}
 
       <div className="flex flex-1 flex-col p-5">
         {/* Badges row */}
@@ -169,10 +186,33 @@ export function SessionCard({
           ) : (
             <Badge variant="success">Available</Badge>
           )}
+
+          {/* "Your Cohort" badge for enrolled academy sessions */}
+          {cohortInfo?.isEnrolled && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-xs font-semibold text-violet-700">
+              <Users className="h-3 w-3" />
+              Your Cohort
+            </span>
+          )}
         </div>
 
         {/* Title */}
         <h3 className="text-lg font-semibold text-slate-900">{session.title}</h3>
+
+        {/* Cohort name for academy sessions */}
+        {cohortInfo && (
+          <p className="mt-0.5 text-sm font-medium text-slate-500">
+            <span
+              className="mr-1.5 inline-block h-2 w-2 rounded-full"
+              style={{ backgroundColor: cohortColor ?? undefined }}
+            />
+            {cohortInfo.cohortName}
+            {cohortInfo.programName && cohortInfo.programName !== session.title && (
+              <span className="text-slate-400"> &middot; {cohortInfo.programName}</span>
+            )}
+          </p>
+        )}
+
         {session.description && (
           <p className="mt-1 line-clamp-2 text-sm text-slate-500">{session.description}</p>
         )}

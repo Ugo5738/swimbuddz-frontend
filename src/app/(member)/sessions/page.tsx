@@ -5,9 +5,10 @@ import { SessionCard, type SessionWithRides } from "@/components/sessions/Sessio
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { LoadingCard } from "@/components/ui/LoadingCard";
+import { AcademyApi, type Cohort, type Enrollment } from "@/lib/academy";
 import { apiGet, apiPost } from "@/lib/api";
 import { tierDisplayLabel } from "@/lib/sessionAccess";
-import { getSessionTypeLabel, SessionType } from "@/lib/sessions";
+import { type CohortInfo, getSessionTypeLabel, SessionType } from "@/lib/sessions";
 import { getEffectiveTier, MembershipTier } from "@/lib/tiers";
 import {
   ArrowRight,
@@ -250,6 +251,9 @@ function FilterBar({
   setDateFilter,
   typeFilters,
   toggleTypeFilter,
+  myCohortsOnly,
+  setMyCohortsOnly,
+  showCohortFilter,
   clearFilters,
   hasActiveFilters,
 }: {
@@ -257,6 +261,9 @@ function FilterBar({
   setDateFilter: (f: DateFilter) => void;
   typeFilters: Set<string>;
   toggleTypeFilter: (type: string) => void;
+  myCohortsOnly: boolean;
+  setMyCohortsOnly: (v: boolean) => void;
+  showCohortFilter: boolean;
   clearFilters: () => void;
   hasActiveFilters: boolean;
 }) {
@@ -290,7 +297,7 @@ function FilterBar({
         Filters
         {hasActiveFilters && (
           <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-cyan-600 px-1.5 text-xs font-bold text-white">
-            {(dateFilter !== "all" ? 1 : 0) + typeFilters.size}
+            {(dateFilter !== "all" ? 1 : 0) + typeFilters.size + (myCohortsOnly ? 1 : 0)}
           </span>
         )}
         <ChevronDown
@@ -344,6 +351,25 @@ function FilterBar({
             </div>
           </div>
 
+          {/* My Cohorts filter — only for academy members with enrollments */}
+          {showCohortFilter && (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
+                Academy
+              </p>
+              <button
+                onClick={() => setMyCohortsOnly(!myCohortsOnly)}
+                className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  myCohortsOnly
+                    ? "bg-violet-600 text-white"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                My Cohorts Only
+              </button>
+            </div>
+          )}
+
           {/* Clear */}
           {hasActiveFilters && (
             <button
@@ -370,11 +396,15 @@ function ActiveFilterChips({
   setDateFilter,
   typeFilters,
   toggleTypeFilter,
+  myCohortsOnly,
+  setMyCohortsOnly,
 }: {
   dateFilter: DateFilter;
   setDateFilter: (f: DateFilter) => void;
   typeFilters: Set<string>;
   toggleTypeFilter: (type: string) => void;
+  myCohortsOnly: boolean;
+  setMyCohortsOnly: (v: boolean) => void;
 }) {
   const chips: { label: string; onRemove: () => void }[] = [];
 
@@ -388,6 +418,10 @@ function ActiveFilterChips({
       label: getSessionTypeLabel(type),
       onRemove: () => toggleTypeFilter(type),
     });
+  }
+
+  if (myCohortsOnly) {
+    chips.push({ label: "My Cohorts", onRemove: () => setMyCohortsOnly(false) });
   }
 
   if (chips.length === 0) return null;
@@ -456,6 +490,7 @@ function DateGroupedSessions({
   membership,
   isPast = false,
   attendanceBySession,
+  cohortMap,
   selectMode = false,
   selectedIds,
   onToggleSelect,
@@ -465,6 +500,7 @@ function DateGroupedSessions({
   membership: MembershipTier;
   isPast?: boolean;
   attendanceBySession?: Map<string, string>;
+  cohortMap?: Map<string, CohortInfo>;
   selectMode?: boolean;
   selectedIds?: Set<string>;
   onToggleSelect?: (id: string) => void;
@@ -495,6 +531,7 @@ function DateGroupedSessions({
                 membership={membership}
                 isPast={isPast}
                 attendanceStatus={attendanceBySession?.get(session.id)}
+                cohortInfo={session.cohort_id ? cohortMap?.get(session.cohort_id) : undefined}
                 selectable={selectMode}
                 selected={selectedIds?.has(session.id) ?? false}
                 onToggleSelect={onToggleSelect ? () => onToggleSelect(session.id) : undefined}
@@ -532,9 +569,14 @@ function SessionsHub() {
   const [error, setError] = useState<string | null>(null);
   const [membership, setMembership] = useState<MembershipTier>("community");
 
+  // Cohort identity
+  const [cohortMap, setCohortMap] = useState<Map<string, CohortInfo>>(new Map());
+  const [enrolledCohortIds, setEnrolledCohortIds] = useState<Set<string>>(new Set());
+
   // Filters
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [typeFilters, setTypeFilters] = useState<Set<string>>(new Set());
+  const [myCohortsOnly, setMyCohortsOnly] = useState(false);
 
   // Multi-select for bundle booking
   const [selectMode, setSelectMode] = useState(false);
@@ -562,7 +604,7 @@ function SessionsHub() {
     setSelectedIds(new Set());
   }, []);
 
-  const hasActiveFilters = dateFilter !== "all" || typeFilters.size > 0;
+  const hasActiveFilters = dateFilter !== "all" || typeFilters.size > 0 || myCohortsOnly;
 
   const toggleTypeFilter = useCallback((type: string) => {
     setTypeFilters((prev) => {
@@ -579,6 +621,7 @@ function SessionsHub() {
   const clearFilters = useCallback(() => {
     setDateFilter("all");
     setTypeFilters(new Set());
+    setMyCohortsOnly(false);
   }, []);
 
   // ── Data loading ───────────────────────────────────────────────────────
@@ -604,6 +647,45 @@ function SessionsHub() {
 
         setMembership(resolvedTier);
         setAttendance(attendanceData);
+
+        // Fetch cohort identity data for academy sessions
+        try {
+          const [enrollments, openCohorts] = await Promise.all([
+            AcademyApi.getMyEnrollments().catch(() => [] as Enrollment[]),
+            AcademyApi.getOpenCohorts().catch(() => [] as Cohort[]),
+          ]);
+
+          const map = new Map<string, CohortInfo>();
+          const enrolled = new Set<string>();
+
+          // Add enrolled cohorts (these get isEnrolled: true)
+          for (const enrollment of enrollments) {
+            if (enrollment.cohort_id && enrollment.cohort) {
+              enrolled.add(enrollment.cohort_id);
+              map.set(enrollment.cohort_id, {
+                cohortName: enrollment.cohort.name,
+                programName: enrollment.cohort.program?.name ?? "",
+                isEnrolled: true,
+              });
+            }
+          }
+
+          // Add open cohorts the member is NOT enrolled in
+          for (const cohort of openCohorts) {
+            if (!map.has(cohort.id)) {
+              map.set(cohort.id, {
+                cohortName: cohort.name,
+                programName: cohort.program?.name ?? "",
+                isEnrolled: false,
+              });
+            }
+          }
+
+          setCohortMap(map);
+          setEnrolledCohortIds(enrolled);
+        } catch {
+          // Non-critical — sessions still render, just without cohort labels
+        }
 
         // Fetch upcoming sessions
         const upcomingData = await apiGet<SessionWithRides[]>(
@@ -731,8 +813,21 @@ function SessionsHub() {
     result = filterByDate(result, dateFilter);
     result = filterByType(result, typeFilters);
 
+    if (myCohortsOnly && enrolledCohortIds.size > 0) {
+      result = result.filter((s) => s.cohort_id && enrolledCohortIds.has(s.cohort_id));
+    }
+
     return result;
-  }, [activeTab, sessions, myUpcomingSessions, pastSessions, dateFilter, typeFilters]);
+  }, [
+    activeTab,
+    sessions,
+    myUpcomingSessions,
+    pastSessions,
+    dateFilter,
+    typeFilters,
+    myCohortsOnly,
+    enrolledCohortIds,
+  ]);
 
   // ── Tab switching ──────────────────────────────────────────────────────
   const setTab = useCallback(
@@ -848,6 +943,7 @@ function SessionsHub() {
           membership={membership}
           isPast={activeTab === "past"}
           attendanceBySession={activeTab === "past" ? attendanceBySession : undefined}
+          cohortMap={cohortMap}
           selectMode={selectMode}
           selectedIds={selectedIds}
           onToggleSelect={toggleSelected}
@@ -938,6 +1034,9 @@ function SessionsHub() {
               setDateFilter={setDateFilter}
               typeFilters={typeFilters}
               toggleTypeFilter={toggleTypeFilter}
+              myCohortsOnly={myCohortsOnly}
+              setMyCohortsOnly={setMyCohortsOnly}
+              showCohortFilter={enrolledCohortIds.size > 0}
               clearFilters={clearFilters}
               hasActiveFilters={hasActiveFilters}
             />
@@ -952,6 +1051,8 @@ function SessionsHub() {
           setDateFilter={setDateFilter}
           typeFilters={typeFilters}
           toggleTypeFilter={toggleTypeFilter}
+          myCohortsOnly={myCohortsOnly}
+          setMyCohortsOnly={setMyCohortsOnly}
         />
       )}
 
