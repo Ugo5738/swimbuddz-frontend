@@ -199,17 +199,14 @@ export function SessionCard({
         {/* Title */}
         <h3 className="text-lg font-semibold text-slate-900">{session.title}</h3>
 
-        {/* Cohort name for academy sessions */}
+        {/* Cohort identifier for academy sessions */}
         {cohortInfo && (
           <p className="mt-0.5 text-sm font-medium text-slate-500">
             <span
               className="mr-1.5 inline-block h-2 w-2 rounded-full"
               style={{ backgroundColor: cohortColor ?? undefined }}
             />
-            {cohortInfo.cohortName}
-            {cohortInfo.programName && cohortInfo.programName !== session.title && (
-              <span className="text-slate-400"> &middot; {cohortInfo.programName}</span>
-            )}
+            {cohortInfo.cohortName} Cohort
           </p>
         )}
 

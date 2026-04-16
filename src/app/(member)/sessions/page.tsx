@@ -214,9 +214,11 @@ function filterByType(sessions: SessionWithRides[], types: Set<string>): Session
   return sessions.filter((s) => types.has(s.session_type));
 }
 
-/** Group sessions by date and sort groups chronologically */
+/** Group sessions by date and sort groups chronologically.
+ *  When enrolledCohortIds is provided, enrolled-cohort sessions sort first within each date. */
 function groupByDate(
-  sessions: SessionWithRides[]
+  sessions: SessionWithRides[],
+  enrolledCohortIds?: Set<string>
 ): { dateKey: string; label: string; sessions: SessionWithRides[] }[] {
   const grouped = new Map<string, { label: string; sessions: SessionWithRides[] }>();
 
@@ -231,11 +233,16 @@ function groupByDate(
     grouped.get(key)!.sessions.push(session);
   }
 
-  // Sort sessions within each group by time
+  // Sort sessions within each group: enrolled cohort first, then by time
   for (const group of grouped.values()) {
-    group.sessions.sort(
-      (a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
-    );
+    group.sessions.sort((a, b) => {
+      if (enrolledCohortIds && enrolledCohortIds.size > 0) {
+        const aEnrolled = a.cohort_id ? enrolledCohortIds.has(a.cohort_id) : false;
+        const bEnrolled = b.cohort_id ? enrolledCohortIds.has(b.cohort_id) : false;
+        if (aEnrolled !== bEnrolled) return aEnrolled ? -1 : 1;
+      }
+      return new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime();
+    });
   }
 
   // Sort groups by date
@@ -491,6 +498,7 @@ function DateGroupedSessions({
   isPast = false,
   attendanceBySession,
   cohortMap,
+  enrolledCohortIds,
   selectMode = false,
   selectedIds,
   onToggleSelect,
@@ -501,11 +509,12 @@ function DateGroupedSessions({
   isPast?: boolean;
   attendanceBySession?: Map<string, string>;
   cohortMap?: Map<string, CohortInfo>;
+  enrolledCohortIds?: Set<string>;
   selectMode?: boolean;
   selectedIds?: Set<string>;
   onToggleSelect?: (id: string) => void;
 }) {
-  const groups = groupByDate(sessions);
+  const groups = groupByDate(sessions, enrolledCohortIds);
 
   return (
     <div className="space-y-8">
@@ -683,6 +692,10 @@ function SessionsHub() {
 
           setCohortMap(map);
           setEnrolledCohortIds(enrolled);
+          // Default to showing only enrolled cohort sessions for academy members
+          if (enrolled.size > 0) {
+            setMyCohortsOnly(true);
+          }
         } catch {
           // Non-critical — sessions still render, just without cohort labels
         }
@@ -944,6 +957,7 @@ function SessionsHub() {
           isPast={activeTab === "past"}
           attendanceBySession={activeTab === "past" ? attendanceBySession : undefined}
           cohortMap={cohortMap}
+          enrolledCohortIds={enrolledCohortIds}
           selectMode={selectMode}
           selectedIds={selectedIds}
           onToggleSelect={toggleSelected}
