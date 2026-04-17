@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { LoadingCard } from "@/components/ui/LoadingCard";
+import { MediaInput } from "@/components/ui/MediaInput";
 import { apiPatch } from "@/lib/api";
 import { getMyCoachProfile, type CoachProfile } from "@/lib/coach";
-import { ArrowLeft, Loader2, Save } from "lucide-react";
+import { ArrowLeft, Loader2, Save, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -53,6 +54,10 @@ export default function CoachEditPage() {
   const [coachingYears, setCoachingYears] = useState(0);
   const [certifications, setCertifications] = useState<string[]>([]);
   const [specialties, setSpecialties] = useState<string[]>([]);
+  const [profilePhotoMediaId, setProfilePhotoMediaId] = useState<string | null>(
+    null,
+  );
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadProfile() {
@@ -63,6 +68,8 @@ export default function CoachEditPage() {
         setCoachingYears(profile.coaching_years || 0);
         setCertifications(profile.certifications || []);
         setSpecialties(profile.coaching_specialties || []);
+        setProfilePhotoMediaId(profile.coach_profile_photo_media_id || null);
+        setProfilePhotoUrl(profile.coach_profile_photo_url || null);
       } catch (err) {
         console.error("Failed to load profile", err);
         setError("Failed to load your profile");
@@ -87,6 +94,7 @@ export default function CoachEditPage() {
           coaching_years: coachingYears,
           certifications,
           coaching_specialties: specialties,
+          coach_profile_photo_media_id: profilePhotoMediaId,
         },
         { auth: true },
       );
@@ -129,6 +137,44 @@ export default function CoachEditPage() {
       {error && <Alert variant="error">{error}</Alert>}
 
       <Card className="p-6 space-y-6">
+        {/* Profile Photo */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            Profile Photo
+          </label>
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0">
+              {profilePhotoUrl ? (
+                <img
+                  src={profilePhotoUrl}
+                  alt="Profile"
+                  className="h-24 w-24 rounded-full object-cover border border-slate-200"
+                />
+              ) : (
+                <div className="h-24 w-24 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center">
+                  <User className="h-10 w-10 text-slate-400" />
+                </div>
+              )}
+            </div>
+            <div className="flex-1">
+              <MediaInput
+                purpose="profile_photo"
+                mode="upload-only"
+                value={profilePhotoMediaId}
+                onChange={(mediaId, fileUrl) => {
+                  setProfilePhotoMediaId(mediaId);
+                  setProfilePhotoUrl(fileUrl || null);
+                }}
+                showPreview={false}
+              />
+              <p className="text-xs text-slate-500 mt-2">
+                Upload a clear photo of yourself. Students will see this on your
+                profile.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Display Name */}
         <Input
           label="Display Name"

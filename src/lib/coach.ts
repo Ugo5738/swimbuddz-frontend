@@ -112,6 +112,8 @@ export type CoachProfile = {
   pools_supported: string[];
   preferred_cohort_types: string[];
   show_in_directory?: boolean;
+  coach_profile_photo_media_id: string | null;
+  coach_profile_photo_url: string | null;
   created_at: string;
   updated_at: string;
 };

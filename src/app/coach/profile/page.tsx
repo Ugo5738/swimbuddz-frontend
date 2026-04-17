@@ -76,9 +76,17 @@ export default function CoachProfilePage() {
       {/* Profile Overview */}
       <Card className="p-6">
         <div className="flex items-start gap-4">
-          <div className="p-4 rounded-full bg-emerald-100">
-            <User className="h-8 w-8 text-emerald-600" />
-          </div>
+          {profile?.coach_profile_photo_url ? (
+            <img
+              src={profile.coach_profile_photo_url}
+              alt={profile?.display_name || "Coach"}
+              className="h-16 w-16 rounded-full object-cover border border-slate-200"
+            />
+          ) : (
+            <div className="p-4 rounded-full bg-emerald-100">
+              <User className="h-8 w-8 text-emerald-600" />
+            </div>
+          )}
           <div className="flex-1">
             <h2 className="text-xl font-semibold text-slate-900">
               {profile?.display_name || email?.split("@")[0] || "Coach"}
