@@ -1,4 +1,5 @@
 import { StoreHeader } from "@/components/store/StoreHeader";
+import { SocialLinks } from "@/components/ui/SocialLinks";
 import { StoreCartProvider } from "@/lib/storeCart";
 import { Clock, Mail, MapPin, ShieldCheck } from "lucide-react";
 import { ReactNode } from "react";
@@ -74,6 +75,10 @@ export default function StoreLayout({ children }: { children: ReactNode }) {
                 <a href="/announcements" className="hover:text-cyan-600 transition-colors">
                   Announcements
                 </a>
+                <span aria-hidden="true" className="text-slate-300">
+                  |
+                </span>
+                <SocialLinks tone="text-slate-400" hoverTone="hover:text-cyan-600" />
               </div>
             </div>
           </div>

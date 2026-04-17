@@ -1,5 +1,6 @@
 "use client";
 
+import { SocialLinks } from "@/components/ui/SocialLinks";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -47,7 +48,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       <footer className="border-t bg-white" role="contentinfo">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-6 text-sm text-slate-600 md:flex-row md:items-center md:justify-between">
           <p>© {year} SwimBuddz. All rights reserved.</p>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <Link href="/guidelines-and-rules" className="hover:text-cyan-700">
               Guidelines
             </Link>
@@ -60,6 +61,10 @@ export function MainLayout({ children }: MainLayoutProps) {
             <Link href="/announcements" className="hover:text-cyan-700">
               Announcements
             </Link>
+            <span aria-hidden="true" className="text-slate-300">
+              |
+            </span>
+            <SocialLinks />
           </div>
         </div>
       </footer>
