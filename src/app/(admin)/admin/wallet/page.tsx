@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { apiGet } from "@/lib/api";
 import { formatNaira } from "@/lib/format";
+import { Search, X } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
@@ -55,6 +56,7 @@ export default function AdminWalletPage() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [statusFilter, setStatusFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -64,6 +66,7 @@ export default function AdminWalletPage() {
         limit: String(PAGE_SIZE),
       });
       if (statusFilter) params.set("status", statusFilter);
+      if (searchQuery.trim()) params.set("search", searchQuery.trim());
 
       const [statsData, walletsData] = await Promise.all([
         apiGet<WalletStats>("/api/v1/admin/wallet/stats", { auth: true }),
@@ -78,16 +81,21 @@ export default function AdminWalletPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter]);
+  }, [page, statusFilter, searchQuery]);
 
+  // Debounce the search query so we don't hit the backend on every keystroke
   useEffect(() => {
-    loadData();
+    const handle = setTimeout(() => {
+      loadData();
+    }, 300);
+    return () => clearTimeout(handle);
   }, [loadData]);
 
   if (loading && !stats) {
     return <LoadingPage text="Loading wallet dashboard..." />;
   }
 
+  const wallets = walletData?.wallets ?? [];
   const totalPages = walletData ? Math.ceil(walletData.total / PAGE_SIZE) : 0;
 
   return (
@@ -140,26 +148,60 @@ export default function AdminWalletPage() {
 
       {/* Wallet List */}
       <div>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-col gap-3 mb-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-semibold text-slate-900">All Wallets</h2>
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(0);
-            }}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
-          >
-            <option value="">All Statuses</option>
-            <option value="active">Active</option>
-            <option value="frozen">Frozen</option>
-            <option value="suspended">Suspended</option>
-            <option value="closed">Closed</option>
-          </select>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setPage(0);
+                }}
+                placeholder="Search name, email, or auth ID"
+                className="w-full rounded-lg border border-slate-300 pl-9 pr-9 py-1.5 text-sm sm:w-72"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    setPage(0);
+                  }}
+                  aria-label="Clear search"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(0);
+              }}
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
+            >
+              <option value="">All Statuses</option>
+              <option value="active">Active</option>
+              <option value="frozen">Frozen</option>
+              <option value="suspended">Suspended</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
         </div>
 
+        {searchQuery && walletData && (
+          <p className="mb-2 text-xs text-slate-500">
+            {walletData.total} {walletData.total === 1 ? "match" : "matches"} for &ldquo;
+            {searchQuery}&rdquo;
+          </p>
+        )}
+
         <div className="space-y-2">
-          {walletData?.wallets.map((w) => (
+          {wallets.map((w) => (
             <Link key={w.id} href={`/admin/wallet/${w.id}`}>
               <Card className="p-3 md:p-4 hover:shadow-md transition-shadow cursor-pointer">
                 <div className="flex items-center justify-between">
@@ -199,9 +241,13 @@ export default function AdminWalletPage() {
           ))}
         </div>
 
-        {walletData?.wallets.length === 0 && (
+        {wallets.length === 0 && (
           <Card className="p-6 bg-slate-50 border-dashed text-center">
-            <p className="text-slate-600">No wallets found</p>
+            <p className="text-slate-600">
+              {searchQuery
+                ? `No wallets match "${searchQuery}"`
+                : "No wallets found"}
+            </p>
           </Card>
         )}
 

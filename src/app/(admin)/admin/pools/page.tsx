@@ -25,6 +25,7 @@ interface Pool {
   contact_phone: string | null;
   water_quality: number | null;
   overall_score: number | null;
+  computed_score: string | number | null;
   pool_length_m: number | null;
   number_of_lanes: number | null;
   indoor_outdoor: string | null;
@@ -41,15 +42,6 @@ interface PoolListResponse {
   total: number;
   page: number;
   page_size: number;
-}
-
-interface NewPoolForm {
-  name: string;
-  slug: string;
-  location_area: string;
-  pool_type: string;
-  contact_person: string;
-  contact_phone: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -79,15 +71,6 @@ const PAGE_SIZE = 20;
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/[\s_]+/g, "-")
-    .replace(/-+/g, "-");
-}
 
 function StatusBadge({ status }: { status: string }) {
   const config = STATUS_BADGE_CONFIG[status] || {
@@ -126,6 +109,52 @@ function ScoreStars({ score }: { score: number | null }) {
   );
 }
 
+function PoolScoreCell({
+  overall,
+  computed,
+}: {
+  overall: number | null;
+  computed: string | number | null;
+}) {
+  // Decimal serialises as string from Pydantic; normalise to number.
+  const computedNum =
+    computed === null || computed === undefined
+      ? null
+      : typeof computed === "string"
+        ? Number(computed)
+        : computed;
+  const hasVariance =
+    overall !== null &&
+    computedNum !== null &&
+    Number.isFinite(computedNum) &&
+    Math.abs(overall - computedNum) >= 1.5;
+
+  if (overall === null && computedNum === null) {
+    return <span className="text-xs text-slate-400">--</span>;
+  }
+
+  return (
+    <div className="space-y-0.5">
+      <div className="flex items-center gap-1.5">
+        <ScoreStars score={overall} />
+        {hasVariance && (
+          <span
+            className="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800"
+            title={`Admin rating (${overall}) differs from component average (${computedNum!.toFixed(1)}) by ${Math.abs(overall! - computedNum!).toFixed(1)} points`}
+          >
+            ⚠
+          </span>
+        )}
+      </div>
+      {computedNum !== null && (
+        <div className="text-[11px] text-slate-400">
+          avg {computedNum.toFixed(1)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Page Component
 // ---------------------------------------------------------------------------
@@ -141,18 +170,6 @@ export default function PoolRegistryPage() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterType, setFilterType] = useState("");
-
-  // Add Pool form state
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState<NewPoolForm>({
-    name: "",
-    slug: "",
-    location_area: "",
-    pool_type: "",
-    contact_person: "",
-    contact_phone: "",
-  });
 
   // Status dropdown state (per-pool inline editing)
   const [openStatusDropdown, setOpenStatusDropdown] = useState<string | null>(null);
@@ -219,44 +236,6 @@ export default function PoolRegistryPage() {
 
   // ---------- Actions ----------
 
-  const handleAddPool = async () => {
-    if (!form.name.trim()) {
-      toast.error("Pool name is required");
-      return;
-    }
-    setSubmitting(true);
-    try {
-      await apiPost<Pool>(
-        "/api/v1/admin/pools",
-        {
-          name: form.name,
-          slug: form.slug || slugify(form.name),
-          location_area: form.location_area || null,
-          pool_type: form.pool_type || null,
-          contact_person: form.contact_person || null,
-          contact_phone: form.contact_phone || null,
-        },
-        { auth: true }
-      );
-      toast.success("Pool added successfully");
-      setShowAddForm(false);
-      setForm({
-        name: "",
-        slug: "",
-        location_area: "",
-        pool_type: "",
-        contact_person: "",
-        contact_phone: "",
-      });
-      loadPools();
-      loadStatusCounts();
-    } catch (e: any) {
-      toast.error(e?.message || "Failed to add pool");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const handleStatusChange = async (poolId: string, newStatus: string) => {
     try {
       await apiPost<Pool>(
@@ -306,98 +285,18 @@ export default function PoolRegistryPage() {
           </h1>
           <p className="text-slate-500">Screening &amp; partnership CRM for pool locations</p>
         </div>
-        <Button onClick={() => setShowAddForm(!showAddForm)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Pool
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link href="/admin/pools/submissions">
+            <Button variant="outline">Member submissions</Button>
+          </Link>
+          <Link href="/admin/pools/new">
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Pool
+            </Button>
+          </Link>
+        </div>
       </div>
-
-      {/* Add Pool Form */}
-      {showAddForm && (
-        <Card className="p-6 border-cyan-200 bg-cyan-50/30">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">New Pool</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Name *</label>
-              <input
-                type="text"
-                value={form.name}
-                onChange={(e) => {
-                  const name = e.target.value;
-                  setForm((f) => ({ ...f, name, slug: slugify(name) }));
-                }}
-                placeholder="e.g. Yaba Olympic Pool"
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Slug</label>
-              <input
-                type="text"
-                value={form.slug}
-                onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
-                placeholder="auto-generated"
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-slate-50"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Location Area</label>
-              <input
-                type="text"
-                value={form.location_area}
-                onChange={(e) => setForm((f) => ({ ...f, location_area: e.target.value }))}
-                placeholder="e.g. Yaba, Lagos"
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Pool Type</label>
-              <select
-                value={form.pool_type}
-                onChange={(e) => setForm((f) => ({ ...f, pool_type: e.target.value }))}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white"
-              >
-                <option value="">Select type...</option>
-                {POOL_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t.charAt(0).toUpperCase() + t.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Contact Person
-              </label>
-              <input
-                type="text"
-                value={form.contact_person}
-                onChange={(e) => setForm((f) => ({ ...f, contact_person: e.target.value }))}
-                placeholder="Full name"
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Contact Phone</label>
-              <input
-                type="text"
-                value={form.contact_phone}
-                onChange={(e) => setForm((f) => ({ ...f, contact_phone: e.target.value }))}
-                placeholder="+234..."
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-              />
-            </div>
-          </div>
-          <div className="flex items-center gap-3 mt-5">
-            <Button onClick={handleAddPool} disabled={submitting}>
-              {submitting ? "Saving..." : "Save Pool"}
-            </Button>
-            <Button variant="secondary" onClick={() => setShowAddForm(false)}>
-              Cancel
-            </Button>
-          </div>
-        </Card>
-      )}
 
       {/* Filters */}
       <Card className="p-4">
@@ -513,9 +412,12 @@ export default function PoolRegistryPage() {
                       <StatusBadge status={pool.partnership_status} />
                     </td>
 
-                    {/* Score */}
+                    {/* Score — admin rating + computed composite with variance flag */}
                     <td className="px-4 py-3">
-                      <ScoreStars score={pool.overall_score} />
+                      <PoolScoreCell
+                        overall={pool.overall_score}
+                        computed={pool.computed_score}
+                      />
                     </td>
 
                     {/* Lanes */}

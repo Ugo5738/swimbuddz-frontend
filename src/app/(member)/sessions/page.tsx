@@ -10,6 +10,7 @@ import { apiGet, apiPost } from "@/lib/api";
 import { tierDisplayLabel } from "@/lib/sessionAccess";
 import { type CohortInfo, getSessionTypeLabel, SessionType } from "@/lib/sessions";
 import { getEffectiveTier, MembershipTier } from "@/lib/tiers";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   Calendar,
@@ -633,114 +634,135 @@ function SessionsHub() {
     setMyCohortsOnly(false);
   }, []);
 
-  // ── Data loading ───────────────────────────────────────────────────────
-  useEffect(() => {
-    async function loadData() {
+  // ── Data loading (cached via React Query) ──────────────────────────────
+  // Cache key: staleTime of 2min means within-session navigations read from cache.
+  const sessionsHubQuery = useQuery({
+    queryKey: ["sessions-hub"],
+    queryFn: async () => {
+      let resolvedTier: MembershipTier = "community";
+      let attendanceData: AttendanceRecord[] = [];
+
       try {
-        setLoading(true);
-        let resolvedTier: MembershipTier = "community";
-        let attendanceData: AttendanceRecord[] = [];
+        const profile = await apiGet<MemberProfile>("/api/v1/members/me", {
+          auth: true,
+        });
+        resolvedTier = getEffectiveTier(profile);
 
-        try {
-          const profile = await apiGet<MemberProfile>("/api/v1/members/me", {
-            auth: true,
-          });
-          resolvedTier = getEffectiveTier(profile);
-
-          attendanceData = await apiGet<AttendanceRecord[]>("/api/v1/attendance/me", {
-            auth: true,
-          }).catch(() => []);
-        } catch {
-          // Not authenticated or profile fetch failed — default community
-        }
-
-        setMembership(resolvedTier);
-        setAttendance(attendanceData);
-
-        // Fetch cohort identity data for academy sessions
-        try {
-          const [enrollments, openCohorts] = await Promise.all([
-            AcademyApi.getMyEnrollments().catch(() => [] as Enrollment[]),
-            AcademyApi.getOpenCohorts().catch(() => [] as Cohort[]),
-          ]);
-
-          const map = new Map<string, CohortInfo>();
-          const enrolled = new Set<string>();
-
-          // Add enrolled cohorts (these get isEnrolled: true)
-          for (const enrollment of enrollments) {
-            if (enrollment.cohort_id && enrollment.cohort) {
-              enrolled.add(enrollment.cohort_id);
-              map.set(enrollment.cohort_id, {
-                cohortName: enrollment.cohort.name,
-                programName: enrollment.cohort.program?.name ?? "",
-                isEnrolled: true,
-              });
-            }
-          }
-
-          // Add open cohorts the member is NOT enrolled in
-          for (const cohort of openCohorts) {
-            if (!map.has(cohort.id)) {
-              map.set(cohort.id, {
-                cohortName: cohort.name,
-                programName: cohort.program?.name ?? "",
-                isEnrolled: false,
-              });
-            }
-          }
-
-          setCohortMap(map);
-          setEnrolledCohortIds(enrolled);
-          // Default to showing only enrolled cohort sessions for academy members
-          if (enrolled.size > 0) {
-            setMyCohortsOnly(true);
-          }
-        } catch {
-          // Non-critical — sessions still render, just without cohort labels
-        }
-
-        // Fetch upcoming sessions
-        const upcomingData = await apiGet<SessionWithRides[]>(
-          `/api/v1/sessions?types=${encodeURIComponent(SESSION_TYPES_QUERY)}`
-        );
-
-        // Fetch ride configs per session
-        const withRides = await Promise.all(
-          upcomingData.map(async (session) => {
-            try {
-              const rideConfigs = await apiGet<SessionWithRides["ride_configs"]>(
-                `/api/v1/transport/sessions/${session.id}/ride-configs`
-              );
-              return { ...session, ride_configs: rideConfigs || [] };
-            } catch {
-              return { ...session, ride_configs: [] };
-            }
-          })
-        );
-
-        setSessions(withRides);
-
-        // Fetch past sessions (last 60 days)
-        const sixtyDaysAgo = new Date();
-        sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-        try {
-          const pastData = await apiGet<SessionWithRides[]>(
-            `/api/v1/sessions?types=${encodeURIComponent(SESSION_TYPES_QUERY)}&before=${sixtyDaysAgo.toISOString()}&status=completed`
-          );
-          setPastSessions(pastData);
-        } catch {
-          setPastSessions([]);
-        }
-      } catch (err) {
-        console.error(err);
-        setError("Unable to load sessions. Please try again later.");
-      } finally {
-        setLoading(false);
+        attendanceData = await apiGet<AttendanceRecord[]>("/api/v1/attendance/me", {
+          auth: true,
+        }).catch(() => []);
+      } catch {
+        // Not authenticated or profile fetch failed — default community
       }
+
+      // Fetch cohort identity data for academy sessions
+      const cohortMapResult = new Map<string, CohortInfo>();
+      const enrolledCohorts = new Set<string>();
+      try {
+        const [enrollments, openCohorts] = await Promise.all([
+          AcademyApi.getMyEnrollments().catch(() => [] as Enrollment[]),
+          AcademyApi.getOpenCohorts().catch(() => [] as Cohort[]),
+        ]);
+
+        for (const enrollment of enrollments) {
+          if (enrollment.cohort_id && enrollment.cohort) {
+            enrolledCohorts.add(enrollment.cohort_id);
+            cohortMapResult.set(enrollment.cohort_id, {
+              cohortName: enrollment.cohort.name,
+              programName: enrollment.cohort.program?.name ?? "",
+              isEnrolled: true,
+            });
+          }
+        }
+        for (const cohort of openCohorts) {
+          if (!cohortMapResult.has(cohort.id)) {
+            cohortMapResult.set(cohort.id, {
+              cohortName: cohort.name,
+              programName: cohort.program?.name ?? "",
+              isEnrolled: false,
+            });
+          }
+        }
+      } catch {
+        // Non-critical — sessions still render without cohort labels
+      }
+
+      // Fetch upcoming sessions
+      const upcomingData = await apiGet<SessionWithRides[]>(
+        `/api/v1/sessions?types=${encodeURIComponent(SESSION_TYPES_QUERY)}`
+      );
+
+      // Batch-fetch ride configs in a single HTTP call (Tier 1 optimization)
+      let rideConfigsBySession: Record<string, SessionWithRides["ride_configs"]> = {};
+      if (upcomingData.length > 0) {
+        try {
+          const resp = await apiPost<{
+            configs: Record<string, SessionWithRides["ride_configs"]>;
+          }>("/api/v1/transport/sessions/ride-configs/batch", {
+            session_ids: upcomingData.map((s) => s.id),
+          });
+          rideConfigsBySession = resp.configs || {};
+        } catch {
+          // Non-fatal
+        }
+      }
+      const withRides = upcomingData.map((session) => ({
+        ...session,
+        ride_configs: rideConfigsBySession[session.id] ?? [],
+      }));
+
+      // Fetch past sessions (last 60 days)
+      const sixtyDaysAgo = new Date();
+      sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+      let past: SessionWithRides[] = [];
+      try {
+        past = await apiGet<SessionWithRides[]>(
+          `/api/v1/sessions?types=${encodeURIComponent(SESSION_TYPES_QUERY)}&before=${sixtyDaysAgo.toISOString()}&status=completed`
+        );
+      } catch {
+        past = [];
+      }
+
+      return {
+        membership: resolvedTier,
+        attendance: attendanceData,
+        cohortMap: cohortMapResult,
+        enrolledCohortIds: enrolledCohorts,
+        sessions: withRides,
+        pastSessions: past,
+      };
+    },
+  });
+
+  // Sync query result into local state so the rest of the page (filters,
+  // derived memos) keeps working unchanged.
+  useEffect(() => {
+    if (!sessionsHubQuery.data) return;
+    const d = sessionsHubQuery.data;
+    setMembership(d.membership);
+    setAttendance(d.attendance);
+    setCohortMap(d.cohortMap);
+    setEnrolledCohortIds(d.enrolledCohortIds);
+    setSessions(d.sessions);
+    setPastSessions(d.pastSessions);
+    // Default to "my cohorts" filter for academy members (original behavior).
+    if (d.enrolledCohortIds.size > 0) {
+      setMyCohortsOnly(true);
     }
-    loadData();
-  }, []);
+  }, [sessionsHubQuery.data]);
+
+  useEffect(() => {
+    setLoading(sessionsHubQuery.isLoading);
+  }, [sessionsHubQuery.isLoading]);
+
+  useEffect(() => {
+    if (sessionsHubQuery.isError) {
+      console.error(sessionsHubQuery.error);
+      setError("Unable to load sessions. Please try again later.");
+    } else {
+      setError(null);
+    }
+  }, [sessionsHubQuery.isError, sessionsHubQuery.error]);
 
   // ── Derived data ───────────────────────────────────────────────────────
   const bookedSessionIds = useMemo(() => {
@@ -989,6 +1011,15 @@ function SessionsHub() {
         </div>
         <p className="text-base text-slate-600">
           Browse sessions, manage your bookings, and review past swims.
+        </p>
+        <p className="text-sm text-slate-500">
+          Know a pool we should partner with?{" "}
+          <Link
+            href="/account/pools/suggest"
+            className="font-medium text-cyan-700 hover:underline"
+          >
+            Suggest a pool &rarr;
+          </Link>
         </p>
       </header>
 
