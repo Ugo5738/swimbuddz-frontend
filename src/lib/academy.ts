@@ -145,6 +145,12 @@ export interface Cohort {
   installment_deposit_amount?: number | null;
   // Relations
   program?: Program;
+  /** Live enrolment count (ENROLLED + PENDING_APPROVAL). Only populated by
+   *  list endpoints that annotate it: /cohorts/open and /cohorts/enrollable. */
+  enrolled_count?: number;
+  /** True when enrolled_count has reached capacity; new enrolments would land
+   *  on the waitlist. Only populated by the list endpoints above. */
+  is_full?: boolean;
   created_at: string;
   updated_at: string;
 }
