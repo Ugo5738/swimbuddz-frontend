@@ -1,16 +1,11 @@
 "use client";
 
+import { PoolPicker } from "@/components/admin/PoolPicker";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
-import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import {
-  SessionLocation,
-  SessionsApi,
-  SessionType,
-  type Session,
-} from "@/lib/sessions";
+import { SessionsApi, SessionType, type Session } from "@/lib/sessions";
 import { useState } from "react";
 
 type AddSessionModalProps = {
@@ -20,6 +15,8 @@ type AddSessionModalProps = {
   cohortId: string;
   cohortTimezone?: string;
   cohortLocationName?: string;
+  /** Cohort's default pool — used to pre-select the PoolPicker. */
+  cohortPoolId?: string | null;
 };
 
 export function AddSessionModal({
@@ -29,6 +26,7 @@ export function AddSessionModal({
   cohortId,
   cohortTimezone = "Africa/Lagos",
   cohortLocationName = "",
+  cohortPoolId = null,
 }: AddSessionModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +44,9 @@ export function AddSessionModal({
     date: getDefaultDate(),
     start_time: "09:00",
     end_time: "10:00",
-    location: SessionLocation.OTHER,
+    // Pre-fill with the cohort's pool so the admin doesn't have to re-pick
+    // when adding an ad-hoc session.
+    pool_id: cohortPoolId,
     location_name: cohortLocationName,
     capacity: 10,
     pool_fee: 0,
@@ -73,7 +73,7 @@ export function AddSessionModal({
         starts_at,
         ends_at,
         timezone: cohortTimezone,
-        location: formData.location,
+        pool_id: formData.pool_id,
         location_name: formData.location_name || undefined,
         capacity: formData.capacity,
         pool_fee: formData.pool_fee,
@@ -83,7 +83,7 @@ export function AddSessionModal({
       onSuccess(newSession);
       onClose();
 
-      // Reset form
+      // Reset form (keep pool_id pre-filled with the cohort's default)
       setFormData({
         title: "",
         description: "",
@@ -92,7 +92,7 @@ export function AddSessionModal({
         date: getDefaultDate(),
         start_time: "09:00",
         end_time: "10:00",
-        location: SessionLocation.OTHER,
+        pool_id: cohortPoolId,
         location_name: cohortLocationName,
         capacity: 10,
         pool_fee: 0,
@@ -108,10 +108,7 @@ export function AddSessionModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Add Session">
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-4 max-h-[70vh] overflow-y-auto pr-2"
-      >
+      <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
         {error && <div className="text-sm text-red-600">{error}</div>}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -131,9 +128,7 @@ export function AddSessionModal({
           <Input
             label="Lesson Title"
             value={formData.lesson_title}
-            onChange={(e) =>
-              setFormData({ ...formData, lesson_title: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, lesson_title: e.target.value })}
             placeholder="e.g., Freestyle Basics"
           />
         </div>
@@ -148,9 +143,7 @@ export function AddSessionModal({
         <Textarea
           label="Description"
           value={formData.description}
-          onChange={(e) =>
-            setFormData({ ...formData, description: e.target.value })
-          }
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           placeholder="Session description..."
         />
 
@@ -167,52 +160,30 @@ export function AddSessionModal({
             label="Start Time"
             type="time"
             value={formData.start_time}
-            onChange={(e) =>
-              setFormData({ ...formData, start_time: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
             required
           />
           <Input
             label="End Time"
             type="time"
             value={formData.end_time}
-            onChange={(e) =>
-              setFormData({ ...formData, end_time: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
             required
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Select
-            label="Location"
-            value={formData.location}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                location: e.target.value as SessionLocation,
-              })
-            }
-          >
-            <option value={SessionLocation.SUNFIT_POOL}>SunFit Pool</option>
-            <option value={SessionLocation.ROWE_PARK_POOL}>
-              Rowe Park Pool
-            </option>
-            <option value={SessionLocation.FEDERAL_PALACE_POOL}>
-              Federal Palace Pool
-            </option>
-            <option value={SessionLocation.OPEN_WATER}>Open Water</option>
-            <option value={SessionLocation.OTHER}>Other</option>
-          </Select>
-          <Input
-            label="Location Name"
-            value={formData.location_name}
-            onChange={(e) =>
-              setFormData({ ...formData, location_name: e.target.value })
-            }
-            placeholder="Custom location name"
-          />
-        </div>
+        <PoolPicker
+          label="Pool"
+          value={formData.pool_id}
+          onChange={(poolId, poolName) =>
+            setFormData({
+              ...formData,
+              pool_id: poolId,
+              location_name: poolName ?? "",
+            })
+          }
+          hint="Defaults to this cohort's pool. Override if this one-off session is at a different pool."
+        />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
@@ -249,12 +220,7 @@ export function AddSessionModal({
         />
 
         <div className="flex justify-end gap-2 pt-2 sticky bottom-0 bg-white">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={onClose}
-            disabled={loading}
-          >
+          <Button type="button" variant="ghost" onClick={onClose} disabled={loading}>
             Cancel
           </Button>
           <Button type="submit" disabled={loading}>

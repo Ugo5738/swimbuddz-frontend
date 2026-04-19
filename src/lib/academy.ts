@@ -113,6 +113,18 @@ export interface Program {
   updated_at: string;
 }
 
+/**
+ * A single ride-area entry stored on a cohort's `default_ride_configs`.
+ * When sessions are generated for this cohort, each entry is materialised
+ * as a SessionRideConfig on the new session via the transport service.
+ */
+export interface CohortRideConfigEntry {
+  ride_area_id: string;
+  /** Cost in naira (major unit). Backend converts to kobo on store. */
+  cost: number;
+  capacity: number;
+}
+
 export interface Cohort {
   id: string;
   program_id: string;
@@ -125,10 +137,17 @@ export interface Cohort {
   location_type?: LocationType;
   location_name?: string;
   location_address?: string;
+  /** Preferred: links cohort to a pool in the pools registry (pools_service). */
+  pool_id?: string | null;
   // Coach
   coach_id?: string | null;
   // Pricing
   price_override?: number;
+  // ── Session defaults (applied to every generated session) ──
+  /** Default pool fee in naira. Used to populate pool_fee on each session. */
+  default_pool_fee?: number | null;
+  /** Default ride-area configurations copied to each generated session. */
+  default_ride_configs?: CohortRideConfigEntry[] | null;
   // Status
   status: CohortStatus;
   allow_mid_entry?: boolean;

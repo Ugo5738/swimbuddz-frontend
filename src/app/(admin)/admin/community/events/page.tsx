@@ -1,5 +1,6 @@
 "use client";
 
+import { PoolPicker } from "@/components/admin/PoolPicker";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -36,6 +37,10 @@ export default function AdminEventsPage() {
     title: "",
     description: "",
     event_type: "social",
+    // Hybrid venue: either a pool from the registry (pool_id + auto-filled
+    // `location` string) OR a custom free-text location for non-pool events
+    // (park, hotel, members' home, etc.).
+    pool_id: null as string | null,
     location: "",
     start_time: "",
     end_time: "",
@@ -75,20 +80,15 @@ export default function AdminEventsPage() {
         location: formData.location,
         start_time: formData.start_time,
         end_time: formData.end_time || null,
-        max_capacity: formData.max_capacity
-          ? parseInt(formData.max_capacity)
-          : null,
+        max_capacity: formData.max_capacity ? parseInt(formData.max_capacity) : null,
         tier_access: formData.tier_access,
       };
 
-      const response = await fetch(
-        `${apiEndpoints.events}/?created_by=${createdBy}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        },
-      );
+      const response = await fetch(`${apiEndpoints.events}/?created_by=${createdBy}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
       if (response.ok) {
         setShowCreateModal(false);
@@ -96,6 +96,7 @@ export default function AdminEventsPage() {
           title: "",
           description: "",
           event_type: "social",
+          pool_id: null,
           location: "",
           start_time: "",
           end_time: "",
@@ -130,12 +131,8 @@ export default function AdminEventsPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
-            Event Management
-          </h1>
-          <p className="mt-2 text-slate-600">
-            Create and manage community events
-          </p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Event Management</h1>
+          <p className="mt-2 text-slate-600">Create and manage community events</p>
         </div>
         {!showCreateModal && (
           <Button
@@ -152,16 +149,12 @@ export default function AdminEventsPage() {
       {showCreateModal && (
         <Card className="p-6">
           <form onSubmit={handleCreateEvent} className="space-y-4">
-            <h2 className="text-xl font-semibold text-slate-900">
-              Create New Event
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900">Create New Event</h2>
 
             <Input
               label="Event Title"
               value={formData.title}
-              onChange={(e) =>
-                setFormData({ ...formData, title: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               required
               placeholder="e.g., Beach Day at Rowe Park"
             />
@@ -169,9 +162,7 @@ export default function AdminEventsPage() {
             <Textarea
               label="Description"
               value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               required
               rows={3}
               placeholder="Describe the event..."
@@ -181,9 +172,7 @@ export default function AdminEventsPage() {
               <Select
                 label="Event Type"
                 value={formData.event_type}
-                onChange={(e) =>
-                  setFormData({ ...formData, event_type: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, event_type: e.target.value })}
                 required
               >
                 <option value="social">Social</option>
@@ -194,21 +183,39 @@ export default function AdminEventsPage() {
                 <option value="training">Training Session</option>
               </Select>
 
-              <Select
-                label="Location"
-                value={formData.location}
-                onChange={(e) =>
-                  setFormData({ ...formData, location: e.target.value })
-                }
-                required
-              >
-                <option value="">Select location</option>
-                <option value="Rowe Park, Yaba">Rowe Park, Yaba</option>
-                <option value="Sunfit, Ago">Sunfit, Ago</option>
-                <option value="Federal Palace Hotel, Victoria Island">
-                  Federal Palace Hotel, Victoria Island
-                </option>
-              </Select>
+              <div className="space-y-2">
+                <PoolPicker
+                  label="Pool venue (optional)"
+                  value={formData.pool_id}
+                  onChange={(poolId, poolName) =>
+                    setFormData({
+                      ...formData,
+                      pool_id: poolId,
+                      // Keep `location` in sync: if a pool is picked, use the
+                      // pool's name as the human-readable location string.
+                      // When the admin clears the picker, leave whatever they
+                      // typed below so we don't wipe their manual entry.
+                      location: poolId ? (poolName ?? "") : formData.location,
+                    })
+                  }
+                  hint="Pick a partner pool, or leave empty and type a custom venue below."
+                />
+                <Input
+                  label="Custom venue (if not a pool)"
+                  value={formData.pool_id ? (formData.location ?? "") : formData.location}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      // Editing the free-text field clears any picked pool —
+                      // this field becomes the source of truth.
+                      pool_id: null,
+                      location: e.target.value,
+                    })
+                  }
+                  placeholder="e.g. Lekki Conservation Centre, Freedom Park"
+                  required
+                />
+              </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -216,9 +223,7 @@ export default function AdminEventsPage() {
                 label="Start Date & Time"
                 type="datetime-local"
                 value={formData.start_time}
-                onChange={(e) =>
-                  setFormData({ ...formData, start_time: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
                 required
               />
 
@@ -226,9 +231,7 @@ export default function AdminEventsPage() {
                 label="End Date & Time (Optional)"
                 type="datetime-local"
                 value={formData.end_time}
-                onChange={(e) =>
-                  setFormData({ ...formData, end_time: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
               />
             </div>
 
@@ -237,18 +240,14 @@ export default function AdminEventsPage() {
                 label="Max Capacity (Optional)"
                 type="number"
                 value={formData.max_capacity}
-                onChange={(e) =>
-                  setFormData({ ...formData, max_capacity: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, max_capacity: e.target.value })}
                 placeholder="Leave blank for unlimited"
               />
 
               <Select
                 label="Tier Access"
                 value={formData.tier_access}
-                onChange={(e) =>
-                  setFormData({ ...formData, tier_access: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, tier_access: e.target.value })}
                 required
               >
                 <option value="community">Community (All Members)</option>
@@ -258,11 +257,7 @@ export default function AdminEventsPage() {
             </div>
 
             <div className="flex justify-end gap-3">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setShowCreateModal(false)}
-              >
+              <Button type="button" variant="secondary" onClick={() => setShowCreateModal(false)}>
                 Cancel
               </Button>
               <Button type="submit">Create Event</Button>
@@ -277,12 +272,8 @@ export default function AdminEventsPage() {
       ) : events.length === 0 && !showCreateModal ? (
         <Card className="p-12 text-center">
           <Calendar className="mx-auto h-12 w-12 text-slate-400" />
-          <h3 className="mt-4 text-lg font-semibold text-slate-900">
-            No events created yet
-          </h3>
-          <p className="mt-2 text-sm text-slate-600">
-            Create your first event to get started!
-          </p>
+          <h3 className="mt-4 text-lg font-semibold text-slate-900">No events created yet</h3>
+          <p className="mt-2 text-sm text-slate-600">Create your first event to get started!</p>
         </Card>
       ) : events.length > 0 ? (
         <div className="space-y-4">
@@ -291,29 +282,20 @@ export default function AdminEventsPage() {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 space-y-3">
                   <div>
-                    <h3 className="text-lg font-semibold text-slate-900">
-                      {event.title}
-                    </h3>
-                    <p className="mt-1 text-sm text-slate-600">
-                      {event.description}
-                    </p>
+                    <h3 className="text-lg font-semibold text-slate-900">{event.title}</h3>
+                    <p className="mt-1 text-sm text-slate-600">{event.description}</p>
                   </div>
 
                   <div className="flex flex-wrap gap-4 text-sm text-slate-600">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
-                      {format(
-                        new Date(event.start_time),
-                        "MMM d, yyyy 'at' h:mm a",
-                      )}
+                      {format(new Date(event.start_time), "MMM d, yyyy 'at' h:mm a")}
                     </div>
                     <div>
-                      <span className="font-medium">Location:</span>{" "}
-                      {event.location}
+                      <span className="font-medium">Location:</span> {event.location}
                     </div>
                     <div>
-                      <span className="font-medium">Type:</span>{" "}
-                      {event.event_type}
+                      <span className="font-medium">Type:</span> {event.event_type}
                     </div>
                     {event.max_capacity && (
                       <div className="flex items-center gap-2">

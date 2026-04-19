@@ -57,7 +57,9 @@ export interface Session {
   session_type: SessionType;
   status: SessionStatus;
 
-  // Location
+  // Location — prefer pool_id (references the pools registry).
+  // location / location_name are kept for pre-pool-registry rows.
+  pool_id?: string | null;
   location?: SessionLocation;
   location_name?: string;
   location_address?: string;
@@ -129,6 +131,7 @@ export interface SessionCreate {
   notes?: string;
   session_type: SessionType;
   status?: SessionStatus;
+  pool_id?: string | null;
   location?: SessionLocation;
   location_name?: string;
   location_address?: string;
@@ -149,6 +152,7 @@ export interface SessionUpdate {
   description?: string;
   notes?: string;
   status?: SessionStatus;
+  pool_id?: string | null;
   location?: SessionLocation;
   location_name?: string;
   location_address?: string;

@@ -6,21 +6,10 @@ import { Modal } from "@/components/ui/Modal";
 import { Textarea } from "@/components/ui/Textarea";
 import { supabase } from "@/lib/auth";
 import { API_BASE_URL, buildAppUrl } from "@/lib/config";
-import {
-  Ban,
-  Link as LinkIcon,
-  Pencil,
-  Send,
-  Trash2,
-} from "lucide-react";
+import { Ban, Link as LinkIcon, Pencil, Send, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
-type SessionStatusType =
-  | "draft"
-  | "scheduled"
-  | "in_progress"
-  | "completed"
-  | "cancelled";
+type SessionStatusType = "draft" | "scheduled" | "in_progress" | "completed" | "cancelled";
 
 interface Session {
   id: string;
@@ -34,7 +23,9 @@ interface Session {
     | "group_booking"
     | "event";
   status?: SessionStatusType;
-  location: string;
+  pool_id?: string | null;
+  location: string | null;
+  location_name?: string | null;
   starts_at: string;
   ends_at: string;
   pool_fee: number;
@@ -107,7 +98,7 @@ function SessionDetailsModal({
         `${API_BASE_URL}/api/v1/transport/sessions/${session.id}/ride-configs`,
         {
           headers: { Authorization: `Bearer ${token}` },
-        },
+        }
       );
 
       if (res.ok) {
@@ -158,8 +149,7 @@ function SessionDetailsModal({
 
   // Check if session start is less than 6 hours away
   const isShortNotice = () => {
-    const hoursUntilStart =
-      (new Date(session.starts_at).getTime() - Date.now()) / (1000 * 60 * 60);
+    const hoursUntilStart = (new Date(session.starts_at).getTime() - Date.now()) / (1000 * 60 * 60);
     return hoursUntilStart < 6;
   };
 
@@ -188,9 +178,7 @@ function SessionDetailsModal({
                     : "bg-emerald-100 text-emerald-800"
               }`}
             >
-              {session.session_type
-                ? session.session_type.toUpperCase()
-                : "COMMUNITY"}
+              {session.session_type ? session.session_type.toUpperCase() : "COMMUNITY"}
             </span>
           </div>
         </div>
@@ -207,15 +195,11 @@ function SessionDetailsModal({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-sm font-medium text-slate-700">Start Time</p>
-            <p className="text-slate-900">
-              {new Date(session.starts_at).toLocaleString()}
-            </p>
+            <p className="text-slate-900">{new Date(session.starts_at).toLocaleString()}</p>
           </div>
           <div>
             <p className="text-sm font-medium text-slate-700">End Time</p>
-            <p className="text-slate-900">
-              {new Date(session.ends_at).toLocaleString()}
-            </p>
+            <p className="text-slate-900">{new Date(session.ends_at).toLocaleString()}</p>
           </div>
         </div>
         {session.published_at && (
@@ -235,56 +219,41 @@ function SessionDetailsModal({
 
         {/* Ride Share Information */}
         <div className="border-t pt-4">
-          <p className="text-sm font-medium text-slate-700 mb-2">
-            Ride Share Options
-          </p>
+          <p className="text-sm font-medium text-slate-700 mb-2">Ride Share Options</p>
           {loading ? (
             <p className="text-sm text-slate-500">Loading ride share info...</p>
           ) : rideConfigs.length > 0 ? (
             <div className="space-y-2">
               {rideConfigs.map((config, idx) => (
-                <div
-                  key={idx}
-                  className="p-3 bg-slate-50 rounded border border-slate-200"
-                >
+                <div key={idx} className="p-3 bg-slate-50 rounded border border-slate-200">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="font-medium text-slate-900">
-                        {config.ride_area_name}
-                      </p>
+                      <p className="font-medium text-slate-900">{config.ride_area_name}</p>
                       <p className="text-sm text-slate-600">
                         Cost: ₦{config.cost} · Capacity: {config.capacity} seats
                       </p>
                       {config.departure_time && (
                         <p className="text-xs text-slate-500">
-                          Departs:{" "}
-                          {new Date(config.departure_time).toLocaleTimeString()}
+                          Departs: {new Date(config.departure_time).toLocaleTimeString()}
                         </p>
                       )}
                     </div>
                   </div>
-                  {config.pickup_locations &&
-                    config.pickup_locations.length > 0 && (
-                      <div className="mt-2">
-                        <p className="text-xs font-medium text-slate-700 mb-1">
-                          Pickup locations:
-                        </p>
-                        <ul className="text-xs text-slate-600 space-y-0.5">
-                          {config.pickup_locations.map(
-                            (loc: any, idx: number) => (
-                              <li key={idx}>• {loc.name}</li>
-                            ),
-                          )}
-                        </ul>
-                      </div>
-                    )}
+                  {config.pickup_locations && config.pickup_locations.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-xs font-medium text-slate-700 mb-1">Pickup locations:</p>
+                      <ul className="text-xs text-slate-600 space-y-0.5">
+                        {config.pickup_locations.map((loc: any, idx: number) => (
+                          <li key={idx}>• {loc.name}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-slate-500 italic">
-              No ride share options configured
-            </p>
+            <p className="text-sm text-slate-500 italic">No ride share options configured</p>
           )}
         </div>
 
@@ -297,17 +266,14 @@ function SessionDetailsModal({
         {/* Publish Confirmation */}
         {showPublishConfirm && (
           <div className="border-t pt-4 space-y-3">
-            <p className="text-sm font-medium text-slate-900">
-              Publish this session?
-            </p>
+            <p className="text-sm font-medium text-slate-900">Publish this session?</p>
             <p className="text-sm text-slate-600">
-              This will make the session visible to members and send
-              notification emails to subscribed members.
+              This will make the session visible to members and send notification emails to
+              subscribed members.
             </p>
             {isShortNotice() && (
               <Alert variant="info" title="Short Notice">
-                This session starts in less than 6 hours. It will be marked as
-                short notice.
+                This session starts in less than 6 hours. It will be marked as short notice.
               </Alert>
             )}
             <Textarea
@@ -334,9 +300,7 @@ function SessionDetailsModal({
         {/* Cancel Confirmation */}
         {showCancelConfirm && (
           <div className="border-t pt-4 space-y-3">
-            <p className="text-sm font-medium text-red-700">
-              Cancel this session?
-            </p>
+            <p className="text-sm font-medium text-red-700">Cancel this session?</p>
             <p className="text-sm text-slate-600">
               This will cancel the session and notify all registered members.
             </p>
@@ -347,11 +311,7 @@ function SessionDetailsModal({
               onChange={(e) => setCancellationReason(e.target.value)}
             />
             <div className="flex gap-2">
-              <Button
-                variant="danger"
-                onClick={handleCancel}
-                disabled={actionLoading}
-              >
+              <Button variant="danger" onClick={handleCancel} disabled={actionLoading}>
                 {actionLoading ? "Cancelling..." : "Confirm Cancel"}
               </Button>
               <Button

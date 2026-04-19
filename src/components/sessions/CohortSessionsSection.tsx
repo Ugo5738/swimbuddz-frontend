@@ -11,6 +11,8 @@ type CohortSessionsSectionProps = {
   cohortId: string;
   cohortTimezone?: string;
   cohortLocationName?: string;
+  /** The cohort's default pool — used to pre-fill AddSessionModal. */
+  cohortPoolId?: string | null;
   refreshNonce?: number;
 };
 
@@ -18,6 +20,7 @@ export function CohortSessionsSection({
   cohortId,
   cohortTimezone,
   cohortLocationName,
+  cohortPoolId,
   refreshNonce = 0,
 }: CohortSessionsSectionProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -30,10 +33,7 @@ export function CohortSessionsSection({
         includeDrafts: true,
       });
       // Sort by starts_at
-      data.sort(
-        (a, b) =>
-          new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime(),
-      );
+      data.sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
       setSessions(data);
     } catch (error) {
       console.error("Failed to load sessions", error);
@@ -61,10 +61,7 @@ export function CohortSessionsSection({
     }
   };
 
-  const handleStatusChange = async (
-    sessionId: string,
-    newStatus: SessionStatus,
-  ) => {
+  const handleStatusChange = async (sessionId: string, newStatus: SessionStatus) => {
     try {
       await SessionsApi.updateSession(sessionId, { status: newStatus });
       toast.success("Session status updated");
@@ -119,9 +116,7 @@ export function CohortSessionsSection({
         <div className="border-b border-slate-200 bg-slate-50 px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
           <div className="min-w-0">
             <h2 className="text-lg font-semibold text-slate-900">Sessions</h2>
-            <p className="text-sm text-slate-600">
-              Manage class sessions for this cohort
-            </p>
+            <p className="text-sm text-slate-600">Manage class sessions for this cohort</p>
           </div>
           <Button onClick={() => setIsAddModalOpen(true)} className="shrink-0">
             + Add Session
@@ -142,19 +137,14 @@ export function CohortSessionsSection({
               const endTime = formatDateTime(session.ends_at).time;
 
               return (
-                <div
-                  key={session.id}
-                  className="p-3 sm:p-4 hover:bg-slate-50/50 transition-colors"
-                >
+                <div key={session.id} className="p-3 sm:p-4 hover:bg-slate-50/50 transition-colors">
                   {/* Desktop layout */}
                   <div className="hidden sm:flex items-center gap-4">
                     <div className="w-24 flex-shrink-0">
                       <div className="text-xs font-medium text-slate-500 uppercase">
                         Week {session.week_number || "—"}
                       </div>
-                      <div className="text-sm font-semibold text-slate-900">
-                        {date}
-                      </div>
+                      <div className="text-sm font-semibold text-slate-900">{date}</div>
                     </div>
                     <div className="w-24 flex-shrink-0">
                       <div className="text-sm text-slate-700">
@@ -173,34 +163,21 @@ export function CohortSessionsSection({
                     </div>
                     <div className="w-20 text-center flex-shrink-0">
                       <div className="text-xs text-slate-500">Capacity</div>
-                      <div className="text-sm font-medium text-slate-700">
-                        {session.capacity}
-                      </div>
+                      <div className="text-sm font-medium text-slate-700">{session.capacity}</div>
                     </div>
                     <div className="w-28 flex-shrink-0">
                       <select
                         value={session.status}
                         onChange={(e) =>
-                          handleStatusChange(
-                            session.id,
-                            e.target.value as SessionStatus,
-                          )
+                          handleStatusChange(session.id, e.target.value as SessionStatus)
                         }
                         className="w-full text-xs rounded border border-slate-200 px-2 py-1 focus:outline-none focus:border-cyan-500"
                       >
                         <option value={SessionStatus.DRAFT}>Draft</option>
-                        <option value={SessionStatus.SCHEDULED}>
-                          Scheduled
-                        </option>
-                        <option value={SessionStatus.IN_PROGRESS}>
-                          In Progress
-                        </option>
-                        <option value={SessionStatus.COMPLETED}>
-                          Completed
-                        </option>
-                        <option value={SessionStatus.CANCELLED}>
-                          Cancelled
-                        </option>
+                        <option value={SessionStatus.SCHEDULED}>Scheduled</option>
+                        <option value={SessionStatus.IN_PROGRESS}>In Progress</option>
+                        <option value={SessionStatus.COMPLETED}>Completed</option>
+                        <option value={SessionStatus.CANCELLED}>Cancelled</option>
                       </select>
                     </div>
                     <div className="flex-shrink-0">
@@ -222,8 +199,7 @@ export function CohortSessionsSection({
                           {session.lesson_title || session.title}
                         </div>
                         <div className="text-xs text-slate-500 mt-0.5">
-                          Wk {session.week_number || "—"} · {date} · {time}–
-                          {endTime}
+                          Wk {session.week_number || "—"} · {date} · {time}–{endTime}
                         </div>
                         {session.location_name && (
                           <div className="text-xs text-slate-400 truncate">
@@ -243,30 +219,17 @@ export function CohortSessionsSection({
                       <select
                         value={session.status}
                         onChange={(e) =>
-                          handleStatusChange(
-                            session.id,
-                            e.target.value as SessionStatus,
-                          )
+                          handleStatusChange(session.id, e.target.value as SessionStatus)
                         }
                         className="text-xs rounded border border-slate-200 px-2 py-1 focus:outline-none focus:border-cyan-500"
                       >
                         <option value={SessionStatus.DRAFT}>Draft</option>
-                        <option value={SessionStatus.SCHEDULED}>
-                          Scheduled
-                        </option>
-                        <option value={SessionStatus.IN_PROGRESS}>
-                          In Progress
-                        </option>
-                        <option value={SessionStatus.COMPLETED}>
-                          Completed
-                        </option>
-                        <option value={SessionStatus.CANCELLED}>
-                          Cancelled
-                        </option>
+                        <option value={SessionStatus.SCHEDULED}>Scheduled</option>
+                        <option value={SessionStatus.IN_PROGRESS}>In Progress</option>
+                        <option value={SessionStatus.COMPLETED}>Completed</option>
+                        <option value={SessionStatus.CANCELLED}>Cancelled</option>
                       </select>
-                      <span className="text-xs text-slate-400">
-                        {session.capacity} seats
-                      </span>
+                      <span className="text-xs text-slate-400">{session.capacity} seats</span>
                     </div>
                   </div>
                 </div>
@@ -286,6 +249,7 @@ export function CohortSessionsSection({
         cohortId={cohortId}
         cohortTimezone={cohortTimezone}
         cohortLocationName={cohortLocationName}
+        cohortPoolId={cohortPoolId}
       />
     </>
   );

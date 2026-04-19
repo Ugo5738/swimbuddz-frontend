@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { supabase } from "@/lib/auth";
-import { API_BASE_URL } from "@/lib/config";
-import { Modal } from "@/components/ui/Modal";
+import { PoolPicker } from "@/components/admin/PoolPicker";
+import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import { Button } from "@/components/ui/Button";
+import { supabase } from "@/lib/auth";
+import { API_BASE_URL } from "@/lib/config";
+import { useEffect, useState } from "react";
 
 interface Session {
   id: string;
@@ -20,7 +21,10 @@ interface Session {
     | "one_on_one"
     | "group_booking"
     | "event";
+  /** Preferred location reference — pool from the pools registry. */
+  pool_id?: string | null;
   location: string;
+  location_name?: string | null;
   starts_at: string; // API returns starts_at, not start_time
   ends_at: string; // API returns ends_at, not end_time
   pool_fee: number;
@@ -51,10 +55,15 @@ export function EditSessionForm({
 
   const [formData, setFormData] = useState({
     title: session.title,
-    type: session.session_type || "club", // Map from session_type back to type for form
+    type: session.session_type || "club",
+    pool_id: session.pool_id ?? null,
+    // Kept for backwards-compatible API payload; populated by PoolPicker's
+    // onChange alongside pool_id so legacy consumers still see a string.
+    location_name: session.location_name ?? null,
+    // Legacy enum — only used if pool_id is null (pre-registry sessions).
     location: session.location,
-    start_time: formatDateTimeLocal(session.starts_at), // Map from starts_at to start_time for form
-    end_time: formatDateTimeLocal(session.ends_at), // Map from ends_at to end_time for form
+    start_time: formatDateTimeLocal(session.starts_at),
+    end_time: formatDateTimeLocal(session.ends_at),
     pool_fee: session.pool_fee,
     capacity: session.capacity,
     description: session.description || "",
@@ -106,7 +115,7 @@ export function EditSessionForm({
         `${API_BASE_URL}/api/v1/transport/sessions/${session.id}/ride-configs`,
         {
           headers: { Authorization: `Bearer ${token}` },
-        },
+        }
       );
 
       if (res.ok) {
@@ -119,9 +128,7 @@ export function EditSessionForm({
           departure_time: config.departure_time
             ? formatDateTimeLocal(config.departure_time)
             : formatDateTimeLocal(
-                new Date(
-                  new Date(formData.start_time).getTime() - 2 * 60 * 60 * 1000,
-                ).toISOString(),
+                new Date(new Date(formData.start_time).getTime() - 2 * 60 * 60 * 1000).toISOString()
               ),
         }));
         setSelectedAreas(mapped);
@@ -141,9 +148,7 @@ export function EditSessionForm({
         cost: 1000,
         capacity: 4,
         departure_time: formatDateTimeLocal(
-          new Date(
-            new Date(formData.start_time).getTime() - 2 * 60 * 60 * 1000,
-          ).toISOString(),
+          new Date(new Date(formData.start_time).getTime() - 2 * 60 * 60 * 1000).toISOString()
         ),
       },
     ]);
@@ -165,11 +170,17 @@ export function EditSessionForm({
     e.preventDefault();
 
     // Separate session data from ride configs
-    const { start_time, end_time, type, location, ...restFormData } = formData;
+    const { start_time, end_time, type, location, pool_id, location_name, ...restFormData } =
+      formData;
     const sessionData = {
       ...restFormData,
-      session_type: type, // Keep as lowercase (club, academy, community)
-      location: location, // Keep as lowercase snake_case (sunfit_pool, rowe_park_pool)
+      session_type: type,
+      // When a pool was picked, send pool_id (the authoritative link).
+      // When not, keep sending the legacy `location` enum so pre-registry
+      // sessions continue to edit cleanly.
+      pool_id: pool_id ?? null,
+      location: pool_id ? null : location,
+      location_name: location_name ?? null,
       starts_at: new Date(start_time).toISOString(),
       ends_at: new Date(end_time).toISOString(),
     };
@@ -214,44 +225,41 @@ export function EditSessionForm({
           <Select
             label="Session type"
             value={formData.type}
-            onChange={(e) =>
-              setFormData({ ...formData, type: e.target.value as any })
-            }
+            onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
           >
             <option value="club">Club</option>
             <option value="academy">Academy</option>
             <option value="community">Community</option>
           </Select>
-          <Select
-            label="Location"
-            value={formData.location}
-            onChange={(e) =>
-              setFormData({ ...formData, location: e.target.value })
+          <PoolPicker
+            label="Pool"
+            value={formData.pool_id}
+            onChange={(poolId, poolName) =>
+              setFormData({
+                ...formData,
+                pool_id: poolId,
+                // Mirror into location_name so older consumers that read
+                // location_name (e.g. member-facing session cards) still
+                // show something sensible without a cross-service lookup.
+                location_name: poolName ?? null,
+              })
             }
-          >
-            <option value="sunfit_pool">Sunfit Pool</option>
-            <option value="rowe_park_pool">Rowe Park Pool</option>
-            <option value="federal_palace_pool">Federal Palace Pool</option>
-            <option value="open_water">Open Water</option>
-          </Select>
+            hint="Pools are managed in Admin → Pool Registry. Only active partners appear here."
+          />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <Input
             label="Start Time"
             type="datetime-local"
             value={formData.start_time}
-            onChange={(e) =>
-              setFormData({ ...formData, start_time: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
             required
           />
           <Input
             label="End Time"
             type="datetime-local"
             value={formData.end_time}
-            onChange={(e) =>
-              setFormData({ ...formData, end_time: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
             required
           />
         </div>
@@ -260,34 +268,26 @@ export function EditSessionForm({
             label="Pool Fee (₦)"
             type="number"
             value={formData.pool_fee}
-            onChange={(e) =>
-              setFormData({ ...formData, pool_fee: parseInt(e.target.value) })
-            }
+            onChange={(e) => setFormData({ ...formData, pool_fee: parseInt(e.target.value) })}
             required
           />
           <Input
             label="Capacity"
             type="number"
             value={formData.capacity}
-            onChange={(e) =>
-              setFormData({ ...formData, capacity: parseInt(e.target.value) })
-            }
+            onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) })}
             required
           />
         </div>
         <Textarea
           label="Description (optional)"
           value={formData.description}
-          onChange={(e) =>
-            setFormData({ ...formData, description: e.target.value })
-          }
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
         />
 
         <div className="border-t pt-4">
           <div className="flex justify-between items-center mb-2">
-            <label className="block text-sm font-medium">
-              Ride Share Options
-            </label>
+            <label className="block text-sm font-medium">Ride Share Options</label>
             <button
               type="button"
               onClick={addAreaConfig}
@@ -313,9 +313,7 @@ export function EditSessionForm({
                 <Select
                   label="Select Area"
                   value={config.ride_area_id}
-                  onChange={(e) =>
-                    updateAreaConfig(index, "ride_area_id", e.target.value)
-                  }
+                  onChange={(e) => updateAreaConfig(index, "ride_area_id", e.target.value)}
                   required
                 >
                   <option value="">-- Select Ride Area --</option>
@@ -329,31 +327,21 @@ export function EditSessionForm({
                   label="Cost (₦)"
                   type="number"
                   value={config.cost}
-                  onChange={(e) =>
-                    updateAreaConfig(index, "cost", parseFloat(e.target.value))
-                  }
+                  onChange={(e) => updateAreaConfig(index, "cost", parseFloat(e.target.value))}
                   required
                 />
                 <Input
                   label="Capacity (seats)"
                   type="number"
                   value={config.capacity}
-                  onChange={(e) =>
-                    updateAreaConfig(
-                      index,
-                      "capacity",
-                      parseInt(e.target.value),
-                    )
-                  }
+                  onChange={(e) => updateAreaConfig(index, "capacity", parseInt(e.target.value))}
                   required
                 />
                 <Input
                   label="Departure Time"
                   type="datetime-local"
                   value={config.departure_time}
-                  onChange={(e) =>
-                    updateAreaConfig(index, "departure_time", e.target.value)
-                  }
+                  onChange={(e) => updateAreaConfig(index, "departure_time", e.target.value)}
                 />
               </div>
             </div>

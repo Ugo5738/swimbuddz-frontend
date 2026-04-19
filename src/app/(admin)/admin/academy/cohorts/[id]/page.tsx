@@ -37,31 +37,22 @@ export default function CohortDetailsPage() {
   const [cohort, setCohort] = useState<Cohort | null>(null);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [students, setStudents] = useState<Enrollment[]>([]);
-  const [studentProgress, setStudentProgress] = useState<
-    Record<string, StudentProgress[]>
-  >({});
-  const [memberLookup, setMemberLookup] = useState<
-    Record<string, MemberBasicInfo>
-  >({});
+  const [studentProgress, setStudentProgress] = useState<Record<string, StudentProgress[]>>({});
+  const [memberLookup, setMemberLookup] = useState<Record<string, MemberBasicInfo>>({});
   const [loading, setLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [sessionsRefreshNonce, setSessionsRefreshNonce] = useState(0);
 
   // Milestone Progress Modal State
   const [isMilestoneModalOpen, setIsMilestoneModalOpen] = useState(false);
-  const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(
-    null,
-  );
+  const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null);
   const [selectedEnrollmentId, setSelectedEnrollmentId] = useState<string>("");
   const [selectedStudentName, setSelectedStudentName] = useState<string>("");
-  const [selectedProgress, setSelectedProgress] = useState<
-    StudentProgress | undefined
-  >();
+  const [selectedProgress, setSelectedProgress] = useState<StudentProgress | undefined>();
 
   // Enrollment Update Modal State
   const [isEnrollmentModalOpen, setIsEnrollmentModalOpen] = useState(false);
-  const [selectedEnrollment, setSelectedEnrollment] =
-    useState<Enrollment | null>(null);
+  const [selectedEnrollment, setSelectedEnrollment] = useState<Enrollment | null>(null);
 
   const loadData = async () => {
     try {
@@ -70,9 +61,7 @@ export default function CohortDetailsPage() {
       setCohort(cohortData);
 
       // 2. Get Milestones for the Program
-      const milestonesData = await AcademyApi.listMilestones(
-        cohortData.program_id,
-      );
+      const milestonesData = await AcademyApi.listMilestones(cohortData.program_id);
       setMilestones(milestonesData);
 
       // 3. Get Students (enrollments) and hydrate member info via members service
@@ -89,13 +78,11 @@ export default function CohortDetailsPage() {
           } catch (e) {
             progressLookup[student.id] = [];
           }
-        }),
+        })
       );
       setStudentProgress(progressLookup);
 
-      const memberIds = Array.from(
-        new Set(studentsData.map((s) => s.member_id)),
-      );
+      const memberIds = Array.from(new Set(studentsData.map((s) => s.member_id)));
       if (memberIds.length) {
         const {
           data: { session },
@@ -106,13 +93,10 @@ export default function CohortDetailsPage() {
         });
         if (membersRes.ok) {
           const members = (await membersRes.json()) as MemberBasicInfo[];
-          const lookup = members.reduce<Record<string, MemberBasicInfo>>(
-            (acc, m) => {
-              if (memberIds.includes(m.id)) acc[m.id] = m;
-              return acc;
-            },
-            {},
-          );
+          const lookup = members.reduce<Record<string, MemberBasicInfo>>((acc, m) => {
+            if (memberIds.includes(m.id)) acc[m.id] = m;
+            return acc;
+          }, {});
           setMemberLookup(lookup);
         }
       }
@@ -131,11 +115,7 @@ export default function CohortDetailsPage() {
   }, [cohortId]);
 
   const handleDelete = async () => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this cohort? This action cannot be undone.",
-      )
-    )
+    if (!confirm("Are you sure you want to delete this cohort? This action cannot be undone."))
       return;
     try {
       await AcademyApi.deleteCohort(cohortId);
@@ -151,7 +131,7 @@ export default function CohortDetailsPage() {
     milestone: Milestone,
     enrollmentId: string,
     studentName: string,
-    progress?: StudentProgress,
+    progress?: StudentProgress
   ) => {
     setSelectedMilestone(milestone);
     setSelectedEnrollmentId(enrollmentId);
@@ -168,18 +148,13 @@ export default function CohortDetailsPage() {
   const calculateCompletion = (student: Enrollment): number => {
     if (milestones.length === 0) return 0;
     const progress = studentProgress[student.id] || [];
-    const achieved = progress.filter(
-      (p) => p.status === ProgressStatus.ACHIEVED,
-    ).length;
+    const achieved = progress.filter((p) => p.status === ProgressStatus.ACHIEVED).length;
     return Math.round((achieved / milestones.length) * 100);
   };
 
   const calculateAverageCompletion = (): number => {
     if (students.length === 0) return 0;
-    const total = students.reduce(
-      (sum, student) => sum + calculateCompletion(student),
-      0,
-    );
+    const total = students.reduce((sum, student) => sum + calculateCompletion(student), 0);
     return Math.round(total / students.length);
   };
 
@@ -234,15 +209,10 @@ export default function CohortDetailsPage() {
               variant={cohort.admin_dropout_approval ? "warning" : "info"}
               className="capitalize"
             >
-              Dropout:{" "}
-              {cohort.admin_dropout_approval
-                ? "Admin Approval"
-                : "Automatic"}
+              Dropout: {cohort.admin_dropout_approval ? "Admin Approval" : "Automatic"}
             </Badge>
             <button
-              onClick={() =>
-                router.push(`/admin/academy/cohorts/${cohortId}/score`)
-              }
+              onClick={() => router.push(`/admin/academy/cohorts/${cohortId}/score`)}
               className="rounded bg-cyan-600 px-3 py-2 text-sm font-medium text-white hover:bg-cyan-700"
             >
               Complexity Score
@@ -268,12 +238,8 @@ export default function CohortDetailsPage() {
         <Card className="bg-gradient-to-br from-cyan-50 to-blue-50 min-w-0">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-600">
-                Total Students
-              </p>
-              <p className="text-3xl font-bold text-slate-900">
-                {students.length}
-              </p>
+              <p className="text-sm font-medium text-slate-600">Total Students</p>
+              <p className="text-3xl font-bold text-slate-900">{students.length}</p>
             </div>
             <div className="rounded-full bg-cyan-100 p-3">
               <svg
@@ -296,12 +262,8 @@ export default function CohortDetailsPage() {
         <Card className="bg-gradient-to-br from-green-50 to-emerald-50 min-w-0">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-600">
-                Average Completion
-              </p>
-              <p className="text-3xl font-bold text-slate-900">
-                {calculateAverageCompletion()}%
-              </p>
+              <p className="text-sm font-medium text-slate-600">Average Completion</p>
+              <p className="text-3xl font-bold text-slate-900">{calculateAverageCompletion()}%</p>
             </div>
             <div className="rounded-full bg-green-100 p-3">
               <svg
@@ -324,12 +286,8 @@ export default function CohortDetailsPage() {
         <Card className="bg-gradient-to-br from-yellow-50 to-orange-50 min-w-0">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-600">
-                Pending Payments
-              </p>
-              <p className="text-3xl font-bold text-slate-900">
-                {getPendingPaymentsCount()}
-              </p>
+              <p className="text-sm font-medium text-slate-600">Pending Payments</p>
+              <p className="text-3xl font-bold text-slate-900">{getPendingPaymentsCount()}</p>
             </div>
             <div className="rounded-full bg-yellow-100 p-3">
               <svg
@@ -355,18 +313,15 @@ export default function CohortDetailsPage() {
         cohortId={cohortId}
         cohortTimezone={cohort.timezone}
         cohortLocationName={cohort.location_name}
+        cohortPoolId={cohort.pool_id}
         refreshNonce={sessionsRefreshNonce}
       />
 
       {/* Student Progress Table */}
       <Card className="overflow-hidden !p-0">
         <div className="border-b border-slate-200 bg-slate-50 px-4 sm:px-6 py-4">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Student Progress
-          </h2>
-          <p className="text-sm text-slate-600">
-            Track and update milestone achievements
-          </p>
+          <h2 className="text-lg font-semibold text-slate-900">Student Progress</h2>
+          <p className="text-sm text-slate-600">Track and update milestone achievements</p>
         </div>
 
         <div className="overflow-x-auto">
@@ -378,10 +333,7 @@ export default function CohortDetailsPage() {
                 <th className="p-4 font-semibold">Payment</th>
                 <th className="p-4 font-semibold">Progress</th>
                 {milestones.map((milestone) => (
-                  <th
-                    key={milestone.id}
-                    className="p-4 font-semibold min-w-[150px]"
-                  >
+                  <th key={milestone.id} className="p-4 font-semibold min-w-[150px]">
                     {milestone.name}
                   </th>
                 ))}
@@ -390,10 +342,7 @@ export default function CohortDetailsPage() {
             <tbody className="divide-y divide-slate-100">
               {students.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={milestones.length + 4}
-                    className="p-8 text-center text-slate-500"
-                  >
+                  <td colSpan={milestones.length + 4} className="p-8 text-center text-slate-500">
                     No students enrolled yet.
                   </td>
                 </tr>
@@ -405,8 +354,7 @@ export default function CohortDetailsPage() {
                       <td className="p-4 font-medium text-slate-900">
                         {formatStudentName(student)}
                         <div className="text-xs font-normal text-slate-500">
-                          {memberLookup[student.member_id]?.email ||
-                            student.member_id}
+                          {memberLookup[student.member_id]?.email || student.member_id}
                         </div>
                       </td>
                       <td className="p-4">
@@ -427,35 +375,29 @@ export default function CohortDetailsPage() {
                               style={{ width: `${completion}%` }}
                             />
                           </div>
-                          <span className="text-xs font-medium text-slate-600">
-                            {completion}%
-                          </span>
+                          <span className="text-xs font-medium text-slate-600">{completion}%</span>
                         </div>
                       </td>
                       {milestones.map((milestone) => {
                         // Get actual progress for this milestone
-                        const progress = (
-                          studentProgress[student.id] || []
-                        ).find((p) => p.milestone_id === milestone.id);
-                        const isAchieved =
-                          progress?.status === ProgressStatus.ACHIEVED;
+                        const progress = (studentProgress[student.id] || []).find(
+                          (p) => p.milestone_id === milestone.id
+                        );
+                        const isAchieved = progress?.status === ProgressStatus.ACHIEVED;
                         const isVerified = !!progress?.reviewed_at;
 
                         // Determine status label and styling
                         let statusLabel = "Pending";
-                        let badgeClass =
-                          "bg-slate-100 text-slate-600 hover:bg-slate-200";
+                        let badgeClass = "bg-slate-100 text-slate-600 hover:bg-slate-200";
                         let dotClass = "bg-slate-400";
 
                         if (isVerified) {
                           statusLabel = "✓ Verified";
-                          badgeClass =
-                            "bg-green-100 text-green-700 hover:bg-green-200";
+                          badgeClass = "bg-green-100 text-green-700 hover:bg-green-200";
                           dotClass = "bg-green-500";
                         } else if (isAchieved) {
                           statusLabel = "Claimed";
-                          badgeClass =
-                            "bg-amber-100 text-amber-700 hover:bg-amber-200";
+                          badgeClass = "bg-amber-100 text-amber-700 hover:bg-amber-200";
                           dotClass = "bg-amber-500";
                         }
 
@@ -467,14 +409,12 @@ export default function CohortDetailsPage() {
                                   milestone,
                                   student.id,
                                   formatStudentName(student),
-                                  progress,
+                                  progress
                                 )
                               }
                               className={`flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium transition-colors ${badgeClass}`}
                             >
-                              <div
-                                className={`h-2 w-2 rounded-full ${dotClass}`}
-                              />
+                              <div className={`h-2 w-2 rounded-full ${dotClass}`} />
                               {statusLabel}
                             </button>
                           </td>

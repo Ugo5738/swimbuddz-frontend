@@ -1,6 +1,7 @@
 "use client";
 
 import { GenerateSessionsModal } from "@/components/admin/GenerateSessionsModal";
+import { PoolPicker } from "@/components/admin/PoolPicker";
 import { SessionCalendar } from "@/components/admin/SessionCalendar";
 import { SessionDetailsModal } from "@/components/admin/SessionDetailsModal";
 import { Button } from "@/components/ui/Button";
@@ -62,8 +63,9 @@ interface Session {
   session_type?: SessionType;
   status?: SessionStatusType;
   published_at?: string;
-  location: string;
-  location_name?: string;
+  pool_id?: string | null;
+  location: string | null;
+  location_name?: string | null;
   starts_at: string;
   ends_at: string;
   pool_fee: number;
@@ -83,7 +85,9 @@ interface Template {
   day_of_week: number;
   start_time: string;
   duration_minutes: number;
-  location: string;
+  pool_id?: string | null;
+  location: string | null;
+  location_name?: string | null;
   session_type?: string;
   pool_fee: number;
   ride_share_fee?: number;
@@ -152,7 +156,8 @@ function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
 
-function locationLabel(loc: string) {
+function locationLabel(loc: string | null | undefined) {
+  if (!loc) return "";
   return LOCATION_LABELS[loc] || loc;
 }
 
@@ -997,7 +1002,11 @@ function SessionFormModal({
   const [form, setForm] = useState({
     title: session?.title || "",
     session_type: session?.session_type || "club",
-    location: session?.location || "sunfit_pool",
+    // Preferred: pool_id from the registry. Keep location (legacy enum) and
+    // location_name to avoid regressions on pre-registry sessions.
+    pool_id: session?.pool_id ?? null,
+    location: session?.location || null,
+    location_name: session?.location_name ?? null,
     starts_at: session
       ? formatDateTimeLocal(new Date(session.starts_at))
       : formatDateTimeLocal(defaultStart),
@@ -1043,7 +1052,12 @@ function SessionFormModal({
     const sessionData = {
       title: form.title,
       session_type: form.session_type,
-      location: form.location,
+      // When a pool is picked, send pool_id as the authoritative link and
+      // skip the legacy enum. Pre-registry sessions without a pool_id
+      // continue to send the `location` enum for backwards compatibility.
+      pool_id: form.pool_id ?? null,
+      location: form.pool_id ? null : form.location,
+      location_name: form.location_name ?? null,
       starts_at: new Date(form.starts_at).toISOString(),
       ends_at: new Date(form.ends_at).toISOString(),
       pool_fee: form.pool_fee,
@@ -1089,16 +1103,18 @@ function SessionFormModal({
             <option value="group_booking">Group Booking</option>
             <option value="event">Event</option>
           </Select>
-          <Select
-            label="Location"
-            value={form.location}
-            onChange={(e) => setForm({ ...form, location: e.target.value })}
-          >
-            <option value="sunfit_pool">Sunfit Pool</option>
-            <option value="rowe_park_pool">Rowe Park Pool</option>
-            <option value="federal_palace_pool">Federal Palace Pool</option>
-            <option value="open_water">Open Water</option>
-          </Select>
+          <PoolPicker
+            label="Pool"
+            value={form.pool_id}
+            onChange={(poolId, poolName) =>
+              setForm({
+                ...form,
+                pool_id: poolId,
+                location_name: poolName ?? null,
+              })
+            }
+            hint="Managed at Admin \u2192 Pool Registry."
+          />
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
@@ -1364,7 +1380,10 @@ function TemplateFormInline({
   const [form, setForm] = useState({
     title: template?.title || "",
     session_type: template?.session_type || "club",
-    location: template?.location || "sunfit_pool",
+    // Prefer pool_id; legacy `location` enum kept for pre-registry templates.
+    pool_id: template?.pool_id ?? null,
+    location: template?.location || null,
+    location_name: template?.location_name ?? null,
     day_of_week: template?.day_of_week ?? 5,
     start_time: template?.start_time || "09:00",
     duration_minutes: template?.duration_minutes || 180,
@@ -1387,8 +1406,15 @@ function TemplateFormInline({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // SessionTemplate backend doesn't carry pool_id yet, so when a pool is
+    // picked we persist the pool's name in location_name and drop pool_id
+    // from the payload. Sessions generated from the template will still show
+    // the pool name via the existing location_name → display fallback.
+    // TODO(follow-up): add SessionTemplate.pool_id so generated sessions
+    // inherit the authoritative link, not just the string name.
+    const { pool_id: _pool_id, ...formWithoutPoolId } = form;
     const data = {
-      ...form,
+      ...formWithoutPoolId,
       ride_share_config: rideConfigs
         .filter((c) => c.ride_area_id)
         .map((c) => ({
@@ -1445,16 +1471,18 @@ function TemplateFormInline({
         onChange={(e) => setForm({ ...form, start_time: e.target.value })}
         required
       />
-      <Select
-        label="Location"
-        value={form.location}
-        onChange={(e) => setForm({ ...form, location: e.target.value })}
-      >
-        <option value="sunfit_pool">Sunfit Pool</option>
-        <option value="rowe_park_pool">Rowe Park Pool</option>
-        <option value="federal_palace_pool">Federal Palace Pool</option>
-        <option value="open_water">Open Water</option>
-      </Select>
+      <PoolPicker
+        label="Pool"
+        value={form.pool_id}
+        onChange={(poolId, poolName) =>
+          setForm({
+            ...form,
+            pool_id: poolId,
+            location_name: poolName ?? null,
+          })
+        }
+        hint="Templates inherit the pool for every session they generate."
+      />
       <Input
         label="Duration (minutes)"
         type="number"

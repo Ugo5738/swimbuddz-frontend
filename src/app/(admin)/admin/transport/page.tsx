@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
+import { PoolPicker } from "@/components/admin/PoolPicker";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
 import { supabase } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Card } from "@/components/ui/Card";
-import { Alert } from "@/components/ui/Alert";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 interface PickupLocation {
   id: string;
@@ -19,6 +20,9 @@ interface PickupLocation {
   is_active: boolean;
 }
 type RouteFormState = {
+  /** Preferred: pool from the pools registry. */
+  destination_pool_id: string | null;
+  /** Legacy enum string — kept for routes created before the pool registry. */
   destination: string;
   destination_name: string;
   distance_text: string;
@@ -33,7 +37,8 @@ interface RouteApi {
   id: string;
   origin_area_id: string | null;
   origin_pickup_location_id: string | null;
-  destination: string;
+  destination_pool_id: string | null;
+  destination: string | null;
   destination_name: string;
   distance_text: string;
   duration_text: string;
@@ -48,18 +53,12 @@ interface RideArea {
   pickup_locations: PickupLocationWithRoute[];
 }
 
-const DEFAULT_DESTINATIONS = [
-  "sunfit_pool",
-  "rowe_park_pool",
-  "federal_palace_pool",
-  "open_water",
-];
+const DEFAULT_DESTINATIONS = ["sunfit_pool", "rowe_park_pool", "federal_palace_pool", "open_water"];
 
 export default function AdminTransportPage() {
   const [areas, setAreas] = useState<RideArea[]>([]);
   const [routes, setRoutes] = useState<RouteApi[]>([]);
-  const [destinationOptions, setDestinationOptions] =
-    useState<string[]>(DEFAULT_DESTINATIONS);
+  const [destinationOptions, setDestinationOptions] = useState<string[]>(DEFAULT_DESTINATIONS);
   const [showCreateArea, setShowCreateArea] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -83,46 +82,36 @@ export default function AdminTransportPage() {
 
       let routesData: RouteApi[] = [];
       try {
-        const routesRes = await fetch(
-          `${API_BASE_URL}/api/v1/transport/routes`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
-        );
+        const routesRes = await fetch(`${API_BASE_URL}/api/v1/transport/routes`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (routesRes.ok) {
           routesData = await routesRes.json();
           setRoutes(routesData);
         } else {
-          console.warn(
-            "Routes endpoint unavailable, continuing without route data",
-          );
+          console.warn("Routes endpoint unavailable, continuing without route data");
           setRoutes([]);
         }
       } catch (routesErr) {
-        console.warn(
-          "Failed to load routes, continuing without route data",
-          routesErr,
-        );
+        console.warn("Failed to load routes, continuing without route data", routesErr);
         setRoutes([]);
       }
       const destinations = Array.from(
-        new Set([
+        new Set<string>([
           ...DEFAULT_DESTINATIONS,
-          ...routesData.map((r: RouteApi) => r.destination),
-        ]),
+          ...routesData.map((r: RouteApi) => r.destination).filter((d): d is string => Boolean(d)),
+        ])
       );
       setDestinationOptions(destinations);
 
       const augmented = areasData.map((area: RideArea) => ({
         ...area,
-        pickup_locations: area.pickup_locations.map(
-          (loc: PickupLocationWithRoute) => {
-            const matches = routesData.filter(
-              (r: RouteApi) => r.origin_pickup_location_id === loc.id,
-            );
-            return { ...loc, routes: matches };
-          },
-        ),
+        pickup_locations: area.pickup_locations.map((loc: PickupLocationWithRoute) => {
+          const matches = routesData.filter(
+            (r: RouteApi) => r.origin_pickup_location_id === loc.id
+          );
+          return { ...loc, routes: matches };
+        }),
       }));
       setAreas(augmented);
     } catch (err) {
@@ -146,18 +135,17 @@ export default function AdminTransportPage() {
       // merge existing routes
       const augmented = data.map((area: RideArea) => ({
         ...area,
-        pickup_locations: area.pickup_locations.map(
-          (loc: PickupLocationWithRoute) => {
-            const matches = routes.filter(
-              (r) => r.origin_pickup_location_id === loc.id,
-            );
-            return { ...loc, routes: matches };
-          },
-        ),
+        pickup_locations: area.pickup_locations.map((loc: PickupLocationWithRoute) => {
+          const matches = routes.filter((r) => r.origin_pickup_location_id === loc.id);
+          return { ...loc, routes: matches };
+        }),
       }));
       setAreas(augmented);
       const destinations = Array.from(
-        new Set([...DEFAULT_DESTINATIONS, ...routes.map((r) => r.destination)]),
+        new Set<string>([
+          ...DEFAULT_DESTINATIONS,
+          ...routes.map((r) => r.destination).filter((d): d is string => Boolean(d)),
+        ])
       );
       setDestinationOptions(destinations);
     } catch (err) {
@@ -199,7 +187,7 @@ export default function AdminTransportPage() {
     areaId: string,
     name: string,
     description?: string,
-    address?: string,
+    address?: string
   ) => {
     try {
       const {
@@ -207,17 +195,14 @@ export default function AdminTransportPage() {
       } = await supabase.auth.getSession();
       const token = session?.access_token;
 
-      const res = await fetch(
-        `${API_BASE_URL}/api/v1/transport/areas/${areaId}/locations`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ name, description, address }),
+      const res = await fetch(`${API_BASE_URL}/api/v1/transport/areas/${areaId}/locations`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify({ name, description, address }),
+      });
 
       if (!res.ok) throw new Error("Failed to add location");
 
@@ -228,27 +213,21 @@ export default function AdminTransportPage() {
     }
   };
 
-  const handleUpdateArea = async (
-    areaId: string,
-    updates: { name?: string; slug?: string },
-  ) => {
+  const handleUpdateArea = async (areaId: string, updates: { name?: string; slug?: string }) => {
     try {
       const {
         data: { session },
       } = await supabase.auth.getSession();
       const token = session?.access_token;
 
-      const res = await fetch(
-        `${API_BASE_URL}/api/v1/transport/areas/${areaId}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(updates),
+      const res = await fetch(`${API_BASE_URL}/api/v1/transport/areas/${areaId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify(updates),
+      });
 
       if (!res.ok) throw new Error("Failed to update area");
       fetchData();
@@ -258,52 +237,40 @@ export default function AdminTransportPage() {
     }
   };
 
-  const upsertRouteForPickup = async (
-    pickupId: string,
-    route?: RouteFormState,
-  ) => {
+  const upsertRouteForPickup = async (pickupId: string, route?: RouteFormState) => {
     if (!route) return;
     const hasValues =
-      route.destination ||
-      route.destination_name ||
-      route.distance_text ||
-      route.duration_text;
+      route.destination || route.destination_name || route.distance_text || route.duration_text;
     const {
       data: { session },
     } = await supabase.auth.getSession();
     const token = session?.access_token;
 
     if (route.route_id && !hasValues) {
-      const res = await fetch(
-        `${API_BASE_URL}/api/v1/transport/routes/${route.route_id}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      const res = await fetch(`${API_BASE_URL}/api/v1/transport/routes/${route.route_id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!res.ok) throw new Error("Failed to delete route");
       return;
     }
 
     if (route.route_id) {
-      const res = await fetch(
-        `${API_BASE_URL}/api/v1/transport/routes/${route.route_id}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            origin_pickup_location_id: pickupId,
-            destination: route.destination,
-            destination_name: route.destination_name,
-            distance_text: route.distance_text,
-            duration_text: route.duration_text,
-            departure_offset_minutes: route.departure_offset_minutes,
-          }),
+      const res = await fetch(`${API_BASE_URL}/api/v1/transport/routes/${route.route_id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify({
+          origin_pickup_location_id: pickupId,
+          destination: route.destination,
+          destination_name: route.destination_name,
+          distance_text: route.distance_text,
+          duration_text: route.duration_text,
+          departure_offset_minutes: route.departure_offset_minutes,
+        }),
+      });
       if (!res.ok) throw new Error("Failed to update route");
       return;
     }
@@ -330,7 +297,7 @@ export default function AdminTransportPage() {
 
   const handleUpdateLocation = async (
     locationId: string,
-    updates: { name?: string; description?: string; route?: RouteFormState },
+    updates: { name?: string; description?: string; route?: RouteFormState }
   ) => {
     try {
       const {
@@ -338,20 +305,17 @@ export default function AdminTransportPage() {
       } = await supabase.auth.getSession();
       const token = session?.access_token;
 
-      const res = await fetch(
-        `${API_BASE_URL}/api/v1/transport/locations/${locationId}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            name: updates.name,
-            description: updates.description,
-          }),
+      const res = await fetch(`${API_BASE_URL}/api/v1/transport/locations/${locationId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify({
+          name: updates.name,
+          description: updates.description,
+        }),
+      });
 
       if (!res.ok) throw new Error("Failed to update pickup location");
       await upsertRouteForPickup(locationId, updates.route);
@@ -370,13 +334,10 @@ export default function AdminTransportPage() {
       } = await supabase.auth.getSession();
       const token = session?.access_token;
 
-      const res = await fetch(
-        `${API_BASE_URL}/api/v1/transport/locations/${locationId}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      const res = await fetch(`${API_BASE_URL}/api/v1/transport/locations/${locationId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (!res.ok) throw new Error("Failed to delete pickup location");
       fetchData();
@@ -395,13 +356,10 @@ export default function AdminTransportPage() {
       } = await supabase.auth.getSession();
       const token = session?.access_token;
 
-      const res = await fetch(
-        `${API_BASE_URL}/api/v1/transport/areas/${areaId}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      const res = await fetch(`${API_BASE_URL}/api/v1/transport/areas/${areaId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (!res.ok) throw new Error("Failed to delete area");
       fetchAreas();
@@ -418,12 +376,8 @@ export default function AdminTransportPage() {
           <p className="text-sm font-semibold uppercase tracking-wider text-cyan-600">
             Admin · Transport
           </p>
-          <h1 className="text-4xl font-bold text-slate-900">
-            Transport Management
-          </h1>
-          <p className="text-slate-600 mt-2">
-            Manage ride share areas and pickup locations
-          </p>
+          <h1 className="text-4xl font-bold text-slate-900">Transport Management</h1>
+          <p className="text-slate-600 mt-2">Manage ride share areas and pickup locations</p>
         </div>
         <Link href="/admin/transport/new">
           <Button>+ Create Ride Area</Button>
@@ -480,19 +434,11 @@ function RideAreaCard({
   onRefresh,
 }: {
   area: RideArea;
-  onAddLocation: (
-    areaId: string,
-    name: string,
-    description?: string,
-    address?: string,
-  ) => void;
-  onUpdateArea: (
-    areaId: string,
-    updates: { name?: string; slug?: string },
-  ) => void;
+  onAddLocation: (areaId: string, name: string, description?: string, address?: string) => void;
+  onUpdateArea: (areaId: string, updates: { name?: string; slug?: string }) => void;
   onUpdateLocation: (
     locationId: string,
-    updates: { name?: string; description?: string; route?: RouteFormState },
+    updates: { name?: string; description?: string; route?: RouteFormState }
   ) => void;
   onDeleteLocation: (locationId: string) => void;
   onDelete: (areaId: string) => void;
@@ -507,12 +453,11 @@ function RideAreaCard({
   const [editingArea, setEditingArea] = useState(false);
   const [areaName, setAreaName] = useState(area.name);
   const [areaSlug, setAreaSlug] = useState(area.slug);
-  const [editingLocationId, setEditingLocationId] = useState<string | null>(
-    null,
-  );
+  const [editingLocationId, setEditingLocationId] = useState<string | null>(null);
   const [locationEditName, setLocationEditName] = useState("");
   const [locationEditDesc, setLocationEditDesc] = useState("");
   const [locationRoute, setLocationRoute] = useState<RouteFormState>({
+    destination_pool_id: null,
     destination: "",
     destination_name: "",
     distance_text: "",
@@ -525,12 +470,7 @@ function RideAreaCard({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onAddLocation(
-      area.id,
-      locationName,
-      locationDesc,
-      locationAddress || undefined,
-    );
+    onAddLocation(area.id, locationName, locationDesc, locationAddress || undefined);
     setLocationName("");
     setLocationDesc("");
     setLocationAddress("");
@@ -548,6 +488,7 @@ function RideAreaCard({
     setLocationEditDesc(loc.description || "");
     setEditingRouteId(null);
     setLocationRoute({
+      destination_pool_id: null,
       destination: "",
       destination_name: "",
       distance_text: "",
@@ -567,6 +508,7 @@ function RideAreaCard({
     setLocationEditName("");
     setLocationEditDesc("");
     setLocationRoute({
+      destination_pool_id: null,
       destination: "",
       destination_name: "",
       distance_text: "",
@@ -582,6 +524,7 @@ function RideAreaCard({
     await onUpsertRoute(pickupId, locationRoute);
     await onRefresh();
     setLocationRoute({
+      destination_pool_id: null,
       destination: "",
       destination_name: "",
       distance_text: "",
@@ -596,7 +539,8 @@ function RideAreaCard({
   const handleRouteEdit = (route: RouteApi) => {
     setEditingRouteId(route.id);
     setLocationRoute({
-      destination: route.destination,
+      destination_pool_id: route.destination_pool_id,
+      destination: route.destination ?? "",
       destination_name: route.destination_name,
       distance_text: route.distance_text,
       duration_text: route.duration_text,
@@ -608,6 +552,7 @@ function RideAreaCard({
 
   const handleRouteDelete = async (pickupId: string, routeId: string) => {
     await onUpsertRoute(pickupId, {
+      destination_pool_id: null,
       destination: "",
       destination_name: "",
       distance_text: "",
@@ -618,6 +563,7 @@ function RideAreaCard({
     await onRefresh();
     setEditingRouteId(null);
     setLocationRoute({
+      destination_pool_id: null,
       destination: "",
       destination_name: "",
       distance_text: "",
@@ -648,11 +594,7 @@ function RideAreaCard({
                 <Button size="sm" onClick={handleAreaSave}>
                   Save
                 </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => setEditingArea(false)}
-                >
+                <Button size="sm" variant="secondary" onClick={() => setEditingArea(false)}>
                   Cancel
                 </Button>
               </div>
@@ -665,18 +607,10 @@ function RideAreaCard({
           )}
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setEditingArea((v) => !v)}
-          >
+          <Button variant="outline" size="sm" onClick={() => setEditingArea((v) => !v)}>
             {editingArea ? "Close" : "Edit Area"}
           </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => onDelete(area.id)}
-          >
+          <Button variant="secondary" size="sm" onClick={() => onDelete(area.id)}>
             Delete
           </Button>
         </div>
@@ -684,14 +618,8 @@ function RideAreaCard({
 
       <div className="mt-6">
         <div className="flex justify-between items-center mb-3">
-          <h3 className="text-lg font-semibold text-slate-900">
-            Pickup Locations
-          </h3>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowAddLocation(!showAddLocation)}
-          >
+          <h3 className="text-lg font-semibold text-slate-900">Pickup Locations</h3>
+          <Button variant="outline" size="sm" onClick={() => setShowAddLocation(!showAddLocation)}>
             + Add Location
           </Button>
         </div>
@@ -760,6 +688,7 @@ function RideAreaCard({
                       onClick={() => {
                         setEditingLocationId(null);
                         setLocationRoute({
+                          destination_pool_id: null,
                           destination: "",
                           destination_name: "",
                           distance_text: "",
@@ -774,9 +703,7 @@ function RideAreaCard({
                   </div>
                   <div className="space-y-2 pt-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-slate-800">
-                        Routes
-                      </span>
+                      <span className="text-sm font-semibold text-slate-800">Routes</span>
                       <Button
                         size="sm"
                         variant="outline"
@@ -793,9 +720,9 @@ function RideAreaCard({
                             className="flex justify-between items-center rounded border border-slate-200 bg-white p-2"
                           >
                             <div className="text-xs text-slate-700">
-                              {route.distance_text} • {route.duration_text} •
-                              Leave {route.departure_offset_minutes} mins before
-                              to {route.destination_name} ({route.destination})
+                              {route.distance_text} • {route.duration_text} • Leave{" "}
+                              {route.departure_offset_minutes} mins before to{" "}
+                              {route.destination_name} ({route.destination})
                             </div>
                             <div className="flex gap-2">
                               <Button
@@ -808,9 +735,7 @@ function RideAreaCard({
                               <Button
                                 size="sm"
                                 variant="secondary"
-                                onClick={() =>
-                                  handleRouteDelete(loc.id, route.id)
-                                }
+                                onClick={() => handleRouteDelete(loc.id, route.id)}
                               >
                                 Delete
                               </Button>
@@ -819,38 +744,31 @@ function RideAreaCard({
                         ))}
                       </div>
                     ) : (
-                      <div className="text-xs text-slate-500">
-                        No routes for this pickup.
-                      </div>
+                      <div className="text-xs text-slate-500">No routes for this pickup.</div>
                     )}
                     {showRouteForm && (
                       <>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                          <PoolPicker
+                            label="Destination pool"
+                            value={locationRoute.destination_pool_id}
+                            onChange={(poolId, poolName) =>
+                              setLocationRoute({
+                                ...locationRoute,
+                                destination_pool_id: poolId,
+                                // Auto-fill destination_name from the pool so
+                                // admin doesn't have to type it twice.
+                                destination_name: poolName ?? locationRoute.destination_name,
+                                // Clear the legacy enum string — the pool_id
+                                // now authoritatively identifies the pool.
+                                destination: "",
+                              })
+                            }
+                            hint="Sessions match routes by pool_id when available."
+                          />
                           <div>
                             <label className="block text-sm text-slate-700 mb-1">
-                              Destination
-                            </label>
-                            <input
-                              className="w-full rounded border border-slate-300 p-2"
-                              value={locationRoute.destination}
-                              onChange={(e) =>
-                                setLocationRoute({
-                                  ...locationRoute,
-                                  destination: e.target.value,
-                                })
-                              }
-                              placeholder="e.g. sunfit_pool"
-                              list={`destinations-${area.id}`}
-                            />
-                            <datalist id={`destinations-${area.id}`}>
-                              {destinationOptions.map((opt) => (
-                                <option key={opt} value={opt} />
-                              ))}
-                            </datalist>
-                          </div>
-                          <div>
-                            <label className="block text-sm text-slate-700 mb-1">
-                              Destination Name
+                              Destination display name
                             </label>
                             <Input
                               value={locationRoute.destination_name}
@@ -860,13 +778,11 @@ function RideAreaCard({
                                   destination_name: e.target.value,
                                 })
                               }
-                              placeholder="Display name"
+                              placeholder="Auto-fills from selected pool; editable."
                             />
                           </div>
                           <div>
-                            <label className="block text-sm text-slate-700 mb-1">
-                              Distance
-                            </label>
+                            <label className="block text-sm text-slate-700 mb-1">Distance</label>
                             <Input
                               value={locationRoute.distance_text}
                               onChange={(e) =>
@@ -879,9 +795,7 @@ function RideAreaCard({
                             />
                           </div>
                           <div>
-                            <label className="block text-sm text-slate-700 mb-1">
-                              Duration
-                            </label>
+                            <label className="block text-sm text-slate-700 mb-1">Duration</label>
                             <Input
                               value={locationRoute.duration_text}
                               onChange={(e) =>
@@ -903,18 +817,14 @@ function RideAreaCard({
                               onChange={(e) =>
                                 setLocationRoute({
                                   ...locationRoute,
-                                  departure_offset_minutes:
-                                    parseInt(e.target.value, 10) || 0,
+                                  departure_offset_minutes: parseInt(e.target.value, 10) || 0,
                                 })
                               }
                             />
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => handleRouteSave(loc.id)}
-                          >
+                          <Button size="sm" onClick={() => handleRouteSave(loc.id)}>
                             {editingRouteId ? "Update Route" : "Save Route"}
                           </Button>
                           {editingRouteId && (
@@ -924,6 +834,7 @@ function RideAreaCard({
                               onClick={() => {
                                 setEditingRouteId(null);
                                 setLocationRoute({
+                                  destination_pool_id: null,
                                   destination: "",
                                   destination_name: "",
                                   distance_text: "",
@@ -945,24 +856,17 @@ function RideAreaCard({
               ) : (
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="font-medium text-slate-900">
-                      {loc.name}
-                    </span>
+                    <span className="font-medium text-slate-900">{loc.name}</span>
                     {loc.description && (
-                      <span className="text-sm text-slate-600 ml-2">
-                        — {loc.description}
-                      </span>
+                      <span className="text-sm text-slate-600 ml-2">— {loc.description}</span>
                     )}
                     {loc.routes && loc.routes.length > 0 && (
                       <div className="space-y-1 mt-1">
                         {loc.routes.map((route) => (
-                          <div
-                            key={route.id}
-                            className="text-xs text-slate-600"
-                          >
-                            {route.distance_text} • {route.duration_text} •
-                            Leave {route.departure_offset_minutes} mins before
-                            to {route.destination_name} ({route.destination})
+                          <div key={route.id} className="text-xs text-slate-600">
+                            {route.distance_text} • {route.duration_text} • Leave{" "}
+                            {route.departure_offset_minutes} mins before to {route.destination_name}{" "}
+                            ({route.destination})
                           </div>
                         ))}
                       </div>
@@ -972,17 +876,11 @@ function RideAreaCard({
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() =>
-                        startEditLocation(loc as PickupLocationWithRoute)
-                      }
+                      onClick={() => startEditLocation(loc as PickupLocationWithRoute)}
                     >
                       Edit
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => onDeleteLocation(loc.id)}
-                    >
+                    <Button size="sm" variant="secondary" onClick={() => onDeleteLocation(loc.id)}>
                       Delete
                     </Button>
                   </div>
@@ -991,9 +889,7 @@ function RideAreaCard({
             </li>
           ))}
           {area.pickup_locations.length === 0 && (
-            <li className="text-slate-500 italic text-center py-4">
-              No pickup locations yet
-            </li>
+            <li className="text-slate-500 italic text-center py-4">No pickup locations yet</li>
           )}
         </ul>
       </div>
@@ -1027,14 +923,10 @@ function CreateAreaModal({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <Card className="w-full max-w-md p-6">
-        <h2 className="text-2xl font-bold mb-4 text-slate-900">
-          Create Ride Area
-        </h2>
+        <h2 className="text-2xl font-bold mb-4 text-slate-900">Create Ride Area</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Area Name
-            </label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Area Name</label>
             <Input
               value={name}
               onChange={handleNameChange}
@@ -1043,9 +935,7 @@ function CreateAreaModal({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Slug
-            </label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Slug</label>
             <Input
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
@@ -1054,12 +944,7 @@ function CreateAreaModal({
             />
           </div>
           <div className="flex gap-2 justify-end">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onClose}
-              disabled={loading}
-            >
+            <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
