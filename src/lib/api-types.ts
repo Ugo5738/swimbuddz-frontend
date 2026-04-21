@@ -24,6 +24,155 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/assessments/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Submit Assessment
+     * @description Submit a completed swim readiness assessment.
+     *
+     *     Public endpoint — no authentication required. If the caller supplies a
+     *     valid JWT the result is linked to their member record.
+     */
+    post: operations["submit_assessment_assessments__post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/assessments": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Submit Assessment
+     * @description Submit a completed swim readiness assessment.
+     *
+     *     Public endpoint — no authentication required. If the caller supplies a
+     *     valid JWT the result is linked to their member record.
+     */
+    post: operations["submit_assessment_assessments_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/assessments/stats": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Assessment Stats
+     * @description Get aggregate assessment statistics. Public endpoint.
+     */
+    get: operations["get_assessment_stats_assessments_stats_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/assessments/me": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get My Assessments
+     * @description Get assessment history for the authenticated user.
+     */
+    get: operations["get_my_assessments_assessments_me_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/assessments/{assessment_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Assessment
+     * @description Get a single assessment result by ID. Public endpoint.
+     */
+    get: operations["get_assessment_assessments__assessment_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/members/coaches": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Coaches
+     * @description List all active coaches.
+     *     Public endpoint - no authentication required.
+     *     Returns Member objects that have an active CoachProfile.
+     */
+    get: operations["list_coaches_members_coaches_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/members/coaches/{member_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Coach By Id
+     * @description Get a single active coach's public profile by member ID.
+     *     Public endpoint - no authentication required.
+     */
+    get: operations["get_coach_by_id_members_coaches__member_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/members/me": {
     parameters: {
       query?: never;
@@ -89,6 +238,53 @@ export interface paths {
     get: operations["list_public_members_members_public_get"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/members/directory": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Directory Members
+     * @description List members who opted into the community directory.
+     *     Filters server-side by show_in_directory=True.
+     *     Returns only the fields needed for the directory page.
+     *     No auth required — directory is a community feature.
+     */
+    get: operations["list_directory_members_members_directory_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/members/bulk-basic": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Get Members Bulk Basic
+     * @description Bulk lookup of basic member info by IDs.
+     *
+     *     Internal endpoint for service-to-service calls. Returns a dict mapping
+     *     member_id (string) -> basic info (name, email, profile photo).
+     *     Max 50 IDs per request.
+     */
+    post: operations["get_members_bulk_basic_members_bulk_basic_post"];
     delete?: never;
     options?: never;
     head?: never;
@@ -411,6 +607,31 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/admin/members/by-auth/{auth_id}/academy/activate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Admin Activate Academy Membership By Auth
+     * @description Set (or extend) the academy tier for a member until cohort_end_date.
+     *
+     *     A member may be enrolled in multiple simultaneous cohorts ending at different
+     *     dates. This endpoint always keeps academy_paid_until at the *latest* cohort
+     *     end date seen, so access is never prematurely revoked.
+     *     Called by payments_service after a successful academy cohort payment.
+     */
+    post: operations["admin_activate_academy_membership_by_auth_admin_members_by_auth__auth_id__academy_activate_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/admin/members/by-auth/{auth_id}/membership": {
     parameters: {
       query?: never;
@@ -429,98 +650,6 @@ export interface paths {
      * @description Partially update membership fields for a member (admin/service use).
      */
     patch: operations["admin_patch_membership_by_auth_admin_members_by_auth__auth_id__membership_patch"];
-    trace?: never;
-  };
-  "/api/v1/volunteers/roles": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List Volunteer Roles
-     * @description List volunteer roles with optional filters.
-     */
-    get: operations["list_volunteer_roles_volunteers_roles_get"];
-    put?: never;
-    /**
-     * Create Volunteer Role
-     * @description Create a new volunteer role (admin only).
-     */
-    post: operations["create_volunteer_role_volunteers_roles_post"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/volunteers/roles/{role_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get Volunteer Role
-     * @description Get a single volunteer role by ID.
-     */
-    get: operations["get_volunteer_role_volunteers_roles__role_id__get"];
-    put?: never;
-    post?: never;
-    /**
-     * Delete Volunteer Role
-     * @description Delete a volunteer role (admin only).
-     */
-    delete: operations["delete_volunteer_role_volunteers_roles__role_id__delete"];
-    options?: never;
-    head?: never;
-    /**
-     * Update Volunteer Role
-     * @description Update a volunteer role (admin only).
-     */
-    patch: operations["update_volunteer_role_volunteers_roles__role_id__patch"];
-    trace?: never;
-  };
-  "/api/v1/volunteers/interest": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Register Volunteer Interest
-     * @description Register interest in a volunteer role.
-     */
-    post: operations["register_volunteer_interest_volunteers_interest_post"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/volunteers/roles/{role_id}/interested": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List Interested Members
-     * @description List members interested in a volunteer role (admin only).
-     */
-    get: operations["list_interested_members_volunteers_roles__role_id__interested_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
     trace?: never;
   };
   "/api/v1/challenges/": {
@@ -615,6 +744,98 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/volunteers/roles": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Volunteer Roles
+     * @description List volunteer roles with optional filters.
+     */
+    get: operations["list_volunteer_roles_volunteers_roles_get"];
+    put?: never;
+    /**
+     * Create Volunteer Role
+     * @description Create a new volunteer role (admin only).
+     */
+    post: operations["create_volunteer_role_volunteers_roles_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/volunteers/roles/{role_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Volunteer Role
+     * @description Get a single volunteer role by ID.
+     */
+    get: operations["get_volunteer_role_volunteers_roles__role_id__get"];
+    put?: never;
+    post?: never;
+    /**
+     * Delete Volunteer Role
+     * @description Delete a volunteer role (admin only).
+     */
+    delete: operations["delete_volunteer_role_volunteers_roles__role_id__delete"];
+    options?: never;
+    head?: never;
+    /**
+     * Update Volunteer Role
+     * @description Update a volunteer role (admin only).
+     */
+    patch: operations["update_volunteer_role_volunteers_roles__role_id__patch"];
+    trace?: never;
+  };
+  "/api/v1/volunteers/interest": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Register Volunteer Interest
+     * @description Register interest in a volunteer role.
+     */
+    post: operations["register_volunteer_interest_volunteers_interest_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/volunteers/roles/{role_id}/interested": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Interested Members
+     * @description List members interested in a volunteer role (admin only).
+     */
+    get: operations["list_interested_members_volunteers_roles__role_id__interested_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/coaches/apply": {
     parameters: {
       query?: never;
@@ -682,6 +903,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/coaches/me/preferences": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Update My Coach Preferences
+     * @description Update the current coach's preferences (post-onboarding).
+     */
+    post: operations["update_my_coach_preferences_coaches_me_preferences_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/coaches/me/onboarding": {
     parameters: {
       query?: never;
@@ -696,6 +937,132 @@ export interface paths {
      * @description Complete coach onboarding (for approved coaches).
      */
     post: operations["complete_coach_onboarding_coaches_me_onboarding_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/coaches/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Coaches For Admin
+     * @description List coaches for admin use (e.g., coach picker in cohort forms).
+     *     Default filters to approved and active coaches only.
+     *     Use status=all to get all coaches regardless of status.
+     */
+    get: operations["list_coaches_for_admin_admin_coaches__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/coaches/applications": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Coach Applications
+     * @description List coach applications (admin only).
+     */
+    get: operations["list_coach_applications_admin_coaches_applications_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/coaches/applications/{coach_profile_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Coach Application
+     * @description Get a single coach application for review (admin only).
+     */
+    get: operations["get_coach_application_admin_coaches_applications__coach_profile_id__get"];
+    put?: never;
+    post?: never;
+    /**
+     * Delete Coach Application
+     * @description Delete a coach profile so the member can re-apply from scratch.
+     */
+    delete: operations["delete_coach_application_admin_coaches_applications__coach_profile_id__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/coaches/applications/{coach_profile_id}/approve": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Approve Coach Application
+     * @description Approve a coach application (admin only).
+     */
+    post: operations["approve_coach_application_admin_coaches_applications__coach_profile_id__approve_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/coaches/applications/{coach_profile_id}/reject": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Reject Coach Application
+     * @description Reject a coach application (admin only).
+     */
+    post: operations["reject_coach_application_admin_coaches_applications__coach_profile_id__reject_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/coaches/applications/{coach_profile_id}/request-info": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Request More Info
+     * @description Request more information from a coach applicant (admin only).
+     */
+    post: operations["request_more_info_admin_coaches_applications__coach_profile_id__request_info_post"];
     delete?: never;
     options?: never;
     head?: never;
@@ -775,7 +1142,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/admin/coaches/": {
+  "/api/v1/coaches/me/grades": {
     parameters: {
       query?: never;
       header?: never;
@@ -783,12 +1150,10 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * List Coaches For Admin
-     * @description List coaches for admin use (e.g., coach picker in cohort forms).
-     *     Default filters to approved and active coaches only.
-     *     Use status=all to get all coaches regardless of status.
+     * Get My Grades
+     * @description Get the current coach's grades across all categories.
      */
-    get: operations["list_coaches_for_admin_admin_coaches__get"];
+    get: operations["get_my_grades_coaches_me_grades_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -797,7 +1162,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/admin/coaches/applications": {
+  "/api/v1/coaches/me/progression": {
     parameters: {
       query?: never;
       header?: never;
@@ -805,10 +1170,10 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * List Coach Applications
-     * @description List coach applications (admin only).
+     * Get My Progression
+     * @description Get the current coach's progression statistics.
      */
-    get: operations["list_coach_applications_admin_coaches_applications_get"];
+    get: operations["get_my_progression_coaches_me_progression_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -817,7 +1182,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/admin/coaches/applications/{coach_profile_id}": {
+  "/api/v1/admin/coaches/{coach_profile_id}/grades": {
     parameters: {
       query?: never;
       header?: never;
@@ -825,11 +1190,15 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get Coach Application
-     * @description Get a single coach application for review (admin only).
+     * Get Coach Grades
+     * @description Get a coach's grades (admin only).
      */
-    get: operations["get_coach_application_admin_coaches_applications__coach_profile_id__get"];
-    put?: never;
+    get: operations["get_coach_grades_admin_coaches__coach_profile_id__grades_get"];
+    /**
+     * Update Coach Grades
+     * @description Update a coach's grades (admin only).
+     */
+    put: operations["update_coach_grades_admin_coaches__coach_profile_id__grades_put"];
     post?: never;
     delete?: never;
     options?: never;
@@ -837,7 +1206,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/admin/coaches/applications/{coach_profile_id}/approve": {
+  "/api/v1/admin/coaches/{coach_profile_id}/suggest-grades": {
     parameters: {
       query?: never;
       header?: never;
@@ -847,17 +1216,88 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Approve Coach Application
-     * @description Approve a coach application (admin only).
+     * Suggest Coach Grades
+     * @description Get AI-suggested grades for a coach based on their profile data.
+     *
+     *     Proxies to the AI service's coach grade scoring endpoint.
+     *     Returns recommended grade, rationale, strengths, and areas for improvement.
      */
-    post: operations["approve_coach_application_admin_coaches_applications__coach_profile_id__approve_post"];
+    post: operations["suggest_coach_grades_admin_coaches__coach_profile_id__suggest_grades_post"];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  "/api/v1/admin/coaches/applications/{coach_profile_id}/reject": {
+  "/api/v1/admin/coaches/eligible/{category}/{required_grade}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Eligible Coaches
+     * @description List coaches eligible for a cohort based on category and required grade.
+     *
+     *     A coach is eligible if their grade for the category meets or exceeds
+     *     the required grade. Grade hierarchy: GRADE_1 < GRADE_2 < GRADE_3.
+     */
+    get: operations["list_eligible_coaches_admin_coaches_eligible__category___required_grade__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/coaches/agreement/current": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Current Agreement
+     * @description Get the current coach agreement content, rendered with the coach's data.
+     *
+     *     Placeholders like [COACH FULL NAME], [DATE], [Email Address] etc. are
+     *     replaced with the authenticated coach's real data at fetch time.
+     *     The content_hash still reflects the original template so that signing
+     *     verification remains consistent across all coaches.
+     */
+    get: operations["get_current_agreement_coaches_agreement_current_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/coaches/agreement/status": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Agreement Status
+     * @description Check if the current coach has signed the latest agreement.
+     */
+    get: operations["get_agreement_status_coaches_agreement_status_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/coaches/agreement/sign": {
     parameters: {
       query?: never;
       header?: never;
@@ -867,17 +1307,144 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Reject Coach Application
-     * @description Reject a coach application (admin only).
+     * Sign Agreement
+     * @description Sign the coach agreement.
      */
-    post: operations["reject_coach_application_admin_coaches_applications__coach_profile_id__reject_post"];
+    post: operations["sign_agreement_coaches_agreement_sign_post"];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  "/api/v1/admin/coaches/applications/{coach_profile_id}/request-info": {
+  "/api/v1/coaches/agreement/history": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Agreement History
+     * @description Get the coach's agreement signing history.
+     */
+    get: operations["get_agreement_history_coaches_agreement_history_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/coaches/handbook/current": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Current Handbook
+     * @description Get the current handbook content for display to coaches.
+     */
+    get: operations["get_current_handbook_coaches_handbook_current_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/coaches/handbook/{version}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Handbook Version
+     * @description Get a specific handbook version.
+     */
+    get: operations["get_handbook_version_coaches_handbook__version__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/coaches/agreements": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Agreement Versions
+     * @description List all agreement versions with signature counts (admin only).
+     */
+    get: operations["list_agreement_versions_admin_coaches_agreements_get"];
+    put?: never;
+    /**
+     * Create Agreement Version
+     * @description Create a new agreement version (admin only).
+     *
+     *     Auto-sets the new version as current and deactivates the previous one.
+     *     Sends email notification to all active coaches about the new version.
+     */
+    post: operations["create_agreement_version_admin_coaches_agreements_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/coaches/agreements/{version_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Agreement Version Detail
+     * @description Get a specific agreement version with signature statistics.
+     */
+    get: operations["get_agreement_version_detail_admin_coaches_agreements__version_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/coaches/handbook/versions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Handbook Versions
+     * @description List all handbook versions (admin).
+     */
+    get: operations["list_handbook_versions_admin_coaches_handbook_versions_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/coaches/handbook": {
     parameters: {
       query?: never;
       header?: never;
@@ -887,10 +1454,317 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Request More Info
-     * @description Request more information from a coach applicant (admin only).
+     * Create Handbook Version
+     * @description Create a new handbook version (admin). Deactivates previous current version.
      */
-    post: operations["request_more_info_admin_coaches_applications__coach_profile_id__request_info_post"];
+    post: operations["create_handbook_version_admin_coaches_handbook_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/members/guardians": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Guardian Links
+     * @description List guardian links, filtered by minor_member_id or guardian_member_id.
+     *
+     *     At least one filter must be provided to avoid accidentally dumping the
+     *     whole table.
+     */
+    get: operations["list_guardian_links_admin_members_guardians_get"];
+    put?: never;
+    /**
+     * Create Guardian Link
+     * @description Create a new guardian link between a minor and an adult member.
+     *
+     *     The link is created unverified — admin must call PATCH with
+     *     ``verified=true`` after confirming the relationship.
+     */
+    post: operations["create_guardian_link_admin_members_guardians_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/members/guardians/{link_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Update Guardian Link
+     * @description Update a guardian link — verify, deactivate, or edit notes.
+     *
+     *     ``verified=true`` sets ``verified_at = now()`` and records the admin's
+     *     member_id in ``verified_by``. Once verified, the link can gate
+     *     safeguarding-sensitive chat operations (e.g. joining a coach-minor DM).
+     */
+    patch: operations["update_guardian_link_admin_members_guardians__link_id__patch"];
+    trace?: never;
+  };
+  "/api/v1/internal/members/guardians/for-minor/{minor_member_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Guardians For Minor
+     * @description Return active (and by default verified) guardians for a given minor.
+     *
+     *     Consumed by chat_service to enforce: a coach cannot be in a 1:1 DM with a
+     *     minor without a verified guardian present.
+     */
+    get: operations["get_guardians_for_minor_internal_members_guardians_for_minor__minor_member_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/members/by-auth/{auth_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Member By Auth Id
+     * @description Look up a member by Supabase auth_id.
+     */
+    get: operations["get_member_by_auth_id_internal_members_by_auth__auth_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/members/active": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Active Members
+     * @description Get all active members (for notifications/communications).
+     */
+    get: operations["get_active_members_internal_members_active_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/members/search": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Search Members
+     * @description Search members by first name, last name, or email (case-insensitive substring).
+     *
+     *     Used by other services (e.g., wallet_service admin) to resolve human-readable
+     *     queries into auth_ids for filtering. Returns up to `limit` matches.
+     */
+    get: operations["search_members_internal_members_search_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/members/approved-list": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Approved Members List
+     * @description Get all approved members with basic info for reporting.
+     *
+     *     Used by the reporting service to iterate over all members for quarterly reports.
+     */
+    get: operations["get_approved_members_list_internal_members_approved_list_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/members/{member_id}/membership": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Member Membership
+     * @description Look up a member's membership tier and billing info.
+     */
+    get: operations["get_member_membership_internal_members__member_id__membership_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/members/{member_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Member By Id
+     * @description Look up a member by ID.
+     */
+    get: operations["get_member_by_id_internal_members__member_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/members/bulk": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Get Members Bulk
+     * @description Bulk-lookup members by IDs.
+     */
+    post: operations["get_members_bulk_internal_members_bulk_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/members/coaches/{member_id}/profile": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Coach Profile
+     * @description Look up a coach profile by member_id.
+     */
+    get: operations["get_coach_profile_internal_members_coaches__member_id__profile_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/members/{member_id}/bank-account": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Member Bank Account
+     * @description Look up a coach's bank account by member_id.
+     */
+    get: operations["get_member_bank_account_internal_members__member_id__bank_account_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/members/coaches/eligible": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Eligible Coaches
+     * @description Get eligible coaches filtered by grade column and allowed grades.
+     *
+     *     The grade_column must be one of the valid category grade columns on CoachProfile.
+     *     eligible_grades is a comma-separated list like 'grade_1,grade_2,grade_3'.
+     */
+    get: operations["get_eligible_coaches_internal_members_coaches_eligible_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/members/coaches/{member_id}/readiness": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Coach Readiness Data
+     * @description Get extended coach profile data for readiness assessment.
+     *
+     *     Returns profile fields + whether an active agreement exists.
+     */
+    get: operations["get_coach_readiness_data_internal_members_coaches__member_id__readiness_get"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -969,6 +1843,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/sessions/bundles": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create Bundle Cart
+     * @description Create a new bundle cart with the selected session IDs.
+     */
+    post: operations["create_bundle_cart_sessions_bundles_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/sessions/bundles/{bundle_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Bundle Cart
+     * @description Fetch a bundle cart by id. Must belong to the authenticated member.
+     */
+    get: operations["get_bundle_cart_sessions_bundles__bundle_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/sessions/": {
     parameters: {
       query?: never;
@@ -981,12 +1895,17 @@ export interface paths {
      * @description List all upcoming sessions. Optional `types` filter is a comma-separated list
      *     of SessionType values (e.g., "club,community"). Optional `cohort_id` filter
      *     returns only sessions for that cohort.
+     *
+     *     Draft sessions are only visible to admins with include_drafts=true.
      */
     get: operations["list_sessions_sessions__get"];
     put?: never;
     /**
      * Create Session
      * @description Create a new session (Admin only).
+     *
+     *     Sessions are created in DRAFT status by default. Use the publish endpoint
+     *     to make them visible to members and trigger notifications.
      */
     post: operations["create_session_sessions__post"];
     delete?: never;
@@ -1067,6 +1986,264 @@ export interface paths {
     patch: operations["update_session_sessions__session_id__patch"];
     trace?: never;
   };
+  "/api/v1/sessions/{session_id}/publish": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Publish Session
+     * @description Publish a draft session, making it visible to members.
+     *
+     *     This transitions the session from DRAFT to SCHEDULED status, sets the
+     *     published_at timestamp, and triggers notifications:
+     *     - Immediate announcement to subscribed members
+     *     - Scheduled reminders (24h, 3h, 1h before start)
+     *
+     *     If the session starts within 6 hours, it's marked as "short notice" and
+     *     only applicable reminders are scheduled.
+     */
+    post: operations["publish_session_sessions__session_id__publish_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/sessions/{session_id}/cancel": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cancel Session
+     * @description Cancel a session and notify registered attendees.
+     *
+     *     This transitions the session to CANCELLED status and sends cancellation
+     *     notifications to all registered attendees and coaches.
+     */
+    post: operations["cancel_session_sessions__session_id__cancel_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/sessions/by-cohort/{cohort_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Delete Sessions For Cohort
+     * @description Delete all sessions (and related rows) for a cohort.
+     */
+    delete: operations["delete_sessions_for_cohort_sessions_by_cohort__cohort_id__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/sessions/scheduled": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Scheduled Sessions
+     * @description Get scheduled sessions within a date range.
+     */
+    get: operations["get_scheduled_sessions_internal_sessions_scheduled_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/sessions/range-stats": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Session Range Stats
+     * @description Get aggregated session stats within a date range.
+     *
+     *     Used by the reporting service for quarterly community stats.
+     */
+    get: operations["get_session_range_stats_internal_sessions_range_stats_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/sessions/detailed-stats": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Session Detailed Stats
+     * @description Get detailed session stats for quarterly reports.
+     *
+     *     Returns pool hours, location rankings, busiest sessions, etc.
+     *     Accepts ISO 8601 date strings (with or without timezone).
+     */
+    get: operations["get_session_detailed_stats_internal_sessions_detailed_stats_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/sessions/durations": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Session Durations
+     * @description Return duration in hours for a list of session IDs.
+     *
+     *     Used by attendance service to compute per-member pool hours.
+     */
+    get: operations["get_session_durations_internal_sessions_durations_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/sessions/{session_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Session By Id
+     * @description Look up a session by ID.
+     */
+    get: operations["get_session_by_id_internal_sessions__session_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/sessions/cohorts/{cohort_id}/next-session": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Next Session For Cohort
+     * @description Get the next upcoming session for a cohort.
+     */
+    get: operations["get_next_session_for_cohort_internal_sessions_cohorts__cohort_id__next_session_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/sessions/cohorts/{cohort_id}/session-ids": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Session Ids For Cohort
+     * @description Get all session IDs for a cohort.
+     */
+    get: operations["get_session_ids_for_cohort_internal_sessions_cohorts__cohort_id__session_ids_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/sessions/cohorts/{cohort_id}/completed-session-ids": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Completed Session Ids For Cohort
+     * @description Get completed session IDs for a cohort, optionally filtered by date range.
+     */
+    get: operations["get_completed_session_ids_for_cohort_internal_sessions_cohorts__cohort_id__completed_session_ids_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/sessions/{session_id}/coaches": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Session Coach Ids
+     * @description Get coach member IDs for a session.
+     */
+    get: operations["get_session_coach_ids_internal_sessions__session_id__coaches_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/attendance/sessions/{session_id}/sign-in": {
     parameters: {
       query?: never;
@@ -1079,6 +2256,8 @@ export interface paths {
     /**
      * Sign In To Session
      * @description Sign in to a session. Idempotent upsert.
+     *     When pay_with_bubbles=True the member's wallet is debited for the session fee
+     *     (only on the first sign-in, not on subsequent upserts).
      */
     post: operations["sign_in_to_session_attendance_sessions__session_id__sign_in_post"];
     delete?: never;
@@ -1116,7 +2295,11 @@ export interface paths {
     };
     /**
      * List Session Attendance
-     * @description List all attendees for a session (Admin only).
+     * @description List all attendees for a session.
+     *
+     *     Access control:
+     *     - Admins: Can view attendance for any session
+     *     - Coaches: Can view attendance for sessions in their assigned cohorts
      */
     get: operations["list_session_attendance_attendance_sessions__session_id__attendance_get"];
     put?: never;
@@ -1127,7 +2310,33 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/attendance/me/attendance": {
+  "/api/v1/attendance/cohorts/{cohort_id}/attendance/summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Cohort Attendance Summary
+     * @description Get attendance summary for all students in a cohort.
+     *
+     *     Returns aggregated attendance data: total sessions, per-student attendance rates.
+     *
+     *     Access control:
+     *     - Admins: Can view any cohort's attendance
+     *     - Coaches: Can view attendance for their assigned cohorts
+     */
+    get: operations["get_cohort_attendance_summary_attendance_cohorts__cohort_id__attendance_summary_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/attendance/me": {
     parameters: {
       query?: never;
       header?: never;
@@ -1136,9 +2345,9 @@ export interface paths {
     };
     /**
      * Get My Attendance History
-     * @description Get attendance history for the current member.
+     * @description Get attendance history for the current member, enriched with session details.
      */
-    get: operations["get_my_attendance_history_attendance_me_attendance_get"];
+    get: operations["get_my_attendance_history_attendance_me_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -1187,21 +2396,65 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/academy/admin/tasks/transition-cohort-statuses": {
+  "/api/v1/internal/attendance/member/{member_id}": {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    get?: never;
-    put?: never;
     /**
-     * Trigger Cohort Status Transitions
-     * @description Manually trigger cohort status transitions (OPEN→ACTIVE, ACTIVE→COMPLETED).
-     *     Useful for testing or manual corrections.
+     * Get Member Attendance
+     * @description Get attendance records for a member, optionally filtered by session IDs.
      */
-    post: operations["trigger_cohort_status_transitions_academy_admin_tasks_transition_cohort_statuses_post"];
+    get: operations["get_member_attendance_internal_attendance_member__member_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/attendance/session/{session_id}/member-ids": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Session Attendee Member Ids
+     * @description Return distinct member ID strings for everyone who has an attendance
+     *     record for the given session.  Used by communications-service to find
+     *     who should receive session-related notifications.
+     */
+    get: operations["get_session_attendee_member_ids_internal_attendance_session__session_id__member_ids_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/attendance/stats/member/{member_auth_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Member Attendance Stats
+     * @description Aggregate attendance stats for a member within a date range.
+     *
+     *     Used by the reporting service for quarterly reports.
+     *     The member_auth_id is matched against members.auth_id via the member_id FK.
+     */
+    get: operations["get_member_attendance_stats_internal_attendance_stats_member__member_auth_id__get"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -1224,26 +2477,6 @@ export interface paths {
     /** Create Program */
     post: operations["create_program_academy_programs_post"];
     delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/academy/admin/members/{member_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /**
-     * Admin Delete Member Academy Records
-     * @description Delete academy enrollments and progress records for a member (Admin only).
-     */
-    delete: operations["admin_delete_member_academy_records_academy_admin_members__member_id__delete"];
     options?: never;
     head?: never;
     patch?: never;
@@ -1283,6 +2516,90 @@ export interface paths {
     post?: never;
     /** Delete Program */
     delete: operations["delete_program_academy_programs__program_id__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/milestones": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create Milestone */
+    post: operations["create_milestone_academy_milestones_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/programs/{program_id}/milestones": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Program Milestones */
+    get: operations["list_program_milestones_academy_programs__program_id__milestones_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/programs/{program_id}/interest": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Check Program Interest
+     * @description Check if the current user is registered for notifications for a program.
+     */
+    get: operations["check_program_interest_academy_programs__program_id__interest_get"];
+    put?: never;
+    /**
+     * Register Program Interest
+     * @description Register interest in a program to be notified when new cohorts open.
+     */
+    post: operations["register_program_interest_academy_programs__program_id__interest_post"];
+    /**
+     * Remove Program Interest
+     * @description Remove interest in a program (unsubscribe from notifications).
+     */
+    delete: operations["remove_program_interest_academy_programs__program_id__interest_delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/stats/public": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Public Academy Stats
+     * @description Return lightweight, non-PII academy statistics for public display.
+     *     Single aggregated query per metric; safe to call from unauthenticated
+     *     landing pages.
+     */
+    get: operations["get_public_academy_stats_academy_stats_public_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -1334,9 +2651,41 @@ export interface paths {
     };
     /**
      * List Open Cohorts
-     * @description List all cohorts with status OPEN, only from published programs.
+     * @description List cohorts members can enroll in — OPEN cohorts plus ACTIVE cohorts
+     *     with mid-entry still open. Only from published programs.
+     *
+     *     Previously returned just OPEN status; broadened so the public academy page
+     *     surfaces in-progress cohorts that still accept mid-entry. Callers that
+     *     need only-not-yet-started cohorts should filter by status client-side.
      */
     get: operations["list_open_cohorts_academy_cohorts_open_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/cohorts/enrollable": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Enrollable Cohorts
+     * @description List cohorts members can enroll in right now.
+     *
+     *     Includes:
+     *     - OPEN cohorts (published programs)
+     *     - ACTIVE cohorts where mid-entry is enabled and still within cutoff week
+     *
+     *     Identical semantics to /cohorts/open; this endpoint additionally accepts a
+     *     program_id filter.
+     */
+    get: operations["list_enrollable_cohorts_academy_cohorts_enrollable_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -1379,92 +2728,6 @@ export interface paths {
      * @description List cohorts where the current user is the assigned coach.
      */
     get: operations["list_my_coach_cohorts_academy_cohorts_coach_me_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/academy/coach/me/students": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List My Coach Students
-     * @description List all students across all cohorts where the current user is the assigned coach.
-     *
-     *     Returns enrollments with cohort, program, and progress data.
-     */
-    get: operations["list_my_coach_students_academy_coach_me_students_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/academy/coach/me/earnings": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get My Coach Earnings
-     * @description Get earnings summary for the current coach.
-     *
-     *     Calculates earnings based on:
-     *     - academy_cohort_stipend from CoachProfile
-     *     - Number of active/completed cohorts
-     */
-    get: operations["get_my_coach_earnings_academy_coach_me_earnings_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/academy/coach/me/resources": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List My Coach Resources
-     * @description List all resources across all cohorts where the current user is the assigned coach.
-     */
-    get: operations["list_my_coach_resources_academy_coach_me_resources_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/academy/cohorts/{cohort_id}/resources": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List Cohort Resources
-     * @description List resources for a specific cohort. Accessible by coach or admin.
-     */
-    get: operations["list_cohort_resources_academy_cohorts__cohort_id__resources_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -1517,7 +2780,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/academy/milestones": {
+  "/api/v1/academy/cohorts/{cohort_id}/timeline-shifts/preview": {
     parameters: {
       query?: never;
       header?: never;
@@ -1526,23 +2789,66 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Create Milestone */
-    post: operations["create_milestone_academy_milestones_post"];
+    /**
+     * Preview Cohort Timeline Shift
+     * @description Preview a cohort timeline shift without applying changes.
+     *
+     *     This endpoint is intentionally side-effect free and reports:
+     *     - date delta validation
+     *     - session shiftability breakdown
+     *     - pending installment count that would be rebased
+     *     - reminder reset opportunities
+     */
+    post: operations["preview_cohort_timeline_shift_academy_cohorts__cohort_id__timeline_shifts_preview_post"];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  "/api/v1/academy/programs/{program_id}/milestones": {
+  "/api/v1/academy/cohorts/{cohort_id}/timeline-shifts": {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /** List Program Milestones */
-    get: operations["list_program_milestones_academy_programs__program_id__milestones_get"];
+    /**
+     * List Cohort Timeline Shift Logs
+     * @description List immutable timeline-shift audit logs for a cohort (newest first).
+     */
+    get: operations["list_cohort_timeline_shift_logs_academy_cohorts__cohort_id__timeline_shifts_get"];
+    put?: never;
+    /**
+     * Apply Cohort Timeline Shift
+     * @description Apply a cohort timeline shift and propagate it across linked records.
+     *
+     *     Workflow:
+     *     1. Validate equal start/end delta (duration preserved)
+     *     2. Shift eligible sessions in sessions-service (with compensation on failure)
+     *     3. Shift pending installment due dates
+     *     4. Reset enrollment countdown reminders
+     *     5. Persist cohort dates and send member notifications (best effort)
+     */
+    post: operations["apply_cohort_timeline_shift_academy_cohorts__cohort_id__timeline_shifts_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/cohorts/{cohort_id}/resources": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Cohort Resources
+     * @description List resources for a specific cohort. Accessible by coach or admin.
+     */
+    get: operations["list_cohort_resources_academy_cohorts__cohort_id__resources_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -1581,7 +2887,7 @@ export interface paths {
     };
     /**
      * Get Enrollment
-     * @description Get detailed enrollment info.
+     * @description Get detailed enrollment info. Accessible by admins and coaches.
      */
     get: operations["get_enrollment_academy_enrollments__enrollment_id__get"];
     put?: never;
@@ -1678,43 +2984,47 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/academy/internal/enrollments/{enrollment_id}": {
+  "/api/v1/academy/admin/enrollments/{enrollment_id}/mark-paid": {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /**
-     * Get Enrollment Internal
-     * @description Get a single enrollment by ID (internal service-to-service call).
-     *     Used by payments service to lookup enrollment details.
-     *     No auth required as this is called with service role token.
-     */
-    get: operations["get_enrollment_internal_academy_internal_enrollments__enrollment_id__get"];
+    get?: never;
     put?: never;
-    post?: never;
+    /**
+     * Admin Mark Enrollment Paid
+     * @description Mark an enrollment as paid (service-to-service call from payments_service).
+     *     Updates payment_status to PAID and enrollment status to ENROLLED if pending.
+     */
+    post: operations["admin_mark_enrollment_paid_academy_admin_enrollments__enrollment_id__mark_paid_post"];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  "/api/v1/academy/my-enrollments/{enrollment_id}/onboarding": {
+  "/api/v1/academy/admin/enrollments/{enrollment_id}/dropout-action": {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /**
-     * Get Enrollment Onboarding
-     * @description Get structured onboarding information for a new enrollment.
-     *     Returns next session, prep materials, and dashboard links.
-     */
-    get: operations["get_enrollment_onboarding_academy_my_enrollments__enrollment_id__onboarding_get"];
+    get?: never;
     put?: never;
-    post?: never;
+    /**
+     * Admin Dropout Action
+     * @description Admin action on a DROPOUT_PENDING enrollment.
+     *
+     *     action="approve" → confirms the dropout, moves enrollment to DROPPED.
+     *     action="reverse"  → reinstates the student, moves enrollment back to ENROLLED
+     *                         (or PENDING_APPROVAL if the cohort requires it).
+     *                         The missed_installments_count is NOT reset — it is a
+     *                         permanent behavioral counter.
+     */
+    post: operations["admin_dropout_action_academy_admin_enrollments__enrollment_id__dropout_action_post"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1738,7 +3048,28 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/academy/admin/enrollments/{enrollment_id}/mark-paid": {
+  "/api/v1/academy/cohorts/{cohort_id}/analytics": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Cohort Analytics
+     * @description Get detailed analytics for a cohort including:
+     *     - Total students, completion rates, at-risk students, avg scores
+     */
+    get: operations["get_cohort_analytics_academy_cohorts__cohort_id__analytics_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/enrollments/{enrollment_id}/installments/{installment_id}/pay-with-bubbles": {
     parameters: {
       query?: never;
       header?: never;
@@ -1748,11 +3079,36 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Admin Mark Enrollment Paid
-     * @description Mark an enrollment as paid (service-to-service call from payments_service).
-     *     Updates payment_status to PAID and enrollment status to ENROLLED if pending.
+     * Pay Installment With Bubbles
+     * @description Pay a pending enrollment installment using Bubbles wallet.
+     *
+     *     - Deducts the installment amount from the member's wallet.
+     *     - Marks the installment as PAID with the wallet transaction ID.
+     *     - Re-syncs enrollment payment status (may lift suspension, unlock access).
+     *     - Idempotent: repeated calls return the current state without double-charging.
      */
-    post: operations["admin_mark_enrollment_paid_academy_admin_enrollments__enrollment_id__mark_paid_post"];
+    post: operations["pay_installment_with_bubbles_academy_enrollments__enrollment_id__installments__installment_id__pay_with_bubbles_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/my-enrollments/{enrollment_id}/onboarding": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Enrollment Onboarding
+     * @description Get structured onboarding information for a new enrollment.
+     *     Returns next session, prep materials, and dashboard links.
+     */
+    get: operations["get_enrollment_onboarding_academy_my_enrollments__enrollment_id__onboarding_get"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -1817,6 +3173,676 @@ export interface paths {
      *     record with ACHIEVED status and optional evidence.
      */
     post: operations["claim_milestone_academy_enrollments__enrollment_id__progress__milestone_id__claim_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/enrollments/{enrollment_id}/progress/{progress_id}/events": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Milestone Review Events
+     * @description List the audit trail of claim / review / status-change events for a
+     *     given StudentProgress record.
+     *
+     *     Visible to: the enrolled student, the coach assigned to the cohort, or an
+     *     admin.
+     */
+    get: operations["list_milestone_review_events_academy_enrollments__enrollment_id__progress__progress_id__events_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/coach/me/dashboard": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Coach Dashboard
+     * @description Get dashboard summary for the current coach.
+     *
+     *     Includes:
+     *     - Cohort counts (active, upcoming, completed)
+     *     - Student counts and pending approvals
+     *     - Pending milestone reviews
+     *     - Next upcoming session
+     *             - Earnings summary
+     */
+    get: operations["get_coach_dashboard_academy_coach_me_dashboard_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/coach/me/cohorts/{cohort_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Coach Cohort Detail
+     * @description Get detailed view of a specific cohort for the coach dashboard.
+     *
+     *     Includes enrollment stats, progress tracking, and complexity score info.
+     */
+    get: operations["get_coach_cohort_detail_academy_coach_me_cohorts__cohort_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/coach/me/students": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List My Coach Students
+     * @description List all students across all cohorts where the current user is the assigned coach.
+     *
+     *     Returns enrollments with cohort, program, and progress data.
+     */
+    get: operations["list_my_coach_students_academy_coach_me_students_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/coach/me/earnings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get My Coach Earnings
+     * @description Get earnings summary for the current coach.
+     *
+     *     Calculates earnings based on:
+     *     - academy_cohort_stipend from CoachProfile
+     *     - Number of active/completed cohorts
+     */
+    get: operations["get_my_coach_earnings_academy_coach_me_earnings_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/coach/me/resources": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List My Coach Resources
+     * @description List all resources across all cohorts where the current user is the assigned coach.
+     */
+    get: operations["list_my_coach_resources_academy_coach_me_resources_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/coach/me/pending-reviews": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Pending Milestone Reviews
+     * @description List all milestone claims waiting for coach review.
+     *
+     *     Returns claims that have evidence submitted but haven't been reviewed yet.
+     */
+    get: operations["list_pending_milestone_reviews_academy_coach_me_pending_reviews_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/coach/me/milestone-reviews/{progress_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Review Milestone Claim
+     * @description Review (approve/reject) a milestone claim.
+     *
+     *     Only the coach assigned to the student's cohort can review.
+     */
+    post: operations["review_milestone_claim_academy_coach_me_milestone_reviews__progress_id__post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/scoring/calculate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Preview Complexity Score
+     * @description Preview complexity score calculation without saving.
+     *     Useful for testing scores before committing to a cohort.
+     */
+    post: operations["preview_complexity_score_academy_scoring_calculate_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/scoring/dimensions/{category}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Scoring Dimensions
+     * @description Get the dimension labels for a specific program category.
+     *     Useful for building the scoring UI.
+     */
+    get: operations["get_scoring_dimensions_academy_scoring_dimensions__category__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/cohorts/{cohort_id}/complexity-score": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Cohort Complexity Score
+     * @description Get the complexity score for a cohort.
+     */
+    get: operations["get_cohort_complexity_score_academy_cohorts__cohort_id__complexity_score_get"];
+    /**
+     * Update Cohort Complexity Score
+     * @description Update the complexity score for a cohort.
+     */
+    put: operations["update_cohort_complexity_score_academy_cohorts__cohort_id__complexity_score_put"];
+    /**
+     * Create Cohort Complexity Score
+     * @description Create a complexity score for a cohort.
+     *     This determines the required coach grade and pay band.
+     */
+    post: operations["create_cohort_complexity_score_academy_cohorts__cohort_id__complexity_score_post"];
+    /**
+     * Delete Cohort Complexity Score
+     * @description Delete the complexity score for a cohort.
+     */
+    delete: operations["delete_cohort_complexity_score_academy_cohorts__cohort_id__complexity_score_delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/cohorts/{cohort_id}/complexity-score/review": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Mark Complexity Score Reviewed
+     * @description Mark a complexity score as reviewed (for audit purposes).
+     */
+    post: operations["mark_complexity_score_reviewed_academy_cohorts__cohort_id__complexity_score_review_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/cohorts/{cohort_id}/eligible-coaches": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Eligible Coaches For Cohort
+     * @description Get coaches eligible for a cohort based on grade requirements.
+     *     Returns coaches who meet or exceed the required grade.
+     */
+    get: operations["get_eligible_coaches_for_cohort_academy_cohorts__cohort_id__eligible_coaches_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/cohorts/{cohort_id}/ai-score": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Ai Score Cohort
+     * @description Get AI-suggested dimension scores for a cohort.
+     *
+     *     The AI analyses the cohort/program metadata and returns suggested
+     *     scores across the 7 category-specific dimensions.  The admin can
+     *     then review, adjust and save manually.
+     */
+    post: operations["ai_score_cohort_academy_cohorts__cohort_id__ai_score_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/cohorts/{cohort_id}/ai-suggest-coach": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Ai Suggest Coach
+     * @description Get AI-ranked coach suggestions for a scored cohort.
+     *
+     *     The endpoint fetches eligible coaches, then uses AI to rank them
+     *     by suitability based on the cohort's complexity profile and the
+     *     coach's experience/specialisation.
+     */
+    post: operations["ai_suggest_coach_academy_cohorts__cohort_id__ai_suggest_coach_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/cohorts/{cohort_id}/progress-report.pdf": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Download Cohort Progress Report
+     * @description Download a PDF progress report for a specific cohort.
+     *     Contains all students and their milestone progress.
+     */
+    get: operations["download_cohort_progress_report_academy_cohorts__cohort_id__progress_report_pdf_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/enrollments/{enrollment_id}/certificate.pdf": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Download Certificate
+     * @description Download completion certificate for an enrollment.
+     *     Only available if all milestones are completed and certificate was issued.
+     */
+    get: operations["download_certificate_academy_enrollments__enrollment_id__certificate_pdf_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/admin/tasks/transition-cohort-statuses": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Trigger Cohort Status Transitions
+     * @description Manually trigger cohort status transitions (OPEN→ACTIVE, ACTIVE→COMPLETED).
+     *     Useful for testing or manual corrections.
+     */
+    post: operations["trigger_cohort_status_transitions_academy_admin_tasks_transition_cohort_statuses_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/admin/members/{member_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Admin Delete Member Academy Records
+     * @description Delete academy enrollments and progress records for a member (Admin only).
+     */
+    delete: operations["admin_delete_member_academy_records_academy_admin_members__member_id__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/academy/coaches/{coach_member_id}/cohort-ids": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Cohort Ids For Coach
+     * @description Internal helper endpoint used by sessions-service.
+     *
+     *     Returns cohort IDs where the given coach is assigned (legacy cohort.coach_id
+     *     or active lead/assistant coach assignments).
+     */
+    get: operations["list_cohort_ids_for_coach_internal_academy_coaches__coach_member_id__cohort_ids_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/academy/enrollments/{enrollment_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Enrollment Internal
+     * @description Get a single enrollment by ID (internal service-to-service call).
+     *     Used by payments service to lookup enrollment details.
+     *     No auth required as this is called with service role token.
+     *
+     *     Pass ``?use_installments=true`` when the member opted for an installment
+     *     plan at checkout — this triggers schedule creation if none exists yet.
+     */
+    get: operations["get_enrollment_internal_internal_academy_enrollments__enrollment_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/academy/cohorts/{cohort_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Cohort Internal
+     * @description Get basic cohort info (internal service-to-service call).
+     *     Used by communications-service to validate coach ownership.
+     */
+    get: operations["get_cohort_internal_internal_academy_cohorts__cohort_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/academy/cohorts/{cohort_id}/enrolled-students": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Cohort Enrolled Students Internal
+     * @description Get enrolled students for a cohort (internal service-to-service call).
+     *     Used by communications-service for messaging.
+     *     Returns enrollment info with member_id (caller fetches member details separately).
+     */
+    get: operations["get_cohort_enrolled_students_internal_internal_academy_cohorts__cohort_id__enrolled_students_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/academy/cohorts/{cohort_id}/check-enrollment/{member_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Check Cohort Enrollment Internal
+     * @description Check if a member is enrolled in a specific cohort.
+     *
+     *     Used by attendance-service to enforce tier-based session access control.
+     *     Returns enrollment status and access info.
+     */
+    get: operations["check_cohort_enrollment_internal_internal_academy_cohorts__cohort_id__check_enrollment__member_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/academy/member-summary/{member_auth_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Member Academy Summary
+     * @description Aggregate academy stats for a member within a date range.
+     *
+     *     Used by the reporting service for quarterly reports.
+     */
+    get: operations["get_member_academy_summary_internal_academy_member_summary__member_auth_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/extension-requests/cohorts/{cohort_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Extension Requests For Cohort
+     * @description List all extension requests for a cohort (coach or admin).
+     */
+    get: operations["list_extension_requests_for_cohort_academy_extension_requests_cohorts__cohort_id__get"];
+    put?: never;
+    /**
+     * Create Extension Request
+     * @description Coach requests an extension for a cohort they're assigned to.
+     */
+    post: operations["create_extension_request_academy_extension_requests_cohorts__cohort_id__post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/extension-requests/coach/me": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List My Extension Requests
+     * @description List all extension requests created by the current coach.
+     */
+    get: operations["list_my_extension_requests_academy_extension_requests_coach_me_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/extension-requests/pending": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Pending Extension Requests
+     * @description List all pending extension requests (admin only).
+     */
+    get: operations["list_pending_extension_requests_academy_extension_requests_pending_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/extension-requests/{request_id}/approve": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Approve Extension Request
+     * @description Admin approves an extension request and updates the cohort end date.
+     */
+    post: operations["approve_extension_request_academy_extension_requests__request_id__approve_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/extension-requests/{request_id}/reject": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Reject Extension Request
+     * @description Admin rejects an extension request.
+     */
+    post: operations["reject_extension_request_academy_extension_requests__request_id__reject_post"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2023,6 +4049,159 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/academy/coach-assignments/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create Assignment
+     * @description Create a new coach assignment (admin only).
+     */
+    post: operations["create_assignment_academy_coach_assignments__post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/coach-assignments/cohort/{cohort_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Cohort Assignments
+     * @description List all coach assignments for a cohort.
+     */
+    get: operations["list_cohort_assignments_academy_coach_assignments_cohort__cohort_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/coach-assignments/coach/me": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List My Assignments
+     * @description List my coach assignments.
+     */
+    get: operations["list_my_assignments_academy_coach_assignments_coach_me_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/coach-assignments/coach/{coach_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Coach Assignments
+     * @description List all assignments for a specific coach (admin only).
+     */
+    get: operations["list_coach_assignments_academy_coach_assignments_coach__coach_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/coach-assignments/{assignment_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Cancel Assignment
+     * @description Cancel a coach assignment (admin only).
+     */
+    delete: operations["cancel_assignment_academy_coach_assignments__assignment_id__delete"];
+    options?: never;
+    head?: never;
+    /**
+     * Update Assignment
+     * @description Update a coach assignment (admin only).
+     */
+    patch: operations["update_assignment_academy_coach_assignments__assignment_id__patch"];
+    trace?: never;
+  };
+  "/api/v1/academy/coach-assignments/{assignment_id}/evaluations": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Evaluations
+     * @description List evaluations for a specific assignment.
+     */
+    get: operations["list_evaluations_academy_coach_assignments__assignment_id__evaluations_get"];
+    put?: never;
+    /**
+     * Create Shadow Evaluation
+     * @description Create a shadow evaluation for an assignment (lead coach only).
+     */
+    post: operations["create_shadow_evaluation_academy_coach_assignments__assignment_id__evaluations_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/academy/coach-assignments/readiness/{coach_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Coach Readiness
+     * @description Get computed readiness assessment for a coach toward a target grade.
+     *
+     *     Checks requirements based on target grade:
+     *     - Grade 1: >=5 shadow sessions with passing evals, agreement signed, CPR current, BG check
+     *     - Grade 2: Grade 1 + >=50 hours, >=3 cohorts completed, rating >=4.0
+     *     - Grade 3: Grade 2 + >=200 hours, >=10 lead cohorts, rating >=4.3
+     */
+    get: operations["get_coach_readiness_academy_coach_assignments_readiness__coach_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/payments/pricing": {
     parameters: {
       query?: never;
@@ -2138,6 +4317,26 @@ export interface paths {
      *     In production, this should be triggered by a verified payment webhook.
      */
     post: operations["complete_payment_payments__reference__complete_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/payments/admin/{reference}/replay-entitlement": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Replay Payment Entitlement
+     * @description Replay entitlement fulfillment for a paid payment.
+     */
+    post: operations["replay_payment_entitlement_payments_admin__reference__replay_entitlement_post"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2279,6 +4478,97 @@ export interface paths {
     patch: operations["update_discount_payments_admin_discounts__discount_id__patch"];
     trace?: never;
   };
+  "/api/v1/internal/payments/initialize": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Internal Initialize Payment
+     * @description Initialize a Paystack transaction on behalf of another service.
+     *
+     *     Called by wallet_service for topups, or any service needing Paystack.
+     *     If purpose maps to PaymentPurpose, a Payment intent record is persisted
+     *     for unified reconciliation/forensics.
+     *
+     *     Auth: service-role JWT only (via ``require_service_role``).
+     */
+    post: operations["internal_initialize_payment_internal_payments_initialize_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/payments/paystack/verify/{reference}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Internal Verify Paystack Reference
+     * @description Verify a Paystack reference for internal fulfillment reconciliation.
+     */
+    get: operations["internal_verify_paystack_reference_internal_payments_paystack_verify__reference__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/payments/discounts/validate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Internal Validate Discount
+     * @description Validate a discount code for another service (e.g., store).
+     *
+     *     Returns discount details and calculated discount amount if valid.
+     *     Raises 400 if the code is invalid, expired, or exhausted.
+     */
+    post: operations["internal_validate_discount_internal_payments_discounts_validate_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/payments/member-summary/{member_auth_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Member Payment Summary
+     * @description Aggregate payment stats for a member within a date range.
+     *
+     *     Used by the reporting service for quarterly reports.
+     */
+    get: operations["get_member_payment_summary_internal_payments_member_summary__member_auth_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/payments/{reference}/proof": {
     parameters: {
       query?: never;
@@ -2365,7 +4655,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/admin/payouts/": {
+  "/api/v1/payments/admin/payouts/": {
     parameters: {
       query?: never;
       header?: never;
@@ -2376,20 +4666,20 @@ export interface paths {
      * List Payouts
      * @description List all payouts with optional filters.
      */
-    get: operations["list_payouts_admin_payouts__get"];
+    get: operations["list_payouts_payments_admin_payouts__get"];
     put?: never;
     /**
      * Create Payout
      * @description Create a new payout for a coach.
      */
-    post: operations["create_payout_admin_payouts__post"];
+    post: operations["create_payout_payments_admin_payouts__post"];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  "/api/v1/admin/payouts/summary": {
+  "/api/v1/payments/admin/payouts/summary": {
     parameters: {
       query?: never;
       header?: never;
@@ -2400,7 +4690,7 @@ export interface paths {
      * Get Payout Summary
      * @description Get summary stats for all payouts.
      */
-    get: operations["get_payout_summary_admin_payouts_summary_get"];
+    get: operations["get_payout_summary_payments_admin_payouts_summary_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -2409,7 +4699,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/admin/payouts/{payout_id}": {
+  "/api/v1/payments/admin/payouts/{payout_id}": {
     parameters: {
       query?: never;
       header?: never;
@@ -2420,7 +4710,7 @@ export interface paths {
      * Get Payout
      * @description Get a single payout by ID.
      */
-    get: operations["get_payout_admin_payouts__payout_id__get"];
+    get: operations["get_payout_payments_admin_payouts__payout_id__get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -2429,7 +4719,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/admin/payouts/{payout_id}/approve": {
+  "/api/v1/payments/admin/payouts/{payout_id}/approve": {
     parameters: {
       query?: never;
       header?: never;
@@ -2441,7 +4731,7 @@ export interface paths {
      * Approve Payout
      * @description Approve a pending payout.
      */
-    put: operations["approve_payout_admin_payouts__payout_id__approve_put"];
+    put: operations["approve_payout_payments_admin_payouts__payout_id__approve_put"];
     post?: never;
     delete?: never;
     options?: never;
@@ -2449,7 +4739,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/admin/payouts/{payout_id}/initiate-transfer": {
+  "/api/v1/payments/admin/payouts/{payout_id}/initiate-transfer": {
     parameters: {
       query?: never;
       header?: never;
@@ -2464,14 +4754,14 @@ export interface paths {
      *
      *     Requires the coach to have a verified bank account with Paystack recipient code.
      */
-    post: operations["initiate_transfer_admin_payouts__payout_id__initiate_transfer_post"];
+    post: operations["initiate_transfer_payments_admin_payouts__payout_id__initiate_transfer_post"];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  "/api/v1/admin/payouts/{payout_id}/complete-manual": {
+  "/api/v1/payments/admin/payouts/{payout_id}/complete-manual": {
     parameters: {
       query?: never;
       header?: never;
@@ -2483,7 +4773,7 @@ export interface paths {
      * Complete Manual Payout
      * @description Mark a payout as completed via manual bank transfer or other method.
      */
-    put: operations["complete_manual_payout_admin_payouts__payout_id__complete_manual_put"];
+    put: operations["complete_manual_payout_payments_admin_payouts__payout_id__complete_manual_put"];
     post?: never;
     delete?: never;
     options?: never;
@@ -2491,7 +4781,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/admin/payouts/{payout_id}/fail": {
+  "/api/v1/payments/admin/payouts/{payout_id}/fail": {
     parameters: {
       query?: never;
       header?: never;
@@ -2503,7 +4793,7 @@ export interface paths {
      * Fail Payout
      * @description Mark a payout as failed.
      */
-    put: operations["fail_payout_admin_payouts__payout_id__fail_put"];
+    put: operations["fail_payout_payments_admin_payouts__payout_id__fail_put"];
     post?: never;
     delete?: never;
     options?: never;
@@ -2511,7 +4801,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/coach/me/payouts/": {
+  "/api/v1/payments/coach/me/payouts/": {
     parameters: {
       query?: never;
       header?: never;
@@ -2522,7 +4812,7 @@ export interface paths {
      * Get My Payouts
      * @description Get current coach's payouts.
      */
-    get: operations["get_my_payouts_coach_me_payouts__get"];
+    get: operations["get_my_payouts_payments_coach_me_payouts__get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -2531,7 +4821,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/coach/me/payouts/{payout_id}": {
+  "/api/v1/payments/coach/me/payouts/{payout_id}": {
     parameters: {
       query?: never;
       header?: never;
@@ -2542,7 +4832,7 @@ export interface paths {
      * Get My Payout
      * @description Get a specific payout for the current coach.
      */
-    get: operations["get_my_payout_coach_me_payouts__payout_id__get"];
+    get: operations["get_my_payout_payments_coach_me_payouts__payout_id__get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -2560,7 +4850,7 @@ export interface paths {
     };
     /**
      * List Announcements
-     * @description List all announcements, newest first.
+     * @description List announcements, newest first. Supports limit and unread-only filtering.
      */
     get: operations["list_announcements_announcements__get"];
     put?: never;
@@ -2595,6 +4885,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/announcements/unread-count": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Unread Count
+     * @description Return the number of published, non-expired announcements the member has not read.
+     */
+    get: operations["get_unread_count_announcements_unread_count_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/announcements/{announcement_id}": {
     parameters: {
       query?: never;
@@ -2621,6 +4931,67 @@ export interface paths {
      * @description Update an announcement (Admin only).
      */
     patch: operations["update_announcement_announcements__announcement_id__patch"];
+    trace?: never;
+  };
+  "/api/v1/announcements/{announcement_id}/read": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Mark Announcement Read
+     * @description Mark an announcement as read by a member.
+     *     If already read, updates acknowledged status if provided.
+     */
+    post: operations["mark_announcement_read_announcements__announcement_id__read_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/announcements/{announcement_id}/read-status": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Announcement Read Status
+     * @description Get read status of an announcement for a specific member.
+     */
+    get: operations["get_announcement_read_status_announcements__announcement_id__read_status_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/announcements/{announcement_id}/read-stats": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Announcement Read Stats
+     * @description Get read/acknowledged statistics for an announcement (Admin only).
+     */
+    get: operations["get_announcement_read_stats_announcements__announcement_id__read_stats_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   "/api/v1/announcements/{announcement_id}/comments": {
@@ -2699,6 +5070,48 @@ export interface paths {
     patch: operations["update_content_post_content__post_id__patch"];
     trace?: never;
   };
+  "/api/v1/content/{post_id}/publish": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Publish Content Post
+     * @description Publish a content post (admin only).
+     *     Sets is_published to True and published_at to current time.
+     */
+    post: operations["publish_content_post_content__post_id__publish_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/content/{post_id}/unpublish": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Unpublish Content Post
+     * @description Unpublish a content post (admin only).
+     *     Sets is_published to False while preserving published_at for history.
+     */
+    post: operations["unpublish_content_post_content__post_id__unpublish_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/content/{post_id}/comments": {
     parameters: {
       query?: never;
@@ -2723,6 +5136,55 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/categories/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Announcement Categories
+     * @description List all custom announcement categories.
+     */
+    get: operations["list_announcement_categories_categories__get"];
+    put?: never;
+    /**
+     * Create Announcement Category
+     * @description Create a custom announcement category (Admin only).
+     */
+    post: operations["create_announcement_category_categories__post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/categories/{category_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Delete Announcement Category
+     * @description Delete a custom announcement category (Admin only).
+     *     Note: This will not delete announcements using this category.
+     */
+    delete: operations["delete_announcement_category_categories__category_id__delete"];
+    options?: never;
+    head?: never;
+    /**
+     * Update Announcement Category
+     * @description Update a custom announcement category (Admin only).
+     */
+    patch: operations["update_announcement_category_categories__category_id__patch"];
+    trace?: never;
+  };
   "/api/v1/admin/members/{member_id}": {
     parameters: {
       query?: never;
@@ -2743,10 +5205,525 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/messages/cohorts/{cohort_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Send Cohort Message
+     * @description Send a message to all enrolled students in a cohort.
+     *
+     *     Access control:
+     *     - Coaches: Can send to their assigned cohorts
+     *     - Admins: Can send to any cohort
+     */
+    post: operations["send_cohort_message_messages_cohorts__cohort_id__post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/messages/enrollments/{enrollment_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Send Student Message
+     * @description Send a message to an individual enrolled student.
+     *
+     *     Access control:
+     *     - Coaches: Can send to students in their assigned cohorts
+     *     - Admins: Can send to any student
+     */
+    post: operations["send_student_message_messages_enrollments__enrollment_id__post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/messages/logs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Message Logs
+     * @description List sent message logs.
+     *
+     *     Access control:
+     *     - Coaches: See only their own sent messages
+     *     - Admins: See all messages (optionally filtered by cohort)
+     */
+    get: operations["list_message_logs_messages_logs_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/email/send": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Send Single Email
+     * @description Send a single email.
+     *
+     *     Requires service role authentication (internal service-to-service calls).
+     */
+    post: operations["send_single_email_email_send_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/email/send-bulk": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Send Bulk Emails
+     * @description Send bulk emails to multiple recipients.
+     *
+     *     Requires service role authentication (internal service-to-service calls).
+     *     Logs the operation in message_logs table.
+     */
+    post: operations["send_bulk_emails_email_send_bulk_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/email/template": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Send Templated Email
+     * @description Send a templated email using predefined templates.
+     *
+     *     Template types:
+     *     - enrollment_confirmation: Academy enrollment confirmed
+     *     - enrollment_reminder: Reminder before cohort starts
+     *     - waitlist_promotion: Student moved off waitlist
+     *     - progress_report: Student progress report
+     *     - certificate: Course completion certificate
+     *     - attendance_summary: Weekly attendance summary for coach
+     *     - coach_assignment: Coach assigned to a cohort
+     *     - low_attendance_alert: Alert about student low attendance
+     *     - coach_agreement_signed: Coach agreement signing confirmation
+     *     - coach_grade_change: Coach grade promotion/update notification
+     *     - shadow_assignment: Shadow coach assignment notification
+     *     - coach_readiness: Coach readiness assessment result
+     *     - coach_application_approved: Coach application approved
+     *     - coach_application_rejected: Coach application rejected
+     *     - coach_application_more_info: More info requested from coach applicant
+     *     - member_approved: Member application approved
+     *     - member_rejected: Member application rejected
+     *     - payment_approved: Payment was approved
+     *     - session_confirmation: Session booking confirmed
+     *     - store_order_confirmation: Store order confirmed
+     *     - store_order_ready: Store order ready for pickup/shipped
+     *     - password_reset: Password reset link
+     *
+     *     Requires service role authentication (internal service-to-service calls).
+     */
+    post: operations["send_templated_email_email_template_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notifications/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Notifications
+     * @description List notifications for a member, newest first.
+     */
+    get: operations["list_notifications_notifications__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notifications/unread-count": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Unread Count
+     * @description Get unread notification count for a member.
+     */
+    get: operations["get_unread_count_notifications_unread_count_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notifications/{notification_id}/read": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Mark Notification Read
+     * @description Mark a single notification as read.
+     */
+    post: operations["mark_notification_read_notifications__notification_id__read_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notifications/read-all": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Mark All Notifications Read
+     * @description Mark all unread notifications as read for a member.
+     */
+    post: operations["mark_all_notifications_read_notifications_read_all_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notifications/{notification_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Delete Notification
+     * @description Dismiss/delete a single notification.
+     */
+    delete: operations["delete_notification_notifications__notification_id__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notifications/dispatch": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Dispatch Notification
+     * @description Create and deliver notification(s). Called by other services via the gateway.
+     *
+     *     Always creates an in-app notification row. Optionally sends email if the
+     *     member's preferences allow it.
+     */
+    post: operations["dispatch_notification_notifications_dispatch_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notifications/admin/stats": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Notification Stats
+     * @description Get notification volume statistics.
+     */
+    get: operations["get_notification_stats_notifications_admin_stats_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notifications/admin/cleanup": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cleanup Expired Notifications
+     * @description Purge expired notifications.
+     */
+    post: operations["cleanup_expired_notifications_notifications_admin_cleanup_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/preferences/me": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get My Preferences
+     * @description Get the current user's notification preferences.
+     *     Creates default preferences if none exist.
+     */
+    get: operations["get_my_preferences_preferences_me_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Update My Preferences
+     * @description Update the current user's notification preferences.
+     */
+    patch: operations["update_my_preferences_preferences_me_patch"];
+    trace?: never;
+  };
+  "/api/v1/preferences/{member_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Member Preferences
+     * @description Get notification preferences for a specific member.
+     *     Admin only or self-access.
+     */
+    get: operations["get_member_preferences_preferences__member_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/preferences/check-opt-in": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Check Notification Opt In
+     * @description Check if a member has opted in for a specific notification type.
+     *     Used by other services before sending notifications.
+     */
+    post: operations["check_notification_opt_in_preferences_check_opt_in_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/testimonials/public": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Public Testimonials
+     * @description Return published testimonials, optionally filtered by track.
+     */
+    get: operations["list_public_testimonials_testimonials_public_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/testimonials": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Admin List Testimonials
+     * @description Admin: list ALL testimonials, published or not.
+     */
+    get: operations["admin_list_testimonials_admin_testimonials_get"];
+    put?: never;
+    /** Admin Create Testimonial */
+    post: operations["admin_create_testimonial_admin_testimonials_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/testimonials/{testimonial_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Admin Delete Testimonial */
+    delete: operations["admin_delete_testimonial_admin_testimonials__testimonial_id__delete"];
+    options?: never;
+    head?: never;
+    /** Admin Update Testimonial */
+    patch: operations["admin_update_testimonial_admin_testimonials__testimonial_id__patch"];
+    trace?: never;
+  };
+  "/api/v1/internal/communications/session-published": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Handle Session Published
+     * @description Trigger publish notifications for a session.
+     *
+     *     Called by sessions_service after a session transitions from draft → scheduled.
+     *     Schedules reminders and sends the immediate announcement email + in-app notification.
+     */
+    post: operations["handle_session_published_internal_communications_session_published_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/internal/communications/session-cancelled": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Handle Session Cancelled
+     * @description Trigger cancellation notifications for a session.
+     *
+     *     Called by sessions_service after a session is cancelled.
+     *     Cancels pending reminders and sends cancellation notices.
+     */
+    post: operations["handle_session_cancelled_internal_communications_session_cancelled_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /**
+     * ActivateAcademyRequest
+     * @description Request to activate (or extend) academy tier until a specific date.
+     *
+     *     The caller passes the cohort end_date. The endpoint sets academy_paid_until
+     *     to whichever is later: the current value or the supplied cohort_end_date,
+     *     so that a member enrolled in multiple overlapping cohorts always retains
+     *     access until their last cohort finishes.
+     */
+    ActivateAcademyRequest: {
+      /**
+       * Cohort End Date
+       * Format: date-time
+       * @description ISO datetime of the cohort end date (timezone-aware)
+       */
+      cohort_end_date: string;
+    };
     /**
      * ActivateClubRequest
      * @description Request to activate club membership.
@@ -2952,12 +5929,202 @@ export interface components {
       admin_notes?: string | null;
     };
     /**
+     * AdminUpdateCoachGrades
+     * @description Admin payload for updating coach grades.
+     */
+    AdminUpdateCoachGrades: {
+      learn_to_swim_grade?: components["schemas"]["CoachGradeEnum"] | null;
+      special_populations_grade?: components["schemas"]["CoachGradeEnum"] | null;
+      institutional_grade?: components["schemas"]["CoachGradeEnum"] | null;
+      competitive_elite_grade?: components["schemas"]["CoachGradeEnum"] | null;
+      certifications_grade?: components["schemas"]["CoachGradeEnum"] | null;
+      specialized_disciplines_grade?: components["schemas"]["CoachGradeEnum"] | null;
+      adjacent_services_grade?: components["schemas"]["CoachGradeEnum"] | null;
+      /** Swimbuddz Level */
+      swimbuddz_level?: number | null;
+      /** Admin Notes */
+      admin_notes?: string | null;
+    };
+    /**
+     * AgreementContentResponse
+     * @description Current agreement content for display.
+     */
+    AgreementContentResponse: {
+      /** Version */
+      version: string;
+      /** Title */
+      title: string;
+      /** Content */
+      content: string;
+      /** Content Hash */
+      content_hash: string;
+      /**
+       * Effective Date
+       * Format: date
+       */
+      effective_date: string;
+      /**
+       * Requires Signature
+       * @default true
+       */
+      requires_signature: boolean;
+    };
+    /**
+     * AgreementVersionDetail
+     * @description Full agreement version detail for admin view.
+     */
+    AgreementVersionDetail: {
+      /** Id */
+      id: string;
+      /** Version */
+      version: string;
+      /** Title */
+      title: string;
+      /** Content */
+      content: string;
+      /** Content Hash */
+      content_hash: string;
+      /**
+       * Effective Date
+       * Format: date
+       */
+      effective_date: string;
+      /** Is Current */
+      is_current: boolean;
+      /** Created By Id */
+      created_by_id?: string | null;
+      /**
+       * Signature Count
+       * @default 0
+       */
+      signature_count: number;
+      /**
+       * Active Signature Count
+       * @default 0
+       */
+      active_signature_count: number;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /**
+     * AgreementVersionListItem
+     * @description Agreement version for admin list view.
+     */
+    AgreementVersionListItem: {
+      /** Id */
+      id: string;
+      /** Version */
+      version: string;
+      /** Title */
+      title: string;
+      /**
+       * Effective Date
+       * Format: date
+       */
+      effective_date: string;
+      /** Is Current */
+      is_current: boolean;
+      /** Content Hash */
+      content_hash: string;
+      /**
+       * Signature Count
+       * @default 0
+       */
+      signature_count: number;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /**
      * ApprovalAction
      * @description Schema for approve/reject actions.
      */
     ApprovalAction: {
       /** Notes */
       notes?: string | null;
+    };
+    /** ApprovedMemberBasic */
+    ApprovedMemberBasic: {
+      /** Id */
+      id: string;
+      /** Auth Id */
+      auth_id: string;
+      /** First Name */
+      first_name: string;
+      /** Last Name */
+      last_name: string;
+      /** Primary Tier */
+      primary_tier?: string | null;
+    };
+    /**
+     * AssessmentResponse
+     * @description Response for a single assessment result.
+     */
+    AssessmentResponse: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Total Score */
+      total_score: number;
+      /** Raw Score */
+      raw_score: number;
+      /** Level */
+      level: string;
+      /** Dimension Scores */
+      dimension_scores: {
+        [key: string]: unknown;
+      }[];
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Member Id */
+      member_id?: string | null;
+    };
+    /**
+     * AssessmentStatsResponse
+     * @description Aggregate statistics across all assessments.
+     */
+    AssessmentStatsResponse: {
+      /** Total Count */
+      total_count: number;
+      /** Level Distribution */
+      level_distribution: {
+        [key: string]: number;
+      };
+      /** Average Score */
+      average_score: number;
+    };
+    /**
+     * AssessmentSubmit
+     * @description Request body for submitting an assessment.
+     */
+    AssessmentSubmit: {
+      /**
+       * Answers
+       * @description Map of question_id → selected option score
+       * @example {
+       *       "face_in_water": 3,
+       *       "floating": 1,
+       *       "water_comfort": 2
+       *     }
+       */
+      answers: {
+        [key: string]: number;
+      };
     };
     /**
      * BankAccountCreate
@@ -2970,6 +6137,11 @@ export interface components {
       bank_name: string;
       /** Account Number */
       account_number: string;
+    };
+    /** BulkMembersRequest */
+    BulkMembersRequest: {
+      /** Ids */
+      ids: string[];
     };
     /**
      * ChallengeCompletionCreate
@@ -3112,6 +6284,74 @@ export interface components {
       is_active?: boolean | null;
     };
     /**
+     * CoachAgreementHistoryItem
+     * @description Historical agreement for audit trail.
+     */
+    CoachAgreementHistoryItem: {
+      /** Id */
+      id: string;
+      /** Agreement Version */
+      agreement_version: string;
+      /** Signature Type */
+      signature_type: string;
+      /**
+       * Signed At
+       * Format: date-time
+       */
+      signed_at: string;
+      /** Is Active */
+      is_active: boolean;
+      /** Superseded At */
+      superseded_at?: string | null;
+    };
+    /**
+     * CoachAgreementResponse
+     * @description Response for a signed coach agreement.
+     */
+    CoachAgreementResponse: {
+      /** Id */
+      id: string;
+      /** Coach Profile Id */
+      coach_profile_id: string;
+      /** Agreement Version */
+      agreement_version: string;
+      /** Signature Type */
+      signature_type: string;
+      /**
+       * Signed At
+       * Format: date-time
+       */
+      signed_at: string;
+      /** Is Active */
+      is_active: boolean;
+      /** Ip Address */
+      ip_address?: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /**
+     * CoachAgreementStatusResponse
+     * @description Quick status check for coach agreement.
+     */
+    CoachAgreementStatusResponse: {
+      /** Has Signed Current Version */
+      has_signed_current_version: boolean;
+      /** Current Version */
+      current_version: string;
+      /** Signed Version */
+      signed_version?: string | null;
+      /** Signed At */
+      signed_at?: string | null;
+      /**
+       * Requires New Signature
+       * @default false
+       */
+      requires_new_signature: boolean;
+    };
+    /**
      * CoachApplicationCreate
      * @description Schema for submitting a coach application.
      */
@@ -3177,6 +6417,10 @@ export interface components {
       last_name: string;
       /** Display Name */
       display_name?: string | null;
+      /** Coach Profile Photo Media Id */
+      coach_profile_photo_media_id?: string | null;
+      /** Coach Profile Photo Url */
+      coach_profile_photo_url?: string | null;
       /** Status */
       status: string;
       /** Short Bio */
@@ -3224,6 +6468,11 @@ export interface components {
       /** Rejection Reason */
       rejection_reason?: string | null;
       /**
+       * Show In Directory
+       * @default true
+       */
+      show_in_directory: boolean | null;
+      /**
        * Created At
        * Format: date-time
        */
@@ -3252,6 +6501,72 @@ export interface components {
        * @default false
        */
       can_access_dashboard: boolean;
+    };
+    /** CoachBankAccountResponse */
+    CoachBankAccountResponse: {
+      /** Id */
+      id: string;
+      /** Member Id */
+      member_id: string;
+      /** Bank Code */
+      bank_code: string;
+      /** Bank Name */
+      bank_name?: string | null;
+      /** Account Number */
+      account_number: string;
+      /** Account Name */
+      account_name?: string | null;
+      /** Is Verified */
+      is_verified: boolean;
+      /** Recipient Code */
+      recipient_code?: string | null;
+    };
+    /**
+     * CoachGradeEnum
+     * @description Coach grade levels for API responses.
+     * @enum {string}
+     */
+    CoachGradeEnum: "grade_1" | "grade_2" | "grade_3";
+    /**
+     * CoachGradesResponse
+     * @description Coach grades across all program categories.
+     */
+    CoachGradesResponse: {
+      /** Coach Profile Id */
+      coach_profile_id: string;
+      /** Member Id */
+      member_id: string;
+      /** Display Name */
+      display_name?: string | null;
+      learn_to_swim_grade?: components["schemas"]["CoachGradeEnum"] | null;
+      special_populations_grade?: components["schemas"]["CoachGradeEnum"] | null;
+      institutional_grade?: components["schemas"]["CoachGradeEnum"] | null;
+      competitive_elite_grade?: components["schemas"]["CoachGradeEnum"] | null;
+      certifications_grade?: components["schemas"]["CoachGradeEnum"] | null;
+      specialized_disciplines_grade?: components["schemas"]["CoachGradeEnum"] | null;
+      adjacent_services_grade?: components["schemas"]["CoachGradeEnum"] | null;
+      /**
+       * Total Coaching Hours
+       * @default 0
+       */
+      total_coaching_hours: number;
+      /**
+       * Cohorts Completed
+       * @default 0
+       */
+      cohorts_completed: number;
+      /** Average Feedback Rating */
+      average_feedback_rating?: number | null;
+      /** Swimbuddz Level */
+      swimbuddz_level?: number | null;
+      /** Last Active Date */
+      last_active_date?: string | null;
+      /** First Aid Cert Expiry */
+      first_aid_cert_expiry?: string | null;
+      /** Cpr Expiry Date */
+      cpr_expiry_date?: string | null;
+      /** Lifeguard Expiry Date */
+      lifeguard_expiry_date?: string | null;
     };
     /**
      * CoachOnboardingUpdate
@@ -3305,6 +6620,47 @@ export interface components {
       show_in_directory?: boolean | null;
       /** Coach Profile Photo Media Id */
       coach_profile_photo_media_id?: string | null;
+    };
+    /**
+     * CoachPreferencesUpdate
+     * @description Schema for updating coach preferences after onboarding.
+     */
+    CoachPreferencesUpdate: {
+      /** Availability Calendar */
+      availability_calendar?: {
+        [key: string]: unknown;
+      } | null;
+      /** Pools Supported */
+      pools_supported?: string[] | null;
+      /** Can Travel Between Pools */
+      can_travel_between_pools?: boolean | null;
+      /** Travel Radius Km */
+      travel_radius_km?: number | null;
+      /** Accepts One On One */
+      accepts_one_on_one?: boolean | null;
+      /** Accepts Group Cohorts */
+      accepts_group_cohorts?: boolean | null;
+      /** Max Swimmers Per Session */
+      max_swimmers_per_session?: number | null;
+      /** Max Cohorts At Once */
+      max_cohorts_at_once?: number | null;
+      /** Preferred Cohort Types */
+      preferred_cohort_types?: string[] | null;
+      /** Show In Directory */
+      show_in_directory?: boolean | null;
+    };
+    /** CoachProfileBasic */
+    CoachProfileBasic: {
+      /** Member Id */
+      member_id: string;
+      /** Status */
+      status: string;
+      /** Academy Cohort Stipend */
+      academy_cohort_stipend?: number | null;
+      /** One To One Rate Per Hour */
+      one_to_one_rate_per_hour?: number | null;
+      /** Group Session Rate Per Hour */
+      group_session_rate_per_hour?: number | null;
     };
     /**
      * CoachProfileResponse
@@ -3517,6 +6873,165 @@ export interface components {
       preferred_cohort_types?: string[] | null;
     };
     /**
+     * CoachProgressionStats
+     * @description Coach progression statistics for dashboard.
+     */
+    CoachProgressionStats: {
+      /** Coach Profile Id */
+      coach_profile_id: string;
+      /**
+       * Total Coaching Hours
+       * @default 0
+       */
+      total_coaching_hours: number;
+      /**
+       * Cohorts Completed
+       * @default 0
+       */
+      cohorts_completed: number;
+      /**
+       * Active Cohorts
+       * @default 0
+       */
+      active_cohorts: number;
+      /** Average Feedback Rating */
+      average_feedback_rating?: number | null;
+      /** Swimbuddz Level */
+      swimbuddz_level?: number | null;
+      highest_grade?: components["schemas"]["CoachGradeEnum"] | null;
+      /**
+       * Grades Held
+       * @default []
+       */
+      grades_held: string[];
+      /**
+       * Credentials Valid
+       * @default true
+       */
+      credentials_valid: boolean;
+      /**
+       * Expiring Soon
+       * @default []
+       */
+      expiring_soon: string[];
+    };
+    /**
+     * CoachReadinessData
+     * @description Extended coach profile data for readiness assessment.
+     */
+    CoachReadinessData: {
+      /** Profile Id */
+      profile_id: string;
+      /**
+       * Total Coaching Hours
+       * @default 0
+       */
+      total_coaching_hours: number;
+      /** Average Rating */
+      average_rating?: number | null;
+      /** Background Check Status */
+      background_check_status?: string | null;
+      /**
+       * Has Cpr Training
+       * @default false
+       */
+      has_cpr_training: boolean;
+      /** Cpr Expiry Date */
+      cpr_expiry_date?: string | null;
+      /**
+       * Has Active Agreement
+       * @default false
+       */
+      has_active_agreement: boolean;
+    };
+    /**
+     * CreateAgreementVersionRequest
+     * @description Admin request to create a new agreement version.
+     */
+    CreateAgreementVersionRequest: {
+      /** Version */
+      version: string;
+      /** Title */
+      title: string;
+      /** Content */
+      content: string;
+      /**
+       * Effective Date
+       * Format: date
+       */
+      effective_date: string;
+    };
+    /**
+     * CreateHandbookVersionRequest
+     * @description Admin request to create a new handbook version.
+     */
+    CreateHandbookVersionRequest: {
+      /** Version */
+      version: string;
+      /** Title */
+      title: string;
+      /** Content */
+      content: string;
+      /**
+       * Effective Date
+       * Format: date
+       */
+      effective_date: string;
+    };
+    /** EligibleCoachBasic */
+    EligibleCoachBasic: {
+      /** Member Id */
+      member_id: string;
+      /** Name */
+      name: string;
+      /** Email */
+      email: string;
+      /** Grade */
+      grade?: string | null;
+      /**
+       * Total Coaching Hours
+       * @default 0
+       */
+      total_coaching_hours: number;
+      /** Average Feedback Rating */
+      average_feedback_rating?: number | null;
+    };
+    /**
+     * EligibleCoachListItem
+     * @description Coach item in eligible coaches list.
+     */
+    EligibleCoachListItem: {
+      /** Coach Profile Id */
+      coach_profile_id: string;
+      /** Member Id */
+      member_id: string;
+      /** Display Name */
+      display_name?: string | null;
+      /** Email */
+      email: string;
+      grade: components["schemas"]["CoachGradeEnum"];
+      /**
+       * Coaching Years
+       * @default 0
+       */
+      coaching_years: number;
+      /**
+       * Average Rating
+       * @default 0
+       */
+      average_rating: number;
+      /**
+       * Cohorts Completed
+       * @default 0
+       */
+      cohorts_completed: number;
+      /**
+       * Is Available
+       * @default true
+       */
+      is_available: boolean;
+    };
+    /**
      * ExtendCommunityRequest
      * @description Request to extend community membership by months.
      */
@@ -3527,10 +7042,158 @@ export interface components {
        */
       months: number;
     };
+    /** GuardianLinkCreate */
+    GuardianLinkCreate: {
+      /**
+       * Minor Member Id
+       * Format: uuid
+       */
+      minor_member_id: string;
+      /**
+       * Guardian Member Id
+       * Format: uuid
+       */
+      guardian_member_id: string;
+      relationship: components["schemas"]["GuardianRelationship"];
+      /** Notes */
+      notes?: string | null;
+    };
+    /** GuardianLinkResponse */
+    GuardianLinkResponse: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Minor Member Id
+       * Format: uuid
+       */
+      minor_member_id: string;
+      /**
+       * Guardian Member Id
+       * Format: uuid
+       */
+      guardian_member_id: string;
+      relationship: components["schemas"]["GuardianRelationship"];
+      /** Is Active */
+      is_active: boolean;
+      /** Verified At */
+      verified_at: string | null;
+      /** Verified By */
+      verified_by: string | null;
+      /** Notes */
+      notes: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** GuardianLinkUpdate */
+    GuardianLinkUpdate: {
+      /** Is Active */
+      is_active?: boolean | null;
+      /** Verified */
+      verified?: boolean | null;
+      /** Notes */
+      notes?: string | null;
+    };
+    /**
+     * GuardianRelationship
+     * @description How a guardian is related to the minor they guard.
+     * @enum {string}
+     */
+    GuardianRelationship: "parent" | "legal_guardian" | "grandparent" | "other_adult";
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
       detail?: components["schemas"]["ValidationError"][];
+    };
+    /**
+     * HandbookContentResponse
+     * @description Current handbook content for display.
+     */
+    HandbookContentResponse: {
+      /** Version */
+      version: string;
+      /** Title */
+      title: string;
+      /** Content */
+      content: string;
+      /** Content Hash */
+      content_hash: string;
+      /**
+       * Effective Date
+       * Format: date
+       */
+      effective_date: string;
+    };
+    /**
+     * HandbookVersionDetail
+     * @description Full handbook version detail for admin view.
+     */
+    HandbookVersionDetail: {
+      /** Id */
+      id: string;
+      /** Version */
+      version: string;
+      /** Title */
+      title: string;
+      /** Content */
+      content: string;
+      /** Content Hash */
+      content_hash: string;
+      /**
+       * Effective Date
+       * Format: date
+       */
+      effective_date: string;
+      /** Is Current */
+      is_current: boolean;
+      /** Created By Id */
+      created_by_id?: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /**
+     * HandbookVersionListItem
+     * @description Handbook version for admin list view.
+     */
+    HandbookVersionListItem: {
+      /** Id */
+      id: string;
+      /** Version */
+      version: string;
+      /** Title */
+      title: string;
+      /**
+       * Effective Date
+       * Format: date
+       */
+      effective_date: string;
+      /** Is Current */
+      is_current: boolean;
+      /** Content Hash */
+      content_hash: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
     };
     /**
      * MemberAvailabilityInput
@@ -3582,6 +7245,46 @@ export interface components {
       /** Updated At */
       updated_at?: string | null;
     };
+    /** MemberBasic */
+    MemberBasic: {
+      /** Id */
+      id: string;
+      /** First Name */
+      first_name: string;
+      /** Last Name */
+      last_name: string;
+      /** Email */
+      email: string;
+      /** Phone */
+      phone?: string | null;
+      /** Community Paid Until */
+      community_paid_until?: string | null;
+      /** Profile Photo Url */
+      profile_photo_url?: string | null;
+    };
+    /**
+     * MemberBasicResponse
+     * @description Basic member info for service-to-service lookups.
+     */
+    MemberBasicResponse: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** First Name */
+      first_name?: string | null;
+      /** Last Name */
+      last_name?: string | null;
+      /** Email */
+      email?: string | null;
+      /** Profile Photo Media Id */
+      profile_photo_media_id?: string | null;
+      /** Profile Photo Url */
+      profile_photo_url?: string | null;
+      /** Community Paid Until */
+      community_paid_until?: string | null;
+    };
     /**
      * MemberCreate
      * @description Input for creating a new member.
@@ -3599,12 +7302,35 @@ export interface components {
       /** Last Name */
       last_name: string;
       profile?: components["schemas"]["MemberProfileInput"] | null;
-      emergency_contact?:
-        | components["schemas"]["MemberEmergencyContactInput"]
-        | null;
+      emergency_contact?: components["schemas"]["MemberEmergencyContactInput"] | null;
       availability?: components["schemas"]["MemberAvailabilityInput"] | null;
       membership?: components["schemas"]["MemberMembershipInput"] | null;
       preferences?: components["schemas"]["MemberPreferencesInput"] | null;
+    };
+    /**
+     * MemberDirectoryResponse
+     * @description Member info for the community directory.
+     */
+    MemberDirectoryResponse: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** First Name */
+      first_name: string;
+      /** Last Name */
+      last_name: string;
+      /** Profile Photo Url */
+      profile_photo_url?: string | null;
+      /** City */
+      city?: string | null;
+      /** Country */
+      country?: string | null;
+      /** Swim Level */
+      swim_level?: string | null;
+      /** Interest Tags */
+      interest_tags?: string[] | null;
     };
     /**
      * MemberEmergencyContactInput
@@ -3656,7 +7382,7 @@ export interface components {
     };
     /**
      * MemberListResponse
-     * @description Lightweight member response for lists (no nested sub-records).
+     * @description Member response for admin lists with flattened profile/membership fields.
      */
     MemberListResponse: {
       /**
@@ -3686,6 +7412,12 @@ export interface components {
        * @default pending
        */
       approval_status: string;
+      /** Approval Notes */
+      approval_notes?: string | null;
+      /** Approved At */
+      approved_at?: string | null;
+      /** Approved By */
+      approved_by?: string | null;
       /** Profile Photo Media Id */
       profile_photo_media_id?: string | null;
       /** Profile Photo Url */
@@ -3700,44 +7432,30 @@ export interface components {
        * @default false
        */
       is_coach: boolean;
-    };
-    /**
-     * MemberMembershipInput
-     * @description Input for creating/updating membership (admin only for most fields).
-     */
-    MemberMembershipInput: {
-      /** Primary Tier */
-      primary_tier?: string | null;
-      /** Active Tiers */
-      active_tiers?: string[] | null;
-      /** Requested Tiers */
-      requested_tiers?: string[] | null;
-      /** Club Notes */
-      club_notes?: string | null;
-      /** Academy Goals */
-      academy_goals?: string | null;
-      /** Academy Preferred Coach Gender */
-      academy_preferred_coach_gender?: string | null;
-      /** Academy Lesson Preference */
-      academy_lesson_preference?: string | null;
-      /** Academy Focus Areas */
-      academy_focus_areas?: string[] | null;
-    };
-    /**
-     * MemberMembershipResponse
-     * @description Membership tiers, billing, and gamification.
-     */
-    MemberMembershipResponse: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /**
-       * Member Id
-       * Format: uuid
-       */
-      member_id: string;
+      /** Phone */
+      phone?: string | null;
+      /** Swim Level */
+      swim_level?: string | null;
+      /** City */
+      city?: string | null;
+      /** Country */
+      country?: string | null;
+      /** Gender */
+      gender?: string | null;
+      /** Date Of Birth */
+      date_of_birth?: string | null;
+      /** Occupation */
+      occupation?: string | null;
+      /** Area In Lagos */
+      area_in_lagos?: string | null;
+      /** How Found Us */
+      how_found_us?: string | null;
+      /** Previous Communities */
+      previous_communities?: string | null;
+      /** Hopes From Swimbuddz */
+      hopes_from_swimbuddz?: string | null;
+      /** Goals Narrative */
+      goals_narrative?: string | null;
       /**
        * Primary Tier
        * @default community
@@ -3753,24 +7471,24 @@ export interface components {
       club_paid_until?: string | null;
       /** Academy Paid Until */
       academy_paid_until?: string | null;
-      /** Pending Payment Reference */
-      pending_payment_reference?: string | null;
-      /** Club Badges Earned */
-      club_badges_earned?: string[] | null;
-      /** Club Challenges Completed */
-      club_challenges_completed?: {
-        [key: string]: unknown;
-      } | null;
-      /**
-       * Punctuality Score
-       * @default 0
-       */
-      punctuality_score: number;
-      /**
-       * Commitment Score
-       * @default 0
-       */
-      commitment_score: number;
+      /** Emergency Contact Name */
+      emergency_contact_name?: string | null;
+      /** Emergency Contact Phone */
+      emergency_contact_phone?: string | null;
+      /** Medical Info */
+      medical_info?: string | null;
+    };
+    /**
+     * MemberMembershipInput
+     * @description Input for creating/updating membership (admin only for most fields).
+     */
+    MemberMembershipInput: {
+      /** Primary Tier */
+      primary_tier?: string | null;
+      /** Active Tiers */
+      active_tiers?: string[] | null;
+      /** Requested Tiers */
+      requested_tiers?: string[] | null;
       /** Club Notes */
       club_notes?: string | null;
       /** Academy Skill Assessment */
@@ -3783,23 +7501,8 @@ export interface components {
       academy_preferred_coach_gender?: string | null;
       /** Academy Lesson Preference */
       academy_lesson_preference?: string | null;
-      /** Academy Certifications */
-      academy_certifications?: string[] | null;
-      /** Academy Graduation Dates */
-      academy_graduation_dates?: {
-        [key: string]: unknown;
-      } | null;
-      /**
-       * Academy Alumni
-       * @default false
-       */
-      academy_alumni: boolean;
       /** Academy Focus Areas */
       academy_focus_areas?: string[] | null;
-      /** Created At */
-      created_at?: string | null;
-      /** Updated At */
-      updated_at?: string | null;
     };
     /**
      * MemberPreferencesInput
@@ -3873,8 +7576,12 @@ export interface components {
     MemberProfileInput: {
       /** Phone */
       phone?: string | null;
+      /** Address */
+      address?: string | null;
       /** City */
       city?: string | null;
+      /** State */
+      state?: string | null;
       /** Country */
       country?: string | null;
       /** Time Zone */
@@ -3931,8 +7638,12 @@ export interface components {
       member_id: string;
       /** Phone */
       phone?: string | null;
+      /** Address */
+      address?: string | null;
       /** City */
       city?: string | null;
+      /** State */
+      state?: string | null;
       /** Country */
       country?: string | null;
       /** Time Zone */
@@ -3969,7 +7680,7 @@ export interface components {
       social_other?: string | null;
       /**
        * Show In Directory
-       * @default false
+       * @default true
        */
       show_in_directory: boolean;
       /** Interest Tags */
@@ -4047,13 +7758,29 @@ export interface components {
        */
       updated_at: string;
       profile?: components["schemas"]["MemberProfileResponse"] | null;
-      emergency_contact?:
-        | components["schemas"]["MemberEmergencyContactResponse"]
-        | null;
+      emergency_contact?: components["schemas"]["MemberEmergencyContactResponse"] | null;
       availability?: components["schemas"]["MemberAvailabilityResponse"] | null;
-      membership?: components["schemas"]["MemberMembershipResponse"] | null;
+      membership?:
+        | components["schemas"]["services__members_service__schemas__member__MemberMembershipResponse"]
+        | null;
       preferences?: components["schemas"]["MemberPreferencesResponse"] | null;
       coach_profile?: components["schemas"]["CoachProfileResponse"] | null;
+    };
+    /**
+     * MemberSearchResult
+     * @description Slim search result with auth_id for cross-service filtering.
+     */
+    MemberSearchResult: {
+      /** Id */
+      id: string;
+      /** Auth Id */
+      auth_id: string;
+      /** First Name */
+      first_name: string;
+      /** Last Name */
+      last_name: string;
+      /** Email */
+      email: string;
     };
     /**
      * MemberUpdate
@@ -4071,9 +7798,7 @@ export interface components {
       /** Profile Photo Media Id */
       profile_photo_media_id?: string | null;
       profile?: components["schemas"]["MemberProfileInput"] | null;
-      emergency_contact?:
-        | components["schemas"]["MemberEmergencyContactInput"]
-        | null;
+      emergency_contact?: components["schemas"]["MemberEmergencyContactInput"] | null;
       availability?: components["schemas"]["MemberAvailabilityInput"] | null;
       membership?: components["schemas"]["MemberMembershipInput"] | null;
       preferences?: components["schemas"]["MemberPreferencesInput"] | null;
@@ -4139,11 +7864,11 @@ export interface components {
        */
       updated_at: string;
       profile?: components["schemas"]["MemberProfileResponse"] | null;
-      emergency_contact?:
-        | components["schemas"]["MemberEmergencyContactResponse"]
-        | null;
+      emergency_contact?: components["schemas"]["MemberEmergencyContactResponse"] | null;
       availability?: components["schemas"]["MemberAvailabilityResponse"] | null;
-      membership?: components["schemas"]["MemberMembershipResponse"] | null;
+      membership?:
+        | components["schemas"]["services__members_service__schemas__member__MemberMembershipResponse"]
+        | null;
       preferences?: components["schemas"]["MemberPreferencesResponse"] | null;
       coach_profile?: components["schemas"]["CoachProfileResponse"] | null;
     };
@@ -4164,9 +7889,7 @@ export interface components {
       /** Password */
       password?: string | null;
       profile?: components["schemas"]["MemberProfileInput"] | null;
-      emergency_contact?:
-        | components["schemas"]["MemberEmergencyContactInput"]
-        | null;
+      emergency_contact?: components["schemas"]["MemberEmergencyContactInput"] | null;
       availability?: components["schemas"]["MemberAvailabilityInput"] | null;
       preferences?: components["schemas"]["MemberPreferencesInput"] | null;
     } & {
@@ -4194,6 +7917,19 @@ export interface components {
       created_at: string;
     };
     /**
+     * ProgramCategoryEnum
+     * @description Program categories for grade assignment.
+     * @enum {string}
+     */
+    ProgramCategoryEnum:
+      | "learn_to_swim"
+      | "special_populations"
+      | "institutional"
+      | "competitive_elite"
+      | "certifications"
+      | "specialized_disciplines"
+      | "adjacent_services";
+    /**
      * ResolveAccountRequest
      * @description Request to resolve/verify a bank account.
      */
@@ -4203,6 +7939,43 @@ export interface components {
       /** Account Number */
       account_number: string;
     };
+    /**
+     * SignAgreementRequest
+     * @description Request to sign the coach agreement.
+     */
+    SignAgreementRequest: {
+      signature_type: components["schemas"]["SignatureTypeEnum"];
+      /**
+       * Signature Data
+       * @description Typed name string, base64 encoded drawing, 'CHECKBOX_AGREE' for checkbox, or media reference for uploaded image
+       */
+      signature_data: string;
+      /**
+       * Signature Media Id
+       * @description Media service ID for uploaded signature images (required when signature_type is uploaded_image)
+       */
+      signature_media_id?: string | null;
+      /** Agreement Version */
+      agreement_version: string;
+      /** Agreement Content Hash */
+      agreement_content_hash: string;
+      /**
+       * Handbook Acknowledged
+       * @description Must be True — coach must acknowledge the handbook before signing
+       */
+      handbook_acknowledged: boolean;
+      /**
+       * Handbook Version
+       * @description Version of the handbook that was acknowledged
+       */
+      handbook_version?: string | null;
+    };
+    /**
+     * SignatureTypeEnum
+     * @description Signature type for coach agreements.
+     * @enum {string}
+     */
+    SignatureTypeEnum: "typed_name" | "drawn" | "checkbox" | "uploaded_image";
     /** ValidationError */
     ValidationError: {
       /** Location */
@@ -4331,6 +8104,125 @@ export interface components {
       /** Is Active */
       is_active?: boolean | null;
     };
+    /** MemberMembershipResponse */
+    services__members_service__routers__internal__MemberMembershipResponse: {
+      /** Member Id */
+      member_id: string;
+      /** Primary Tier */
+      primary_tier: string;
+      /** Active Tiers */
+      active_tiers?: string[] | null;
+      /** Community Paid Until */
+      community_paid_until?: string | null;
+      /** Club Paid Until */
+      club_paid_until?: string | null;
+      /** Academy Paid Until */
+      academy_paid_until?: string | null;
+    };
+    /**
+     * MemberMembershipResponse
+     * @description Membership tiers, billing, and gamification.
+     */
+    services__members_service__schemas__member__MemberMembershipResponse: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Member Id
+       * Format: uuid
+       */
+      member_id: string;
+      /**
+       * Primary Tier
+       * @default community
+       */
+      primary_tier: string;
+      /** Active Tiers */
+      active_tiers?: string[] | null;
+      /** Requested Tiers */
+      requested_tiers?: string[] | null;
+      /** Community Paid Until */
+      community_paid_until?: string | null;
+      /** Club Paid Until */
+      club_paid_until?: string | null;
+      /** Academy Paid Until */
+      academy_paid_until?: string | null;
+      /** Pending Payment Reference */
+      pending_payment_reference?: string | null;
+      /** Club Badges Earned */
+      club_badges_earned?: string[] | null;
+      /** Club Challenges Completed */
+      club_challenges_completed?: {
+        [key: string]: unknown;
+      } | null;
+      /**
+       * Punctuality Score
+       * @default 0
+       */
+      punctuality_score: number;
+      /**
+       * Commitment Score
+       * @default 0
+       */
+      commitment_score: number;
+      /** Club Notes */
+      club_notes?: string | null;
+      /** Academy Skill Assessment */
+      academy_skill_assessment?: {
+        [key: string]: unknown;
+      } | null;
+      /** Academy Goals */
+      academy_goals?: string | null;
+      /** Academy Preferred Coach Gender */
+      academy_preferred_coach_gender?: string | null;
+      /** Academy Lesson Preference */
+      academy_lesson_preference?: string | null;
+      /** Academy Certifications */
+      academy_certifications?: string[] | null;
+      /** Academy Graduation Dates */
+      academy_graduation_dates?: {
+        [key: string]: unknown;
+      } | null;
+      /**
+       * Academy Alumni
+       * @default false
+       */
+      academy_alumni: boolean;
+      /** Academy Focus Areas */
+      academy_focus_areas?: string[] | null;
+      /** Created At */
+      created_at?: string | null;
+      /** Updated At */
+      updated_at?: string | null;
+    };
+    /** BundleCartResponse */
+    BundleCartResponse: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Member Auth Id */
+      member_auth_id: string;
+      /** Session Ids */
+      session_ids: string[];
+      /** Status */
+      status: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Expires At */
+      expires_at: string | null;
+    };
+    /** CreateBundleCartRequest */
+    CreateBundleCartRequest: {
+      /** Session Ids */
+      session_ids: string[];
+    };
     /** GenerateSessionsRequest */
     GenerateSessionsRequest: {
       /**
@@ -4345,6 +8237,51 @@ export interface components {
        */
       skip_conflicts: boolean;
     };
+    /** NextSessionResponse */
+    NextSessionResponse: {
+      /** Starts At */
+      starts_at: string;
+      /** Title */
+      title: string;
+      /** Location Name */
+      location_name?: string | null;
+    };
+    /** SessionBasic */
+    SessionBasic: {
+      /** Id */
+      id: string;
+      /** Title */
+      title: string;
+      /** Session Type */
+      session_type: string;
+      /** Status */
+      status: string;
+      /** Starts At */
+      starts_at: string;
+      /** Ends At */
+      ends_at: string;
+      /** Location Name */
+      location_name?: string | null;
+      /** Location Address */
+      location_address?: string | null;
+      /** Location */
+      location?: string | null;
+      /** Cohort Id */
+      cohort_id?: string | null;
+      /** Capacity */
+      capacity: number;
+      /** Pool Fee */
+      pool_fee?: number | null;
+      /** Week Number */
+      week_number?: number | null;
+      /** Lesson Title */
+      lesson_title?: string | null;
+      /**
+       * Timezone
+       * @default Africa/Lagos
+       */
+      timezone: string;
+    };
     /** SessionCreate */
     SessionCreate: {
       /** Title */
@@ -4355,8 +8292,9 @@ export interface components {
       notes?: string | null;
       /** @default club */
       session_type: components["schemas"]["SessionType"];
-      /** @default scheduled */
-      status: components["schemas"]["SessionStatus"];
+      status?: components["schemas"]["SessionStatus"] | null;
+      /** Pool Id */
+      pool_id?: string | null;
       location?: components["schemas"]["SessionLocation"] | null;
       /** Location Name */
       location_name?: string | null;
@@ -4404,8 +8342,46 @@ export interface components {
       lesson_title?: string | null;
     };
     /**
+     * SessionDetailedStats
+     * @description Extended session stats for quarterly reports.
+     */
+    SessionDetailedStats: {
+      /**
+       * Total Sessions
+       * @default 0
+       */
+      total_sessions: number;
+      /**
+       * Total Pool Hours
+       * @default 0
+       */
+      total_pool_hours: number;
+      /** By Type */
+      by_type?: {
+        [key: string]: unknown;
+      } | null;
+      /** Most Active Location */
+      most_active_location?: string | null;
+      /** Busiest Session Title */
+      busiest_session_title?: string | null;
+      /**
+       * Busiest Session Attendance
+       * @default 0
+       */
+      busiest_session_attendance: number;
+      /** Most Popular Day */
+      most_popular_day?: string | null;
+      /** Most Popular Time Slot */
+      most_popular_time_slot?: string | null;
+      /** Session Details */
+      session_details?:
+        | {
+            [key: string]: unknown;
+          }[]
+        | null;
+    };
+    /**
      * SessionLocation
-     * @description Predefined pool locations.
      * @enum {string}
      */
     SessionLocation:
@@ -4414,6 +8390,26 @@ export interface components {
       | "federal_palace_pool"
       | "open_water"
       | "other";
+    /**
+     * SessionRangeStats
+     * @description Aggregated session stats for a date range.
+     */
+    SessionRangeStats: {
+      /**
+       * Total Sessions
+       * @default 0
+       */
+      total_sessions: number;
+      /** By Type */
+      by_type?: {
+        [key: string]: unknown;
+      } | null;
+      /**
+       * New Members
+       * @default 0
+       */
+      new_members: number;
+    };
     /** SessionResponse */
     SessionResponse: {
       /** Title */
@@ -4424,8 +8420,9 @@ export interface components {
       notes?: string | null;
       /** @default club */
       session_type: components["schemas"]["SessionType"];
-      /** @default scheduled */
       status: components["schemas"]["SessionStatus"];
+      /** Pool Id */
+      pool_id?: string | null;
       location?: components["schemas"]["SessionLocation"] | null;
       /** Location Name */
       location_name?: string | null;
@@ -4476,6 +8473,8 @@ export interface components {
        * Format: uuid
        */
       id: string;
+      /** Published At */
+      published_at?: string | null;
       /**
        * Created At
        * Format: date-time
@@ -4496,10 +8495,9 @@ export interface components {
     };
     /**
      * SessionStatus
-     * @description Session lifecycle status.
      * @enum {string}
      */
-    SessionStatus: "scheduled" | "in_progress" | "completed" | "cancelled";
+    SessionStatus: "draft" | "scheduled" | "in_progress" | "completed" | "cancelled";
     /** SessionTemplateCreate */
     SessionTemplateCreate: {
       /** Title */
@@ -4645,16 +8643,9 @@ export interface components {
     };
     /**
      * SessionType
-     * @description Type of session - determines which fields are relevant.
      * @enum {string}
      */
-    SessionType:
-      | "cohort_class"
-      | "one_on_one"
-      | "group_booking"
-      | "club"
-      | "community"
-      | "event";
+    SessionType: "cohort_class" | "one_on_one" | "group_booking" | "club" | "community" | "event";
     /** SessionUpdate */
     SessionUpdate: {
       /** Title */
@@ -4665,6 +8656,8 @@ export interface components {
       notes?: string | null;
       session_type?: components["schemas"]["SessionType"] | null;
       status?: components["schemas"]["SessionStatus"] | null;
+      /** Pool Id */
+      pool_id?: string | null;
       location?: components["schemas"]["SessionLocation"] | null;
       /** Location Name */
       location_name?: string | null;
@@ -4695,16 +8688,10 @@ export interface components {
     };
     /** AttendanceCreate */
     AttendanceCreate: {
-      /**
-       * Status
-       * @default PRESENT
-       */
-      status: string;
-      /**
-       * Role
-       * @default SWIMMER
-       */
-      role: string;
+      /** @default present */
+      status: components["schemas"]["AttendanceStatus"];
+      /** @default swimmer */
+      role: components["schemas"]["AttendanceRole"];
       /** Notes */
       notes?: string | null;
       /** @default none */
@@ -4721,19 +8708,29 @@ export interface components {
       can_offer_ride: boolean;
       /** Pickup Location */
       pickup_location?: string | null;
+      /**
+       * Pay With Bubbles
+       * @default false
+       */
+      pay_with_bubbles: boolean;
+    };
+    /** AttendanceRecordBasic */
+    AttendanceRecordBasic: {
+      /** Id */
+      id: string;
+      /** Session Id */
+      session_id: string;
+      /** Member Id */
+      member_id: string;
+      /** Status */
+      status: string;
     };
     /** AttendanceResponse */
     AttendanceResponse: {
-      /**
-       * Status
-       * @default PRESENT
-       */
-      status: string;
-      /**
-       * Role
-       * @default SWIMMER
-       */
-      role: string;
+      /** @default present */
+      status: components["schemas"]["AttendanceStatus"];
+      /** @default swimmer */
+      role: components["schemas"]["AttendanceRole"];
       /** Notes */
       notes?: string | null;
       /** @default none */
@@ -4775,23 +8772,104 @@ export interface components {
        * Format: date-time
        */
       updated_at: string;
+      /** Wallet Transaction Id */
+      wallet_transaction_id?: string | null;
       /** Member Name */
       member_name?: string | null;
       /** Member Email */
       member_email?: string | null;
+      session?: components["schemas"]["SessionSummary"] | null;
+    };
+    /**
+     * AttendanceRole
+     * @enum {string}
+     */
+    AttendanceRole: "swimmer" | "coach" | "volunteer" | "guest";
+    /**
+     * AttendanceStatus
+     * @enum {string}
+     */
+    AttendanceStatus: "present" | "absent" | "late" | "excused" | "cancelled";
+    /**
+     * CohortAttendanceSummary
+     * @description Summary of attendance for an entire cohort.
+     */
+    CohortAttendanceSummary: {
+      /**
+       * Cohort Id
+       * Format: uuid
+       */
+      cohort_id: string;
+      /** Total Sessions */
+      total_sessions: number;
+      /** Students */
+      students: components["schemas"]["StudentAttendanceSummary"][];
+    };
+    /**
+     * MemberAttendanceStats
+     * @description Aggregated attendance stats for a member over a date range.
+     */
+    MemberAttendanceStats: {
+      /**
+       * Total Present
+       * @default 0
+       */
+      total_present: number;
+      /**
+       * Total Late
+       * @default 0
+       */
+      total_late: number;
+      /**
+       * Total Absent
+       * @default 0
+       */
+      total_absent: number;
+      /**
+       * Total Excused
+       * @default 0
+       */
+      total_excused: number;
+      /**
+       * Total Sessions
+       * @default 0
+       */
+      total_sessions: number;
+      /** By Type */
+      by_type?: {
+        [key: string]: unknown;
+      } | null;
+      /** By Day */
+      by_day?: {
+        [key: string]: unknown;
+      } | null;
+      /** By Location */
+      by_location?: {
+        [key: string]: unknown;
+      } | null;
+      /** Favorite Day */
+      favorite_day?: string | null;
+      /** Favorite Location */
+      favorite_location?: string | null;
+      /** Weekly Attendance */
+      weekly_attendance?: boolean[] | null;
+      /**
+       * Events Attended
+       * @default 0
+       */
+      events_attended: number;
+      /**
+       * Total Pool Hours
+       * @default 0
+       */
+      total_pool_hours: number;
     };
     /** PublicAttendanceCreate */
     PublicAttendanceCreate: {
-      /**
-       * Status
-       * @default PRESENT
-       */
-      status: string;
-      /**
-       * Role
-       * @default SWIMMER
-       */
-      role: string;
+      /** @default present */
+      status: components["schemas"]["AttendanceStatus"];
+      /** @default swimmer */
+      role: components["schemas"]["AttendanceRole"];
       /** Notes */
       notes?: string | null;
       /** @default none */
@@ -4816,14 +8894,549 @@ export interface components {
     };
     /**
      * RideShareOption
+     * @description Local copy — avoids cross-service import from transport_service.
      * @enum {string}
      */
     RideShareOption: "none" | "lead" | "join";
+    /**
+     * SessionSummary
+     * @description Lightweight session info embedded in attendance responses.
+     */
+    SessionSummary: {
+      /** Id */
+      id: string;
+      /** Title */
+      title: string;
+      /** Session Type */
+      session_type: string;
+      /** Start Time */
+      start_time: string;
+      /** Location Name */
+      location_name?: string | null;
+    };
+    /**
+     * StudentAttendanceSummary
+     * @description Summary of a student's attendance across all cohort sessions.
+     */
+    StudentAttendanceSummary: {
+      /**
+       * Member Id
+       * Format: uuid
+       */
+      member_id: string;
+      /** Member Name */
+      member_name: string;
+      /** Member Email */
+      member_email: string;
+      /** Sessions Attended */
+      sessions_attended: number;
+      /** Sessions Total */
+      sessions_total: number;
+      /** Attendance Rate */
+      attendance_rate: number;
+    };
+    /**
+     * AICoachSuggestion
+     * @description A single AI-recommended coach for a cohort.
+     */
+    AICoachSuggestion: {
+      /**
+       * Member Id
+       * Format: uuid
+       */
+      member_id: string;
+      /** Name */
+      name: string;
+      /** Email */
+      email?: string | null;
+      grade: components["schemas"]["CoachGrade"];
+      /** Total Coaching Hours */
+      total_coaching_hours?: number | null;
+      /** Average Feedback Rating */
+      average_feedback_rating?: number | null;
+      /**
+       * Match Score
+       * @description 0-1 suitability score
+       */
+      match_score: number;
+      /** Rationale */
+      rationale: string;
+    };
+    /**
+     * AICoachSuggestionResponse
+     * @description AI-suggested coaches ranked by suitability.
+     */
+    AICoachSuggestionResponse: {
+      /** Suggestions */
+      suggestions: components["schemas"]["AICoachSuggestion"][];
+      required_coach_grade: components["schemas"]["CoachGrade"];
+      category: components["schemas"]["ProgramCategory"];
+      /** Model Used */
+      model_used: string;
+      /** Ai Request Id */
+      ai_request_id?: string | null;
+    };
+    /**
+     * AIDimensionSuggestion
+     * @description A single AI-suggested dimension score.
+     */
+    AIDimensionSuggestion: {
+      /** Dimension */
+      dimension: string;
+      /** Label */
+      label: string;
+      /** Score */
+      score: number;
+      /** Rationale */
+      rationale: string;
+      /** Confidence */
+      confidence: number;
+    };
+    /**
+     * AIScoringRequest
+     * @description Request body for AI-assisted cohort complexity scoring.
+     *
+     *     All fields are optional — if omitted, the backend will try to derive
+     *     them from the cohort / program data.
+     */
+    AIScoringRequest: {
+      category?: components["schemas"]["ProgramCategory"] | null;
+      /** Age Group */
+      age_group?: string | null;
+      /** Skill Level */
+      skill_level?: string | null;
+      /** Special Needs */
+      special_needs?: string | null;
+      /** Location Type */
+      location_type?: string | null;
+      /** Duration Weeks */
+      duration_weeks?: number | null;
+      /** Class Size */
+      class_size?: number | null;
+    };
+    /**
+     * AIScoringResponse
+     * @description AI-suggested complexity scores for a cohort.
+     */
+    AIScoringResponse: {
+      /** Dimensions */
+      dimensions: components["schemas"]["AIDimensionSuggestion"][];
+      /** Total Score */
+      total_score: number;
+      required_coach_grade: components["schemas"]["CoachGrade"];
+      /** Pay Band Min */
+      pay_band_min: number;
+      /** Pay Band Max */
+      pay_band_max: number;
+      /** Overall Rationale */
+      overall_rationale: string;
+      /** Confidence */
+      confidence: number;
+      /** Model Used */
+      model_used: string;
+      /** Ai Request Id */
+      ai_request_id?: string | null;
+    };
+    /**
+     * AcademyPublicStats
+     * @description Public aggregate stats for the academy landing page.
+     */
+    AcademyPublicStats: {
+      /** Cohorts Enrolling */
+      cohorts_enrolling: number;
+      /** Cohorts Active */
+      cohorts_active: number;
+      /** Total Seats Open */
+      total_seats_open: number;
+      /** Graduates All Time */
+      graduates_all_time: number;
+      /** Graduates Last 90 Days */
+      graduates_last_90_days: number;
+      /** Completion Rate */
+      completion_rate: number | null;
+    };
+    /**
+     * AdminDropoutActionRequest
+     * @description Admin action on an enrollment that is in DROPOUT_PENDING state.
+     */
+    AdminDropoutActionRequest: {
+      /** Action */
+      action: string;
+      /** Note */
+      note?: string | null;
+    };
+    /**
+     * AssignmentRoleEnum
+     * @enum {string}
+     */
+    AssignmentRoleEnum: "lead" | "assistant" | "shadow" | "observer";
+    /**
+     * AssignmentStatusEnum
+     * @enum {string}
+     */
+    AssignmentStatusEnum: "active" | "completed" | "cancelled";
     /**
      * BillingType
      * @enum {string}
      */
     BillingType: "one_time" | "subscription" | "per_session";
+    /**
+     * CoachAssignmentCreate
+     * @description Create a new coach assignment.
+     */
+    CoachAssignmentCreate: {
+      /**
+       * Cohort Id
+       * Format: uuid
+       */
+      cohort_id: string;
+      /**
+       * Coach Id
+       * Format: uuid
+       */
+      coach_id: string;
+      role: components["schemas"]["AssignmentRoleEnum"];
+      /** Start Date */
+      start_date?: string | null;
+      /** End Date */
+      end_date?: string | null;
+      /** Notes */
+      notes?: string | null;
+      /**
+       * Is Session Override
+       * @default false
+       */
+      is_session_override: boolean;
+      /** Session Date */
+      session_date?: string | null;
+    };
+    /**
+     * CoachAssignmentInput
+     * @description Input for creating coach assignments during cohort creation.
+     */
+    CoachAssignmentInput: {
+      /**
+       * Coach Id
+       * Format: uuid
+       */
+      coach_id: string;
+      /**
+       * Role
+       * @default lead
+       */
+      role: string;
+    };
+    /**
+     * CoachAssignmentResponse
+     * @description Response for a coach assignment.
+     */
+    CoachAssignmentResponse: {
+      /** Id */
+      id: string;
+      /** Cohort Id */
+      cohort_id: string;
+      /** Coach Id */
+      coach_id: string;
+      /** Role */
+      role: string;
+      /**
+       * Start Date
+       * Format: date-time
+       */
+      start_date: string;
+      /** End Date */
+      end_date?: string | null;
+      /** Assigned By Id */
+      assigned_by_id: string;
+      /** Status */
+      status: string;
+      /** Notes */
+      notes?: string | null;
+      /**
+       * Is Session Override
+       * @default false
+       */
+      is_session_override: boolean;
+      /** Session Date */
+      session_date?: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+      /** Coach Name */
+      coach_name?: string | null;
+      /** Cohort Name */
+      cohort_name?: string | null;
+      /** Program Name */
+      program_name?: string | null;
+    };
+    /**
+     * CoachAssignmentUpdate
+     * @description Update an existing coach assignment.
+     */
+    CoachAssignmentUpdate: {
+      role?: components["schemas"]["AssignmentRoleEnum"] | null;
+      status?: components["schemas"]["AssignmentStatusEnum"] | null;
+      /** End Date */
+      end_date?: string | null;
+      /** Notes */
+      notes?: string | null;
+    };
+    /**
+     * CoachCohortDetail
+     * @description Detailed cohort view for coach dashboard.
+     */
+    CoachCohortDetail: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Name */
+      name: string;
+      /**
+       * Program Id
+       * Format: uuid
+       */
+      program_id: string;
+      /** Program Name */
+      program_name: string;
+      /** Program Level */
+      program_level?: string | null;
+      status: components["schemas"]["CohortStatus"];
+      /**
+       * Start Date
+       * Format: date-time
+       */
+      start_date: string;
+      /**
+       * End Date
+       * Format: date-time
+       */
+      end_date: string;
+      /** Capacity */
+      capacity: number;
+      /** Enrolled Count */
+      enrolled_count: number;
+      /** Waitlist Count */
+      waitlist_count: number;
+      /** Location Name */
+      location_name?: string | null;
+      /** Location Address */
+      location_address?: string | null;
+      required_grade?: components["schemas"]["CoachGrade"] | null;
+      /** Pay Band Min */
+      pay_band_min?: number | null;
+      /** Pay Band Max */
+      pay_band_max?: number | null;
+      /**
+       * Weeks Completed
+       * @default 0
+       */
+      weeks_completed: number;
+      /**
+       * Total Weeks
+       * @default 0
+       */
+      total_weeks: number;
+      /**
+       * Milestones Count
+       * @default 0
+       */
+      milestones_count: number;
+      /**
+       * Milestones Achieved Count
+       * @default 0
+       */
+      milestones_achieved_count: number;
+    };
+    /**
+     * CoachDashboardSummary
+     * @description Summary data for coach dashboard home page.
+     */
+    CoachDashboardSummary: {
+      /**
+       * Active Cohorts
+       * @default 0
+       */
+      active_cohorts: number;
+      /**
+       * Upcoming Cohorts
+       * @default 0
+       */
+      upcoming_cohorts: number;
+      /**
+       * Completed Cohorts
+       * @default 0
+       */
+      completed_cohorts: number;
+      /**
+       * Total Students
+       * @default 0
+       */
+      total_students: number;
+      /**
+       * Students Pending Approval
+       * @default 0
+       */
+      students_pending_approval: number;
+      /**
+       * Pending Milestone Reviews
+       * @default 0
+       */
+      pending_milestone_reviews: number;
+      /**
+       * Upcoming Sessions Count
+       * @default 0
+       */
+      upcoming_sessions_count: number;
+      next_session?: components["schemas"]["UpcomingSessionSummary"] | null;
+      /**
+       * Current Period Earnings
+       * @default 0
+       */
+      current_period_earnings: number;
+      /**
+       * Pending Payout
+       * @default 0
+       */
+      pending_payout: number;
+    };
+    /**
+     * CoachGrade
+     * @enum {string}
+     */
+    CoachGrade: "grade_1" | "grade_2" | "grade_3";
+    /**
+     * CoachReadinessResponse
+     * @description Coach readiness assessment for a target grade.
+     */
+    CoachReadinessResponse: {
+      /** Coach Id */
+      coach_id: string;
+      /** Coach Name */
+      coach_name?: string | null;
+      /** Target Grade */
+      target_grade: string;
+      /** Is Ready */
+      is_ready: boolean;
+      /** Checks */
+      checks: components["schemas"]["ReadinessCheckItem"][];
+      /** Missing Requirements */
+      missing_requirements: string[];
+      /** Recommendations */
+      recommendations: string[];
+    };
+    /**
+     * CohortComplexityScoreCreate
+     * @description Create a complexity score for a cohort.
+     */
+    CohortComplexityScoreCreate: {
+      category: components["schemas"]["ProgramCategory"];
+      dimension_1: components["schemas"]["DimensionScore"];
+      dimension_2: components["schemas"]["DimensionScore"];
+      dimension_3: components["schemas"]["DimensionScore"];
+      dimension_4: components["schemas"]["DimensionScore"];
+      dimension_5: components["schemas"]["DimensionScore"];
+      dimension_6: components["schemas"]["DimensionScore"];
+      dimension_7: components["schemas"]["DimensionScore"];
+    };
+    /**
+     * CohortComplexityScoreResponse
+     * @description Response schema for cohort complexity score.
+     */
+    CohortComplexityScoreResponse: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Cohort Id
+       * Format: uuid
+       */
+      cohort_id: string;
+      category: components["schemas"]["ProgramCategory"];
+      /** Dimension 1 Score */
+      dimension_1_score: number;
+      /** Dimension 1 Rationale */
+      dimension_1_rationale?: string | null;
+      /** Dimension 2 Score */
+      dimension_2_score: number;
+      /** Dimension 2 Rationale */
+      dimension_2_rationale?: string | null;
+      /** Dimension 3 Score */
+      dimension_3_score: number;
+      /** Dimension 3 Rationale */
+      dimension_3_rationale?: string | null;
+      /** Dimension 4 Score */
+      dimension_4_score: number;
+      /** Dimension 4 Rationale */
+      dimension_4_rationale?: string | null;
+      /** Dimension 5 Score */
+      dimension_5_score: number;
+      /** Dimension 5 Rationale */
+      dimension_5_rationale?: string | null;
+      /** Dimension 6 Score */
+      dimension_6_score: number;
+      /** Dimension 6 Rationale */
+      dimension_6_rationale?: string | null;
+      /** Dimension 7 Score */
+      dimension_7_score: number;
+      /** Dimension 7 Rationale */
+      dimension_7_rationale?: string | null;
+      /** Total Score */
+      total_score: number;
+      required_coach_grade: components["schemas"]["CoachGrade"];
+      /** Pay Band Min */
+      pay_band_min: number;
+      /** Pay Band Max */
+      pay_band_max: number;
+      /**
+       * Scored By Id
+       * Format: uuid
+       */
+      scored_by_id: string;
+      /**
+       * Scored At
+       * Format: date-time
+       */
+      scored_at: string;
+      /** Reviewed By Id */
+      reviewed_by_id?: string | null;
+      /** Reviewed At */
+      reviewed_at?: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /**
+     * CohortComplexityScoreUpdate
+     * @description Update a complexity score for a cohort.
+     */
+    CohortComplexityScoreUpdate: {
+      category?: components["schemas"]["ProgramCategory"] | null;
+      dimension_1?: components["schemas"]["DimensionScore"] | null;
+      dimension_2?: components["schemas"]["DimensionScore"] | null;
+      dimension_3?: components["schemas"]["DimensionScore"] | null;
+      dimension_4?: components["schemas"]["DimensionScore"] | null;
+      dimension_5?: components["schemas"]["DimensionScore"] | null;
+      dimension_6?: components["schemas"]["DimensionScore"] | null;
+      dimension_7?: components["schemas"]["DimensionScore"] | null;
+    };
     /** CohortCreate */
     CohortCreate: {
       /** Name */
@@ -4848,10 +9461,20 @@ export interface components {
        */
       allow_mid_entry: boolean;
       /**
+       * Mid Entry Cutoff Week
+       * @default 2
+       */
+      mid_entry_cutoff_week: number;
+      /**
        * Require Approval
        * @default false
        */
       require_approval: boolean;
+      /**
+       * Admin Dropout Approval
+       * @default false
+       */
+      admin_dropout_approval: boolean;
       /** Timezone */
       timezone?: string | null;
       location_type?: components["schemas"]["LocationType"] | null;
@@ -4859,17 +9482,108 @@ export interface components {
       location_name?: string | null;
       /** Location Address */
       location_address?: string | null;
+      /** Pool Id */
+      pool_id?: string | null;
       /** Price Override */
       price_override?: number | null;
       /** Notes Internal */
       notes_internal?: string | null;
+      /** Default Pool Fee */
+      default_pool_fee?: number | null;
+      /** Default Ride Configs */
+      default_ride_configs?:
+        | {
+            [key: string]: unknown;
+          }[]
+        | null;
+      /**
+       * Installment Plan Enabled
+       * @default false
+       */
+      installment_plan_enabled: boolean;
+      /** Installment Count */
+      installment_count?: number | null;
+      /** Installment Deposit Amount */
+      installment_deposit_amount?: number | null;
       /**
        * Program Id
        * Format: uuid
        */
       program_id: string;
-      /** Coach Id */
-      coach_id?: string | null;
+      /** Coach Assignments */
+      coach_assignments?: components["schemas"]["CoachAssignmentInput"][] | null;
+    };
+    /**
+     * CohortExtensionRequestCreate
+     * @description Coach request to extend a cohort's end date.
+     */
+    CohortExtensionRequestCreate: {
+      /**
+       * Weeks Requested
+       * @description Number of weeks to extend (1-4)
+       */
+      weeks_requested: number;
+      /**
+       * Reason
+       * @description Reason for the extension
+       */
+      reason: string;
+    };
+    /**
+     * CohortExtensionRequestResponse
+     * @description Response for a cohort extension request.
+     */
+    CohortExtensionRequestResponse: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Cohort Id
+       * Format: uuid
+       */
+      cohort_id: string;
+      /**
+       * Coach Id
+       * Format: uuid
+       */
+      coach_id: string;
+      /** Weeks Requested */
+      weeks_requested: number;
+      /** Reason */
+      reason: string;
+      /**
+       * Current End Date
+       * Format: date-time
+       */
+      current_end_date: string;
+      /**
+       * Proposed End Date
+       * Format: date-time
+       */
+      proposed_end_date: string;
+      /** Status */
+      status: string;
+      /** Reviewed By Id */
+      reviewed_by_id?: string | null;
+      /** Admin Notes */
+      admin_notes?: string | null;
+      /** Reviewed At */
+      reviewed_at?: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /**
+     * CohortExtensionRequestReview
+     * @description Admin action on an extension request.
+     */
+    CohortExtensionRequestReview: {
+      /** Admin Notes */
+      admin_notes?: string | null;
     };
     /** CohortResourceResponse */
     CohortResourceResponse: {
@@ -4921,10 +9635,20 @@ export interface components {
        */
       allow_mid_entry: boolean;
       /**
+       * Mid Entry Cutoff Week
+       * @default 2
+       */
+      mid_entry_cutoff_week: number;
+      /**
        * Require Approval
        * @default false
        */
       require_approval: boolean;
+      /**
+       * Admin Dropout Approval
+       * @default false
+       */
+      admin_dropout_approval: boolean;
       /** Timezone */
       timezone?: string | null;
       location_type?: components["schemas"]["LocationType"] | null;
@@ -4932,10 +9656,29 @@ export interface components {
       location_name?: string | null;
       /** Location Address */
       location_address?: string | null;
+      /** Pool Id */
+      pool_id?: string | null;
       /** Price Override */
       price_override?: number | null;
       /** Notes Internal */
       notes_internal?: string | null;
+      /** Default Pool Fee */
+      default_pool_fee?: number | null;
+      /** Default Ride Configs */
+      default_ride_configs?:
+        | {
+            [key: string]: unknown;
+          }[]
+        | null;
+      /**
+       * Installment Plan Enabled
+       * @default false
+       */
+      installment_plan_enabled: boolean;
+      /** Installment Count */
+      installment_count?: number | null;
+      /** Installment Deposit Amount */
+      installment_deposit_amount?: number | null;
       /**
        * Id
        * Format: uuid
@@ -4959,12 +9702,279 @@ export interface components {
        */
       updated_at: string;
       program?: components["schemas"]["ProgramResponse"] | null;
+      /** Enrolled Count */
+      enrolled_count?: number | null;
+      /** Is Full */
+      is_full?: boolean | null;
     };
     /**
      * CohortStatus
      * @enum {string}
      */
     CohortStatus: "open" | "active" | "completed" | "cancelled";
+    /** CohortTimelineSessionImpact */
+    CohortTimelineSessionImpact: {
+      /** Session Id */
+      session_id: string;
+      /** Status */
+      status: string;
+      /**
+       * Starts At
+       * Format: date-time
+       */
+      starts_at: string;
+      /**
+       * Ends At
+       * Format: date-time
+       */
+      ends_at: string;
+      /**
+       * New Starts At
+       * Format: date-time
+       */
+      new_starts_at: string;
+      /**
+       * New Ends At
+       * Format: date-time
+       */
+      new_ends_at: string;
+      /** Will Shift */
+      will_shift: boolean;
+    };
+    /** CohortTimelineShiftApplyResponse */
+    CohortTimelineShiftApplyResponse: {
+      /**
+       * Cohort Id
+       * Format: uuid
+       */
+      cohort_id: string;
+      /**
+       * Old Start Date
+       * Format: date-time
+       */
+      old_start_date: string;
+      /**
+       * Old End Date
+       * Format: date-time
+       */
+      old_end_date: string;
+      /**
+       * New Start Date
+       * Format: date-time
+       */
+      new_start_date: string;
+      /**
+       * New End Date
+       * Format: date-time
+       */
+      new_end_date: string;
+      /** Delta Seconds */
+      delta_seconds: number;
+      /**
+       * Already Applied
+       * @default false
+       */
+      already_applied: boolean;
+      /**
+       * Sessions Shifted
+       * @default 0
+       */
+      sessions_shifted: number;
+      /**
+       * Sessions Skipped
+       * @default 0
+       */
+      sessions_skipped: number;
+      /**
+       * Pending Installments Shifted
+       * @default 0
+       */
+      pending_installments_shifted: number;
+      /**
+       * Reminder Resets Applied
+       * @default 0
+       */
+      reminder_resets_applied: number;
+      /**
+       * Notification Attempts
+       * @default 0
+       */
+      notification_attempts: number;
+      /**
+       * Notification Sent
+       * @default 0
+       */
+      notification_sent: number;
+      /** Warnings */
+      warnings?: string[];
+    };
+    /** CohortTimelineShiftLogResponse */
+    CohortTimelineShiftLogResponse: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Cohort Id
+       * Format: uuid
+       */
+      cohort_id: string;
+      /** Idempotency Key */
+      idempotency_key?: string | null;
+      /** Actor Auth Id */
+      actor_auth_id?: string | null;
+      /** Actor Member Id */
+      actor_member_id?: string | null;
+      /** Reason */
+      reason?: string | null;
+      /**
+       * Old Start Date
+       * Format: date-time
+       */
+      old_start_date: string;
+      /**
+       * Old End Date
+       * Format: date-time
+       */
+      old_end_date: string;
+      /**
+       * New Start Date
+       * Format: date-time
+       */
+      new_start_date: string;
+      /**
+       * New End Date
+       * Format: date-time
+       */
+      new_end_date: string;
+      /** Delta Seconds */
+      delta_seconds: number;
+      /** Options Json */
+      options_json?: {
+        [key: string]: unknown;
+      };
+      /** Results Json */
+      results_json?: {
+        [key: string]: unknown;
+      };
+      /** Warnings */
+      warnings?: string[];
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /** CohortTimelineShiftPreviewResponse */
+    CohortTimelineShiftPreviewResponse: {
+      /**
+       * Cohort Id
+       * Format: uuid
+       */
+      cohort_id: string;
+      /**
+       * Old Start Date
+       * Format: date-time
+       */
+      old_start_date: string;
+      /**
+       * Old End Date
+       * Format: date-time
+       */
+      old_end_date: string;
+      /**
+       * New Start Date
+       * Format: date-time
+       */
+      new_start_date: string;
+      /**
+       * New End Date
+       * Format: date-time
+       */
+      new_end_date: string;
+      /** Delta Seconds */
+      delta_seconds: number;
+      /**
+       * Already Applied
+       * @default false
+       */
+      already_applied: boolean;
+      /**
+       * Sessions Total
+       * @default 0
+       */
+      sessions_total: number;
+      /**
+       * Sessions Shiftable
+       * @default 0
+       */
+      sessions_shiftable: number;
+      /**
+       * Sessions Blocked
+       * @default 0
+       */
+      sessions_blocked: number;
+      /**
+       * Pending Installments
+       * @default 0
+       */
+      pending_installments: number;
+      /**
+       * Reminder Resets Possible
+       * @default 0
+       */
+      reminder_resets_possible: number;
+      /** Session Impacts */
+      session_impacts?: components["schemas"]["CohortTimelineSessionImpact"][];
+    };
+    /**
+     * CohortTimelineShiftRequest
+     * @description Request payload for timeline-shifting a cohort and linked records.
+     */
+    CohortTimelineShiftRequest: {
+      /**
+       * New Start Date
+       * Format: date-time
+       */
+      new_start_date: string;
+      /**
+       * New End Date
+       * Format: date-time
+       */
+      new_end_date: string;
+      /** Expected Updated At */
+      expected_updated_at?: string | null;
+      /** Idempotency Key */
+      idempotency_key?: string | null;
+      /** Reason */
+      reason?: string | null;
+      /**
+       * Shift Sessions
+       * @default true
+       */
+      shift_sessions: boolean;
+      /**
+       * Shift Installments
+       * @default true
+       */
+      shift_installments: boolean;
+      /**
+       * Reset Start Reminders
+       * @default true
+       */
+      reset_start_reminders: boolean;
+      /**
+       * Notify Members
+       * @default true
+       */
+      notify_members: boolean;
+      /**
+       * Set Status To Open If Future
+       * @default true
+       */
+      set_status_to_open_if_future: boolean;
+    };
     /** CohortUpdate */
     CohortUpdate: {
       /** Name */
@@ -4976,12 +9986,14 @@ export interface components {
       /** Capacity */
       capacity?: number | null;
       status?: components["schemas"]["CohortStatus"] | null;
-      /** Coach Id */
-      coach_id?: string | null;
       /** Allow Mid Entry */
       allow_mid_entry?: boolean | null;
+      /** Mid Entry Cutoff Week */
+      mid_entry_cutoff_week?: number | null;
       /** Require Approval */
       require_approval?: boolean | null;
+      /** Admin Dropout Approval */
+      admin_dropout_approval?: boolean | null;
       /** Timezone */
       timezone?: string | null;
       location_type?: components["schemas"]["LocationType"] | null;
@@ -4989,10 +10001,48 @@ export interface components {
       location_name?: string | null;
       /** Location Address */
       location_address?: string | null;
+      /** Pool Id */
+      pool_id?: string | null;
       /** Price Override */
       price_override?: number | null;
       /** Notes Internal */
       notes_internal?: string | null;
+      /** Default Pool Fee */
+      default_pool_fee?: number | null;
+      /** Default Ride Configs */
+      default_ride_configs?:
+        | {
+            [key: string]: unknown;
+          }[]
+        | null;
+      /** Installment Plan Enabled */
+      installment_plan_enabled?: boolean | null;
+      /** Installment Count */
+      installment_count?: number | null;
+      /** Installment Deposit Amount */
+      installment_deposit_amount?: number | null;
+    };
+    /**
+     * ComplexityScoreCalculateRequest
+     * @description Request body for previewing a complexity score calculation.
+     */
+    ComplexityScoreCalculateRequest: {
+      category: components["schemas"]["ProgramCategory"];
+      /** Dimension Scores */
+      dimension_scores: number[];
+    };
+    /**
+     * ComplexityScoreCalculation
+     * @description Preview of complexity score calculation without saving.
+     */
+    ComplexityScoreCalculation: {
+      /** Total Score */
+      total_score: number;
+      required_coach_grade: components["schemas"]["CoachGrade"];
+      /** Pay Band Min */
+      pay_band_min: number;
+      /** Pay Band Max */
+      pay_band_max: number;
     };
     /**
      * CurriculumLessonCreate
@@ -5124,6 +10174,45 @@ export interface components {
       /** Order Index */
       order_index?: number | null;
     };
+    /**
+     * DimensionLabelsResponse
+     * @description Dimension labels for a given program category (UI contract).
+     */
+    DimensionLabelsResponse: {
+      category: components["schemas"]["ProgramCategory"];
+      /** Labels */
+      labels: string[];
+    };
+    /**
+     * DimensionScore
+     * @description Individual dimension score with optional rationale.
+     */
+    DimensionScore: {
+      /** Score */
+      score: number;
+      /** Rationale */
+      rationale?: string | null;
+    };
+    /**
+     * EligibleCoachResponse
+     * @description Coach eligible for a cohort based on grade requirements.
+     */
+    EligibleCoachResponse: {
+      /**
+       * Member Id
+       * Format: uuid
+       */
+      member_id: string;
+      /** Name */
+      name: string;
+      /** Email */
+      email?: string | null;
+      grade: components["schemas"]["CoachGrade"];
+      /** Total Coaching Hours */
+      total_coaching_hours?: number | null;
+      /** Average Feedback Rating */
+      average_feedback_rating?: number | null;
+    };
     /** EnrollmentCreate */
     EnrollmentCreate: {
       /**
@@ -5142,6 +10231,54 @@ export interface components {
       preferences?: {
         [key: string]: unknown;
       } | null;
+    };
+    /** EnrollmentInstallmentResponse */
+    EnrollmentInstallmentResponse: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Installment Number */
+      installment_number: number;
+      /** Amount */
+      amount: number;
+      /**
+       * Due At
+       * Format: date-time
+       */
+      due_at: string;
+      status: components["schemas"]["InstallmentStatus"];
+      /** Paid At */
+      paid_at?: string | null;
+      /** Payment Reference */
+      payment_reference?: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** EnrollmentMarkPaidRequest */
+    EnrollmentMarkPaidRequest: {
+      /** Installment Id */
+      installment_id?: string | null;
+      /** Installment Number */
+      installment_number?: number | null;
+      /**
+       * Clear Installments
+       * @default false
+       */
+      clear_installments: boolean;
+      /** Payment Reference */
+      payment_reference?: string | null;
+      /** Paid At */
+      paid_at?: string | null;
     };
     /** EnrollmentResponse */
     EnrollmentResponse: {
@@ -5177,8 +10314,41 @@ export interface components {
        * Format: date-time
        */
       updated_at: string;
+      /**
+       * Total Installments
+       * @default 0
+       */
+      total_installments: number;
+      /**
+       * Paid Installments Count
+       * @default 0
+       */
+      paid_installments_count: number;
+      /**
+       * Missed Installments Count
+       * @default 0
+       */
+      missed_installments_count: number;
+      /**
+       * Access Suspended
+       * @default false
+       */
+      access_suspended: boolean;
+      /**
+       * Uses Installments
+       * @default false
+       */
+      uses_installments: boolean;
       cohort?: components["schemas"]["CohortResponse"] | null;
       program?: components["schemas"]["ProgramResponse"] | null;
+      /** Installments */
+      installments?: components["schemas"]["EnrollmentInstallmentResponse"][];
+      /** Progress */
+      progress?: components["schemas"]["StudentProgressResponse"][];
+      /** Member Name */
+      member_name?: string | null;
+      /** Member Email */
+      member_email?: string | null;
     };
     /**
      * EnrollmentStatus
@@ -5188,6 +10358,7 @@ export interface components {
       | "pending_approval"
       | "enrolled"
       | "waitlist"
+      | "dropout_pending"
       | "dropped"
       | "graduated";
     /** EnrollmentUpdate */
@@ -5196,12 +10367,49 @@ export interface components {
       payment_status?: components["schemas"]["PaymentStatus"] | null;
       /** Cohort Id */
       cohort_id?: string | null;
+      /** Access Suspended */
+      access_suspended?: boolean | null;
+      /** Missed Installments Count */
+      missed_installments_count?: number | null;
     };
+    /**
+     * EvalRecommendation
+     * @enum {string}
+     */
+    EvalRecommendation: "continue_shadow" | "ready_for_assistant" | "ready_for_lead";
+    /**
+     * InstallmentStatus
+     * @enum {string}
+     */
+    InstallmentStatus: "pending" | "paid" | "missed" | "waived";
     /**
      * LocationType
      * @enum {string}
      */
     LocationType: "pool" | "open_water" | "remote";
+    /** MemberAcademySummary */
+    MemberAcademySummary: {
+      /**
+       * Milestones Achieved
+       * @default 0
+       */
+      milestones_achieved: number;
+      /**
+       * Milestones In Progress
+       * @default 0
+       */
+      milestones_in_progress: number;
+      /**
+       * Programs Enrolled
+       * @default 0
+       */
+      programs_enrolled: number;
+      /**
+       * Certificates Earned
+       * @default 0
+       */
+      certificates_earned: number;
+    };
     /**
      * MemberMilestoneClaimRequest
      * @description Member self-claim for a milestone - includes optional evidence via media service.
@@ -5221,11 +10429,29 @@ export interface components {
       /** Video Media Id */
       video_media_id?: string | null;
       /**
+       * Order Index
+       * @default 0
+       */
+      order_index: number;
+      /** @default skill */
+      milestone_type: components["schemas"]["MilestoneType"];
+      /** @default none */
+      required_evidence: components["schemas"]["RequiredEvidence"];
+      /** Rubric Json */
+      rubric_json?: {
+        [key: string]: unknown;
+      } | null;
+      /**
        * Program Id
        * Format: uuid
        */
       program_id: string;
     };
+    /**
+     * MilestoneEventType
+     * @enum {string}
+     */
+    MilestoneEventType: "claimed" | "approved" | "rejected" | "status_changed";
     /** MilestoneResponse */
     MilestoneResponse: {
       /** Name */
@@ -5234,6 +10460,19 @@ export interface components {
       criteria?: string | null;
       /** Video Media Id */
       video_media_id?: string | null;
+      /**
+       * Order Index
+       * @default 0
+       */
+      order_index: number;
+      /** @default skill */
+      milestone_type: components["schemas"]["MilestoneType"];
+      /** @default none */
+      required_evidence: components["schemas"]["RequiredEvidence"];
+      /** Rubric Json */
+      rubric_json?: {
+        [key: string]: unknown;
+      } | null;
       /**
        * Id
        * Format: uuid
@@ -5255,6 +10494,72 @@ export interface components {
        */
       updated_at: string;
     };
+    /**
+     * MilestoneReviewAction
+     * @description Coach action on a milestone review.
+     */
+    MilestoneReviewAction: {
+      /** Action */
+      action: string;
+      /** Score */
+      score?: number | null;
+      /** Coach Notes */
+      coach_notes?: string | null;
+    };
+    /**
+     * MilestoneReviewEventResponse
+     * @description One entry in the milestone review audit trail.
+     */
+    MilestoneReviewEventResponse: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Progress Id
+       * Format: uuid
+       */
+      progress_id: string;
+      /**
+       * Enrollment Id
+       * Format: uuid
+       */
+      enrollment_id: string;
+      /**
+       * Milestone Id
+       * Format: uuid
+       */
+      milestone_id: string;
+      event_type: components["schemas"]["MilestoneEventType"];
+      /**
+       * Actor Id
+       * Format: uuid
+       */
+      actor_id: string;
+      /** Actor Role */
+      actor_role: string;
+      previous_status?: components["schemas"]["ProgressStatus"] | null;
+      new_status: components["schemas"]["ProgressStatus"];
+      /** Student Notes Snapshot */
+      student_notes_snapshot?: string | null;
+      /** Coach Notes Snapshot */
+      coach_notes_snapshot?: string | null;
+      /** Evidence Media Id Snapshot */
+      evidence_media_id_snapshot?: string | null;
+      /** Score Snapshot */
+      score_snapshot?: number | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /**
+     * MilestoneType
+     * @enum {string}
+     */
+    MilestoneType: "skill" | "endurance" | "technique" | "assessment";
     /**
      * NextSessionInfo
      * @description Information about the next scheduled session.
@@ -5314,10 +10619,74 @@ export interface components {
      * @enum {string}
      */
     PaymentStatus: "pending" | "paid" | "failed" | "waived";
+    /**
+     * PendingMilestoneReview
+     * @description Milestone claim waiting for coach review.
+     */
+    PendingMilestoneReview: {
+      /**
+       * Progress Id
+       * Format: uuid
+       */
+      progress_id: string;
+      /**
+       * Enrollment Id
+       * Format: uuid
+       */
+      enrollment_id: string;
+      /**
+       * Milestone Id
+       * Format: uuid
+       */
+      milestone_id: string;
+      /** Milestone Name */
+      milestone_name: string;
+      /** Milestone Type */
+      milestone_type: string;
+      /**
+       * Student Member Id
+       * Format: uuid
+       */
+      student_member_id: string;
+      /** Student Name */
+      student_name: string;
+      /** Student Email */
+      student_email?: string | null;
+      /**
+       * Cohort Id
+       * Format: uuid
+       */
+      cohort_id: string;
+      /** Cohort Name */
+      cohort_name: string;
+      /** Evidence Media Id */
+      evidence_media_id?: string | null;
+      /** Student Notes */
+      student_notes?: string | null;
+      /**
+       * Claimed At
+       * Format: date-time
+       */
+      claimed_at: string;
+    };
+    /**
+     * ProgramCategory
+     * @enum {string}
+     */
+    ProgramCategory:
+      | "learn_to_swim"
+      | "special_populations"
+      | "institutional"
+      | "competitive_elite"
+      | "certifications"
+      | "specialized_disciplines"
+      | "adjacent_services";
     /** ProgramCreate */
     ProgramCreate: {
       /** Name */
       name: string;
+      /** Slug */
+      slug?: string | null;
       /** Description */
       description?: string | null;
       /** Cover Image Media Id */
@@ -5395,16 +10764,13 @@ export interface components {
      * ProgramLevel
      * @enum {string}
      */
-    ProgramLevel:
-      | "beginner_1"
-      | "beginner_2"
-      | "intermediate"
-      | "advanced"
-      | "specialty";
+    ProgramLevel: "beginner_1" | "beginner_2" | "intermediate" | "advanced" | "specialty";
     /** ProgramResponse */
     ProgramResponse: {
       /** Name */
       name: string;
+      /** Slug */
+      slug?: string | null;
       /** Description */
       description?: string | null;
       /** Cover Image Media Id */
@@ -5469,6 +10835,8 @@ export interface components {
     ProgramUpdate: {
       /** Name */
       name?: string | null;
+      /** Slug */
+      slug?: string | null;
       /** Description */
       description?: string | null;
       /** Cover Image Media Id */
@@ -5499,6 +10867,87 @@ export interface components {
      * @enum {string}
      */
     ProgressStatus: "pending" | "achieved";
+    /**
+     * ReadinessCheckItem
+     * @description Individual readiness check result.
+     */
+    ReadinessCheckItem: {
+      /** Name */
+      name: string;
+      /** Description */
+      description: string;
+      status: components["schemas"]["ReadinessCheckStatus"];
+      /**
+       * Required
+       * @default true
+       */
+      required: boolean;
+      /** Details */
+      details?: string | null;
+    };
+    /**
+     * ReadinessCheckStatus
+     * @enum {string}
+     */
+    ReadinessCheckStatus: "passed" | "pending" | "failed";
+    /**
+     * RequiredEvidence
+     * @enum {string}
+     */
+    RequiredEvidence: "none" | "video" | "time_trial";
+    /**
+     * ShadowEvaluationCreate
+     * @description Create a shadow evaluation for a coach assignment.
+     */
+    ShadowEvaluationCreate: {
+      /**
+       * Session Date
+       * Format: date
+       */
+      session_date: string;
+      /**
+       * Scores
+       * @description JSON scores e.g. {'communication': 4, 'safety': 5, 'technique_demo': 3}
+       */
+      scores: {
+        [key: string]: unknown;
+      };
+      /** Feedback */
+      feedback?: string | null;
+      recommendation: components["schemas"]["EvalRecommendation"];
+    };
+    /**
+     * ShadowEvaluationResponse
+     * @description Response for a shadow evaluation.
+     */
+    ShadowEvaluationResponse: {
+      /** Id */
+      id: string;
+      /** Assignment Id */
+      assignment_id: string;
+      /** Evaluator Id */
+      evaluator_id: string;
+      /**
+       * Session Date
+       * Format: date
+       */
+      session_date: string;
+      /** Scores */
+      scores: {
+        [key: string]: unknown;
+      };
+      /** Feedback */
+      feedback?: string | null;
+      /** Recommendation */
+      recommendation: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Evaluator Name */
+      evaluator_name?: string | null;
+    };
     /**
      * SkillCreate
      * @description Create a new skill in the global skills library.
@@ -5605,6 +11054,33 @@ export interface components {
       reviewed_at?: string | null;
     };
     /**
+     * UpcomingSessionSummary
+     * @description Summary of an upcoming session for dashboard.
+     */
+    UpcomingSessionSummary: {
+      /**
+       * Cohort Id
+       * Format: uuid
+       */
+      cohort_id: string;
+      /** Cohort Name */
+      cohort_name: string;
+      /** Program Name */
+      program_name?: string | null;
+      /**
+       * Session Date
+       * Format: date-time
+       */
+      session_date: string;
+      /** Location Name */
+      location_name?: string | null;
+      /**
+       * Enrolled Count
+       * @default 0
+       */
+      enrolled_count: number;
+    };
+    /**
      * AdminReviewRequest
      * @description Admin review action for a manual payment.
      */
@@ -5664,6 +11140,11 @@ export interface components {
       /** Discount Code */
       discount_code?: string | null;
       /**
+       * Use Installments
+       * @default false
+       */
+      use_installments: boolean;
+      /**
        * Include Community Extension
        * @default false
        */
@@ -5674,13 +11155,23 @@ export interface components {
       ride_config_id?: string | null;
       /** Pickup Location Id */
       pickup_location_id?: string | null;
-      /**
-       * Attendance Status
-       * @default PRESENT
-       */
-      attendance_status: string;
+      /** @default present */
+      attendance_status: components["schemas"]["SessionAttendanceStatus"];
       /** Direct Amount */
       direct_amount?: number | null;
+      /**
+       * Num Seats
+       * @default 1
+       */
+      num_seats: number;
+      /** Session Ids */
+      session_ids?: string[] | null;
+      /** Session Ride Configs */
+      session_ride_configs?: {
+        [key: string]: components["schemas"]["SessionRideConfig"];
+      } | null;
+      /** Bubbles To Apply */
+      bubbles_to_apply?: number | null;
       /** Metadata */
       metadata?: {
         [key: string]: unknown;
@@ -5808,6 +11299,113 @@ export interface components {
       /** Is Active */
       is_active?: boolean | null;
     };
+    /** InternalDiscountValidateRequest */
+    InternalDiscountValidateRequest: {
+      /** Code */
+      code: string;
+      /**
+       * Purpose
+       * @default store_order
+       */
+      purpose: string;
+      /**
+       * Amount
+       * @default 0
+       */
+      amount: number;
+      /** Member Auth Id */
+      member_auth_id?: string | null;
+    };
+    /** InternalDiscountValidateResponse */
+    InternalDiscountValidateResponse: {
+      /** Valid */
+      valid: boolean;
+      /** Code */
+      code: string;
+      /** Discount Type */
+      discount_type?: string | null;
+      /** Value */
+      value?: number | null;
+      /** Discount Amount */
+      discount_amount?: number | null;
+      /** Message */
+      message?: string | null;
+    };
+    /**
+     * InternalInitializeRequest
+     * @description Request from another service to initialize a Paystack transaction.
+     *
+     *     Used by wallet_service for topups, or any other service needing
+     *     Paystack checkout without creating a Payment record.
+     */
+    InternalInitializeRequest: {
+      /** Purpose */
+      purpose: string;
+      /** Amount */
+      amount: number;
+      /**
+       * Currency
+       * @default NGN
+       */
+      currency: string;
+      /** Reference */
+      reference: string;
+      /** Member Auth Id */
+      member_auth_id: string;
+      /** Callback Url */
+      callback_url?: string | null;
+      /** Metadata */
+      metadata?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /**
+     * InternalInitializeResponse
+     * @description Response with Paystack checkout details.
+     */
+    InternalInitializeResponse: {
+      /** Reference */
+      reference: string;
+      /** Authorization Url */
+      authorization_url?: string | null;
+      /** Access Code */
+      access_code?: string | null;
+    };
+    /**
+     * InternalPaystackVerifyResponse
+     * @description Normalized Paystack verification response for internal services.
+     */
+    InternalPaystackVerifyResponse: {
+      /** Reference */
+      reference: string;
+      /** Status */
+      status: string;
+      /** Provider Status */
+      provider_status?: string | null;
+      /** Paid At */
+      paid_at?: string | null;
+      /** Amount Kobo */
+      amount_kobo?: number | null;
+      /** Currency */
+      currency?: string | null;
+      /** Raw */
+      raw?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** MemberPaymentSummary */
+    MemberPaymentSummary: {
+      /**
+       * Total Spent
+       * @default 0
+       */
+      total_spent: number;
+      /**
+       * Payment Count
+       * @default 0
+       */
+      payment_count: number;
+    };
     /** PaymentIntentResponse */
     PaymentIntentResponse: {
       /** Reference */
@@ -5859,7 +11457,10 @@ export interface components {
       | "club_bundle"
       | "academy_cohort"
       | "session_fee"
-      | "store_order";
+      | "session_bundle"
+      | "store_order"
+      | "wallet_topup"
+      | "ride_share";
     /** PaymentResponse */
     PaymentResponse: {
       /**
@@ -5998,7 +11599,6 @@ export interface components {
     };
     /**
      * PayoutMethod
-     * @description Method used for coach payout.
      * @enum {string}
      */
     PayoutMethod: "paystack_transfer" | "bank_transfer" | "other";
@@ -6064,7 +11664,6 @@ export interface components {
     };
     /**
      * PayoutStatus
-     * @description Status of a coach payout.
      * @enum {string}
      */
     PayoutStatus: "pending" | "approved" | "processing" | "paid" | "failed";
@@ -6106,6 +11705,32 @@ export interface components {
       currency: string;
     };
     /**
+     * SessionAttendanceStatus
+     * @enum {string}
+     */
+    SessionAttendanceStatus: "present" | "absent" | "late" | "excused" | "cancelled";
+    /**
+     * SessionRideConfig
+     * @description Per-session ride selection for a SESSION_BUNDLE payment.
+     */
+    SessionRideConfig: {
+      /**
+       * Ride Config Id
+       * Format: uuid
+       */
+      ride_config_id: string;
+      /**
+       * Pickup Location Id
+       * Format: uuid
+       */
+      pickup_location_id: string;
+      /**
+       * Num Seats
+       * @default 1
+       */
+      num_seats: number;
+    };
+    /**
      * SubmitProofRequest
      * @description Submit proof of payment for manual transfer.
      */
@@ -6114,15 +11739,106 @@ export interface components {
       proof_media_id: string;
     };
     /**
+     * AnnouncementAudience
+     * @enum {string}
+     */
+    AnnouncementAudience: "community" | "club" | "academy";
+    /**
      * AnnouncementCategory
      * @enum {string}
      */
     AnnouncementCategory:
       | "rain_update"
       | "schedule_change"
+      | "academy_update"
       | "event"
       | "competition"
-      | "general";
+      | "general"
+      | "custom";
+    /**
+     * AnnouncementCategoryConfigCreate
+     * @description Schema for creating a custom announcement category.
+     */
+    AnnouncementCategoryConfigCreate: {
+      /** Name */
+      name: string;
+      /** Display Name */
+      display_name: string;
+      /** Description */
+      description?: string | null;
+      /** Auto Expire Hours */
+      auto_expire_hours?: number | null;
+      /**
+       * Default Notify Email
+       * @default true
+       */
+      default_notify_email: boolean;
+      /**
+       * Default Notify Push
+       * @default false
+       */
+      default_notify_push: boolean;
+      /** Icon */
+      icon?: string | null;
+      /** Color */
+      color?: string | null;
+    };
+    /**
+     * AnnouncementCategoryConfigResponse
+     * @description Response for announcement category config.
+     */
+    AnnouncementCategoryConfigResponse: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Name */
+      name: string;
+      /** Display Name */
+      display_name: string;
+      /** Description */
+      description?: string | null;
+      /** Auto Expire Hours */
+      auto_expire_hours?: number | null;
+      /** Default Notify Email */
+      default_notify_email: boolean;
+      /** Default Notify Push */
+      default_notify_push: boolean;
+      /** Icon */
+      icon?: string | null;
+      /** Color */
+      color?: string | null;
+      /** Is Active */
+      is_active: boolean;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /**
+     * AnnouncementCategoryConfigUpdate
+     * @description Schema for updating a custom announcement category.
+     */
+    AnnouncementCategoryConfigUpdate: {
+      /** Display Name */
+      display_name?: string | null;
+      /** Description */
+      description?: string | null;
+      /** Auto Expire Hours */
+      auto_expire_hours?: number | null;
+      /** Default Notify Email */
+      default_notify_email?: boolean | null;
+      /** Default Notify Push */
+      default_notify_push?: boolean | null;
+      /** Icon */
+      icon?: string | null;
+      /** Color */
+      color?: string | null;
+      /** Is Active */
+      is_active?: boolean | null;
+    };
     /**
      * AnnouncementCommentResponse
      * @description Announcement comment response schema.
@@ -6143,6 +11859,8 @@ export interface components {
        * Format: uuid
        */
       member_id: string;
+      /** Member Name */
+      member_name?: string | null;
       /** Content */
       content: string;
       /**
@@ -6166,16 +11884,69 @@ export interface components {
       body: string;
       /** @default general */
       category: components["schemas"]["AnnouncementCategory"];
+      /** Custom Category */
+      custom_category?: string | null;
+      /** @default published */
+      status: components["schemas"]["AnnouncementStatus"];
+      /** @default community */
+      audience: components["schemas"]["AnnouncementAudience"];
+      /** Expires At */
+      expires_at?: string | null;
+      /**
+       * Notify Email
+       * @default true
+       */
+      notify_email: boolean;
+      /**
+       * Notify Push
+       * @default true
+       */
+      notify_push: boolean;
       /**
        * Is Pinned
        * @default false
        */
       is_pinned: boolean;
+      /** Scheduled For */
+      scheduled_for?: string | null;
+      /** Published At */
+      published_at?: string | null;
+    };
+    /**
+     * AnnouncementReadCreate
+     * @description Schema for marking an announcement as read.
+     */
+    AnnouncementReadCreate: {
       /**
-       * Published At
+       * Acknowledged
+       * @default false
+       */
+      acknowledged: boolean;
+    };
+    /**
+     * AnnouncementReadResponse
+     * @description Response showing read status for an announcement.
+     */
+    AnnouncementReadResponse: {
+      /**
+       * Announcement Id
+       * Format: uuid
+       */
+      announcement_id: string;
+      /**
+       * Member Id
+       * Format: uuid
+       */
+      member_id: string;
+      /**
+       * Read At
        * Format: date-time
        */
-      published_at: string;
+      read_at: string;
+      /** Acknowledged */
+      acknowledged: boolean;
+      /** Acknowledged At */
+      acknowledged_at?: string | null;
     };
     /** AnnouncementResponse */
     AnnouncementResponse: {
@@ -6187,16 +11958,33 @@ export interface components {
       body: string;
       /** @default general */
       category: components["schemas"]["AnnouncementCategory"];
+      /** Custom Category */
+      custom_category?: string | null;
+      /** @default published */
+      status: components["schemas"]["AnnouncementStatus"];
+      /** @default community */
+      audience: components["schemas"]["AnnouncementAudience"];
+      /** Expires At */
+      expires_at?: string | null;
+      /**
+       * Notify Email
+       * @default true
+       */
+      notify_email: boolean;
+      /**
+       * Notify Push
+       * @default true
+       */
+      notify_push: boolean;
       /**
        * Is Pinned
        * @default false
        */
       is_pinned: boolean;
-      /**
-       * Published At
-       * Format: date-time
-       */
-      published_at: string;
+      /** Scheduled For */
+      scheduled_for?: string | null;
+      /** Published At */
+      published_at?: string | null;
       /**
        * Id
        * Format: uuid
@@ -6212,7 +12000,22 @@ export interface components {
        * Format: date-time
        */
       updated_at: string;
+      /**
+       * Read Count
+       * @default 0
+       */
+      read_count: number | null;
+      /**
+       * Acknowledged Count
+       * @default 0
+       */
+      acknowledged_count: number | null;
     };
+    /**
+     * AnnouncementStatus
+     * @enum {string}
+     */
+    AnnouncementStatus: "draft" | "published" | "archived";
     /** AnnouncementUpdate */
     AnnouncementUpdate: {
       /** Title */
@@ -6222,10 +12025,85 @@ export interface components {
       /** Body */
       body?: string | null;
       category?: components["schemas"]["AnnouncementCategory"] | null;
+      /** Custom Category */
+      custom_category?: string | null;
+      status?: components["schemas"]["AnnouncementStatus"] | null;
+      audience?: components["schemas"]["AnnouncementAudience"] | null;
+      /** Expires At */
+      expires_at?: string | null;
+      /** Notify Email */
+      notify_email?: boolean | null;
+      /** Notify Push */
+      notify_push?: boolean | null;
       /** Is Pinned */
       is_pinned?: boolean | null;
+      /** Scheduled For */
+      scheduled_for?: string | null;
       /** Published At */
       published_at?: string | null;
+    };
+    /**
+     * AuthUser
+     * @description Represents an authenticated user from Supabase.
+     */
+    AuthUser: {
+      /** Sub */
+      sub: string;
+      /** Email */
+      email?: string | null;
+      /**
+       * Role
+       * @default authenticated
+       */
+      role: string;
+      /** App Metadata */
+      app_metadata?: {
+        [key: string]: unknown;
+      };
+      /** User Metadata */
+      user_metadata?: {
+        [key: string]: unknown;
+      };
+    };
+    /** Body_handle_session_cancelled_internal_communications_session_cancelled_post */
+    Body_handle_session_cancelled_internal_communications_session_cancelled_post: {
+      body: components["schemas"]["SessionCancelRequest"];
+      user: components["schemas"]["AuthUser"];
+    };
+    /** Body_handle_session_published_internal_communications_session_published_post */
+    Body_handle_session_published_internal_communications_session_published_post: {
+      body: components["schemas"]["SessionPublishRequest"];
+      user: components["schemas"]["AuthUser"];
+    };
+    /**
+     * BulkEmailRequest
+     * @description Request schema for sending bulk emails.
+     */
+    BulkEmailRequest: {
+      /** To Emails */
+      to_emails: string[];
+      /** Subject */
+      subject: string;
+      /** Body */
+      body: string;
+      /** Html Body */
+      html_body?: string | null;
+      /** From Email */
+      from_email?: string | null;
+      /** From Name */
+      from_name?: string | null;
+      /** Sender Id */
+      sender_id?: string | null;
+    };
+    /**
+     * CohortMessageCreate
+     * @description Schema for sending a message to all students in a cohort.
+     */
+    CohortMessageCreate: {
+      /** Subject */
+      subject: string;
+      /** Body */
+      body: string;
     };
     /**
      * CommentCreate
@@ -6255,6 +12133,8 @@ export interface components {
        * Format: uuid
        */
       member_id: string;
+      /** Member Name */
+      member_name?: string | null;
       /** Content */
       content: string;
       /**
@@ -6323,6 +12203,8 @@ export interface components {
       is_published: boolean;
       /** Published At */
       published_at?: string | null;
+      /** Scheduled For */
+      scheduled_for?: string | null;
       /**
        * Created By
        * Format: uuid
@@ -6345,6 +12227,11 @@ export interface components {
       comment_count: number | null;
       /** Featured Image Url */
       featured_image_url?: string | null;
+      /**
+       * Status
+       * @description Return 'published', 'scheduled', or 'draft' based on post state.
+       */
+      readonly status: string;
     };
     /**
      * ContentPostUpdate
@@ -6365,6 +12252,469 @@ export interface components {
       tier_access?: string | null;
       /** Is Published */
       is_published?: boolean | null;
+      /** Scheduled For */
+      scheduled_for?: string | null;
+    };
+    /**
+     * EmailRequest
+     * @description Request schema for sending a single email.
+     */
+    EmailRequest: {
+      /**
+       * To Email
+       * Format: email
+       */
+      to_email: string;
+      /** Subject */
+      subject: string;
+      /** Body */
+      body: string;
+      /** Html Body */
+      html_body?: string | null;
+      /** From Email */
+      from_email?: string | null;
+      /** From Name */
+      from_name?: string | null;
+    };
+    /**
+     * EmailResponse
+     * @description Response schema for email operations.
+     */
+    EmailResponse: {
+      /** Success */
+      success: boolean;
+      /** Message */
+      message: string;
+      /**
+       * Sent Count
+       * @default 0
+       */
+      sent_count: number;
+      /**
+       * Failed Count
+       * @default 0
+       */
+      failed_count: number;
+    };
+    /**
+     * MessageLogResponse
+     * @description Response showing a sent message log entry.
+     */
+    MessageLogResponse: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Sender Id
+       * Format: uuid
+       */
+      sender_id: string;
+      /** Sender Name */
+      sender_name?: string | null;
+      /** Recipient Type */
+      recipient_type: string;
+      /**
+       * Recipient Id
+       * Format: uuid
+       */
+      recipient_id: string;
+      /** Recipient Count */
+      recipient_count: number;
+      /** Subject */
+      subject: string;
+      /**
+       * Sent At
+       * Format: date-time
+       */
+      sent_at: string;
+    };
+    /**
+     * MessageResponse
+     * @description Response after sending a message.
+     */
+    MessageResponse: {
+      /** Success */
+      success: boolean;
+      /** Recipients Count */
+      recipients_count: number;
+      /** Message */
+      message: string;
+    };
+    /**
+     * NotificationDispatchRequest
+     * @description Request to create and deliver notification(s) via the dispatcher.
+     */
+    NotificationDispatchRequest: {
+      /** Type */
+      type: string;
+      /** Category */
+      category: string;
+      /** Member Ids */
+      member_ids: string[];
+      /** Title */
+      title: string;
+      /** Body */
+      body?: string | null;
+      /** Action Url */
+      action_url?: string | null;
+      /** Icon */
+      icon?: string | null;
+      /** Metadata */
+      metadata?: {
+        [key: string]: unknown;
+      } | null;
+      /**
+       * Channels
+       * @default [
+       *       "in_app"
+       *     ]
+       */
+      channels: string[];
+      /** Email Template */
+      email_template?: string | null;
+      /** Email Data */
+      email_data?: {
+        [key: string]: unknown;
+      } | null;
+      /** Expires At */
+      expires_at?: string | null;
+    };
+    /**
+     * NotificationListResponse
+     * @description Paginated notification list response.
+     */
+    NotificationListResponse: {
+      /** Items */
+      items: components["schemas"]["NotificationResponse"][];
+      /** Total */
+      total: number;
+      /** Unread Count */
+      unread_count: number;
+    };
+    /**
+     * NotificationPreferencesResponse
+     * @description Response schema for notification preferences.
+     */
+    NotificationPreferencesResponse: {
+      /**
+       * Email Announcements
+       * @default true
+       */
+      email_announcements: boolean;
+      /**
+       * Email Session Reminders
+       * @default true
+       */
+      email_session_reminders: boolean;
+      /**
+       * Email Academy Updates
+       * @default true
+       */
+      email_academy_updates: boolean;
+      /**
+       * Email Payment Receipts
+       * @default true
+       */
+      email_payment_receipts: boolean;
+      /**
+       * Email Coach Messages
+       * @default true
+       */
+      email_coach_messages: boolean;
+      /**
+       * Email Marketing
+       * @default false
+       */
+      email_marketing: boolean;
+      /**
+       * Push Announcements
+       * @default true
+       */
+      push_announcements: boolean;
+      /**
+       * Push Session Reminders
+       * @default true
+       */
+      push_session_reminders: boolean;
+      /**
+       * Push Academy Updates
+       * @default true
+       */
+      push_academy_updates: boolean;
+      /**
+       * Push Coach Messages
+       * @default true
+       */
+      push_coach_messages: boolean;
+      /**
+       * Subscribe Community Sessions
+       * @default true
+       */
+      subscribe_community_sessions: boolean;
+      /**
+       * Subscribe Club Sessions
+       * @default true
+       */
+      subscribe_club_sessions: boolean;
+      /**
+       * Subscribe Event Sessions
+       * @default true
+       */
+      subscribe_event_sessions: boolean;
+      /**
+       * Reminder 24H Enabled
+       * @default true
+       */
+      reminder_24h_enabled: boolean;
+      /**
+       * Reminder 3H Enabled
+       * @default true
+       */
+      reminder_3h_enabled: boolean;
+      /**
+       * Weekly Digest
+       * @default true
+       */
+      weekly_digest: boolean;
+      /**
+       * Weekly Session Digest
+       * @default false
+       */
+      weekly_session_digest: boolean;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Member Id
+       * Format: uuid
+       */
+      member_id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /**
+     * NotificationPreferencesUpdate
+     * @description Schema for updating notification preferences.
+     */
+    NotificationPreferencesUpdate: {
+      /** Email Announcements */
+      email_announcements?: boolean | null;
+      /** Email Session Reminders */
+      email_session_reminders?: boolean | null;
+      /** Email Academy Updates */
+      email_academy_updates?: boolean | null;
+      /** Email Payment Receipts */
+      email_payment_receipts?: boolean | null;
+      /** Email Coach Messages */
+      email_coach_messages?: boolean | null;
+      /** Email Marketing */
+      email_marketing?: boolean | null;
+      /** Push Announcements */
+      push_announcements?: boolean | null;
+      /** Push Session Reminders */
+      push_session_reminders?: boolean | null;
+      /** Push Academy Updates */
+      push_academy_updates?: boolean | null;
+      /** Push Coach Messages */
+      push_coach_messages?: boolean | null;
+      /** Subscribe Community Sessions */
+      subscribe_community_sessions?: boolean | null;
+      /** Subscribe Club Sessions */
+      subscribe_club_sessions?: boolean | null;
+      /** Subscribe Event Sessions */
+      subscribe_event_sessions?: boolean | null;
+      /** Reminder 24H Enabled */
+      reminder_24h_enabled?: boolean | null;
+      /** Reminder 3H Enabled */
+      reminder_3h_enabled?: boolean | null;
+      /** Weekly Digest */
+      weekly_digest?: boolean | null;
+      /** Weekly Session Digest */
+      weekly_session_digest?: boolean | null;
+    };
+    /**
+     * NotificationResponse
+     * @description Response for a single notification.
+     */
+    NotificationResponse: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Type */
+      type: string;
+      /** Category */
+      category: string;
+      /** Title */
+      title: string;
+      /** Body */
+      body?: string | null;
+      /** Icon */
+      icon?: string | null;
+      /** Action Url */
+      action_url?: string | null;
+      /** Metadata */
+      metadata?: {
+        [key: string]: unknown;
+      } | null;
+      /** Read At */
+      read_at?: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /**
+     * NotificationUnreadCountResponse
+     * @description Unread notification count response.
+     */
+    NotificationUnreadCountResponse: {
+      /** Unread Count */
+      unread_count: number;
+    };
+    /** SessionCancelRequest */
+    SessionCancelRequest: {
+      /** Session Id */
+      session_id: string;
+      /**
+       * Cancellation Reason
+       * @default
+       */
+      cancellation_reason: string;
+    };
+    /** SessionPublishRequest */
+    SessionPublishRequest: {
+      /** Session Id */
+      session_id: string;
+      /**
+       * Is Short Notice
+       * @default false
+       */
+      is_short_notice: boolean;
+      /**
+       * Short Notice Message
+       * @default
+       */
+      short_notice_message: string;
+    };
+    /**
+     * StudentMessageCreate
+     * @description Schema for sending a message to an individual student.
+     */
+    StudentMessageCreate: {
+      /** Subject */
+      subject: string;
+      /** Body */
+      body: string;
+    };
+    /**
+     * TemplatedEmailRequest
+     * @description Request schema for templated emails (academy, payments, etc.).
+     */
+    TemplatedEmailRequest: {
+      /** Template Type */
+      template_type: string;
+      /**
+       * To Email
+       * Format: email
+       */
+      to_email: string;
+      /** Template Data */
+      template_data: {
+        [key: string]: unknown;
+      };
+    };
+    /** TestimonialCreate */
+    TestimonialCreate: {
+      /** Author Name */
+      author_name: string;
+      /** Author Role */
+      author_role: string;
+      /** Author Since */
+      author_since?: string | null;
+      /** Author Initials */
+      author_initials: string;
+      /** Author Photo Url */
+      author_photo_url?: string | null;
+      /** Quote */
+      quote: string;
+      /** Tracks */
+      tracks?: string[];
+      /**
+       * Is Published
+       * @default false
+       */
+      is_published: boolean;
+      /**
+       * Sort Order
+       * @default 100
+       */
+      sort_order: number;
+      /** Consent Note */
+      consent_note?: string | null;
+    };
+    /** TestimonialResponse */
+    TestimonialResponse: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Author Name */
+      author_name: string;
+      /** Author Role */
+      author_role: string;
+      /** Author Since */
+      author_since?: string | null;
+      /** Author Initials */
+      author_initials: string;
+      /** Author Photo Url */
+      author_photo_url?: string | null;
+      /** Quote */
+      quote: string;
+      /** Tracks */
+      tracks: string[];
+      /** Is Published */
+      is_published: boolean;
+      /** Sort Order */
+      sort_order: number;
+    };
+    /** TestimonialUpdate */
+    TestimonialUpdate: {
+      /** Author Name */
+      author_name?: string | null;
+      /** Author Role */
+      author_role?: string | null;
+      /** Author Since */
+      author_since?: string | null;
+      /** Author Initials */
+      author_initials?: string | null;
+      /** Author Photo Url */
+      author_photo_url?: string | null;
+      /** Quote */
+      quote?: string | null;
+      /** Tracks */
+      tracks?: string[] | null;
+      /** Is Published */
+      is_published?: boolean | null;
+      /** Sort Order */
+      sort_order?: number | null;
+      /** Consent Note */
+      consent_note?: string | null;
     };
   };
   responses: never;
@@ -6393,6 +12743,194 @@ export interface operations {
           "application/json": {
             [key: string]: string;
           };
+        };
+      };
+    };
+  };
+  submit_assessment_assessments__post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AssessmentSubmit"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AssessmentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  submit_assessment_assessments_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AssessmentSubmit"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AssessmentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_assessment_stats_assessments_stats_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AssessmentStatsResponse"];
+        };
+      };
+    };
+  };
+  get_my_assessments_assessments_me_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AssessmentResponse"][];
+        };
+      };
+    };
+  };
+  get_assessment_assessments__assessment_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        assessment_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AssessmentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_coaches_members_coaches_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MemberResponse"][];
+        };
+      };
+    };
+  };
+  get_coach_by_id_members_coaches__member_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        member_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MemberResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };
@@ -6531,6 +13069,61 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["MemberPublicResponse"][];
+        };
+      };
+    };
+  };
+  list_directory_members_members_directory_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MemberDirectoryResponse"][];
+        };
+      };
+    };
+  };
+  get_members_bulk_basic_members_bulk_basic_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": string[];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: components["schemas"]["MemberBasicResponse"];
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };
@@ -7055,6 +13648,41 @@ export interface operations {
       };
     };
   };
+  admin_activate_academy_membership_by_auth_admin_members_by_auth__auth_id__academy_activate_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        auth_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ActivateAcademyRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MemberResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   admin_patch_membership_by_auth_admin_members_by_auth__auth_id__membership_patch: {
     parameters: {
       query?: never;
@@ -7077,6 +13705,235 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["MemberResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_club_challenges_challenges__get: {
+    parameters: {
+      query?: {
+        /** @description Show only active challenges */
+        active_only?: boolean;
+        /** @description Filter by challenge type */
+        challenge_type?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ClubChallengeResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_club_challenge_challenges__post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ClubChallengeCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ClubChallengeResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_club_challenge_challenges__challenge_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        challenge_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ClubChallengeResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_club_challenge_challenges__challenge_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        challenge_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  update_club_challenge_challenges__challenge_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        challenge_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ClubChallengeUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ClubChallengeResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  mark_challenge_complete_challenges_completions_post: {
+    parameters: {
+      query?: {
+        /** @description Admin/coach verifying completion */
+        verified_by?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChallengeCompletionCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ChallengeCompletionResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_challenge_completions_challenges__challenge_id__completions_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        challenge_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ChallengeCompletionResponse"][];
         };
       };
       /** @description Validation Error */
@@ -7320,235 +14177,6 @@ export interface operations {
       };
     };
   };
-  list_club_challenges_challenges__get: {
-    parameters: {
-      query?: {
-        /** @description Show only active challenges */
-        active_only?: boolean;
-        /** @description Filter by challenge type */
-        challenge_type?: string | null;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ClubChallengeResponse"][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  create_club_challenge_challenges__post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ClubChallengeCreate"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ClubChallengeResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  get_club_challenge_challenges__challenge_id__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        challenge_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ClubChallengeResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  delete_club_challenge_challenges__challenge_id__delete: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        challenge_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  update_club_challenge_challenges__challenge_id__patch: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        challenge_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ClubChallengeUpdate"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ClubChallengeResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  mark_challenge_complete_challenges_completions_post: {
-    parameters: {
-      query?: {
-        /** @description Admin/coach verifying completion */
-        verified_by?: string | null;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ChallengeCompletionCreate"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ChallengeCompletionResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  list_challenge_completions_challenges__challenge_id__completions_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        challenge_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ChallengeCompletionResponse"][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
   apply_as_coach_coaches_apply_post: {
     parameters: {
       query?: never;
@@ -7655,6 +14283,39 @@ export interface operations {
       };
     };
   };
+  update_my_coach_preferences_coaches_me_preferences_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CoachPreferencesUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CoachApplicationResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   complete_coach_onboarding_coaches_me_onboarding_post: {
     parameters: {
       query?: never;
@@ -7675,6 +14336,235 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["CoachApplicationResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_coaches_for_admin_admin_coaches__get: {
+    parameters: {
+      query?: {
+        status?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminCoachApplicationListItem"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_coach_applications_admin_coaches_applications_get: {
+    parameters: {
+      query?: {
+        application_status?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminCoachApplicationListItem"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_coach_application_admin_coaches_applications__coach_profile_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        coach_profile_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminCoachApplicationDetail"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_coach_application_admin_coaches_applications__coach_profile_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        coach_profile_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  approve_coach_application_admin_coaches_applications__coach_profile_id__approve_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        coach_profile_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AdminApproveCoach"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  reject_coach_application_admin_coaches_applications__coach_profile_id__reject_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        coach_profile_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AdminRejectCoach"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  request_more_info_admin_coaches_applications__coach_profile_id__request_info_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        coach_profile_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AdminRequestMoreInfo"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
         };
       };
       /** @description Validation Error */
@@ -7814,10 +14704,462 @@ export interface operations {
       };
     };
   };
-  list_coaches_for_admin_admin_coaches__get: {
+  get_my_grades_coaches_me_grades_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CoachGradesResponse"];
+        };
+      };
+    };
+  };
+  get_my_progression_coaches_me_progression_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CoachProgressionStats"];
+        };
+      };
+    };
+  };
+  get_coach_grades_admin_coaches__coach_profile_id__grades_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        coach_profile_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CoachGradesResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  update_coach_grades_admin_coaches__coach_profile_id__grades_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        coach_profile_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AdminUpdateCoachGrades"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CoachGradesResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  suggest_coach_grades_admin_coaches__coach_profile_id__suggest_grades_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        coach_profile_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_eligible_coaches_admin_coaches_eligible__category___required_grade__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        category: components["schemas"]["ProgramCategoryEnum"];
+        required_grade: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EligibleCoachListItem"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_current_agreement_coaches_agreement_current_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AgreementContentResponse"];
+        };
+      };
+    };
+  };
+  get_agreement_status_coaches_agreement_status_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CoachAgreementStatusResponse"];
+        };
+      };
+    };
+  };
+  sign_agreement_coaches_agreement_sign_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SignAgreementRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CoachAgreementResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_agreement_history_coaches_agreement_history_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CoachAgreementHistoryItem"][];
+        };
+      };
+    };
+  };
+  get_current_handbook_coaches_handbook_current_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HandbookContentResponse"];
+        };
+      };
+    };
+  };
+  get_handbook_version_coaches_handbook__version__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        version: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HandbookContentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_agreement_versions_admin_coaches_agreements_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AgreementVersionListItem"][];
+        };
+      };
+    };
+  };
+  create_agreement_version_admin_coaches_agreements_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateAgreementVersionRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AgreementVersionDetail"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_agreement_version_detail_admin_coaches_agreements__version_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        version_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AgreementVersionDetail"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_handbook_versions_admin_coaches_handbook_versions_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HandbookVersionListItem"][];
+        };
+      };
+    };
+  };
+  create_handbook_version_admin_coaches_handbook_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateHandbookVersionRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HandbookVersionDetail"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_guardian_links_admin_members_guardians_get: {
     parameters: {
       query?: {
-        status?: string | null;
+        minor_member_id?: string | null;
+        guardian_member_id?: string | null;
+        active_only?: boolean;
       };
       header?: never;
       path?: never;
@@ -7831,7 +15173,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["AdminCoachApplicationListItem"][];
+          "application/json": components["schemas"]["GuardianLinkResponse"][];
         };
       };
       /** @description Validation Error */
@@ -7845,10 +15187,164 @@ export interface operations {
       };
     };
   };
-  list_coach_applications_admin_coaches_applications_get: {
+  create_guardian_link_admin_members_guardians_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["GuardianLinkCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GuardianLinkResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  update_guardian_link_admin_members_guardians__link_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        link_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["GuardianLinkUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GuardianLinkResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_guardians_for_minor_internal_members_guardians_for_minor__minor_member_id__get: {
     parameters: {
       query?: {
-        application_status?: string | null;
+        verified_only?: boolean;
+      };
+      header?: never;
+      path: {
+        minor_member_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GuardianLinkResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_member_by_auth_id_internal_members_by_auth__auth_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        auth_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MemberBasic"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_active_members_internal_members_active_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MemberBasic"][];
+        };
+      };
+    };
+  };
+  search_members_internal_members_search_get: {
+    parameters: {
+      query: {
+        /** @description Search term (name or email) */
+        q: string;
+        limit?: number;
       };
       header?: never;
       path?: never;
@@ -7862,7 +15358,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["AdminCoachApplicationListItem"][];
+          "application/json": components["schemas"]["MemberSearchResult"][];
         };
       };
       /** @description Validation Error */
@@ -7876,12 +15372,32 @@ export interface operations {
       };
     };
   };
-  get_coach_application_admin_coaches_applications__coach_profile_id__get: {
+  get_approved_members_list_internal_members_approved_list_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ApprovedMemberBasic"][];
+        };
+      };
+    };
+  };
+  get_member_membership_internal_members__member_id__membership_get: {
     parameters: {
       query?: never;
       header?: never;
       path: {
-        coach_profile_id: string;
+        member_id: string;
       };
       cookie?: never;
     };
@@ -7893,7 +15409,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["AdminCoachApplicationDetail"];
+          "application/json": components["schemas"]["services__members_service__routers__internal__MemberMembershipResponse"];
         };
       };
       /** @description Validation Error */
@@ -7907,20 +15423,16 @@ export interface operations {
       };
     };
   };
-  approve_coach_application_admin_coaches_applications__coach_profile_id__approve_post: {
+  get_member_by_id_internal_members__member_id__get: {
     parameters: {
       query?: never;
       header?: never;
       path: {
-        coach_profile_id: string;
+        member_id: string;
       };
       cookie?: never;
     };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AdminApproveCoach"];
-      };
-    };
+    requestBody?: never;
     responses: {
       /** @description Successful Response */
       200: {
@@ -7928,7 +15440,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": unknown;
+          "application/json": components["schemas"]["MemberBasic"];
         };
       };
       /** @description Validation Error */
@@ -7942,18 +15454,16 @@ export interface operations {
       };
     };
   };
-  reject_coach_application_admin_coaches_applications__coach_profile_id__reject_post: {
+  get_members_bulk_internal_members_bulk_post: {
     parameters: {
       query?: never;
       header?: never;
-      path: {
-        coach_profile_id: string;
-      };
+      path?: never;
       cookie?: never;
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["AdminRejectCoach"];
+        "application/json": components["schemas"]["BulkMembersRequest"];
       };
     };
     responses: {
@@ -7963,7 +15473,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": unknown;
+          "application/json": components["schemas"]["MemberBasic"][];
         };
       };
       /** @description Validation Error */
@@ -7977,20 +15487,16 @@ export interface operations {
       };
     };
   };
-  request_more_info_admin_coaches_applications__coach_profile_id__request_info_post: {
+  get_coach_profile_internal_members_coaches__member_id__profile_get: {
     parameters: {
       query?: never;
       header?: never;
       path: {
-        coach_profile_id: string;
+        member_id: string;
       };
       cookie?: never;
     };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AdminRequestMoreInfo"];
-      };
-    };
+    requestBody?: never;
     responses: {
       /** @description Successful Response */
       200: {
@@ -7998,7 +15504,103 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": unknown;
+          "application/json": components["schemas"]["CoachProfileBasic"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_member_bank_account_internal_members__member_id__bank_account_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        member_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CoachBankAccountResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_eligible_coaches_internal_members_coaches_eligible_get: {
+    parameters: {
+      query: {
+        /** @description Coach profile grade column name */
+        grade_column: string;
+        /** @description Comma-separated eligible grade values */
+        eligible_grades: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EligibleCoachBasic"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_coach_readiness_data_internal_members_coaches__member_id__readiness_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        member_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CoachReadinessData"];
         };
       };
       /** @description Validation Error */
@@ -8206,11 +15808,77 @@ export interface operations {
       };
     };
   };
+  create_bundle_cart_sessions_bundles_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateBundleCartRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BundleCartResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_bundle_cart_sessions_bundles__bundle_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        bundle_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BundleCartResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   list_sessions_sessions__get: {
     parameters: {
       query?: {
         types?: string | null;
         cohort_id?: string | null;
+        /** @description Include draft sessions (admin only) */
+        include_drafts?: boolean;
       };
       header?: never;
       path?: never;
@@ -8418,6 +16086,389 @@ export interface operations {
       };
     };
   };
+  publish_session_sessions__session_id__publish_post: {
+    parameters: {
+      query?: {
+        /** @description Optional message explaining short notice (shown in announcement) */
+        short_notice_message?: string | null;
+      };
+      header?: never;
+      path: {
+        session_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SessionResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  cancel_session_sessions__session_id__cancel_post: {
+    parameters: {
+      query?: {
+        /** @description Reason for cancellation (shown in notification) */
+        cancellation_reason?: string | null;
+      };
+      header?: never;
+      path: {
+        session_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SessionResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_sessions_for_cohort_sessions_by_cohort__cohort_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        cohort_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_scheduled_sessions_internal_sessions_scheduled_get: {
+    parameters: {
+      query?: {
+        start_date?: string | null;
+        end_date?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SessionBasic"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_session_range_stats_internal_sessions_range_stats_get: {
+    parameters: {
+      query: {
+        from: string;
+        to: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SessionRangeStats"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_session_detailed_stats_internal_sessions_detailed_stats_get: {
+    parameters: {
+      query: {
+        from: string;
+        to: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SessionDetailedStats"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_session_durations_internal_sessions_durations_get: {
+    parameters: {
+      query: {
+        /** @description Comma-separated session UUIDs */
+        ids: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_session_by_id_internal_sessions__session_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        session_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SessionBasic"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_next_session_for_cohort_internal_sessions_cohorts__cohort_id__next_session_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        cohort_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NextSessionResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_session_ids_for_cohort_internal_sessions_cohorts__cohort_id__session_ids_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        cohort_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": string[];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_completed_session_ids_for_cohort_internal_sessions_cohorts__cohort_id__completed_session_ids_get: {
+    parameters: {
+      query?: {
+        start_date?: string | null;
+        end_date?: string | null;
+      };
+      header?: never;
+      path: {
+        cohort_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": string[];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_session_coach_ids_internal_sessions__session_id__coaches_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        session_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": string[];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   sign_in_to_session_attendance_sessions__session_id__sign_in_post: {
     parameters: {
       query?: never;
@@ -8519,7 +16570,38 @@ export interface operations {
       };
     };
   };
-  get_my_attendance_history_attendance_me_attendance_get: {
+  get_cohort_attendance_summary_attendance_cohorts__cohort_id__attendance_summary_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        cohort_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CohortAttendanceSummary"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_my_attendance_history_attendance_me_get: {
     parameters: {
       query?: never;
       header?: never;
@@ -8601,11 +16683,16 @@ export interface operations {
       };
     };
   };
-  trigger_cohort_status_transitions_academy_admin_tasks_transition_cohort_statuses_post: {
+  get_member_attendance_internal_attendance_member__member_id__get: {
     parameters: {
-      query?: never;
+      query?: {
+        /** @description Comma-separated session IDs to filter by */
+        session_ids?: string | null;
+      };
       header?: never;
-      path?: never;
+      path: {
+        member_id: string;
+      };
       cookie?: never;
     };
     requestBody?: never;
@@ -8616,7 +16703,81 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": unknown;
+          "application/json": components["schemas"]["AttendanceRecordBasic"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_session_attendee_member_ids_internal_attendance_session__session_id__member_ids_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        session_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": string[];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_member_attendance_stats_internal_attendance_stats_member__member_auth_id__get: {
+    parameters: {
+      query: {
+        from: string;
+        to: string;
+      };
+      header?: never;
+      path: {
+        member_auth_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MemberAttendanceStats"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };
@@ -8672,37 +16833,6 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ProgramResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  admin_delete_member_academy_records_academy_admin_members__member_id__delete: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        member_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": unknown;
         };
       };
       /** @description Validation Error */
@@ -8827,6 +16957,183 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_milestone_academy_milestones_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MilestoneCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MilestoneResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_program_milestones_academy_programs__program_id__milestones_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        program_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MilestoneResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  check_program_interest_academy_programs__program_id__interest_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        program_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  register_program_interest_academy_programs__program_id__interest_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        program_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  remove_program_interest_academy_programs__program_id__interest_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        program_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_public_academy_stats_academy_stats_public_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AcademyPublicStats"];
         };
       };
     };
@@ -9010,6 +17317,37 @@ export interface operations {
       };
     };
   };
+  list_enrollable_cohorts_academy_cohorts_enrollable_get: {
+    parameters: {
+      query?: {
+        program_id?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CohortResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   list_cohorts_by_coach_academy_cohorts_by_coach__coach_member_id__get: {
     parameters: {
       query?: never;
@@ -9057,97 +17395,6 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["CohortResponse"][];
-        };
-      };
-    };
-  };
-  list_my_coach_students_academy_coach_me_students_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["EnrollmentResponse"][];
-        };
-      };
-    };
-  };
-  get_my_coach_earnings_academy_coach_me_earnings_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": unknown;
-        };
-      };
-    };
-  };
-  list_my_coach_resources_academy_coach_me_resources_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CohortResourceResponse"][];
-        };
-      };
-    };
-  };
-  list_cohort_resources_academy_cohorts__cohort_id__resources_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        cohort_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CohortResourceResponse"][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };
@@ -9214,16 +17461,18 @@ export interface operations {
       };
     };
   };
-  create_milestone_academy_milestones_post: {
+  preview_cohort_timeline_shift_academy_cohorts__cohort_id__timeline_shifts_preview_post: {
     parameters: {
       query?: never;
       header?: never;
-      path?: never;
+      path: {
+        cohort_id: string;
+      };
       cookie?: never;
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["MilestoneCreate"];
+        "application/json": components["schemas"]["CohortTimelineShiftRequest"];
       };
     };
     responses: {
@@ -9233,7 +17482,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["MilestoneResponse"];
+          "application/json": components["schemas"]["CohortTimelineShiftPreviewResponse"];
         };
       };
       /** @description Validation Error */
@@ -9247,12 +17496,14 @@ export interface operations {
       };
     };
   };
-  list_program_milestones_academy_programs__program_id__milestones_get: {
+  list_cohort_timeline_shift_logs_academy_cohorts__cohort_id__timeline_shifts_get: {
     parameters: {
-      query?: never;
+      query?: {
+        limit?: number;
+      };
       header?: never;
       path: {
-        program_id: string;
+        cohort_id: string;
       };
       cookie?: never;
     };
@@ -9264,7 +17515,73 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["MilestoneResponse"][];
+          "application/json": components["schemas"]["CohortTimelineShiftLogResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  apply_cohort_timeline_shift_academy_cohorts__cohort_id__timeline_shifts_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        cohort_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CohortTimelineShiftRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CohortTimelineShiftApplyResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_cohort_resources_academy_cohorts__cohort_id__resources_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        cohort_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CohortResourceResponse"][];
         };
       };
       /** @description Validation Error */
@@ -9525,7 +17842,7 @@ export interface operations {
       };
     };
   };
-  get_enrollment_internal_academy_internal_enrollments__enrollment_id__get: {
+  admin_mark_enrollment_paid_academy_admin_enrollments__enrollment_id__mark_paid_post: {
     parameters: {
       query?: never;
       header?: never;
@@ -9534,7 +17851,11 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody?: never;
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["EnrollmentMarkPaidRequest"] | null;
+      };
+    };
     responses: {
       /** @description Successful Response */
       200: {
@@ -9556,7 +17877,7 @@ export interface operations {
       };
     };
   };
-  get_enrollment_onboarding_academy_my_enrollments__enrollment_id__onboarding_get: {
+  admin_dropout_action_academy_admin_enrollments__enrollment_id__dropout_action_post: {
     parameters: {
       query?: never;
       header?: never;
@@ -9565,7 +17886,11 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody?: never;
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AdminDropoutActionRequest"];
+      };
+    };
     responses: {
       /** @description Successful Response */
       200: {
@@ -9573,7 +17898,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["OnboardingResponse"];
+          "application/json": components["schemas"]["EnrollmentResponse"];
         };
       };
       /** @description Validation Error */
@@ -9618,7 +17943,70 @@ export interface operations {
       };
     };
   };
-  admin_mark_enrollment_paid_academy_admin_enrollments__enrollment_id__mark_paid_post: {
+  get_cohort_analytics_academy_cohorts__cohort_id__analytics_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        cohort_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  pay_installment_with_bubbles_academy_enrollments__enrollment_id__installments__installment_id__pay_with_bubbles_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        enrollment_id: string;
+        installment_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EnrollmentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_enrollment_onboarding_academy_my_enrollments__enrollment_id__onboarding_get: {
     parameters: {
       query?: never;
       header?: never;
@@ -9635,7 +18023,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["EnrollmentResponse"];
+          "application/json": components["schemas"]["OnboardingResponse"];
         };
       };
       /** @description Validation Error */
@@ -9739,6 +18127,1009 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["StudentProgressResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_milestone_review_events_academy_enrollments__enrollment_id__progress__progress_id__events_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        enrollment_id: string;
+        progress_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MilestoneReviewEventResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_coach_dashboard_academy_coach_me_dashboard_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CoachDashboardSummary"];
+        };
+      };
+    };
+  };
+  get_coach_cohort_detail_academy_coach_me_cohorts__cohort_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        cohort_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CoachCohortDetail"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_my_coach_students_academy_coach_me_students_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EnrollmentResponse"][];
+        };
+      };
+    };
+  };
+  get_my_coach_earnings_academy_coach_me_earnings_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  list_my_coach_resources_academy_coach_me_resources_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CohortResourceResponse"][];
+        };
+      };
+    };
+  };
+  list_pending_milestone_reviews_academy_coach_me_pending_reviews_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PendingMilestoneReview"][];
+        };
+      };
+    };
+  };
+  review_milestone_claim_academy_coach_me_milestone_reviews__progress_id__post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        progress_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MilestoneReviewAction"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  preview_complexity_score_academy_scoring_calculate_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ComplexityScoreCalculateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ComplexityScoreCalculation"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_scoring_dimensions_academy_scoring_dimensions__category__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        category: components["schemas"]["ProgramCategory"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DimensionLabelsResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_cohort_complexity_score_academy_cohorts__cohort_id__complexity_score_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        cohort_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CohortComplexityScoreResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  update_cohort_complexity_score_academy_cohorts__cohort_id__complexity_score_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        cohort_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CohortComplexityScoreUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CohortComplexityScoreResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_cohort_complexity_score_academy_cohorts__cohort_id__complexity_score_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        cohort_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CohortComplexityScoreCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CohortComplexityScoreResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_cohort_complexity_score_academy_cohorts__cohort_id__complexity_score_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        cohort_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  mark_complexity_score_reviewed_academy_cohorts__cohort_id__complexity_score_review_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        cohort_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_eligible_coaches_for_cohort_academy_cohorts__cohort_id__eligible_coaches_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        cohort_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EligibleCoachResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  ai_score_cohort_academy_cohorts__cohort_id__ai_score_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        cohort_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AIScoringRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AIScoringResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  ai_suggest_coach_academy_cohorts__cohort_id__ai_suggest_coach_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        cohort_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AICoachSuggestionResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  download_cohort_progress_report_academy_cohorts__cohort_id__progress_report_pdf_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        cohort_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  download_certificate_academy_enrollments__enrollment_id__certificate_pdf_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        enrollment_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  trigger_cohort_status_transitions_academy_admin_tasks_transition_cohort_statuses_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  admin_delete_member_academy_records_academy_admin_members__member_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        member_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_cohort_ids_for_coach_internal_academy_coaches__coach_member_id__cohort_ids_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        coach_member_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": string[];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_enrollment_internal_internal_academy_enrollments__enrollment_id__get: {
+    parameters: {
+      query?: {
+        use_installments?: boolean;
+      };
+      header?: never;
+      path: {
+        enrollment_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EnrollmentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_cohort_internal_internal_academy_cohorts__cohort_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        cohort_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_cohort_enrolled_students_internal_internal_academy_cohorts__cohort_id__enrolled_students_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        cohort_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  check_cohort_enrollment_internal_internal_academy_cohorts__cohort_id__check_enrollment__member_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        cohort_id: string;
+        member_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_member_academy_summary_internal_academy_member_summary__member_auth_id__get: {
+    parameters: {
+      query: {
+        from: string;
+        to: string;
+      };
+      header?: never;
+      path: {
+        member_auth_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MemberAcademySummary"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_extension_requests_for_cohort_academy_extension_requests_cohorts__cohort_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        cohort_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CohortExtensionRequestResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_extension_request_academy_extension_requests_cohorts__cohort_id__post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        cohort_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CohortExtensionRequestCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CohortExtensionRequestResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_my_extension_requests_academy_extension_requests_coach_me_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CohortExtensionRequestResponse"][];
+        };
+      };
+    };
+  };
+  list_pending_extension_requests_academy_extension_requests_pending_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CohortExtensionRequestResponse"][];
+        };
+      };
+    };
+  };
+  approve_extension_request_academy_extension_requests__request_id__approve_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        request_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CohortExtensionRequestReview"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CohortExtensionRequestResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  reject_extension_request_academy_extension_requests__request_id__reject_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        request_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CohortExtensionRequestReview"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CohortExtensionRequestResponse"];
         };
       };
       /** @description Validation Error */
@@ -10210,6 +19601,286 @@ export interface operations {
       };
     };
   };
+  create_assignment_academy_coach_assignments__post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CoachAssignmentCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CoachAssignmentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_cohort_assignments_academy_coach_assignments_cohort__cohort_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        cohort_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CoachAssignmentResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_my_assignments_academy_coach_assignments_coach_me_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CoachAssignmentResponse"][];
+        };
+      };
+    };
+  };
+  list_coach_assignments_academy_coach_assignments_coach__coach_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        coach_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CoachAssignmentResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  cancel_assignment_academy_coach_assignments__assignment_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        assignment_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  update_assignment_academy_coach_assignments__assignment_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        assignment_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CoachAssignmentUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CoachAssignmentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_evaluations_academy_coach_assignments__assignment_id__evaluations_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        assignment_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ShadowEvaluationResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_shadow_evaluation_academy_coach_assignments__assignment_id__evaluations_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        assignment_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ShadowEvaluationCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ShadowEvaluationResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_coach_readiness_academy_coach_assignments_readiness__coach_id__get: {
+    parameters: {
+      query?: {
+        target_grade?: string;
+      };
+      header?: never;
+      path: {
+        coach_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CoachReadinessResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   get_pricing_config_payments_pricing_get: {
     parameters: {
       query?: never;
@@ -10359,6 +20030,37 @@ export interface operations {
         "application/json": components["schemas"]["CompletePaymentRequest"];
       };
     };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaymentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  replay_payment_entitlement_payments_admin__reference__replay_entitlement_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        reference: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
     responses: {
       /** @description Successful Response */
       200: {
@@ -10623,6 +20325,137 @@ export interface operations {
       };
     };
   };
+  internal_initialize_payment_internal_payments_initialize_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["InternalInitializeRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InternalInitializeResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  internal_verify_paystack_reference_internal_payments_paystack_verify__reference__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        reference: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InternalPaystackVerifyResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  internal_validate_discount_internal_payments_discounts_validate_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["InternalDiscountValidateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InternalDiscountValidateResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_member_payment_summary_internal_payments_member_summary__member_auth_id__get: {
+    parameters: {
+      query: {
+        from: string;
+        to: string;
+      };
+      header?: never;
+      path: {
+        member_auth_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MemberPaymentSummary"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   submit_proof_of_payment_payments__reference__proof_post: {
     parameters: {
       query?: never;
@@ -10748,7 +20581,7 @@ export interface operations {
       };
     };
   };
-  list_payouts_admin_payouts__get: {
+  list_payouts_payments_admin_payouts__get: {
     parameters: {
       query?: {
         status?: components["schemas"]["PayoutStatus"] | null;
@@ -10782,7 +20615,7 @@ export interface operations {
       };
     };
   };
-  create_payout_admin_payouts__post: {
+  create_payout_payments_admin_payouts__post: {
     parameters: {
       query?: never;
       header?: never;
@@ -10815,7 +20648,7 @@ export interface operations {
       };
     };
   };
-  get_payout_summary_admin_payouts_summary_get: {
+  get_payout_summary_payments_admin_payouts_summary_get: {
     parameters: {
       query?: never;
       header?: never;
@@ -10835,7 +20668,7 @@ export interface operations {
       };
     };
   };
-  get_payout_admin_payouts__payout_id__get: {
+  get_payout_payments_admin_payouts__payout_id__get: {
     parameters: {
       query?: never;
       header?: never;
@@ -10866,7 +20699,7 @@ export interface operations {
       };
     };
   };
-  approve_payout_admin_payouts__payout_id__approve_put: {
+  approve_payout_payments_admin_payouts__payout_id__approve_put: {
     parameters: {
       query?: never;
       header?: never;
@@ -10901,7 +20734,7 @@ export interface operations {
       };
     };
   };
-  initiate_transfer_admin_payouts__payout_id__initiate_transfer_post: {
+  initiate_transfer_payments_admin_payouts__payout_id__initiate_transfer_post: {
     parameters: {
       query?: never;
       header?: never;
@@ -10932,7 +20765,7 @@ export interface operations {
       };
     };
   };
-  complete_manual_payout_admin_payouts__payout_id__complete_manual_put: {
+  complete_manual_payout_payments_admin_payouts__payout_id__complete_manual_put: {
     parameters: {
       query?: never;
       header?: never;
@@ -10967,7 +20800,7 @@ export interface operations {
       };
     };
   };
-  fail_payout_admin_payouts__payout_id__fail_put: {
+  fail_payout_payments_admin_payouts__payout_id__fail_put: {
     parameters: {
       query?: never;
       header?: never;
@@ -11002,7 +20835,7 @@ export interface operations {
       };
     };
   };
-  get_my_payouts_coach_me_payouts__get: {
+  get_my_payouts_payments_coach_me_payouts__get: {
     parameters: {
       query?: {
         status?: components["schemas"]["PayoutStatus"] | null;
@@ -11035,7 +20868,7 @@ export interface operations {
       };
     };
   };
-  get_my_payout_coach_me_payouts__payout_id__get: {
+  get_my_payout_payments_coach_me_payouts__payout_id__get: {
     parameters: {
       query?: never;
       header?: never;
@@ -11068,7 +20901,16 @@ export interface operations {
   };
   list_announcements_announcements__get: {
     parameters: {
-      query?: never;
+      query?: {
+        /** @description Include drafts/archived/expired (admin only) */
+        include_all?: boolean;
+        /** @description Max items to return */
+        limit?: number | null;
+        /** @description Only return unread (requires member_id) */
+        unread_only?: boolean;
+        /** @description Member ID for unread filtering */
+        member_id?: string | null;
+      };
       header?: never;
       path?: never;
       cookie?: never;
@@ -11082,6 +20924,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["AnnouncementResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };
@@ -11121,7 +20972,10 @@ export interface operations {
   };
   get_announcement_stats_announcements_stats_get: {
     parameters: {
-      query?: never;
+      query?: {
+        /** @description Include drafts/archived/expired (admin only) */
+        include_all?: boolean;
+      };
       header?: never;
       path?: never;
       cookie?: never;
@@ -11137,11 +20991,55 @@ export interface operations {
           "application/json": unknown;
         };
       };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_unread_count_announcements_unread_count_get: {
+    parameters: {
+      query: {
+        /** @description Member ID */
+        member_id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
   };
   get_announcement_announcements__announcement_id__get: {
     parameters: {
-      query?: never;
+      query?: {
+        /** @description Include drafts/archived/expired (admin only) */
+        include_all?: boolean;
+      };
       header?: never;
       path: {
         announcement_id: string;
@@ -11221,6 +21119,109 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["AnnouncementResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  mark_announcement_read_announcements__announcement_id__read_post: {
+    parameters: {
+      query: {
+        /** @description Member ID */
+        member_id: string;
+      };
+      header?: never;
+      path: {
+        announcement_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AnnouncementReadCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnnouncementReadResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_announcement_read_status_announcements__announcement_id__read_status_get: {
+    parameters: {
+      query: {
+        /** @description Member ID */
+        member_id: string;
+      };
+      header?: never;
+      path: {
+        announcement_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnnouncementReadResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_announcement_read_stats_announcements__announcement_id__read_stats_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        announcement_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
         };
       };
       /** @description Validation Error */
@@ -11468,6 +21469,68 @@ export interface operations {
       };
     };
   };
+  publish_content_post_content__post_id__publish_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        post_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ContentPostResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  unpublish_content_post_content__post_id__unpublish_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        post_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ContentPostResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   list_content_comments_content__post_id__comments_get: {
     parameters: {
       query?: never;
@@ -11537,6 +21600,135 @@ export interface operations {
       };
     };
   };
+  list_announcement_categories_categories__get: {
+    parameters: {
+      query?: {
+        /** @description Include inactive categories */
+        include_inactive?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnnouncementCategoryConfigResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_announcement_category_categories__post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AnnouncementCategoryConfigCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnnouncementCategoryConfigResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_announcement_category_categories__category_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        category_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  update_announcement_category_categories__category_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        category_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AnnouncementCategoryConfigUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnnouncementCategoryConfigResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   admin_delete_member_comments_admin_members__member_id__delete: {
     parameters: {
       query?: never;
@@ -11555,6 +21747,785 @@ export interface operations {
         };
         content: {
           "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  send_cohort_message_messages_cohorts__cohort_id__post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        cohort_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CohortMessageCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MessageResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  send_student_message_messages_enrollments__enrollment_id__post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        enrollment_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StudentMessageCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MessageResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_message_logs_messages_logs_get: {
+    parameters: {
+      query?: {
+        cohort_id?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MessageLogResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  send_single_email_email_send_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EmailRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EmailResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  send_bulk_emails_email_send_bulk_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BulkEmailRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EmailResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  send_templated_email_email_template_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TemplatedEmailRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EmailResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_notifications_notifications__get: {
+    parameters: {
+      query: {
+        /** @description Member ID */
+        member_id: string;
+        /** @description Filter by category */
+        category?: string | null;
+        /** @description Only return unread */
+        unread_only?: boolean;
+        /** @description Max items to return */
+        limit?: number;
+        /** @description Pagination offset */
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NotificationListResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_unread_count_notifications_unread_count_get: {
+    parameters: {
+      query: {
+        /** @description Member ID */
+        member_id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NotificationUnreadCountResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  mark_notification_read_notifications__notification_id__read_post: {
+    parameters: {
+      query: {
+        /** @description Member ID */
+        member_id: string;
+      };
+      header?: never;
+      path: {
+        notification_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NotificationResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  mark_all_notifications_read_notifications_read_all_post: {
+    parameters: {
+      query: {
+        /** @description Member ID */
+        member_id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_notification_notifications__notification_id__delete: {
+    parameters: {
+      query: {
+        /** @description Member ID */
+        member_id: string;
+      };
+      header?: never;
+      path: {
+        notification_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  dispatch_notification_notifications_dispatch_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NotificationDispatchRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_notification_stats_notifications_admin_stats_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  cleanup_expired_notifications_notifications_admin_cleanup_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  get_my_preferences_preferences_me_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NotificationPreferencesResponse"];
+        };
+      };
+    };
+  };
+  update_my_preferences_preferences_me_patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NotificationPreferencesUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NotificationPreferencesResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_member_preferences_preferences__member_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        member_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NotificationPreferencesResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  check_notification_opt_in_preferences_check_opt_in_post: {
+    parameters: {
+      query: {
+        member_id: string;
+        notification_type: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_public_testimonials_testimonials_public_get: {
+    parameters: {
+      query?: {
+        /** @description Filter by track: academy|club|community|all. Omit for all tracks. */
+        track?: string | null;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TestimonialResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  admin_list_testimonials_admin_testimonials_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TestimonialResponse"][];
+        };
+      };
+    };
+  };
+  admin_create_testimonial_admin_testimonials_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TestimonialCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TestimonialResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  admin_delete_testimonial_admin_testimonials__testimonial_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        testimonial_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  admin_update_testimonial_admin_testimonials__testimonial_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        testimonial_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TestimonialUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TestimonialResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  handle_session_published_internal_communications_session_published_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Body_handle_session_published_internal_communications_session_published_post"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  handle_session_cancelled_internal_communications_session_cancelled_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Body_handle_session_cancelled_internal_communications_session_cancelled_post"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
         };
       };
       /** @description Validation Error */

@@ -2,7 +2,7 @@
 
 Complete reference for all routes in the SwimBuddz Next.js application.
 
-**Total Pages:** 118
+**Total Pages:** 122
 
 ---
 
@@ -10,7 +10,7 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 
 | Group                               | Pages | Description                                     |
 | ----------------------------------- | ----- | ----------------------------------------------- |
-| [Public Routes](#public-routes)     | 21    | Accessible without authentication               |
+| [Public Routes](#public-routes)     | 25    | Accessible without authentication               |
 | [Auth Routes](#auth-routes)         | 7     | Authentication flows (login, register, confirm) |
 | [Member Routes](#member-routes)     | 29    | Authenticated member dashboards and features    |
 | [Coach Routes](#coach-routes)       | 5     | Coach application, onboarding, and wallet       |
@@ -21,7 +21,7 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 
 ## Public Routes
 
-**21 pages** - Accessible to all visitors
+**25 pages** - Accessible to all visitors
 
 ### Landing & Info Pages
 
@@ -72,6 +72,13 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 | ------------------------ | ------------------------------------------------- | --------------------------------------------------- |
 | `/join`                  | `src/app/(public)/join/page.tsx`                  | Referral landing page — validate code, drive signup |
 | `/community/leaderboard` | `src/app/(public)/community/leaderboard/page.tsx` | Public referral leaderboard (anonymized top-10)     |
+
+### Guides
+
+| Route             | File                                        | Purpose                                                                |
+| ----------------- | ------------------------------------------- | ---------------------------------------------------------------------- |
+| `/guides`         | `src/app/(public)/guides/page.tsx`          | Shareable index of public guides, grouped by audience                  |
+| `/guides/[slug]`  | `src/app/(public)/guides/[slug]/page.tsx`   | Individual guide detail page, rendered from `src/content/guides/*.md`  |
 
 ---
 

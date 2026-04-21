@@ -82,6 +82,25 @@ export type StudentProgress = {
   updated_at: string;
 };
 
+export type MilestoneEventType = "claimed" | "approved" | "rejected" | "status_changed";
+
+export type MilestoneReviewEvent = {
+  id: string;
+  progress_id: string;
+  enrollment_id: string;
+  milestone_id: string;
+  event_type: MilestoneEventType;
+  actor_id: string;
+  actor_role: "student" | "coach" | "admin";
+  previous_status: ProgressStatus | null;
+  new_status: ProgressStatus;
+  student_notes_snapshot: string | null;
+  coach_notes_snapshot: string | null;
+  evidence_media_id_snapshot: string | null;
+  score_snapshot: number | null;
+  created_at: string;
+};
+
 export type Enrollment = {
   id: string;
   program_id: string | null;
@@ -255,9 +274,7 @@ export async function getCohort(cohortId: string): Promise<Cohort> {
  * Get students enrolled in a cohort.
  * Requires coach or admin permission.
  */
-export async function getCohortStudents(
-  cohortId: string,
-): Promise<Enrollment[]> {
+export async function getCohortStudents(cohortId: string): Promise<Enrollment[]> {
   return apiGet<Enrollment[]>(`/api/v1/academy/cohorts/${cohortId}/students`, {
     auth: true,
   });
@@ -290,11 +307,7 @@ export type SessionType =
   | "community"
   | "event";
 
-export type SessionStatus =
-  | "scheduled"
-  | "in_progress"
-  | "completed"
-  | "cancelled";
+export type SessionStatus = "scheduled" | "in_progress" | "completed" | "cancelled";
 
 export type CoachSession = {
   id: string;
@@ -368,40 +381,42 @@ export async function getMyCoachResources(): Promise<CohortResource[]> {
 /**
  * Get resources for a specific cohort.
  */
-export async function getCohortResources(
-  cohortId: string,
-): Promise<CohortResource[]> {
-  return apiGet<CohortResource[]>(
-    `/api/v1/academy/cohorts/${cohortId}/resources`,
-    {
-      auth: true,
-    },
-  );
+export async function getCohortResources(cohortId: string): Promise<CohortResource[]> {
+  return apiGet<CohortResource[]>(`/api/v1/academy/cohorts/${cohortId}/resources`, {
+    auth: true,
+  });
 }
 
 /**
  * Get milestones for a program.
  */
-export async function getProgramMilestones(
-  programId: string,
-): Promise<Milestone[]> {
-  return apiGet<Milestone[]>(
-    `/api/v1/academy/programs/${programId}/milestones`,
-    {
-      auth: true,
-    },
-  );
+export async function getProgramMilestones(programId: string): Promise<Milestone[]> {
+  return apiGet<Milestone[]>(`/api/v1/academy/programs/${programId}/milestones`, {
+    auth: true,
+  });
 }
 
 /**
  * Get progress records for an enrollment.
  */
-export async function getEnrollmentProgress(
+export async function getEnrollmentProgress(enrollmentId: string): Promise<StudentProgress[]> {
+  return apiGet<StudentProgress[]>(`/api/v1/academy/enrollments/${enrollmentId}/progress`, {
+    auth: true,
+  });
+}
+
+/**
+ * Get the append-only audit trail of claim/review/status-change events for
+ * a single StudentProgress record. Visible to the owning student, the coach
+ * assigned to the cohort, or an admin.
+ */
+export async function getMilestoneEvents(
   enrollmentId: string,
-): Promise<StudentProgress[]> {
-  return apiGet<StudentProgress[]>(
-    `/api/v1/academy/enrollments/${enrollmentId}/progress`,
-    { auth: true },
+  progressId: string
+): Promise<MilestoneReviewEvent[]> {
+  return apiGet<MilestoneReviewEvent[]>(
+    `/api/v1/academy/enrollments/${enrollmentId}/progress/${progressId}/events`,
+    { auth: true }
   );
 }
 
@@ -415,7 +430,7 @@ export async function updateStudentProgress(
     status: ProgressStatus;
     achieved_at?: string;
     coach_notes?: string;
-  },
+  }
 ): Promise<StudentProgress> {
   return apiPost<StudentProgress>(
     "/api/v1/academy/progress",
@@ -424,7 +439,7 @@ export async function updateStudentProgress(
       milestone_id: milestoneId,
       ...data,
     },
-    { auth: true },
+    { auth: true }
   );
 }
 
@@ -438,13 +453,9 @@ export async function reviewMilestone(
     action: "approve" | "reject";
     score?: number;
     coach_notes?: string;
-  },
+  }
 ): Promise<{ message: string; progress_id: string; status: string }> {
-  return apiPost(
-    `/api/v1/academy/coach/me/milestone-reviews/${progressId}`,
-    data,
-    { auth: true },
-  );
+  return apiPost(`/api/v1/academy/coach/me/milestone-reviews/${progressId}`, data, { auth: true });
 }
 
 /**
@@ -533,10 +544,7 @@ export function calculateCohortStats(cohorts: Cohort[]) {
   const upcomingCohorts = cohorts.filter((c) => {
     const start = Date.parse(c.start_date);
     return (
-      Number.isFinite(start) &&
-      start > now &&
-      c.status !== "completed" &&
-      c.status !== "cancelled"
+      Number.isFinite(start) && start > now && c.status !== "completed" && c.status !== "cancelled"
     );
   });
   const next7Days = upcomingCohorts.filter((c) => {
@@ -559,7 +567,7 @@ export function calculateCohortStats(cohorts: Cohort[]) {
  */
 export function calculateProgressPercentage(
   progress: StudentProgress[],
-  totalMilestones: number,
+  totalMilestones: number
 ): number {
   if (totalMilestones === 0) return 0;
   const achieved = progress.filter((p) => p.status === "achieved").length;
@@ -569,10 +577,7 @@ export function calculateProgressPercentage(
 /**
  * Get students grouped by their progress status.
  */
-export function groupStudentsByProgress(
-  enrollments: Enrollment[],
-  milestones: Milestone[],
-) {
+export function groupStudentsByProgress(enrollments: Enrollment[], milestones: Milestone[]) {
   const totalMilestones = milestones.length;
 
   return enrollments.reduce(
@@ -594,7 +599,7 @@ export function groupStudentsByProgress(
       notStarted: [] as Enrollment[],
       inProgress: [] as Enrollment[],
       completed: [] as Enrollment[],
-    },
+    }
   );
 }
 
@@ -614,25 +619,17 @@ export async function getCoachDashboard(): Promise<CoachDashboardSummary> {
 /**
  * Get detailed cohort view for coach dashboard.
  */
-export async function getCoachCohortDetail(
-  cohortId: string,
-): Promise<CoachCohortDetail> {
-  return apiGet<CoachCohortDetail>(
-    `/api/v1/academy/coach/me/cohorts/${cohortId}`,
-    { auth: true },
-  );
+export async function getCoachCohortDetail(cohortId: string): Promise<CoachCohortDetail> {
+  return apiGet<CoachCohortDetail>(`/api/v1/academy/coach/me/cohorts/${cohortId}`, { auth: true });
 }
 
 /**
  * Get pending milestone reviews for the current coach.
  */
-export async function getPendingMilestoneReviews(): Promise<
-  PendingMilestoneReview[]
-> {
-  return apiGet<PendingMilestoneReview[]>(
-    "/api/v1/academy/coach/me/pending-reviews",
-    { auth: true },
-  );
+export async function getPendingMilestoneReviews(): Promise<PendingMilestoneReview[]> {
+  return apiGet<PendingMilestoneReview[]>("/api/v1/academy/coach/me/pending-reviews", {
+    auth: true,
+  });
 }
 
 /**
@@ -640,13 +637,11 @@ export async function getPendingMilestoneReviews(): Promise<
  */
 export async function reviewMilestoneClaim(
   progressId: string,
-  action: MilestoneReviewAction,
+  action: MilestoneReviewAction
 ): Promise<{ message: string; progress_id: string; status: string }> {
-  return apiPost(
-    `/api/v1/academy/coach/me/milestone-reviews/${progressId}`,
-    action,
-    { auth: true },
-  );
+  return apiPost(`/api/v1/academy/coach/me/milestone-reviews/${progressId}`, action, {
+    auth: true,
+  });
 }
 
 // ============================================================================
@@ -720,7 +715,7 @@ export function getCategoryLabel(category: ProgramCategory): string {
  */
 export function getGradeForCategory(
   grades: CoachGrades,
-  category: ProgramCategory,
+  category: ProgramCategory
 ): CoachGrade | null {
   const fieldMap: Record<ProgramCategory, keyof CoachGrades> = {
     learn_to_swim: "learn_to_swim_grade",

@@ -11,10 +11,12 @@ import { apiGet } from "@/lib/api";
 import {
   calculateProgressPercentage,
   getEnrollmentProgress,
+  getMilestoneEvents,
   getProgramMilestones,
   reviewMilestone,
   type Enrollment,
   type Milestone,
+  type MilestoneReviewEvent,
   type StudentProgress,
 } from "@/lib/coach";
 import { formatDate } from "@/lib/format";
@@ -50,7 +52,7 @@ export default function CoachStudentProgressPage() {
         // Load enrollment details
         const enrollmentData = await apiGet<Enrollment>(
           `/api/v1/academy/enrollments/${enrollmentId}`,
-          { auth: true },
+          { auth: true }
         );
         setEnrollment(enrollmentData);
 
@@ -75,11 +77,7 @@ export default function CoachStudentProgressPage() {
     loadData();
   }, [enrollmentId]);
 
-  const handleReview = async (
-    progressId: string,
-    action: "approve" | "reject",
-    notes?: string,
-  ) => {
+  const handleReview = async (progressId: string, action: "approve" | "reject", notes?: string) => {
     try {
       await reviewMilestone(progressId, {
         action,
@@ -107,15 +105,10 @@ export default function CoachStudentProgressPage() {
     );
   }
 
-  const progressPercent = calculateProgressPercentage(
-    progress,
-    milestones.length,
-  );
-  const achievedCount = progress.filter(
-    (p) => p.status === "achieved" && p.reviewed_at,
-  ).length;
+  const progressPercent = calculateProgressPercentage(progress, milestones.length);
+  const achievedCount = progress.filter((p) => p.status === "achieved" && p.reviewed_at).length;
   const pendingReviewCount = progress.filter(
-    (p) => p.status === "achieved" && !p.reviewed_at,
+    (p) => p.status === "achieved" && !p.reviewed_at
   ).length;
 
   // Map progress by milestone_id for easy lookup
@@ -124,7 +117,7 @@ export default function CoachStudentProgressPage() {
       acc[p.milestone_id] = p;
       return acc;
     },
-    {} as Record<string, StudentProgress>,
+    {} as Record<string, StudentProgress>
   );
 
   return (
@@ -132,39 +125,26 @@ export default function CoachStudentProgressPage() {
       {/* Header */}
       <header>
         <Link
-          href={
-            enrollment.cohort_id
-              ? `/coach/cohorts/${enrollment.cohort_id}`
-              : "/coach/cohorts"
-          }
+          href={enrollment.cohort_id ? `/coach/cohorts/${enrollment.cohort_id}` : "/coach/cohorts"}
           className="text-sm text-slate-500 hover:text-slate-700"
         >
           ← Back to cohort
         </Link>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between mt-2">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">
-              Student Progress
-            </h1>
+            <h1 className="text-3xl font-bold text-slate-900">Student Progress</h1>
             <p className="text-slate-600 mt-1">
-              {enrollment.member_name ||
-                `Student ${enrollment.member_id.slice(0, 8)}`}
+              {enrollment.member_name || `Student ${enrollment.member_id.slice(0, 8)}`}
             </p>
             {enrollment.member_email && (
-              <p className="text-sm text-slate-500">
-                {enrollment.member_email}
-              </p>
+              <p className="text-sm text-slate-500">{enrollment.member_email}</p>
             )}
           </div>
           <div className="flex items-center gap-2">
             {pendingReviewCount > 0 && (
-              <Badge variant="warning">
-                {pendingReviewCount} pending review
-              </Badge>
+              <Badge variant="warning">{pendingReviewCount} pending review</Badge>
             )}
-            <Badge
-              variant={enrollment.status === "enrolled" ? "info" : "success"}
-            >
+            <Badge variant={enrollment.status === "enrolled" ? "info" : "success"}>
               {enrollment.status}
             </Badge>
           </div>
@@ -175,9 +155,7 @@ export default function CoachStudentProgressPage() {
       <Card className="p-6">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="flex-1">
-            <h2 className="text-lg font-semibold text-slate-900 mb-2">
-              Overall Progress
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-2">Overall Progress</h2>
             <div className="flex items-center gap-4">
               <div className="flex-1 h-3 bg-slate-200 rounded-full overflow-hidden">
                 <div
@@ -185,9 +163,7 @@ export default function CoachStudentProgressPage() {
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
-              <span className="text-lg font-semibold text-slate-900">
-                {progressPercent}%
-              </span>
+              <span className="text-lg font-semibold text-slate-900">{progressPercent}%</span>
             </div>
             <p className="text-sm text-slate-600 mt-2">
               {achievedCount} of {milestones.length} milestones verified
@@ -195,9 +171,7 @@ export default function CoachStudentProgressPage() {
           </div>
           <div className="text-center sm:text-right">
             <p className="text-sm text-slate-500">Enrolled</p>
-            <p className="font-medium text-slate-900">
-              {formatDate(enrollment.created_at)}
-            </p>
+            <p className="font-medium text-slate-900">{formatDate(enrollment.created_at)}</p>
           </div>
         </div>
       </Card>
@@ -208,9 +182,7 @@ export default function CoachStudentProgressPage() {
           {enrollment.program && (
             <Card className="p-4">
               <p className="text-sm text-slate-500 mb-1">Program</p>
-              <p className="font-semibold text-slate-900">
-                {enrollment.program.name}
-              </p>
+              <p className="font-semibold text-slate-900">{enrollment.program.name}</p>
               {enrollment.program.description && (
                 <p className="text-sm text-slate-600 mt-1 line-clamp-2">
                   {enrollment.program.description}
@@ -221,9 +193,7 @@ export default function CoachStudentProgressPage() {
           {enrollment.cohort && (
             <Card className="p-4">
               <p className="text-sm text-slate-500 mb-1">Cohort</p>
-              <p className="font-semibold text-slate-900">
-                {enrollment.cohort.name}
-              </p>
+              <p className="font-semibold text-slate-900">{enrollment.cohort.name}</p>
               <p className="text-sm text-slate-600 mt-1">
                 {formatDate(enrollment.cohort.start_date)} -{" "}
                 {formatDate(enrollment.cohort.end_date)}
@@ -235,9 +205,7 @@ export default function CoachStudentProgressPage() {
 
       {/* Milestones */}
       <Card className="p-6">
-        <h2 className="text-xl font-semibold text-slate-900 mb-4">
-          Milestones
-        </h2>
+        <h2 className="text-xl font-semibold text-slate-900 mb-4">Milestones</h2>
 
         {milestones.length === 0 ? (
           <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center">
@@ -254,6 +222,7 @@ export default function CoachStudentProgressPage() {
                 key={milestone.id}
                 milestone={milestone}
                 index={index}
+                enrollmentId={enrollmentId}
                 progress={progressByMilestone[milestone.id]}
                 onReview={handleReview}
               />
@@ -268,21 +237,42 @@ export default function CoachStudentProgressPage() {
 function MilestoneItem({
   milestone,
   index,
+  enrollmentId,
   progress,
   onReview,
 }: {
   milestone: Milestone;
   index: number;
+  enrollmentId: string;
   progress?: StudentProgress;
-  onReview: (
-    progressId: string,
-    action: "approve" | "reject",
-    notes?: string,
-  ) => Promise<void>;
+  onReview: (progressId: string, action: "approve" | "reject", notes?: string) => Promise<void>;
 }) {
   const [showNotes, setShowNotes] = useState(false);
   const [notes, setNotes] = useState(progress?.coach_notes || "");
   const [saving, setSaving] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [history, setHistory] = useState<MilestoneReviewEvent[] | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+
+  const toggleHistory = async () => {
+    if (!progress) return;
+    const next = !showHistory;
+    setShowHistory(next);
+    if (next && history === null) {
+      setHistoryLoading(true);
+      setHistoryError(null);
+      try {
+        const events = await getMilestoneEvents(enrollmentId, progress.id);
+        setHistory(events);
+      } catch (err) {
+        console.error("Failed to load milestone history", err);
+        setHistoryError("Failed to load history.");
+      } finally {
+        setHistoryLoading(false);
+      }
+    }
+  };
 
   const isAchieved = progress?.status === "achieved";
   const isVerified = isAchieved && !!progress?.reviewed_at;
@@ -368,9 +358,7 @@ function MilestoneItem({
               )}
             </div>
             {milestone.criteria && (
-              <p className="text-sm text-slate-600 mt-1">
-                {milestone.criteria}
-              </p>
+              <p className="text-sm text-slate-600 mt-1">{milestone.criteria}</p>
             )}
             {isVerified && progress?.reviewed_at && (
               <p className="text-xs text-emerald-600 mt-2">
@@ -387,21 +375,14 @@ function MilestoneItem({
             {isRejected && progress?.reviewed_at && (
               <p className="text-xs text-red-600 mt-2">
                 <XCircle className="h-3 w-3 inline mr-1" />
-                Rejected {formatDate(progress.reviewed_at)} — awaiting
-                resubmission
+                Rejected {formatDate(progress.reviewed_at)} — awaiting resubmission
               </p>
             )}
           </div>
           {/* Details toggle for non-pending states */}
           {!isPendingReview &&
-            (progress?.coach_notes ||
-              progress?.student_notes ||
-              progress?.evidence_media_id) && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowNotes(!showNotes)}
-              >
+            (progress?.coach_notes || progress?.student_notes || progress?.evidence_media_id) && (
+              <Button size="sm" variant="outline" onClick={() => setShowNotes(!showNotes)}>
                 {showNotes ? "Hide" : "Details"}
               </Button>
             )}
@@ -412,16 +393,12 @@ function MilestoneItem({
       {isPendingReview && (
         <div className="px-4 pb-4 border-t border-amber-200 pt-4 space-y-3">
           {/* Student Evidence — prominent */}
-          {progress?.evidence_media_id && (
-            <EvidenceMedia mediaId={progress.evidence_media_id} />
-          )}
+          {progress?.evidence_media_id && <EvidenceMedia mediaId={progress.evidence_media_id} />}
 
           {/* Student notes */}
           {progress?.student_notes && (
             <div className="p-3 bg-white/60 rounded-lg border border-amber-100">
-              <p className="text-xs font-medium text-slate-500 mb-1">
-                Student Notes
-              </p>
+              <p className="text-xs font-medium text-slate-500 mb-1">Student Notes</p>
               <p className="text-sm text-slate-700">{progress.student_notes}</p>
             </div>
           )}
@@ -454,12 +431,7 @@ function MilestoneItem({
               <XCircle className="h-4 w-4 mr-1" />
               {saving ? "..." : "Reject"}
             </Button>
-            <Button
-              size="sm"
-              variant="primary"
-              onClick={handleApprove}
-              disabled={saving}
-            >
+            <Button size="sm" variant="primary" onClick={handleApprove} disabled={saving}>
               <CheckCircle2 className="h-4 w-4 mr-1" />
               {saving ? "..." : "Approve"}
             </Button>
@@ -471,9 +443,7 @@ function MilestoneItem({
       {!isPendingReview && showNotes && (
         <div className="px-4 pb-4 border-t border-slate-100 pt-4">
           {/* Show evidence for verified/rejected too */}
-          {progress?.evidence_media_id && (
-            <EvidenceMedia mediaId={progress.evidence_media_id} />
-          )}
+          {progress?.evidence_media_id && <EvidenceMedia mediaId={progress.evidence_media_id} />}
 
           {progress?.student_notes && (
             <div className="mb-3 p-3 bg-slate-100 rounded-lg">
@@ -489,11 +459,7 @@ function MilestoneItem({
               <p
                 className={`text-xs mb-1 ${isVerified ? "text-emerald-600" : isRejected ? "text-red-600" : "text-slate-500"}`}
               >
-                {isVerified
-                  ? "Coach Notes:"
-                  : isRejected
-                    ? "Rejection Feedback:"
-                    : "Notes:"}
+                {isVerified ? "Coach Notes:" : isRejected ? "Rejection Feedback:" : "Notes:"}
               </p>
               <p className="text-sm text-slate-700">{progress.coach_notes}</p>
             </div>
@@ -502,7 +468,91 @@ function MilestoneItem({
           )}
         </div>
       )}
+
+      {/* History — visible whenever there's a progress record (i.e. at least
+          one claim has happened). Lazy-loads on expand. */}
+      {progress && (
+        <div className="px-4 pb-3 border-t border-slate-100 pt-3">
+          <button
+            type="button"
+            onClick={toggleHistory}
+            className="text-xs text-slate-500 hover:text-slate-700 underline"
+          >
+            {showHistory ? "Hide history" : "View history"}
+          </button>
+          {showHistory && (
+            <div className="mt-3">
+              {historyLoading && (
+                <p className="text-xs text-slate-400 flex items-center gap-1">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Loading…
+                </p>
+              )}
+              {historyError && <p className="text-xs text-red-500">{historyError}</p>}
+              {history && history.length === 0 && (
+                <p className="text-xs text-slate-400 italic">No recorded events yet.</p>
+              )}
+              {history && history.length > 0 && (
+                <ol className="space-y-2">
+                  {history.map((ev) => (
+                    <MilestoneHistoryEntry key={ev.id} event={ev} />
+                  ))}
+                </ol>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
+  );
+}
+
+function MilestoneHistoryEntry({ event }: { event: MilestoneReviewEvent }) {
+  const { event_type, created_at, actor_role } = event;
+  const label =
+    event_type === "claimed"
+      ? "Student submitted claim"
+      : event_type === "approved"
+        ? "Coach approved"
+        : event_type === "rejected"
+          ? "Coach rejected"
+          : "Status changed";
+  const dotColor =
+    event_type === "approved"
+      ? "bg-emerald-500"
+      : event_type === "rejected"
+        ? "bg-red-500"
+        : event_type === "claimed"
+          ? "bg-amber-500"
+          : "bg-slate-400";
+
+  return (
+    <li className="flex gap-3">
+      <span className={`mt-1.5 h-2 w-2 flex-shrink-0 rounded-full ${dotColor}`} aria-hidden />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <span className="text-xs font-medium text-slate-700">{label}</span>
+          <span className="text-[10px] uppercase tracking-wide text-slate-400">{actor_role}</span>
+          <span className="text-[11px] text-slate-400">
+            {new Date(created_at).toLocaleString()}
+          </span>
+        </div>
+        {event.student_notes_snapshot && (
+          <p className="mt-0.5 text-xs text-slate-600">
+            <span className="text-slate-400">Student notes: </span>
+            {event.student_notes_snapshot}
+          </p>
+        )}
+        {event.coach_notes_snapshot && (
+          <p className="mt-0.5 text-xs text-slate-600">
+            <span className="text-slate-400">Coach feedback: </span>
+            {event.coach_notes_snapshot}
+          </p>
+        )}
+        {event.evidence_media_id_snapshot && (
+          <p className="mt-0.5 text-[11px] text-slate-400">Evidence attached</p>
+        )}
+      </div>
+    </li>
   );
 }
 
@@ -531,8 +581,7 @@ function EvidenceMedia({ mediaId }: { mediaId: string }) {
     );
   }
 
-  const isVideo =
-    /\.(mp4|mov|webm|ogg|avi)(\?|$)/i.test(url) || url.includes("video");
+  const isVideo = /\.(mp4|mov|webm|ogg|avi)(\?|$)/i.test(url) || url.includes("video");
 
   return (
     <>
@@ -540,9 +589,7 @@ function EvidenceMedia({ mediaId }: { mediaId: string }) {
         <div className="px-3 py-1.5 bg-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <Play className="h-3.5 w-3.5 text-slate-600" />
-            <span className="text-xs font-medium text-slate-600">
-              Student Evidence
-            </span>
+            <span className="text-xs font-medium text-slate-600">Student Evidence</span>
           </div>
           <button
             onClick={() => setShowFullscreen(true)}
@@ -553,19 +600,11 @@ function EvidenceMedia({ mediaId }: { mediaId: string }) {
           </button>
         </div>
         {isVideo ? (
-          <video
-            controls
-            preload="metadata"
-            className="w-full max-h-72"
-            src={url}
-          >
+          <video controls preload="metadata" className="w-full max-h-72" src={url}>
             Your browser does not support video playback.
           </video>
         ) : (
-          <button
-            onClick={() => setShowFullscreen(true)}
-            className="w-full cursor-pointer"
-          >
+          <button onClick={() => setShowFullscreen(true)} className="w-full cursor-pointer">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={url}
@@ -588,17 +627,9 @@ function EvidenceMedia({ mediaId }: { mediaId: string }) {
           >
             <X className="h-6 w-6" />
           </button>
-          <div
-            className="max-w-5xl w-full max-h-[90vh]"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="max-w-5xl w-full max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
             {isVideo ? (
-              <video
-                controls
-                autoPlay
-                className="w-full max-h-[90vh] rounded-lg"
-                src={url}
-              >
+              <video controls autoPlay className="w-full max-h-[90vh] rounded-lg" src={url}>
                 Your browser does not support video playback.
               </video>
             ) : (
