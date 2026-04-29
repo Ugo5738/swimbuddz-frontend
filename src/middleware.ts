@@ -152,15 +152,28 @@ export async function middleware(request: NextRequest) {
         const communityPaidUntilMs = parseDateMs(
           member.membership?.community_paid_until,
         );
+        const academyUntilMs = parseDateMs(
+          member.membership?.academy_paid_until,
+        );
+        const clubUntilMs = parseDateMs(member.membership?.club_paid_until);
         const communityActive =
           communityPaidUntilMs !== null && communityPaidUntilMs > now;
+        const clubPaid = clubUntilMs !== null && clubUntilMs > now;
+        const academyPaid = academyUntilMs !== null && academyUntilMs > now;
 
         // Community activation paywall: allow account/profile, block other member routes.
+        // Active Club or Academy supersedes Community per the tier hierarchy, so either
+        // also satisfies the paywall.
         const paywallAllowed =
           pathname.startsWith("/account") ||
           pathname.startsWith("/account/profile");
 
-        if (!communityActive && !paywallAllowed) {
+        if (
+          !communityActive &&
+          !clubPaid &&
+          !academyPaid &&
+          !paywallAllowed
+        ) {
           const url = new URL("/account/billing", request.url);
           url.searchParams.set("required", "community");
           return NextResponse.redirect(url);
@@ -173,10 +186,6 @@ export async function middleware(request: NextRequest) {
 
         if (protectedRoute) {
           // Determine effective tier based on active payments using nested membership structure.
-          const academyUntilMs = parseDateMs(
-            member.membership?.academy_paid_until,
-          );
-          const clubUntilMs = parseDateMs(member.membership?.club_paid_until);
 
           const approvedTiers: string[] =
             member.membership?.active_tiers &&
