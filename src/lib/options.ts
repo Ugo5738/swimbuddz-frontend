@@ -131,6 +131,23 @@ export const discoverySourceOptions = [
   { value: "other", label: "Other" },
 ];
 
+/**
+ * Typed acquisition channel options — matches backend
+ * `services.members_service.models.enums.AcquisitionSource`. Used at
+ * registration to power flywheel funnel attribution.
+ */
+export const acquisitionSourceOptions = [
+  { value: "social_instagram", label: "Instagram" },
+  { value: "social_tiktok", label: "TikTok" },
+  { value: "referral_member", label: "A SwimBuddz member referred me" },
+  { value: "referral_friend", label: "A friend told me" },
+  { value: "corporate", label: "Through my employer" },
+  { value: "event", label: "Saw it at an event" },
+  { value: "whatsapp", label: "WhatsApp group" },
+  { value: "search", label: "Google / search" },
+  { value: "other", label: "Other" },
+];
+
 export const currencyOptions = [
   { value: "NGN", label: "Nigerian Naira (NGN)" },
   { value: "USD", label: "US Dollar (USD)" },

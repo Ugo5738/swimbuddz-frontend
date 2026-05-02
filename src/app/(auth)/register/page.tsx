@@ -39,6 +39,7 @@ interface FormData {
   country: string;
   swimLevel: string;
   discoverySource: string;
+  acquisitionSource: string;
   profilePhotoUrl?: string;
 
   // Club Readiness
@@ -98,6 +99,7 @@ const initialFormData: FormData = {
   country: "Nigeria",
   swimLevel: "",
   discoverySource: "",
+  acquisitionSource: "",
   profilePhotoUrl: "",
   emergencyContactName: "",
   emergencyContactRelationship: "",
@@ -192,6 +194,7 @@ function RegisterContent() {
             country: profile.country || "Nigeria",
             swimLevel: profile.swim_level || "",
             discoverySource: profile.discovery_source || "",
+            acquisitionSource: profile.acquisition_source || "",
             profilePhotoUrl: profile.profile_photo_url || "",
             emergencyContactName: profile.emergency_contact_name || "",
             emergencyContactRelationship: profile.emergency_contact_relationship || "",
@@ -280,7 +283,9 @@ function RegisterContent() {
           formData.state &&
           formData.city &&
           formData.country &&
-          formData.swimLevel
+          formData.swimLevel &&
+          // Coach registration skips acquisition source — only members feed the funnel.
+          (isCoachRegistration || formData.acquisitionSource)
         );
 
       case "confirm":
@@ -376,6 +381,10 @@ function RegisterContent() {
         state: formData.state,
         country: formData.country,
         swim_level: formData.swimLevel,
+        // Typed acquisition channel (powers flywheel funnel attribution).
+        acquisition_source: formData.acquisitionSource || undefined,
+        // Keep legacy discovery_source populated for back-compat with profile page.
+        discovery_source: formData.acquisitionSource || formData.discoverySource || undefined,
         // Always allow account access after email verification; tier upgrades are handled separately.
         membership_tier: "community",
         membership_tiers: ["community"],
@@ -412,6 +421,7 @@ function RegisterContent() {
       case "essentials":
         return (
           <RegistrationEssentialsStep
+            includeAcquisitionSource={!isCoachRegistration}
             formData={{
               firstName: formData.firstName,
               lastName: formData.lastName,
@@ -422,6 +432,7 @@ function RegisterContent() {
               state: formData.state,
               country: formData.country,
               swimLevel: formData.swimLevel,
+              acquisitionSource: formData.acquisitionSource,
             }}
             onUpdate={updateField}
           />

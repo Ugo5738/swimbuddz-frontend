@@ -2,6 +2,7 @@
 
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
+import { acquisitionSourceOptions } from "@/lib/options";
 import { Country, State } from "country-state-city";
 import { Eye, EyeOff } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -12,6 +13,7 @@ import "react-phone-number-input/style.css";
 interface RegistrationEssentialsStepProps {
   mode?: "registration" | "onboarding";
   includeSwimLevel?: boolean;
+  includeAcquisitionSource?: boolean;
   formData: {
     firstName: string;
     lastName: string;
@@ -22,6 +24,7 @@ interface RegistrationEssentialsStepProps {
     state: string;
     country: string;
     swimLevel?: string;
+    acquisitionSource?: string;
   };
   onUpdate: (field: string, value: any) => void;
 }
@@ -31,6 +34,7 @@ const countries = Country.getAllCountries();
 export function RegistrationEssentialsStep({
   mode = "registration",
   includeSwimLevel = true,
+  includeAcquisitionSource = true,
   formData,
   onUpdate,
 }: RegistrationEssentialsStepProps) {
@@ -220,6 +224,24 @@ export function RegistrationEssentialsStep({
           <option value="beginner">Beginner</option>
           <option value="intermediate">Intermediate</option>
           <option value="advanced">Advanced</option>
+        </Select>
+      ) : null}
+
+      {includeAcquisitionSource ? (
+        <Select
+          label="How did you hear about SwimBuddz?"
+          name="acquisitionSource"
+          value={formData.acquisitionSource || ""}
+          onChange={(e) => onUpdate("acquisitionSource", e.target.value)}
+          required
+          hint="This helps us understand where our community is coming from."
+        >
+          <option value="">Select an option</option>
+          {acquisitionSourceOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
         </Select>
       ) : null}
     </div>

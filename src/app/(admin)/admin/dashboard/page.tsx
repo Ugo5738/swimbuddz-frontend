@@ -2,8 +2,10 @@
 
 import { Card } from "@/components/ui/Card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { apiGet } from "@/lib/api";
 import { supabase } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
+import type { FlywheelOverview } from "@/lib/types/flywheel";
 import {
   AlertCircle,
   ArrowRight,
@@ -16,6 +18,7 @@ import {
   TrendingUp,
   UserCheck,
   Users,
+  Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -58,6 +61,7 @@ export default function AdminDashboardPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [recentEnrollments, setRecentEnrollments] = useState<Enrollment[]>([]);
+  const [flywheel, setFlywheel] = useState<FlywheelOverview | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -122,6 +126,17 @@ export default function AdminDashboardPage() {
         if (enrollmentsRes.ok) {
           const enrollmentsData = await enrollmentsRes.json();
           setRecentEnrollments(enrollmentsData.slice(0, 5));
+        }
+
+        // Fetch Flywheel Overview (best-effort — fails silently if no snapshot yet)
+        try {
+          const flywheelData = await apiGet<FlywheelOverview>(
+            "/api/v1/admin/reports/flywheel/overview",
+            { auth: true }
+          );
+          setFlywheel(flywheelData);
+        } catch {
+          // Snapshot may not exist yet — leave card showing em-dashes.
         }
       } catch (err) {
         console.error(err);
@@ -509,7 +524,82 @@ export default function AdminDashboardPage() {
             </div>
           </Card>
         </Link>
+
+        {/* Flywheel Snapshot Card */}
+        <Card className="p-6 border-purple-200 bg-gradient-to-r from-purple-50 to-fuchsia-50 lg:col-span-2">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl bg-purple-200 p-3">
+                <TrendingUp className="h-6 w-6 text-purple-700" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900">Flywheel</h3>
+                <p className="text-sm text-slate-600">
+                  Is the SwimBuddz ecosystem actually flowing?
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/admin/flywheel"
+              className="flex items-center gap-1 text-sm font-medium text-purple-700 hover:text-purple-800"
+            >
+              View detailed flywheel <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <FlywheelStat
+              icon={<GraduationCap className="h-4 w-4 text-purple-600" />}
+              label="Cohort fill avg"
+              value={formatFlywheelPct(flywheel?.cohort_fill_avg)}
+            />
+            <FlywheelStat
+              icon={<Users className="h-4 w-4 text-cyan-600" />}
+              label="Community → Club"
+              value={formatFlywheelPct(flywheel?.community_to_club_rate)}
+            />
+            <FlywheelStat
+              icon={<TrendingUp className="h-4 w-4 text-blue-600" />}
+              label="Club → Academy"
+              value={formatFlywheelPct(flywheel?.club_to_academy_rate)}
+            />
+            <FlywheelStat
+              icon={<Wallet className="h-4 w-4 text-emerald-600" />}
+              label="Wallet cross-svc"
+              value={formatFlywheelPct(flywheel?.wallet_cross_service_rate)}
+            />
+          </div>
+          {flywheel?.is_stale && (
+            <p className="mt-3 text-xs text-amber-700">
+              Snapshot is stale (no refresh in 36h+).
+            </p>
+          )}
+        </Card>
       </div>
+    </div>
+  );
+}
+
+function formatFlywheelPct(value: number | null | undefined): string {
+  if (value == null || Number.isNaN(value)) return "—";
+  return `${(value * 100).toFixed(0)}%`;
+}
+
+function FlywheelStat({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-lg bg-white/70 p-3">
+      <div className="flex items-center gap-1.5 text-xs text-slate-500">
+        {icon}
+        <span className="truncate">{label}</span>
+      </div>
+      <p className="mt-1 text-lg font-bold text-slate-900">{value}</p>
     </div>
   );
 }

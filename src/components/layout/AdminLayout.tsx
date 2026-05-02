@@ -6,6 +6,7 @@ import { supabase } from "@/lib/auth";
 import {
   AlertTriangle,
   Award,
+  Banknote,
   BarChart3,
   Calendar,
   CalendarDays,
@@ -21,9 +22,11 @@ import {
   LogOut,
   Mail,
   Megaphone,
-  MessageSquareQuote,
   Menu,
+  MessageSquareQuote,
+  Repeat,
   ShoppingBag,
+  TrendingUp,
   Trophy,
   UserCheck,
   Users,
@@ -70,6 +73,12 @@ const navSections: NavSection[] = [
     title: "Wallet & Rewards",
     items: [
       { href: "/admin/wallet", label: "Wallets", icon: Wallet },
+      { href: "/admin/payouts", label: "Coach Payouts", icon: Banknote },
+      {
+        href: "/admin/payouts/recurring",
+        label: "Recurring Payouts",
+        icon: Repeat,
+      },
       { href: "/admin/wallet/rewards", label: "Reward Rules", icon: Award },
       { href: "/admin/wallet/referrals", label: "Referrals", icon: Users },
       {
@@ -121,6 +130,7 @@ const navSections: NavSection[] = [
       { href: "/admin/store", label: "Store", icon: ShoppingBag },
       { href: "/admin/pools", label: "Pool Registry", icon: Waves },
       { href: "/admin/reports", label: "Quarterly Reports", icon: BarChart3 },
+      { href: "/admin/flywheel", label: "Flywheel", icon: TrendingUp },
       {
         href: "/admin/reports/seasonality",
         label: "Seasonality",
