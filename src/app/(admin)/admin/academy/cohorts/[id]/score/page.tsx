@@ -72,6 +72,7 @@ export default function CohortScoringPage() {
   const [eligibleCoaches, setEligibleCoaches] = useState<EligibleCoach[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [markingReviewed, setMarkingReviewed] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Form state
@@ -325,6 +326,23 @@ export default function CohortScoringPage() {
     }
   }
 
+  async function handleMarkReviewed() {
+    if (!existingScore) return;
+    setMarkingReviewed(true);
+    try {
+      await AcademyApi.markComplexityScoreReviewed(cohortId);
+      toast.success("Complexity score marked as reviewed");
+      // Refresh so the badge updates without a full page reload.
+      const refreshed = await AcademyApi.getCohortComplexityScore(cohortId);
+      setExistingScore(refreshed);
+    } catch (err) {
+      console.error("Failed to mark reviewed", err);
+      toast.error("Failed to mark complexity score as reviewed");
+    } finally {
+      setMarkingReviewed(false);
+    }
+  }
+
   async function handleSuggestCoach() {
     setSuggestingCoach(true);
     try {
@@ -462,13 +480,30 @@ export default function CohortScoringPage() {
           )}
 
           {step === "review" && existingScore && (
-            <Button
-              variant="outline"
-              onClick={handleDeleteScore}
-              className="text-red-600 hover:bg-red-50"
-            >
-              Delete Score
-            </Button>
+            <>
+              {existingScore.reviewed_at ? (
+                <Badge variant="success">
+                  Reviewed{" "}
+                  {new Date(existingScore.reviewed_at).toLocaleDateString()}
+                </Badge>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={handleMarkReviewed}
+                  disabled={markingReviewed}
+                  className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                >
+                  {markingReviewed ? "Marking…" : "Mark Reviewed"}
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                onClick={handleDeleteScore}
+                className="text-red-600 hover:bg-red-50"
+              >
+                Delete Score
+              </Button>
+            </>
           )}
 
           {step === "scoring" ? (

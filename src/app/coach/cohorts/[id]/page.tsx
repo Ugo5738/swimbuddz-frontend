@@ -477,6 +477,14 @@ export default function CoachCohortDetailPage() {
                 {attendanceSummary.total_sessions !== 1 ? "s" : ""} held
               </p>
             </div>
+            <div className="flex gap-2">
+              <Link href={`/coach/cohorts/${cohortId}/makeups`}>
+                <Button variant="secondary">Make-ups</Button>
+              </Link>
+              <Link href={`/coach/cohorts/${cohortId}/attendance`}>
+                <Button variant="secondary">Mark attendance</Button>
+              </Link>
+            </div>
           </div>
 
           <div className="overflow-x-auto">

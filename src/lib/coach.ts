@@ -347,6 +347,67 @@ export async function getMyCoachSessions(options?: {
   return apiGet<CoachSession[]>(url, { auth: true });
 }
 
+// --- Attendance Types & API ---
+
+export type AttendanceStatus =
+  | "present"
+  | "late"
+  | "excused"
+  | "absent"
+  | "cancelled";
+
+export type SessionAttendanceRecord = {
+  id: string;
+  session_id: string;
+  member_id: string;
+  status: AttendanceStatus;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  member_name: string | null;
+  member_email: string | null;
+};
+
+export type CoachAttendanceMarkEntry = {
+  member_id: string;
+  status: AttendanceStatus;
+  notes?: string | null;
+};
+
+export type CoachAttendanceMarkResponse = {
+  session_id: string;
+  upserted: number;
+  deleted: number;
+  records: SessionAttendanceRecord[];
+};
+
+/** List existing attendance rows (exceptions) for a session.
+ * Default-present model: members NOT in this list are implicitly PRESENT.
+ */
+export async function getSessionAttendance(
+  sessionId: string,
+): Promise<SessionAttendanceRecord[]> {
+  return apiGet<SessionAttendanceRecord[]>(
+    `/api/v1/attendance/sessions/${sessionId}/attendance`,
+    { auth: true },
+  );
+}
+
+/** Bulk-upsert attendance for a session.
+ * Submitting status="present" deletes the existing exception row for that
+ * member (returns to default-present). All other statuses upsert.
+ */
+export async function coachMarkSessionAttendance(
+  sessionId: string,
+  entries: CoachAttendanceMarkEntry[],
+): Promise<CoachAttendanceMarkResponse> {
+  return apiPost<CoachAttendanceMarkResponse>(
+    `/api/v1/attendance/sessions/${sessionId}/coach-mark`,
+    { entries },
+    { auth: true },
+  );
+}
+
 // --- Resource Types ---
 
 export type ResourceSourceType = "url" | "upload";
