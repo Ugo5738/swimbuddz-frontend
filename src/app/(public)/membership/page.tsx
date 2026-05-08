@@ -11,10 +11,73 @@ export default function MembershipPage() {
           How SwimBuddz membership works
         </h1>
         <p className="text-sm text-slate-600">
-          Clear, simple rules for registration, onboarding, payments, and
-          upgrades.
+          Three tiers — Community, Club, Academy — with clear rules for
+          registration, onboarding, payments, and upgrades.
         </p>
       </header>
+
+      <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-6">
+        <h2 className="text-lg font-semibold text-slate-900">
+          The three tiers
+        </h2>
+        <p className="text-sm text-slate-700">
+          SwimBuddz has three membership types. Pick the one that fits where
+          you are; you can upgrade later.
+        </p>
+
+        <div className="space-y-3">
+          <div className="rounded-lg border border-slate-200 p-4">
+            <div className="flex items-baseline justify-between gap-3">
+              <h3 className="text-base font-semibold text-slate-900">
+                Community
+              </h3>
+              <span className="text-sm font-semibold text-cyan-700">
+                ₦20,000/year
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-slate-700">
+              The home base for everyone, regardless of swimming level. Open
+              swim meetups, community events, and access to the broader
+              SwimBuddz network. For people who can already swim and want to
+              stay connected.
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-slate-200 p-4">
+            <div className="flex items-baseline justify-between gap-3">
+              <h3 className="text-base font-semibold text-slate-900">Club</h3>
+              <span className="text-sm font-semibold text-cyan-700">
+                From ₦42,500/quarter
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-slate-700">
+              For people who want to swim together every week. Structured
+              Saturday sessions, group challenges, and a crew that holds you
+              accountable. Subscription-based — quarterly, 6-month, or
+              12-month plans available. Includes Community access — no second
+              fee.
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-slate-200 p-4">
+            <div className="flex items-baseline justify-between gap-3">
+              <h3 className="text-base font-semibold text-slate-900">
+                Academy
+              </h3>
+              <span className="text-sm font-semibold text-cyan-700">
+                From ₦150,000 / 12-week cohort
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-slate-700">
+              Structured cohorts where you actually learn — beginner programs,
+              stroke development, and competition prep depending on the level.
+              Cohort-based with a fixed start and end date. Includes Club &
+              Community access during the program, plus your first month of
+              Club after graduation.
+            </p>
+          </div>
+        </div>
+      </section>
 
       <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-6">
         <h2 className="text-lg font-semibold text-slate-900">
@@ -38,12 +101,14 @@ export default function MembershipPage() {
 
       <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-6">
         <h2 className="text-lg font-semibold text-slate-900">
-          The core rule: Community is the foundation
+          The core rule: every tier includes the one below
         </h2>
         <p className="text-sm text-slate-700">
-          Everyone starts with Community. After you confirm your email and log
-          in, you’ll activate your annual Community membership (₦5,000/year) to
-          unlock member features.
+          You pay for one tier, not many. Club includes Community access.
+          Academy includes Club access during the program, plus your first
+          month of Club after graduation. No fee stacking — pick the tier
+          that fits where you are, and you get everything below it
+          automatically.
         </p>
       </section>
 
@@ -54,12 +119,12 @@ export default function MembershipPage() {
         <ol className="space-y-2 text-sm text-slate-700">
           <li>1) Confirm email → log in</li>
           <li>2) We’ll take you to your next step on your dashboard</li>
+          <li>3) Complete onboarding / readiness checklist</li>
+          <li>4) Request upgrade</li>
           <li>
-            3) Activate Community (₦20,000/year) to unlock member features
+            5) Pay your tier fee — Community access is included automatically,
+            no separate payment
           </li>
-          <li>4) Complete onboarding / readiness checklist</li>
-          <li>5) Request upgrade</li>
-          <li>6) Pay when you activate Club or enroll in an Academy cohort</li>
         </ol>
         <p className="text-sm text-slate-600">
           Selecting Club/Academy during signup saves your request — it does not
@@ -74,17 +139,21 @@ export default function MembershipPage() {
         <div className="space-y-3 text-sm text-slate-700">
           <p>
             <span className="font-semibold">Community</span> is annual
-            (₦20,000/year) and unlocks member access.
+            (₦20,000/year) and unlocks member access — events, open meetups,
+            and the broader network.
           </p>
           <p>
-            <span className="font-semibold">Club</span> is subscription-based.
-            If you stop paying, Club access pauses and you fall back to
-            Community (while your Community membership is still active).
+            <span className="font-semibold">Club</span> is subscription-based
+            (quarterly, 6-month, or 12-month). The Club fee already includes
+            Community access. If you stop paying for Club, you can continue on
+            Community alone (₦20,000/year) to stay connected.
           </p>
           <p>
             <span className="font-semibold">Academy</span> is cohort-based
-            (program enrollment). When a cohort ends, Academy access ends, but
-            you keep your membership history (e.g. Academy alumni).
+            (program enrollment). Your Academy fee includes Club access during
+            the program plus your first month of Club after graduation. When
+            the bridge month ends, you continue with Club, drop to Community,
+            or pause — your choice.
           </p>
         </div>
       </section>

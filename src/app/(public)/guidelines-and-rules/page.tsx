@@ -1,13 +1,7 @@
-import Link from "next/link";
-
-const guidelinesDocUrl =
-  "https://docs.google.com/document/d/1xZ7n-NB62ahVRm1W3Epl2iGnjWVKxegxZD3Ai5FCNZA/edit?tab=t.0";
-
 type ContentBlock =
   | { type: "paragraph"; text: string }
   | { type: "list"; items: string[] }
-  | { type: "subtitle"; text: string }
-  | { type: "link"; text: string; href: string };
+  | { type: "subtitle"; text: string };
 
 type Section = {
   title: string;
@@ -56,37 +50,29 @@ const sections: Section[] = [
     content: [
       {
         type: "paragraph",
-        text: "To help everyone learn and grow at their own pace, we have different skill levels.",
-      },
-      { type: "subtitle", text: "Levels:" },
-      {
-        type: "list",
-        items: [
-          "Beginner: Focus on water confidence, floating, breathing, and basic stroke.",
-          "Intermediate: Work on endurance, stroke efficiency, and body coordination.",
-          "Advanced: Improve speed, refine techniques, and prepare for competitions.",
-        ],
-      },
-      { type: "subtitle", text: "How It Works:" },
-      {
-        type: "list",
-        items: [
-          "We have WhatsApp groups for each level.",
-          "Beginner: Open to all members.",
-          "Intermediate: You should be able to swim at least two styles with above-average technique.",
-          "Expert: You should be able to swim four styles with above-average technique.",
-          "Admins may confirm your ability before adding you to higher-level groups.",
-        ],
+        text: "SwimBuddz welcomes swimmers at every level — first-timers, intermediates, and advanced. We don’t currently run separate groups by skill level; our groups are organised by membership tier (see “Sessions, Meetups & RSVPs” below).",
       },
       {
         type: "paragraph",
-        text: "Mentorship and peer support are encouraged at all levels.",
+        text: "Mentorship and peer support are encouraged at all levels. Coaches and experienced swimmers help you progress at your own pace, whether you’re learning to put your face in the water or training for competition.",
       },
     ],
   },
   {
     title: "4. 🏊 Sessions, Meetups & RSVPs",
     content: [
+      {
+        type: "paragraph",
+        text: "Sessions are organised by membership tier:",
+      },
+      {
+        type: "list",
+        items: [
+          "Community: open meetups and community events for any active member.",
+          "Club: weekly structured Saturday sessions for active Club members.",
+          "Academy: cohort-based programs for currently enrolled cohort members.",
+        ],
+      },
       {
         type: "list",
         items: [
@@ -101,13 +87,13 @@ const sections: Section[] = [
   {
     title: "5. 🏆 Events & Challenges",
     content: [
-      { type: "subtitle", text: "End-of-Year SwimBuddz Competition (2025):" },
+      { type: "subtitle", text: "End-of-Year SwimBuddz Competition:" },
       {
         type: "list",
         items: [
           "Informal, fun, and inclusive.",
-          "Events will be scaled for Beginner, Intermediate, and Advanced swimmers.",
-          "Training guidance will be posted in level groups.",
+          "Events scaled for swimmers of every level.",
+          "Training guidance will be posted in the relevant group.",
           "Details (date, venue, events, sign-up, and rules) will be announced in Announcements.",
         ],
       },
@@ -202,12 +188,25 @@ const sections: Section[] = [
     title: "11. 👶 Children & Safeguarding",
     content: [
       {
+        type: "paragraph",
+        text: "SwimBuddz protects young members through a Chat Safeguarding Policy that all members, parents, coaches, and admins must follow. The headlines:",
+      },
+      {
         type: "list",
         items: [
           "Children may only join sessions explicitly designated for them.",
           "They must be supervised by a parent or guardian unless the session is officially structured and supervised.",
           "Parents/guardians are responsible for the child’s safety and behavior.",
+          "No 1:1 direct messages between a coach and a minor — every coach-minor chat must include the minor’s verified guardian or take place in a group channel with multiple people present.",
+          "No off-platform chat with minors for SwimBuddz business (no WhatsApp, Instagram DMs, etc.). If a minor or parent reaches out off-platform, coaches redirect to SwimBuddz chat.",
+          "No meetings with a minor outside scheduled SwimBuddz activities without prior, logged guardian consent.",
+          "Photos that include minors must be available to the guardian on request; marketing use requires separate media consent.",
+          "Concerns are raised via the in-app Report tool. Reports involving minors get priority handling by a Safeguarding Admin.",
         ],
+      },
+      {
+        type: "paragraph",
+        text: "The full Chat Safeguarding Policy applies to all SwimBuddz chat and is presented for acceptance during signup. Coaches and admins are bound by additional duties under that policy.",
       },
     ],
   },
@@ -240,11 +239,6 @@ const sections: Section[] = [
           "Change notifications: Major updates will be summarized and shared in the group.",
         ],
       },
-      {
-        type: "paragraph",
-        text: "Version control: The latest guidelines are always available at the shared document link.",
-      },
-      { type: "link", text: "Open the Google Doc", href: guidelinesDocUrl },
     ],
   },
   {
@@ -269,7 +263,7 @@ export default function GuidelinesPage() {
           🏊‍♂️ SwimBuddz Community Rules &amp; Safety Guidelines
         </h1>
         <p className="text-base text-slate-600">
-          Last Updated: 19 October, 2025
+          Last Updated: 8 May, 2026
         </p>
         <p className="text-lg text-slate-600">
           Our mission is to build a fun, supportive, and safe community that
@@ -321,19 +315,6 @@ export default function GuidelinesPage() {
                 );
               }
 
-              if (block.type === "link") {
-                return (
-                  <Link
-                    key={index}
-                    href={block.href}
-                    target="_blank"
-                    className="inline-flex text-sm font-semibold text-cyan-700 hover:underline"
-                  >
-                    {block.text} &rarr;
-                  </Link>
-                );
-              }
-
               return null;
             })}
           </article>
@@ -342,11 +323,11 @@ export default function GuidelinesPage() {
 
       <section className="space-y-3 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-xl font-semibold text-slate-900">Contact</h2>
-        <p className="text-slate-700">Daniel Nwachukwu</p>
+        <p className="text-slate-700">SwimBuddz Team</p>
         <p className="text-sm text-slate-600">
-          📧 Email: contactugodaniels@gmail.com
+          📧 Email: swimbuddz@gmail.com
         </p>
-        <p className="text-sm text-slate-600">📞 Phone: +234 703 358 8400</p>
+        <p className="text-sm text-slate-600">📞 Phone: +2347033588400</p>
       </section>
     </div>
   );
