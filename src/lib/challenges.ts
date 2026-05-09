@@ -163,7 +163,12 @@ export async function listChallenges(
     params.set("active_only", String(options.activeOnly));
   if (options.challengeType) params.set("challenge_type", options.challengeType);
   if (options.audience) params.set("audience", options.audience);
-  const url = `${apiEndpoints.challenges}${params.toString() ? `?${params}` : ""}`;
+  // Trailing slash is intentional — the backend collection route is
+  // registered at `/challenges/`, so without it FastAPI returns a 307
+  // redirect that the upstream proxy currently rewrites to `http://`,
+  // tripping the browser's mixed-content block. Same pattern across all
+  // root-collection fetches in this file.
+  const url = `${apiEndpoints.challenges}/${params.toString() ? `?${params}` : ""}`;
   const res = await authedFetch(url);
   return unwrap<Challenge[]>(res, "Failed to load challenges");
 }

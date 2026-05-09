@@ -455,8 +455,10 @@ export default function AdminChallengesPage() {
 
   const fetchChallenges = async () => {
     try {
+      // Trailing slash on the collection root avoids a 307 redirect to
+      // `/challenges/` that the proxy rewrites to http:// (mixed content).
       const response = await authedFetch(
-        `${apiEndpoints.challenges}?active_only=false`,
+        `${apiEndpoints.challenges}/?active_only=false`,
       );
       if (response.ok) {
         const data: ClubChallenge[] = await response.json();
@@ -524,7 +526,7 @@ export default function AdminChallengesPage() {
 
       const url = editingId
         ? `${apiEndpoints.challenges}/${editingId}`
-        : apiEndpoints.challenges;
+        : `${apiEndpoints.challenges}/`; // trailing slash for the create POST
       const method = editingId ? "PATCH" : "POST";
 
       const response = await authedFetch(url, {
