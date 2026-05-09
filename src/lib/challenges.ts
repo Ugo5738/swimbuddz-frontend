@@ -88,6 +88,7 @@ export interface Challenge {
   challenge_type: ChallengeType;
   badge_name: string;
   reward_badge_image_media_id: string | null;
+  badge_image_url: string | null;
   reward_bubbles_amount: number | null;
   reward_volunteer_hours: number | null;
   audience: Audience;

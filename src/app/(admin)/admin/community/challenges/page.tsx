@@ -91,6 +91,7 @@ interface ClubChallenge {
   challenge_type: ChallengeType;
   badge_name: string;
   reward_badge_image_media_id: string | null;
+  badge_image_url: string | null;
   reward_bubbles_amount: number | null;
   reward_volunteer_hours: number | null;
   audience: Audience;
@@ -682,7 +683,15 @@ function ChallengeCard({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex flex-1 items-start gap-4">
           <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-amber-50 text-amber-600">
-            <Trophy className="h-7 w-7" />
+            {challenge.badge_image_url ? (
+              <img
+                src={challenge.badge_image_url}
+                alt={challenge.badge_name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <Trophy className="h-7 w-7" />
+            )}
           </div>
           <div className="flex-1 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
