@@ -3,6 +3,7 @@
 import { OptionPillGroup } from "@/components/forms/OptionPillGroup";
 import { SingleSelectPills } from "@/components/forms/SingleSelectPills";
 import { TimezoneCombobox } from "@/components/forms/TimezoneCombobox";
+import { BadgesCard } from "@/components/profile/BadgesCard";
 import { MembershipCard } from "@/components/profile/MembershipCard";
 import { UpcomingSessions } from "@/components/profile/UpcomingSessions";
 import { Alert } from "@/components/ui/Alert";
@@ -587,6 +588,8 @@ function ProfileContent() {
               </Button>
             </div>
           </Card>
+
+          <BadgesCard />
 
           <Card className="space-y-4">
             <h2 className="text-lg font-semibold text-slate-900">Upcoming Sessions</h2>

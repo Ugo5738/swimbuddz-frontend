@@ -21,6 +21,9 @@ interface MediaInputProps {
     | "product_image"
     | "product_video"
     | "content_image"
+    | "challenge_example"
+    | "challenge_proof"
+    | "badge_image"
     | "general";
   /** Display mode - upload-only shows just upload, both shows tabs */
   mode?: MediaInputMode;
@@ -80,6 +83,11 @@ export function MediaInput({
         return "image/*,video/*";
       case "milestone_video":
         return "image/*,video/*";
+      case "challenge_example":
+      case "challenge_proof":
+        return "image/*,video/*";
+      case "badge_image":
+        return "image/*";
       case "coach_document":
       case "payment_proof":
         return "image/*,.pdf";

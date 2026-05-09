@@ -21,7 +21,10 @@ export function MainLayout({ children }: MainLayoutProps) {
   // Store routes use their own dedicated layout (header, footer, cart provider)
   const isStoreRoute = pathname?.startsWith("/store");
 
-  // Member/coach portal routes should use their own layouts without the public chrome
+  // Member/coach portal routes should use their own layouts without the public chrome.
+  // Note: /challenges (no /community prefix) intentionally stays public — that's the
+  // unauthenticated landing-page surface; only the member-side /community/challenges
+  // route belongs in this allowlist.
   const isMemberPortalRoute =
     pathname?.startsWith("/account") ||
     pathname?.startsWith("/community/directory") ||
@@ -29,6 +32,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     pathname?.startsWith("/community/tips") ||
     pathname?.startsWith("/community/coaches") ||
     pathname?.startsWith("/community/volunteers") ||
+    pathname?.startsWith("/community/challenges") ||
     pathname?.startsWith("/attendance") ||
     pathname?.startsWith("/checkout") ||
     pathname?.startsWith("/upgrade") ||

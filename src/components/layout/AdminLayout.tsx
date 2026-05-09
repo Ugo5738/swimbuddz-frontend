@@ -122,6 +122,11 @@ const navSections: NavSection[] = [
         label: "Challenges",
         icon: Trophy,
       },
+      {
+        href: "/admin/community/clubs",
+        label: "Clubs",
+        icon: Users,
+      },
     ],
   },
   {
