@@ -495,6 +495,15 @@ export async function coachScheduleMakeup(
 // Coach earnings summary
 // =============================================================================
 
+export interface CoachLineItem {
+  student_member_id: string;
+  student_name: string | null;
+  sessions_delivered: number;
+  sessions_excused: number;
+  makeups_completed_in_block: number;
+  subtotal_kobo: number;
+}
+
 export interface CoachUpcomingPayout {
   config_id: string;
   cohort_id: string;
@@ -509,6 +518,10 @@ export interface CoachUpcomingPayout {
   expected_amount_kobo: number;
   sessions_in_block: number;
   students_count: number;
+  // Formula inputs — let the UI explain the math.
+  cohort_price_amount: number; // kobo per student
+  per_session_amount_kobo: number;
+  lines: CoachLineItem[];
 }
 
 export interface CoachRecentPayoutRow {

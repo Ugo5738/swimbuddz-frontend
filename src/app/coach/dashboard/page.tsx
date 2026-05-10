@@ -26,6 +26,8 @@ import {
   AlertCircle,
   Calendar,
   CheckCircle,
+  ChevronDown,
+  ChevronUp,
   ClipboardCheck,
   DollarSign,
   GraduationCap,
@@ -47,6 +49,10 @@ export default function CoachDashboardPage() {
   >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Track which cohort breakdowns are expanded on the earnings card.
+  const [expandedConfigs, setExpandedConfigs] = useState<Set<string>>(
+    new Set(),
+  );
   const [accessVerified, setAccessVerified] = useState(false);
 
   // Defense-in-depth: verify coach status and agreement before showing dashboard
@@ -431,34 +437,163 @@ export default function CoachDashboardPage() {
                   </div>
                 </div>
 
-                {/* Per-cohort upcoming breakdown */}
+                {/* Per-cohort upcoming breakdown — each row expands to
+                    show the formula + per-student lines so the coach can
+                    audit how the headline ₦ is computed. */}
                 {earnings.upcoming_payouts.length > 0 && (
                   <div className="pt-3 border-t border-slate-100 space-y-2">
                     <p className="text-xs text-slate-500">
                       Upcoming by cohort
                     </p>
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                      {earnings.upcoming_payouts.map((u) => (
-                        <div
-                          key={u.config_id}
-                          className="rounded-lg bg-slate-50 p-2 text-sm"
-                        >
-                          <div className="flex justify-between gap-2">
-                            <span className="text-slate-700 truncate">
-                              {u.cohort_name ?? u.cohort_id.slice(0, 8)}
-                            </span>
-                            <span className="font-medium text-emerald-700">
-                              {formatNaira(u.expected_amount_kobo / 100)}
-                            </span>
+                    <div className="space-y-2 max-h-[28rem] overflow-y-auto">
+                      {earnings.upcoming_payouts.map((u) => {
+                        const expanded = expandedConfigs.has(u.config_id);
+                        const toggle = () =>
+                          setExpandedConfigs((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(u.config_id)) next.delete(u.config_id);
+                            else next.add(u.config_id);
+                            return next;
+                          });
+                        const bandPct = Number(u.band_percentage);
+                        const cohortPriceN = u.cohort_price_amount / 100;
+                        const perSessionN = u.per_session_amount_kobo / 100;
+                        return (
+                          <div
+                            key={u.config_id}
+                            className="rounded-lg bg-slate-50 text-sm overflow-hidden"
+                          >
+                            {/* Summary row */}
+                            <button
+                              type="button"
+                              onClick={toggle}
+                              className="w-full text-left p-2 hover:bg-slate-100 transition-colors"
+                              aria-expanded={expanded}
+                            >
+                              <div className="flex justify-between gap-2 items-center">
+                                <span className="text-slate-700 truncate flex-1">
+                                  {u.cohort_name ?? u.cohort_id.slice(0, 8)}
+                                </span>
+                                <span className="font-medium text-emerald-700 whitespace-nowrap">
+                                  {formatNaira(u.expected_amount_kobo / 100)}
+                                </span>
+                                {expanded ? (
+                                  <ChevronUp className="h-4 w-4 text-slate-400" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4 text-slate-400" />
+                                )}
+                              </div>
+                              <p className="text-[11px] text-slate-500">
+                                Block {u.next_block_index + 1}/{u.total_blocks}{" "}
+                                · {u.students_count} student
+                                {u.students_count === 1 ? "" : "s"} · pays{" "}
+                                {formatDate(u.next_run_date)}
+                              </p>
+                            </button>
+
+                            {/* Expanded breakdown */}
+                            {expanded && (
+                              <div className="px-3 pb-3 pt-1 border-t border-slate-200 space-y-3 bg-white">
+                                {/* Formula */}
+                                <div className="rounded-md bg-slate-50 p-2 text-[11px] text-slate-600 leading-relaxed font-mono">
+                                  <p className="text-slate-500 mb-1 font-sans">
+                                    How this is calculated
+                                  </p>
+                                  <p>
+                                    {formatNaira(cohortPriceN)} ×{" "}
+                                    <strong>{bandPct.toFixed(2)}%</strong> ÷{" "}
+                                    {u.total_blocks} blocks ÷{" "}
+                                    {u.sessions_in_block} sessions ={" "}
+                                    <strong className="text-emerald-700">
+                                      {formatNaira(perSessionN)}
+                                    </strong>{" "}
+                                    per student-session
+                                  </p>
+                                </div>
+
+                                {/* Per-student table */}
+                                <div>
+                                  <p className="text-[11px] text-slate-500 mb-1">
+                                    Per student in this block
+                                  </p>
+                                  <table className="w-full text-[11px]">
+                                    <thead className="text-slate-500">
+                                      <tr>
+                                        <th className="text-left pb-1 font-medium">
+                                          Student
+                                        </th>
+                                        <th className="text-right pb-1 font-medium">
+                                          Delivered
+                                        </th>
+                                        <th className="text-right pb-1 font-medium">
+                                          Excused
+                                        </th>
+                                        <th className="text-right pb-1 font-medium">
+                                          Make-ups
+                                        </th>
+                                        <th className="text-right pb-1 font-medium">
+                                          ₦
+                                        </th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="text-slate-700">
+                                      {u.lines.map((ln) => (
+                                        <tr
+                                          key={ln.student_member_id}
+                                          className="border-t border-slate-100"
+                                        >
+                                          <td className="py-1 truncate max-w-[120px]">
+                                            {ln.student_name ??
+                                              ln.student_member_id.slice(0, 8)}
+                                          </td>
+                                          <td className="py-1 text-right">
+                                            {ln.sessions_delivered}
+                                          </td>
+                                          <td className="py-1 text-right">
+                                            {ln.sessions_excused}
+                                          </td>
+                                          <td className="py-1 text-right">
+                                            {ln.makeups_completed_in_block}
+                                          </td>
+                                          <td className="py-1 text-right font-medium">
+                                            {formatNaira(ln.subtotal_kobo / 100)}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                      <tr className="border-t border-slate-200 font-semibold">
+                                        <td colSpan={4} className="py-1">
+                                          Total
+                                        </td>
+                                        <td className="py-1 text-right text-emerald-700">
+                                          {formatNaira(
+                                            u.expected_amount_kobo / 100,
+                                          )}
+                                        </td>
+                                      </tr>
+                                    </tbody>
+                                  </table>
+                                </div>
+
+                                <p className="text-[11px] text-slate-500">
+                                  <span className="text-slate-700 font-medium">
+                                    Excused
+                                  </span>{" "}
+                                  absences become make-up obligations you can
+                                  schedule on your{" "}
+                                  <Link
+                                    href={`/coach/cohorts/${u.cohort_id}/makeups`}
+                                    className="underline text-cyan-700"
+                                  >
+                                    make-ups page
+                                  </Link>
+                                  ; the ₦ for those moves to whichever block
+                                  you actually deliver them in.
+                                </p>
+                              </div>
+                            )}
                           </div>
-                          <p className="text-[11px] text-slate-500">
-                            Block {u.next_block_index + 1}/{u.total_blocks} ·{" "}
-                            {u.students_count} student
-                            {u.students_count === 1 ? "" : "s"} · pays{" "}
-                            {formatDate(u.next_run_date)}
-                          </p>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
