@@ -2,6 +2,7 @@
 
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { GreetingHero } from "@/components/dashboard/GreetingHero";
+import { MyPodCard } from "@/components/dashboard/MyPodCard";
 import { NextSessionCard } from "@/components/dashboard/NextSessionCard";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { SwimCalendar } from "@/components/dashboard/SwimCalendar";
@@ -13,6 +14,7 @@ import { apiGet } from "@/lib/api";
 import type { Announcement } from "@/lib/communications";
 import { formatAnnouncementCategory } from "@/lib/communications";
 import { loadPaymentIntentCache, type CachedPaymentIntent } from "@/lib/paymentCache";
+import { getMyPod, type PodSummary } from "@/lib/pods";
 import {
   fetchQuarterlyReport,
   fetchYTDStats,
@@ -70,6 +72,7 @@ export default function MemberDashboardPage() {
   } | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [ytdStats, setYtdStats] = useState<YTDStats | null>(null);
+  const [myPod, setMyPod] = useState<PodSummary | null>(null);
 
   const currentYear = new Date().getFullYear();
   const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
@@ -119,6 +122,12 @@ export default function MemberDashboardPage() {
     fetchYTDStats(currentYear)
       .then(setYtdStats)
       .catch(() => setYtdStats(null));
+
+    // Fetch the member's current pod (Club tier; null if not in one).
+    // Best-effort — failures shouldn't break the dashboard.
+    getMyPod()
+      .then(setMyPod)
+      .catch(() => setMyPod(null));
   }, [currentYear]);
 
   useEffect(() => {
@@ -502,6 +511,9 @@ export default function MemberDashboardPage() {
 
       {/* ── Section 4: Next Session ── */}
       <NextSessionCard session={nextSession} isBooked={upcomingBookings.length > 0} />
+
+      {/* ── Section 4b: My Pod (Club members only — see docs/club/POD_OPERATIONS.md) ── */}
+      {isClubMember && <MyPodCard pod={myPod} showJoinCta={!myPod} />}
 
       {/* ── Section 5: Conditional Action Banners ── */}
       {showCommunityActivationBanner && (

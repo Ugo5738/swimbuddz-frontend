@@ -127,6 +127,11 @@ const navSections: NavSection[] = [
         label: "Clubs",
         icon: Users,
       },
+      {
+        href: "/admin/community/pods",
+        label: "Pods",
+        icon: Users,
+      },
     ],
   },
   {

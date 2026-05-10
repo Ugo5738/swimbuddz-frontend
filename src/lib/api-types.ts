@@ -1838,6 +1838,279 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/members/pods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin Create Pod */
+        post: operations["admin_create_pod_admin_members_pods_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/members/pods/review-queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin Review Queue
+         * @description Pods past their 3-month review window — admin/Pod Lead decides
+         *     continue / rebalance / dissolve.
+         */
+        get: operations["admin_review_queue_admin_members_pods_review_queue_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/members/pods/{pod_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin Get Pod */
+        get: operations["admin_get_pod_admin_members_pods__pod_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Admin Update Pod */
+        patch: operations["admin_update_pod_admin_members_pods__pod_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/members/pods/{pod_id}/dissolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin Dissolve Pod
+         * @description Dissolves the pod and soft-leaves every active member. Chat is
+         *     NOT auto-archived from here — the chat admin API owns archival, and
+         *     we don't want to baby-sit a side effect that may need a manual
+         *     review trail. Admin archives the channel from chat admin once the
+         *     final messages settle.
+         */
+        post: operations["admin_dissolve_pod_admin_members_pods__pod_id__dissolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/members/pods/{pod_id}/extend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin Extend Pod */
+        post: operations["admin_extend_pod_admin_members_pods__pod_id__extend_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/members/pods/{pod_id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin Add Member */
+        post: operations["admin_add_member_admin_members_pods__pod_id__members_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/members/pods/{pod_id}/members/{member_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Admin Remove Member */
+        delete: operations["admin_remove_member_admin_members_pods__pod_id__members__member_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/members/pods/{pod_id}/transfers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin Transfer Member */
+        post: operations["admin_transfer_member_admin_members_pods__pod_id__transfers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/members/pods/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get My Pod
+         * @description My current pod, or null if I'm not in one. Used by the dashboard.
+         */
+        get: operations["get_my_pod_members_pods_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/members/pods/public": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Public Pods
+         * @description Public pod directory. Filter to a club if the caller knows which
+         *     one they're registering for.
+         */
+        get: operations["list_public_pods_members_pods_public_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/members/pods/{pod_id}/join": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Member Join Pod
+         * @description Self-join a public pod with capacity. Refuses for private pods —
+         *     those go through admin assignment.
+         */
+        post: operations["member_join_pod_members_pods__pod_id__join_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/members/pods/me/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Member Leave Pod
+         * @description Leave my current pod. No-op if I'm not in one.
+         */
+        post: operations["member_leave_pod_members_pods_me_leave_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/members/pods/{pod_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Pod Internal
+         * @description Single pod lookup. Used by sessions_service when creating a
+         *     Club session that's scoped to a specific pod — needs the schedule
+         *     fields and the active member roster.
+         */
+        get: operations["get_pod_internal_internal_members_pods__pod_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/members/pods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Pods Internal
+         * @description List pods. Used by sessions_service for batch scheduling — e.g.
+         *     "create this Saturday's sessions for every active pod in club X".
+         */
+        get: operations["list_pods_internal_internal_members_pods_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/members/by-auth/{auth_id}": {
         parameters: {
             query?: never;
@@ -2246,236 +2519,6 @@ export interface paths {
          * @description Generate sessions from a template for the specified number of weeks.
          */
         post: operations["generate_sessions_sessions_templates__template_id__generate_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/sessions/pods/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get My Pod
-         * @description My current pod, or null if I'm not in one. Used by the dashboard.
-         */
-        get: operations["get_my_pod_sessions_pods_me_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/sessions/pods/public": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Public Pods
-         * @description Public pod directory. Filter to a club if the caller knows which
-         *     one they're registering for.
-         */
-        get: operations["list_public_pods_sessions_pods_public_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/sessions/pods/{pod_id}/join": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Member Join Pod
-         * @description Self-join a public pod with capacity. Refuses for private pods —
-         *     those go through admin assignment.
-         */
-        post: operations["member_join_pod_sessions_pods__pod_id__join_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/sessions/pods/me/leave": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Member Leave Pod
-         * @description Leave my current pod. No-op if I'm not in one.
-         */
-        post: operations["member_leave_pod_sessions_pods_me_leave_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/sessions/pods": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Admin Create Pod */
-        post: operations["admin_create_pod_admin_sessions_pods_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/sessions/pods/review-queue": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Admin Review Queue
-         * @description Pods past their 3-month review window — admin/coach decides
-         *     continue / rebalance / dissolve.
-         */
-        get: operations["admin_review_queue_admin_sessions_pods_review_queue_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/sessions/pods/{pod_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Admin Get Pod */
-        get: operations["admin_get_pod_admin_sessions_pods__pod_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Admin Update Pod */
-        patch: operations["admin_update_pod_admin_sessions_pods__pod_id__patch"];
-        trace?: never;
-    };
-    "/api/v1/admin/sessions/pods/{pod_id}/dissolve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Admin Dissolve Pod
-         * @description Dissolves the pod and soft-leaves every active member. Chat is
-         *     NOT auto-archived from here — the chat admin API owns archival, and
-         *     we don't want to baby-sit a side effect that may need a manual
-         *     review trail. Coach archives the channel from chat admin once the
-         *     final messages settle.
-         */
-        post: operations["admin_dissolve_pod_admin_sessions_pods__pod_id__dissolve_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/sessions/pods/{pod_id}/extend": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Admin Extend Pod */
-        post: operations["admin_extend_pod_admin_sessions_pods__pod_id__extend_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/sessions/pods/{pod_id}/members": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Admin Add Member */
-        post: operations["admin_add_member_admin_sessions_pods__pod_id__members_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/sessions/pods/{pod_id}/members/{member_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Admin Remove Member */
-        delete: operations["admin_remove_member_admin_sessions_pods__pod_id__members__member_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/sessions/pods/{pod_id}/transfers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Admin Transfer Member */
-        post: operations["admin_transfer_member_admin_sessions_pods__pod_id__transfers_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5821,6 +5864,35 @@ export interface paths {
          *         before the make-up is delivered).
          */
         patch: operations["coach_schedule_makeup_payments_coach_me_cohort_makeups__obligation_id__schedule_patch"];
+        trace?: never;
+    };
+    "/api/v1/payments/coach/me/earnings/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Coach Earnings Summary
+         * @description Forward + backward looking earnings view for the calling coach.
+         *
+         *     Forward: for each ACTIVE recurring config the coach owns, compute the
+         *     upcoming block payout (uses the same calculator the cron does, so the
+         *     number matches what would actually be created when next_run_date hits).
+         *
+         *     Backward: lifetime PAID totals + currently-in-flight totals + recent
+         *     5 payout rows.
+         *
+         *     Auth: any logged-in coach (filters server-side by their member_id).
+         */
+        get: operations["coach_earnings_summary_payments_coach_me_earnings__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/announcements/": {
@@ -14058,6 +14130,14 @@ export interface components {
              */
             effective_date: string;
         };
+        /**
+         * DayOfWeek
+         * @description Day-of-week for a pod's default session schedule. Stored as the
+         *     standard 3-letter abbreviation so it round-trips cleanly to JSON
+         *     and reads naturally in admin tooling.
+         * @enum {string}
+         */
+        DayOfWeek: "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
         /** EligibleCoachBasic */
         EligibleCoachBasic: {
             /** Member Id */
@@ -15007,6 +15087,374 @@ export interface components {
             created_at: string;
         };
         /**
+         * PodAssignmentSource
+         * @description How a member came to be in a pod. Useful for understanding
+         *     self-selection vs administrative-assignment behaviour.
+         * @enum {string}
+         */
+        PodAssignmentSource: "admin" | "self" | "lead_transfer";
+        /**
+         * PodCreateRequest
+         * @description Admin creates a pod for a Club. `name` is optional — if blank, the
+         *     server auto-names ``{club_slug}-pod-{N}``. Schedule fields are also
+         *     optional — they inherit the parent Club's defaults when blank.
+         */
+        PodCreateRequest: {
+            /**
+             * Club Id
+             * Format: uuid
+             */
+            club_id: string;
+            /** Name */
+            name?: string | null;
+            /** Handle */
+            handle?: string | null;
+            /** Description */
+            description?: string | null;
+            /**
+             * Pod Lead Id
+             * Format: uuid
+             */
+            pod_lead_id: string;
+            /** Assistant Pod Lead Id */
+            assistant_pod_lead_id?: string | null;
+            /**
+             * Min Size
+             * @default 2
+             */
+            min_size: number;
+            /**
+             * Max Size
+             * @default 5
+             */
+            max_size: number;
+            default_session_day?: components["schemas"]["DayOfWeek"] | null;
+            /** Default Session Time */
+            default_session_time?: string | null;
+            /** Default Session Duration Minutes */
+            default_session_duration_minutes?: number | null;
+            /** Default Pool Id */
+            default_pool_id?: string | null;
+            /** @default public */
+            visibility: components["schemas"]["PodVisibility"];
+        };
+        /**
+         * PodDetail
+         * @description Full pod view — includes the current assignment list.
+         */
+        PodDetail: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Club Id
+             * Format: uuid
+             */
+            club_id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /** Handle */
+            handle?: string | null;
+            /** Description */
+            description?: string | null;
+            /**
+             * Pod Lead Id
+             * Format: uuid
+             */
+            pod_lead_id: string;
+            /** Assistant Pod Lead Id */
+            assistant_pod_lead_id?: string | null;
+            visibility: components["schemas"]["PodVisibility"];
+            status: components["schemas"]["PodStatus"];
+            /** Min Size */
+            min_size: number;
+            /** Max Size */
+            max_size: number;
+            /** Active Member Count */
+            active_member_count: number;
+            default_session_day: components["schemas"]["DayOfWeek"];
+            /**
+             * Default Session Time
+             * Format: time
+             */
+            default_session_time: string;
+            /** Default Session Duration Minutes */
+            default_session_duration_minutes: number;
+            /** Default Pool Id */
+            default_pool_id?: string | null;
+            /**
+             * Cycle Started At
+             * Format: date-time
+             */
+            cycle_started_at: string;
+            /**
+             * Review Due At
+             * Format: date-time
+             */
+            review_due_at: string;
+            /** Dissolved At */
+            dissolved_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Members */
+            members?: components["schemas"]["PodMemberOut"][];
+        };
+        /**
+         * PodInternalDetail
+         * @description Same as summary, plus the active member ids — used by sessions
+         *     service when it needs to know "who should I create attendance rows
+         *     for?".
+         */
+        PodInternalDetail: {
+            /** Id */
+            id: string;
+            /** Club Id */
+            club_id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /** Handle */
+            handle?: string | null;
+            /** Pod Lead Id */
+            pod_lead_id: string;
+            /** Assistant Pod Lead Id */
+            assistant_pod_lead_id?: string | null;
+            /** Status */
+            status: string;
+            /** Visibility */
+            visibility: string;
+            /** Min Size */
+            min_size: number;
+            /** Max Size */
+            max_size: number;
+            /** Active Member Count */
+            active_member_count: number;
+            /** Default Session Day */
+            default_session_day: string;
+            /** Default Session Time */
+            default_session_time: string;
+            /** Default Session Duration Minutes */
+            default_session_duration_minutes: number;
+            /** Default Pool Id */
+            default_pool_id?: string | null;
+            /** Active Member Ids */
+            active_member_ids: string[];
+        };
+        /**
+         * PodInternalSummary
+         * @description The shape sessions_service uses when scheduling a pod's sessions.
+         */
+        PodInternalSummary: {
+            /** Id */
+            id: string;
+            /** Club Id */
+            club_id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /** Handle */
+            handle?: string | null;
+            /** Pod Lead Id */
+            pod_lead_id: string;
+            /** Assistant Pod Lead Id */
+            assistant_pod_lead_id?: string | null;
+            /** Status */
+            status: string;
+            /** Visibility */
+            visibility: string;
+            /** Min Size */
+            min_size: number;
+            /** Max Size */
+            max_size: number;
+            /** Active Member Count */
+            active_member_count: number;
+            /** Default Session Day */
+            default_session_day: string;
+            /** Default Session Time */
+            default_session_time: string;
+            /** Default Session Duration Minutes */
+            default_session_duration_minutes: number;
+            /** Default Pool Id */
+            default_pool_id?: string | null;
+        };
+        /** PodMemberAddRequest */
+        PodMemberAddRequest: {
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+        };
+        /**
+         * PodMemberOut
+         * @description One active assignment row.
+         */
+        PodMemberOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /**
+             * Joined At
+             * Format: date-time
+             */
+            joined_at: string;
+            assigned_by: components["schemas"]["PodAssignmentSource"];
+        };
+        /**
+         * PodStatus
+         * @description Lifecycle marker. Active pods accept members and surface in the
+         *     review queue at the end of each 3-month cycle. Inactive pods are
+         *     dissolved — chat archives, no new joins.
+         * @enum {string}
+         */
+        PodStatus: "active" | "inactive";
+        /**
+         * PodSummary
+         * @description Compact pod shape used in list views (admin queue, public directory).
+         *
+         *     Capacity counters are computed (not columns) — derived from the active
+         *     assignments at read time.
+         */
+        PodSummary: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Club Id
+             * Format: uuid
+             */
+            club_id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /** Handle */
+            handle?: string | null;
+            /** Description */
+            description?: string | null;
+            /**
+             * Pod Lead Id
+             * Format: uuid
+             */
+            pod_lead_id: string;
+            /** Assistant Pod Lead Id */
+            assistant_pod_lead_id?: string | null;
+            visibility: components["schemas"]["PodVisibility"];
+            status: components["schemas"]["PodStatus"];
+            /** Min Size */
+            min_size: number;
+            /** Max Size */
+            max_size: number;
+            /** Active Member Count */
+            active_member_count: number;
+            default_session_day: components["schemas"]["DayOfWeek"];
+            /**
+             * Default Session Time
+             * Format: time
+             */
+            default_session_time: string;
+            /** Default Session Duration Minutes */
+            default_session_duration_minutes: number;
+            /** Default Pool Id */
+            default_pool_id?: string | null;
+            /**
+             * Cycle Started At
+             * Format: date-time
+             */
+            cycle_started_at: string;
+            /**
+             * Review Due At
+             * Format: date-time
+             */
+            review_due_at: string;
+            /** Dissolved At */
+            dissolved_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * PodTransferRequest
+         * @description Pod Lead / admin moves a member from this pod to another pod
+         *     (typically within the same Club).
+         */
+        PodTransferRequest: {
+            /**
+             * Target Pod Id
+             * Format: uuid
+             */
+            target_pod_id: string;
+        };
+        /**
+         * PodUpdateRequest
+         * @description Partial update — admins can rename, change visibility, swap leads,
+         *     tune capacity, override schedule. To extend the cycle, use the
+         *     dedicated extend endpoint.
+         */
+        PodUpdateRequest: {
+            /** Name */
+            name?: string | null;
+            /** Handle */
+            handle?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Pod Lead Id */
+            pod_lead_id?: string | null;
+            /** Assistant Pod Lead Id */
+            assistant_pod_lead_id?: string | null;
+            /** Min Size */
+            min_size?: number | null;
+            /** Max Size */
+            max_size?: number | null;
+            default_session_day?: components["schemas"]["DayOfWeek"] | null;
+            /** Default Session Time */
+            default_session_time?: string | null;
+            /** Default Session Duration Minutes */
+            default_session_duration_minutes?: number | null;
+            /** Default Pool Id */
+            default_pool_id?: string | null;
+            visibility?: components["schemas"]["PodVisibility"] | null;
+        };
+        /**
+         * PodVisibility
+         * @description Whether a pod appears in the public directory.
+         *
+         *     `public` pods are listed for self-selection during registration and on
+         *     the member dashboard. `private` pods are admin-managed only.
+         * @enum {string}
+         */
+        PodVisibility: "public" | "private";
+        /**
          * ProgramCategoryEnum
          * @description Program categories for grade assignment.
          * @enum {string}
@@ -15343,250 +15791,6 @@ export interface components {
             /** Location Name */
             location_name?: string | null;
         };
-        /**
-         * PodAssignmentSource
-         * @description How a member came to be in a pod. Useful for understanding
-         *     self-selection vs administrative-assignment behaviour.
-         * @enum {string}
-         */
-        PodAssignmentSource: "admin" | "self" | "coach_transfer";
-        /**
-         * PodCreateRequest
-         * @description Admin creates a pod for a Club. `name` is optional — if blank, the
-         *     server auto-names `{club_slug}-pod-{N}` (filled in by the service layer).
-         */
-        PodCreateRequest: {
-            /**
-             * Club Id
-             * Format: uuid
-             */
-            club_id: string;
-            /** Name */
-            name?: string | null;
-            /** Description */
-            description?: string | null;
-            /**
-             * Lead Coach Id
-             * Format: uuid
-             */
-            lead_coach_id: string;
-            /** Assistant Coach Id */
-            assistant_coach_id?: string | null;
-            /**
-             * Min Size
-             * @default 2
-             */
-            min_size: number;
-            /**
-             * Max Size
-             * @default 5
-             */
-            max_size: number;
-            /** @default public */
-            visibility: components["schemas"]["PodVisibility"];
-        };
-        /**
-         * PodDetail
-         * @description Full pod view — includes the current assignment list.
-         */
-        PodDetail: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /**
-             * Club Id
-             * Format: uuid
-             */
-            club_id: string;
-            /** Name */
-            name: string;
-            /** Slug */
-            slug: string;
-            /** Description */
-            description?: string | null;
-            /**
-             * Lead Coach Id
-             * Format: uuid
-             */
-            lead_coach_id: string;
-            /** Assistant Coach Id */
-            assistant_coach_id?: string | null;
-            visibility: components["schemas"]["PodVisibility"];
-            status: components["schemas"]["PodStatus"];
-            /** Min Size */
-            min_size: number;
-            /** Max Size */
-            max_size: number;
-            /** Active Member Count */
-            active_member_count: number;
-            /**
-             * Cycle Started At
-             * Format: date-time
-             */
-            cycle_started_at: string;
-            /**
-             * Review Due At
-             * Format: date-time
-             */
-            review_due_at: string;
-            /** Dissolved At */
-            dissolved_at?: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
-            /** Members */
-            members?: components["schemas"]["PodMemberOut"][];
-        };
-        /** PodMemberAddRequest */
-        PodMemberAddRequest: {
-            /**
-             * Member Id
-             * Format: uuid
-             */
-            member_id: string;
-        };
-        /**
-         * PodMemberOut
-         * @description One active assignment row.
-         */
-        PodMemberOut: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /**
-             * Member Id
-             * Format: uuid
-             */
-            member_id: string;
-            /**
-             * Joined At
-             * Format: date-time
-             */
-            joined_at: string;
-            assigned_by: components["schemas"]["PodAssignmentSource"];
-        };
-        /**
-         * PodStatus
-         * @description Lifecycle marker. Active pods accept members and surface in the
-         *     review queue at the end of each 3-month cycle. Inactive pods are
-         *     dissolved — chat archives, no new joins.
-         * @enum {string}
-         */
-        PodStatus: "active" | "inactive";
-        /**
-         * PodSummary
-         * @description Compact pod shape used in list views (admin queue, public directory).
-         *
-         *     Capacity counters are computed (not columns) — derived from the active
-         *     assignments at read time.
-         */
-        PodSummary: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /**
-             * Club Id
-             * Format: uuid
-             */
-            club_id: string;
-            /** Name */
-            name: string;
-            /** Slug */
-            slug: string;
-            /** Description */
-            description?: string | null;
-            /**
-             * Lead Coach Id
-             * Format: uuid
-             */
-            lead_coach_id: string;
-            /** Assistant Coach Id */
-            assistant_coach_id?: string | null;
-            visibility: components["schemas"]["PodVisibility"];
-            status: components["schemas"]["PodStatus"];
-            /** Min Size */
-            min_size: number;
-            /** Max Size */
-            max_size: number;
-            /** Active Member Count */
-            active_member_count: number;
-            /**
-             * Cycle Started At
-             * Format: date-time
-             */
-            cycle_started_at: string;
-            /**
-             * Review Due At
-             * Format: date-time
-             */
-            review_due_at: string;
-            /** Dissolved At */
-            dissolved_at?: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
-        };
-        /**
-         * PodTransferRequest
-         * @description Coach moves a member from this pod to another pod (typically within
-         *     the same Club).
-         */
-        PodTransferRequest: {
-            /**
-             * Target Pod Id
-             * Format: uuid
-             */
-            target_pod_id: string;
-        };
-        /**
-         * PodUpdateRequest
-         * @description Partial update — admins can rename, change visibility, swap coaches,
-         *     tune capacity. To extend the cycle, use the dedicated extend endpoint.
-         */
-        PodUpdateRequest: {
-            /** Name */
-            name?: string | null;
-            /** Description */
-            description?: string | null;
-            /** Lead Coach Id */
-            lead_coach_id?: string | null;
-            /** Assistant Coach Id */
-            assistant_coach_id?: string | null;
-            /** Min Size */
-            min_size?: number | null;
-            /** Max Size */
-            max_size?: number | null;
-            visibility?: components["schemas"]["PodVisibility"] | null;
-        };
-        /**
-         * PodVisibility
-         * @description Whether a pod appears in the public directory.
-         *
-         *     `public` pods are listed for self-selection during registration and on
-         *     the member dashboard. `private` pods are admin/coach-managed only.
-         * @enum {string}
-         */
-        PodVisibility: "public" | "private";
         /** SessionBasic */
         SessionBasic: {
             /** Id */
@@ -18450,6 +18654,121 @@ export interface components {
          * @enum {string}
          */
         ClubBillingCycle: "quarterly" | "biannual" | "annual";
+        /**
+         * CoachEarningsSummaryResponse
+         * @description Snapshot of a coach's payout situation across all their cohorts.
+         */
+        CoachEarningsSummaryResponse: {
+            /**
+             * Coach Member Id
+             * Format: uuid
+             */
+            coach_member_id: string;
+            /**
+             * Currency
+             * @default NGN
+             */
+            currency: string;
+            /** Total Paid Kobo */
+            total_paid_kobo: number;
+            /** Total Pending Kobo */
+            total_pending_kobo: number;
+            /** Upcoming Payouts */
+            upcoming_payouts: components["schemas"]["CoachUpcomingPayout"][];
+            /** Upcoming Total Kobo */
+            upcoming_total_kobo: number;
+            /** Recent Payouts */
+            recent_payouts: {
+                [key: string]: unknown;
+            }[];
+        };
+        /**
+         * CoachLineItem
+         * @description Per-student contribution to an upcoming block payout — the same data
+         *     surfaced to admins on the preview, exposed to the coach so they can
+         *     audit how their pay was computed.
+         */
+        CoachLineItem: {
+            /**
+             * Student Member Id
+             * Format: uuid
+             */
+            student_member_id: string;
+            /** Student Name */
+            student_name?: string | null;
+            /** Sessions Delivered */
+            sessions_delivered: number;
+            /** Sessions Excused */
+            sessions_excused: number;
+            /** Makeups Completed In Block */
+            makeups_completed_in_block: number;
+            /** Subtotal Kobo */
+            subtotal_kobo: number;
+        };
+        /**
+         * CoachUpcomingPayout
+         * @description One row per active recurring config — what the coach will earn at
+         *     the next block close based on what's been delivered so far.
+         *
+         *     Includes the inputs to the formula so the coach can see exactly why
+         *     the headline number is what it is:
+         *
+         *         per_session_per_student =
+         *             cohort_price_amount × band_percentage
+         *             ÷ total_blocks ÷ sessions_in_block
+         *
+         *         expected_amount_kobo =
+         *             Σ over students( (delivered + makeups_completed) × per_session_rate )
+         */
+        CoachUpcomingPayout: {
+            /**
+             * Config Id
+             * Format: uuid
+             */
+            config_id: string;
+            /**
+             * Cohort Id
+             * Format: uuid
+             */
+            cohort_id: string;
+            /** Cohort Name */
+            cohort_name?: string | null;
+            /** Band Percentage */
+            band_percentage: string;
+            /** Block Index */
+            block_index: number;
+            /** Total Blocks */
+            total_blocks: number;
+            /** Next Block Index */
+            next_block_index: number;
+            /**
+             * Block Start
+             * Format: date-time
+             */
+            block_start: string;
+            /**
+             * Block End
+             * Format: date-time
+             */
+            block_end: string;
+            /**
+             * Next Run Date
+             * Format: date-time
+             */
+            next_run_date: string;
+            /** Expected Amount Kobo */
+            expected_amount_kobo: number;
+            /** Sessions In Block */
+            sessions_in_block: number;
+            /** Students Count */
+            students_count: number;
+            /** Cohort Price Amount */
+            cohort_price_amount: number;
+            /** Per Session Amount Kobo */
+            per_session_amount_kobo: number;
+            /** Lines */
+            lines: components["schemas"]["CoachLineItem"][];
+        };
         /** CompletePaymentRequest */
         CompletePaymentRequest: {
             /**
@@ -30740,6 +31059,452 @@ export interface operations {
             };
         };
     };
+    admin_create_pod_admin_members_pods_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PodCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_review_queue_admin_members_pods_review_queue_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodSummary"][];
+                };
+            };
+        };
+    };
+    admin_get_pod_admin_members_pods__pod_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pod_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_update_pod_admin_members_pods__pod_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pod_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PodUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_dissolve_pod_admin_members_pods__pod_id__dissolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pod_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_extend_pod_admin_members_pods__pod_id__extend_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pod_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_add_member_admin_members_pods__pod_id__members_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pod_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PodMemberAddRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodMemberOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_remove_member_admin_members_pods__pod_id__members__member_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pod_id: string;
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_transfer_member_admin_members_pods__pod_id__transfers_post: {
+        parameters: {
+            query: {
+                /** @description Member being moved (kept in query so the body stays focused) */
+                member_id: string;
+            };
+            header?: never;
+            path: {
+                pod_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PodTransferRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_pod_members_pods_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodSummary"] | null;
+                };
+            };
+        };
+    };
+    list_public_pods_members_pods_public_get: {
+        parameters: {
+            query?: {
+                club_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    member_join_pod_members_pods__pod_id__join_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pod_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodMemberOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    member_leave_pod_members_pods_me_leave_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_pod_internal_internal_members_pods__pod_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pod_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodInternalDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_pods_internal_internal_members_pods_get: {
+        parameters: {
+            query?: {
+                club_id?: string | null;
+                /** @description Filter by status (active|inactive). Defaults to active only. */
+                status?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodInternalSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_member_by_auth_id_internal_members_by_auth__auth_id__get: {
         parameters: {
             query?: never;
@@ -31367,388 +32132,6 @@ export interface operations {
                 content: {
                     "application/json": unknown;
                 };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_my_pod_sessions_pods_me_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PodSummary"] | null;
-                };
-            };
-        };
-    };
-    list_public_pods_sessions_pods_public_get: {
-        parameters: {
-            query?: {
-                club_id?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PodSummary"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    member_join_pod_sessions_pods__pod_id__join_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                pod_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PodMemberOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    member_leave_pod_sessions_pods_me_leave_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    admin_create_pod_admin_sessions_pods_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PodCreateRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PodSummary"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    admin_review_queue_admin_sessions_pods_review_queue_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PodSummary"][];
-                };
-            };
-        };
-    };
-    admin_get_pod_admin_sessions_pods__pod_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                pod_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PodDetail"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    admin_update_pod_admin_sessions_pods__pod_id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                pod_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PodUpdateRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PodSummary"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    admin_dissolve_pod_admin_sessions_pods__pod_id__dissolve_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                pod_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PodSummary"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    admin_extend_pod_admin_sessions_pods__pod_id__extend_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                pod_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PodSummary"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    admin_add_member_admin_sessions_pods__pod_id__members_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                pod_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PodMemberAddRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PodMemberOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    admin_remove_member_admin_sessions_pods__pod_id__members__member_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                pod_id: string;
-                member_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    admin_transfer_member_admin_sessions_pods__pod_id__transfers_post: {
-        parameters: {
-            query: {
-                /** @description Member being moved (kept in query so the body stays focused) */
-                member_id: string;
-            };
-            header?: never;
-            path: {
-                pod_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PodTransferRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -37410,6 +37793,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    coach_earnings_summary_payments_coach_me_earnings__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachEarningsSummaryResponse"];
                 };
             };
         };
