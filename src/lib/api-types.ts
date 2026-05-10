@@ -13385,6 +13385,13 @@ export interface components {
             description?: string | null;
             /** Location */
             location?: string | null;
+            default_session_day?: components["schemas"]["DayOfWeek"] | null;
+            /** Default Session Time */
+            default_session_time?: string | null;
+            /** Default Session Duration Minutes */
+            default_session_duration_minutes?: number | null;
+            /** Default Pool Id */
+            default_pool_id?: string | null;
             /**
              * Is Active
              * @default true
@@ -13401,6 +13408,16 @@ export interface components {
             description?: string | null;
             /** Location */
             location?: string | null;
+            default_session_day: components["schemas"]["DayOfWeek"];
+            /**
+             * Default Session Time
+             * Format: time
+             */
+            default_session_time: string;
+            /** Default Session Duration Minutes */
+            default_session_duration_minutes: number;
+            /** Default Pool Id */
+            default_pool_id?: string | null;
             /**
              * Id
              * Format: uuid
@@ -13434,6 +13451,13 @@ export interface components {
             location?: string | null;
             /** Is Active */
             is_active?: boolean | null;
+            default_session_day?: components["schemas"]["DayOfWeek"] | null;
+            /** Default Session Time */
+            default_session_time?: string | null;
+            /** Default Session Duration Minutes */
+            default_session_duration_minutes?: number | null;
+            /** Default Pool Id */
+            default_pool_id?: string | null;
         };
         /**
          * CoachAgreementHistoryItem
@@ -15881,6 +15905,8 @@ export interface components {
             event_id?: string | null;
             /** Booking Id */
             booking_id?: string | null;
+            /** Pod Id */
+            pod_id?: string | null;
             /** Week Number */
             week_number?: number | null;
             /** Lesson Title */
@@ -16002,6 +16028,8 @@ export interface components {
             event_id?: string | null;
             /** Booking Id */
             booking_id?: string | null;
+            /** Pod Id */
+            pod_id?: string | null;
             /** Week Number */
             week_number?: number | null;
             /** Lesson Title */
@@ -16213,6 +16241,8 @@ export interface components {
             event_id?: string | null;
             /** Booking Id */
             booking_id?: string | null;
+            /** Pod Id */
+            pod_id?: string | null;
             /** Week Number */
             week_number?: number | null;
             /** Lesson Title */

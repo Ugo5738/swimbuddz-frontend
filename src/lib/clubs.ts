@@ -9,6 +9,17 @@ import { API_BASE_URL } from "./config";
 
 const BASE = `${API_BASE_URL}/api/v1/clubs`;
 
+/** Day-of-week enum on Club.default_session_day. Mirrors backend
+ * ``services.members_service.models.enums.DayOfWeek``. */
+export type ClubDayOfWeek =
+  | "mon"
+  | "tue"
+  | "wed"
+  | "thu"
+  | "fri"
+  | "sat"
+  | "sun";
+
 export interface Club {
   id: string;
   name: string;
@@ -16,6 +27,14 @@ export interface Club {
   description: string | null;
   location: string | null;
   is_active: boolean;
+  /** Default session day pods inherit at creation. */
+  default_session_day: ClubDayOfWeek;
+  /** Default session start time pods inherit. ISO HH:MM:SS. */
+  default_session_time: string;
+  /** Default session length in minutes pods inherit. */
+  default_session_duration_minutes: number;
+  /** Default pool pods inherit (cross-service ref → pools_service.pools.id). */
+  default_pool_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -26,6 +45,11 @@ export interface ClubInput {
   description?: string | null;
   location?: string | null;
   is_active?: boolean;
+  default_session_day?: ClubDayOfWeek;
+  /** HH:MM (5 chars) or HH:MM:SS — backend accepts both. */
+  default_session_time?: string;
+  default_session_duration_minutes?: number;
+  default_pool_id?: string | null;
 }
 
 async function authedFetch(url: string, init: RequestInit = {}) {
@@ -58,6 +82,11 @@ export async function listClubs(activeOnly = true): Promise<Club[]> {
   params.set("active_only", String(activeOnly));
   const res = await fetch(`${BASE}/?${params}`, { cache: "no-store" });
   return unwrap<Club[]>(res, "Failed to load clubs");
+}
+
+export async function getClub(id: string): Promise<Club> {
+  const res = await fetch(`${BASE}/${id}`, { cache: "no-store" });
+  return unwrap<Club>(res, "Failed to load club");
 }
 
 export async function createClub(input: ClubInput): Promise<Club> {

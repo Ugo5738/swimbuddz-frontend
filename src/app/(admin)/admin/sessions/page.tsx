@@ -76,6 +76,7 @@ interface Session {
   template_id?: string;
   is_recurring_instance?: boolean;
   cohort_id?: string;
+  pod_id?: string | null;
   timezone?: string;
 }
 
@@ -1017,7 +1018,37 @@ function SessionFormModal({
     capacity: session?.capacity ?? 20,
     description: session?.description || "",
     publish_status: "draft" as "draft" | "published",
+    // Optional Pod link for Club sessions. NULL = "general Club session,
+    // any Club member welcome". Set = "this Saturday's session for
+    // Dolphins specifically". See docs/club/POD_OPERATIONS.md.
+    pod_id: session?.pod_id ?? null,
   });
+
+  // Lazy-load active pods only when session_type is "club" — avoids the
+  // round-trip for academy/community/event sessions where pod_id doesn't
+  // apply.
+  const [pods, setPods] = useState<
+    Array<{ id: string; label: string; club_id: string }>
+  >([]);
+  useEffect(() => {
+    if (form.session_type !== "club") return;
+    if (pods.length > 0) return;
+    void (async () => {
+      try {
+        const { listPublicPods, podDisplayName } = await import("@/lib/pods");
+        const list = await listPublicPods();
+        setPods(
+          list.map((p) => ({
+            id: p.id,
+            label: podDisplayName(p),
+            club_id: p.club_id,
+          })),
+        );
+      } catch (e) {
+        console.warn("Failed to load pods for session form", e);
+      }
+    })();
+  }, [form.session_type, pods.length]);
 
   const [rideConfigs, setRideConfigs] = useState<
     Array<{ ride_area_id: string; cost: number; capacity: number; departure_time: string }>
@@ -1063,6 +1094,9 @@ function SessionFormModal({
       pool_fee: form.pool_fee,
       capacity: form.capacity,
       description: form.description || undefined,
+      // Pod link is only meaningful for Club sessions; clear it on type
+      // switch so we don't ship a stale pod_id for an academy/event row.
+      pod_id: form.session_type === "club" ? form.pod_id ?? null : null,
     };
 
     const validRides = rideConfigs
@@ -1116,6 +1150,26 @@ function SessionFormModal({
             hint="Managed at Admin \u2192 Pool Registry."
           />
         </div>
+        {/* Pod link \u2014 only meaningful for Club sessions. NULL = general
+            Club session open to any club member. Set = scheduled for that
+            specific pod's roster (Saturday for Dolphins, etc). */}
+        {form.session_type === "club" && (
+          <Select
+            label="Pod (optional)"
+            value={form.pod_id ?? ""}
+            onChange={(e) =>
+              setForm({ ...form, pod_id: e.target.value || null })
+            }
+            hint="Leave blank for a general Club session. Pick a pod to scope this to that crew's Saturday."
+          >
+            <option value="">\u2014 General Club session \u2014</option>
+            {pods.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label}
+              </option>
+            ))}
+          </Select>
+        )}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
             label="Start Time"

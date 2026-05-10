@@ -127,11 +127,10 @@ const navSections: NavSection[] = [
         label: "Clubs",
         icon: Users,
       },
-      {
-        href: "/admin/community/pods",
-        label: "Pods",
-        icon: Users,
-      },
+      // Pods are managed inside their parent Club — open a club from
+      // /admin/community/clubs to see and create its pods. The pod CRUD
+      // pages still exist at /admin/community/pods/* (deep-linkable from
+      // the club detail page) but aren't surfaced as a top-level nav item.
     ],
   },
   {

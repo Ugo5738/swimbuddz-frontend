@@ -24,7 +24,7 @@ import {
 } from "@/lib/pods";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 const DAYS: { value: DayOfWeek; label: string }[] = [
@@ -69,12 +69,18 @@ const empty: FormState = {
 
 export default function NewPodPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // When linked from a club detail page (/admin/community/clubs/[id] →
+  // "Create pod"), the club_id query param pre-selects the club so the
+  // admin doesn't have to re-pick it.
+  const presetClubId = searchParams?.get("club_id") ?? "";
+
   const [clubs, setClubs] = useState<Club[]>([]);
   const [members, setMembers] = useState<MemberListItem[]>([]);
   const [loadingDeps, setLoadingDeps] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState<FormState>(empty);
+  const [form, setForm] = useState<FormState>({ ...empty, club_id: presetClubId });
   const [memberSearch, setMemberSearch] = useState("");
   const [assistantSearch, setAssistantSearch] = useState("");
 

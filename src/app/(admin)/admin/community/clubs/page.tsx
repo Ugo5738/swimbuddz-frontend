@@ -1,12 +1,12 @@
 "use client";
 
 /**
- * Admin Clubs Management.
+ * Admin Clubs Management — list view.
  *
- * SwimBuddz has Community / Club / Academy as membership tiers but the
- * "Club" was conceptually implicit until now. This page is the lightweight
- * CRUD that lets admins seed Club rows so the challenges form (and any
- * future club-scoped feature) has something to point at.
+ * Each row links to a per-club detail page where you can edit defaults
+ * (schedule, pool, location) and manage the club's pods. Inline create
+ * form here is for the bare minimum needed to seed a row; the rich
+ * editing UI lives in [id]/page.tsx.
  */
 
 import { Button } from "@/components/ui/Button";
@@ -21,9 +21,17 @@ import {
   createClub,
   deleteClub,
   listClubs,
-  updateClub,
 } from "@/lib/clubs";
-import { Pencil, Plus, Trash2, Users } from "lucide-react";
+import {
+  ArrowRight,
+  Calendar,
+  Clock,
+  MapPin,
+  Plus,
+  Trash2,
+  Users,
+} from "lucide-react";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 const slugify = (s: string) =>
@@ -33,6 +41,16 @@ const slugify = (s: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 40);
+
+const DAY_LABELS: Record<string, string> = {
+  mon: "Mon",
+  tue: "Tue",
+  wed: "Wed",
+  thu: "Thu",
+  fri: "Fri",
+  sat: "Sat",
+  sun: "Sun",
+};
 
 const emptyForm: ClubInput = {
   name: "",
@@ -48,7 +66,6 @@ export default function AdminClubsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ClubInput>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [autoSlug, setAutoSlug] = useState(true);
@@ -71,22 +88,8 @@ export default function AdminClubsPage() {
   }, []);
 
   const openCreate = () => {
-    setEditingId(null);
     setForm(emptyForm);
     setAutoSlug(true);
-    setModalOpen(true);
-  };
-
-  const openEdit = (club: Club) => {
-    setEditingId(club.id);
-    setForm({
-      name: club.name,
-      slug: club.slug,
-      description: club.description ?? "",
-      location: club.location ?? "",
-      is_active: club.is_active,
-    });
-    setAutoSlug(false);
     setModalOpen(true);
   };
 
@@ -99,11 +102,7 @@ export default function AdminClubsPage() {
         description: form.description?.trim() || null,
         location: form.location?.trim() || null,
       };
-      if (editingId) {
-        await updateClub(editingId, payload);
-      } else {
-        await createClub(payload);
-      }
+      await createClub(payload);
       setModalOpen(false);
       await load();
     } catch (e) {
@@ -113,10 +112,12 @@ export default function AdminClubsPage() {
     }
   };
 
-  const handleDelete = async (club: Club) => {
+  const handleDelete = async (e: React.MouseEvent, club: Club) => {
+    e.preventDefault(); // Don't trigger the row's <Link> nav
+    e.stopPropagation();
     if (
       !confirm(
-        `Delete "${club.name}"? Existing challenges that point to this club will keep their stale club_id but lose the link in the picker.`,
+        `Delete "${club.name}"? Pods under this club will be left orphaned (their club_id stays but the picker won't show this club).`,
       )
     )
       return;
@@ -131,7 +132,6 @@ export default function AdminClubsPage() {
   const sortedClubs = useMemo(
     () =>
       [...clubs].sort((a, b) => {
-        // Active first, then alphabetical
         if (a.is_active !== b.is_active) return a.is_active ? -1 : 1;
         return a.name.localeCompare(b.name);
       }),
@@ -148,8 +148,9 @@ export default function AdminClubsPage() {
             Clubs
           </h1>
           <p className="mt-2 text-slate-600">
-            Manage SwimBuddz clubs. Used to scope challenges and other
-            club-tier features.
+            One Club per location (e.g. <em>SwimBuddz Yaba</em>). Pods are
+            small training crews inside a Club — open a Club to manage its
+            pods and default schedule.
           </p>
         </div>
         <Button onClick={openCreate} className="flex w-fit items-center gap-2">
@@ -171,7 +172,7 @@ export default function AdminClubsPage() {
             No clubs yet
           </h3>
           <p className="mt-2 text-sm text-slate-600">
-            Create the first club so you can scope challenges to it.
+            Create the first club so you can add pods to it.
           </p>
           <div className="mt-4">
             <Button onClick={openCreate}>Create club</Button>
@@ -180,62 +181,69 @@ export default function AdminClubsPage() {
       ) : (
         <div className="space-y-3">
           {sortedClubs.map((club) => (
-            <Card
-              key={club.id}
-              className={`flex flex-wrap items-start justify-between gap-3 p-4 ${
-                club.is_active ? "" : "opacity-60"
-              }`}
-            >
-              <div className="min-w-0 flex-1 space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-lg font-semibold text-slate-900">
-                    {club.name}
-                  </h3>
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
-                    {club.slug}
-                  </span>
-                  {!club.is_active && (
-                    <span className="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-700">
-                      Inactive
+            <Link key={club.id} href={`/admin/community/clubs/${club.id}`}>
+              <Card
+                className={`group flex flex-wrap items-start justify-between gap-3 p-4 transition hover:border-cyan-300 hover:shadow-md ${
+                  club.is_active ? "" : "opacity-60"
+                }`}
+              >
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-lg font-semibold text-slate-900 group-hover:text-cyan-700">
+                      {club.name}
+                    </h3>
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                      {club.slug}
                     </span>
+                    {!club.is_active && (
+                      <span className="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-700">
+                        Inactive
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
+                    {club.location && (
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin className="h-3.5 w-3.5" />
+                        {club.location}
+                      </span>
+                    )}
+                    <span className="inline-flex items-center gap-1">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {DAY_LABELS[club.default_session_day] ??
+                        club.default_session_day}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5" />
+                      {club.default_session_time.slice(0, 5)} ·{" "}
+                      {club.default_session_duration_minutes}m
+                    </span>
+                  </div>
+                  {club.description && (
+                    <p className="line-clamp-2 text-sm text-slate-700">
+                      {club.description}
+                    </p>
                   )}
                 </div>
-                {club.location && (
-                  <p className="text-sm text-slate-600">📍 {club.location}</p>
-                )}
-                {club.description && (
-                  <p className="line-clamp-2 text-sm text-slate-700">
-                    {club.description}
-                  </p>
-                )}
-              </div>
-              <div className="flex shrink-0 gap-2">
-                <Button
-                  variant="secondary"
-                  onClick={() => openEdit(club)}
-                  className="flex items-center gap-1.5"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                  Edit
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => handleDelete(club)}
-                  className="flex items-center gap-1.5 text-rose-600 hover:bg-rose-50"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </Card>
+                <div className="flex shrink-0 items-center gap-2">
+                  <Button
+                    variant="secondary"
+                    onClick={(e) => handleDelete(e, club)}
+                    className="flex items-center gap-1.5 text-rose-600 hover:bg-rose-50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                  <ArrowRight className="h-5 w-5 text-slate-300 group-hover:text-cyan-600" />
+                </div>
+              </Card>
+            </Link>
           ))}
         </div>
       )}
 
-      <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={editingId ? "Edit club" : "Create club"}
-      >
+      {/* Create modal — minimal fields. Schedule/pool/edit lives in the
+          per-club detail page (linked to from the row). */}
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Create club">
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
             label="Name"
@@ -249,7 +257,7 @@ export default function AdminClubsPage() {
               }));
             }}
             required
-            placeholder="e.g. Yaba Swim Club"
+            placeholder="e.g. SwimBuddz Yaba"
           />
           <Input
             label="Slug"
@@ -259,8 +267,8 @@ export default function AdminClubsPage() {
               setForm((f) => ({ ...f, slug: slugify(e.target.value) }));
             }}
             required
-            placeholder="e.g. yaba-swim-club"
-            hint="Lowercase letters, digits, single hyphens. Used in URLs."
+            placeholder="e.g. sb-yaba"
+            hint="Auto-generated from name. Lowercase letters/digits, single hyphens."
           />
           <Input
             label="Location (optional)"
@@ -272,33 +280,19 @@ export default function AdminClubsPage() {
             label="Description (optional)"
             rows={3}
             value={form.description ?? ""}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, description: e.target.value }))
-            }
+            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             placeholder="What is this club about?"
           />
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={form.is_active ?? true}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, is_active: e.target.checked }))
-              }
-              className="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
-            />
-            Active (visible in pickers)
-          </label>
-
+          <p className="text-xs text-slate-500">
+            Default session schedule (day, time, duration, pool) and pods are
+            configured on the next page after you create the club.
+          </p>
           <div className="flex justify-end gap-2 border-t border-slate-100 pt-3">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setModalOpen(false)}
-            >
+            <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={submitting}>
-              {submitting ? "Saving…" : editingId ? "Save" : "Create"}
+              {submitting ? "Creating…" : "Create"}
             </Button>
           </div>
         </form>

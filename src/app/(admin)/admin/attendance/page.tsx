@@ -13,7 +13,53 @@ type Session = {
   starts_at: string;
   location: string | null;
   location_name: string | null;
+  title: string | null;
+  lesson_title: string | null;
+  week_number: number | null;
+  cohort_id: string | null;
+  session_type: string | null;
 };
+
+type Cohort = {
+  id: string;
+  name: string;
+};
+
+function describeSession(
+  session: Session,
+  cohortNames: Map<string, string>,
+): string {
+  const startDate = session.starts_at ? new Date(session.starts_at) : null;
+  const dateLabel =
+    startDate && !isNaN(startDate.getTime())
+      ? format(startDate, "MMM d, yyyy h:mm a")
+      : "Date TBD";
+
+  const cohortName = session.cohort_id
+    ? cohortNames.get(session.cohort_id)
+    : null;
+  const weekLabel = session.week_number ? `Week ${session.week_number}` : null;
+  const cohortLabel = cohortName
+    ? weekLabel
+      ? `${cohortName} · ${weekLabel}`
+      : cohortName
+    : null;
+
+  const titleLabel =
+    session.title ||
+    session.lesson_title ||
+    (session.session_type
+      ? session.session_type.charAt(0).toUpperCase() +
+        session.session_type.slice(1)
+      : "Session");
+
+  const locationLabel =
+    session.location_name || session.location || "Location TBD";
+
+  return [dateLabel, titleLabel, cohortLabel, locationLabel]
+    .filter(Boolean)
+    .join(" · ");
+}
 
 type Attendance = {
   id: string;
@@ -54,6 +100,9 @@ type RideConfig = {
 
 export default function AdminAttendancePage() {
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [cohortNames, setCohortNames] = useState<Map<string, string>>(
+    () => new Map(),
+  );
   const [attendanceList, setAttendanceList] = useState<Attendance[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(true);
   const [loadingAttendance, setLoadingAttendance] = useState(false);
@@ -66,10 +115,17 @@ export default function AdminAttendancePage() {
   useEffect(() => {
     async function fetchSessions() {
       try {
-        const data = await apiGet<Session[]>("/api/v1/sessions/", {
-          auth: true,
-        });
+        const [data, cohorts] = await Promise.all([
+          apiGet<Session[]>("/api/v1/sessions/", { auth: true }),
+          apiGet<Cohort[]>("/api/v1/academy/cohorts", { auth: true }).catch(
+            (err) => {
+              console.warn("Failed to fetch cohorts for dropdown labels", err);
+              return [] as Cohort[];
+            },
+          ),
+        ]);
         setSessions(data);
+        setCohortNames(new Map(cohorts.map((c) => [c.id, c.name])));
         if (data.length > 0) {
           setSelectedSessionId(data[0].id);
         }
@@ -270,21 +326,14 @@ export default function AdminAttendancePage() {
       const startDate = selectedSession?.starts_at
         ? new Date(selectedSession.starts_at)
         : null;
-      const dateLabel =
-        startDate && !isNaN(startDate.getTime())
-          ? format(startDate, "PPPp")
-          : "Session";
-      const locationLabel =
-        selectedSession?.location_name || selectedSession?.location || "";
+      const subtitle = selectedSession
+        ? describeSession(selectedSession, cohortNames)
+        : "Session";
 
       doc.setFontSize(14);
       doc.text("Attendance Report", 14, 16);
       doc.setFontSize(10);
-      doc.text(
-        `${dateLabel}${locationLabel ? ` - ${locationLabel}` : ""}`,
-        14,
-        22,
-      );
+      doc.text(subtitle, 14, 22);
 
       const columns = [
         {
@@ -432,19 +481,11 @@ export default function AdminAttendancePage() {
             value={selectedSessionId}
             onChange={(e) => setSelectedSessionId(e.target.value)}
           >
-            {sessions.map((s) => {
-              const startDate = s.starts_at ? new Date(s.starts_at) : null;
-              const dateLabel =
-                startDate && !isNaN(startDate.getTime())
-                  ? format(startDate, "MMM d, yyyy h:mm a")
-                  : "Date TBD";
-              return (
-                <option key={s.id} value={s.id}>
-                  {dateLabel} -{" "}
-                  {s.location_name || s.location || "Location TBD"}
-                </option>
-              );
-            })}
+            {sessions.map((s) => (
+              <option key={s.id} value={s.id}>
+                {describeSession(s, cohortNames)}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -457,19 +498,9 @@ export default function AdminAttendancePage() {
                 (s) => s.id === selectedSessionId,
               );
               if (!selectedSession) return null;
-              const startDate = selectedSession.starts_at
-                ? new Date(selectedSession.starts_at)
-                : null;
-              const dateLabel =
-                startDate && !isNaN(startDate.getTime())
-                  ? format(startDate, "MMMM d, yyyy h:mm a")
-                  : "Date TBD";
               return (
                 <p className="text-sm text-slate-600">
-                  {dateLabel} -{" "}
-                  {selectedSession.location_name ||
-                    selectedSession.location ||
-                    "Location TBD"}
+                  {describeSession(selectedSession, cohortNames)}
                 </p>
               );
             })()}
