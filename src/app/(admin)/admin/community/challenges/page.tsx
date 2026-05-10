@@ -108,6 +108,10 @@ interface ClubChallenge {
   team_min_size: number | null;
   team_max_size: number | null;
   example_media: ExampleMediaItem[];
+  // Skill-ladder series (Phase B). All optional.
+  series_slug: string | null;
+  series_order: number | null;
+  requires_challenge_id: string | null;
   completion_count: number;
   submission_count: number;
 }
@@ -134,6 +138,10 @@ interface FormState {
   team_min_size: string;
   team_max_size: string;
   example_media: ExampleMediaItem[];
+  // Skill-ladder series (Phase B). All optional.
+  series_slug: string;
+  series_order: string;  // numeric input as string until parse on submit
+  requires_challenge_id: string; // empty = no prerequisite (soft progression)
 }
 
 const EMPTY_FORM: FormState = {
@@ -158,6 +166,9 @@ const EMPTY_FORM: FormState = {
   team_min_size: "",
   team_max_size: "",
   example_media: [],
+  series_slug: "",
+  series_order: "",
+  requires_challenge_id: "",
 };
 
 // ---------------------------------------------------------------------------
@@ -249,6 +260,9 @@ function challengeToForm(c: ClubChallenge): FormState {
       file_url: m.file_url ?? null,
       thumbnail_url: m.thumbnail_url ?? null,
     })),
+    series_slug: c.series_slug ?? "",
+    series_order: c.series_order == null ? "" : String(c.series_order),
+    requires_challenge_id: c.requires_challenge_id ?? "",
   };
 }
 
@@ -282,6 +296,14 @@ function formToPayload(f: FormState) {
       order_idx: idx,
       caption: m.caption,
     })),
+    // Skill-ladder series. series_slug is the trigger — if empty, send
+    // null for everything (a non-ladder challenge). Backend treats nulls
+    // as "this challenge is standalone."
+    series_slug: nullableString(f.series_slug),
+    series_order: f.series_slug.trim() ? nullableInt(f.series_order) : null,
+    requires_challenge_id: f.series_slug.trim()
+      ? nullableUuid(f.requires_challenge_id)
+      : null,
   };
 }
 
@@ -627,8 +649,10 @@ export default function AdminChallengesPage() {
           onSubmit={handleSave}
           onCancel={closeForm}
           editing={!!editingId}
+          editingId={editingId}
           saving={saving}
           error={saveError}
+          allChallenges={challenges}
         />
       )}
 
@@ -815,17 +839,35 @@ function ChallengeForm({
   onSubmit,
   onCancel,
   editing,
+  editingId,
   saving,
   error,
+  allChallenges,
 }: {
   form: FormState;
   setForm: React.Dispatch<React.SetStateAction<FormState>>;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
   editing: boolean;
+  editingId: string | null;
   saving: boolean;
   error: string | null;
+  allChallenges: ClubChallenge[];
 }) {
+  // Prerequisite picker only offers challenges in the SAME series — a
+  // hard-gate to a challenge in a different series doesn't make sense.
+  // Empty when this isn't a series challenge yet (no series_slug).
+  const prerequisiteOptions = useMemo(() => {
+    const slug = form.series_slug.trim();
+    if (!slug) return [];
+    return allChallenges
+      .filter((c) => c.series_slug === slug && c.id !== editingId)
+      .sort(
+        (a, b) =>
+          (a.series_order ?? Number.MAX_SAFE_INTEGER) -
+          (b.series_order ?? Number.MAX_SAFE_INTEGER),
+      );
+  }, [allChallenges, form.series_slug, editingId]);
   // Stable initial content so BlockEditor doesn't re-mount on every keystroke
   const editorInitial = useMemo(
     () => form.instructions_blocks,
@@ -990,6 +1032,69 @@ function ChallengeForm({
               onChange={(e) => setForm({ ...form, ends_at: e.target.value })}
             />
           </div>
+        </Section>
+
+        <Section
+          title="Skill Ladder (optional)"
+          description="Group challenges into an ordered ladder. Members see ladders on the Club page and track progression on their profile. Leave the slug empty for a standalone challenge."
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label="Series slug"
+              value={form.series_slug}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  series_slug: e.target.value
+                    .toLowerCase()
+                    .replace(/[^a-z0-9-]+/g, "-")
+                    .replace(/^-+|-+$/g, "")
+                    .slice(0, 64),
+                })
+              }
+              placeholder="e.g. club-fundamentals"
+              hint="Lowercase letters, digits, hyphens. All challenges sharing a slug form one ladder."
+            />
+            <Input
+              label="Step number"
+              type="number"
+              min={1}
+              value={form.series_order}
+              onChange={(e) =>
+                setForm({ ...form, series_order: e.target.value })
+              }
+              placeholder="e.g. 1"
+              disabled={!form.series_slug.trim()}
+              hint="Position in the ladder. 1 = first step."
+            />
+          </div>
+          {form.series_slug.trim() && (
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                Prerequisite (hard gating — optional)
+              </label>
+              <Select
+                value={form.requires_challenge_id}
+                onChange={(e) =>
+                  setForm({ ...form, requires_challenge_id: e.target.value })
+                }
+              >
+                <option value="">No prerequisite (soft progression)</option>
+                {prerequisiteOptions.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.series_order ? `${c.series_order}. ` : ""}
+                    {c.title}
+                  </option>
+                ))}
+              </Select>
+              <p className="mt-1 text-xs text-slate-500">
+                If set, members must have an approved badge for the
+                prerequisite before they can submit this step. Leave on
+                "No prerequisite" for the recommended soft-progression
+                model — order is suggested, not enforced.
+              </p>
+            </div>
+          )}
         </Section>
 
         <Section title="Visibility">

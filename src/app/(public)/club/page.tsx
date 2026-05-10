@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
+import { SkillLaddersShowcase } from "@/components/club/SkillLaddersShowcase";
 
 type Benefit = {
   title: string;
@@ -170,11 +171,20 @@ export default function ClubPage() {
         </div>
       </section>
 
-      {/* Challenges & Badges */}
+      {/* Skill Ladders — auto-renders any seeded skill ladders for the
+          Club tier (challenges with series_slug set, audience='club').
+          Falls back to the static badge list below when no ladders exist
+          yet, so the page never looks broken pre-seed. */}
+      <SkillLaddersShowcase audience="club" />
+
+      {/* Static badge teaser — shown alongside the live ladders so
+          prospects always see *some* badge content even before admins
+          have seeded the ladder data. Will likely be removed once a
+          full Club Path is published. */}
       <section className="space-y-6">
         <div>
           <h2 className="text-2xl font-semibold text-slate-900">
-            Challenges & Badges
+            Sample Badges
           </h2>
           <p className="text-base text-slate-600 mt-2">
             Push yourself and earn recognition for your commitment and

@@ -111,6 +111,13 @@ export interface Challenge {
   updated_at: string;
   // criteria_json kept loose — schema-side it's an arbitrary dict
   criteria_json?: Record<string, unknown> | null;
+  // Skill-ladder series. When `series_slug` is set, this challenge is
+  // step #`series_order` of an ordered ladder. `requires_challenge_id`
+  // is OPTIONAL hard-gating — the default is soft progression (no
+  // prerequisite enforced).
+  series_slug: string | null;
+  series_order: number | null;
+  requires_challenge_id: string | null;
 }
 
 export interface ChallengeSubmissionPayload {
@@ -157,6 +164,13 @@ export async function listChallenges(
     activeOnly?: boolean;
     challengeType?: ChallengeType;
     audience?: Audience;
+    /**
+     * Filter by skill-ladder series:
+     *   "<slug>" — only that ladder's steps, ordered by series_order
+     *   "none"   — only standalone challenges (excludes ladders)
+     *   undefined — everything (admin/list view)
+     */
+    seriesSlug?: string | "none";
   } = {},
 ): Promise<Challenge[]> {
   const params = new URLSearchParams();
@@ -164,6 +178,7 @@ export async function listChallenges(
     params.set("active_only", String(options.activeOnly));
   if (options.challengeType) params.set("challenge_type", options.challengeType);
   if (options.audience) params.set("audience", options.audience);
+  if (options.seriesSlug) params.set("series_slug", options.seriesSlug);
   // Trailing slash is intentional — the backend collection route is
   // registered at `/challenges/`, so without it FastAPI returns a 307
   // redirect that the upstream proxy currently rewrites to `http://`,
@@ -172,6 +187,27 @@ export async function listChallenges(
   const url = `${apiEndpoints.challenges}/${params.toString() ? `?${params}` : ""}`;
   const res = await authedFetch(url);
   return unwrap<Challenge[]>(res, "Failed to load challenges");
+}
+
+/**
+ * Fetch all challenges that belong to a series, grouped by slug.
+ * Powers the Club page's skill-ladders showcase. The endpoint already
+ * orders steps within each series by `series_order`, so callers can
+ * render directly without re-sorting.
+ */
+export async function listChallengesBySeries(
+  audience?: Audience,
+): Promise<Record<string, Challenge[]>> {
+  const params = new URLSearchParams();
+  params.set("active_only", "true");
+  if (audience) params.set("audience", audience);
+  const res = await authedFetch(
+    `${apiEndpoints.challenges}/series/list?${params}`,
+  );
+  return unwrap<Record<string, Challenge[]>>(
+    res,
+    "Failed to load skill ladders",
+  );
 }
 
 export async function getChallenge(id: string): Promise<Challenge> {
@@ -325,6 +361,9 @@ export interface PublicChallenge {
   example_media: ExampleMedia[];
   winner: ChallengeWinnerPublicInfo | null;
   is_finished: boolean;
+  // Skill-ladder series; the Club page groups by these to render ladders.
+  series_slug: string | null;
+  series_order: number | null;
   created_at: string;
 }
 

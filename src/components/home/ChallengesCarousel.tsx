@@ -50,10 +50,18 @@ export function ChallengesCarousel() {
     listPublicChallenges("all")
       .then((data) => {
         if (cancelled) return;
-        // Only show challenges that are either still running OR finished
-        // with a designated winner — finished participatory challenges
-        // without a winner are uninteresting to a brand-new visitor.
-        const surface = data.filter((c) => !c.is_finished || c.winner);
+        // Surface rules for the homepage carousel:
+        //   1. Skip skill-ladder challenges (series_slug != null) — they
+        //      live on the Club page's "Skill Ladders" section instead.
+        //      Without this filter, evergreen ladder steps would clog
+        //      the row indefinitely.
+        //   2. Skip finished participatory challenges with no winner —
+        //      uninteresting to a brand-new visitor. Keep finished
+        //      competitions WITH a winner because the winner reveal is
+        //      compelling marketing.
+        const surface = data.filter(
+          (c) => c.series_slug === null && (!c.is_finished || c.winner),
+        );
         setItems(surface);
       })
       .catch((e) => {
