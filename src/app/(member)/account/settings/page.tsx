@@ -7,6 +7,7 @@ import { apiEndpoints } from "@/lib/config";
 import {
   Bell,
   BookOpen,
+  Cake,
   Calendar,
   Clock,
   CreditCard,
@@ -29,6 +30,7 @@ interface NotificationPreferences {
   email_payment_receipts: boolean;
   email_coach_messages: boolean;
   email_marketing: boolean;
+  email_birthday: boolean;
   push_announcements: boolean;
   push_session_reminders: boolean;
   push_academy_updates: boolean;
@@ -255,6 +257,14 @@ export default function NotificationSettingsPage() {
             description="Swimming tips, promotions, and community news"
             enabled={preferences.email_marketing}
             onChange={(v) => updatePreference("email_marketing", v)}
+            saving={saving}
+          />
+          <PreferenceRow
+            icon={<Cake className="h-4 w-4" />}
+            title="Birthday Wishes"
+            description="A birthday card from the SwimBuddz family on your special day"
+            enabled={preferences.email_birthday}
+            onChange={(v) => updatePreference("email_birthday", v)}
             saving={saving}
           />
         </div>
