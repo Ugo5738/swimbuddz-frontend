@@ -3,6 +3,7 @@
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { apiGet } from "@/lib/api";
 import { supabase } from "@/lib/auth";
+import { listPodsILead } from "@/lib/pods";
 import {
   BookOpen,
   Briefcase,
@@ -139,6 +140,19 @@ const navSections: NavSection[] = [
     ],
   },
   {
+    // "Pod Lead Tools" is gated by leadsAnyPod — see filter logic in
+    // visibleSections. Members who don't lead any pod never see this
+    // section, so the queue page they can't act on doesn't appear.
+    title: "Pod Lead Tools",
+    items: [
+      {
+        href: "/account/pod-lead/review",
+        label: "Submission Review",
+        icon: ClipboardCheck,
+      },
+    ],
+  },
+  {
     title: "Shop",
     items: [
       { href: "/store", label: "Store", icon: ShoppingBag },
@@ -163,6 +177,12 @@ export function MemberLayout({ children }: MemberLayoutProps) {
   const [loading, setLoading] = useState(true);
   const [academyEnrollments, setAcademyEnrollments] = useState<AcademyEnrollment[]>([]);
   const [isCoach, setIsCoach] = useState(false);
+  // True when this user is the lead or assistant lead of at least one pod.
+  // Drives the conditional "Pod Lead Tools" sidebar section. Default false
+  // means the section is hidden during the initial load — a brief flash of
+  // a navigation entry that promptly disappears would feel worse than a
+  // half-second delay before it appears.
+  const [leadsAnyPod, setLeadsAnyPod] = useState(false);
 
   const refreshMember = useCallback(async () => {
     try {
@@ -192,6 +212,12 @@ export function MemberLayout({ children }: MemberLayoutProps) {
           setIsCoach(Array.isArray(roles) && roles.includes("coach"));
         })
         .catch(() => setIsCoach(false)),
+      // Pod-lead status — drives the conditional "Pod Lead Tools" section.
+      // Best-effort; failures collapse to "not a pod lead" so the sidebar
+      // never crashes for unauthenticated callers.
+      listPodsILead()
+        .then((pods) => setLeadsAnyPod(pods.length > 0))
+        .catch(() => setLeadsAnyPod(false)),
     ]).finally(() => setLoading(false));
   }, [refreshMember]);
 
@@ -418,6 +444,13 @@ export function MemberLayout({ children }: MemberLayoutProps) {
       if (!section.showFor) return true;
       return section.showFor.some((tier) => memberTiers.includes(tier));
     })
+    // Pod Lead Tools is hidden for members who don't lead any pod.
+    // (The page itself also redirects them to the dashboard, but
+    // hiding the entry up-front keeps the sidebar clean for everyone
+    // who isn't a Pod Lead.)
+    .filter(
+      (section) => section.title !== "Pod Lead Tools" || leadsAnyPod,
+    )
     .filter((section) => section.items.length > 0);
 
   const memberName = member?.first_name

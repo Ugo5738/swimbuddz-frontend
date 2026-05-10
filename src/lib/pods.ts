@@ -217,6 +217,22 @@ export async function getMyPod(): Promise<PodSummary | null> {
   return unwrap<PodSummary | null>(res, "Failed to load your pod");
 }
 
+/** Pods I'm the lead OR assistant lead of. Empty list when I lead none.
+ *
+ * Powers two member-facing surfaces:
+ *   * The conditional "Pod Lead Review" sidebar entry — only shown when
+ *     this returns at least one pod.
+ *   * The Pod-Lead-side review page — uses the list for context
+ *     ("Reviewing as Pod Lead of {pod.name}").
+ *
+ * 401/403 responses are coerced to an empty list so unauthenticated
+ * callers (e.g. in a sidebar render race) don't crash. */
+export async function listPodsILead(): Promise<PodSummary[]> {
+  const res = await authedFetch(`${MEMBER_BASE}/i-lead`);
+  if (res.status === 401 || res.status === 403) return [];
+  return unwrap<PodSummary[]>(res, "Failed to load pods I lead");
+}
+
 /** Public pod directory (filterable by club). */
 export async function listPublicPods(clubId?: string): Promise<PodSummary[]> {
   const url = clubId
