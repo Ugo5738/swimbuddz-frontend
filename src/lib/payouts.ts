@@ -490,3 +490,52 @@ export async function coachScheduleMakeup(
     { auth: true },
   );
 }
+
+// =============================================================================
+// Coach earnings summary
+// =============================================================================
+
+export interface CoachUpcomingPayout {
+  config_id: string;
+  cohort_id: string;
+  cohort_name: string | null;
+  band_percentage: string; // Decimal as string
+  block_index: number;
+  total_blocks: number;
+  next_block_index: number;
+  block_start: string;
+  block_end: string;
+  next_run_date: string;
+  expected_amount_kobo: number;
+  sessions_in_block: number;
+  students_count: number;
+}
+
+export interface CoachRecentPayoutRow {
+  id: string;
+  period_label: string;
+  period_start: string;
+  period_end: string;
+  total_amount_kobo: number;
+  status: PayoutStatus;
+  paid_at: string | null;
+  created_at: string;
+}
+
+export interface CoachEarningsSummary {
+  coach_member_id: string;
+  currency: string;
+  total_paid_kobo: number;
+  total_pending_kobo: number;
+  upcoming_payouts: CoachUpcomingPayout[];
+  upcoming_total_kobo: number;
+  recent_payouts: CoachRecentPayoutRow[];
+}
+
+/** Coach: forward + backward looking earnings dashboard data. */
+export async function getCoachEarningsSummary(): Promise<CoachEarningsSummary> {
+  return apiGet<CoachEarningsSummary>(
+    `/api/v1/payments/coach/me/earnings/`,
+    { auth: true },
+  );
+}

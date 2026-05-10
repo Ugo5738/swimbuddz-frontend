@@ -11,14 +11,16 @@ import {
   getCoachApplicationStatus,
   getCoachDashboard,
   getMyCoachCohorts,
-  getMyCoachEarnings,
   getPendingMilestoneReviews,
   type CoachDashboardSummary,
-  type CoachEarnings,
   type Cohort,
   type PendingMilestoneReview,
 } from "@/lib/coach";
 import { AgreementApi } from "@/lib/coaches";
+import {
+  getCoachEarningsSummary,
+  type CoachEarningsSummary,
+} from "@/lib/payouts";
 import { formatDate, formatNaira, formatRelativeTime } from "@/lib/format";
 import {
   AlertCircle,
@@ -36,7 +38,7 @@ import { useEffect, useMemo, useState } from "react";
 export default function CoachDashboardPage() {
   const router = useRouter();
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
-  const [earnings, setEarnings] = useState<CoachEarnings | null>(null);
+  const [earnings, setEarnings] = useState<CoachEarningsSummary | null>(null);
   const [dashboard, setDashboard] = useState<CoachDashboardSummary | null>(
     null,
   );
@@ -81,7 +83,7 @@ export default function CoachDashboardPage() {
 
     Promise.all([
       getMyCoachCohorts(),
-      getMyCoachEarnings().catch(() => null),
+      getCoachEarningsSummary().catch(() => null),
       getCoachDashboard().catch(() => null),
       getPendingMilestoneReviews().catch(() => []),
     ])
@@ -390,7 +392,7 @@ export default function CoachDashboardPage() {
             </div>
           </Card>
 
-          {/* Earnings Card */}
+          {/* Earnings Card — backed by recurring payout configs */}
           <Card className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-slate-900">Earnings</h2>
@@ -398,53 +400,98 @@ export default function CoachDashboardPage() {
             </div>
             {earnings ? (
               <div className="space-y-4">
+                {/* Headline: total paid lifetime */}
                 <div>
-                  <p className="text-sm text-slate-500">Total Earnings</p>
+                  <p className="text-sm text-slate-500">Paid to date</p>
                   <p className="text-2xl font-bold text-emerald-600">
-                    {formatNaira(earnings.summary.total_earnings)}
+                    {formatNaira(earnings.total_paid_kobo / 100)}
                   </p>
                 </div>
+
+                {/* In-flight + upcoming */}
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div className="bg-slate-50 rounded-lg p-2">
-                    <p className="text-slate-500 text-xs">Active</p>
+                    <p className="text-slate-500 text-xs">In flight</p>
                     <p className="font-semibold text-slate-900">
-                      {earnings.summary.active_cohorts} cohorts
+                      {formatNaira(earnings.total_pending_kobo / 100)}
+                    </p>
+                    <p className="text-[10px] text-slate-400">
+                      pending / approved / processing
                     </p>
                   </div>
-                  <div className="bg-slate-50 rounded-lg p-2">
-                    <p className="text-slate-500 text-xs">Completed</p>
-                    <p className="font-semibold text-slate-900">
-                      {earnings.summary.completed_cohorts} cohorts
+                  <div className="bg-emerald-50 rounded-lg p-2">
+                    <p className="text-emerald-700 text-xs">Next payout est.</p>
+                    <p className="font-semibold text-emerald-900">
+                      {formatNaira(earnings.upcoming_total_kobo / 100)}
+                    </p>
+                    <p className="text-[10px] text-emerald-600">
+                      across {earnings.upcoming_payouts.length} cohort
+                      {earnings.upcoming_payouts.length === 1 ? "" : "s"}
                     </p>
                   </div>
                 </div>
-                {earnings.rates.academy_cohort_stipend > 0 && (
-                  <div className="pt-3 border-t border-slate-100">
+
+                {/* Per-cohort upcoming breakdown */}
+                {earnings.upcoming_payouts.length > 0 && (
+                  <div className="pt-3 border-t border-slate-100 space-y-2">
                     <p className="text-xs text-slate-500">
-                      Cohort Stipend Rate
+                      Upcoming by cohort
                     </p>
-                    <p className="text-sm font-medium text-slate-700">
-                      {formatNaira(earnings.rates.academy_cohort_stipend)} /
-                      cohort
-                    </p>
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {earnings.upcoming_payouts.map((u) => (
+                        <div
+                          key={u.config_id}
+                          className="rounded-lg bg-slate-50 p-2 text-sm"
+                        >
+                          <div className="flex justify-between gap-2">
+                            <span className="text-slate-700 truncate">
+                              {u.cohort_name ?? u.cohort_id.slice(0, 8)}
+                            </span>
+                            <span className="font-medium text-emerald-700">
+                              {formatNaira(u.expected_amount_kobo / 100)}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500">
+                            Block {u.next_block_index + 1}/{u.total_blocks} ·{" "}
+                            {u.students_count} student
+                            {u.students_count === 1 ? "" : "s"} · pays{" "}
+                            {formatDate(u.next_run_date)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
-                {earnings.cohort_earnings.length > 0 && (
+
+                {/* Recent payout history */}
+                {earnings.recent_payouts.length > 0 && (
                   <div className="pt-3 border-t border-slate-100">
                     <p className="text-xs text-slate-500 mb-2">
-                      Earnings by Cohort
+                      Recent payouts
                     </p>
-                    <div className="space-y-2 max-h-32 overflow-y-auto">
-                      {earnings.cohort_earnings.slice(0, 3).map((ce) => (
+                    <div className="space-y-1">
+                      {earnings.recent_payouts.slice(0, 3).map((p) => (
                         <div
-                          key={ce.cohort_id}
+                          key={p.id}
                           className="flex justify-between text-sm"
                         >
                           <span className="text-slate-600 truncate mr-2">
-                            {ce.cohort_name}
+                            {p.period_label}
                           </span>
-                          <span className="font-medium text-emerald-600">
-                            {formatNaira(ce.earnings)}
+                          <span className="font-medium text-slate-900 inline-flex items-center gap-1">
+                            {formatNaira(p.total_amount_kobo / 100)}
+                            <Badge
+                              variant={
+                                p.status === "paid"
+                                  ? "success"
+                                  : p.status === "failed"
+                                    ? "danger"
+                                    : "default"
+                              }
+                              className="text-[10px]"
+                            >
+                              {p.status}
+                            </Badge>
                           </span>
                         </div>
                       ))}
@@ -455,8 +502,8 @@ export default function CoachDashboardPage() {
             ) : (
               <div className="text-sm text-slate-500">
                 <p>
-                  Earnings will appear once you have active or completed
-                  cohorts.
+                  Earnings will appear once you have an active cohort with a
+                  recurring payout config.
                 </p>
               </div>
             )}
