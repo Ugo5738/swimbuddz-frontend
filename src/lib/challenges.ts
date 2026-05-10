@@ -71,6 +71,10 @@ export interface ChallengeSubmission {
   status: SubmissionStatus;
   reviewed_at: string | null;
   reviewed_by: string | null;
+  /** Phase 8b — who actually reviewed this. "admin" for HQ approvals,
+   *  "pod_lead" / "assistant_pod_lead" for delegated approvals. Lets the
+   *  oversight UI distinguish HQ from delegated decisions. */
+  reviewed_by_kind: "admin" | "pod_lead" | "assistant_pod_lead" | null;
   review_note: string | null;
   rewards_distributed_at: string | null;
   completed_at: string;

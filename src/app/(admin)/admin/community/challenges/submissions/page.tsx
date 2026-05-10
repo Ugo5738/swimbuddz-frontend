@@ -371,14 +371,24 @@ function SubmissionCard({
         </p>
       )}
 
-      {submission.review_note && submission.status !== "pending" && (
-        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          <p className="text-xs font-semibold uppercase tracking-wider">
-            Review note
-          </p>
-          <p className="mt-1 whitespace-pre-wrap">{submission.review_note}</p>
-        </div>
-      )}
+      {submission.status !== "pending" &&
+        (submission.review_note || submission.reviewed_by_kind) && (
+          <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs font-semibold uppercase tracking-wider">
+                Review note
+              </p>
+              {submission.reviewed_by_kind && (
+                <ReviewerKindBadge kind={submission.reviewed_by_kind} />
+              )}
+            </div>
+            {submission.review_note && (
+              <p className="mt-1 whitespace-pre-wrap">
+                {submission.review_note}
+              </p>
+            )}
+          </div>
+        )}
 
       <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-3">
         {showMarkWinner && (
@@ -414,6 +424,37 @@ function SubmissionCard({
         )}
       </div>
     </Card>
+  );
+}
+
+// Phase 8b — surface delegated approvals so HQ admins can spot-check
+// pod-lead decisions in the audit oversight queue.
+function ReviewerKindBadge({
+  kind,
+}: {
+  kind: NonNullable<ChallengeSubmission["reviewed_by_kind"]>;
+}) {
+  const cfg: Record<typeof kind, { label: string; classes: string }> = {
+    admin: {
+      label: "Reviewed by SwimBuddz HQ",
+      classes: "bg-cyan-100 text-cyan-700",
+    },
+    pod_lead: {
+      label: "Reviewed by Pod Lead",
+      classes: "bg-emerald-100 text-emerald-700",
+    },
+    assistant_pod_lead: {
+      label: "Reviewed by Assistant Pod Lead",
+      classes: "bg-emerald-50 text-emerald-700",
+    },
+  };
+  const c = cfg[kind];
+  return (
+    <span
+      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${c.classes}`}
+    >
+      {c.label}
+    </span>
   );
 }
 
