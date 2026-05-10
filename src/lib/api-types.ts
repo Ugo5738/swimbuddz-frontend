@@ -198,6 +198,30 @@ export interface paths {
         patch: operations["update_current_member_members_me_patch"];
         trace?: never;
     };
+    "/api/v1/members/me/badges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List My Badges
+         * @description List challenge badges earned by the authenticated member.
+         *
+         *     Reads from the denormalised challenge_badge_awards table (one row per
+         *     earned badge). Hydrates badge_image_url via media_service so the
+         *     profile page can render the badge artwork without a per-row HTTP call.
+         */
+        get: operations["list_my_badges_members_me_badges_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/members/": {
         parameters: {
             query?: never;
@@ -652,6 +676,53 @@ export interface paths {
         patch: operations["admin_patch_membership_by_auth_admin_members_by_auth__auth_id__membership_patch"];
         trace?: never;
     };
+    "/api/v1/challenges/public/all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Public Challenges
+         * @description List public-visible challenges for anonymous viewers.
+         *
+         *     Excludes admin-internal fields (criteria_json, club_id, academy_cohort_id,
+         *     is_active, is_public). Sorted: active first by start date asc, then
+         *     finished by end date desc.
+         */
+        get: operations["list_public_challenges_challenges_public_all_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/challenges/public/{challenge_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Public Challenge
+         * @description Public detail for a single challenge — includes winner info.
+         *
+         *     Returns 404 for any challenge with is_public=False even if it exists,
+         *     so private challenges aren't enumerable from the outside.
+         */
+        get: operations["get_public_challenge_challenges_public__challenge_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/challenges/": {
         parameters: {
             query?: never;
@@ -693,6 +764,10 @@ export interface paths {
         /**
          * Delete Club Challenge
          * @description Delete a club challenge (admin only).
+         *
+         *     Example media + submissions + submission media + submission members
+         *     cascade via FK ON DELETE CASCADE. Badge awards reference the submission
+         *     via SET NULL so historical badges survive challenge deletion.
          */
         delete: operations["delete_club_challenge_challenges__challenge_id__delete"];
         options?: never;
@@ -700,8 +775,178 @@ export interface paths {
         /**
          * Update Club Challenge
          * @description Update a club challenge (admin only).
+         *
+         *     If example_media is supplied, the entire example-media set is replaced
+         *     (delete-and-reinsert in one transaction). If omitted, existing example
+         *     media is left untouched.
          */
         patch: operations["update_club_challenge_challenges__challenge_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/challenges/submissions/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List My Submissions
+         * @description Return every submission the authenticated member has made.
+         *
+         *     Powers two member-facing surfaces:
+         *       * "Your status" pill on the challenges list tile (newest submission
+         *         per challenge → derive a current pending|approved|rejected chip).
+         *       * "Past attempts" list on the challenge detail page, filtered to a
+         *         single challenge_id.
+         *
+         *     The result includes team submissions where the member is on the roster
+         *     (not just where they're the captain) — so a teammate sees a shared
+         *     submission even though they didn't initiate it.
+         */
+        get: operations["list_my_submissions_challenges_submissions_mine_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/challenges/{challenge_id}/submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Challenge Submission
+         * @description Submit an attempt at a challenge (member-driven).
+         *
+         *     Captain (current authenticated member) is added to the team roster
+         *     automatically. team_member_ids contains the OTHER teammates.
+         *
+         *     Members are blocked from creating a new submission while they have a
+         *     pending or already-approved submission on the same challenge — they
+         *     can re-submit only after rejection. Prior submission rows are never
+         *     deleted; they're preserved for audit.
+         */
+        post: operations["create_challenge_submission_challenges__challenge_id__submissions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/challenges/submissions/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Pending Submissions Legacy
+         * @description LEGACY alias for /submissions/list?status=pending.
+         *
+         *     Kept so any existing frontend bindings keep working through a deploy.
+         *     Prefer GET /challenges/submissions/list with the `status` query param.
+         */
+        get: operations["list_pending_submissions_legacy_challenges_submissions_pending_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/challenges/submissions/list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Submissions
+         * @description Admin review queue: list submissions filtered by status.
+         *
+         *     Powers the approved/rejected tabs in the admin review UI in addition to
+         *     the default pending bucket.
+         */
+        get: operations["list_submissions_challenges_submissions_list_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/challenges/submissions/{submission_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Review Challenge Submission
+         * @description Approve or reject a submission (admin only).
+         *
+         *     Approve: writes a badge award per member (idempotent via unique
+         *     (member_id, challenge_id) constraint). Bubbles + volunteer-hours
+         *     distribution lands in Phase 7.
+         *
+         *     Re-approving an already-approved submission is a no-op (idempotent).
+         *     A rejected submission can be re-approved to fix a mistaken rejection;
+         *     a previously-approved submission can be rejected to revoke (the badge
+         *     award row remains — revocation logic, if needed, lands later).
+         */
+        patch: operations["review_challenge_submission_challenges_submissions__submission_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/challenges/submissions/{submission_id}/mark-winner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark Submission As Winner
+         * @description Mark an approved submission as the winner of its challenge.
+         *
+         *     Side effects:
+         *       * Sets ClubChallenge.winner_submission_id to this submission.
+         *       * Sends an in-app notification to every member on the submission
+         *         roster ("Congrats — you won {challenge}!").
+         *
+         *     Constraints:
+         *       * Submission must be approved (otherwise 400).
+         *       * Challenge must be format='competition' (otherwise 400).
+         *       * Re-marking the same submission as winner is a no-op for the FK
+         *         update but still re-fires the notification (admins occasionally
+         *         want to re-announce); rev-marking to a different submission is
+         *         allowed.
+         */
+        post: operations["mark_submission_as_winner_challenges_submissions__submission_id__mark_winner_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/challenges/completions": {
@@ -715,7 +960,15 @@ export interface paths {
         put?: never;
         /**
          * Mark Challenge Complete
-         * @description Mark a challenge as complete for a member (admin/coach only).
+         * @description LEGACY: admin records a pre-approved completion for a member.
+         *
+         *     Kept so existing admin tooling continues to work. The new submission
+         *     flow lives at POST /challenges/{id}/submissions + PATCH /submissions/{id}.
+         *
+         *     This path creates a submission already in `approved` status with the
+         *     admin recorded as the reviewer, writes a per-member roster row, and
+         *     produces a badge award. Multiple "approved" rows for the same member
+         *     on the same challenge are blocked here (use a fresh challenge instead).
          */
         post: operations["mark_challenge_complete_challenges_completions_post"];
         delete?: never;
@@ -733,7 +986,11 @@ export interface paths {
         };
         /**
          * List Challenge Completions
-         * @description List all completions for a specific challenge (admin only).
+         * @description List submissions for a specific challenge (admin only).
+         *
+         *     Returns the legacy ChallengeCompletionResponse shape for back-compat.
+         *     For the richer per-member + media view, use /submissions/pending or
+         *     a future GET /challenges/{id}/submissions endpoint.
          */
         get: operations["list_challenge_completions_challenges__challenge_id__completions_get"];
         put?: never;
@@ -742,6 +999,47 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Clubs
+         * @description List clubs. Public — used by the challenges admin form picker and
+         *     any future club-scoped landing pages.
+         */
+        get: operations["list_clubs_clubs__get"];
+        put?: never;
+        /** Create Club */
+        post: operations["create_club_clubs__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/{club_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Club */
+        get: operations["get_club_clubs__club_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Club */
+        delete: operations["delete_club_clubs__club_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Club */
+        patch: operations["update_club_clubs__club_id__patch"];
         trace?: never;
     };
     "/api/v1/volunteers/roles": {
@@ -795,7 +1093,12 @@ export interface paths {
         put?: never;
         /**
          * Register Volunteer Interest
-         * @description Register interest in a volunteer role.
+         * @description Register interest in a volunteer role (legacy; admin-only).
+         *
+         *     NOTE: VolunteerRole/VolunteerInterest tables are LEGACY (renamed to
+         *     legacy_volunteer_*) and the active volunteer programme lives in
+         *     volunteer_service. This endpoint is gated to admin so the legacy
+         *     surface cannot be exercised anonymously while the legacy data lingers.
          */
         post: operations["register_volunteer_interest_volunteers_interest_post"];
         delete?: never;
@@ -1075,7 +1378,9 @@ export interface paths {
          * @description Create or update coach's bank account.
          *
          *     Auto-verifies via Paystack Resolve Account API and creates
-         *     a transfer recipient for automated payouts.
+         *     a transfer recipient for automated payouts. Paystack calls go through
+         *     payments-service over HTTP (`paystack_resolve_account` /
+         *     `paystack_create_recipient`).
          */
         post: operations["create_or_update_bank_account_coaches_me_bank_account_post"];
         /**
@@ -1098,7 +1403,10 @@ export interface paths {
         /**
          * List Banks
          * @description Get list of Nigerian banks for dropdown.
-         *     Cached via Paystack API.
+         *
+         *     Proxied through payments-service so members-service does not need a
+         *     PAYSTACK_SECRET_KEY. The frontend has its own hardcoded fallback list
+         *     if this 502/503s.
          */
         get: operations["list_banks_coaches_banks_get"];
         put?: never;
@@ -1121,7 +1429,8 @@ export interface paths {
         /**
          * Resolve Bank Account
          * @description Verify a bank account and get the account holder name.
-         *     Free Paystack API, used for validation before saving.
+         *     Free Paystack API, used for validation before saving. Proxied through
+         *     payments-service.
          */
         post: operations["resolve_bank_account_coaches_resolve_account_post"];
         delete?: never;
@@ -1614,6 +1923,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/members/birthdays-today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Birthdays Today
+         * @description Return active members whose date_of_birth falls on the given date.
+         *
+         *     Used by communications_service's daily birthday cron. The target date is
+         *     resolved in Africa/Lagos so the cron can fire from any UTC offset and
+         *     still match the human definition of "today" in Lagos.
+         */
+        get: operations["get_birthdays_today_internal_members_birthdays_today_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/members/admins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Admin Members
+         * @description Return active members whose roles overlap with admin-flavoured roles.
+         *
+         *     Used by communications_service to fan out admin-task notifications
+         *     (e.g. the daily birthday WhatsApp reminder). Currently includes
+         *     'admin', 'comms_admin', and 'community_manager'.
+         */
+        get: operations["get_admin_members_internal_members_admins_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/members/joined-tier": {
         parameters: {
             query?: never;
@@ -1889,6 +2246,236 @@ export interface paths {
          * @description Generate sessions from a template for the specified number of weeks.
          */
         post: operations["generate_sessions_sessions_templates__template_id__generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/pods/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get My Pod
+         * @description My current pod, or null if I'm not in one. Used by the dashboard.
+         */
+        get: operations["get_my_pod_sessions_pods_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/pods/public": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Public Pods
+         * @description Public pod directory. Filter to a club if the caller knows which
+         *     one they're registering for.
+         */
+        get: operations["list_public_pods_sessions_pods_public_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/pods/{pod_id}/join": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Member Join Pod
+         * @description Self-join a public pod with capacity. Refuses for private pods —
+         *     those go through admin assignment.
+         */
+        post: operations["member_join_pod_sessions_pods__pod_id__join_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/pods/me/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Member Leave Pod
+         * @description Leave my current pod. No-op if I'm not in one.
+         */
+        post: operations["member_leave_pod_sessions_pods_me_leave_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/sessions/pods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin Create Pod */
+        post: operations["admin_create_pod_admin_sessions_pods_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/sessions/pods/review-queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin Review Queue
+         * @description Pods past their 3-month review window — admin/coach decides
+         *     continue / rebalance / dissolve.
+         */
+        get: operations["admin_review_queue_admin_sessions_pods_review_queue_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/sessions/pods/{pod_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin Get Pod */
+        get: operations["admin_get_pod_admin_sessions_pods__pod_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Admin Update Pod */
+        patch: operations["admin_update_pod_admin_sessions_pods__pod_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/sessions/pods/{pod_id}/dissolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin Dissolve Pod
+         * @description Dissolves the pod and soft-leaves every active member. Chat is
+         *     NOT auto-archived from here — the chat admin API owns archival, and
+         *     we don't want to baby-sit a side effect that may need a manual
+         *     review trail. Coach archives the channel from chat admin once the
+         *     final messages settle.
+         */
+        post: operations["admin_dissolve_pod_admin_sessions_pods__pod_id__dissolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/sessions/pods/{pod_id}/extend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin Extend Pod */
+        post: operations["admin_extend_pod_admin_sessions_pods__pod_id__extend_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/sessions/pods/{pod_id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin Add Member */
+        post: operations["admin_add_member_admin_sessions_pods__pod_id__members_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/sessions/pods/{pod_id}/members/{member_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Admin Remove Member */
+        delete: operations["admin_remove_member_admin_sessions_pods__pod_id__members__member_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/sessions/pods/{pod_id}/transfers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin Transfer Member */
+        post: operations["admin_transfer_member_admin_sessions_pods__pod_id__transfers_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4704,6 +5291,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/payments/paystack/banks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Internal Paystack Banks
+         * @description Proxy Paystack's GET /bank for callers that don't carry the
+         *     PAYSTACK_SECRET_KEY (e.g. members-service).
+         */
+        get: operations["internal_paystack_banks_internal_payments_paystack_banks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/payments/paystack/resolve-account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Internal Paystack Resolve Account
+         * @description Proxy Paystack's GET /bank/resolve.
+         */
+        post: operations["internal_paystack_resolve_account_internal_payments_paystack_resolve_account_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/payments/paystack/recipients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Internal Paystack Create Recipient
+         * @description Proxy Paystack's POST /transferrecipient (nuban). Callers should
+         *     have already verified the account via /resolve-account first.
+         */
+        post: operations["internal_paystack_create_recipient_internal_payments_paystack_recipients_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/payments/{reference}/proof": {
         parameters: {
             query?: never;
@@ -5102,7 +5751,7 @@ export interface paths {
          * @description Admin override to schedule a make-up to a specific session.
          *
          *     Coaches use a separate coach-facing endpoint for the same operation
-         *     on their own cohorts (added in PR2).
+         *     on their own cohorts.
          */
         patch: operations["admin_schedule_makeup_payments_admin_cohort_makeups__obligation_id__schedule_patch"];
         trace?: never;
@@ -7754,6 +8403,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/wallet/challenge-completion-reward": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Internal Challenge Completion Reward
+         * @description Grant Bubbles for an approved challenge submission.
+         *
+         *     Called by members_service when an admin approves a challenge submission.
+         *     Idempotent via the per-member campaign code
+         *     `CHALLENGE_{submission_id}_{member_id}` — needed because team
+         *     submissions trigger one grant per member, all sharing submission_id.
+         *
+         *     Auth: service-role JWT only.
+         */
+        post: operations["internal_challenge_completion_reward_internal_wallet_challenge_completion_reward_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/wallet/referral-qualify": {
         parameters: {
             query?: never;
@@ -8914,6 +9590,33 @@ export interface paths {
          *     Idempotent: returns success with created=False if profile exists.
          */
         post: operations["ensure_volunteer_profile_internal_volunteer_ensure_profile_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/volunteer/log-hours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Internal Log Hours
+         * @description Credit volunteer hours to a member, idempotently.
+         *
+         *     The (source, external_reference_id, member_id) tuple is enforced
+         *     unique by a partial unique index in the migration that ships with
+         *     this endpoint. If the tuple already exists, this is a no-op and
+         *     returns created=False with the existing log id.
+         *
+         *     Auth: service-role JWT only.
+         */
+        post: operations["internal_log_hours_internal_volunteer_log_hours_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -11072,6 +11775,419 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/chat/channels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List My Channels
+         * @description List my active (non-archived) channels with unread counts and previews.
+         */
+        get: operations["list_my_channels_chat_channels_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chat/channels/{channel_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Channel */
+        get: operations["get_channel_chat_channels__channel_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chat/channels/{channel_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark Channel Read */
+        post: operations["mark_channel_read_chat_channels__channel_id__read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chat/channels/{channel_id}/mute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mute Channel */
+        post: operations["mute_channel_chat_channels__channel_id__mute_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chat/channels/{channel_id}/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Leave Channel */
+        post: operations["leave_channel_chat_channels__channel_id__leave_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chat/channels/{channel_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Channel Messages */
+        get: operations["list_channel_messages_chat_channels__channel_id__messages_get"];
+        put?: never;
+        /**
+         * Send Channel Message
+         * @description Send a message. `client_message_id` is the idempotency key; reuse it
+         *     on retry to avoid duplicates after a flaky network.
+         */
+        post: operations["send_channel_message_chat_channels__channel_id__messages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chat/messages/{message_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Soft Delete Message
+         * @description Soft-delete (sender only). Body becomes `[deleted]`; row stays for audit.
+         */
+        delete: operations["soft_delete_message_chat_messages__message_id__delete"];
+        options?: never;
+        head?: never;
+        /** Edit Message */
+        patch: operations["edit_message_chat_messages__message_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/chat/messages/{message_id}/reactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Reaction */
+        post: operations["add_reaction_chat_messages__message_id__reactions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chat/messages/{message_id}/reactions/{emoji}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Reaction */
+        delete: operations["remove_reaction_chat_messages__message_id__reactions__emoji__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chat/attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Attachment
+         * @description Upload an image attachment. Returns a descriptor to embed in a message's
+         *     `attachments` array, or `rejected=true` if pre-deliver moderation hit a
+         *     safeguarding category we never deliver. Phase 1: images only.
+         */
+        post: operations["upload_attachment_chat_attachments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chat/messages/{message_id}/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report Message
+         * @description File a moderation report. Re-reporting the same message returns the
+         *     existing open report rather than creating a duplicate.
+         */
+        post: operations["report_message_chat_messages__message_id__reports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/chat/channels/{channel_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin Get Channel
+         * @description Admin channel detail. Doesn't require membership — admins can inspect
+         *     any channel for moderation. Per-caller fields (`my_role`, `unread_count`)
+         *     fall back to defaults since the admin isn't a member.
+         */
+        get: operations["admin_get_channel_admin_chat_channels__channel_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/chat/channels/{channel_id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin Archive Channel */
+        post: operations["admin_archive_channel_admin_chat_channels__channel_id__archive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/chat/channels/{channel_id}/members/{member_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Admin Remove Member
+         * @description Admin soft-removes a member. Use the internal `memberships/reconcile`
+         *     endpoint instead if the removal is driven by an upstream parent change
+         *     (enrollment cancelled, etc.) so derived_from stays accurate.
+         */
+        delete: operations["admin_remove_member_admin_chat_channels__channel_id__members__member_id__delete"];
+        options?: never;
+        head?: never;
+        /** Admin Update Member Role */
+        patch: operations["admin_update_member_role_admin_chat_channels__channel_id__members__member_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/chat/messages/{message_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Admin Hard Delete Message
+         * @description Hard-delete a message (row is removed; audit row retained).
+         *
+         *     For minor channels, the safeguarding-admin check is enforced inline
+         *     (a plain admin will get 403). The required `note` ends up in the audit
+         *     payload.
+         */
+        delete: operations["admin_hard_delete_message_admin_chat_messages__message_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/chat/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin List Reports */
+        get: operations["admin_list_reports_admin_chat_reports_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/chat/reports/{report_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Admin Resolve Report */
+        patch: operations["admin_resolve_report_admin_chat_reports__report_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/chat/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin List Audit */
+        get: operations["admin_list_audit_admin_chat_audit_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/chat/safeguarding/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Safeguarding Health
+         * @description Trivial endpoint that confirms a caller's safeguarding-admin role.
+         *
+         *     Useful for the admin UI to decide whether to render the safeguarding
+         *     panels at all (vs hiding them for plain admins).
+         */
+        get: operations["safeguarding_health_admin_chat_safeguarding_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/chat/channels/ensure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ensure Channel
+         * @description Idempotent create-or-fetch for a channel tied to a parent entity.
+         *
+         *     Called once per parent — subsequent calls return the existing channel.
+         */
+        post: operations["ensure_channel_internal_chat_channels_ensure_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/chat/memberships/reconcile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reconcile Membership
+         * @description Add or remove a member based on an upstream parent state change.
+         *
+         *     Idempotent: re-adding an active member is a no-op (with role upgrade);
+         *     re-removing a member who already left is a no-op.
+         */
+        post: operations["reconcile_membership_internal_chat_memberships_reconcile_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -11276,6 +12392,19 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** AdminMember */
+        AdminMember: {
+            /** Id */
+            id: string;
+            /** First Name */
+            first_name: string;
+            /** Last Name */
+            last_name: string;
+            /** Email */
+            email: string;
+            /** Roles */
+            roles: string[];
         };
         /**
          * AdminRejectCoach
@@ -11507,14 +12636,65 @@ export interface components {
             /** Account Number */
             account_number: string;
         };
+        /** BirthdayMember */
+        BirthdayMember: {
+            /** Id */
+            id: string;
+            /** First Name */
+            first_name: string;
+            /** Last Name */
+            last_name: string;
+            /** Email */
+            email: string;
+            /** Age */
+            age: number;
+        };
         /** BulkMembersRequest */
         BulkMembersRequest: {
             /** Ids */
             ids: string[];
         };
         /**
+         * ChallengeBadgeAwardResponse
+         * @description A single earned badge as shown on a member's profile.
+         */
+        ChallengeBadgeAwardResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /**
+             * Challenge Id
+             * Format: uuid
+             */
+            challenge_id: string;
+            /** Submission Id */
+            submission_id?: string | null;
+            /** Badge Name */
+            badge_name: string;
+            /** Badge Image Media Id */
+            badge_image_media_id?: string | null;
+            /** Badge Image Url */
+            badge_image_url?: string | null;
+            /**
+             * Awarded At
+             * Format: date-time
+             */
+            awarded_at: string;
+        };
+        /**
          * ChallengeCompletionCreate
-         * @description Schema for marking a challenge as complete.
+         * @description Legacy completion-create shape used by the admin "mark complete" path.
+         *
+         *     The new submission flow uses ChallengeSubmissionCreate; this alias is kept
+         *     so the existing admin `mark_challenge_complete` endpoint continues to work
+         *     while the broader submission flow lands.
          */
         ChallengeCompletionCreate: {
             /**
@@ -11534,7 +12714,7 @@ export interface components {
         };
         /**
          * ChallengeCompletionResponse
-         * @description Challenge completion response schema.
+         * @description Legacy completion-response (subset of ChallengeSubmissionResponse).
          */
         ChallengeCompletionResponse: {
             /**
@@ -11564,10 +12744,334 @@ export interface components {
             /** Verified By */
             verified_by?: string | null;
             /**
+             * Status
+             * @default pending
+             * @enum {string}
+             */
+            status: "pending" | "approved" | "rejected";
+            /**
              * Created At
              * Format: date-time
              */
             created_at: string;
+        };
+        /**
+         * ChallengeExampleMediaItem
+         * @description One example media reference, sent on create/update of a challenge.
+         */
+        ChallengeExampleMediaItem: {
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
+            /**
+             * Order Idx
+             * @default 0
+             */
+            order_idx: number;
+            /** Caption */
+            caption?: string | null;
+        };
+        /**
+         * ChallengeExampleMediaResponse
+         * @description Example media as returned by the API (with id + URLs hydrated by caller).
+         */
+        ChallengeExampleMediaResponse: {
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
+            /**
+             * Order Idx
+             * @default 0
+             */
+            order_idx: number;
+            /** Caption */
+            caption?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** File Url */
+            file_url?: string | null;
+            /** Thumbnail Url */
+            thumbnail_url?: string | null;
+        };
+        /**
+         * ChallengePublicResponse
+         * @description Public-facing challenge summary.
+         *
+         *     Excludes admin-internal fields (club_id, academy_cohort_id, is_active,
+         *     is_public, criteria_json, winner_submission_id raw). Suitable for
+         *     rendering on the unauthenticated landing-page surface.
+         */
+        ChallengePublicResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /** Description */
+            description?: string | null;
+            /** Instructions */
+            instructions?: string | null;
+            /**
+             * Challenge Type
+             * @enum {string}
+             */
+            challenge_type: "time_trial" | "attendance" | "distance" | "technique";
+            /** Badge Name */
+            badge_name: string;
+            /** Reward Badge Image Media Id */
+            reward_badge_image_media_id?: string | null;
+            /** Badge Image Url */
+            badge_image_url?: string | null;
+            /** Reward Bubbles Amount */
+            reward_bubbles_amount?: number | null;
+            /** Reward Volunteer Hours */
+            reward_volunteer_hours?: number | null;
+            /**
+             * Audience
+             * @enum {string}
+             */
+            audience: "community" | "club" | "academy" | "all";
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "participatory" | "competition";
+            /** Starts At */
+            starts_at?: string | null;
+            /** Ends At */
+            ends_at?: string | null;
+            /** Team Enabled */
+            team_enabled: boolean;
+            /** Team Min Size */
+            team_min_size?: number | null;
+            /** Team Max Size */
+            team_max_size?: number | null;
+            /**
+             * Completion Count
+             * @default 0
+             */
+            completion_count: number;
+            /** Example Media */
+            example_media?: components["schemas"]["ChallengeExampleMediaResponse"][];
+            winner?: components["schemas"]["ChallengeWinnerPublicInfo"] | null;
+            /**
+             * Is Finished
+             * @default false
+             */
+            is_finished: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * ChallengeSubmissionCreate
+         * @description Member-facing payload to submit an attempt at a challenge.
+         *
+         *     The captain (current user) is added automatically to the team roster on
+         *     the server; `team_member_ids` should contain the OTHER teammates only.
+         */
+        ChallengeSubmissionCreate: {
+            /**
+             * Challenge Id
+             * Format: uuid
+             */
+            challenge_id: string;
+            /** Submission Note */
+            submission_note?: string | null;
+            /** Proof Media */
+            proof_media?: components["schemas"]["ChallengeSubmissionMediaItem"][];
+            /** Team Member Ids */
+            team_member_ids?: string[];
+            /** Result Data */
+            result_data?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * ChallengeSubmissionMediaItem
+         * @description One proof media reference, attached to a submission on create.
+         */
+        ChallengeSubmissionMediaItem: {
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
+            /**
+             * Order Idx
+             * @default 0
+             */
+            order_idx: number;
+        };
+        /** ChallengeSubmissionMediaResponse */
+        ChallengeSubmissionMediaResponse: {
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
+            /**
+             * Order Idx
+             * @default 0
+             */
+            order_idx: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** File Url */
+            file_url?: string | null;
+            /** Thumbnail Url */
+            thumbnail_url?: string | null;
+        };
+        /**
+         * ChallengeSubmissionMemberResponse
+         * @description One row from the per-member ledger on a submission.
+         */
+        ChallengeSubmissionMemberResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Member Name */
+            member_name?: string | null;
+            /** Role */
+            role?: string | null;
+            /**
+             * Badge Awarded
+             * @default false
+             */
+            badge_awarded: boolean;
+            /** Bubbles Grant Id */
+            bubbles_grant_id?: string | null;
+            /** Volunteer Hours Log Id */
+            volunteer_hours_log_id?: string | null;
+            /** Rewarded At */
+            rewarded_at?: string | null;
+        };
+        /**
+         * ChallengeSubmissionResponse
+         * @description Submission as returned to admins / the submitter themselves.
+         */
+        ChallengeSubmissionResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Challenge Id
+             * Format: uuid
+             */
+            challenge_id: string;
+            /** Challenge Title */
+            challenge_title?: string | null;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Member Name */
+            member_name?: string | null;
+            /** Submitted By Member Id */
+            submitted_by_member_id?: string | null;
+            /** Submission Note */
+            submission_note?: string | null;
+            /**
+             * Is Team Submission
+             * @default false
+             */
+            is_team_submission: boolean;
+            /**
+             * Status
+             * @default pending
+             * @enum {string}
+             */
+            status: "pending" | "approved" | "rejected";
+            /** Reviewed At */
+            reviewed_at?: string | null;
+            /** Reviewed By */
+            reviewed_by?: string | null;
+            /** Review Note */
+            review_note?: string | null;
+            /** Rewards Distributed At */
+            rewards_distributed_at?: string | null;
+            /**
+             * Completed At
+             * Format: date-time
+             */
+            completed_at: string;
+            /** Result Data */
+            result_data?: {
+                [key: string]: unknown;
+            } | null;
+            /** Proof Media */
+            proof_media?: components["schemas"]["ChallengeSubmissionMediaResponse"][];
+            /** Members */
+            members?: components["schemas"]["ChallengeSubmissionMemberResponse"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * ChallengeSubmissionReview
+         * @description Admin-only payload to approve or reject a submission.
+         */
+        ChallengeSubmissionReview: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "approved" | "rejected";
+            /** Review Note */
+            review_note?: string | null;
+        };
+        /**
+         * ChallengeWinnerPublicInfo
+         * @description Winner summary shown on the public landing page.
+         *
+         *     Only populated when format='competition' AND winner_submission_id is set.
+         *     Member emails / auth_ids are NEVER included — only display names.
+         *     proof_media is only populated when show_winner_media_publicly is true on
+         *     the challenge.
+         */
+        ChallengeWinnerPublicInfo: {
+            /**
+             * Submission Id
+             * Format: uuid
+             */
+            submission_id: string;
+            /** Captain Name */
+            captain_name: string;
+            /** Teammate Names */
+            teammate_names?: string[];
+            /**
+             * Is Team Submission
+             * @default false
+             */
+            is_team_submission: boolean;
+            /** Proof Media */
+            proof_media?: components["schemas"]["ChallengeSubmissionMediaResponse"][];
         };
         /**
          * ClubChallengeCreate
@@ -11578,19 +13082,71 @@ export interface components {
             title: string;
             /** Description */
             description?: string | null;
-            /** Challenge Type */
-            challenge_type: string;
+            /** Instructions */
+            instructions?: string | null;
+            /**
+             * Challenge Type
+             * @enum {string}
+             */
+            challenge_type: "time_trial" | "attendance" | "distance" | "technique";
             /** Badge Name */
             badge_name: string;
+            /** Reward Badge Image Media Id */
+            reward_badge_image_media_id?: string | null;
+            /** Reward Bubbles Amount */
+            reward_bubbles_amount?: number | null;
+            /** Reward Volunteer Hours */
+            reward_volunteer_hours?: number | null;
             /** Criteria Json */
             criteria_json?: {
                 [key: string]: unknown;
             } | null;
             /**
+             * Audience
+             * @default all
+             * @enum {string}
+             */
+            audience: "community" | "club" | "academy" | "all";
+            /** Club Id */
+            club_id?: string | null;
+            /** Academy Cohort Id */
+            academy_cohort_id?: string | null;
+            /**
+             * Format
+             * @default participatory
+             * @enum {string}
+             */
+            format: "participatory" | "competition";
+            /** Starts At */
+            starts_at?: string | null;
+            /** Ends At */
+            ends_at?: string | null;
+            /**
+             * Is Public
+             * @default true
+             */
+            is_public: boolean;
+            /**
+             * Show Winner Media Publicly
+             * @default true
+             */
+            show_winner_media_publicly: boolean;
+            /**
+             * Team Enabled
+             * @default false
+             */
+            team_enabled: boolean;
+            /** Team Min Size */
+            team_min_size?: number | null;
+            /** Team Max Size */
+            team_max_size?: number | null;
+            /**
              * Is Active
              * @default true
              */
             is_active: boolean;
+            /** Example Media */
+            example_media?: components["schemas"]["ChallengeExampleMediaItem"][];
         };
         /**
          * ClubChallengeResponse
@@ -11601,14 +13157,178 @@ export interface components {
             title: string;
             /** Description */
             description?: string | null;
-            /** Challenge Type */
-            challenge_type: string;
+            /** Instructions */
+            instructions?: string | null;
+            /**
+             * Challenge Type
+             * @enum {string}
+             */
+            challenge_type: "time_trial" | "attendance" | "distance" | "technique";
             /** Badge Name */
             badge_name: string;
+            /** Reward Badge Image Media Id */
+            reward_badge_image_media_id?: string | null;
+            /** Reward Bubbles Amount */
+            reward_bubbles_amount?: number | null;
+            /** Reward Volunteer Hours */
+            reward_volunteer_hours?: number | null;
             /** Criteria Json */
             criteria_json?: {
                 [key: string]: unknown;
             } | null;
+            /**
+             * Audience
+             * @default all
+             * @enum {string}
+             */
+            audience: "community" | "club" | "academy" | "all";
+            /** Club Id */
+            club_id?: string | null;
+            /** Academy Cohort Id */
+            academy_cohort_id?: string | null;
+            /**
+             * Format
+             * @default participatory
+             * @enum {string}
+             */
+            format: "participatory" | "competition";
+            /** Starts At */
+            starts_at?: string | null;
+            /** Ends At */
+            ends_at?: string | null;
+            /**
+             * Is Public
+             * @default true
+             */
+            is_public: boolean;
+            /**
+             * Show Winner Media Publicly
+             * @default true
+             */
+            show_winner_media_publicly: boolean;
+            /**
+             * Team Enabled
+             * @default false
+             */
+            team_enabled: boolean;
+            /** Team Min Size */
+            team_min_size?: number | null;
+            /** Team Max Size */
+            team_max_size?: number | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Active */
+            is_active: boolean;
+            /** Winner Submission Id */
+            winner_submission_id?: string | null;
+            /**
+             * Completion Count
+             * @default 0
+             */
+            completion_count: number | null;
+            /**
+             * Submission Count
+             * @default 0
+             */
+            submission_count: number | null;
+            /** Example Media */
+            example_media?: components["schemas"]["ChallengeExampleMediaResponse"][];
+            /** Badge Image Url */
+            badge_image_url?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * ClubChallengeUpdate
+         * @description Schema for updating a club challenge (all fields optional).
+         */
+        ClubChallengeUpdate: {
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Instructions */
+            instructions?: string | null;
+            /** Challenge Type */
+            challenge_type?: ("time_trial" | "attendance" | "distance" | "technique") | null;
+            /** Badge Name */
+            badge_name?: string | null;
+            /** Reward Badge Image Media Id */
+            reward_badge_image_media_id?: string | null;
+            /** Reward Bubbles Amount */
+            reward_bubbles_amount?: number | null;
+            /** Reward Volunteer Hours */
+            reward_volunteer_hours?: number | null;
+            /** Criteria Json */
+            criteria_json?: {
+                [key: string]: unknown;
+            } | null;
+            /** Audience */
+            audience?: ("community" | "club" | "academy" | "all") | null;
+            /** Club Id */
+            club_id?: string | null;
+            /** Academy Cohort Id */
+            academy_cohort_id?: string | null;
+            /** Format */
+            format?: ("participatory" | "competition") | null;
+            /** Winner Submission Id */
+            winner_submission_id?: string | null;
+            /** Starts At */
+            starts_at?: string | null;
+            /** Ends At */
+            ends_at?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Is Public */
+            is_public?: boolean | null;
+            /** Show Winner Media Publicly */
+            show_winner_media_publicly?: boolean | null;
+            /** Team Enabled */
+            team_enabled?: boolean | null;
+            /** Team Min Size */
+            team_min_size?: number | null;
+            /** Team Max Size */
+            team_max_size?: number | null;
+            /** Example Media */
+            example_media?: components["schemas"]["ChallengeExampleMediaItem"][] | null;
+        };
+        /** ClubCreate */
+        ClubCreate: {
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /** Description */
+            description?: string | null;
+            /** Location */
+            location?: string | null;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+        };
+        /** ClubResponse */
+        ClubResponse: {
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /** Description */
+            description?: string | null;
+            /** Location */
+            location?: string | null;
             /**
              * Id
              * Format: uuid
@@ -11626,29 +13346,20 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
-            /**
-             * Completion Count
-             * @default 0
-             */
-            completion_count: number | null;
         };
         /**
-         * ClubChallengeUpdate
-         * @description Schema for updating a club challenge.
+         * ClubUpdate
+         * @description All fields optional. slug accepts the same format if provided.
          */
-        ClubChallengeUpdate: {
-            /** Title */
-            title?: string | null;
+        ClubUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Slug */
+            slug?: string | null;
             /** Description */
             description?: string | null;
-            /** Challenge Type */
-            challenge_type?: string | null;
-            /** Badge Name */
-            badge_name?: string | null;
-            /** Criteria Json */
-            criteria_json?: {
-                [key: string]: unknown;
-            } | null;
+            /** Location */
+            location?: string | null;
             /** Is Active */
             is_active?: boolean | null;
         };
@@ -13632,6 +15343,250 @@ export interface components {
             /** Location Name */
             location_name?: string | null;
         };
+        /**
+         * PodAssignmentSource
+         * @description How a member came to be in a pod. Useful for understanding
+         *     self-selection vs administrative-assignment behaviour.
+         * @enum {string}
+         */
+        PodAssignmentSource: "admin" | "self" | "coach_transfer";
+        /**
+         * PodCreateRequest
+         * @description Admin creates a pod for a Club. `name` is optional — if blank, the
+         *     server auto-names `{club_slug}-pod-{N}` (filled in by the service layer).
+         */
+        PodCreateRequest: {
+            /**
+             * Club Id
+             * Format: uuid
+             */
+            club_id: string;
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /**
+             * Lead Coach Id
+             * Format: uuid
+             */
+            lead_coach_id: string;
+            /** Assistant Coach Id */
+            assistant_coach_id?: string | null;
+            /**
+             * Min Size
+             * @default 2
+             */
+            min_size: number;
+            /**
+             * Max Size
+             * @default 5
+             */
+            max_size: number;
+            /** @default public */
+            visibility: components["schemas"]["PodVisibility"];
+        };
+        /**
+         * PodDetail
+         * @description Full pod view — includes the current assignment list.
+         */
+        PodDetail: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Club Id
+             * Format: uuid
+             */
+            club_id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /** Description */
+            description?: string | null;
+            /**
+             * Lead Coach Id
+             * Format: uuid
+             */
+            lead_coach_id: string;
+            /** Assistant Coach Id */
+            assistant_coach_id?: string | null;
+            visibility: components["schemas"]["PodVisibility"];
+            status: components["schemas"]["PodStatus"];
+            /** Min Size */
+            min_size: number;
+            /** Max Size */
+            max_size: number;
+            /** Active Member Count */
+            active_member_count: number;
+            /**
+             * Cycle Started At
+             * Format: date-time
+             */
+            cycle_started_at: string;
+            /**
+             * Review Due At
+             * Format: date-time
+             */
+            review_due_at: string;
+            /** Dissolved At */
+            dissolved_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Members */
+            members?: components["schemas"]["PodMemberOut"][];
+        };
+        /** PodMemberAddRequest */
+        PodMemberAddRequest: {
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+        };
+        /**
+         * PodMemberOut
+         * @description One active assignment row.
+         */
+        PodMemberOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /**
+             * Joined At
+             * Format: date-time
+             */
+            joined_at: string;
+            assigned_by: components["schemas"]["PodAssignmentSource"];
+        };
+        /**
+         * PodStatus
+         * @description Lifecycle marker. Active pods accept members and surface in the
+         *     review queue at the end of each 3-month cycle. Inactive pods are
+         *     dissolved — chat archives, no new joins.
+         * @enum {string}
+         */
+        PodStatus: "active" | "inactive";
+        /**
+         * PodSummary
+         * @description Compact pod shape used in list views (admin queue, public directory).
+         *
+         *     Capacity counters are computed (not columns) — derived from the active
+         *     assignments at read time.
+         */
+        PodSummary: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Club Id
+             * Format: uuid
+             */
+            club_id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /** Description */
+            description?: string | null;
+            /**
+             * Lead Coach Id
+             * Format: uuid
+             */
+            lead_coach_id: string;
+            /** Assistant Coach Id */
+            assistant_coach_id?: string | null;
+            visibility: components["schemas"]["PodVisibility"];
+            status: components["schemas"]["PodStatus"];
+            /** Min Size */
+            min_size: number;
+            /** Max Size */
+            max_size: number;
+            /** Active Member Count */
+            active_member_count: number;
+            /**
+             * Cycle Started At
+             * Format: date-time
+             */
+            cycle_started_at: string;
+            /**
+             * Review Due At
+             * Format: date-time
+             */
+            review_due_at: string;
+            /** Dissolved At */
+            dissolved_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * PodTransferRequest
+         * @description Coach moves a member from this pod to another pod (typically within
+         *     the same Club).
+         */
+        PodTransferRequest: {
+            /**
+             * Target Pod Id
+             * Format: uuid
+             */
+            target_pod_id: string;
+        };
+        /**
+         * PodUpdateRequest
+         * @description Partial update — admins can rename, change visibility, swap coaches,
+         *     tune capacity. To extend the cycle, use the dedicated extend endpoint.
+         */
+        PodUpdateRequest: {
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Lead Coach Id */
+            lead_coach_id?: string | null;
+            /** Assistant Coach Id */
+            assistant_coach_id?: string | null;
+            /** Min Size */
+            min_size?: number | null;
+            /** Max Size */
+            max_size?: number | null;
+            visibility?: components["schemas"]["PodVisibility"] | null;
+        };
+        /**
+         * PodVisibility
+         * @description Whether a pod appears in the public directory.
+         *
+         *     `public` pods are listed for self-selection during registration and on
+         *     the member dashboard. `private` pods are admin/coach-managed only.
+         * @enum {string}
+         */
+        PodVisibility: "public" | "private";
         /** SessionBasic */
         SessionBasic: {
             /** Id */
@@ -17385,6 +19340,58 @@ export interface components {
             /** Proof Media Id */
             proof_media_id: string;
         };
+        /** _BankItem */
+        _BankItem: {
+            /** Name */
+            name: string;
+            /** Code */
+            code: string;
+            /** Slug */
+            slug: string;
+        };
+        /** _CreateRecipientRequest */
+        _CreateRecipientRequest: {
+            /** Name */
+            name: string;
+            /** Account Number */
+            account_number: string;
+            /** Bank Code */
+            bank_code: string;
+            /**
+             * Currency
+             * @default NGN
+             */
+            currency: string;
+        };
+        /** _CreateRecipientResponse */
+        _CreateRecipientResponse: {
+            /** Recipient Code */
+            recipient_code: string;
+            /** Name */
+            name: string;
+            /** Account Number */
+            account_number: string;
+            /** Bank Code */
+            bank_code: string;
+            /** Bank Name */
+            bank_name: string;
+        };
+        /** _ResolveAccountRequest */
+        _ResolveAccountRequest: {
+            /** Account Number */
+            account_number: string;
+            /** Bank Code */
+            bank_code: string;
+        };
+        /** _ResolveAccountResponse */
+        _ResolveAccountResponse: {
+            /** Account Number */
+            account_number: string;
+            /** Account Name */
+            account_name: string;
+            /** Bank Code */
+            bank_code: string;
+        };
         /**
          * AnnouncementAudience
          * @enum {string}
@@ -18069,6 +20076,11 @@ export interface components {
              */
             email_marketing: boolean;
             /**
+             * Email Birthday
+             * @default true
+             */
+            email_birthday: boolean;
+            /**
              * Push Announcements
              * @default true
              */
@@ -18161,6 +20173,8 @@ export interface components {
             email_coach_messages?: boolean | null;
             /** Email Marketing */
             email_marketing?: boolean | null;
+            /** Email Birthday */
+            email_birthday?: boolean | null;
             /** Push Announcements */
             push_announcements?: boolean | null;
             /** Push Session Reminders */
@@ -19375,6 +21389,36 @@ export interface components {
             /** Balance */
             balance: number;
             status: components["schemas"]["WalletStatus"];
+        };
+        /**
+         * ChallengeCompletionRewardRequest
+         * @description Reward Bubbles for an approved challenge submission.
+         *
+         *     Called by members_service after an admin approves a challenge
+         *     submission. Idempotent via the per-member campaign code
+         *     `CHALLENGE_{submission_id}_{member_id}` so retries (and team submissions
+         *     where multiple members trigger the same submission_id) don't double-grant.
+         */
+        ChallengeCompletionRewardRequest: {
+            /** Member Auth Id */
+            member_auth_id: string;
+            /** Bubbles Amount */
+            bubbles_amount: number;
+            /**
+             * Submission Id
+             * @description Challenge submission UUID
+             */
+            submission_id: string;
+            /**
+             * Member Id
+             * @description Members-service Member.id of the recipient — disambiguates team submissions where one submission grants to multiple members.
+             */
+            member_id: string;
+            /**
+             * Granted By
+             * @default admin
+             */
+            granted_by: string;
         };
         /**
          * ConfirmTopupRequest
@@ -21265,6 +23309,50 @@ export interface components {
             by_role: {
                 [key: string]: unknown;
             }[];
+        };
+        /**
+         * LogHoursRequest
+         * @description Idempotent hours-credit request from another service.
+         *
+         *     The (source, external_reference_id, member_id) tuple identifies the
+         *     granting event. If a row with the same tuple already exists, the
+         *     endpoint is a no-op and returns the existing log id — so retries from
+         *     the calling service never double-credit.
+         */
+        LogHoursRequest: {
+            /**
+             * Member Id
+             * @description Members-service Member.id
+             */
+            member_id: string;
+            /** Hours */
+            hours: number;
+            /**
+             * Source
+             * @description e.g. 'challenge_completion'. Free-form string, kept consistent across calls so idempotency lookup works.
+             */
+            source: string;
+            /**
+             * External Reference Id
+             * @description Stable id from the granting event (e.g. challenge submission id). Used together with source + member_id for idempotency.
+             */
+            external_reference_id: string;
+            /**
+             * Logged By
+             * @description Auth UUID of the admin/service that triggered the grant.
+             */
+            logged_by?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** LogHoursResponse */
+        LogHoursResponse: {
+            /** Success */
+            success: boolean;
+            /** Created */
+            created: boolean;
+            /** Log Id */
+            log_id: string;
         };
         /** ManualHoursCreate */
         ManualHoursCreate: {
@@ -25111,6 +27199,629 @@ export interface components {
             /** Media Item Id */
             media_item_id?: string | null;
         };
+        /** AdminMemberRoleUpdateRequest */
+        AdminMemberRoleUpdateRequest: {
+            role: components["schemas"]["ChannelMemberRole"];
+        };
+        /**
+         * AdminMessageDeleteRequest
+         * @description Body for admin hard-delete. Note is required so the audit row records
+         *     *why* — hard-delete is a high-trust action, especially in minor channels.
+         */
+        AdminMessageDeleteRequest: {
+            /** Note */
+            note: string;
+        };
+        /**
+         * AttachmentDescriptor
+         * @description One attachment as it appears inside a message's `attachments` list.
+         *
+         *     The chat backend produces this when an image is uploaded; the client
+         *     sends an array of these (JSON-serialised) when posting the message.
+         */
+        AttachmentDescriptor: {
+            /**
+             * Type
+             * @default image
+             * @constant
+             */
+            type: "image";
+            /**
+             * Storage Key
+             * @description Path within chat-attachments bucket
+             */
+            storage_key: string;
+            /** Mime */
+            mime: string;
+            /** Size */
+            size: number;
+            /** Width */
+            width?: number | null;
+            /** Height */
+            height?: number | null;
+            /** Public Url */
+            public_url?: string | null;
+            moderation?: components["schemas"]["AttachmentModeration"] | null;
+        };
+        /**
+         * AttachmentModeration
+         * @description Outcome of pre-deliver moderation on an uploaded image.
+         *
+         *     Stored alongside the descriptor so admins/moderators can audit the
+         *     decision later without re-scanning. `skipped=True` means the provider
+         *     was unavailable (open-by-default in dev); `flagged=True` means at least
+         *     one category exceeded its threshold (policy decision belongs to the
+         *     caller, not to the moderator).
+         */
+        AttachmentModeration: {
+            /** Provider */
+            provider: string;
+            /** Flagged */
+            flagged: boolean;
+            /**
+             * Skipped
+             * @default false
+             */
+            skipped: boolean;
+            /** Top Category */
+            top_category?: string | null;
+            /** Top Confidence */
+            top_confidence?: number | null;
+        };
+        /**
+         * AttachmentUploadResponse
+         * @description Response from `POST /chat/attachments`.
+         *
+         *     The descriptor goes into the message's `attachments` array on send.
+         *     `rejected=True` means the moderation hit a category that the chat policy
+         *     refuses to deliver under any circumstances (currently: SAFEGUARDING) —
+         *     the upload was deleted from the bucket and cannot be sent.
+         */
+        AttachmentUploadResponse: {
+            descriptor?: components["schemas"]["AttachmentDescriptor"] | null;
+            /**
+             * Rejected
+             * @default false
+             */
+            rejected: boolean;
+            /** Rejection Reason */
+            rejection_reason?: string | null;
+        };
+        /** AuditLogItem */
+        AuditLogItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Actor Id */
+            actor_id?: string | null;
+            action: components["schemas"]["ChatAuditAction"];
+            /** Channel Id */
+            channel_id?: string | null;
+            /** Message Id */
+            message_id?: string | null;
+            /** Subject Member Id */
+            subject_member_id?: string | null;
+            /** Payload */
+            payload?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * AuditLogPage
+         * @description Cursor-paginated audit log slice. Cursor is `next_before_id` — the
+         *     oldest entry's id in the current page.
+         */
+        AuditLogPage: {
+            /** Items */
+            items: components["schemas"]["AuditLogItem"][];
+            /** Next Before Id */
+            next_before_id?: string | null;
+            /**
+             * Has More
+             * @default false
+             */
+            has_more: boolean;
+        };
+        /** Body_upload_attachment_chat_attachments_post */
+        Body_upload_attachment_chat_attachments_post: {
+            /**
+             * File
+             * Format: binary
+             */
+            file: string;
+            /**
+             * Mime
+             * @description Override the upload's content_type. Useful when the browser sends an octet-stream MIME for a recognised image.
+             */
+            mime?: string | null;
+        };
+        /**
+         * ChannelDetail
+         * @description Channel detail view — adds settings & metadata not needed on the list.
+         */
+        ChannelDetail: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            type: components["schemas"]["ChannelType"];
+            parent_entity_type: components["schemas"]["ParentEntityType"];
+            /** Parent Entity Id */
+            parent_entity_id?: string | null;
+            /** Name */
+            name: string;
+            /** Archived At */
+            archived_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            my_role: components["schemas"]["ChannelMemberRole"];
+            /** My Muted Until */
+            my_muted_until?: string | null;
+            /** My Last Read Message Id */
+            my_last_read_message_id?: string | null;
+            /**
+             * Unread Count
+             * @default 0
+             */
+            unread_count: number;
+            last_message?: components["schemas"]["LastMessagePreview"] | null;
+            /** Description */
+            description?: string | null;
+            retention_policy: components["schemas"]["RetentionPolicy"];
+            /** Created By */
+            created_by?: string | null;
+            /** Safeguarding Flags */
+            safeguarding_flags?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Member Count
+             * @default 0
+             */
+            member_count: number;
+        };
+        /**
+         * ChannelMarkReadRequest
+         * @description Move my last_read pointer up to (and including) `message_id`.
+         */
+        ChannelMarkReadRequest: {
+            /**
+             * Message Id
+             * Format: uuid
+             */
+            message_id: string;
+        };
+        /** ChannelMemberOut */
+        ChannelMemberOut: {
+            /**
+             * Channel Id
+             * Format: uuid
+             */
+            channel_id: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            role: components["schemas"]["ChannelMemberRole"];
+            /**
+             * Joined At
+             * Format: date-time
+             */
+            joined_at: string;
+            /** Left At */
+            left_at?: string | null;
+            /** Muted Until */
+            muted_until?: string | null;
+            /** Last Read Message Id */
+            last_read_message_id?: string | null;
+            derived_from: components["schemas"]["MembershipDerivation"];
+            /** Derivation Ref */
+            derivation_ref?: string | null;
+        };
+        /**
+         * ChannelMemberRole
+         * @description Per-channel role. See design §5.1.
+         * @enum {string}
+         */
+        ChannelMemberRole: "observer" | "member" | "moderator" | "admin";
+        /**
+         * ChannelMuteRequest
+         * @description Mute notifications for this channel until `muted_until`. Pass `null` to
+         *     clear an existing mute.
+         */
+        ChannelMuteRequest: {
+            /** Muted Until */
+            muted_until?: string | null;
+        };
+        /**
+         * ChannelSummary
+         * @description Minimal channel shape for the channel-list view.
+         */
+        ChannelSummary: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            type: components["schemas"]["ChannelType"];
+            parent_entity_type: components["schemas"]["ParentEntityType"];
+            /** Parent Entity Id */
+            parent_entity_id?: string | null;
+            /** Name */
+            name: string;
+            /** Archived At */
+            archived_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            my_role: components["schemas"]["ChannelMemberRole"];
+            /** My Muted Until */
+            my_muted_until?: string | null;
+            /** My Last Read Message Id */
+            my_last_read_message_id?: string | null;
+            /**
+             * Unread Count
+             * @default 0
+             */
+            unread_count: number;
+            last_message?: components["schemas"]["LastMessagePreview"] | null;
+        };
+        /**
+         * ChannelType
+         * @description Three channel primitives per design doc §3.
+         * @enum {string}
+         */
+        ChannelType: "group" | "broadcast" | "direct";
+        /**
+         * ChatAuditAction
+         * @description Actions recorded in chat_audit_log. See design §4.1.
+         * @enum {string}
+         */
+        ChatAuditAction: "message_sent" | "message_edited" | "message_deleted" | "channel_joined" | "channel_left" | "member_added" | "member_removed" | "role_changed" | "report_filed" | "report_resolved" | "safeguarding_action" | "channel_archived";
+        /**
+         * EnsureChannelRequest
+         * @description Internal: idempotent create-or-fetch for a channel tied to a parent
+         *     entity (cohort, pod, event, trip, location, role).
+         *
+         *     Lookup key is (parent_entity_type, parent_entity_id) — the same parent
+         *     can only have one channel of each `type` (group / broadcast).
+         */
+        EnsureChannelRequest: {
+            type: components["schemas"]["ChannelType"];
+            parent_entity_type: components["schemas"]["ParentEntityType"];
+            /** Parent Entity Id */
+            parent_entity_id?: string | null;
+            /** Name */
+            name: string;
+            /** Description */
+            description?: string | null;
+            retention_policy: components["schemas"]["RetentionPolicy"];
+            /** Created By */
+            created_by?: string | null;
+            /** Safeguarding Flags */
+            safeguarding_flags?: {
+                [key: string]: unknown;
+            };
+        };
+        /** EnsureChannelResponse */
+        EnsureChannelResponse: {
+            /**
+             * Channel Id
+             * Format: uuid
+             */
+            channel_id: string;
+            /** Created */
+            created: boolean;
+        };
+        /**
+         * LastMessagePreview
+         * @description Last visible message in a channel — used to render channel-list rows
+         *     without having to fetch full history.
+         */
+        LastMessagePreview: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Sender Id
+             * Format: uuid
+             */
+            sender_id: string;
+            /** Body Preview */
+            body_preview: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * MembershipDerivation
+         * @description How a member came to be in a channel. See design §4.2.
+         * @enum {string}
+         */
+        MembershipDerivation: "enrollment" | "rsvp" | "pod_assignment" | "trip_booking" | "role" | "manual";
+        /** MessageEditRequest */
+        MessageEditRequest: {
+            /** Body */
+            body: string;
+        };
+        /**
+         * MessageListPage
+         * @description Cursor-paginated list of messages in a channel.
+         *
+         *     Cursor is the oldest message's id in the current page — pass it as the
+         *     next request's `before_id` to fetch older messages. `has_more` is true
+         *     when more history exists.
+         */
+        MessageListPage: {
+            /** Items */
+            items: components["schemas"]["MessageOut"][];
+            /** Next Before Id */
+            next_before_id?: string | null;
+            /**
+             * Has More
+             * @default false
+             */
+            has_more: boolean;
+        };
+        /** MessageOut */
+        MessageOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Channel Id
+             * Format: uuid
+             */
+            channel_id: string;
+            /**
+             * Sender Id
+             * Format: uuid
+             */
+            sender_id: string;
+            /** Body */
+            body: string;
+            /** Attachments */
+            attachments?: unknown[];
+            /** Reply To Id */
+            reply_to_id?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Edited At */
+            edited_at?: string | null;
+            /** Deleted At */
+            deleted_at?: string | null;
+            /** Reactions */
+            reactions?: components["schemas"]["ReactionSummary"][];
+        };
+        /**
+         * MessageSendRequest
+         * @description Send a message. `client_message_id` is the canonical idempotency key
+         *     — clients generate it before sending and reuse it on retry. The server
+         *     uses it as the row's primary key, so duplicate POSTs converge on one row.
+         */
+        MessageSendRequest: {
+            /** Body */
+            body: string;
+            /** Attachments */
+            attachments?: unknown[];
+            /** Reply To Id */
+            reply_to_id?: string | null;
+            /**
+             * Client Message Id
+             * Format: uuid
+             */
+            client_message_id: string;
+        };
+        /**
+         * ParentEntityType
+         * @description What a channel's membership is derived from. See design §4.1.
+         * @enum {string}
+         */
+        ParentEntityType: "cohort" | "pod" | "event" | "trip" | "location" | "role" | "none";
+        /** ReactionAddRequest */
+        ReactionAddRequest: {
+            /** Emoji */
+            emoji: string;
+        };
+        /**
+         * ReactionSummary
+         * @description Aggregated reactions on a message: how many of each emoji, and whether
+         *     the caller has reacted.
+         */
+        ReactionSummary: {
+            /** Emoji */
+            emoji: string;
+            /** Count */
+            count: number;
+            /**
+             * Reacted By Me
+             * @default false
+             */
+            reacted_by_me: boolean;
+        };
+        /**
+         * ReconcileAction
+         * @description Add or remove (soft) a member from a channel — used by upstream
+         *     services when their derivation source changes (enrollment, RSVP, …).
+         * @enum {string}
+         */
+        ReconcileAction: "add" | "remove";
+        /**
+         * ReconcileMembershipRequest
+         * @description Internal: align chat membership with an upstream parent state change.
+         *
+         *     Either `channel_id` OR (`parent_entity_type` + `parent_entity_id`) must
+         *     be supplied. The (type, id) form lets callers reconcile without first
+         *     looking up the channel.
+         */
+        ReconcileMembershipRequest: {
+            /** Channel Id */
+            channel_id?: string | null;
+            /** Parent Entity Type */
+            parent_entity_type?: string | null;
+            /** Parent Entity Id */
+            parent_entity_id?: string | null;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            action: components["schemas"]["ReconcileAction"];
+            /** @default member */
+            role: components["schemas"]["ChannelMemberRole"];
+            /** @default manual */
+            derived_from: components["schemas"]["MembershipDerivation"];
+            /** Derivation Ref */
+            derivation_ref?: string | null;
+        };
+        /** ReconcileMembershipResponse */
+        ReconcileMembershipResponse: {
+            /**
+             * Channel Id
+             * Format: uuid
+             */
+            channel_id: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            action_taken: components["schemas"]["ReconcileAction"];
+            role: components["schemas"]["ChannelMemberRole"];
+        };
+        /** ReportCreateRequest */
+        ReportCreateRequest: {
+            reason: components["schemas"]["ReportReason"];
+            /** Note */
+            note?: string | null;
+        };
+        /** ReportListItem */
+        ReportListItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Message Id
+             * Format: uuid
+             */
+            message_id: string;
+            /**
+             * Reporter Id
+             * Format: uuid
+             */
+            reporter_id: string;
+            reason: components["schemas"]["ReportReason"];
+            /** Note */
+            note?: string | null;
+            status: components["schemas"]["ReportStatus"];
+            /** Assigned To */
+            assigned_to?: string | null;
+            /** Resolved At */
+            resolved_at?: string | null;
+            /** Resolution Note */
+            resolution_note?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Channel Id */
+            channel_id?: string | null;
+            /** Sender Id */
+            sender_id?: string | null;
+            /** Body Preview */
+            body_preview?: string | null;
+        };
+        /** ReportOut */
+        ReportOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Message Id
+             * Format: uuid
+             */
+            message_id: string;
+            /**
+             * Reporter Id
+             * Format: uuid
+             */
+            reporter_id: string;
+            reason: components["schemas"]["ReportReason"];
+            /** Note */
+            note?: string | null;
+            status: components["schemas"]["ReportStatus"];
+            /** Assigned To */
+            assigned_to?: string | null;
+            /** Resolved At */
+            resolved_at?: string | null;
+            /** Resolution Note */
+            resolution_note?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * ReportReason
+         * @description Why a member reported a message. See design §4.1.
+         * @enum {string}
+         */
+        ReportReason: "safeguarding" | "harassment" | "spam" | "other";
+        /**
+         * ReportResolveRequest
+         * @description Resolve, dismiss, or assign a report.
+         *
+         *     `status` transitions: open → under_review → (resolved | dismissed).
+         *     `assigned_to` is independent — assignment can move while status stays open.
+         */
+        ReportResolveRequest: {
+            status?: components["schemas"]["ReportStatus"] | null;
+            /** Assigned To */
+            assigned_to?: string | null;
+            /** Resolution Note */
+            resolution_note?: string | null;
+        };
+        /**
+         * ReportStatus
+         * @description Lifecycle of a moderation report.
+         * @enum {string}
+         */
+        ReportStatus: "open" | "under_review" | "resolved" | "dismissed";
+        /**
+         * RetentionPolicy
+         * @description Per-channel retention policy. See design §9.
+         * @enum {string}
+         */
+        RetentionPolicy: "cohort" | "pod" | "event" | "trip" | "location" | "alumni" | "coach_parent_dm" | "support_dm";
     };
     responses: never;
     parameters: never;
@@ -25379,6 +28090,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_my_badges_members_me_badges_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeBadgeAwardResponse"][];
                 };
             };
         };
@@ -26113,6 +28844,69 @@ export interface operations {
             };
         };
     };
+    list_public_challenges_challenges_public_all_get: {
+        parameters: {
+            query?: {
+                /** @description Filter by lifecycle status. 'active' = currently running; 'finished' = ends_at in the past; omit or 'all' = both. */
+                status?: ("active" | "finished" | "all") | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengePublicResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_public_challenge_challenges_public__challenge_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengePublicResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_club_challenges_challenges__get: {
         parameters: {
             query?: {
@@ -26120,6 +28914,8 @@ export interface operations {
                 active_only?: boolean;
                 /** @description Filter by challenge type */
                 challenge_type?: string | null;
+                /** @description Filter by audience */
+                audience?: string | null;
             };
             header?: never;
             path?: never;
@@ -26275,12 +29071,208 @@ export interface operations {
             };
         };
     };
-    mark_challenge_complete_challenges_completions_post: {
+    list_my_submissions_challenges_submissions_mine_get: {
         parameters: {
             query?: {
-                /** @description Admin/coach verifying completion */
-                verified_by?: string | null;
+                /** @description Filter to a single challenge (e.g. for the member detail page's 'your past attempts' panel). */
+                challenge_id?: string | null;
             };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeSubmissionResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_challenge_submission_challenges__challenge_id__submissions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChallengeSubmissionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeSubmissionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_pending_submissions_legacy_challenges_submissions_pending_get: {
+        parameters: {
+            query?: {
+                /** @description Filter by challenge (optional) */
+                challenge_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeSubmissionResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_submissions_challenges_submissions_list_get: {
+        parameters: {
+            query?: {
+                /** @description Filter by submission status. 'all' returns every submission across statuses, ordered newest first. */
+                status?: "pending" | "approved" | "rejected" | "all";
+                /** @description Filter by challenge (optional) */
+                challenge_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeSubmissionResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    review_challenge_submission_challenges_submissions__submission_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                submission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChallengeSubmissionReview"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeSubmissionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_submission_as_winner_challenges_submissions__submission_id__mark_winner_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                submission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeSubmissionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_challenge_complete_challenges_completions_post: {
+        parameters: {
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -26313,7 +29305,10 @@ export interface operations {
     };
     list_challenge_completions_challenges__challenge_id__completions_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Filter by status: pending|approved|rejected */
+                status?: string | null;
+            };
             header?: never;
             path: {
                 challenge_id: string;
@@ -26329,6 +29324,166 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChallengeCompletionResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_clubs_clubs__get: {
+        parameters: {
+            query?: {
+                /** @description Hide inactive clubs (default true). */
+                active_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_club_clubs__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClubCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_club_clubs__club_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                club_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_club_clubs__club_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                club_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_club_clubs__club_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                club_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClubUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubResponse"];
                 };
             };
             /** @description Validation Error */
@@ -27689,6 +30844,58 @@ export interface operations {
             };
         };
     };
+    get_birthdays_today_internal_members_birthdays_today_get: {
+        parameters: {
+            query?: {
+                /** @description Override target date (ISO YYYY-MM-DD). Defaults to today in Africa/Lagos. */
+                on?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BirthdayMember"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_admin_members_internal_members_admins_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMember"][];
+                };
+            };
+        };
+    };
     get_members_who_joined_tier_internal_members_joined_tier_get: {
         parameters: {
             query: {
@@ -28160,6 +31367,388 @@ export interface operations {
                 content: {
                     "application/json": unknown;
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_pod_sessions_pods_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodSummary"] | null;
+                };
+            };
+        };
+    };
+    list_public_pods_sessions_pods_public_get: {
+        parameters: {
+            query?: {
+                club_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    member_join_pod_sessions_pods__pod_id__join_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pod_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodMemberOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    member_leave_pod_sessions_pods_me_leave_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_create_pod_admin_sessions_pods_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PodCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_review_queue_admin_sessions_pods_review_queue_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodSummary"][];
+                };
+            };
+        };
+    };
+    admin_get_pod_admin_sessions_pods__pod_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pod_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_update_pod_admin_sessions_pods__pod_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pod_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PodUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_dissolve_pod_admin_sessions_pods__pod_id__dissolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pod_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_extend_pod_admin_sessions_pods__pod_id__extend_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pod_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_add_member_admin_sessions_pods__pod_id__members_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pod_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PodMemberAddRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodMemberOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_remove_member_admin_sessions_pods__pod_id__members__member_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pod_id: string;
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_transfer_member_admin_sessions_pods__pod_id__transfers_post: {
+        parameters: {
+            query: {
+                /** @description Member being moved (kept in query so the body stays focused) */
+                member_id: string;
+            };
+            header?: never;
+            path: {
+                pod_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PodTransferRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -32905,6 +36494,103 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberPaymentSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    internal_paystack_banks_internal_payments_paystack_banks_get: {
+        parameters: {
+            query?: {
+                country?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["_BankItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    internal_paystack_resolve_account_internal_payments_paystack_resolve_account_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["_ResolveAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["_ResolveAccountResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    internal_paystack_create_recipient_internal_payments_paystack_recipients_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["_CreateRecipientRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["_CreateRecipientResponse"];
                 };
             };
             /** @description Validation Error */
@@ -38063,6 +41749,39 @@ export interface operations {
             };
         };
     };
+    internal_challenge_completion_reward_internal_wallet_challenge_completion_reward_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChallengeCompletionRewardRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrantResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     internal_referral_qualify_internal_wallet_referral_qualify_post: {
         parameters: {
             query?: never;
@@ -40350,6 +44069,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EnsureProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    internal_log_hours_internal_volunteer_log_hours_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LogHoursRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogHoursResponse"];
                 };
             };
             /** @description Validation Error */
@@ -44902,6 +48654,776 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MediaItemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_my_channels_chat_channels_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChannelSummary"][];
+                };
+            };
+        };
+    };
+    get_channel_chat_channels__channel_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                channel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChannelDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_channel_read_chat_channels__channel_id__read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                channel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChannelMarkReadRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mute_channel_chat_channels__channel_id__mute_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                channel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChannelMuteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    leave_channel_chat_channels__channel_id__leave_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                channel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_channel_messages_chat_channels__channel_id__messages_get: {
+        parameters: {
+            query?: {
+                /** @description Cursor — pass the previous page's `next_before_id` to fetch older messages. Omit for the newest page. */
+                before_id?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                channel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageListPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_channel_message_chat_channels__channel_id__messages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                channel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageSendRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    soft_delete_message_chat_messages__message_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                message_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_message_chat_messages__message_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                message_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageEditRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_reaction_chat_messages__message_id__reactions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                message_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReactionAddRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_reaction_chat_messages__message_id__reactions__emoji__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                message_id: string;
+                emoji: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_attachment_chat_attachments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_attachment_chat_attachments_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttachmentUploadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_message_chat_messages__message_id__reports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                message_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_get_channel_admin_chat_channels__channel_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                channel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChannelDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_archive_channel_admin_chat_channels__channel_id__archive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                channel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChannelDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_remove_member_admin_chat_channels__channel_id__members__member_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                channel_id: string;
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_update_member_role_admin_chat_channels__channel_id__members__member_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                channel_id: string;
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminMemberRoleUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChannelMemberOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_hard_delete_message_admin_chat_messages__message_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                message_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminMessageDeleteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_list_reports_admin_chat_reports_get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["ReportStatus"] | null;
+                reason?: components["schemas"]["ReportReason"] | null;
+                assigned_to?: string | null;
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportListItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_resolve_report_admin_chat_reports__report_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                report_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportResolveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_list_audit_admin_chat_audit_get: {
+        parameters: {
+            query?: {
+                channel_id?: string | null;
+                actor_id?: string | null;
+                subject_member_id?: string | null;
+                /** @description Cursor — pass the previous page's `next_before_id` for older entries. */
+                before_id?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditLogPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    safeguarding_health_admin_chat_safeguarding_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    ensure_channel_internal_chat_channels_ensure_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnsureChannelRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnsureChannelResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reconcile_membership_internal_chat_memberships_reconcile_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReconcileMembershipRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReconcileMembershipResponse"];
                 };
             };
             /** @description Validation Error */

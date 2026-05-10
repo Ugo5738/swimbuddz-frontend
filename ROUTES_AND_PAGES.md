@@ -159,6 +159,13 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 | `/account/wallet/rewards`         | `src/app/(member)/account/wallet/rewards/page.tsx`         | Rewards dashboard — rules, recent rewards       |
 | `/account/wallet/rewards/history` | `src/app/(member)/account/wallet/rewards/history/page.tsx` | Full reward history with filter and CSV export  |
 
+### Chat (Member)
+
+| Route                         | File                                                       | Purpose                                                  |
+| ----------------------------- | ---------------------------------------------------------- | -------------------------------------------------------- |
+| `/account/chat`               | `src/app/(member)/account/chat/page.tsx`                   | Channel list — last-message previews, unread badges      |
+| `/account/chat/[channel_id]`  | `src/app/(member)/account/chat/[channel_id]/page.tsx`      | Channel detail — message thread + composer + mark-read   |
+
 ### Community Features
 
 | Route                                      | File                                                                | Purpose                                                |
