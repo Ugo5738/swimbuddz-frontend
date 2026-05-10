@@ -1,7 +1,7 @@
 "use client";
 
 import { ProductCard } from "@/components/store/ProductCard";
-import { LoadingCard } from "@/components/ui/LoadingCard";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { apiGet } from "@/lib/api";
 import { useStoreCart } from "@/lib/storeCart";
 import {
@@ -98,7 +98,13 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 
 export default function StorePage() {
   return (
-    <Suspense fallback={<LoadingCard text="Loading store..." />}>
+    <Suspense
+      fallback={
+        <div className="flex min-h-[60vh] items-center justify-center px-4">
+          <LoadingSpinner size="lg" text="Loading store..." />
+        </div>
+      }
+    >
       <StorePageContent />
     </Suspense>
   );
@@ -230,7 +236,11 @@ function StorePageContent() {
 
   /* ---- loading state ---- */
   if (loading) {
-    return <LoadingCard text="Loading store..." />;
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center px-4">
+        <LoadingSpinner size="lg" text="Loading store..." />
+      </div>
+    );
   }
 
   const isFilterActive = !!selectedCategory || !!search || featured;
