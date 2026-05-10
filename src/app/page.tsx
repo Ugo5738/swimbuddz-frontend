@@ -1,5 +1,6 @@
 "use client";
 
+import { ChallengesCarousel } from "@/components/home/ChallengesCarousel";
 import { Card } from "@/components/ui/Card";
 import { API_BASE_URL } from "@/lib/config";
 import { fetchTestimonials, getTestimonials, type Testimonial } from "@/lib/testimonials";
@@ -530,7 +531,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── 2. WHO SWIMBUDDZ IS FOR ────────────────────────────────── */}
+      {/* ─── 2. LIVE CHALLENGES (auto-hides if no public challenges) ─── */}
+      <ChallengesCarousel />
+
+      {/* ─── 3. WHO SWIMBUDDZ IS FOR ────────────────────────────────── */}
       <section className="space-y-10">
         <div className="text-center space-y-4">
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">

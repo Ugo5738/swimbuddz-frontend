@@ -84,7 +84,10 @@ const navGroups = [
     ],
   },
   { href: "/sessions-and-events", label: "Sessions", type: "link" as const },
-  { href: "/challenges", label: "Challenges", type: "link" as const },
+  // Note: /challenges is reachable via the homepage carousel + the
+  // member-portal sidebar. Keeping it out of the top nav prevents the
+  // nav from creeping past 7 items and reserves top-level slots for
+  // conversion-oriented links rather than engagement features.
   { href: "/tips", label: "Resources", type: "link" as const },
   { href: "/store", label: "Store", type: "link" as const },
 ];
