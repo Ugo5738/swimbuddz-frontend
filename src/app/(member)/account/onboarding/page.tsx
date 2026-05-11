@@ -1166,6 +1166,7 @@ export default function DashboardOnboardingPage() {
             <RegistrationEssentialsStep
               mode="onboarding"
               includeSwimLevel={false}
+              includeAcquisitionSource={false}
               formData={{
                 firstName: coreForm.firstName,
                 lastName: coreForm.lastName,
