@@ -108,10 +108,7 @@ async function authedFetch(url: string, init: RequestInit = {}): Promise<Respons
 async function unwrap<T>(res: Response, fallback: string): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    const detail =
-      typeof body?.detail === "string"
-        ? body.detail
-        : `${fallback} (${res.status})`;
+    const detail = typeof body?.detail === "string" ? body.detail : `${fallback} (${res.status})`;
     throw new Error(detail);
   }
   if (res.status === 204) return null as T;
@@ -135,10 +132,7 @@ export async function adminGetPod(podId: string): Promise<PodDetail> {
   return unwrap<PodDetail>(res, "Failed to load pod");
 }
 
-export async function adminUpdatePod(
-  podId: string,
-  patch: PodUpdateInput,
-): Promise<PodSummary> {
+export async function adminUpdatePod(podId: string, patch: PodUpdateInput): Promise<PodSummary> {
   const res = await authedFetch(`${ADMIN_BASE}/${podId}`, {
     method: "PATCH",
     body: JSON.stringify(patch),
@@ -160,10 +154,7 @@ export async function adminExtendPod(podId: string): Promise<PodSummary> {
   return unwrap<PodSummary>(res, "Failed to extend pod cycle");
 }
 
-export async function adminAddMember(
-  podId: string,
-  memberId: string,
-): Promise<PodMemberOut> {
+export async function adminAddMember(podId: string, memberId: string): Promise<PodMemberOut> {
   const res = await authedFetch(`${ADMIN_BASE}/${podId}/members`, {
     method: "POST",
     body: JSON.stringify({ member_id: memberId }),
@@ -171,10 +162,7 @@ export async function adminAddMember(
   return unwrap<PodMemberOut>(res, "Failed to add member");
 }
 
-export async function adminRemoveMember(
-  podId: string,
-  memberId: string,
-): Promise<void> {
+export async function adminRemoveMember(podId: string, memberId: string): Promise<void> {
   const res = await authedFetch(`${ADMIN_BASE}/${podId}/members/${memberId}`, {
     method: "DELETE",
   });
@@ -187,14 +175,14 @@ export async function adminRemoveMember(
 export async function adminTransferMember(
   sourcePodId: string,
   memberId: string,
-  targetPodId: string,
+  targetPodId: string
 ): Promise<void> {
   const res = await authedFetch(
     `${ADMIN_BASE}/${sourcePodId}/transfers?member_id=${encodeURIComponent(memberId)}`,
     {
       method: "POST",
       body: JSON.stringify({ target_pod_id: targetPodId }),
-    },
+    }
   );
   if (!res.ok && res.status !== 204) {
     const body = await res.json().catch(() => ({}));
@@ -233,12 +221,14 @@ export async function listPodsILead(): Promise<PodSummary[]> {
   return unwrap<PodSummary[]>(res, "Failed to load pods I lead");
 }
 
-/** Public pod directory (filterable by club). */
+/** Public pod directory (filterable by club). No auth required — pods
+ *  with visibility='public' are intentionally browseable, including
+ *  from the unauthenticated /club marketing page. */
 export async function listPublicPods(clubId?: string): Promise<PodSummary[]> {
   const url = clubId
     ? `${MEMBER_BASE}/public?club_id=${encodeURIComponent(clubId)}`
     : `${MEMBER_BASE}/public`;
-  const res = await authedFetch(url);
+  const res = await fetch(url, { cache: "no-store" });
   return unwrap<PodSummary[]>(res, "Failed to load public pods");
 }
 
