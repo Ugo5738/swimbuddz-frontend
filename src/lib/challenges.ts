@@ -76,6 +76,11 @@ export interface ChallengeSubmission {
    *  oversight UI distinguish HQ from delegated decisions. */
   reviewed_by_kind: "admin" | "pod_lead" | "assistant_pod_lead" | null;
   review_note: string | null;
+  /** Set when SwimBuddz HQ revoked a previously-approved submission.
+   *  Original review fields stay intact for audit. */
+  revoked_at: string | null;
+  revoked_by: string | null;
+  revoke_note: string | null;
   rewards_distributed_at: string | null;
   completed_at: string;
   result_data: Record<string, unknown> | null;
@@ -242,13 +247,35 @@ export type SubmissionListStatus =
   | "rejected"
   | "all";
 
+export type ReviewerKind = "admin" | "pod_lead" | "assistant_pod_lead";
+
+export interface ListSubmissionsOptions {
+  status?: SubmissionListStatus;
+  challengeId?: string;
+  /** Filter to submissions reviewed by a specific actor type. Powers the
+   *  HQ audit page's "show only Pod Lead approvals" view. */
+  reviewedByKind?: ReviewerKind;
+  /** "only" = revoked submissions only.
+   *  "exclude" = hide revoked.
+   *  Omit = include both. */
+  revoked?: "only" | "exclude";
+}
+
 export async function listSubmissions(
-  status: SubmissionListStatus = "pending",
+  statusOrOpts: SubmissionListStatus | ListSubmissionsOptions = "pending",
   challengeId?: string,
 ): Promise<ChallengeSubmission[]> {
+  // Back-compat: callers passing (status, challengeId) positionally still work.
+  const opts: ListSubmissionsOptions =
+    typeof statusOrOpts === "string"
+      ? { status: statusOrOpts, challengeId }
+      : statusOrOpts;
+
   const params = new URLSearchParams();
-  params.set("status", status);
-  if (challengeId) params.set("challenge_id", challengeId);
+  params.set("status", opts.status ?? "pending");
+  if (opts.challengeId) params.set("challenge_id", opts.challengeId);
+  if (opts.reviewedByKind) params.set("reviewed_by_kind", opts.reviewedByKind);
+  if (opts.revoked) params.set("revoked", opts.revoked);
   const res = await authedFetch(
     `${apiEndpoints.challenges}/submissions/list?${params}`,
   );
@@ -314,6 +341,26 @@ export async function listMySubmissions(
   }`;
   const res = await authedFetch(url);
   return unwrap<ChallengeSubmission[]>(res, "Failed to load your submissions");
+}
+
+/**
+ * SwimBuddz HQ override — revoke a previously-approved submission. The
+ * submission keeps its original review fields for audit; the badge is
+ * marked revoked (hidden from profile, kept in the DB). Member is
+ * notified. Admin-only on the backend.
+ */
+export async function revokeSubmission(
+  submissionId: string,
+  revokeNote: string,
+): Promise<ChallengeSubmission> {
+  const res = await authedFetch(
+    `${apiEndpoints.challenges}/submissions/${submissionId}/revoke`,
+    {
+      method: "POST",
+      body: JSON.stringify({ revoke_note: revokeNote }),
+    },
+  );
+  return unwrap<ChallengeSubmission>(res, "Failed to revoke submission");
 }
 
 /**

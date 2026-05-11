@@ -15,6 +15,7 @@ import { PartialBlock } from "@blocknote/core";
 import {
   Calendar,
   ClipboardCheck,
+  Shield,
   Image as ImageIcon,
   Pencil,
   Plus,
@@ -629,6 +630,15 @@ export default function AdminChallengesPage() {
               >
                 <ClipboardCheck className="h-4 w-4" />
                 Review submissions
+              </Button>
+            </Link>
+            <Link href="/admin/community/challenges/audit">
+              <Button
+                variant="secondary"
+                className="flex items-center gap-2"
+              >
+                <Shield className="h-4 w-4" />
+                Approval audit
               </Button>
             </Link>
             <Button

@@ -28,6 +28,7 @@ import {
   listSubmissions,
   markSubmissionAsWinner,
   reviewSubmission,
+  revokeSubmission,
 } from "@/lib/challenges";
 import { apiEndpoints } from "@/lib/config";
 import {
@@ -59,6 +60,11 @@ export default function ChallengeSubmissionReviewPage() {
     submission: ChallengeSubmission;
     action: "approved" | "rejected";
   } | null>(null);
+  // Separate modal state for the HQ revoke flow — different copy + a
+  // hard "are you sure?" warning, plus a 5-char minimum reason.
+  const [revokeTarget, setRevokeTarget] = useState<ChallengeSubmission | null>(
+    null,
+  );
 
   const load = useCallback(
     async (
@@ -156,6 +162,17 @@ export default function ChallengeSubmissionReviewPage() {
     }
   };
 
+  const handleRevokeSubmit = async (note: string) => {
+    if (!revokeTarget) return;
+    try {
+      await revokeSubmission(revokeTarget.id, note);
+      setRevokeTarget(null);
+      load(tab, "refresh");
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Revoke failed");
+    }
+  };
+
   if (loading) return <LoadingPage text="Loading submissions..." />;
 
   return (
@@ -246,6 +263,7 @@ export default function ChallengeSubmissionReviewPage() {
                 setReviewModal({ submission: sub, action: "rejected" })
               }
               onMarkWinner={() => handleMarkWinner(sub)}
+              onRevoke={() => setRevokeTarget(sub)}
             />
           ))}
         </div>
@@ -257,6 +275,14 @@ export default function ChallengeSubmissionReviewPage() {
           action={reviewModal.action}
           onCancel={() => setReviewModal(null)}
           onSubmit={handleReviewSubmit}
+        />
+      )}
+
+      {revokeTarget && (
+        <RevokeModal
+          submission={revokeTarget}
+          onCancel={() => setRevokeTarget(null)}
+          onSubmit={handleRevokeSubmit}
         />
       )}
     </div>
@@ -273,18 +299,24 @@ function SubmissionCard({
   onApprove,
   onReject,
   onMarkWinner,
+  onRevoke,
 }: {
   submission: ChallengeSubmission;
   challenge: Challenge | undefined;
   onApprove: () => void;
   onReject: () => void;
   onMarkWinner: () => void;
+  onRevoke: () => void;
 }) {
   const isCompetition = challenge?.format === "competition";
   const isWinner =
     challenge && challenge.winner_submission_id === submission.id;
   const showMarkWinner =
     isCompetition && submission.status === "approved" && !isWinner;
+  // Revocation only applies to live (un-revoked) approvals.
+  const showRevoke =
+    submission.status === "approved" && submission.revoked_at === null;
+  const isRevoked = submission.revoked_at !== null;
 
   // Prefer the backend-resolved name; fall back to a short id if a member
   // happens to be missing from the directory (deleted/legacy etc).
@@ -390,6 +422,13 @@ function SubmissionCard({
           </div>
         )}
 
+      {isRevoked && (
+        <div className="flex items-center gap-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+          <strong className="font-semibold">Approval revoked</strong>
+          {submission.revoke_note && <span>· {submission.revoke_note}</span>}
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-3">
         {showMarkWinner && (
           <Button
@@ -399,6 +438,16 @@ function SubmissionCard({
           >
             <Trophy className="h-4 w-4" />
             Mark as winner
+          </Button>
+        )}
+        {showRevoke && (
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onRevoke}
+            className="text-rose-600 hover:bg-rose-50"
+          >
+            Revoke
           </Button>
         )}
         {submission.status === "pending" && (
@@ -561,6 +610,98 @@ function ReviewModal({
               "Approve"
             ) : (
               "Reject"
+            )}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Revoke modal — HQ-override flow with hard warning copy.
+//
+// Required reason (5+ chars) + a clear list of side-effects so HQ
+// doesn't accidentally pull a badge they meant to leave alone. This is
+// the same modal used by the dedicated audit page; keeping a copy here
+// avoids cross-folder coupling for what's essentially a small dialog.
+
+function RevokeModal({
+  submission,
+  onCancel,
+  onSubmit,
+}: {
+  submission: ChallengeSubmission;
+  onCancel: () => void;
+  onSubmit: (note: string) => Promise<void>;
+}) {
+  const [note, setNote] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const valid = note.trim().length >= 5;
+
+  const handle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!valid) return;
+    setSubmitting(true);
+    try {
+      await onSubmit(note.trim());
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Modal isOpen onClose={onCancel} title="Revoke approval">
+      <form onSubmit={handle} className="space-y-4">
+        <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+          <p className="font-semibold">This is a hard override.</p>
+          <ul className="mt-1 list-disc pl-4 text-xs">
+            <li>The badge comes off the member's profile.</li>
+            <li>The member receives a notification with your reason.</li>
+            <li>
+              Bubbles / volunteer-hours grants are <em>not</em> automatically
+              clawed back — handle those via the wallet adjust UI if needed.
+            </li>
+            <li>
+              The audit trail (original reviewer + timestamp + note) stays
+              intact.
+            </li>
+          </ul>
+        </div>
+        <p className="text-xs text-slate-500">
+          Submission:{" "}
+          <span className="font-medium text-slate-700">
+            {submission.challenge_title ??
+              `Challenge ${submission.challenge_id.slice(0, 8)}…`}
+          </span>{" "}
+          —{" "}
+          {submission.member_name ||
+            `Member ${submission.member_id.slice(0, 8)}…`}
+        </p>
+        <Textarea
+          label="Reason (visible to the member)"
+          rows={4}
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="e.g. Bottle was tipped at the 15m mark; full distance not held."
+        />
+        <p className="text-xs text-slate-500">
+          Minimum 5 characters. The member sees this verbatim, so be
+          specific and constructive.
+        </p>
+        <div className="flex justify-end gap-2 border-t border-slate-100 pt-3">
+          <Button type="button" variant="secondary" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={!valid || submitting}
+            className="bg-rose-600 hover:bg-rose-700"
+          >
+            {submitting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              "Revoke approval"
             )}
           </Button>
         </div>
