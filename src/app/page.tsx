@@ -531,10 +531,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── 2. LIVE CHALLENGES (auto-hides if no public challenges) ─── */}
-      <ChallengesCarousel />
-
-      {/* ─── 3. WHO SWIMBUDDZ IS FOR ────────────────────────────────── */}
+      {/* ─── 2. WHO SWIMBUDDZ IS FOR ────────────────────────────────── */}
       <section className="space-y-10">
         <div className="text-center space-y-4">
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
@@ -579,6 +576,9 @@ export default function HomePage() {
       </section>
 
       {/* ─── 3. COMMUNITY GALLERY ────────────────────────────────────── */}
+      {/* Note: Live Challenges section moved DOWN to after "How It Works"
+          (section 5 below) — visitors need to know what SwimBuddz is
+          before active challenges become legible social proof. */}
       <section className="space-y-10">
         <div className="text-center space-y-4">
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
@@ -690,6 +690,7 @@ export default function HomePage() {
       </section>
 
       {/* ─── 4. HOW IT WORKS ─────────────────────────────────────────── */}
+      {/* (Live Challenges renders just below this section — see section 5.) */}
       <section className="space-y-10">
         <div className="text-center space-y-4">
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
@@ -716,7 +717,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── 5. COMMUNITY SPOTLIGHT ──────────────────────────────────── */}
+      {/* ─── 5. LIVE CHALLENGES (auto-hides if no public challenges) ─── */}
+      {/* Moved here from section 2: a first-time visitor is now oriented
+          by sections 1-4 (hero, who-it's-for, gallery, how-it-works)
+          before the carousel asks them to engage with what's running.
+          Sits next to Community Spotlight + Testimonials below — the
+          three together form a "community is alive" social-proof block. */}
+      <ChallengesCarousel />
+
+      {/* ─── 6. COMMUNITY SPOTLIGHT ──────────────────────────────────── */}
       {spotlight && (
         <section className="space-y-10 bg-gradient-to-br from-amber-50/50 via-white to-cyan-50/50 -mx-4 px-4 py-12 md:-mx-8 md:px-8 rounded-3xl">
           <div className="text-center space-y-4">
@@ -859,7 +868,7 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* ─── 6. TESTIMONIALS ─────────────────────────────────────────── */}
+      {/* ─── 7. TESTIMONIALS ─────────────────────────────────────────── */}
       <section className="space-y-10 bg-gradient-to-br from-slate-50 to-white -mx-4 px-4 py-12 md:-mx-8 md:px-8 rounded-3xl">
         <div className="text-center space-y-4">
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
@@ -926,7 +935,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── 7. PRICING TIERS ────────────────────────────────────────── */}
+      {/* ─── 8. PRICING TIERS ────────────────────────────────────────── */}
       <section className="space-y-10">
         <div className="text-center space-y-4">
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
@@ -1062,7 +1071,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── 7b. UPCOMING SESSIONS (inline callout) ──────────────────── */}
+      {/* ─── 8b. UPCOMING SESSIONS (inline callout) ──────────────────── */}
       <section className="flex justify-center">
         <Link
           href="/sessions-and-events"
@@ -1078,7 +1087,7 @@ export default function HomePage() {
         </Link>
       </section>
 
-      {/* ─── 8. EARN BUBBLES ─────────────────────────────────────────── */}
+      {/* ─── 9. EARN BUBBLES ─────────────────────────────────────────── */}
       <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-50 via-cyan-50 to-emerald-50 px-6 py-16 md:px-12 md:py-20">
         <div className="relative z-10 max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-slate-900 md:text-4xl mb-3">
@@ -1133,7 +1142,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── 9. FINAL CTA ────────────────────────────────────────────── */}
+      {/* ─── 10. FINAL CTA ───────────────────────────────────────────── */}
       <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-6 py-16 text-center text-white shadow-2xl md:px-12 md:py-20">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-0 left-0 right-0 text-cyan-500/20">
