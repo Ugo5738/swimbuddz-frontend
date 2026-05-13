@@ -2,6 +2,7 @@
 
 import { Alert } from "@/components/ui/Alert";
 import { Card } from "@/components/ui/Card";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { supabase } from "@/lib/auth";
 import { completePendingRegistrationOnBackend, getPostAuthRedirectPath } from "@/lib/registration";
 import Link from "next/link";
@@ -133,11 +134,11 @@ export default function ConfirmPage() {
     <div className="flex min-h-[60vh] items-center justify-center p-4">
       <div className="w-full max-w-lg">
         <Card className="space-y-4 p-6" aria-busy={isProcessing && !error}>
-          <h1 className="text-2xl font-semibold text-slate-900">
-            {error ? "Verification Issue" : "Finishing verification..."}
-          </h1>
           {error ? (
             <>
+              <h1 className="text-2xl font-semibold text-slate-900">
+                Verification Issue
+              </h1>
               <Alert variant="error" title="Unable to finish confirmation">
                 {error}
               </Alert>
@@ -160,9 +161,18 @@ export default function ConfirmPage() {
               </p>
             </>
           ) : (
-            <p className="text-sm text-slate-600">
-              Please hold while we verify your email and prepare your SwimBuddz profile.
-            </p>
+            <div className="flex flex-col items-center gap-4 py-6 text-center">
+              <LoadingSpinner size="lg" />
+              <div className="space-y-1">
+                <h1 className="text-2xl font-semibold text-slate-900">
+                  Finishing verification
+                </h1>
+                <p className="text-sm text-slate-600">
+                  Hang tight — we&apos;re verifying your email and preparing
+                  your SwimBuddz profile.
+                </p>
+              </div>
+            </div>
           )}
         </Card>
       </div>
