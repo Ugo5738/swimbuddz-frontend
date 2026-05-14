@@ -303,6 +303,20 @@ export interface Enrollment {
   installments?: EnrollmentInstallment[];
 }
 
+export type WithdrawWindow = "before_start" | "mid_entry_window" | "after_cutoff";
+
+export interface WithdrawEnrollmentResponse {
+  enrollment_id: string;
+  status: string;
+  window: WithdrawWindow;
+  refund_kobo: number;
+  refund_percent: number;
+  paid_kobo: number;
+  waived_installment_count: number;
+  payment_references: string[];
+  refund_note: string;
+}
+
 export interface Milestone {
   id: string;
   program_id: string;
@@ -646,6 +660,20 @@ export const AcademyApi = {
     }),
 
   getMyEnrollments: () => apiGet<Enrollment[]>("/api/v1/academy/my-enrollments", { auth: true }),
+
+  /**
+   * Voluntary withdrawal from an active cohort.
+   * Refund policy: 90% before cohort start, 50% of unused portion in mid-entry
+   * window, 0 after the cutoff. Remaining installments are always waived.
+   * Refund (if any) is disbursed manually by admin — this endpoint records the
+   * obligation against the relevant payments.
+   */
+  withdrawEnrollment: (id: string, body?: { reason?: string }) =>
+    apiPost<WithdrawEnrollmentResponse>(
+      `/api/v1/academy/my-enrollments/${id}/withdraw`,
+      body ?? {},
+      { auth: true }
+    ),
 
   // Progress
   updateProgress: (enrollmentId: string, milestoneId: string, data: Partial<StudentProgress>) =>

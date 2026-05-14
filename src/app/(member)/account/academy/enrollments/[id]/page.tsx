@@ -1,6 +1,10 @@
 "use client";
 
 import { MilestoneClaimModal } from "@/components/academy/MilestoneClaimModal";
+import {
+  WithdrawEnrollmentModal,
+  WithdrawLink,
+} from "@/components/academy/WithdrawEnrollmentModal";
 import { PaymentChoicePanel } from "@/components/payment/PaymentChoicePanel";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -177,6 +181,7 @@ export default function EnrollmentDetailPage() {
   const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(
     null,
   );
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
 
   useEffect(() => {
     if (enrollmentId) {
@@ -1037,6 +1042,13 @@ export default function EnrollmentDetailPage() {
             <Button variant="outline" className="w-full">
               Contact Support
             </Button>
+            {/* Subtle, low-emphasis withdraw entry point. Members rarely need
+                this; if they do, the modal walks them through refund + waiver. */}
+            {!isDropped && (
+              <div className="mt-4 pt-3 border-t border-cyan-100 text-center">
+                <WithdrawLink onClick={() => setWithdrawOpen(true)} />
+              </div>
+            )}
           </Card>
         </div>
       </div>
@@ -1051,6 +1063,19 @@ export default function EnrollmentDetailPage() {
           onSuccess={handleClaimSuccess}
         />
       )}
+
+      {/* Withdraw Modal */}
+      <WithdrawEnrollmentModal
+        isOpen={withdrawOpen}
+        onClose={() => setWithdrawOpen(false)}
+        enrollmentId={enrollmentId}
+        cohortName={cohort?.name || "your cohort"}
+        programName={program?.name}
+        onWithdrawn={() => {
+          setWithdrawOpen(false);
+          router.push("/account/academy");
+        }}
+      />
 
       {/* Payment Choice Modal */}
       {openPaymentModal && (() => {
