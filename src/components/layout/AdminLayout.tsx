@@ -74,6 +74,7 @@ const navSections: NavSection[] = [
     items: [
       { href: "/admin/wallet", label: "Wallets", icon: Wallet },
       { href: "/admin/payouts", label: "Coach Payouts", icon: Banknote },
+      { href: "/admin/refunds", label: "Refund Queue", icon: Banknote },
       {
         href: "/admin/payouts/recurring",
         label: "Recurring Payouts",

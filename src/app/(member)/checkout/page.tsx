@@ -73,15 +73,13 @@ function CheckoutContent() {
     "full",
   );
 
-  // Determine purpose from URL or context
-  const urlPurpose = searchParams.get("purpose");
-  const purpose =
-    urlPurpose ||
-    (state.targetTier === "club"
-      ? "club"
-      : state.targetTier === "academy"
-        ? "academy_cohort"
-        : null);
+  // Determine purpose from URL ONLY — do not fall back to context.targetTier.
+  // The context-based fallback was a money-leak: a member arriving with stale
+  // upgrade state (e.g. previously browsed Club) could land here from an
+  // academy-intent flow and silently buy Club. The /upgrade/academy/cohort
+  // page always builds an explicit ?purpose=academy_cohort URL, so requiring
+  // the URL param is safe and removes the race entirely.
+  const purpose = searchParams.get("purpose");
 
   // Get club plan from URL params (fallback) or context
   const urlPlan = searchParams.get("plan") as
@@ -471,16 +469,22 @@ function CheckoutContent() {
     return <LoadingCard text="Loading checkout..." />;
   }
 
-  // Validate we have required data
+  // Validate we have required data. Route the user back to a useful place
+  // based on what they were trying to do — back to cohort selection for
+  // academy, back to billing for anything else.
   if (!purpose || lineItems.length === 0) {
+    const isAcademyFlow = purpose === "academy_cohort";
+    const backLabel = isAcademyFlow ? "Back to Cohort Selection" : "Back to Billing";
+    const backPath = isAcademyFlow ? "/upgrade/academy/cohort" : "/account/billing";
+    const message = isAcademyFlow
+      ? "We couldn't load the cohort details. Please pick a cohort again."
+      : "Missing checkout information. Please start the upgrade process again.";
     return (
       <div className="space-y-6 text-center">
         <Alert variant="error" title="Checkout Error">
-          Missing checkout information. Please start the upgrade process again.
+          {message}
         </Alert>
-        <Button onClick={() => router.push("/account/billing")}>
-          Back to Billing
-        </Button>
+        <Button onClick={() => router.push(backPath)}>{backLabel}</Button>
       </div>
     );
   }

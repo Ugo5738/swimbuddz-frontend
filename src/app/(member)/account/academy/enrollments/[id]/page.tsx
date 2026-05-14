@@ -20,11 +20,7 @@ import {
   StudentProgress,
 } from "@/lib/academy";
 import { apiGet, apiPost } from "@/lib/api";
-import {
-  KOBO_PER_NAIRA,
-  formatBubblesFromKobo,
-  koboBubbles
-} from "@/lib/format";
+import { KOBO_PER_NAIRA } from "@/lib/format";
 import { Session, SessionsApi } from "@/lib/sessions";
 import { X } from "lucide-react";
 import Link from "next/link";
@@ -146,9 +142,6 @@ function InstallmentRow({
         <div className="font-semibold text-slate-900">
           {formatNaira(installment.amount)}
         </div>
-        <div className="text-xs text-slate-400">
-          {formatBubblesFromKobo(installment.amount)}
-        </div>
         {!isPaid && !isWaived && onOpenPayment && (
           <button
             onClick={() => onOpenPayment(installment.id)}
@@ -175,8 +168,6 @@ export default function EnrollmentDetailPage() {
   const [cohortSessions, setCohortSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState(false);
-  const [payingInstallmentId, setPayingInstallmentId] = useState<string | null>(null);
-  const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [openPaymentModal, setOpenPaymentModal] = useState<string | null>(null);
   const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(
     null,
@@ -192,14 +183,8 @@ export default function EnrollmentDetailPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [enrollmentData, walletData] = await Promise.all([
-        AcademyApi.getEnrollment(enrollmentId),
-        apiGet<{ balance: number }>("/api/v1/wallet/me", { auth: true }).catch(
-          () => null,
-        ),
-      ]);
+      const enrollmentData = await AcademyApi.getEnrollment(enrollmentId);
       setEnrollment(enrollmentData);
-      if (walletData) setWalletBalance(walletData.balance);
 
       // Load milestones, progress, and cohort sessions
       const programId =
@@ -258,34 +243,6 @@ export default function EnrollmentDetailPage() {
     } finally {
       setVerifying(false);
     }
-  };
-
-  const handlePayInstallmentWithBubbles = async (installmentId: string) => {
-    setPayingInstallmentId(installmentId);
-    try {
-      await apiPost(
-        `/api/v1/academy/enrollments/${enrollmentId}/installments/${installmentId}/pay-with-bubbles`,
-        {},
-        { auth: true },
-      );
-      toast.success("Installment paid with Bubbles!");
-      await loadData();
-    } catch (e) {
-      toast.error(
-        e instanceof Error
-          ? e.message
-          : "Payment failed. Check your wallet balance.",
-      );
-    } finally {
-      setPayingInstallmentId(null);
-    }
-  };
-
-  /** Called by PaymentChoicePanel when the user confirms wallet payment. */
-  const handleWalletPayForModal = async () => {
-    if (!openPaymentModal) return;
-    await handlePayInstallmentWithBubbles(openPaymentModal);
-    setOpenPaymentModal(null);
   };
 
   /** Called by PaymentChoicePanel when the user chooses card/bank payment.
@@ -441,18 +398,10 @@ export default function EnrollmentDetailPage() {
                   ⚠️ Your academy access is suspended
                 </p>
                 <p className="text-sm text-red-700">
-                  Complete your overdue installment payment to restore access to
+                  Pay your overdue installment below to restore access to
                   sessions and materials.
                 </p>
               </div>
-              <Link href="/account/wallet">
-                <Button
-                  size="sm"
-                  className="bg-red-600 text-white hover:bg-red-700 whitespace-nowrap"
-                >
-                  Top Up Wallet
-                </Button>
-              </Link>
             </div>
           </div>
         )}
@@ -535,33 +484,6 @@ export default function EnrollmentDetailPage() {
                   )}
                 </div>
               </div>
-
-              {/* Wallet top-up prompt for next pending installment */}
-              {nextPending && !isSuspended && (
-                <div className="mb-4 rounded-lg border border-cyan-200 bg-cyan-50 p-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-cyan-800">
-                        💡 Pay with your SwimBuddz Wallet 🫧
-                      </p>
-                      <p className="text-xs text-cyan-700 mt-0.5">
-                        Keep at least{" "}
-                        <strong>{formatBubblesFromKobo(nextPending.amount)}</strong> in
-                        your wallet and we&apos;ll deduct it automatically on
-                        the due date.
-                      </p>
-                    </div>
-                    <Link href="/account/wallet/topup">
-                      <Button
-                        size="sm"
-                        className="bg-cyan-600 text-white hover:bg-cyan-700 whitespace-nowrap"
-                      >
-                        Top Up Wallet
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              )}
 
               <div className="space-y-3">
                 {installments.map((inst, i) => (
@@ -860,73 +782,32 @@ export default function EnrollmentDetailPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Wallet Balance Callout — show when there are pending installments */}
-          {nextPending && (() => {
-            const needed = koboBubbles(nextPending.amount);
-            const balance = walletBalance ?? 0;
-            const hasCovered = balance >= needed;
-            const shortfall = hasCovered ? 0 : needed - balance;
-            const topupUrl = shortfall > 0
-              ? `/account/wallet/topup?prefill=${shortfall}&return_to=${encodeURIComponent(`/account/academy/enrollments/${enrollmentId}`)}`
-              : `/account/wallet/topup`;
-            return (
-              <Card className="overflow-hidden">
-                <div className="bg-gradient-to-br from-cyan-500 to-blue-600 p-4 text-white">
-                  <div className="text-xs font-medium uppercase tracking-wide opacity-80">
-                    SwimBuddz Wallet 🫧
-                  </div>
-                  {walletBalance !== null ? (
-                    <>
-                      <p className="mt-1 text-2xl font-bold">
-                        {walletBalance.toLocaleString()} 🫧
-                      </p>
-                      {hasCovered ? (
-                        <p className="text-xs mt-0.5 text-green-200">
-                          ✅ Covered — {formatBubblesFromKobo(nextPending.amount)} needed on{" "}
-                          {new Date(nextPending.due_at).toLocaleDateString("en-NG", { month: "short", day: "numeric" })}
-                        </p>
-                      ) : (
-                        <p className="text-xs mt-0.5 text-amber-200">
-                          ⚠️ Short {shortfall.toLocaleString()} 🫧 for due on{" "}
-                          {new Date(nextPending.due_at).toLocaleDateString("en-NG", { month: "short", day: "numeric" })}
-                        </p>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <p className="mt-1 text-sm">
-                        Auto-deduction on{" "}
-                        <strong>
-                          {new Date(nextPending.due_at).toLocaleDateString("en-NG", {
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </strong>
-                      </p>
-                      <p className="text-xs opacity-80">
-                        Keep {formatBubblesFromKobo(nextPending.amount)} in your wallet
-                      </p>
-                    </>
-                  )}
+          {/* Next Payment Due Callout — academy cohort fees are real-money only */}
+          {nextPending && (
+            <Card className="overflow-hidden">
+              <div className="bg-gradient-to-br from-slate-700 to-slate-900 p-4 text-white">
+                <div className="text-xs font-medium uppercase tracking-wide opacity-80">
+                  Next Payment Due
                 </div>
-                <div className="p-4">
-                  <Link href="/account/wallet">
-                    <Button variant="outline" className="w-full" size="sm">
-                      View Wallet
-                    </Button>
-                  </Link>
-                  <Link href={topupUrl} className="mt-2 block">
-                    <Button
-                      className="w-full bg-cyan-600 text-white hover:bg-cyan-700"
-                      size="sm"
-                    >
-                      {shortfall > 0 ? `Add ${shortfall.toLocaleString()} 🫧` : "Top Up Bubbles"}
-                    </Button>
-                  </Link>
-                </div>
-              </Card>
-            );
-          })()}
+                <p className="mt-1 text-2xl font-bold">
+                  ₦{(nextPending.amount / KOBO_PER_NAIRA).toLocaleString("en-NG", { maximumFractionDigits: 0 })}
+                </p>
+                <p className="text-xs mt-0.5 opacity-80">
+                  Installment {nextPending.installment_number} · due{" "}
+                  {new Date(nextPending.due_at).toLocaleDateString("en-NG", { month: "short", day: "numeric", year: "numeric" })}
+                </p>
+              </div>
+              <div className="p-4">
+                <Button
+                  className="w-full bg-cyan-600 text-white hover:bg-cyan-700"
+                  size="sm"
+                  onClick={() => setOpenPaymentModal(nextPending.id)}
+                >
+                  Pay Installment {nextPending.installment_number}
+                </Button>
+              </div>
+            </Card>
+          )}
 
           {/* Cohort Info */}
           {cohort && (
@@ -1031,14 +912,6 @@ export default function EnrollmentDetailPage() {
                   View Upcoming Sessions
                 </span>
               </Link>
-              <Link
-                href="/account/wallet"
-                className="block rounded-lg bg-slate-50 p-3 transition-colors hover:bg-slate-100"
-              >
-                <span className="text-sm font-medium text-slate-900">
-                  🫧 My Wallet
-                </span>
-              </Link>
             </div>
           </Card>
 
@@ -1137,12 +1010,9 @@ export default function EnrollmentDetailPage() {
                     <PaymentChoicePanel
                       amountKobo={activeInstallment.amount}
                       maxPayableKobo={remainingKobo}
-                      walletBalanceBubbles={walletBalance ?? 0}
                       enrollmentId={enrollmentId}
                       installmentId={openPaymentModal}
-                      onPayWithWallet={handleWalletPayForModal}
                       onPayWithCard={handlePayWithCard}
-                      isLoading={payingInstallmentId === openPaymentModal}
                     />
                   );
                 })()}
