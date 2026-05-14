@@ -611,6 +611,35 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/members/by-auth/{auth_id}/club/extend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin Extend Club Membership By Auth
+         * @description Extend club membership by N months without eligibility checks.
+         *
+         *     Intended for service-to-service grants such as the free 1-month
+         *     post-academy club access bridge (see PRICING_STRATEGY.md). Skips the
+         *     readiness/requested-tier gates that ``/club/activate`` enforces because
+         *     the caller is the system, not the member self-upgrading.
+         *
+         *     The new ``club_paid_until`` becomes ``max(current, anchor) + months`` where
+         *     ``anchor = payload.from_date or now``. Idempotent: if club_paid_until is
+         *     already at or past the computed target, no change is made.
+         */
+        post: operations["admin_extend_club_membership_by_auth_admin_members_by_auth__auth_id__club_extend_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/members/by-auth/{auth_id}/club/activate": {
         parameters: {
             query?: never;
@@ -625,6 +654,31 @@ export interface paths {
          * @description Apply Club entitlement for a member (admin/service use).
          */
         post: operations["admin_activate_club_membership_by_auth_admin_members_by_auth__auth_id__club_activate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/members/by-auth/{auth_id}/academy/expire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin Expire Academy Membership By Auth
+         * @description Set academy_paid_until to NOW, effectively expiring academy access.
+         *
+         *     Used by academy_service after a member's withdrawal when they have no
+         *     remaining ENROLLED cohorts. Subsequent reads via /members/me or the
+         *     internal membership endpoint will strip "academy" from active_tiers
+         *     via normalize_member_tiers since the date is no longer in the future.
+         */
+        post: operations["admin_expire_academy_membership_by_auth_admin_members_by_auth__auth_id__academy_expire_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -733,6 +787,11 @@ export interface paths {
         /**
          * List Club Challenges
          * @description List club challenges with optional filters.
+         *
+         *     Skill-ladder behaviour:
+         *       * series_slug=<slug>  → returns just that ladder's steps, ordered
+         *       * series_slug='none'  → returns only standalone challenges
+         *       * series_slug omitted → returns everything (admin/list view)
          */
         get: operations["list_club_challenges_challenges__get"];
         put?: never;
@@ -741,6 +800,31 @@ export interface paths {
          * @description Create a new club challenge (admin only).
          */
         post: operations["create_club_challenge_challenges__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/challenges/series/list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Challenges By Series
+         * @description Return all challenges that belong to a series, grouped by slug.
+         *
+         *     Powers the Club page's "skill ladders showcase". Standalone (no
+         *     `series_slug`) challenges are excluded — they show on the homepage
+         *     carousel instead. Within each series, steps are ordered by
+         *     `series_order`.
+         */
+        get: operations["list_challenges_by_series_challenges_series_list_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -873,10 +957,16 @@ export interface paths {
         };
         /**
          * List Submissions
-         * @description Admin review queue: list submissions filtered by status.
+         * @description Review queue — admin sees everything, Pod Leads see only their own
+         *     pod's submissions.
          *
-         *     Powers the approved/rejected tabs in the admin review UI in addition to
-         *     the default pending bucket.
+         *     Powers the approved/rejected tabs in the admin review UI in addition
+         *     to the default pending bucket. Pod Leads also use it via the same UI
+         *     so they can clear their pod's queue independent of HQ.
+         *
+         *     The `reviewed_by_kind` and `revoked` filters are intended for the HQ
+         *     audit page; Pod Leads can pass them too but they only narrow within
+         *     the per-pod scope they're already restricted to.
          */
         get: operations["list_submissions_challenges_submissions_list_get"];
         put?: never;
@@ -902,7 +992,13 @@ export interface paths {
         head?: never;
         /**
          * Review Challenge Submission
-         * @description Approve or reject a submission (admin only).
+         * @description Approve or reject a submission (admin OR Pod Lead).
+         *
+         *     Authorization (Phase 8b — delegated review):
+         *       * SwimBuddz admin → can review anything
+         *       * Pod Lead / Assistant Pod Lead → can review their own pod
+         *         members' submissions, EXCEPT competition-format challenges
+         *         (those stay HQ-only — too easy to game otherwise)
          *
          *     Approve: writes a badge award per member (idempotent via unique
          *     (member_id, challenge_id) constraint). Bubbles + volunteer-hours
@@ -914,6 +1010,48 @@ export interface paths {
          *     award row remains — revocation logic, if needed, lands later).
          */
         patch: operations["review_challenge_submission_challenges_submissions__submission_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/challenges/submissions/{submission_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke Challenge Submission
+         * @description SwimBuddz HQ override — revoke a previously-approved submission.
+         *
+         *     Used when HQ spot-checks a Pod Lead's approval (or one of their
+         *     own legacy approvals) and finds it didn't actually meet the bar.
+         *     Strictly admin-only; Pod Leads cannot revoke each other.
+         *
+         *     Effects:
+         *       * Stamps the submission with revoked_at / revoked_by / revoke_note
+         *         (the original review fields stay intact for audit).
+         *       * Stamps the corresponding challenge_badge_awards row with
+         *         revoked_at so the badge stops showing on the member's profile,
+         *         but the row itself is preserved for the audit trail.
+         *       * Sends an in-app notification to every member on the submission's
+         *         roster so they know what happened (and can re-attempt).
+         *
+         *     What we DON'T do:
+         *       * Reverse Bubbles or volunteer-hours grants. Those are external
+         *         ledgers (wallet_service, volunteer_service); HQ should clawback
+         *         manually via the wallet adjust UI if the situation warrants it.
+         *         Doing it automatically here would invent a partial-refund flow
+         *         that's not backed by the existing reward grants' idempotency keys.
+         *
+         *     Idempotent on revoked_at: re-revoking just refreshes the note.
+         */
+        post: operations["revoke_challenge_submission_challenges_submissions__submission_id__revoke_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/challenges/submissions/{submission_id}/mark-winner": {
@@ -2006,6 +2144,35 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/members/pods/i-lead": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Pods I Lead
+         * @description Pods where I am the lead OR assistant lead.
+         *
+         *     Powers two member-facing surfaces:
+         *       * The "Pod Lead Review" entry in the member sidebar — only shown
+         *         when this returns at least one pod.
+         *       * The Pod-Lead-side challenge review queue, which uses the list
+         *         for context (e.g. "you're reviewing as Pod Lead of {pod.name}").
+         *
+         *     Returns ALL pods the member leads regardless of status, so a recently
+         *     dissolved pod still shows up briefly before fading from the UI.
+         */
+        get: operations["list_pods_i_lead_members_pods_i_lead_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/members/pods/public": {
         parameters: {
             query?: never;
@@ -2015,8 +2182,15 @@ export interface paths {
         };
         /**
          * List Public Pods
-         * @description Public pod directory. Filter to a club if the caller knows which
-         *     one they're registering for.
+         * @description Public pod directory — anonymous read.
+         *
+         *     Returns only pods with visibility='public' (set on the row). Pods
+         *     intentionally have a public-facing handle ("dolphins", "orcas") and
+         *     no member PII is exposed in PodSummary — the response is metadata
+         *     only (handle, lead/assistant UUIDs, capacity, schedule). Safe to
+         *     expose to the unauthenticated /club marketing page.
+         *
+         *     Private pods stay hidden — they go through admin assignment.
          */
         get: operations["list_public_pods_members_pods_public_get"];
         put?: never;
@@ -3693,6 +3867,45 @@ export interface paths {
         get: operations["get_my_enrollment_academy_my_enrollments__enrollment_id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/my-enrollments/{enrollment_id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw My Enrollment
+         * @description Member-initiated voluntary withdrawal from a cohort.
+         *
+         *     Refund policy (docs/club/PRICING_STRATEGY.md, founder-confirmed May 2026):
+         *       - Before cohort start: 90% refund of paid amount.
+         *       - In mid-entry window (week 1 → mid_entry_cutoff_week): 50% of unused
+         *         prorated portion, capped at paid amount.
+         *       - After cutoff: no refund.
+         *
+         *     In all cases:
+         *       - All unpaid installments are WAIVED.
+         *       - Enrollment status → DROPPED, dropped_at = now.
+         *       - Member's academy_paid_until is recomputed from remaining ENROLLED
+         *         cohorts (multi-cohort safe). The post-academy free club month is
+         *         only granted at natural graduation (via the cron), NOT on withdrawal.
+         *       - Community membership and any pre-existing club access are preserved.
+         *
+         *     The refund itself is queued for admin disbursement — Paystack refund API
+         *     is not invoked from this endpoint (Nigerian payment flows are commonly
+         *     settled via direct transfer). The refund obligation is written to the
+         *     relevant payments' metadata as ``refund_owed``.
+         */
+        post: operations["withdraw_my_enrollment_academy_my_enrollments__enrollment_id__withdraw_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5390,6 +5603,29 @@ export interface paths {
          *     have already verified the account via /resolve-account first.
          */
         post: operations["internal_paystack_create_recipient_internal_payments_paystack_recipients_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/payments/{reference}/annotate-refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Annotate Refund Obligation
+         * @description Write a refund obligation to a payment's metadata.
+         *
+         *     Idempotent: multiple calls for the same enrollment_id overwrite the prior
+         *     entry rather than appending duplicates.
+         */
+        post: operations["annotate_refund_obligation_internal_payments__reference__annotate_refund_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -12940,6 +13176,10 @@ export interface components {
              * @default false
              */
             is_finished: boolean;
+            /** Series Slug */
+            series_slug?: string | null;
+            /** Series Order */
+            series_order?: number | null;
             /**
              * Created At
              * Format: date-time
@@ -13082,8 +13322,40 @@ export interface components {
             reviewed_at?: string | null;
             /** Reviewed By */
             reviewed_by?: string | null;
+            /** Reviewed By Kind */
+            reviewed_by_kind?: ("admin" | "pod_lead" | "assistant_pod_lead") | null;
             /** Review Note */
             review_note?: string | null;
+            /** Revoked At */
+            revoked_at?: string | null;
+            /** Revoked By */
+            revoked_by?: string | null;
+            /** Revoke Note */
+            revoke_note?: string | null;
+        };
+        /**
+         * ChallengeSubmissionReview
+         * @description Admin-only payload to approve or reject a submission.
+         */
+        ChallengeSubmissionReview: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "approved" | "rejected";
+            /** Review Note */
+            review_note?: string | null;
+        };
+        /**
+         * ChallengeSubmissionRevokeRequest
+         * @description Admin payload to revoke a previously-approved submission.
+         *
+         *     A note is required so the member always sees a human reason — and so
+         *     HQ has a clear paper trail when spot-checking Pod Lead approvals.
+         */
+        ChallengeSubmissionRevokeRequest: {
+            /** Revoke Note */
+            revoke_note: string;
             /** Rewards Distributed At */
             rewards_distributed_at?: string | null;
             /**
@@ -13104,19 +13376,6 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
-        };
-        /**
-         * ChallengeSubmissionReview
-         * @description Admin-only payload to approve or reject a submission.
-         */
-        ChallengeSubmissionReview: {
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "approved" | "rejected";
-            /** Review Note */
-            review_note?: string | null;
         };
         /**
          * ChallengeWinnerPublicInfo
@@ -13212,6 +13471,12 @@ export interface components {
             team_min_size?: number | null;
             /** Team Max Size */
             team_max_size?: number | null;
+            /** Series Slug */
+            series_slug?: string | null;
+            /** Series Order */
+            series_order?: number | null;
+            /** Requires Challenge Id */
+            requires_challenge_id?: string | null;
             /**
              * Is Active
              * @default true
@@ -13287,6 +13552,12 @@ export interface components {
             team_min_size?: number | null;
             /** Team Max Size */
             team_max_size?: number | null;
+            /** Series Slug */
+            series_slug?: string | null;
+            /** Series Order */
+            series_order?: number | null;
+            /** Requires Challenge Id */
+            requires_challenge_id?: string | null;
             /**
              * Id
              * Format: uuid
@@ -13374,6 +13645,12 @@ export interface components {
             team_max_size?: number | null;
             /** Example Media */
             example_media?: components["schemas"]["ChallengeExampleMediaItem"][] | null;
+            /** Series Slug */
+            series_slug?: string | null;
+            /** Series Order */
+            series_order?: number | null;
+            /** Requires Challenge Id */
+            requires_challenge_id?: string | null;
         };
         /** ClubCreate */
         ClubCreate: {
@@ -14216,6 +14493,31 @@ export interface components {
             is_available: boolean;
         };
         /**
+         * ExtendClubRequest
+         * @description Request to extend club membership without eligibility checks.
+         *
+         *     Intended for service-to-service grants (e.g. the free 1-month post-academy
+         *     club access from PRICING_STRATEGY.md). The optional ``from_date`` anchors
+         *     the new period — useful when granting at cohort.end_date rather than now.
+         */
+        ExtendClubRequest: {
+            /**
+             * Months
+             * @default 1
+             */
+            months: number;
+            /**
+             * From Date
+             * @description Anchor the new period at this date (defaults to NOW or current expiry, whichever is later). Pass the cohort end_date for post-academy free month grants.
+             */
+            from_date?: string | null;
+            /**
+             * Reason
+             * @description Audit note describing why the extension was granted.
+             */
+            reason?: string | null;
+        };
+        /**
          * ExtendCommunityRequest
          * @description Request to extend community membership by months.
          */
@@ -14804,6 +15106,8 @@ export interface components {
             personal_goals?: string | null;
             /** How Found Us */
             how_found_us?: string | null;
+            /** Acquisition Source */
+            acquisition_source?: string | null;
             /** Previous Communities */
             previous_communities?: string | null;
             /** Hopes From Swimbuddz */
@@ -14866,6 +15170,8 @@ export interface components {
             personal_goals?: string | null;
             /** How Found Us */
             how_found_us?: string | null;
+            /** Acquisition Source */
+            acquisition_source?: string | null;
             /** Previous Communities */
             previous_communities?: string | null;
             /** Hopes From Swimbuddz */
@@ -17883,6 +18189,8 @@ export interface components {
             payment_reference?: string | null;
             /** Paid At */
             paid_at?: string | null;
+            /** Amount Kobo */
+            amount_kobo?: number | null;
         };
         /** EnrollmentResponse */
         EnrollmentResponse: {
@@ -18672,12 +18980,68 @@ export interface components {
             enrolled_count: number;
         };
         /**
+         * WithdrawEnrollmentRequest
+         * @description Member-initiated voluntary withdrawal from a cohort.
+         */
+        WithdrawEnrollmentRequest: {
+            /**
+             * Reason
+             * @description Optional reason for withdrawal (for admin visibility).
+             */
+            reason?: string | null;
+        };
+        /**
+         * WithdrawEnrollmentResponse
+         * @description Summary of a withdrawal action — what was refunded and waived.
+         */
+        WithdrawEnrollmentResponse: {
+            /**
+             * Enrollment Id
+             * Format: uuid
+             */
+            enrollment_id: string;
+            /** Status */
+            status: string;
+            /** Window */
+            window: string;
+            /** Refund Kobo */
+            refund_kobo: number;
+            /** Refund Percent */
+            refund_percent: number;
+            /** Paid Kobo */
+            paid_kobo: number;
+            /** Waived Installment Count */
+            waived_installment_count: number;
+            /** Payment References */
+            payment_references: string[];
+            /** Refund Note */
+            refund_note: string;
+        };
+        /**
          * AdminReviewRequest
          * @description Admin review action for a manual payment.
          */
         AdminReviewRequest: {
             /** Note */
             note?: string | null;
+        };
+        /**
+         * AnnotateRefundRequest
+         * @description Refund obligation written to a payment's metadata by the academy service.
+         *
+         *     The Nigerian payment-flow reality: most refunds are settled via direct bank
+         *     transfer, not Paystack API. This endpoint records the *obligation*; an admin
+         *     disburses and stamps the payment via a separate manual step.
+         */
+        AnnotateRefundRequest: {
+            /** Refund Kobo */
+            refund_kobo: number;
+            /** Enrollment Id */
+            enrollment_id: string;
+            /** Window */
+            window: string;
+            /** Reason */
+            reason?: string | null;
         };
         /**
          * ClubBillingCycle
@@ -18878,6 +19242,8 @@ export interface components {
             } | null;
             /** Bubbles To Apply */
             bubbles_to_apply?: number | null;
+            /** Amount Override Kobo */
+            amount_override_kobo?: number | null;
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -29088,6 +29454,41 @@ export interface operations {
             };
         };
     };
+    admin_extend_club_membership_by_auth_admin_members_by_auth__auth_id__club_extend_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                auth_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExtendClubRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     admin_activate_club_membership_by_auth_admin_members_by_auth__auth_id__club_activate_post: {
         parameters: {
             query?: never;
@@ -29102,6 +29503,37 @@ export interface operations {
                 "application/json": components["schemas"]["ActivateClubRequest"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_expire_academy_membership_by_auth_admin_members_by_auth__auth_id__academy_expire_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                auth_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -29265,6 +29697,8 @@ export interface operations {
                 challenge_type?: string | null;
                 /** @description Filter by audience */
                 audience?: string | null;
+                /** @description Filter by skill-ladder series. Pass an exact slug to fetch one ladder; pass the literal value 'none' to fetch only standalone (non-ladder) challenges. */
+                series_slug?: string | null;
             };
             header?: never;
             path?: never;
@@ -29312,6 +29746,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClubChallengeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_challenges_by_series_challenges_series_list_get: {
+        parameters: {
+            query?: {
+                /** @description Filter to a single audience tier (e.g. 'club') so a tier-page shows only the relevant ladders. */
+                audience?: string | null;
+                /** @description Hide inactive challenges */
+                active_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: components["schemas"]["ClubChallengeResponse"][];
+                    };
                 };
             };
             /** @description Validation Error */
@@ -29526,6 +29996,10 @@ export interface operations {
                 status?: "pending" | "approved" | "rejected" | "all";
                 /** @description Filter by challenge (optional) */
                 challenge_id?: string | null;
+                /** @description Filter to submissions reviewed by a specific actor type. Powers the HQ audit page's 'just show Pod Lead approvals' view. */
+                reviewed_by_kind?: ("admin" | "pod_lead" | "assistant_pod_lead") | null;
+                /** @description 'only' = revoked submissions only. 'exclude' = hide revoked. Default (omitted) = include both. Use with status=approved + revoked=exclude on the audit page to see live approvals only. */
+                revoked?: ("only" | "exclude") | null;
             };
             header?: never;
             path?: never;
@@ -29565,6 +30039,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ChallengeSubmissionReview"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeSubmissionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revoke_challenge_submission_challenges_submissions__submission_id__revoke_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                submission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChallengeSubmissionRevokeRequest"];
             };
         };
         responses: {
@@ -31387,6 +31896,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PodSummary"] | null;
+                };
+            };
+        };
+    };
+    list_pods_i_lead_members_pods_i_lead_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodSummary"][];
                 };
             };
         };
@@ -34243,6 +34772,41 @@ export interface operations {
             };
         };
     };
+    withdraw_my_enrollment_academy_my_enrollments__enrollment_id__withdraw_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WithdrawEnrollmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WithdrawEnrollmentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     admin_mark_enrollment_paid_academy_admin_enrollments__enrollment_id__mark_paid_post: {
         parameters: {
             query?: never;
@@ -37004,6 +37568,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["_CreateRecipientResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    annotate_refund_obligation_internal_payments__reference__annotate_refund_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnnotateRefundRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

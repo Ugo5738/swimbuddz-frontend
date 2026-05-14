@@ -94,6 +94,14 @@ function CheckoutContent() {
   // Get cohort_id from URL (for resuming pending payments)
   const urlCohortId = searchParams.get("cohort_id");
   const urlEnrollmentId = searchParams.get("enrollment_id");
+  // Optional override (kobo) for member-initiated mid-cohort custom-amount pay.
+  // Backend validates: >= next installment amount, <= remaining balance.
+  const urlAmountOverrideKobo = (() => {
+    const raw = searchParams.get("amount_override_kobo");
+    if (!raw) return undefined;
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : undefined;
+  })();
   const { setSelectedCohort } = useUpgrade();
 
   // Load member data and pricing (and cohort if needed)
@@ -400,6 +408,9 @@ function CheckoutContent() {
           enrollment_id: enrollmentId,
           use_installments:
             installmentsEnabled && billingMode === "installments",
+          ...(urlAmountOverrideKobo
+            ? { amount_override_kobo: urlAmountOverrideKobo }
+            : {}),
         };
       } else if (purpose === "community") {
         intentPayload = {

@@ -288,14 +288,24 @@ export default function EnrollmentDetailPage() {
     setOpenPaymentModal(null);
   };
 
-  /** Called by PaymentChoicePanel when the user chooses card/bank payment. */
-  const handlePayWithCard = () => {
+  /** Called by PaymentChoicePanel when the user chooses card/bank payment.
+   *  `chosenAmountKobo` defaults to the installment amount; when the member
+   *  used the "Pay a different amount" option, it's their chosen value and
+   *  gets passed as amount_override_kobo to the payment intent. */
+  const handlePayWithCard = (chosenAmountKobo: number) => {
     if (!openPaymentModal) return;
     const inst = installments.find((i) => i.id === openPaymentModal);
     if (!inst) return;
-    router.push(
-      `/account/checkout?purpose=academy_installment&enrollment_id=${enrollmentId}&installment_id=${openPaymentModal}&amount=${inst.amount}`,
-    );
+    const params = new URLSearchParams({
+      purpose: "academy_cohort",
+      enrollment_id: enrollmentId,
+    });
+    // Only pass the override when it differs from the stipulated amount,
+    // so the default flow stays clean.
+    if (chosenAmountKobo > inst.amount) {
+      params.set("amount_override_kobo", String(chosenAmountKobo));
+    }
+    router.push(`/checkout?${params.toString()}`);
   };
 
   const handleOpenClaimModal = (milestone: Milestone) => {
@@ -1116,15 +1126,26 @@ export default function EnrollmentDetailPage() {
 
               {/* Panel body */}
               <div className="p-5">
-                <PaymentChoicePanel
-                  amountKobo={activeInstallment.amount}
-                  walletBalanceBubbles={walletBalance ?? 0}
-                  enrollmentId={enrollmentId}
-                  installmentId={openPaymentModal}
-                  onPayWithWallet={handleWalletPayForModal}
-                  onPayWithCard={handlePayWithCard}
-                  isLoading={payingInstallmentId === openPaymentModal}
-                />
+                {(() => {
+                  // Total remaining balance = sum of all PENDING installments.
+                  // Used by the "Pay a different amount" option as the upper
+                  // bound a member can apply in one transaction.
+                  const remainingKobo = installments
+                    .filter((i) => i.status === InstallmentStatus.PENDING)
+                    .reduce((s, i) => s + i.amount, 0);
+                  return (
+                    <PaymentChoicePanel
+                      amountKobo={activeInstallment.amount}
+                      maxPayableKobo={remainingKobo}
+                      walletBalanceBubbles={walletBalance ?? 0}
+                      enrollmentId={enrollmentId}
+                      installmentId={openPaymentModal}
+                      onPayWithWallet={handleWalletPayForModal}
+                      onPayWithCard={handlePayWithCard}
+                      isLoading={payingInstallmentId === openPaymentModal}
+                    />
+                  );
+                })()}
               </div>
             </div>
           </div>
