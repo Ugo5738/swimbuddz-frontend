@@ -989,7 +989,7 @@ export default function BillingPage() {
             ))}
 
             {/* Show option to enroll in more cohorts */}
-            {communityActive && availableCohorts.length > 0 && (
+            {availableCohorts.length > 0 && (
               <Card className="p-4 md:p-6 space-y-3 md:space-y-4">
                 <div>
                   <h2 className="text-base md:text-lg font-semibold text-slate-900">
@@ -1002,6 +1002,11 @@ export default function BillingPage() {
                       ? `${availableCohorts.length} more cohort${availableCohorts.length > 1 ? "s" : ""} available for enrollment.`
                       : "Structured swimming programs with expert coaches. Complete your goals faster with personalized training."}
                   </p>
+                  {!communityActive && myEnrollments.length === 0 && (
+                    <p className="text-xs md:text-sm text-emerald-700 mt-2 font-medium">
+                      ✓ Academy enrollment includes Community + Club access — pay once.
+                    </p>
+                  )}
                 </div>
 
                 {/* Show available cohorts preview */}
@@ -1058,8 +1063,7 @@ export default function BillingPage() {
             )}
 
             {/* No enrollments and no available cohorts */}
-            {communityActive &&
-              myEnrollments.length === 0 &&
+            {myEnrollments.length === 0 &&
               availableCohorts.length === 0 && (
                 <Card className="p-4 md:p-6 space-y-3 md:space-y-4">
                   <div>
@@ -1081,8 +1085,7 @@ export default function BillingPage() {
               )}
 
             {/* Enrolled in all available cohorts */}
-            {communityActive &&
-              myEnrollments.length > 0 &&
+            {myEnrollments.length > 0 &&
               availableCohorts.length === 0 && (
                 <Card className="p-4 md:p-6 space-y-2 md:space-y-3 bg-slate-50 border-dashed">
                   <p className="text-xs md:text-sm text-slate-600">
