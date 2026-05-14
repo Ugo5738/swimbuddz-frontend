@@ -63,12 +63,9 @@ function RegistrationSuccessContent() {
   };
 
   useEffect(() => {
-    const reference =
-      searchParams.get("reference") || searchParams.get("trxref");
+    const reference = searchParams.get("reference") || searchParams.get("trxref");
     if (!reference) return;
-    router.replace(
-      `/account/billing?provider=paystack&reference=${encodeURIComponent(reference)}`,
-    );
+    router.replace(`/account/billing?provider=paystack&reference=${encodeURIComponent(reference)}`);
   }, [router, searchParams]);
 
   if (isCoachRegistration) {
@@ -79,9 +76,7 @@ function RegistrationSuccessContent() {
           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
             <CheckCircle className="h-12 w-12 text-emerald-600" />
           </div>
-          <h1 className="mt-6 text-3xl font-bold text-slate-900">
-            Account Created!
-          </h1>
+          <h1 className="mt-6 text-3xl font-bold text-slate-900">Account Created!</h1>
           <p className="mt-3 text-lg text-slate-600">
             You're one step closer to becoming a SwimBuddz Coach.
           </p>
@@ -90,12 +85,9 @@ function RegistrationSuccessContent() {
         {/* What's Next for Coaches */}
         <Card className="space-y-6 p-6">
           <div>
-            <h2 className="text-xl font-semibold text-slate-900">
-              What happens next?
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900">What happens next?</h2>
             <p className="mt-2 text-sm text-slate-600">
-              You're almost there! Just a few more steps to complete your coach
-              application.
+              You're almost there! Just a few more steps to complete your coach application.
             </p>
           </div>
 
@@ -107,15 +99,13 @@ function RegistrationSuccessContent() {
               <div className="flex-1">
                 <h3 className="font-medium text-slate-900">Check your email</h3>
                 <p className="mt-1 text-sm text-slate-600">
-                  We've sent a confirmation email to verify your account. Please
-                  click the link to activate.
+                  We've sent a confirmation email to verify your account. Please click the link to
+                  activate.
                 </p>
 
                 {/* Resend Email Section */}
                 <div className="mt-3 p-3 bg-slate-50 rounded-lg">
-                  <p className="text-xs text-slate-500 mb-2">
-                    Didn't receive the email?
-                  </p>
+                  <p className="text-xs text-slate-500 mb-2">Didn't receive the email?</p>
                   <div className="flex gap-2">
                     <input
                       type="email"
@@ -135,9 +125,7 @@ function RegistrationSuccessContent() {
                       ) : (
                         <Mail className="h-4 w-4" />
                       )}
-                      <span className="ml-1">
-                        {resending ? "Sending..." : "Resend"}
-                      </span>
+                      <span className="ml-1">{resending ? "Sending..." : "Resend"}</span>
                     </Button>
                   </div>
                   {resendMessage && (
@@ -156,12 +144,10 @@ function RegistrationSuccessContent() {
                 2
               </div>
               <div>
-                <h3 className="font-medium text-slate-900">
-                  Log in and complete your application
-                </h3>
+                <h3 className="font-medium text-slate-900">Log in and complete your application</h3>
                 <p className="mt-1 text-sm text-slate-600">
-                  After confirming your email, log in and visit the coach
-                  application page to submit your application.
+                  After confirming your email, log in and visit the coach application page to submit
+                  your application.
                 </p>
               </div>
             </div>
@@ -171,12 +157,9 @@ function RegistrationSuccessContent() {
                 3
               </div>
               <div>
-                <h3 className="font-medium text-slate-900">
-                  Wait for approval
-                </h3>
+                <h3 className="font-medium text-slate-900">Wait for approval</h3>
                 <p className="mt-1 text-sm text-slate-600">
-                  Our team will review your application within 48–72 hours and
-                  notify you by email.
+                  Our team will review your application within 48–72 hours and notify you by email.
                 </p>
               </div>
             </div>
@@ -228,20 +211,14 @@ function RegistrationSuccessContent() {
         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
           <CheckCircle className="h-12 w-12 text-emerald-600" />
         </div>
-        <h1 className="mt-6 text-3xl font-bold text-slate-900">
-          Registration Successful!
-        </h1>
-        <p className="mt-3 text-lg text-slate-600">
-          Welcome to the SwimBuddz community!
-        </p>
+        <h1 className="mt-6 text-3xl font-bold text-slate-900">Registration Successful!</h1>
+        <p className="mt-3 text-lg text-slate-600">Welcome to the SwimBuddz community!</p>
       </div>
 
       {/* What's Next */}
       <Card className="space-y-6 p-6">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900">
-            What happens next?
-          </h2>
+          <h2 className="text-xl font-semibold text-slate-900">What happens next?</h2>
           <p className="mt-2 text-sm text-slate-600">
             We're excited to have you join us. Here's what to expect:
           </p>
@@ -255,15 +232,13 @@ function RegistrationSuccessContent() {
             <div className="flex-1">
               <h3 className="font-medium text-slate-900">Check your email</h3>
               <p className="mt-1 text-sm text-slate-600">
-                We've sent a confirmation email to verify your account. Please
-                click the link to activate your membership.
+                We've sent a confirmation email to verify your account. Please click the link to
+                activate your membership.
               </p>
 
               {/* Resend Email Section */}
               <div className="mt-3 p-3 bg-slate-50 rounded-lg">
-                <p className="text-xs text-slate-500 mb-2">
-                  Didn't receive the email?
-                </p>
+                <p className="text-xs text-slate-500 mb-2">Didn't receive the email?</p>
                 <div className="flex gap-2">
                   <input
                     type="email"
@@ -283,9 +258,7 @@ function RegistrationSuccessContent() {
                     ) : (
                       <Mail className="h-4 w-4" />
                     )}
-                    <span className="ml-1">
-                      {resending ? "Sending..." : "Resend"}
-                    </span>
+                    <span className="ml-1">{resending ? "Sending..." : "Resend"}</span>
                   </Button>
                 </div>
                 {resendMessage && (
@@ -299,7 +272,7 @@ function RegistrationSuccessContent() {
             </div>
           </div>
 
-          <div className="flex gap-4">
+          {/* <div className="flex gap-4">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-sm font-semibold text-cyan-700">
               2
             </div>
@@ -313,26 +286,21 @@ function RegistrationSuccessContent() {
                 features.
               </p>
             </div>
-          </div>
+          </div> */}
 
           <div className="flex gap-4">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-sm font-semibold text-cyan-700">
+            {/* <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-sm font-semibold text-cyan-700">
               3
-            </div>
+            </div> */}
             <div>
-              <h3 className="font-medium text-slate-900">
-                Next steps (Club & Academy)
-              </h3>
+              {/* <h3 className="font-medium text-slate-900">Next steps (Club & Academy)</h3>
               <p className="mt-1 text-sm text-slate-600">
-                If you selected Club or Academy, you'll complete onboarding
-                after login and request an upgrade. Club is paid when you
-                activate; Academy is paid when you enroll in a cohort.
-              </p>
+                If you selected Club or Academy, you'll complete onboarding after login and request
+                an upgrade. Club is paid when you activate; Academy is paid when you enroll in a
+                cohort.
+              </p> */}
               <p className="mt-2 text-sm">
-                <Link
-                  href="/membership"
-                  className="font-semibold text-cyan-700 hover:underline"
-                >
+                <Link href="/membership" className="font-semibold text-cyan-700 hover:underline">
                   How membership works
                 </Link>
               </p>
