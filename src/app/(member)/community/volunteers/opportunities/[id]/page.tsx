@@ -133,7 +133,9 @@ export default function OpportunityDetailPage() {
 
       {/* Details Card */}
       <Card className="space-y-4">
-        {opp.description && <p className="text-slate-700">{opp.description}</p>}
+        {opp.description && (
+          <p className="text-slate-700 whitespace-pre-line">{opp.description}</p>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
           <div className="flex items-center gap-2 text-slate-600">

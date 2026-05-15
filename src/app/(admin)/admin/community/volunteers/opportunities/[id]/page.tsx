@@ -211,7 +211,9 @@ export default function AdminOpportunityDetailPage() {
               )}
               {opp.role_title && <Badge variant="outline">{opp.role_title}</Badge>}
             </div>
-            {opp.description && <p className="text-sm text-slate-600">{opp.description}</p>}
+            {opp.description && (
+              <p className="text-sm text-slate-600 whitespace-pre-line">{opp.description}</p>
+            )}
             <div className="flex flex-wrap gap-4 text-sm text-slate-500">
               <span className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />

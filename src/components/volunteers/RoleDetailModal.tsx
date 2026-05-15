@@ -46,7 +46,7 @@ export function RoleDetailModal({
 
         {/* Description from API */}
         {role.description && (
-          <p className="text-sm text-slate-700">{role.description}</p>
+          <p className="text-sm text-slate-700 whitespace-pre-line">{role.description}</p>
         )}
 
         {/* Rich details from API */}
