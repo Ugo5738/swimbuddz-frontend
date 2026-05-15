@@ -11,17 +11,9 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import { supabase } from "@/lib/auth";
-import { API_BASE_URL } from "@/lib/config";
-import {
-  LOCATION_LABELS as SHARED_LOCATION_LABELS,
-  SESSION_TYPE_COLORS as SHARED_TYPE_CLR,
-  SESSION_TYPE_LABELS as SHARED_TYPE_LABELS,
-} from "@/lib/sessions";
 import type { DateSelectArg, EventClickArg, EventInput } from "@fullcalendar/core";
 import {
   Calendar,
-  CheckCircle,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -41,265 +33,29 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-// ---------------------------------------------------------------------------
-// Types & constants
-// ---------------------------------------------------------------------------
-
-type SessionStatusType = "draft" | "scheduled" | "in_progress" | "completed" | "cancelled";
-type SessionType =
-  | "club"
-  | "academy"
-  | "community"
-  | "cohort_class"
-  | "one_on_one"
-  | "group_booking"
-  | "event";
-type ViewMode = "calendar" | "list";
-type FilterTab = "all" | SessionStatusType;
-
-interface Session {
-  id: string;
-  title: string;
-  session_type?: SessionType;
-  status?: SessionStatusType;
-  published_at?: string;
-  pool_id?: string | null;
-  location: string | null;
-  location_name?: string | null;
-  starts_at: string;
-  ends_at: string;
-  pool_fee: number;
-  ride_share_fee?: number;
-  capacity: number;
-  description?: string;
-  notes?: string;
-  template_id?: string;
-  is_recurring_instance?: boolean;
-  cohort_id?: string;
-  pod_id?: string | null;
-  timezone?: string;
-}
-
-interface Template {
-  id: string;
-  title: string;
-  day_of_week: number;
-  start_time: string;
-  duration_minutes: number;
-  pool_id?: string | null;
-  location: string | null;
-  location_name?: string | null;
-  session_type?: string;
-  pool_fee: number;
-  ride_share_fee?: number;
-  capacity: number;
-  auto_generate: boolean;
-  is_active: boolean;
-  description?: string;
-  ride_share_config?: any;
-}
-
-interface RideArea {
-  id: string;
-  name: string;
-  pickup_locations: any[];
-}
-
-const PER_PAGE = 20;
-
-const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-
-const LOCATION_LABELS = SHARED_LOCATION_LABELS;
-
-const TYPE_LABELS: Record<SessionType, string> = SHARED_TYPE_LABELS as Record<SessionType, string>;
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-async function apiFetch(path: string, opts: RequestInit = {}) {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (!token) throw new Error("Not authenticated");
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...opts,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...opts.headers,
-    },
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(formatApiError(body, res.status));
-  }
-  return res;
-}
-
-function formatApiError(body: any, status: number): string {
-  const detail = body?.detail;
-  if (typeof detail === "string" && detail) return detail;
-  // FastAPI 422: detail is an array of { loc: string[], msg: string, type: string }
-  if (Array.isArray(detail)) {
-    const parts = detail
-      .map((d) => {
-        const loc = Array.isArray(d?.loc) ? d.loc.filter((p: any) => p !== "body").join(".") : "";
-        const msg = d?.msg || "";
-        return loc ? `${loc}: ${msg}` : msg;
-      })
-      .filter(Boolean);
-    if (parts.length) return parts.join("; ");
-  }
-  if (detail && typeof detail === "object") return JSON.stringify(detail);
-  return `Request failed (${status})`;
-}
-
-function formatDateTimeLocal(date: Date) {
-  const y = date.getFullYear();
-  const mo = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  const h = String(date.getHours()).padStart(2, "0");
-  const mi = String(date.getMinutes()).padStart(2, "0");
-  return `${y}-${mo}-${d}T${h}:${mi}`;
-}
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function fmtTime(iso: string) {
-  return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-}
-
-function locationLabel(loc: string | null | undefined) {
-  if (!loc) return "";
-  return LOCATION_LABELS[loc] || loc;
-}
-
-// ---------------------------------------------------------------------------
-// Small presentational pieces
-// ---------------------------------------------------------------------------
-
-const TYPE_CLR = SHARED_TYPE_CLR;
-
-function TypeBadge({ t }: { t: string }) {
-  const label = TYPE_LABELS[t as SessionType] || t;
-  return (
-    <span
-      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium capitalize ${TYPE_CLR[t] || "bg-slate-100 text-slate-600"}`}
-    >
-      {label}
-    </span>
-  );
-}
-
-function StatusBadge({ s }: { s: string }) {
-  const map: Record<string, { cls: string; icon: React.ReactNode; label: string }> = {
-    draft: {
-      cls: "bg-amber-50 text-amber-700",
-      icon: <FileEdit className="h-3 w-3" />,
-      label: "Draft",
-    },
-    scheduled: {
-      cls: "bg-green-50 text-green-700",
-      icon: <CheckCircle className="h-3 w-3" />,
-      label: "Scheduled",
-    },
-    in_progress: {
-      cls: "bg-blue-50 text-blue-700",
-      icon: <Clock className="h-3 w-3" />,
-      label: "In Progress",
-    },
-    completed: {
-      cls: "bg-slate-100 text-slate-600",
-      icon: <CheckCircle className="h-3 w-3" />,
-      label: "Completed",
-    },
-    cancelled: {
-      cls: "bg-red-50 text-red-700",
-      icon: <XCircle className="h-3 w-3" />,
-      label: "Cancelled",
-    },
-  };
-  const m = map[s] || map.scheduled;
-  return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${m.cls}`}
-    >
-      {m.icon}
-      {m.label}
-    </span>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  icon,
-  accent,
-  onClick,
-}: {
-  label: string;
-  value: number;
-  icon: React.ReactNode;
-  accent?: boolean;
-  onClick?: () => void;
-}) {
-  return (
-    <Card
-      className={`flex items-center gap-3 p-4 ${accent ? "ring-1 ring-amber-200" : ""} ${onClick ? "cursor-pointer hover:bg-slate-50 transition" : ""}`}
-      onClick={onClick}
-    >
-      {icon}
-      <div>
-        <p className="text-2xl font-bold text-slate-900">{value}</p>
-        <p className="text-xs text-slate-500">{label}</p>
-      </div>
-    </Card>
-  );
-}
-
-function IBtn({
-  children,
-  title,
-  className = "text-slate-500 hover:bg-slate-100",
-  onClick,
-  disabled,
-}: {
-  children: React.ReactNode;
-  title: string;
-  className?: string;
-  onClick?: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`rounded p-1.5 transition ${className} disabled:opacity-40`}
-      title={title}
-      disabled={disabled}
-    >
-      {children}
-    </button>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Color legend for calendar
-// ---------------------------------------------------------------------------
-
-const LEGEND_ITEMS: { key: SessionType; label: string; cls: string }[] = [
-  { key: "club", label: "Club", cls: "bg-cyan-600" },
-  { key: "community", label: "Community", cls: "bg-purple-600" },
-  { key: "cohort_class", label: "Academy", cls: "bg-orange-600" },
-  { key: "one_on_one", label: "1-on-1", cls: "bg-emerald-600" },
-  { key: "group_booking", label: "Group", cls: "bg-blue-600" },
-  { key: "event", label: "Event", cls: "bg-rose-600" },
-];
+import { IBtn, StatCard, StatusBadge, TypeBadge } from "./components";
+import type {
+  FilterTab,
+  RideArea,
+  Session,
+  SessionStatusType,
+  SessionType,
+  Template,
+  ViewMode,
+} from "./types";
+import {
+  apiFetch,
+  DAY_NAMES,
+  fmtDate,
+  fmtTime,
+  formatApiError,
+  formatDateTimeLocal,
+  LEGEND_ITEMS,
+  LOCATION_LABELS,
+  PER_PAGE,
+  TYPE_LABELS,
+  locationLabel,
+} from "./utils";
 
 // ---------------------------------------------------------------------------
 // Main page component
