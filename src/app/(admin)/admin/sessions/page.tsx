@@ -131,9 +131,27 @@ async function apiFetch(path: string, opts: RequestInit = {}) {
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.detail || `Request failed (${res.status})`);
+    throw new Error(formatApiError(body, res.status));
   }
   return res;
+}
+
+function formatApiError(body: any, status: number): string {
+  const detail = body?.detail;
+  if (typeof detail === "string" && detail) return detail;
+  // FastAPI 422: detail is an array of { loc: string[], msg: string, type: string }
+  if (Array.isArray(detail)) {
+    const parts = detail
+      .map((d) => {
+        const loc = Array.isArray(d?.loc) ? d.loc.filter((p: any) => p !== "body").join(".") : "";
+        const msg = d?.msg || "";
+        return loc ? `${loc}: ${msg}` : msg;
+      })
+      .filter(Boolean);
+    if (parts.length) return parts.join("; ");
+  }
+  if (detail && typeof detail === "object") return JSON.stringify(detail);
+  return `Request failed (${status})`;
 }
 
 function formatDateTimeLocal(date: Date) {
@@ -1533,6 +1551,12 @@ function TemplateFormInline({
             ...form,
             pool_id: poolId,
             location_name: poolName ?? null,
+            // SessionTemplate.location is required (str, non-null) on the backend
+            // and has no pool_id column yet. Mirror the pool name into location
+            // so templates created via the PoolPicker still satisfy the schema.
+            // TODO: drop once SessionTemplate gains pool_id and location is
+            // made optional (see TODO at handleSubmit).
+            location: poolName ?? form.location,
           })
         }
         hint="Templates inherit the pool for every session they generate."
