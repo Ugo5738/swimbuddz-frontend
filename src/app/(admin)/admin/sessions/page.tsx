@@ -1478,15 +1478,8 @@ function TemplateFormInline({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // SessionTemplate backend doesn't carry pool_id yet, so when a pool is
-    // picked we persist the pool's name in location_name and drop pool_id
-    // from the payload. Sessions generated from the template will still show
-    // the pool name via the existing location_name → display fallback.
-    // TODO(follow-up): add SessionTemplate.pool_id so generated sessions
-    // inherit the authoritative link, not just the string name.
-    const { pool_id: _pool_id, ...formWithoutPoolId } = form;
     const data = {
-      ...formWithoutPoolId,
+      ...form,
       ride_share_config: rideConfigs
         .filter((c) => c.ride_area_id)
         .map((c) => ({
@@ -1551,12 +1544,6 @@ function TemplateFormInline({
             ...form,
             pool_id: poolId,
             location_name: poolName ?? null,
-            // SessionTemplate.location is required (str, non-null) on the backend
-            // and has no pool_id column yet. Mirror the pool name into location
-            // so templates created via the PoolPicker still satisfy the schema.
-            // TODO: drop once SessionTemplate gains pool_id and location is
-            // made optional (see TODO at handleSubmit).
-            location: poolName ?? form.location,
           })
         }
         hint="Templates inherit the pool for every session they generate."
