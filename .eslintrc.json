@@ -3,6 +3,13 @@
   "rules": {
     "react/no-unescaped-entities": "off",
     "react-hooks/exhaustive-deps": "warn",
-    "@next/next/no-img-element": "warn"
-  }
+    "@next/next/no-img-element": "warn",
+    "max-lines": ["warn", { "max": 500, "skipBlankLines": true, "skipComments": true }]
+  },
+  "overrides": [
+    {
+      "files": ["src/lib/api-types.ts"],
+      "rules": { "max-lines": "off" }
+    }
+  ]
 }

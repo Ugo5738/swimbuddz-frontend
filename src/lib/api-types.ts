@@ -11,10 +11,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Health Check
-         * @description Health check endpoint.
-         */
+        /** Health Check */
         get: operations["health_check_health_get"];
         put?: never;
         post?: never;
@@ -222,31 +219,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/members/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Members
-         * @description List all members (admin use).
-         */
-        get: operations["list_members_members__get"];
-        put?: never;
-        /**
-         * Create Member
-         * @description Directly create a member (internal use or admin).
-         *     Normal users should go through the pending registration flow.
-         */
-        post: operations["create_member_members__post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/members/public": {
         parameters: {
             query?: never;
@@ -291,6 +263,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/members/public/{member_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Member For Verification
+         * @description Get member data for public verification (e.g., pool staff scanning QR code).
+         *     Returns limited info for verification purposes only.
+         *     No authentication required.
+         */
+        get: operations["get_member_for_verification_members_public__member_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/members/bulk-basic": {
         parameters: {
             query?: never;
@@ -315,7 +309,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/members/public/{member_id}": {
+    "/api/v1/members/": {
         parameters: {
             query?: never;
             header?: never;
@@ -323,14 +317,17 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get Member For Verification
-         * @description Get member data for public verification (e.g., pool staff scanning QR code).
-         *     Returns limited info for verification purposes only.
-         *     No authentication required.
+         * List Members
+         * @description List all members (admin use).
          */
-        get: operations["get_member_for_verification_members_public__member_id__get"];
+        get: operations["list_members_members__get"];
         put?: never;
-        post?: never;
+        /**
+         * Create Member
+         * @description Directly create a member (internal use or admin).
+         *     Normal users should go through the pending registration flow.
+         */
+        post: operations["create_member_members__post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4918,6 +4915,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/academy/curricula/{curriculum_id}/weeks/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Reorder Weeks
+         * @description Reorder weeks by providing the week IDs in the desired order.
+         */
+        put: operations["reorder_weeks_academy_curricula__curriculum_id__weeks_reorder_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/academy/curriculum-weeks/{week_id}/lessons": {
         parameters: {
             query?: never;
@@ -4957,26 +4974,6 @@ export interface paths {
          * @description Delete a curriculum lesson.
          */
         delete: operations["delete_lesson_academy_curriculum_lessons__lesson_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/academy/curricula/{curriculum_id}/weeks/reorder": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Reorder Weeks
-         * @description Reorder weeks by providing the week IDs in the desired order.
-         */
-        put: operations["reorder_weeks_academy_curricula__curriculum_id__weeks_reorder_put"];
-        post?: never;
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -6858,7 +6855,9 @@ export interface paths {
         /**
          * Get My Preferences
          * @description Get the current user's notification preferences.
-         *     Creates default preferences if none exist.
+         *
+         *     Creates a row with all-defaults the first time a member accesses
+         *     their preferences. Subsequent calls return the persisted row.
          */
         get: operations["get_my_preferences_preferences_me_get"];
         put?: never;
@@ -6869,50 +6868,11 @@ export interface paths {
         /**
          * Update My Preferences
          * @description Update the current user's notification preferences.
+         *
+         *     Only fields included in the request body are written; unset fields
+         *     keep their current value. Auto-creates the row if it doesn't exist.
          */
         patch: operations["update_my_preferences_preferences_me_patch"];
-        trace?: never;
-    };
-    "/api/v1/preferences/{member_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Member Preferences
-         * @description Get notification preferences for a specific member.
-         *     Admin only or self-access.
-         */
-        get: operations["get_member_preferences_preferences__member_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/preferences/check-opt-in": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Check Notification Opt In
-         * @description Check if a member has opted in for a specific notification type.
-         *     Used by other services before sending notifications.
-         */
-        post: operations["check_notification_opt_in_preferences_check_opt_in_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/api/v1/testimonials/public": {
@@ -8414,26 +8374,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/admin/wallet/rewards/stats": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Reward Stats
-         * @description Dashboard stats for the rewards engine.
-         */
-        get: operations["get_reward_stats_admin_wallet_rewards_stats_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/admin/wallet/rewards/events/submit": {
         parameters: {
             query?: never;
@@ -8522,6 +8462,26 @@ export interface paths {
          * @description Update alert status (acknowledge, resolve, dismiss).
          */
         patch: operations["update_alert_admin_wallet_rewards_alerts__alert_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/wallet/rewards/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Reward Stats
+         * @description Dashboard stats for the rewards engine.
+         */
+        get: operations["get_reward_stats_admin_wallet_rewards_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/admin/wallet/rewards/analytics": {
@@ -11703,7 +11663,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/api/v1/media/albums": {
+    "/api/v1/media/albums": {
         parameters: {
             query?: never;
             header?: never;
@@ -11714,20 +11674,20 @@ export interface paths {
          * List Albums
          * @description List all albums, optionally filtered by type or linked entity.
          */
-        get: operations["list_albums_api_v1_media_albums_get"];
+        get: operations["list_albums_media_albums_get"];
         put?: never;
         /**
          * Create Album
          * @description Create a new album (admin only).
          */
-        post: operations["create_album_api_v1_media_albums_post"];
+        post: operations["create_album_media_albums_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/api/v1/media/albums/{album_id}": {
+    "/api/v1/media/albums/{album_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -11738,28 +11698,28 @@ export interface paths {
          * Get Album
          * @description Get album details with all media items.
          */
-        get: operations["get_album_api_v1_media_albums__album_id__get"];
+        get: operations["get_album_media_albums__album_id__get"];
         /**
          * Update Album
          * @description Update album (admin only).
          */
-        put: operations["update_album_api_v1_media_albums__album_id__put"];
+        put: operations["update_album_media_albums__album_id__put"];
         post?: never;
         /**
          * Delete Album
          * @description Delete album. Note: Does NOT delete the actual media items, just the album and associations.
          */
-        delete: operations["delete_album_api_v1_media_albums__album_id__delete"];
+        delete: operations["delete_album_media_albums__album_id__delete"];
         options?: never;
         head?: never;
         /**
          * Update Album
          * @description Update album (admin only).
          */
-        patch: operations["update_album_api_v1_media_albums__album_id__patch"];
+        patch: operations["update_album_media_albums__album_id__patch"];
         trace?: never;
     };
-    "/api/v1/api/v1/media/media": {
+    "/api/v1/media/media": {
         parameters: {
             query?: never;
             header?: never;
@@ -11770,20 +11730,20 @@ export interface paths {
          * List Media
          * @description List all media items.
          */
-        get: operations["list_media_api_v1_media_media_get"];
+        get: operations["list_media_media_media_get"];
         put?: never;
         /**
          * Upload Media
          * @description Upload new media item.
          */
-        post: operations["upload_media_api_v1_media_media_post"];
+        post: operations["upload_media_media_media_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/api/v1/media/uploads": {
+    "/api/v1/media/uploads": {
         parameters: {
             query?: never;
             header?: never;
@@ -11806,14 +11766,14 @@ export interface paths {
          *     Returns MediaItem with file_url. The calling service should store the media_id
          *     in its own table to track the relationship.
          */
-        post: operations["upload_file_api_v1_media_uploads_post"];
+        post: operations["upload_file_media_uploads_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/api/v1/media/register-url": {
+    "/api/v1/media/register-url": {
         parameters: {
             query?: never;
             header?: never;
@@ -11831,14 +11791,14 @@ export interface paths {
          *
          *     Returns MediaItem with the external URL as file_url.
          */
-        post: operations["register_external_url_api_v1_media_register_url_post"];
+        post: operations["register_external_url_media_register_url_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/api/v1/media/media/{media_id}": {
+    "/api/v1/media/media/{media_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -11849,24 +11809,24 @@ export interface paths {
          * Get Media Item
          * @description Get a single media item by ID.
          */
-        get: operations["get_media_item_api_v1_media_media__media_id__get"];
+        get: operations["get_media_item_media_media__media_id__get"];
         /**
          * Update Media
          * @description Update media metadata.
          */
-        put: operations["update_media_api_v1_media_media__media_id__put"];
+        put: operations["update_media_media_media__media_id__put"];
         post?: never;
         /**
          * Delete Media
          * @description Delete media item and remove from storage.
          */
-        delete: operations["delete_media_api_v1_media_media__media_id__delete"];
+        delete: operations["delete_media_media_media__media_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/api/v1/media/media/{media_id}/tags": {
+    "/api/v1/media/media/{media_id}/tags": {
         parameters: {
             query?: never;
             header?: never;
@@ -11879,14 +11839,14 @@ export interface paths {
          * Tag Member In Media
          * @description Tag a member in a media item.
          */
-        post: operations["tag_member_in_media_api_v1_media_media__media_id__tags_post"];
+        post: operations["tag_member_in_media_media_media__media_id__tags_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/api/v1/media/media/{media_id}/tags/{member_id}": {
+    "/api/v1/media/media/{media_id}/tags/{member_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -11900,13 +11860,13 @@ export interface paths {
          * Remove Tag
          * @description Remove member tag from media.
          */
-        delete: operations["remove_tag_api_v1_media_media__media_id__tags__member_id__delete"];
+        delete: operations["remove_tag_media_media__media_id__tags__member_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/api/v1/media/health": {
+    "/api/v1/media/health": {
         parameters: {
             query?: never;
             header?: never;
@@ -11917,7 +11877,7 @@ export interface paths {
          * Health Check
          * @description Health check endpoint.
          */
-        get: operations["health_check_api_v1_media_health_get"];
+        get: operations["health_check_media_health_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -11926,7 +11886,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/api/v1/media/urls": {
+    "/api/v1/media/urls": {
         parameters: {
             query?: never;
             header?: never;
@@ -11944,14 +11904,14 @@ export interface paths {
          *
          *     Returns a dict mapping media_id -> file_url (only for found items).
          */
-        post: operations["resolve_media_urls_api_v1_media_urls_post"];
+        post: operations["resolve_media_urls_media_urls_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/api/v1/media/assets": {
+    "/api/v1/media/assets": {
         parameters: {
             query?: never;
             header?: never;
@@ -11962,20 +11922,20 @@ export interface paths {
          * List Site Assets
          * @description List all site assets.
          */
-        get: operations["list_site_assets_api_v1_media_assets_get"];
+        get: operations["list_site_assets_media_assets_get"];
         put?: never;
         /**
          * Create Site Asset
          * @description Create or upsert a site asset key.
          */
-        post: operations["create_site_asset_api_v1_media_assets_post"];
+        post: operations["create_site_asset_media_assets_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/api/v1/media/assets/{key}": {
+    "/api/v1/media/assets/{key}": {
         parameters: {
             query?: never;
             header?: never;
@@ -11986,24 +11946,24 @@ export interface paths {
          * Get Site Asset
          * @description Get site asset by key.
          */
-        get: operations["get_site_asset_api_v1_media_assets__key__get"];
+        get: operations["get_site_asset_media_assets__key__get"];
         /**
          * Update Site Asset
          * @description Update site asset.
          */
-        put: operations["update_site_asset_api_v1_media_assets__key__put"];
+        put: operations["update_site_asset_media_assets__key__put"];
         post?: never;
         /**
          * Delete Site Asset
          * @description Delete site asset and, if unused elsewhere, its media + storage objects.
          */
-        delete: operations["delete_site_asset_api_v1_media_assets__key__delete"];
+        delete: operations["delete_site_asset_media_assets__key__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/api/v1/media/admin/members/{member_id}": {
+    "/api/v1/media/admin/members/{member_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -12017,13 +11977,13 @@ export interface paths {
          * Admin Delete Member Media
          * @description Delete media artifacts for a member (Admin only).
          */
-        delete: operations["admin_delete_member_media_api_v1_media_admin_members__member_id__delete"];
+        delete: operations["admin_delete_member_media_media_admin_members__member_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/api/v1/media/audio-tracks": {
+    "/api/v1/media/audio-tracks": {
         parameters: {
             query?: never;
             header?: never;
@@ -12036,7 +11996,7 @@ export interface paths {
          *
          *     Public endpoint — any authenticated user can browse the track library.
          */
-        get: operations["list_audio_tracks_api_v1_media_audio_tracks_get"];
+        get: operations["list_audio_tracks_media_audio_tracks_get"];
         put?: never;
         /**
          * Upload Audio Track
@@ -12045,14 +12005,14 @@ export interface paths {
          *     Accepts MP3, WAV, AAC, OGG, and FLAC files. The file is stored
          *     in the public bucket under audio-tracks/ prefix.
          */
-        post: operations["upload_audio_track_api_v1_media_audio_tracks_post"];
+        post: operations["upload_audio_track_media_audio_tracks_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/api/v1/media/audio-tracks/{track_id}": {
+    "/api/v1/media/audio-tracks/{track_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -12063,24 +12023,24 @@ export interface paths {
          * Get Audio Track
          * @description Get a single audio track by ID.
          */
-        get: operations["get_audio_track_api_v1_media_audio_tracks__track_id__get"];
+        get: operations["get_audio_track_media_audio_tracks__track_id__get"];
         /**
          * Update Audio Track
          * @description Update audio track metadata (admin only).
          */
-        put: operations["update_audio_track_api_v1_media_audio_tracks__track_id__put"];
+        put: operations["update_audio_track_media_audio_tracks__track_id__put"];
         post?: never;
         /**
          * Delete Audio Track
          * @description Delete an audio track (admin only).
          */
-        delete: operations["delete_audio_track_api_v1_media_audio_tracks__track_id__delete"];
+        delete: operations["delete_audio_track_media_audio_tracks__track_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/api/v1/media/videos/{media_id}/apply-audio": {
+    "/api/v1/media/videos/{media_id}/apply-audio": {
         parameters: {
             query?: never;
             header?: never;
@@ -12103,7 +12063,7 @@ export interface paths {
          *     - 0.0 = keep original audio only (no-op)
          *     - 0.5 = mix both at equal volume
          */
-        post: operations["apply_audio_to_video_api_v1_media_videos__media_id__apply_audio_post"];
+        post: operations["apply_audio_to_video_media_videos__media_id__apply_audio_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -18561,9 +18521,13 @@ export interface components {
         };
         /**
          * PaymentStatus
+         * @description Lifecycle state of a payment record.
+         *
+         *     Used by payments_service (full set) and academy_service (uses PENDING /
+         *     PAID / WAIVED / FAILED only — never writes PENDING_REVIEW today).
          * @enum {string}
          */
-        PaymentStatus: "pending" | "paid" | "failed" | "waived";
+        PaymentStatus: "pending" | "pending_review" | "paid" | "waived" | "failed";
         /**
          * PendingMilestoneReview
          * @description Milestone claim waiting for coach review.
@@ -19139,6 +19103,72 @@ export interface components {
             subtotal_kobo: number;
         };
         /**
+         * CoachPayoutResponse
+         * @description Coach-facing view of their own payout.
+         *
+         *     Strict subset of `PayoutResponse` that omits the admin-only
+         *     `admin_notes` field (a private comment about the coach written by
+         *     the admin who approved/processed the payout — should never reach
+         *     the coach receiving the payout).
+         *
+         *     Used by `coach_router.get("/{payout_id}")`. Admin routes continue
+         *     to return `PayoutResponse`.
+         */
+        CoachPayoutResponse: {
+            /** Id */
+            id: string;
+            /** Coach Member Id */
+            coach_member_id: string;
+            /**
+             * Period Start
+             * Format: date-time
+             */
+            period_start: string;
+            /**
+             * Period End
+             * Format: date-time
+             */
+            period_end: string;
+            /** Period Label */
+            period_label: string;
+            /** Academy Earnings */
+            academy_earnings: number;
+            /** Session Earnings */
+            session_earnings: number;
+            /** Other Earnings */
+            other_earnings: number;
+            /** Total Amount */
+            total_amount: number;
+            /** Currency */
+            currency: string;
+            status: components["schemas"]["PayoutStatus"];
+            payout_method?: components["schemas"]["PayoutMethod"] | null;
+            /** Approved By */
+            approved_by?: string | null;
+            /** Approved At */
+            approved_at?: string | null;
+            /** Paid At */
+            paid_at?: string | null;
+            /** Payment Reference */
+            payment_reference?: string | null;
+            /** Paystack Transfer Code */
+            paystack_transfer_code?: string | null;
+            /** Paystack Transfer Status */
+            paystack_transfer_status?: string | null;
+            /** Failure Reason */
+            failure_reason?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
          * CoachUpcomingPayout
          * @description One row per active recurring config — what the coach will earn at
          *     the next block close based on what's been delivered so far.
@@ -19591,6 +19621,73 @@ export interface components {
             enrollment_id: string;
             /** Note */
             note?: string | null;
+        };
+        /**
+         * MemberPaymentResponse
+         * @description Member-facing payment shape.
+         *
+         *     Strict subset of `PaymentResponse` — deliberately omits fields that
+         *     are admin-only or contain operational/integration data that should
+         *     not leak to the payer:
+         *
+         *       * `admin_review_note`     — admin's private comment on the payment
+         *       * `entitlement_error`     — internal failure string; can leak
+         *                                   service URLs / stack trace fragments
+         *       * `payment_metadata`      — contains `provider_payload` (raw
+         *                                   Paystack response with card BIN/country),
+         *                                   `paystack.access_code` (could be replayed
+         *                                   if leaked while a transaction is open),
+         *                                   `admin_note`, and `fulfillment` retry
+         *                                   state — all admin/ops data, not for the
+         *                                   payer.
+         *
+         *     Routes that return data to the authenticated owner of the payment
+         *     (GET /payments/me, POST /payments/paystack/verify/{ref}, POST
+         *     /payments/{ref}/proof) MUST use this shape. Admin-only routes can
+         *     keep using `PaymentResponse`.
+         */
+        MemberPaymentResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Reference */
+            reference: string;
+            /** Member Auth Id */
+            member_auth_id: string;
+            /** Payer Email */
+            payer_email?: string | null;
+            purpose: components["schemas"]["PaymentPurpose"];
+            /** Amount */
+            amount: number;
+            /** Currency */
+            currency: string;
+            status: components["schemas"]["PaymentStatus"];
+            /** Provider */
+            provider?: string | null;
+            /** Provider Reference */
+            provider_reference?: string | null;
+            /** Payment Method */
+            payment_method?: string | null;
+            /** Proof Of Payment Media Id */
+            proof_of_payment_media_id?: string | null;
+            /** Proof Of Payment Url */
+            proof_of_payment_url?: string | null;
+            /** Paid At */
+            paid_at?: string | null;
+            /** Entitlement Applied At */
+            entitlement_applied_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
         };
         /** MemberPaymentSummary */
         MemberPaymentSummary: {
@@ -20946,11 +21043,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
-            /**
-             * Member Id
-             * Format: uuid
-             */
-            member_id: string;
+            /** Member Auth Id */
+            member_auth_id: string;
             /**
              * Created At
              * Format: date-time
@@ -22486,7 +22580,12 @@ export interface components {
             /** Email */
             email?: string | null;
         };
-        /** MemberWalletSummary */
+        /**
+         * MemberWalletSummary
+         * @description Aggregate wallet activity for one member in a date window.
+         *
+         *     Consumed by ``reporting_service`` when building quarterly member reports.
+         */
         MemberWalletSummary: {
             /**
              * Bubbles Earned
@@ -22667,7 +22766,13 @@ export interface components {
             /** Period */
             period: string;
         };
-        /** ReferralLinkResponse */
+        /**
+         * ReferralLinkResponse
+         * @description Single-field response for the s2s referral-link lookup.
+         *
+         *     Consumed by ``reporting_service`` when generating wrapped cards that
+         *     embed a member's referral share URL.
+         */
         ReferralLinkResponse: {
             /** Share Link */
             share_link: string;
@@ -23818,17 +23923,6 @@ export interface components {
              */
             created_at: string;
         };
-        /** AIRequestListResponse */
-        AIRequestListResponse: {
-            /** Items */
-            items: components["schemas"]["AIRequestResponse"][];
-            /** Total */
-            total: number;
-            /** Page */
-            page: number;
-            /** Page Size */
-            page_size: number;
-        };
         /** AIRequestResponse */
         AIRequestResponse: {
             /** Id */
@@ -24057,6 +24151,17 @@ export interface components {
             /** Model Used */
             model_used: string;
         };
+        /** PaginatedResponse[AIRequestResponse] */
+        PaginatedResponse_AIRequestResponse_: {
+            /** Items */
+            items: components["schemas"]["AIRequestResponse"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
         /** BulkCompleteRequest */
         BulkCompleteRequest: {
             /** Slot Ids */
@@ -24178,6 +24283,126 @@ export interface components {
             role_id?: string | null;
             /** Notes */
             notes?: string | null;
+        };
+        /**
+         * MemberVolunteerProfileResponse
+         * @description Self-view variant of VolunteerProfileResponse.
+         *
+         *     Strict subset that omits `admin_notes` — the field is a private
+         *     comment written by an admin about the volunteer (reliability flags,
+         *     safeguarding observations) and should never reach the member viewing
+         *     their own profile via GET/POST/PATCH /volunteer/profile/me.
+         *
+         *     Admin-facing routes (`/admin/profiles/*`, `/admin/reliability-report`)
+         *     continue to use `VolunteerProfileResponse`.
+         */
+        MemberVolunteerProfileResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            tier: components["schemas"]["VolunteerTier"];
+            tier_override?: components["schemas"]["VolunteerTier"] | null;
+            /** Total Hours */
+            total_hours: number;
+            /** Total Sessions Volunteered */
+            total_sessions_volunteered: number;
+            /** Total No Shows */
+            total_no_shows: number;
+            /** Total Late Cancellations */
+            total_late_cancellations: number;
+            /** Reliability Score */
+            reliability_score: number;
+            recognition_tier?: components["schemas"]["RecognitionTier"] | null;
+            /** Preferred Roles */
+            preferred_roles?: string[] | null;
+            /** Available Days */
+            available_days?: string[] | null;
+            /** Notes */
+            notes?: string | null;
+            /** Is Active */
+            is_active: boolean;
+            /** Spotlight Quote */
+            spotlight_quote?: string | null;
+            /**
+             * Is Featured
+             * @default false
+             */
+            is_featured: boolean;
+            /** Featured From */
+            featured_from?: string | null;
+            /** Featured Until */
+            featured_until?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Member Name */
+            member_name?: string | null;
+            /** Member Email */
+            member_email?: string | null;
+        };
+        /**
+         * MemberVolunteerSlotResponse
+         * @description Self-view variant of VolunteerSlotResponse.
+         *
+         *     Omits `admin_notes` — that's a private operational note from the
+         *     admin who checked the volunteer in / out (reliability flags, late
+         *     arrival, behaviour observations). Member-facing routes (claim,
+         *     cancel-own-slot) return this slim version.
+         */
+        MemberVolunteerSlotResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Opportunity Id
+             * Format: uuid
+             */
+            opportunity_id: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            status: components["schemas"]["SlotStatus"];
+            /**
+             * Claimed At
+             * Format: date-time
+             */
+            claimed_at: string;
+            /** Approved At */
+            approved_at?: string | null;
+            /** Approved By */
+            approved_by?: string | null;
+            /** Cancelled At */
+            cancelled_at?: string | null;
+            /** Cancellation Reason */
+            cancellation_reason?: string | null;
+            /** Checked In At */
+            checked_in_at?: string | null;
+            /** Checked Out At */
+            checked_out_at?: string | null;
+            /** Hours Logged */
+            hours_logged?: number | null;
+            /** Member Feedback */
+            member_feedback?: string | null;
+            /** Member Name */
+            member_name?: string | null;
         };
         /** MemberVolunteerSummary */
         MemberVolunteerSummary: {
@@ -27755,8 +27980,8 @@ export interface components {
             /** Is Active */
             is_active?: boolean | null;
         };
-        /** Body_register_external_url_api_v1_media_register_url_post */
-        Body_register_external_url_api_v1_media_register_url_post: {
+        /** Body_register_external_url_media_register_url_post */
+        Body_register_external_url_media_register_url_post: {
             /** Url */
             url: string;
             /** Purpose */
@@ -27773,8 +27998,8 @@ export interface components {
             /** Linked Id */
             linked_id?: string | null;
         };
-        /** Body_tag_member_in_media_api_v1_media_media__media_id__tags_post */
-        Body_tag_member_in_media_api_v1_media_media__media_id__tags_post: {
+        /** Body_tag_member_in_media_media_media__media_id__tags_post */
+        Body_tag_member_in_media_media_media__media_id__tags_post: {
             /**
              * Member Id
              * Format: uuid
@@ -27785,8 +28010,8 @@ export interface components {
             /** Y Coord */
             y_coord?: number | null;
         };
-        /** Body_upload_audio_track_api_v1_media_audio_tracks_post */
-        Body_upload_audio_track_api_v1_media_audio_tracks_post: {
+        /** Body_upload_audio_track_media_audio_tracks_post */
+        Body_upload_audio_track_media_audio_tracks_post: {
             /**
              * File
              * Format: binary
@@ -27804,8 +28029,8 @@ export interface components {
              */
             license_type: string;
         };
-        /** Body_upload_file_api_v1_media_uploads_post */
-        Body_upload_file_api_v1_media_uploads_post: {
+        /** Body_upload_file_media_uploads_post */
+        Body_upload_file_media_uploads_post: {
             /**
              * File
              * Format: binary
@@ -27820,8 +28045,8 @@ export interface components {
             /** Description */
             description?: string | null;
         };
-        /** Body_upload_media_api_v1_media_media_post */
-        Body_upload_media_api_v1_media_media_post: {
+        /** Body_upload_media_media_media_post */
+        Body_upload_media_media_media_post: {
             /**
              * File
              * Format: binary
@@ -28920,6 +29145,112 @@ export interface operations {
             };
         };
     };
+    list_public_members_members_public_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberPublicResponse"][];
+                };
+            };
+        };
+    };
+    list_directory_members_members_directory_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberDirectoryResponse"][];
+                };
+            };
+        };
+    };
+    get_member_for_verification_members_public__member_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_members_bulk_basic_members_bulk_basic_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": string[];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: components["schemas"]["MemberBasicResponse"];
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_members_members__get: {
         parameters: {
             query?: {
@@ -28972,112 +29303,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_public_members_members_public_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MemberPublicResponse"][];
-                };
-            };
-        };
-    };
-    list_directory_members_members_directory_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MemberDirectoryResponse"][];
-                };
-            };
-        };
-    };
-    get_members_bulk_basic_members_bulk_basic_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": string[];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: components["schemas"]["MemberBasicResponse"];
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_member_for_verification_members_public__member_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                member_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -36519,6 +36744,41 @@ export interface operations {
             };
         };
     };
+    reorder_weeks_academy_curricula__curriculum_id__weeks_reorder_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                curriculum_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": string[];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     add_lesson_academy_curriculum_weeks__week_id__lessons_post: {
         parameters: {
             query?: never;
@@ -36606,41 +36866,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    reorder_weeks_academy_curricula__curriculum_id__weeks_reorder_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                curriculum_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": string[];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
             };
             /** @description Validation Error */
             422: {
@@ -37036,7 +37261,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PaymentResponse"][];
+                    "application/json": components["schemas"]["MemberPaymentResponse"][];
                 };
             };
         };
@@ -37058,7 +37283,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PaymentResponse"];
+                    "application/json": components["schemas"]["MemberPaymentResponse"];
                 };
             };
             /** @description Validation Error */
@@ -37696,7 +37921,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PaymentResponse"];
+                    "application/json": components["schemas"]["MemberPaymentResponse"];
                 };
             };
             /** @description Validation Error */
@@ -38159,7 +38384,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PayoutResponse"];
+                    "application/json": components["schemas"]["CoachPayoutResponse"];
                 };
             };
             /** @description Validation Error */
@@ -39904,69 +40129,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NotificationPreferencesResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_member_preferences_preferences__member_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                member_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NotificationPreferencesResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    check_notification_opt_in_preferences_check_opt_in_post: {
-        parameters: {
-            query: {
-                member_id: string;
-                notification_type: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -42395,26 +42557,6 @@ export interface operations {
             };
         };
     };
-    get_reward_stats_admin_wallet_rewards_stats_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RewardStatsResponse"];
-                };
-            };
-        };
-    };
     admin_submit_event_admin_wallet_rewards_events_submit_post: {
         parameters: {
             query?: never;
@@ -42564,6 +42706,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_reward_stats_admin_wallet_rewards_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RewardStatsResponse"];
                 };
             };
         };
@@ -43846,9 +44008,11 @@ export interface operations {
     list_ai_requests_ai_admin_requests_get: {
         parameters: {
             query?: {
-                page?: number;
-                page_size?: number;
                 request_type?: string | null;
+                /** @description 1-indexed page number */
+                page?: number;
+                /** @description Items per page (max 100) */
+                page_size?: number;
             };
             header?: never;
             path?: never;
@@ -43862,7 +44026,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AIRequestListResponse"];
+                    "application/json": components["schemas"]["PaginatedResponse_AIRequestResponse_"];
                 };
             };
             /** @description Validation Error */
@@ -44017,7 +44181,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["VolunteerProfileResponse"];
+                    "application/json": components["schemas"]["MemberVolunteerProfileResponse"];
                 };
             };
         };
@@ -44041,7 +44205,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["VolunteerProfileResponse"];
+                    "application/json": components["schemas"]["MemberVolunteerProfileResponse"];
                 };
             };
             /** @description Validation Error */
@@ -44074,7 +44238,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["VolunteerProfileResponse"];
+                    "application/json": components["schemas"]["MemberVolunteerProfileResponse"];
                 };
             };
             /** @description Validation Error */
@@ -44192,7 +44356,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["VolunteerSlotResponse"];
+                    "application/json": components["schemas"]["MemberVolunteerSlotResponse"];
                 };
             };
             /** @description Validation Error */
@@ -48889,7 +49053,7 @@ export interface operations {
             };
         };
     };
-    list_albums_api_v1_media_albums_get: {
+    list_albums_media_albums_get: {
         parameters: {
             query?: {
                 album_type?: string | null;
@@ -48921,7 +49085,7 @@ export interface operations {
             };
         };
     };
-    create_album_api_v1_media_albums_post: {
+    create_album_media_albums_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -48954,7 +49118,7 @@ export interface operations {
             };
         };
     };
-    get_album_api_v1_media_albums__album_id__get: {
+    get_album_media_albums__album_id__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -48985,7 +49149,7 @@ export interface operations {
             };
         };
     };
-    update_album_api_v1_media_albums__album_id__put: {
+    update_album_media_albums__album_id__put: {
         parameters: {
             query?: never;
             header?: never;
@@ -49020,7 +49184,7 @@ export interface operations {
             };
         };
     };
-    delete_album_api_v1_media_albums__album_id__delete: {
+    delete_album_media_albums__album_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -49051,7 +49215,7 @@ export interface operations {
             };
         };
     };
-    update_album_api_v1_media_albums__album_id__patch: {
+    update_album_media_albums__album_id__patch: {
         parameters: {
             query?: never;
             header?: never;
@@ -49086,7 +49250,7 @@ export interface operations {
             };
         };
     };
-    list_media_api_v1_media_media_get: {
+    list_media_media_media_get: {
         parameters: {
             query?: {
                 media_type?: string | null;
@@ -49119,7 +49283,7 @@ export interface operations {
             };
         };
     };
-    upload_media_api_v1_media_media_post: {
+    upload_media_media_media_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -49128,7 +49292,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "multipart/form-data": components["schemas"]["Body_upload_media_api_v1_media_media_post"];
+                "multipart/form-data": components["schemas"]["Body_upload_media_media_media_post"];
             };
         };
         responses: {
@@ -49152,7 +49316,7 @@ export interface operations {
             };
         };
     };
-    upload_file_api_v1_media_uploads_post: {
+    upload_file_media_uploads_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -49161,7 +49325,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "multipart/form-data": components["schemas"]["Body_upload_file_api_v1_media_uploads_post"];
+                "multipart/form-data": components["schemas"]["Body_upload_file_media_uploads_post"];
             };
         };
         responses: {
@@ -49185,7 +49349,7 @@ export interface operations {
             };
         };
     };
-    register_external_url_api_v1_media_register_url_post: {
+    register_external_url_media_register_url_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -49194,7 +49358,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/x-www-form-urlencoded": components["schemas"]["Body_register_external_url_api_v1_media_register_url_post"];
+                "application/x-www-form-urlencoded": components["schemas"]["Body_register_external_url_media_register_url_post"];
             };
         };
         responses: {
@@ -49218,7 +49382,7 @@ export interface operations {
             };
         };
     };
-    get_media_item_api_v1_media_media__media_id__get: {
+    get_media_item_media_media__media_id__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -49249,7 +49413,7 @@ export interface operations {
             };
         };
     };
-    update_media_api_v1_media_media__media_id__put: {
+    update_media_media_media__media_id__put: {
         parameters: {
             query?: never;
             header?: never;
@@ -49284,7 +49448,7 @@ export interface operations {
             };
         };
     };
-    delete_media_api_v1_media_media__media_id__delete: {
+    delete_media_media_media__media_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -49315,7 +49479,7 @@ export interface operations {
             };
         };
     };
-    tag_member_in_media_api_v1_media_media__media_id__tags_post: {
+    tag_member_in_media_media_media__media_id__tags_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -49326,7 +49490,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/x-www-form-urlencoded": components["schemas"]["Body_tag_member_in_media_api_v1_media_media__media_id__tags_post"];
+                "application/x-www-form-urlencoded": components["schemas"]["Body_tag_member_in_media_media_media__media_id__tags_post"];
             };
         };
         responses: {
@@ -49350,7 +49514,7 @@ export interface operations {
             };
         };
     };
-    remove_tag_api_v1_media_media__media_id__tags__member_id__delete: {
+    remove_tag_media_media__media_id__tags__member_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -49382,7 +49546,7 @@ export interface operations {
             };
         };
     };
-    health_check_api_v1_media_health_get: {
+    health_check_media_health_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -49402,7 +49566,7 @@ export interface operations {
             };
         };
     };
-    resolve_media_urls_api_v1_media_urls_post: {
+    resolve_media_urls_media_urls_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -49435,7 +49599,7 @@ export interface operations {
             };
         };
     };
-    list_site_assets_api_v1_media_assets_get: {
+    list_site_assets_media_assets_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -49455,7 +49619,7 @@ export interface operations {
             };
         };
     };
-    create_site_asset_api_v1_media_assets_post: {
+    create_site_asset_media_assets_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -49488,7 +49652,7 @@ export interface operations {
             };
         };
     };
-    get_site_asset_api_v1_media_assets__key__get: {
+    get_site_asset_media_assets__key__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -49519,7 +49683,7 @@ export interface operations {
             };
         };
     };
-    update_site_asset_api_v1_media_assets__key__put: {
+    update_site_asset_media_assets__key__put: {
         parameters: {
             query?: never;
             header?: never;
@@ -49554,7 +49718,7 @@ export interface operations {
             };
         };
     };
-    delete_site_asset_api_v1_media_assets__key__delete: {
+    delete_site_asset_media_assets__key__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -49585,7 +49749,7 @@ export interface operations {
             };
         };
     };
-    admin_delete_member_media_api_v1_media_admin_members__member_id__delete: {
+    admin_delete_member_media_media_admin_members__member_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -49616,7 +49780,7 @@ export interface operations {
             };
         };
     };
-    list_audio_tracks_api_v1_media_audio_tracks_get: {
+    list_audio_tracks_media_audio_tracks_get: {
         parameters: {
             query?: {
                 genre?: string | null;
@@ -49650,7 +49814,7 @@ export interface operations {
             };
         };
     };
-    upload_audio_track_api_v1_media_audio_tracks_post: {
+    upload_audio_track_media_audio_tracks_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -49659,7 +49823,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "multipart/form-data": components["schemas"]["Body_upload_audio_track_api_v1_media_audio_tracks_post"];
+                "multipart/form-data": components["schemas"]["Body_upload_audio_track_media_audio_tracks_post"];
             };
         };
         responses: {
@@ -49683,7 +49847,7 @@ export interface operations {
             };
         };
     };
-    get_audio_track_api_v1_media_audio_tracks__track_id__get: {
+    get_audio_track_media_audio_tracks__track_id__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -49714,7 +49878,7 @@ export interface operations {
             };
         };
     };
-    update_audio_track_api_v1_media_audio_tracks__track_id__put: {
+    update_audio_track_media_audio_tracks__track_id__put: {
         parameters: {
             query?: never;
             header?: never;
@@ -49749,7 +49913,7 @@ export interface operations {
             };
         };
     };
-    delete_audio_track_api_v1_media_audio_tracks__track_id__delete: {
+    delete_audio_track_media_audio_tracks__track_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -49778,7 +49942,7 @@ export interface operations {
             };
         };
     };
-    apply_audio_to_video_api_v1_media_videos__media_id__apply_audio_post: {
+    apply_audio_to_video_media_videos__media_id__apply_audio_post: {
         parameters: {
             query?: never;
             header?: never;

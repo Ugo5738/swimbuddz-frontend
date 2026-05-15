@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { API_BASE_URL } from "@/lib/config";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -41,10 +42,8 @@ export async function GET(request: Request) {
             const { data } = await supabase.auth.getSession();
             const token = data.session?.access_token;
             if (token) {
-              const apiBaseUrl =
-                process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
               await fetch(
-                `${apiBaseUrl}/api/v1/pending-registrations/complete`,
+                `${API_BASE_URL}/api/v1/pending-registrations/complete`,
                 {
                   method: "POST",
                   headers: {

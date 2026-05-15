@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { API_BASE_URL } from "@/lib/config";
 
 // Routes that require an approved membership
 const MEMBER_ROUTES = ["/sessions", "/account", "/attendance"];
@@ -92,14 +93,12 @@ export async function middleware(request: NextRequest) {
         return redirectToLogin(request, "not_logged_in");
       }
 
-      // Check if user is admin (by email)
-      const userEmail = user.email;
-      const adminEmail =
-        process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-      const isAdmin =
-        userEmail &&
-        adminEmail &&
-        userEmail.toLowerCase() === adminEmail.toLowerCase();
+      // Admin detection: read from the signed JWT's app_metadata.roles claim.
+      // This matches the backend (`require_admin` in libs/auth/dependencies.py
+      // checks `app_metadata.roles contains "admin"`) and matches the
+      // established pattern for the `coach` role in MemberLayout.tsx.
+      const roles = (user.app_metadata?.roles as string[] | undefined) ?? [];
+      const isAdmin = Array.isArray(roles) && roles.includes("admin");
 
       // Admin users bypass all approval checks
       if (isAdmin) {
@@ -115,9 +114,7 @@ export async function middleware(request: NextRequest) {
       }
 
       // Fetch member profile to check approval status
-      const apiBaseUrl =
-        process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-      const memberResponse = await fetch(`${apiBaseUrl}/api/v1/members/me`, {
+      const memberResponse = await fetch(`${API_BASE_URL}/api/v1/members/me`, {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },

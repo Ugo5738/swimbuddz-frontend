@@ -1,4 +1,5 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from "./api";
+import { API_BASE_URL } from "./config";
 
 // ─── Types ────────────────────────────────────────────────────────────
 //
@@ -284,9 +285,7 @@ export async function uploadAttachment(
   // through as a hint anyway in case the upstream picks octet-stream.
   if (file.type) form.append("mime", file.type);
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
-  const res = await fetch(`${baseUrl}/api/v1/chat/attachments`, {
+  const res = await fetch(`${API_BASE_URL}/api/v1/chat/attachments`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,

@@ -5,8 +5,6 @@
 
 // API Base URL - changes between dev/prod.
 const envApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-const fallbackApiBaseUrl =
-  typeof window === "undefined" ? "http://localhost:8000" : "";
 
 // Public app URL used for auth email redirects.
 const envAppBaseUrl = process.env.NEXT_PUBLIC_APP_URL;
@@ -15,13 +13,29 @@ const fallbackAppBaseUrl =
 
 // Ensure HTTPS in production to prevent mixed content errors
 function normalizeApiUrl(url: string | undefined): string {
-  if (!url) return fallbackApiBaseUrl;
-
-  // In production (non-localhost), enforce HTTPS
-  if (!url.includes("localhost") && url.startsWith("http://")) {
-    return url.replace("http://", "https://");
+  if (url) {
+    // In production (non-localhost), enforce HTTPS
+    if (!url.includes("localhost") && url.startsWith("http://")) {
+      return url.replace("http://", "https://");
+    }
+    return url;
   }
-  return url;
+
+  // No env var set — decide based on context.
+  // Browser: use relative URLs so Netlify's /api/* rewrite proxies to the
+  // real backend (see netlify.toml). This is the documented dev/prod path
+  // for client-side fetches.
+  if (typeof window !== "undefined") return "";
+
+  // Server-side with no env var: fail loud in production rather than
+  // silently calling localhost from a Netlify Function.
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "NEXT_PUBLIC_API_BASE_URL must be set in production " +
+        "(server-side code cannot rely on the Netlify /api/* rewrite).",
+    );
+  }
+  return "http://localhost:8000";
 }
 
 function normalizeAppUrl(url: string | undefined): string {

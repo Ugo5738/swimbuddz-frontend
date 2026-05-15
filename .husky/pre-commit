@@ -1,21 +1,32 @@
 #!/bin/sh
 
-# Pre-commit hook: Regenerate TypeScript types from backend OpenAPI schema
-# This runs automatically before each commit to ensure types are in sync
+# Pre-commit hook: Regenerate TypeScript types from backend OpenAPI schema.
+# Best-effort convenience for local commits. The backend CI also runs a hard
+# `openapi.json` freshness check, so a missed regen here will fail in CI.
 
 # Always work from repo root so relative paths are stable
 cd -- "$(dirname "$0")/.." || exit 1
 
 BACKEND_DIR="../swimbuddz-backend"
 
-# Safely detect backend schema changes (unstaged or staged) inside the backend repo
+# Detect backend schema changes (unstaged or staged) inside the backend repo.
+# Pattern catches both the legacy single-file schemas.py layout and the newer
+# schemas/ package layout used by most services after the CONVENTIONS §12 split.
 BACKEND_CHANGED=""
 if [ -d "$BACKEND_DIR/.git" ]; then
     BACKEND_CHANGED=$(
-        git -C "$BACKEND_DIR" diff --name-only -- 'services/*/schemas.py' 'services/*_schemas.py' 2>/dev/null || true
+        git -C "$BACKEND_DIR" diff --name-only -- \
+            'services/*/schemas.py' \
+            'services/*/schemas/**' \
+            'services/*_schemas.py' \
+            2>/dev/null || true
     )
     BACKEND_CHANGED_STAGED=$(
-        git -C "$BACKEND_DIR" diff --cached --name-only -- 'services/*/schemas.py' 'services/*_schemas.py' 2>/dev/null || true
+        git -C "$BACKEND_DIR" diff --cached --name-only -- \
+            'services/*/schemas.py' \
+            'services/*/schemas/**' \
+            'services/*_schemas.py' \
+            2>/dev/null || true
     )
     BACKEND_CHANGED="$BACKEND_CHANGED$BACKEND_CHANGED_STAGED"
 else
@@ -24,8 +35,8 @@ fi
 
 if [ -n "$BACKEND_CHANGED" ]; then
     echo "🔄 Backend schemas changed, regenerating TypeScript types..."
-    
-    if python "$BACKEND_DIR/scripts/generate_openapi.py" > "$BACKEND_DIR/openapi.json" 2>/dev/null; then
+
+    if python "$BACKEND_DIR/scripts/api/generate-openapi.py" > "$BACKEND_DIR/openapi.json" 2>/dev/null; then
         if npm run generate:types --silent; then
             echo "✅ TypeScript types regenerated successfully"
             git add src/lib/api-types.ts

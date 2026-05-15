@@ -101,9 +101,6 @@ type DropdownItem = {
   badge?: string;
 };
 
-// Check if user is admin by email
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-
 export function Header() {
   const router = useRouter();
   const pathname = usePathname();
@@ -137,11 +134,11 @@ export function Header() {
     profileTimeoutRef.current = setTimeout(() => setProfileOpen(false), 150);
   }, []);
 
-  // Determine if current user is admin
-  const isAdmin =
-    session?.user?.email &&
-    ADMIN_EMAIL &&
-    session.user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  // Admin status comes from the signed JWT's `app_metadata.roles` claim, the
+  // same source the backend `require_admin` dependency reads. Matches the
+  // pattern used for `coach` detection in MemberLayout.tsx.
+  const roles: unknown = session?.user?.app_metadata?.roles;
+  const isAdmin = Array.isArray(roles) && roles.includes("admin");
   const dashboardUrl = isAdmin ? "/admin/dashboard" : "/account";
 
   // Logged-in members go directly to the full session catalog; guests see the public teaser

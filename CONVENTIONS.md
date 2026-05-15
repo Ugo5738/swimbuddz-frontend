@@ -128,3 +128,34 @@ Do not leave users with blank screens.
 - Use React Testing Library by default.
 - Place tests alongside components in `__tests__` directories or under `tests/`.
 - Focus on rendering correctness, key interactions (clicks, submissions), and API integration with mocks.
+
+---
+
+## 12. File Size Limits
+
+Large files hurt review velocity, IDE responsiveness, AI assistance, and bundle-splitting decisions. We aim for files that fit on one screen end-to-end and split anything beyond that into focused modules.
+
+**Targets (lines, excluding blank lines and comments — ESLint measures it this way):**
+
+| File kind | Soft target | Hard cap |
+|---|---:|---:|
+| Page (`src/app/**/page.tsx`) | 500 | 800 |
+| Component (`src/components/**/*.tsx`) | 300 | 500 |
+| Hook (`src/hooks/*.ts`) | 200 | 400 |
+| Utility / API client module (`src/lib/*.ts`) | 500 | 800 |
+
+**Excluded:**
+
+- Generated files (`src/lib/api-types.ts`) — already excluded via ESLint override.
+- Test files.
+
+**How to split:**
+
+- **Pages** — extract per-tab and per-section components into sibling files; move data shaping into custom hooks; move helpers into `lib/`. A 1,500-line `page.tsx` should usually become a 200-line `page.tsx` orchestrating five focused children.
+- **Components** — prefer sub-components in the same folder over single-file mega-components. If a component file has more than one default export's worth of logic, split.
+- **Hooks** — one responsibility per hook. A hook handling list + detail + mutation should split into three.
+- **Utilities** — split by responsibility (`lib/academy-types.ts`, `lib/academy-api.ts`, `lib/academy-enums.ts`) rather than one 1,000-line mega-file.
+
+**Enforcement:**
+
+ESLint's `max-lines` rule is enabled at the **warn** level in `.eslintrc.json` (cap: 500 lines, blank lines and comments excluded). Warnings surface in IDEs and during `npm run lint`. Treat them as a backlog — once oversize files are split, raise the level to `error` to make new violations block CI.

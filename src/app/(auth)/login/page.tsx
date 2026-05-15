@@ -15,10 +15,6 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useEffect, useState } from "react";
 
-const ADMIN_EMAILS = [
-  process.env.NEXT_PUBLIC_ADMIN_EMAIL,
-  "admin@admin.com",
-].filter(Boolean) as string[];
 
 /** Convert raw error messages to user-friendly text */
 function formatErrorMessage(message: string): string {
@@ -110,11 +106,17 @@ function LoginContent() {
       return;
     }
 
-    // Admin users bypass pending-registration completion (they may not have a Member profile).
+    // Admin users bypass pending-registration completion (they may not have
+    // a Member profile). Admin status comes from the signed JWT's
+    // `app_metadata.roles` claim — same source the backend `require_admin`
+    // dependency reads.
     const {
       data: { user: signedInUser },
     } = await supabase.auth.getUser();
-    if (signedInUser?.email && ADMIN_EMAILS.includes(signedInUser.email)) {
+    const adminRoles = signedInUser?.app_metadata?.roles as
+      | string[]
+      | undefined;
+    if (Array.isArray(adminRoles) && adminRoles.includes("admin")) {
       setLoading(false);
       router.push("/admin/dashboard");
       return;

@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { supabase } from "@/lib/auth";
 
-const ADMIN_EMAILS = ["admin@admin.com"];
-
 export default function AdminLayoutWrapper({
   children,
 }: {
@@ -23,7 +21,14 @@ export default function AdminLayoutWrapper({
           data: { user },
         } = await supabase.auth.getUser();
 
-        if (!user || !user.email || !ADMIN_EMAILS.includes(user.email)) {
+        // Admin status comes from the signed JWT's `app_metadata.roles` claim —
+        // same source the backend `require_admin` dependency reads. The
+        // server-side middleware also gates /admin/* before this component
+        // ever renders, so this is a UX guard, not the security boundary.
+        const roles = (user?.app_metadata?.roles as string[] | undefined) ?? [];
+        const isAdmin = Array.isArray(roles) && roles.includes("admin");
+
+        if (!user || !isAdmin) {
           console.warn("Unauthorized admin access attempt", user?.email);
           router.push("/login"); // Redirect to login
           return;
