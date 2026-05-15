@@ -27,155 +27,18 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-type MemberProfile = {
-  phone?: string | null;
-  area_in_lagos?: string | null;
-  city?: string | null;
-  state?: string | null;
-  country?: string | null;
-  time_zone?: string | null;
-  gender?: string | null;
-  date_of_birth?: string | null;
-  swim_level?: string | null;
-  deep_water_comfort?: string | null;
-  strokes?: string[] | null;
-  interests?: string[] | null;
-  personal_goals?: string | null;
-};
-
-type MemberEmergencyContact = {
-  name?: string | null;
-  contact_relationship?: string | null;
-  phone?: string | null;
-  medical_info?: string | null;
-};
-
-type MemberAvailability = {
-  available_days?: string[] | null;
-  preferred_times?: string[] | null;
-  preferred_locations?: string[] | null;
-};
-
-type MemberMembership = {
-  primary_tier?: string | null;
-  active_tiers?: string[] | null;
-  requested_tiers?: string[] | null;
-  community_paid_until?: string | null;
-  club_paid_until?: string | null;
-  academy_paid_until?: string | null;
-  club_notes?: string | null;
-  academy_skill_assessment?: Record<string, boolean> | null;
-  academy_goals?: string | null;
-  academy_preferred_coach_gender?: string | null;
-  academy_lesson_preference?: string | null;
-};
-
-type MemberPreferences = {
-  comms_preference?: string | null;
-  language_preference?: string | null;
-  volunteer_interest?: string[] | null;
-};
-
-type Member = {
-  id?: string;
-  email?: string | null;
-  first_name?: string | null;
-  last_name?: string | null;
-  profile_photo_url?: string | null;
-  profile_photo_media_id?: string | null;
-
-  // Nested sub-records
-  profile?: MemberProfile | null;
-  emergency_contact?: MemberEmergencyContact | null;
-  availability?: MemberAvailability | null;
-  membership?: MemberMembership | null;
-  preferences?: MemberPreferences | null;
-};
-
-function formatDateForInput(value?: string | null) {
-  if (!value) return "";
-  const ms = Date.parse(String(value));
-  if (!Number.isFinite(ms)) return "";
-  return new Date(ms).toISOString().split("T")[0] || "";
-}
-
-type StepKey = "core" | "safety" | "swim" | "club" | "academy" | "signals" | "review";
-type Step = { key: StepKey; title: string; required: boolean };
-
-const ONBOARDING_DRAFT_VERSION = 2;
-
-type OnboardingDraft = {
-  version: number;
-  updatedAt: number;
-  currentStep: StepKey;
-  coreForm: {
-    firstName: string;
-    lastName: string;
-    phone: string;
-    areaInLagos: string;
-    city: string;
-    state: string;
-    country: string;
-    gender: string;
-    dateOfBirth: string;
-    profilePhotoUrl: string;
-    timeZone: string;
-  };
-  clubForm: {
-    emergencyContactName: string;
-    emergencyContactRelationship: string;
-    emergencyContactPhone: string;
-    medicalInfo: string;
-    locationPreference: string[];
-    timeOfDayAvailability: string[];
-    clubNotes: string;
-  };
-  clubReadinessForm: {
-    availabilitySlots: string[];
-    clubNotes: string;
-  };
-  swimForm: {
-    swimLevel: string;
-    deepWaterComfort: string;
-    strokes: string[];
-    goals: string[];
-    otherGoals: string;
-  };
-  academyForm: {
-    academySkillAssessment: {
-      canFloat: boolean;
-      headUnderwater: boolean;
-      deepWaterComfort: boolean;
-      canSwim25m: boolean;
-    };
-    academyGoals: string;
-    academyPreferredCoachGender: string;
-    academyLessonPreference: string;
-  };
-  signalsForm: {
-    interests: string[];
-    volunteerInterest: string[];
-  };
-};
-
-function getDraftKey(member: Member) {
-  const id = member.id ? String(member.id) : "";
-  const email = member.email ? String(member.email) : "";
-  const suffix = id || email || "me";
-  return `swimbuddz:onboarding:draft:v${ONBOARDING_DRAFT_VERSION}:${suffix}`;
-}
-
-function safeParseDraft(raw: string | null): OnboardingDraft | null {
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw) as Partial<OnboardingDraft>;
-    if (parsed.version !== ONBOARDING_DRAFT_VERSION) return null;
-    if (!parsed.currentStep) return null;
-    return parsed as OnboardingDraft;
-  } catch {
-    return null;
-  }
-}
+import type {
+  Member,
+  OnboardingDraft,
+  Step,
+  StepKey,
+} from "./types";
+import {
+  formatDateForInput,
+  getDraftKey,
+  ONBOARDING_DRAFT_VERSION,
+  safeParseDraft,
+} from "./utils";
 
 export default function DashboardOnboardingPage() {
   const router = useRouter();
