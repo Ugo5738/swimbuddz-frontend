@@ -12,114 +12,16 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-// ============================================================================
-// Types
-// ============================================================================
-
-type Member = {
-  id?: string | null;
-  email?: string | null;
-  membership?: {
-    community_paid_until?: string | null;
-    club_paid_until?: string | null;
-    active_tiers?: string[] | null;
-    requested_tiers?: string[] | null;
-    primary_tier?: string | null;
-    pending_payment_reference?: string | null;
-  } | null;
-};
-
-type PaymentRecord = {
-  id: string;
-  reference: string;
-  status: string;
-  amount: number;
-  currency: string;
-  purpose?: string; // Direct field on payment, e.g. "club_bundle", "club", "community"
-  payment_method?: string | null; // paystack or manual_transfer
-  proof_of_payment_url?: string | null;
-  admin_review_note?: string | null;
-  paid_at?: string | null;
-  entitlement_applied_at?: string | null;
-  entitlement_error?: string | null;
-  created_at: string;
-  payment_metadata?: {
-    purpose?: string; // Legacy/backup
-  } | null;
-};
-
-type PricingConfig = {
-  community_annual: number;
-  club_quarterly: number;
-  club_biannual: number;
-  club_annual: number;
-  currency: string;
-};
-
-type Cohort = {
-  id: string;
-  name: string;
-  program_name?: string;
-  start_date?: string;
-  price?: number;
-  status?: string;
-};
-
-type EnrollmentInstallment = {
-  id: string;
-  installment_number: number;
-  amount: number; // kobo
-  due_at: string;
-  status: "pending" | "paid" | "missed" | "waived";
-  paid_at?: string | null;
-};
-
-type Enrollment = {
-  id: string;
-  cohort_id: string;
-  status: string;
-  payment_status: string;
-  total_installments?: number;
-  paid_installments_count?: number;
-  cohort?: {
-    name: string;
-    start_date?: string;
-    end_date?: string;
-    program?: {
-      name: string;
-    };
-  };
-  installments?: EnrollmentInstallment[];
-};
-
-type WalletSummary = {
-  balance: number;
-  welcomeBonusGranted: boolean;
-  welcomeBonusAmount: number;
-};
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-function formatDate(value?: string | null): string {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
-
-function formatCurrency(amount: number): string {
-  return `₦${amount.toLocaleString("en-NG")}`;
-}
-
-// ============================================================================
-// Component
-// ============================================================================
+import type {
+  Cohort,
+  Enrollment,
+  EnrollmentInstallment,
+  Member,
+  PaymentRecord,
+  PricingConfig,
+  WalletSummary,
+} from "./types";
+import { formatCurrency, formatDate } from "./utils";
 
 export default function BillingPage() {
   const router = useRouter();
