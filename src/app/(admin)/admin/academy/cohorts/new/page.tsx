@@ -22,17 +22,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-interface RideArea {
-  id: string;
-  name: string;
-}
-
-// Day/time schedule item
-interface ScheduleItem {
-  day: string;
-  startTime: string;
-  endTime: string;
-}
+import type { RideArea, ScheduleItem } from "./types";
 
 export default function NewCohortPage() {
   const router = useRouter();
