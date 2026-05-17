@@ -3,24 +3,73 @@
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { AcademyApi, OnboardingInfo } from "@/lib/academy";
+import { apiPost } from "@/lib/api";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 function EnrollmentSuccessContent() {
   const searchParams = useSearchParams();
   const enrollmentId = searchParams.get("enrollment_id");
+  // Paystack appends `reference` (and `trxref`, identical) to the callback
+  // URL after the user pays. We use it to trigger server-side verification —
+  // the webhook path is the canonical entitlement trigger in production, but
+  // in local dev (or any time the webhook is delayed) this verify call is
+  // what actually marks the enrollment paid, sends the confirmation email,
+  // and activates the academy tier. Without this, the user lands on a
+  // "🎉 Welcome" page while their enrollment sits at payment_status=PENDING.
+  const paystackReference =
+    searchParams.get("reference") || searchParams.get("trxref");
 
   const [onboarding, setOnboarding] = useState<OnboardingInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [verifyMessage, setVerifyMessage] = useState<string | null>(null);
+
+  // React 18 StrictMode double-invokes effects in dev, which would fire the
+  // /paystack/verify call twice. The backend is idempotent so this is
+  // harmless for correctness, but it's avoidable noise (two verify round
+  // trips, duplicate log lines). This ref ensures run() executes once per
+  // mount regardless of StrictMode.
+  const didRun = useRef(false);
 
   useEffect(() => {
+    if (didRun.current) return;
+    didRun.current = true;
+
     if (enrollmentId) {
-      loadOnboarding();
+      // Always verify first if we have a Paystack reference — even if the
+      // webhook already fired, the verify endpoint is idempotent (re-marks
+      // a PAID payment without re-applying entitlement). Then load
+      // onboarding so the UI reflects the activated state.
+      void run();
     } else {
       setLoading(false);
     }
-  }, [enrollmentId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enrollmentId, paystackReference]);
+
+  const run = async () => {
+    if (paystackReference) {
+      try {
+        setVerifyMessage("Confirming your payment with Paystack…");
+        await apiPost(
+          `/api/v1/payments/paystack/verify/${encodeURIComponent(paystackReference)}`,
+          {},
+          { auth: true },
+        );
+        setVerifyMessage(null);
+      } catch (e) {
+        // Don't block onboarding rendering on verify failure — show a hint
+        // so the user can manually retry from the enrollment detail page if
+        // their cohort details look incomplete.
+        console.warn("Paystack verify failed (will load onboarding anyway):", e);
+        setVerifyMessage(
+          "Couldn't auto-confirm payment. If your enrollment still shows as pending in a few minutes, open it from My Academy and tap “Verify Payment”.",
+        );
+      }
+    }
+    await loadOnboarding();
+  };
 
   const loadOnboarding = async () => {
     try {
@@ -38,7 +87,7 @@ function EnrollmentSuccessContent() {
       <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-cyan-200 border-t-cyan-600" />
         <p className="text-lg font-medium text-slate-600">
-          Loading enrollment...
+          {verifyMessage || "Loading enrollment..."}
         </p>
       </div>
     );
@@ -72,6 +121,16 @@ function EnrollmentSuccessContent() {
           <p className="text-green-100">Your enrollment has been confirmed</p>
         </div>
       </Card>
+
+      {/* Verify-payment fallback hint — only renders if the post-Paystack
+          verify call failed. Onboarding still renders below so the user
+          isn't stuck staring at a spinner; the warning just tells them how
+          to recover if their cohort still looks pending later. */}
+      {verifyMessage && (
+        <Card className="p-4 bg-amber-50 border border-amber-200">
+          <p className="text-sm text-amber-800">{verifyMessage}</p>
+        </Card>
+      )}
 
       {/* Next Session */}
       <Card className="p-6">

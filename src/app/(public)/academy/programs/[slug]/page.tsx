@@ -266,7 +266,15 @@ export default function ProgramLandingPage() {
                     checklist, and coach intro before day one.
                   </div>
 
-                  <Link href="/account/academy/browse" className="block w-full">
+                  {/* Deep-link to the member cohort detail page. If the
+                      visitor isn't signed in, the auth middleware bounces
+                      them to /login?redirect=..., and the cohort_id is
+                      preserved end-to-end (login → register → onboarding
+                      → final destination). */}
+                  <Link
+                    href={`/account/academy/cohorts/${cohort.id}`}
+                    className="block w-full"
+                  >
                     <Button className="w-full">Reserve your spot</Button>
                   </Link>
                   <p className="text-center text-xs text-slate-500">Requires Academy Membership</p>

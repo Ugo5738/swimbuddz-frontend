@@ -16,6 +16,31 @@ function getParam(name: string) {
   return hashParams.get(name) ?? searchParams.get(name);
 }
 
+// Recovers a `next` deep-link target that was stashed by /register before the
+// user clicked the email confirmation link. Cleared after read so it doesn't
+// leak into a future session. If the resolved auth path is /account/onboarding
+// we append `?next=...` so onboarding can route the user back to the deep link
+// once they finish onboarding; otherwise we route directly to `next`.
+function applyPendingNext(nextPath: string): string {
+  if (typeof window === "undefined") return nextPath;
+  let pending: string | null = null;
+  try {
+    pending = window.sessionStorage.getItem("post_auth_next");
+    if (pending) window.sessionStorage.removeItem("post_auth_next");
+  } catch {
+    return nextPath;
+  }
+  // Only trust same-origin relative paths.
+  if (!pending || !pending.startsWith("/") || pending.startsWith("//")) {
+    return nextPath;
+  }
+  if (nextPath.startsWith("/account/onboarding")) {
+    const sep = nextPath.includes("?") ? "&" : "?";
+    return `${nextPath}${sep}next=${encodeURIComponent(pending)}`;
+  }
+  return pending;
+}
+
 export default function ConfirmPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -76,7 +101,7 @@ export default function ConfirmPage() {
         }
 
         const nextPath = await getPostAuthRedirectPath();
-        router.replace(nextPath);
+        router.replace(applyPendingNext(nextPath));
         return;
       }
 
@@ -105,7 +130,7 @@ export default function ConfirmPage() {
         }
 
         const nextPath = await getPostAuthRedirectPath();
-        router.replace(nextPath);
+        router.replace(applyPendingNext(nextPath));
         return;
       }
 
@@ -116,7 +141,7 @@ export default function ConfirmPage() {
       if (session) {
         // User is already authenticated, just redirect
         const nextPath = await getPostAuthRedirectPath();
-        router.replace(nextPath);
+        router.replace(applyPendingNext(nextPath));
         return;
       }
 

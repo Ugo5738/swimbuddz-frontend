@@ -62,6 +62,13 @@ function CheckoutContent() {
     amount: number;
     appliesTo?: string | null; // Which component the discount applies to
   } | null>(null);
+  // The discount field is collapsed by default — most users don't have a
+  // code and the always-visible input invites typos / fishing for codes.
+  // Auto-expand if the upgrade state already has a code (e.g. user came
+  // back from a "Back to previous step" loop with a pre-filled code).
+  const [showDiscountInput, setShowDiscountInput] = useState<boolean>(
+    Boolean(state.discountCode),
+  );
   const [validatingDiscount, setValidatingDiscount] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<
     "paystack" | "manual_transfer"
@@ -566,7 +573,7 @@ function CheckoutContent() {
                   </div>
                 </div>
               </div>
-            ) : (
+            ) : showDiscountInput ? (
               <div className="flex items-center gap-2">
                 <Tag className="w-4 h-4 text-slate-400 flex-shrink-0" />
                 <input
@@ -576,6 +583,7 @@ function CheckoutContent() {
                     setDiscountInput(e.target.value.toUpperCase())
                   }
                   placeholder="Discount code"
+                  autoFocus
                   className="flex-1 min-w-0 px-3 py-2 text-sm border border-slate-200 rounded-lg text-slate-700 focus:ring-2 focus:ring-cyan-400 focus:border-transparent uppercase placeholder:text-slate-400"
                 />
                 <Button
@@ -587,7 +595,39 @@ function CheckoutContent() {
                 >
                   {validatingDiscount ? "..." : "Apply"}
                 </Button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDiscountInput("");
+                    setShowDiscountInput(false);
+                  }}
+                  className="flex-shrink-0 p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                  aria-label="Cancel discount entry"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
               </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowDiscountInput(true)}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-cyan-600 hover:text-cyan-700 hover:underline"
+              >
+                <Tag className="w-4 h-4" />
+                Have a discount code?
+              </button>
             )}
           </div>
 

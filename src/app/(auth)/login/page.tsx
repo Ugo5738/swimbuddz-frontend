@@ -244,7 +244,17 @@ function LoginContent() {
         <p className="text-center text-sm text-slate-600">
           New here?{" "}
           <a
-            href="/register"
+            href={(() => {
+              // Preserve deep-link target across login → register. Login uses
+              // `?redirect=`, register uses `?next=`; they mean the same thing
+              // (post-auth destination), but we keep the names separate because
+              // login redirects post-signin while register has to thread the
+              // value through email confirmation.
+              const r = searchParams.get("redirect");
+              return r && r.startsWith("/") && !r.startsWith("//")
+                ? `/register?next=${encodeURIComponent(r)}`
+                : "/register";
+            })()}
             className="font-semibold text-cyan-700 hover:underline"
           >
             Create an account

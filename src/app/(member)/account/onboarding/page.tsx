@@ -566,29 +566,59 @@ export default function DashboardOnboardingPage() {
   const upgradeStepFromUrl = searchParams.get("step") as StepKey | null;
   const isClubUpgradeFlow = upgradeStepFromUrl === "club";
 
-  const activationTarget =
-    wantsClub || wantsAcademy || isClubUpgradeFlow ? "club" : !communityActive ? "community" : null;
+  // Honour a `?next=` deep link (e.g. user came from a public cohort page
+  // and signed up; we want to return them to that cohort after onboarding).
+  // Restricted to same-origin relative paths to avoid open-redirect issues.
+  const nextParam = searchParams.get("next");
+  const safeNext =
+    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//")
+      ? nextParam
+      : null;
+
+  // Academy intent wins over Club: an academy registrant pays for a cohort
+  // (which auto-confers academy tier), so we send them to cohort selection
+  // rather than the Club plan picker. The duplicate `/upgrade/academy/details`
+  // form is bypassed because onboarding already collected those 4 fields.
+  const activationTarget = wantsAcademy
+    ? "academy"
+    : wantsClub || isClubUpgradeFlow
+      ? "club"
+      : !communityActive
+        ? "community"
+        : null;
   const showBillingCta = Boolean(activationTarget);
-  const billingHref =
-    activationTarget === "club"
-      ? "/upgrade/club/plan"
-      : activationTarget === "community"
-        ? "/checkout?purpose=community"
-        : "/account/billing";
+  const defaultBillingHref =
+    activationTarget === "academy"
+      ? "/upgrade/academy/cohort"
+      : activationTarget === "club"
+        ? "/upgrade/club/plan"
+        : activationTarget === "community"
+          ? "/checkout?purpose=community"
+          : "/account/billing";
+  // Prefer `?next=` when present (deep link from a specific cohort page).
+  const billingHref = safeNext ?? defaultBillingHref;
   const billingCtaLabel =
-    activationTarget === "club"
-      ? "Activate Club Membership"
-      : activationTarget === "community"
-        ? "Activate Community Membership"
-        : "Go to Billing";
+    activationTarget === "academy"
+      ? safeNext
+        ? "Continue to Your Cohort"
+        : "Pick Your Cohort"
+      : activationTarget === "club"
+        ? "Activate Club Membership"
+        : activationTarget === "community"
+          ? "Activate Community Membership"
+          : "Go to Billing";
   const reviewDescription =
-    activationTarget === "club"
-      ? communityActive
-        ? "You're almost set. Activate your Club membership to unlock Club benefits."
-        : "You're almost set. Activate Community + Club to unlock full access."
-      : activationTarget === "community"
-        ? "You're almost set. Activate your Community membership to unlock full access."
-        : "Your onboarding details are saved. Your dashboard will guide you to activation or Academy programs when you're ready.";
+    activationTarget === "academy"
+      ? safeNext
+        ? "You're almost set. Continue to the cohort you picked to complete enrollment."
+        : "You're almost set. Pick the cohort you'd like to join — paying for it activates your Academy membership."
+      : activationTarget === "club"
+        ? communityActive
+          ? "You're almost set. Activate your Club membership to unlock Club benefits."
+          : "You're almost set. Activate Community + Club to unlock full access."
+        : activationTarget === "community"
+          ? "You're almost set. Activate your Community membership to unlock full access."
+          : "Your onboarding details are saved. Your dashboard will guide you to activation or Academy programs when you're ready.";
 
   const saveCore = async (): Promise<boolean> => {
     setSaving(true);

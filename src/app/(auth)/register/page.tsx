@@ -150,6 +150,21 @@ function RegisterContent() {
   const isUpgrade = searchParams.get("upgrade") === "true";
   const isCoachRegistration = searchParams.get("coach") === "true";
   const referralCode = searchParams.get("ref") || "";
+  // Deep-link target preserved across the registration funnel:
+  //   public link (e.g. /account/academy/cohorts/<id>)
+  //     → login redirect (?redirect=)
+  //     → register (?next=)
+  //     → register/success (?next=)
+  //     → email confirm (sessionStorage fallback — survives the email
+  //       click on the same device but not cross-device)
+  //     → onboarding (?next=)
+  //     → final CTA href
+  // Restricted to same-origin relative paths to avoid open-redirect.
+  const nextParamRaw = searchParams.get("next");
+  const safeNext =
+    nextParamRaw && nextParamRaw.startsWith("/") && !nextParamRaw.startsWith("//")
+      ? nextParamRaw
+      : null;
 
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>(initialFormData);
@@ -368,6 +383,18 @@ function RegisterContent() {
         return;
       }
 
+      // Stash the deep-link target so the email-confirm page (which has no
+      // way to recover query params from the Supabase confirmation URL) can
+      // pick it up after verifyOtp succeeds. Sessionstorage scope: same
+      // browser tab/window — works for the common single-device flow.
+      if (safeNext && typeof window !== "undefined") {
+        try {
+          window.sessionStorage.setItem("post_auth_next", safeNext);
+        } catch {
+          /* sessionStorage unavailable (Safari private mode etc) — silently skip */
+        }
+      }
+
       const selectedTier = formData.membershipTier!;
       const requestedTiers = selectedTier === "community" ? undefined : expandTier(selectedTier);
 
@@ -396,7 +423,11 @@ function RegisterContent() {
 
       await createPendingRegistration(registrationPayload as any);
 
-      router.push("/register/success");
+      // Surface `next` on the success page too, mostly so a reload of that
+      // tab keeps the deep link visible in the URL. The authoritative
+      // handoff is sessionStorage (set above) since the email link strips
+      // our query params.
+      router.push(safeNext ? `/register/success?next=${encodeURIComponent(safeNext)}` : "/register/success");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to complete registration.";
       setErrorMessage(message);
