@@ -3139,6 +3139,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/attendance/sessions/{session_id}/book": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Book Session
+         * @description Pre-book a session as the authenticated member.
+         *
+         *     Creates a SessionBooking(status=PENDING). Payment is handled
+         *     out-of-band — payments_service writes ``payment_intent_id`` and
+         *     transitions the booking to CONFIRMED when the payment clears.
+         */
+        post: operations["book_session_attendance_sessions__session_id__book_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/attendance/bookings/{booking_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel Booking
+         * @description Cancel a booking before the session starts.
+         *
+         *     Members can only cancel their own bookings. Refund handling lives
+         *     in payments_service per the booking's ``payment_intent_id`` /
+         *     ``wallet_transaction_id`` — this endpoint only transitions status
+         *     and timestamps.
+         */
+        post: operations["cancel_booking_attendance_bookings__booking_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/attendance/sessions/{session_id}/coach-mark": {
         parameters: {
             query?: never;
@@ -3341,6 +3390,36 @@ export interface paths {
         get: operations["get_member_attendance_stats_internal_attendance_stats_member__member_auth_id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/attendance/bookings/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bulk Create Bookings
+         * @description Bulk-create SessionBookings for a corporate-wellness sponsor.
+         *
+         *     Used by sponsor onboarding flows that pre-purchase N×M (sessions ×
+         *     members) and want every (session, member) pair to land as a
+         *     CONFIRMED SessionBooking in one call. Each row is tagged with
+         *     ``channel=CORPORATE_BULK`` and the supplied ``corporate_program_id``
+         *     so the bookings can later be traced to the sponsor.
+         *
+         *     Idempotent: if a booking for (session, member) already exists,
+         *     that pair is reported in ``skipped`` and the existing row is
+         *     returned unchanged.
+         */
+        post: operations["bulk_create_bookings_internal_attendance_bookings_bulk_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -16666,6 +16745,66 @@ export interface components {
          */
         AttendanceStatus: "present" | "absent" | "late" | "excused" | "cancelled";
         /**
+         * BookingChannel
+         * @description How a SessionBooking was created.
+         * @enum {string}
+         */
+        BookingChannel: "member_self" | "admin" | "corporate_bulk" | "bundle_cart";
+        /**
+         * BulkBookingItem
+         * @description One entry in a corporate-bulk booking payload.
+         */
+        BulkBookingItem: {
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Member Auth Id */
+            member_auth_id: string;
+            /**
+             * Fee Amount Kobo
+             * @default 0
+             */
+            fee_amount_kobo: number;
+        };
+        /**
+         * BulkBookingRequest
+         * @description Service-role bulk-create for corporate-wellness orchestration.
+         *
+         *     Used by sponsor onboarding flows that pre-purchase N×M (sessions ×
+         *     members) and want every (session, member) pair to land as a
+         *     CONFIRMED SessionBooking in one call. Caller is expected to set
+         *     channel=CORPORATE_BULK; corporate_program_id is required so the
+         *     bookings can be traced to the sponsor.
+         */
+        BulkBookingRequest: {
+            /**
+             * Corporate Program Id
+             * Format: uuid
+             */
+            corporate_program_id: string;
+            /** Items */
+            items: components["schemas"]["BulkBookingItem"][];
+        };
+        /**
+         * BulkBookingResponse
+         * @description Result of a bulk-create call.
+         */
+        BulkBookingResponse: {
+            /** Created */
+            created: number;
+            /** Skipped */
+            skipped: number;
+            /** Bookings */
+            bookings: components["schemas"]["SessionBookingResponse"][];
+        };
+        /**
          * CoachAttendanceMarkEntry
          * @description Single entry in a coach bulk attendance mark.
          */
@@ -16821,6 +16960,93 @@ export interface components {
          * @enum {string}
          */
         RideShareOption: "none" | "lead" | "join";
+        /**
+         * SessionBookingCreate
+         * @description Member self-book a session ahead of time.
+         *
+         *     Channel defaults to MEMBER_SELF. Admin and internal/corporate routes
+         *     set channel explicitly. Payment is handled out-of-band: the route
+         *     creates a SessionBooking(status=PENDING) and a payment intent in
+         *     payments_service; on Paystack webhook / Bubbles debit success the
+         *     booking is transitioned to CONFIRMED.
+         */
+        SessionBookingCreate: {
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /**
+             * Fee Amount Kobo
+             * @default 0
+             */
+            fee_amount_kobo: number;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** SessionBookingResponse */
+        SessionBookingResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Member Auth Id */
+            member_auth_id: string;
+            status: components["schemas"]["SessionBookingStatus"];
+            channel: components["schemas"]["BookingChannel"];
+            /** Fee Amount Kobo */
+            fee_amount_kobo: number;
+            /** Payment Intent Id */
+            payment_intent_id?: string | null;
+            /** Wallet Transaction Id */
+            wallet_transaction_id?: string | null;
+            /** Corporate Program Id */
+            corporate_program_id?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Booked At
+             * Format: date-time
+             */
+            booked_at: string;
+            /** Confirmed At */
+            confirmed_at?: string | null;
+            /** Cancelled At */
+            cancelled_at?: string | null;
+            /** Expires At */
+            expires_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * SessionBookingStatus
+         * @description Lifecycle of a SessionBooking (the *intent* to attend).
+         *
+         *     Terminal at session start time — post-session outcome (PRESENT/ABSENT/
+         *     etc.) lives on AttendanceRecord, not here. See
+         *     docs/design/A1_SESSION_DISCRIMINATOR_REFACTOR.md §C.
+         * @enum {string}
+         */
+        SessionBookingStatus: "pending" | "confirmed" | "cancelled" | "expired";
         /**
          * SessionSummary
          * @description Lightweight session info embedded in attendance responses.
@@ -33780,6 +34006,72 @@ export interface operations {
             };
         };
     };
+    book_session_attendance_sessions__session_id__book_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SessionBookingCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionBookingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_booking_attendance_bookings__booking_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionBookingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     coach_mark_session_attendance_attendance_sessions__session_id__coach_mark_post: {
         parameters: {
             query?: never;
@@ -34045,6 +34337,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberAttendanceStats"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bulk_create_bookings_internal_attendance_bookings_bulk_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkBookingRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkBookingResponse"];
                 };
             };
             /** @description Validation Error */
