@@ -9,7 +9,7 @@
     "lint": "next lint",
     "test": "vitest",
     "test:coverage": "vitest --coverage",
-    "generate:types": "openapi-typescript ../swimbuddz-backend/openapi.json -o src/lib/api-types.ts",
+    "generate:types": "openapi-typescript ../swimbuddz-backend/openapi.json -o src/lib/api-types.ts && cp ../swimbuddz-backend/openapi.json src/lib/openapi.json",
     "prepare": "husky"
   },
   "dependencies": {
