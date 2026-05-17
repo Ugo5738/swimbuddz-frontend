@@ -687,3 +687,15 @@ If you are an AI agent, **implement in this order**:
 8. Phase 7 – Academy Layer (admin & student views).
 
 Do not skip ahead or introduce new features that are not described here or in the other documentation files.
+
+---
+
+## Code-Review Follow-ups (frontend)
+
+Deferred frontend items from the comprehensive code review are tracked
+in **[docs/REVIEW_FOLLOWUPS.md](../docs/REVIEW_FOLLOWUPS.md)** (docs
+repo): F5–F7 type discipline (raw `fetch` → `useApi`, no `any`
+payloads — migrate-on-touch), G2 mega-component splits, G4 raw `<img>`
+→ `next/image`. The rules are already codified in `CONVENTIONS.md`
+(§3/§5/§6/§12) and ESLint-enforced; apply them **on touch** when you
+modify an affected file.
