@@ -17378,6 +17378,10 @@ export interface components {
             capacity: number;
             /** @default open */
             status: components["schemas"]["CohortStatus"];
+            /** @default group */
+            type: components["schemas"]["CohortType"];
+            /** Corporate Program Id */
+            corporate_program_id?: string | null;
             /**
              * Allow Mid Entry
              * @default false
@@ -17550,6 +17554,10 @@ export interface components {
             capacity: number;
             /** @default open */
             status: components["schemas"]["CohortStatus"];
+            /** @default group */
+            type: components["schemas"]["CohortType"];
+            /** Corporate Program Id */
+            corporate_program_id?: string | null;
             /**
              * Allow Mid Entry
              * @default false
@@ -17894,6 +17902,17 @@ export interface components {
              */
             set_status_to_open_if_future: boolean;
         };
+        /**
+         * CohortType
+         * @description How the cohort is structured.
+         *
+         *     The session layer (``SessionType.COHORT_CLASS`` with ``cohort_id`` set)
+         *     is identical for all CohortType values — variation lives here on the
+         *     cohort row rather than at the per-session level. See
+         *     docs/design/A1_SESSION_DISCRIMINATOR_REFACTOR.md §B.
+         * @enum {string}
+         */
+        CohortType: "group" | "private" | "small_group" | "corporate";
         /** CohortUpdate */
         CohortUpdate: {
             /** Name */
@@ -17905,6 +17924,9 @@ export interface components {
             /** Capacity */
             capacity?: number | null;
             status?: components["schemas"]["CohortStatus"] | null;
+            type?: components["schemas"]["CohortType"] | null;
+            /** Corporate Program Id */
+            corporate_program_id?: string | null;
             /** Allow Mid Entry */
             allow_mid_entry?: boolean | null;
             /** Mid Entry Cutoff Week */
