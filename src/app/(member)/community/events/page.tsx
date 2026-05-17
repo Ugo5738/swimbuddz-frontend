@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Calendar, MapPin, Users, Filter } from "lucide-react";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import Link from "next/link";
 import { format } from "date-fns";
-import { apiEndpoints } from "@/lib/config";
+import { useApi } from "@/hooks/useApi";
 
 interface Event {
   id: string;
@@ -45,27 +45,13 @@ const eventTypeColors: Record<string, string> = {
 };
 
 export default function EventsPage() {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Migrated to the canonical useApi hook (review findings F5–F7).
+  // Public events list — no auth header (matches the prior raw fetch).
+  const { data, loading } = useApi<Event[]>("/api/v1/events/", {
+    auth: false,
+  });
+  const events = data ?? [];
   const [filterType, setFilterType] = useState<string>("all");
-
-  useEffect(() => {
-    fetchEvents();
-  }, []);
-
-  const fetchEvents = async () => {
-    try {
-      const response = await fetch(`${apiEndpoints.events}/`);
-      if (response.ok) {
-        const data = await response.json();
-        setEvents(data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch events:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filteredEvents =
     filterType === "all"

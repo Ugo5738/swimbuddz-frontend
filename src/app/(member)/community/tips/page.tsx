@@ -2,7 +2,7 @@
 
 import { Card } from "@/components/ui/Card";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
-import { apiEndpoints } from "@/lib/config";
+import { useApi } from "@/hooks/useApi";
 import {
   BookOpen,
   Calendar,
@@ -12,7 +12,7 @@ import {
   Tag,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 interface ContentPost {
   id: string;
@@ -60,35 +60,15 @@ const categoryLabels: Record<string, string> = {
 };
 
 export default function CommunityTipsPage() {
-  const [posts, setPosts] = useState<ContentPost[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Migrated to the canonical useApi hook (review findings F5–F7).
+  // Public content — no auth header (matches the prior raw fetch).
+  const { data, loading } = useApi<ContentPost[]>(
+    "/api/v1/content/?published_only=true",
+    { auth: false },
+  );
+  const posts = data ?? [];
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState<string>("all");
-
-  useEffect(() => {
-    fetchPosts();
-  }, []);
-
-  const fetchPosts = async () => {
-    try {
-      // Fetch published content posts from API
-      const response = await fetch(
-        `${apiEndpoints.content}/?published_only=true`,
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setPosts(data);
-      } else {
-        console.error("Failed to fetch content posts:", response.status);
-        setPosts([]);
-      }
-    } catch (error) {
-      console.error("Failed to fetch content posts:", error);
-      setPosts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const categories = ["all", ...new Set(posts.map((p) => p.category))];
 

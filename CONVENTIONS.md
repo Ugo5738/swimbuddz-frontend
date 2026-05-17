@@ -36,6 +36,7 @@ Route-specific rules:
 
 - All React components should be typed.
 - Use `FC` sparingly; prefer explicit prop types.
+- **No `any` for API payloads (review findings F5–F7).** A response body must be typed: prefer the generated types in `src/lib/api-types.ts`, or a narrow hand-written `interface` for the fields you actually read (see `MiddlewareMember` in `src/lib/middlewareAccess.ts` for the pattern). `useApi<T>(…)` makes this the path of least resistance — pass the response type as `T`. Treat a new `any` on a network payload as a review blocker.
 
 Example:
 
@@ -79,11 +80,13 @@ For repeated patterns, extract a reusable component in `src/components/ui/`.
 
 ## 6. Data Fetching and API Calls
 
-- Use `src/lib/api.ts` as the central place for backend calls.
-- Do not copy-paste raw `fetch` logic throughout components.
+- Use `src/lib/api.ts` as the central place for backend calls (`apiGet`/`apiPost`/…). Never call `fetch()` directly from a component.
+- For **client-component GETs with loading/error/refetch state**, use the canonical `useApi` hook (`src/hooks/useApi.ts`) instead of the hand-rolled `useState(loading)/useEffect(fetch)/catch` triad. It aborts in-flight requests on unmount/path-change, surfaces a friendly error string (never a raw exception), and supports conditional fetch (`path = null` / `enabled: false`) and `refetch()`. Reference usage: `src/app/(member)/community/directory/page.tsx`.
+- **Migrate-on-touch (review findings F5–F7).** There are still ~50 components on the raw-`fetch()` + manual-state triad and ~130 `any` API payloads. Do **not** attempt a big-bang sweep. Whenever you modify a component that still uses the old pattern, migrate that component to `useApi` (and type its payload, see §3) as part of the change. New code must use `useApi` (or React Query for cache-sharing cases) from the start.
 - Patterns:
   - Simple SEO-friendly pages: prefer server components with async data fetching.
   - Interactive forms: use client components that call helpers from `api.ts` on submit.
+  - Client read-and-render: `const { data, loading, error, refetch } = useApi<T>(path)`.
 
 ---
 
