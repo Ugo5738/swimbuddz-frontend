@@ -259,23 +259,52 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
     loadData();
   }, [params.id]);
 
-  // Check existing bookings (attendance + ride)
+  // Check existing bookings (SessionBooking + legacy attendance + ride)
   useEffect(() => {
     let cancelled = false;
     async function loadExistingBooking() {
       try {
-        const attendance = await apiGet<Array<{ session_id: string; status?: string }>>(
-          "/api/v1/attendance/me",
-          { auth: true }
-        );
-        if (cancelled) return;
-        const record = (attendance || []).find((r) => r.session_id === params.id);
-        if (!record) return;
-        const status = String(record.status || "").toLowerCase();
-        if (status === "cancelled" || status === "canceled" || status === "no_show") {
-          return;
+        // Phase 3.3: a confirmed SessionBooking is the canonical "I've
+        // paid for this session" record. It does NOT create an
+        // attendance row (attendance is day-of, at sign-in), so this
+        // must be checked directly — otherwise the page can't tell the
+        // user already paid and re-shows the payment form (double-pay
+        // risk). Fall back to the legacy attendance check below for
+        // pre-Phase-3.3 bookings.
+        let foundStatus: string | null = null;
+        try {
+          const myBookings = await apiGet<Array<{ session_id: string; status?: string }>>(
+            "/api/v1/sessions/bookings/me?status_filter=confirmed",
+            {
+              auth: true,
+            }
+          );
+          if (cancelled) return;
+          const booking = (myBookings || []).find((b) => b.session_id === params.id);
+          if (booking) {
+            foundStatus = String(booking.status || "confirmed").toLowerCase();
+          }
+        } catch {
+          // Endpoint unavailable / not authenticated — fall through to
+          // the legacy attendance check.
         }
-        setExistingBookingStatus(status || "booked");
+
+        if (!foundStatus) {
+          const attendance = await apiGet<Array<{ session_id: string; status?: string }>>(
+            "/api/v1/attendance/me",
+            { auth: true }
+          );
+          if (cancelled) return;
+          const record = (attendance || []).find((r) => r.session_id === params.id);
+          if (!record) return;
+          const status = String(record.status || "").toLowerCase();
+          if (status === "cancelled" || status === "canceled" || status === "no_show") {
+            return;
+          }
+          foundStatus = status || "booked";
+        }
+
+        setExistingBookingStatus(foundStatus);
 
         // Check for existing ride booking
         let hasRideBooking = false;
@@ -444,9 +473,7 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
           num_seats: numSeats,
           discount_code: validatedDiscount?.code || undefined,
           bubbles_to_apply: effectiveBubbles > 0 ? effectiveBubbles : undefined,
-          ...(bookingId
-            ? { payment_metadata: { booking_id: bookingId } }
-            : {}),
+          ...(bookingId ? { payment_metadata: { booking_id: bookingId } } : {}),
         },
         { auth: true }
       );

@@ -1,41 +1,26 @@
 "use client";
 
 import { MultiSelectBar } from "@/components/sessions/MultiSelectBar";
-import { SessionCard, type SessionWithRides } from "@/components/sessions/SessionCard";
+import { type SessionWithRides } from "@/components/sessions/SessionCard";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { AcademyApi, type Cohort, type Enrollment } from "@/lib/academy";
 import { apiGet, apiPost } from "@/lib/api";
 import { tierDisplayLabel } from "@/lib/sessionAccess";
-import { type CohortInfo, getSessionTypeLabel, SessionType } from "@/lib/sessions";
+import { type CohortInfo } from "@/lib/sessions";
 import { getEffectiveTier, MembershipTier } from "@/lib/tiers";
 import { useQuery } from "@tanstack/react-query";
-import {
-  ArrowRight,
-  Calendar,
-  CheckSquare,
-  ChevronDown,
-  Clock,
-  Filter,
-  MapPin,
-  Waves,
-  X,
-} from "lucide-react";
+import { ArrowRight, Calendar, CheckSquare, Waves, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import {
-  ActiveFilterChips,
-  DateGroupedSessions,
-  FilterBar,
-  NextSessionPanel,
-} from "./components";
+import { ActiveFilterChips, DateGroupedSessions, FilterBar, NextSessionPanel } from "./components";
 import { SESSION_TYPES_QUERY, TABS } from "./constants";
-import type { AttendanceRecord, DateFilter, MemberProfile, ViewTab } from "./types";
-import { filterByDate, filterByType, groupByDate, isActiveBooking } from "./utils";
+import type { AttendanceRecord, DateFilter, MemberProfile, MyBooking, ViewTab } from "./types";
+import { filterByDate, filterByType, isActiveBooking } from "./utils";
 
 // ── Inner component (needs searchParams) ────────────────────────────────
 
@@ -58,6 +43,7 @@ function SessionsHub() {
   const [sessions, setSessions] = useState<SessionWithRides[]>([]);
   const [pastSessions, setPastSessions] = useState<SessionWithRides[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  const [myBookings, setMyBookings] = useState<MyBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [membership, setMembership] = useState<MembershipTier>("community");
@@ -124,6 +110,7 @@ function SessionsHub() {
     queryFn: async () => {
       let resolvedTier: MembershipTier = "community";
       let attendanceData: AttendanceRecord[] = [];
+      let bookingsData: MyBooking[] = [];
 
       try {
         const profile = await apiGet<MemberProfile>("/api/v1/members/me", {
@@ -131,9 +118,20 @@ function SessionsHub() {
         });
         resolvedTier = getEffectiveTier(profile);
 
-        attendanceData = await apiGet<AttendanceRecord[]>("/api/v1/attendance/me", {
-          auth: true,
-        }).catch(() => []);
+        // Attendance = day-of presence (only exists after sign-in).
+        // Bookings = paid/pending reservations (intent-only, no
+        // attendance row until sign-in). The Booked tab needs both:
+        // attendance covers legacy/older flows, bookings covers the
+        // SessionBooking flow where a confirmed booking has no
+        // attendance record yet.
+        [attendanceData, bookingsData] = await Promise.all([
+          apiGet<AttendanceRecord[]>("/api/v1/attendance/me", {
+            auth: true,
+          }).catch(() => []),
+          apiGet<MyBooking[]>("/api/v1/sessions/bookings/me", {
+            auth: true,
+          }).catch(() => []),
+        ]);
       } catch {
         // Not authenticated or profile fetch failed — default community
       }
@@ -209,6 +207,7 @@ function SessionsHub() {
       return {
         membership: resolvedTier,
         attendance: attendanceData,
+        myBookings: bookingsData,
         cohortMap: cohortMapResult,
         enrolledCohortIds: enrolledCohorts,
         sessions: withRides,
@@ -224,6 +223,7 @@ function SessionsHub() {
     const d = sessionsHubQuery.data;
     setMembership(d.membership);
     setAttendance(d.attendance);
+    setMyBookings(d.myBookings);
     setCohortMap(d.cohortMap);
     setEnrolledCohortIds(d.enrolledCohortIds);
     setSessions(d.sessions);
@@ -250,14 +250,26 @@ function SessionsHub() {
   // ── Derived data ───────────────────────────────────────────────────────
   const bookedSessionIds = useMemo(() => {
     const ids = new Set<string>();
+    // Legacy/day-of path: an attendance record in a non-cancelled state.
     for (const record of attendance) {
       if (!record.session_id) continue;
       if (isActiveBooking(record.status)) {
         ids.add(record.session_id);
       }
     }
+    // SessionBooking path: a paid/pending reservation that has no
+    // attendance record yet (attendance is created day-of at sign-in).
+    // The /bookings/me endpoint already scopes to the active set
+    // (pending + confirmed), but guard with isActiveBooking anyway in
+    // case a status_filter or future status leaks through.
+    for (const booking of myBookings) {
+      if (!booking.session_id) continue;
+      if (isActiveBooking(booking.status)) {
+        ids.add(booking.session_id);
+      }
+    }
     return ids;
-  }, [attendance]);
+  }, [attendance, myBookings]);
 
   const attendanceBySession = useMemo(() => {
     const map = new Map<string, string>();
@@ -497,10 +509,7 @@ function SessionsHub() {
         </p>
         <p className="text-sm text-slate-500">
           Know a pool we should partner with?{" "}
-          <Link
-            href="/account/pools/suggest"
-            className="font-medium text-cyan-700 hover:underline"
-          >
+          <Link href="/account/pools/suggest" className="font-medium text-cyan-700 hover:underline">
             Suggest a pool &rarr;
           </Link>
         </p>

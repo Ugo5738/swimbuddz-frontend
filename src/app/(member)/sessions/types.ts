@@ -2,12 +2,7 @@
 
 export type ViewTab = "upcoming" | "booked" | "past" | "all";
 
-export type DateFilter =
-  | "all"
-  | "this_week"
-  | "this_month"
-  | "next_7"
-  | "next_30";
+export type DateFilter = "all" | "this_week" | "this_month" | "next_7" | "next_30";
 
 export type MemberProfile = {
   membership?: {
@@ -21,6 +16,17 @@ export type MemberProfile = {
 };
 
 export type AttendanceRecord = {
+  session_id: string;
+  status?: string;
+};
+
+// Returned by GET /api/v1/sessions/bookings/me. Only the fields the
+// Booked tab needs are typed here (the endpoint returns the full
+// SessionBookingResponse). status is "pending" | "confirmed" for the
+// default active set; the booking lifecycle is intent-only so a booking
+// never shows up in attendance until day-of sign-in — the Booked tab
+// reads bookings directly.
+export type MyBooking = {
   session_id: string;
   status?: string;
 };
