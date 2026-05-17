@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@/components/ui/Button";
 import { LOCATION_LABELS } from "@/lib/sessions";
 import { ArrowRight, Calendar, MapPin } from "lucide-react";

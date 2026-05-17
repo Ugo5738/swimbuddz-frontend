@@ -1,5 +1,3 @@
-"use client";
-
 import { Calendar, GraduationCap, ShoppingBag, Trophy, Wallet } from "lucide-react";
 import Link from "next/link";
 

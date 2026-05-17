@@ -1,5 +1,3 @@
-"use client";
-
 import { Card } from "@/components/ui/Card";
 import type { YTDStats } from "@/lib/reports";
 import { Calendar, Clock, Flame, Wallet } from "lucide-react";

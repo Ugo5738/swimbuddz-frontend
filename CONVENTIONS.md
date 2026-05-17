@@ -75,6 +75,7 @@ For repeated patterns, extract a reusable component in `src/components/ui/`.
 - Use `src/components/ui/` for shared primitives (Button, Input, Select, Checkbox, Card, Table, Modal, Alert, Badge).
 - Use `src/components/layout/` for layout shells like `MainLayout`, `AdminLayout`, headers, footers, and navigation.
 - Keep components presentational when possible; place data fetching in server components or top-level client containers.
+- **Do not add `"use client"` by default (review finding G3).** A component needs it only if it uses hooks, event handlers, browser APIs, context, or a client-only library. Pure presentational components that just take props and render markup/`next/link`/icons should be Server Components — `next/link` and `lucide-react` render fine server-side. Adding `"use client"` to a pure leaf needlessly pulls it (and its tree) into the client bundle.
 
 ---
 

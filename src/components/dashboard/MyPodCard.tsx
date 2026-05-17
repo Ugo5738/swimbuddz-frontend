@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * "Your pod" dashboard widget for Club members.
  *

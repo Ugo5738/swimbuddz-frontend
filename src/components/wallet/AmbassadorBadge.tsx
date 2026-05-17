@@ -1,5 +1,3 @@
-"use client";
-
 import { formatDate } from "@/lib/format";
 import { Trophy } from "lucide-react";
 
