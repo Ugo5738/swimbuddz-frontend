@@ -2820,6 +2820,37 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sessions/bookings/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List My Bookings
+         * @description List the authenticated member's session bookings.
+         *
+         *     Defaults to the *active* set — PENDING (payment in flight, still
+         *     within the 15-min TTL) and CONFIRMED (paid, seat held). This is what
+         *     the member's "Booked" tab consumes: the booking lifecycle is
+         *     intent-only, so a confirmed booking never produces an AttendanceRecord
+         *     until day-of sign-in — the Booked tab must read bookings directly,
+         *     not attendance. Pass ``?status_filter=cancelled`` (etc.) to narrow to
+         *     a single state.
+         *
+         *     Registered before the admin ``/sessions/{session_id}/bookings`` route
+         *     so the literal ``bookings/me`` path is matched first.
+         */
+        get: operations["list_my_bookings_sessions_bookings_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sessions/{session_id}/bookings": {
         parameters: {
             query?: never;
@@ -33572,6 +33603,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionBookingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_my_bookings_sessions_bookings_me_get: {
+        parameters: {
+            query?: {
+                status_filter?: components["schemas"]["SessionBookingStatus"] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionBookingResponse"][];
                 };
             };
             /** @description Validation Error */
