@@ -1,16 +1,17 @@
 "use client";
 
 import { Alert } from "@/components/ui/Alert";
-import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { FilterTabs } from "@/components/ui/FilterTabs";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
+import { OpportunityCard } from "@/components/volunteers/OpportunityCard";
 import {
   VolunteersApi,
   type VolunteerOpportunity,
+  type VolunteerProfile,
   type VolunteerRole,
 } from "@/lib/volunteers";
-import { ArrowLeft, Calendar, Clock, MapPin } from "lucide-react";
+import { ArrowLeft, Calendar } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -21,9 +22,12 @@ export default function OpportunitiesListPage() {
     [],
   );
   const [roles, setRoles] = useState<VolunteerRole[]>([]);
+  const [profile, setProfile] = useState<VolunteerProfile | null>(null);
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionMsg, setActionMsg] = useState<string | null>(null);
+  const [claimingId, setClaimingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -37,10 +41,45 @@ export default function OpportunitiesListPage() {
       ]);
       setOpportunities(opps);
       setRoles(rolesData);
+      // Profile is optional — member may not yet be a registered volunteer.
+      // Used only to decorate the cards with eligibility info.
+      try {
+        const p = await VolunteersApi.getMyProfile();
+        setProfile(p);
+      } catch {
+        // not registered; cards just won't show eligibility chips
+      }
     } catch {
       setError("Failed to load opportunities.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleInlineClaim = async (oppId: string) => {
+    setActionMsg(null);
+    setError(null);
+    if (!profile) {
+      setError(
+        "Join the volunteer team first to claim opportunities. Go to the Volunteer Hub.",
+      );
+      return;
+    }
+    setClaimingId(oppId);
+    try {
+      const slot = await VolunteersApi.claimSlot(oppId);
+      setActionMsg(
+        slot.status === "approved"
+          ? "You're confirmed! See you there."
+          : "Your request has been submitted.",
+      );
+      await loadData();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to claim slot.";
+      setError(message);
+    } finally {
+      setClaimingId(null);
     }
   };
 
@@ -72,6 +111,7 @@ export default function OpportunitiesListPage() {
       </div>
 
       {error && <Alert variant="error">{error}</Alert>}
+      {actionMsg && <Alert variant="success">{actionMsg}</Alert>}
 
       {/* Role Filter */}
       {roles.length > 0 && (
@@ -93,76 +133,15 @@ export default function OpportunitiesListPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {filtered.map((opp) => {
-            const slotsLeft = opp.slots_needed - opp.slots_filled;
-            return (
-              <Link
-                key={opp.id}
-                href={`/community/volunteers/opportunities/${opp.id}`}
-              >
-                <Card className="transition-shadow hover:shadow-md cursor-pointer">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="space-y-2 flex-1">
-                      <div className="flex items-start gap-2 flex-wrap">
-                        <h3 className="font-semibold text-slate-900">
-                          {opp.title}
-                        </h3>
-                        {opp.role_title && (
-                          <Badge variant="default">{opp.role_title}</Badge>
-                        )}
-                        {opp.opportunity_type === "approval_required" && (
-                          <Badge variant="warning">Approval Required</Badge>
-                        )}
-                      </div>
-                      {opp.description && (
-                        <p className="text-sm text-slate-600 line-clamp-2">
-                          {opp.description}
-                        </p>
-                      )}
-                      <div className="flex flex-wrap gap-4 text-sm text-slate-500">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          {new Date(opp.date).toLocaleDateString("en-NG", {
-                            weekday: "short",
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </span>
-                        {opp.start_time && (
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            {opp.start_time.slice(0, 5)}
-                            {opp.end_time && ` – ${opp.end_time.slice(0, 5)}`}
-                          </span>
-                        )}
-                        {opp.location_name && (
-                          <span className="flex items-center gap-1">
-                            <MapPin className="h-4 w-4" />
-                            {opp.location_name}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex-shrink-0 text-right">
-                      <Badge
-                        variant={
-                          slotsLeft <= 0
-                            ? "warning"
-                            : slotsLeft <= 1
-                              ? "info"
-                              : "success"
-                        }
-                      >
-                        {slotsLeft <= 0
-                          ? "Full"
-                          : `${slotsLeft} slot${slotsLeft > 1 ? "s" : ""} left`}
-                      </Badge>
-                    </div>
-                  </div>
-                </Card>
-              </Link>
-            );
-          })}
+          {filtered.map((opp) => (
+            <OpportunityCard
+              key={opp.id}
+              opp={opp}
+              memberTier={profile?.tier ?? null}
+              onClaim={handleInlineClaim}
+              claiming={claimingId === opp.id}
+            />
+          ))}
         </div>
       )}
     </div>

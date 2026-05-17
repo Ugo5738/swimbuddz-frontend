@@ -90,7 +90,7 @@ export default function OpportunityDetailPage() {
   const isFull = slotsLeft <= 0;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 py-4 md:py-8">
+    <div className="mx-auto max-w-3xl space-y-6 py-4 md:py-8 pb-28 md:pb-8">
       {/* Back */}
       <Link
         href="/community/volunteers/opportunities"
@@ -244,6 +244,52 @@ export default function OpportunityDetailPage() {
             </div>
           </div>
         </Card>
+      )}
+
+      {/* Sticky mobile CTA — mirrors the Action card so the button is always
+          reachable without scrolling on small screens. Hidden on md+ where
+          the in-flow Card is already visible. */}
+      {(opp.status === "open" || opp.status === "in_progress") && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur-sm px-4 py-3 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] md:hidden">
+          <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
+            {hasClaimed ? (
+              <>
+                <span className="flex items-center gap-2 text-sm font-medium text-emerald-700">
+                  <CheckCircle className="h-4 w-4" /> You&apos;re signed up
+                </span>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={handleCancel}
+                  disabled={cancelling}
+                >
+                  {cancelling ? "Cancelling…" : "Cancel"}
+                </Button>
+              </>
+            ) : (
+              <>
+                <span className="text-sm text-slate-600">
+                  {isFull
+                    ? "All slots filled"
+                    : `${slotsLeft} slot${slotsLeft > 1 ? "s" : ""} left`}
+                </span>
+                <Button
+                  onClick={handleClaim}
+                  disabled={claiming || isFull}
+                  size="sm"
+                >
+                  {claiming
+                    ? "Claiming…"
+                    : isFull
+                      ? "Full"
+                      : opp.opportunity_type === "approval_required"
+                        ? "Request to Join"
+                        : "Claim Slot"}
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
