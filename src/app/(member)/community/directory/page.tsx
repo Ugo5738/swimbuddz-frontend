@@ -2,9 +2,9 @@
 
 import { Card } from "@/components/ui/Card";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
-import { apiEndpoints } from "@/lib/config";
+import { useApi } from "@/hooks/useApi";
 import { Award, MapPin, Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 interface Member {
   id: string;
@@ -24,28 +24,16 @@ const swimLevelLabels: Record<string, string> = {
 };
 
 export default function MemberDirectoryPage() {
-  const [members, setMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Reference migration for the useApi hook (FU5). The public member
+  // directory needs no auth. Replaces the hand-rolled
+  // useState/useEffect/try-catch triad.
+  const { data, loading } = useApi<Member[]>(
+    "/api/v1/members/directory",
+    { auth: false },
+  );
+  const members = data ?? [];
   const [searchQuery, setSearchQuery] = useState("");
   const [filterLevel, setFilterLevel] = useState<string>("all");
-
-  useEffect(() => {
-    fetchMembers();
-  }, []);
-
-  const fetchMembers = async () => {
-    try {
-      const response = await fetch(`${apiEndpoints.members}/directory`);
-      if (response.ok) {
-        const data = await response.json();
-        setMembers(data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch members:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filteredMembers = members.filter((member) => {
     const matchesSearch =

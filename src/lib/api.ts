@@ -11,6 +11,9 @@ type RequestOptions = {
   auth?: boolean;
   headers?: HeadersInit;
   body?: unknown;
+  /** Forwarded to fetch() so callers (e.g. useApi) can cancel in-flight
+   * requests on unmount / param change. */
+  signal?: AbortSignal;
 };
 
 async function buildHeaders(
@@ -42,6 +45,7 @@ async function request<T>(
     headers,
     body: options.body ? JSON.stringify(options.body) : undefined,
     cache: "no-store",
+    signal: options.signal,
   });
   const responseText = await response.text();
   const contentType = response.headers.get("content-type") || "";
