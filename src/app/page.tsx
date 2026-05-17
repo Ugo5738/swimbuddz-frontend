@@ -17,15 +17,15 @@ import {
   comparisonFeatures,
   defaultHeroImages,
   FALLBACK_SPOTLIGHT,
-  howItWorks,
   tiers,
   trustBadgeMessages,
-  whoSwimBudzIsFor,
   type GalleryPhoto,
   type VideoTestimonial,
 } from "./_homepage/data";
+import { HowItWorks } from "./_homepage/HowItWorks";
 import { getDisplayName, getSeasonalTagline } from "./_homepage/utils";
 import { WaveDecoration } from "./_homepage/WaveDecoration";
+import { WhoItsFor } from "./_homepage/WhoItsFor";
 
 // Fallback list shown while backend request is in flight / unreachable.
 const fallbackTestimonials = getTestimonials("all");
@@ -333,48 +333,7 @@ export default function HomePage() {
       </section>
 
       {/* ─── 2. WHO SWIMBUDDZ IS FOR ────────────────────────────────── */}
-      <section className="space-y-10">
-        <div className="text-center space-y-4">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
-            For Everyone
-          </p>
-          <h2 className="text-3xl font-bold text-slate-900 md:text-4xl">Who SwimBuddz Is For</h2>
-        </div>
-        <div className="grid gap-6 md:grid-cols-3">
-          {whoSwimBudzIsFor.map((audience) => (
-            <Link key={audience.title} href={audience.link} className="group block h-full">
-              <Card className="relative overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 hover:scale-[1.02] hover:ring-2 hover:ring-cyan-200 h-full">
-                <div
-                  className={`absolute inset-0 bg-gradient-to-br ${audience.gradient} opacity-0 group-hover:opacity-5 transition-opacity`}
-                />
-                <div className="relative flex flex-col items-center text-center p-6 h-full">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 text-4xl shadow-sm flex-shrink-0">
-                    {audience.icon}
-                  </div>
-                  <h3 className="text-xl font-semibold text-slate-900 mt-4">{audience.title}</h3>
-                  <p className="text-slate-600 mt-2 flex-1">{audience.description}</p>
-                  <span className="inline-flex items-center gap-1 text-sm font-medium text-cyan-600 group-hover:text-cyan-700 transition-colors mt-4">
-                    Learn more
-                    <svg
-                      className="w-4 h-4 transition-transform group-hover:translate-x-1"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  </span>
-                </div>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      </section>
+      <WhoItsFor />
 
       {/* ─── 3. COMMUNITY GALLERY ────────────────────────────────────── */}
       {/* Note: Live Challenges section moved DOWN to after "How It Works"
@@ -492,31 +451,7 @@ export default function HomePage() {
 
       {/* ─── 4. HOW IT WORKS ─────────────────────────────────────────── */}
       {/* (Live Challenges renders just below this section — see section 5.) */}
-      <section className="space-y-10">
-        <div className="text-center space-y-4">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
-            Simple Process
-          </p>
-          <h2 className="text-3xl font-bold text-slate-900 md:text-4xl">How It Works</h2>
-        </div>
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4 items-start">
-          {howItWorks.map((step, idx) => (
-            <div
-              key={step.step}
-              className="relative flex flex-col items-center md:items-start text-center md:text-left"
-            >
-              {idx < howItWorks.length - 1 && (
-                <div className="hidden lg:block absolute top-6 left-[60%] w-full h-0.5 bg-gradient-to-r from-cyan-200 to-transparent" />
-              )}
-              <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-cyan-600 text-xl font-bold text-white shadow-lg shadow-cyan-500/25 flex-shrink-0">
-                {step.step}
-              </div>
-              <h3 className="text-lg font-semibold text-slate-900 mt-4">{step.title}</h3>
-              <p className="text-sm text-slate-600 mt-2">{step.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      <HowItWorks />
 
       {/* ─── 5. LIVE CHALLENGES (auto-hides if no public challenges) ─── */}
       {/* Moved here from section 2: a first-time visitor is now oriented
