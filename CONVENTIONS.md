@@ -76,6 +76,12 @@ For repeated patterns, extract a reusable component in `src/components/ui/`.
 - Use `src/components/layout/` for layout shells like `MainLayout`, `AdminLayout`, headers, footers, and navigation.
 - Keep components presentational when possible; place data fetching in server components or top-level client containers.
 - **Do not add `"use client"` by default (review finding G3).** A component needs it only if it uses hooks, event handlers, browser APIs, context, or a client-only library. Pure presentational components that just take props and render markup/`next/link`/icons should be Server Components — `next/link` and `lucide-react` render fine server-side. Adding `"use client"` to a pure leaf needlessly pulls it (and its tree) into the client bundle.
+- **Use `next/image`, not raw `<img>` (review finding G4).** `<img>` ships unoptimised bytes — costly for our mobile-first, bandwidth-constrained users. ESLint's `@next/next/no-img-element` already warns; treat it as a migrate-on-touch backlog (~150 sites): whenever you touch a component with a raw `<img>`, convert it as part of the change; new code uses `next/image` from the start. Patterns:
+  - Static/known-size asset (e.g. the logo): `<Image src="/x.png" width={W} height={H} className="h-N w-auto" priority />` — `priority` only for above-the-fold.
+  - Dynamic image filling a sized box: parent `relative` (+ fixed aspect/size), then `<Image fill sizes="…" className="object-cover" />`.
+  - **Legitimate exceptions (keep raw `<img>`):** blob:/data: object-URL previews of a just-selected file (e.g. `MediaInput`), where `next/image` can't optimise anyway. Add a brief comment so it's not "fixed" later.
+  - Remote `src` hosts must be in `next.config` `images.remotePatterns` or the image 500s — verify before converting a new host.
+  - If `lucide-react`'s `Image` icon is already imported in the file, alias the import: `import NextImage from "next/image"`.
 
 ---
 

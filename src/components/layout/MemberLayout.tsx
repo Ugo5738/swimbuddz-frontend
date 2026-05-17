@@ -27,6 +27,7 @@ import {
   Wallet,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
@@ -481,7 +482,14 @@ export function MemberLayout({ children }: MemberLayoutProps) {
           {/* Header with Logo */}
           <div className="flex items-center justify-between border-b border-white/10 p-6">
             <Link href="/account" className="flex items-center gap-3">
-              <img src="/logo.png" alt="SwimBuddz Logo" className="h-10 w-auto" />
+              <Image
+                src="/logo.png"
+                alt="SwimBuddz Logo"
+                width={500}
+                height={500}
+                className="h-10 w-auto"
+                priority
+              />
               <div className="flex flex-col">
                 <span className="text-xl font-bold text-white">SwimBuddz</span>
                 <span className="text-xs font-medium text-cyan-100">Member Portal</span>
@@ -611,7 +619,14 @@ export function MemberLayout({ children }: MemberLayoutProps) {
               <Menu className="h-6 w-6" />
             </button>
             <div className="flex items-center gap-2">
-              <img src="/logo.png" alt="SwimBuddz Logo" className="h-8 w-auto" />
+              <Image
+                src="/logo.png"
+                alt="SwimBuddz Logo"
+                width={500}
+                height={500}
+                className="h-8 w-auto"
+                priority
+              />
               <span className="text-lg font-semibold text-cyan-700">SwimBuddz</span>
             </div>
             <NotificationBell

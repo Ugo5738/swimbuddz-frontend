@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { apiGet } from "@/lib/api";
 import { CheckCircle, Gift, XCircle } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -58,7 +59,14 @@ function JoinPageContent() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-3">
-            <img src="/logo.png" alt="SwimBuddz" className="h-12 w-auto" />
+            <Image
+              src="/logo.png"
+              alt="SwimBuddz"
+              width={500}
+              height={500}
+              className="h-12 w-auto"
+              priority
+            />
             <span className="text-2xl font-bold text-cyan-700">SwimBuddz</span>
           </Link>
         </div>

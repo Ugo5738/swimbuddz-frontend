@@ -25,6 +25,7 @@ import {
   Wallet,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
@@ -244,7 +245,14 @@ export function CoachLayout({ children }: CoachLayoutProps) {
           {/* Header with Logo */}
           <div className="flex items-center justify-between border-b border-white/10 p-6">
             <Link href="/coach/dashboard" className="flex items-center gap-3">
-              <img src="/logo.png" alt="SwimBuddz Logo" className="h-10 w-auto" />
+              <Image
+                src="/logo.png"
+                alt="SwimBuddz Logo"
+                width={500}
+                height={500}
+                className="h-10 w-auto"
+                priority
+              />
               <div className="flex flex-col">
                 <span className="text-xl font-bold text-white">SwimBuddz</span>
                 <span className="text-xs font-medium text-emerald-100">Coach Portal</span>
@@ -342,7 +350,14 @@ export function CoachLayout({ children }: CoachLayoutProps) {
               <Menu className="h-6 w-6" />
             </button>
             <div className="flex items-center gap-2">
-              <img src="/logo.png" alt="SwimBuddz Logo" className="h-8 w-auto" />
+              <Image
+                src="/logo.png"
+                alt="SwimBuddz Logo"
+                width={500}
+                height={500}
+                className="h-8 w-auto"
+                priority
+              />
               <span className="text-lg font-semibold text-emerald-700">SwimBuddz</span>
             </div>
             <NotificationBell

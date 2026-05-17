@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { MembersApi, type Member } from "@/lib/members";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -77,7 +78,13 @@ export function CoachSpotlight() {
               <Card className="overflow-hidden p-0 h-full bg-gradient-to-br from-slate-800 via-slate-900 to-cyan-900 transition-all hover:shadow-lg hover:-translate-y-0.5">
                 <div className="aspect-[4/3] w-full relative">
                   {photoUrl ? (
-                    <img src={photoUrl} alt={displayName} className="h-full w-full object-cover" />
+                    <Image
+                      src={photoUrl}
+                      alt={displayName}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                      className="object-cover"
+                    />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">
                       <span className="text-5xl font-bold text-cyan-300/80">{initials}</span>

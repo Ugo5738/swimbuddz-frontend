@@ -232,7 +232,10 @@ export function MediaInput({
           (previewUrl.startsWith("blob:") && purpose === "product_video") ? (
             <video src={previewUrl} controls className="max-h-32 rounded-lg" />
           ) : previewUrl.startsWith("blob:") || previewUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-            <img src={previewUrl} alt="Preview" className="max-h-32 rounded-lg object-cover" />
+            // Intentional raw <img> (CONVENTIONS §5, G4 exception):
+            // previewUrl is a local blob:/object URL for a just-selected
+            // file — next/image can't optimise it. Do not "fix".
+            <img src={previewUrl} alt="Preview" className="max-h-32 rounded-lg object-cover" /> // eslint-disable-line @next/next/no-img-element
           ) : (
             <div className="text-sm text-gray-500 p-2 bg-gray-50 rounded">{previewUrl}</div>
           )}

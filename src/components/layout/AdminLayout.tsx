@@ -34,6 +34,7 @@ import {
   Waves,
   X,
 } from "lucide-react";
+import NextImage from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
@@ -303,7 +304,14 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           {/* Header */}
           <div className="flex items-center justify-between border-b border-slate-700 p-4 lg:p-6">
             <Link href="/admin/dashboard" className="flex items-center gap-2 lg:gap-3">
-              <img src="/logo.png" alt="SwimBuddz Logo" className="h-8 lg:h-10 w-auto" />
+              <NextImage
+                src="/logo.png"
+                alt="SwimBuddz Logo"
+                width={500}
+                height={500}
+                className="h-8 lg:h-10 w-auto"
+                priority
+              />
               <div className="flex flex-col">
                 <span className="text-lg lg:text-xl font-bold text-cyan-400">SwimBuddz</span>
                 <span className="text-[10px] lg:text-xs font-medium text-slate-400">
@@ -419,7 +427,14 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               <Menu className="h-6 w-6" />
             </button>
             <Link href="/admin/dashboard" className="flex items-center gap-2">
-              <img src="/logo.png" alt="SwimBuddz Logo" className="h-7 w-auto" />
+              <NextImage
+                src="/logo.png"
+                alt="SwimBuddz Logo"
+                width={500}
+                height={500}
+                className="h-7 w-auto"
+                priority
+              />
               <span className="text-base font-semibold text-cyan-700">Admin</span>
             </Link>
             <div className="flex items-center gap-1 -mr-2">
