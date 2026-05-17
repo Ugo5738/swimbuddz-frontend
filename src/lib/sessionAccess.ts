@@ -17,12 +17,7 @@ export function requiredTierForSessionType(
 ): SessionAccessTier {
   const normalized = String(sessionType || "").toLowerCase();
 
-  if (
-    normalized === "academy" ||
-    normalized === "cohort_class" ||
-    normalized === "one_on_one" ||
-    normalized === "group_booking"
-  ) {
+  if (normalized === "academy" || normalized === "cohort_class") {
     return "academy";
   }
 

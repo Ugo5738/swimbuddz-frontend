@@ -2,10 +2,13 @@ import { apiDelete, apiGet, apiPatch, apiPost } from "./api";
 
 // --- Enums ---
 
+// A1 Phase 3.1 (2026-05-17) dropped ONE_ON_ONE and GROUP_BOOKING — they
+// were aspirational slots with zero rows. Private 1-on-1 / small-group
+// academy instruction is expressed via Cohort.type (PRIVATE, SMALL_GROUP,
+// CORPORATE), not as a separate SessionType.
+// See docs/design/A1_SESSION_DISCRIMINATOR_REFACTOR.md.
 export enum SessionType {
   COHORT_CLASS = "cohort_class",
-  ONE_ON_ONE = "one_on_one",
-  GROUP_BOOKING = "group_booking",
   CLUB = "club",
   COMMUNITY = "community",
   EVENT = "event",

@@ -8,8 +8,6 @@ export const SESSION_TYPES_QUERY = [
   SessionType.COMMUNITY,
   SessionType.CLUB,
   SessionType.COHORT_CLASS,
-  SessionType.ONE_ON_ONE,
-  SessionType.GROUP_BOOKING,
   SessionType.EVENT,
 ].join(",");
 
@@ -33,7 +31,5 @@ export const TYPE_FILTER_OPTIONS = [
   SessionType.COMMUNITY,
   SessionType.CLUB,
   SessionType.COHORT_CLASS,
-  SessionType.ONE_ON_ONE,
-  SessionType.GROUP_BOOKING,
   SessionType.EVENT,
 ];

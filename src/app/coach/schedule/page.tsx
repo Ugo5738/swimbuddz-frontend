@@ -259,10 +259,6 @@ function SessionCard({ session }: { session: CoachSession }) {
     switch (type) {
       case "cohort_class":
         return "Cohort Class";
-      case "one_on_one":
-        return "1-on-1";
-      case "group_booking":
-        return "Group";
       case "club":
         return "Club";
       case "community":

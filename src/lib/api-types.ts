@@ -9773,7 +9773,21 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Bulk Complete */
+        /**
+         * Bulk Complete
+         * @description Complete a batch of slots, deriving timestamps and hours from the
+         *     opportunity's scheduled window.
+         *
+         *     For each slot:
+         *     - reject if the opportunity hasn't started yet (admin mis-click);
+         *     - preserve any pre-existing `checked_in_at` (a real check-in stamp
+         *       shouldn't be clobbered); otherwise stamp the opportunity start;
+         *     - set `checked_out_at` to the opportunity's end (or `now()` if the
+         *       event is still in progress / has no end_time);
+         *     - derive `hours_logged` from those timestamps so the slot row stays
+         *       internally consistent. `data.hours`, if supplied, overrides the
+         *       derivation for every slot in the batch.
+         */
         post: operations["bulk_complete_admin_volunteers_slots_bulk_complete_post"];
         delete?: never;
         options?: never;
@@ -16196,8 +16210,6 @@ export interface components {
             cohort_id?: string | null;
             /** Event Id */
             event_id?: string | null;
-            /** Booking Id */
-            booking_id?: string | null;
             /** Pod Id */
             pod_id?: string | null;
             /** Week Number */
@@ -16319,8 +16331,6 @@ export interface components {
             cohort_id?: string | null;
             /** Event Id */
             event_id?: string | null;
-            /** Booking Id */
-            booking_id?: string | null;
             /** Pod Id */
             pod_id?: string | null;
             /** Week Number */
@@ -16510,7 +16520,7 @@ export interface components {
          * SessionType
          * @enum {string}
          */
-        SessionType: "cohort_class" | "one_on_one" | "group_booking" | "club" | "community" | "event";
+        SessionType: "cohort_class" | "club" | "community" | "event";
         /** SessionUpdate */
         SessionUpdate: {
             /** Title */
@@ -16544,8 +16554,6 @@ export interface components {
             cohort_id?: string | null;
             /** Event Id */
             event_id?: string | null;
-            /** Booking Id */
-            booking_id?: string | null;
             /** Pod Id */
             pod_id?: string | null;
             /** Week Number */

@@ -32,8 +32,6 @@ export const LEGEND_ITEMS: { key: SessionType; label: string; cls: string }[] = 
   { key: "club", label: "Club", cls: "bg-cyan-600" },
   { key: "community", label: "Community", cls: "bg-purple-600" },
   { key: "cohort_class", label: "Academy", cls: "bg-orange-600" },
-  { key: "one_on_one", label: "1-on-1", cls: "bg-emerald-600" },
-  { key: "group_booking", label: "Group", cls: "bg-blue-600" },
   { key: "event", label: "Event", cls: "bg-rose-600" },
 ];
 

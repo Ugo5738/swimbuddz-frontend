@@ -18,8 +18,6 @@ interface Session {
     | "academy"
     | "community"
     | "cohort_class"
-    | "one_on_one"
-    | "group_booking"
     | "event";
   /** Preferred location reference — pool from the pools registry. */
   pool_id?: string | null;

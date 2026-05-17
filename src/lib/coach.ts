@@ -301,8 +301,6 @@ export type SessionLocation =
 
 export type SessionType =
   | "cohort_class"
-  | "one_on_one"
-  | "group_booking"
   | "club"
   | "community"
   | "event";

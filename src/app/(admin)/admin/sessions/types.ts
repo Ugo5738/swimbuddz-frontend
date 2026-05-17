@@ -15,8 +15,6 @@ export type SessionType =
   | "academy"
   | "community"
   | "cohort_class"
-  | "one_on_one"
-  | "group_booking"
   | "event";
 
 export type ViewMode = "calendar" | "list";

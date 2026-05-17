@@ -172,8 +172,6 @@ export function SessionFormModal({
             <option value="club">Club</option>
             <option value="cohort_class">Academy / Cohort Class</option>
             <option value="community">Community</option>
-            <option value="one_on_one">One-on-One</option>
-            <option value="group_booking">Group Booking</option>
             <option value="event">Event</option>
           </Select>
           <PoolPicker

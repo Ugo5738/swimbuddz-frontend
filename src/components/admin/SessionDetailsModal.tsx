@@ -19,8 +19,6 @@ interface Session {
     | "academy"
     | "community"
     | "cohort_class"
-    | "one_on_one"
-    | "group_booking"
     | "event";
   status?: SessionStatusType;
   pool_id?: string | null;

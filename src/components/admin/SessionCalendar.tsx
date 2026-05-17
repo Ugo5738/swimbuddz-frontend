@@ -102,12 +102,6 @@ export function SessionCalendar({
             case "cohort_class":
               typeClasses = "!bg-orange-600 !border-orange-700";
               break;
-            case "one_on_one":
-              typeClasses = "!bg-emerald-600 !border-emerald-700";
-              break;
-            case "group_booking":
-              typeClasses = "!bg-blue-600 !border-blue-700";
-              break;
             case "event":
               typeClasses = "!bg-rose-600 !border-rose-700";
               break;
