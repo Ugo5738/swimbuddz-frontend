@@ -20148,7 +20148,7 @@ export interface components {
          * PaymentPurpose
          * @enum {string}
          */
-        PaymentPurpose: "community" | "club" | "club_bundle" | "academy_cohort" | "session_fee" | "session_bundle" | "store_order" | "wallet_topup" | "ride_share";
+        PaymentPurpose: "community" | "club" | "club_bundle" | "academy_cohort" | "session_fee" | "session_bundle" | "store_order" | "wallet_topup" | "ride_share" | "session_booking";
         /** PaymentResponse */
         PaymentResponse: {
             /**

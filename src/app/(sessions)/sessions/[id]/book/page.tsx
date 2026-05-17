@@ -413,10 +413,28 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
     // Paystack flow
     setProcessing(true);
     try {
+      // A1 Phase 3.3 — for a real session (not ride-only) create the
+      // PENDING SessionBooking first, then pay for it. The entitlement
+      // handler (purpose=session_booking) flips it to CONFIRMED once
+      // Paystack verifies. Ride-only flow has no session booking.
+      let bookingId: string | undefined;
+      if (!isRideOnlyFlow) {
+        const booking = await apiPost<{ id: string }>(
+          `/api/v1/sessions/${session!.id}/book`,
+          {
+            session_id: session!.id,
+            fee_amount_kobo: Math.round((session?.pool_fee ?? 0) * 100),
+            pay_with_bubbles: false,
+          },
+          { auth: true }
+        );
+        bookingId = booking.id;
+      }
+
       const intent = await apiPost<PaymentIntentResponse>(
         "/api/v1/payments/intents",
         {
-          purpose: isRideOnlyFlow ? "ride_share" : "session_fee",
+          purpose: isRideOnlyFlow ? "ride_share" : "session_booking",
           currency: "NGN",
           payment_method: "paystack",
           session_id: session!.id,
@@ -424,9 +442,11 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
           ride_config_id: selectedRideAreaId || undefined,
           pickup_location_id: selectedPickupLocationId || undefined,
           num_seats: numSeats,
-          ...(isRideOnlyFlow ? {} : { attendance_status: "present" }),
           discount_code: validatedDiscount?.code || undefined,
           bubbles_to_apply: effectiveBubbles > 0 ? effectiveBubbles : undefined,
+          ...(bookingId
+            ? { payment_metadata: { booking_id: bookingId } }
+            : {}),
         },
         { auth: true }
       );
