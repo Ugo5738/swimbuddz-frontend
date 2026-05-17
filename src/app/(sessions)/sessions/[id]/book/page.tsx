@@ -358,14 +358,18 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
       try {
         const fullBubbles = (payWithBubbles || coversFullWithBubbles) && total > 0;
         if (!isRideOnlyFlow) {
+          // A1 Phase 3.3 — book the session (creates SessionBooking).
+          // pay_with_bubbles=true (or free session) → endpoint debits
+          // wallet and flips to CONFIRMED atomically (preserves the
+          // one-click UX the old sign-in flow gave us). Day-of
+          // attendance still happens via the existing sign-in endpoint,
+          // which now links AttendanceRecord.booking_id back here.
           await apiPost(
-            `/api/v1/attendance/sessions/${params.id}/sign-in`,
+            `/api/v1/sessions/${params.id}/book`,
             {
-              status: "present",
-              ride_share_option: selectedRideAreaId ? "join" : undefined,
-              needs_ride: !!selectedRideAreaId,
-              pickup_location: selectedPickupLocationId,
-              pay_with_bubbles: fullBubbles,
+              session_id: params.id,
+              fee_amount_kobo: Math.round((session?.pool_fee ?? 0) * 100),
+              pay_with_bubbles: fullBubbles || total <= 0,
             },
             { auth: true }
           );
