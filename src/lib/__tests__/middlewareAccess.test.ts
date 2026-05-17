@@ -158,16 +158,11 @@ describe("evaluateMemberAccess — tier-route gate", () => {
     });
   });
 
-  it("club-approved but unpaid hitting /club → register?upgrade=true (documents a dead branch)", () => {
-    // BEHAVIOUR PARITY, NOT INTENT. The original middleware computes
-    //   requiredTier = allowedTiers.includes("academy") ? "academy" : "club"
-    // and EVERY TIER_ROUTES entry includes "academy", so requiredTier is
-    // always "academy". The `requiredTier === "club"` →
-    // billing(required=club) branch is therefore unreachable. This test
-    // pins the *actual* output (register?upgrade=true) so the F4
-    // extraction is provably behaviour-preserving. The dead branch is
-    // flagged for a separate, deliberate fix — changing it here would
-    // silently move the access boundary.
+  it("club-approved but unpaid hitting /club → billing(required=club)", () => {
+    // The F4 dead branch is now fixed: requiredTier is the LOWEST
+    // allowed tier (/club → "club"), so an approved-but-lapsed Club
+    // member is sent to billing to reactivate — not back through the
+    // upgrade-request flow.
     expect(
       decide("/club/training", {
         approval_status: "approved",
@@ -179,8 +174,26 @@ describe("evaluateMemberAccess — tier-route gate", () => {
       }),
     ).toEqual({
       kind: "redirect",
-      path: "/register",
-      search: { upgrade: "true" },
+      path: "/account/billing",
+      search: { required: "club" },
+    });
+  });
+
+  it("academy-approved but lapsed hitting /academy → billing(required=academy)", () => {
+    // Symmetric to the Club case (added with the F4 dead-branch fix).
+    expect(
+      decide("/academy/cohorts", {
+        approval_status: "approved",
+        membership: {
+          community_paid_until: FUTURE, // passes the paywall
+          academy_paid_until: PAST, // approved but inactive
+          active_tiers: ["academy"],
+        },
+      }),
+    ).toEqual({
+      kind: "redirect",
+      path: "/account/billing",
+      search: { required: "academy" },
     });
   });
 

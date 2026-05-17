@@ -163,9 +163,21 @@ export function evaluateMemberAccess(input: AccessInput): AccessDecision {
 
     if (!allowedTiers.includes(effectiveTier)) {
       const requestedTiers: string[] = membership?.requested_tiers || [];
-      const requiredTier = allowedTiers.includes("academy")
-        ? "academy"
-        : "club";
+      // The cheapest tier that grants access — the LOWEST-privilege
+      // entry in allowedTiers, not the highest. Only /club
+      // (["club","academy"] → "club") and /academy (["academy"] →
+      // "academy") reach this block; /community and /sessions always
+      // include "community" in allowedTiers and community is the
+      // effective-tier floor, so they never get here.
+      //
+      // (The pre-F4 code computed `includes("academy") ? "academy" :
+      // "club"`, which was always "academy" and made the
+      // approved-but-unpaid → billing branch dead. Fixed deliberately
+      // here so an approved-but-lapsed member is sent to billing to
+      // reactivate, not back through the upgrade-request flow.)
+      const requiredTier: MembershipTier = allowedTiers.includes("club")
+        ? "club"
+        : "academy";
 
       if (requestedTiers.includes(requiredTier)) {
         return {
@@ -175,7 +187,9 @@ export function evaluateMemberAccess(input: AccessInput): AccessDecision {
         };
       }
 
-      // Approved for Club but not currently active (unpaid) → billing.
+      // Approved for the required tier but not currently active
+      // (lapsed payment) → send to billing to reactivate rather than
+      // the re-registration / upgrade-request flow.
       if (
         requiredTier === "club" &&
         approvedTiers.includes("club") &&
@@ -185,6 +199,17 @@ export function evaluateMemberAccess(input: AccessInput): AccessDecision {
           kind: "redirect",
           path: "/account/billing",
           search: { required: "club" },
+        };
+      }
+      if (
+        requiredTier === "academy" &&
+        approvedTiers.includes("academy") &&
+        !academyActive
+      ) {
+        return {
+          kind: "redirect",
+          path: "/account/billing",
+          search: { required: "academy" },
         };
       }
 
