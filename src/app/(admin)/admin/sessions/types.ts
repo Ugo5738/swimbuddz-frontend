@@ -38,7 +38,8 @@ export interface Session {
   notes?: string;
   template_id?: string;
   is_recurring_instance?: boolean;
-  cohort_id?: string;
+  cohort_id?: string | null;
+  event_id?: string | null;
   pod_id?: string | null;
   timezone?: string;
 }

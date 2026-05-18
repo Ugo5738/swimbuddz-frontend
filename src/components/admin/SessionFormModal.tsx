@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
+import { apiGet } from "@/lib/api";
 import { useEffect, useState } from "react";
 
 import type { RideArea, Session } from "@/app/(admin)/admin/sessions/types";
@@ -61,6 +62,11 @@ export function SessionFormModal({
     // any Club member welcome". Set = "this Saturday's session for
     // Dolphins specifically". See docs/club/POD_OPERATIONS.md.
     pod_id: session?.pod_id ?? null,
+    // Context FKs the session_type discriminator requires (A1):
+    //   cohort_class → cohort_id required;  event → event_id required;
+    //   club → pod_id optional;  community → none.
+    cohort_id: session?.cohort_id ?? null,
+    event_id: session?.event_id ?? null,
   });
 
   // Lazy-load active pods only when session_type is "club" — avoids the
@@ -88,6 +94,54 @@ export function SessionFormModal({
       }
     })();
   }, [form.session_type, pods.length]);
+
+  // Lazy-load cohorts only when the type is "cohort_class" — required by
+  // the discriminator. Mirrors the pods pattern.
+  const [cohorts, setCohorts] = useState<Array<{ id: string; label: string }>>(
+    [],
+  );
+  useEffect(() => {
+    if (form.session_type !== "cohort_class") return;
+    if (cohorts.length > 0) return;
+    void (async () => {
+      try {
+        const { AcademyApi, CohortStatus } = await import("@/lib/academy");
+        const list = await AcademyApi.listCohorts();
+        setCohorts(
+          list
+            .filter(
+              (c) =>
+                c.status !== CohortStatus.COMPLETED &&
+                c.status !== CohortStatus.CANCELLED,
+            )
+            .map((c) => ({ id: c.id, label: c.name })),
+        );
+      } catch (e) {
+        console.warn("Failed to load cohorts for session form", e);
+      }
+    })();
+  }, [form.session_type, cohorts.length]);
+
+  // Lazy-load events only when the type is "event" — required by the
+  // discriminator.
+  const [events, setEvents] = useState<Array<{ id: string; label: string }>>(
+    [],
+  );
+  useEffect(() => {
+    if (form.session_type !== "event") return;
+    if (events.length > 0) return;
+    void (async () => {
+      try {
+        const list = await apiGet<Array<{ id: string; title: string }>>(
+          "/api/v1/events/",
+          { auth: true },
+        );
+        setEvents(list.map((ev) => ({ id: ev.id, label: ev.title })));
+      } catch (e) {
+        console.warn("Failed to load events for session form", e);
+      }
+    })();
+  }, [form.session_type, events.length]);
 
   const [rideConfigs, setRideConfigs] = useState<
     Array<{ ride_area_id: string; cost: number; capacity: number; departure_time: string }>
@@ -119,9 +173,25 @@ export function SessionFormModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Discriminator guard (A1): give the admin instant feedback instead
+    // of a backend 422 when the required context FK is missing.
+    if (form.session_type === "cohort_class" && !form.cohort_id) {
+      alert("Pick the cohort this Academy class belongs to.");
+      return;
+    }
+    if (form.session_type === "event" && !form.event_id) {
+      alert("Pick the event this session belongs to.");
+      return;
+    }
+
     const sessionData = {
       title: form.title,
       session_type: form.session_type,
+      // Send ONLY the context FK that matches the session_type so we
+      // never ship a discriminator-violating combination.
+      cohort_id: form.session_type === "cohort_class" ? form.cohort_id : null,
+      event_id: form.session_type === "event" ? form.event_id : null,
       // When a pool is picked, send pool_id as the authoritative link and
       // skip the legacy enum. Pre-registry sessions without a pool_id
       // continue to send the `location` enum for backwards compatibility.
@@ -187,6 +257,46 @@ export function SessionFormModal({
             hint="Managed at Admin → Pool Registry."
           />
         </div>
+        {/* Cohort link — REQUIRED for Academy / Cohort Class sessions
+            (discriminator rule). Without it the backend rejects the
+            session. Only active/upcoming cohorts are listed. */}
+        {form.session_type === "cohort_class" && (
+          <Select
+            label="Cohort"
+            value={form.cohort_id ?? ""}
+            onChange={(e) =>
+              setForm({ ...form, cohort_id: e.target.value || null })
+            }
+            required
+            hint="Which academy cohort is this class for?"
+          >
+            <option value="">— Select a cohort —</option>
+            {cohorts.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
+              </option>
+            ))}
+          </Select>
+        )}
+        {/* Event link — REQUIRED for Event sessions (discriminator rule). */}
+        {form.session_type === "event" && (
+          <Select
+            label="Event"
+            value={form.event_id ?? ""}
+            onChange={(e) =>
+              setForm({ ...form, event_id: e.target.value || null })
+            }
+            required
+            hint="Which community event is this session part of?"
+          >
+            <option value="">— Select an event —</option>
+            {events.map((ev) => (
+              <option key={ev.id} value={ev.id}>
+                {ev.label}
+              </option>
+            ))}
+          </Select>
+        )}
         {/* Pod link — only meaningful for Club sessions. NULL = general
             Club session open to any club member. Set = scheduled for that
             specific pod's roster (Saturday for Dolphins, etc). */}
