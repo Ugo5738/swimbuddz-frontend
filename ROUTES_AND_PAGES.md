@@ -304,6 +304,7 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 | `/admin/academy/cohorts/[id]`             | `src/app/(admin)/admin/academy/cohorts/[id]/page.tsx`             | Cohort management            |
 | `/admin/academy/enrollments`              | `src/app/(admin)/admin/academy/enrollments/page.tsx`              | All enrollments list         |
 | `/admin/academy/enrollments/[id]`         | `src/app/(admin)/admin/academy/enrollments/[id]/page.tsx`         | Single enrollment management |
+| `/admin/academy/extension-requests`       | `src/app/(admin)/admin/academy/extension-requests/page.tsx`       | Cohort extension approval queue |
 
 ### Gallery Management
 

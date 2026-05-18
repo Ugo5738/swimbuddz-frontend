@@ -15,6 +15,7 @@ import type {
   CohortComplexityScoreCreate,
   CohortComplexityScoreResponse,
   CohortCreate,
+  CohortExtensionRequest,
   CohortRideConfigEntry,
   CohortTimelineSessionImpact,
   CohortTimelineShiftLog,
@@ -367,6 +368,35 @@ export const AcademyApi = {
       `/api/v1/academy/cohorts/${cohortId}/ai-suggest-coach`,
       {},
       { auth: true }
+    ),
+};
+
+// ============================================================================
+// COHORT EXTENSION REQUESTS (admin approval queue)
+// ============================================================================
+
+export const ExtensionRequestApi = {
+  /** All pending extension requests across cohorts (admin only). */
+  listPending: () =>
+    apiGet<CohortExtensionRequest[]>(
+      "/api/v1/academy/extension-requests/pending",
+      { auth: true },
+    ),
+
+  /** Approve a request — backend also extends the cohort end date and
+   * propagates the new date to enrolled members' academy access. */
+  approve: (requestId: string, adminNotes?: string) =>
+    apiPost<CohortExtensionRequest>(
+      `/api/v1/academy/extension-requests/${requestId}/approve`,
+      { admin_notes: adminNotes?.trim() ? adminNotes.trim() : null },
+      { auth: true },
+    ),
+
+  reject: (requestId: string, adminNotes?: string) =>
+    apiPost<CohortExtensionRequest>(
+      `/api/v1/academy/extension-requests/${requestId}/reject`,
+      { admin_notes: adminNotes?.trim() ? adminNotes.trim() : null },
+      { auth: true },
     ),
 };
 

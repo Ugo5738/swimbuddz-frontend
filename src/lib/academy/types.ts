@@ -587,3 +587,20 @@ export interface OnboardingInfo {
   total_milestones: number;
 }
 
+/** A coach's request to extend a cohort's end date (admin approves/rejects).
+ * Mirrors backend `CohortExtensionRequestResponse`. */
+export interface CohortExtensionRequest {
+  id: string;
+  cohort_id: string;
+  coach_id: string;
+  weeks_requested: number;
+  reason: string;
+  current_end_date: string;
+  proposed_end_date: string;
+  status: "pending" | "approved" | "rejected";
+  reviewed_by_id?: string | null;
+  admin_notes?: string | null;
+  reviewed_at?: string | null;
+  created_at: string;
+}
+
