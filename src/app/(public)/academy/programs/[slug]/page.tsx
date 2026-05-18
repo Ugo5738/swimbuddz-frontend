@@ -3,7 +3,8 @@
 import { LiveTestimonials } from "@/components/academy/LiveTestimonials";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { AcademyApi, Cohort, Program } from "@/lib/academy";
+import { AcademyApi, Cohort, Program, ProgramCurriculum } from "@/lib/academy";
+import { apiEndpoints } from "@/lib/config";
 import Link from "next/link";
 import { notFound, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -33,8 +34,11 @@ export default function ProgramLandingPage() {
 
   const [program, setProgram] = useState<Program | null>(null);
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
+  const [curriculum, setCurriculum] = useState<ProgramCurriculum | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFoundState, setNotFoundState] = useState(false);
+  const [galleryImages, setGalleryImages] = useState<{ src: string; alt: string }[]>([]);
+  const [galleryIndex, setGalleryIndex] = useState(0);
 
   useEffect(() => {
     if (!slug) return;
@@ -52,13 +56,14 @@ export default function ProgramLandingPage() {
 
         setProgram(match);
 
-        // Fetch cohorts for this program
-        try {
-          const cohortList = await AcademyApi.listCohorts(match.id);
-          setCohorts(cohortList);
-        } catch {
-          // Non-fatal — just show program info
-        }
+        // Cohorts and curriculum are both non-fatal — the program still
+        // renders without them. Fetch in parallel to keep mobile TTI low.
+        const [cohortRes, curriculumRes] = await Promise.allSettled([
+          AcademyApi.listCohorts(match.id),
+          AcademyApi.getCurriculum(match.id),
+        ]);
+        if (cohortRes.status === "fulfilled") setCohorts(cohortRes.value);
+        if (curriculumRes.status === "fulfilled") setCurriculum(curriculumRes.value);
       } catch {
         setNotFoundState(true);
       } finally {
@@ -68,6 +73,60 @@ export default function ProgramLandingPage() {
 
     load();
   }, [slug]);
+
+  // Academy public gallery — global (not program-specific), non-fatal.
+  // Reuses the public media album pattern from /gallery/[id].
+  useEffect(() => {
+    let cancelled = false;
+    const loadGallery = async () => {
+      try {
+        const albumsRes = await fetch(
+          `${apiEndpoints.media}/albums?album_type=ACADEMY`
+        );
+        if (!albumsRes.ok) return;
+        const albums = await albumsRes.json();
+        if (!Array.isArray(albums) || albums.length === 0) return;
+        const album =
+          albums.find((a: { is_public?: boolean }) => a.is_public) ?? albums[0];
+        const detailRes = await fetch(`${apiEndpoints.media}/albums/${album.id}`);
+        if (!detailRes.ok) return;
+        const detail = await detailRes.json();
+        const items = (detail.media_items ?? detail.photos ?? []) as Array<{
+          file_url?: string;
+          thumbnail_url?: string | null;
+          media_type?: string;
+          alt_text?: string | null;
+          description?: string | null;
+          title?: string | null;
+        }>;
+        const images = items
+          .filter(
+            (m) => (m.media_type ?? "IMAGE").toUpperCase() === "IMAGE" && m.file_url
+          )
+          .slice(0, 8)
+          .map((m) => ({
+            src: m.thumbnail_url || (m.file_url as string),
+            alt: m.alt_text || m.description || m.title || "SwimBuddz Academy",
+          }));
+        if (!cancelled) setGalleryImages(images);
+      } catch {
+        // Non-fatal — the gallery section just won't render.
+      }
+    };
+    loadGallery();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (galleryImages.length <= 1) return;
+    const timer = setInterval(
+      () => setGalleryIndex((i) => (i + 1) % galleryImages.length),
+      4500
+    );
+    return () => clearInterval(timer);
+  }, [galleryImages.length]);
 
   if (loading) {
     return (
@@ -180,6 +239,94 @@ export default function ProgramLandingPage() {
         </Card>
       </section>
 
+      {/* Week-by-week curriculum (non-fatal — hidden if no active curriculum) */}
+      {curriculum && curriculum.weeks.length > 0 && (
+        <section className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-semibold text-slate-900">
+              Your week-by-week journey
+            </h2>
+            <p className="text-slate-600 mt-2">
+              Every week builds on the last — here&apos;s exactly what you&apos;ll work on.
+            </p>
+          </div>
+          <div className="space-y-3">
+            {[...curriculum.weeks]
+              .sort((a, b) => a.order_index - b.order_index)
+              .map((week) => (
+                <details
+                  key={week.id}
+                  className="group rounded-2xl border border-slate-200 bg-white open:border-cyan-200"
+                >
+                  <summary className="flex cursor-pointer list-none items-center gap-4 p-4">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-sm font-bold text-cyan-700">
+                      {week.week_number}
+                    </span>
+                    <span className="flex-1">
+                      <span className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        Week {week.week_number}
+                      </span>
+                      <span className="block font-semibold text-slate-900">{week.theme}</span>
+                    </span>
+                    <svg
+                      className="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-180"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </summary>
+                  <div className="space-y-4 px-4 pb-4 sm:pl-[4.5rem]">
+                    {week.objectives && (
+                      <p className="text-sm leading-relaxed text-slate-600">{week.objectives}</p>
+                    )}
+                    {week.lessons.length > 0 && (
+                      <ul className="space-y-3">
+                        {[...week.lessons]
+                          .sort((a, b) => a.order_index - b.order_index)
+                          .map((lesson) => (
+                            <li key={lesson.id} className="text-sm">
+                              <div className="flex items-baseline justify-between gap-2">
+                                <span className="font-medium text-slate-900">{lesson.title}</span>
+                                {lesson.duration_minutes != null && (
+                                  <span className="shrink-0 text-xs text-slate-500">
+                                    {lesson.duration_minutes} min
+                                  </span>
+                                )}
+                              </div>
+                              {lesson.description && (
+                                <p className="mt-0.5 text-slate-600">{lesson.description}</p>
+                              )}
+                              {lesson.skills.length > 0 && (
+                                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                                  {lesson.skills.map((skill) => (
+                                    <span
+                                      key={skill.id}
+                                      className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600"
+                                    >
+                                      {skill.name}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </li>
+                          ))}
+                      </ul>
+                    )}
+                  </div>
+                </details>
+              ))}
+          </div>
+        </section>
+      )}
+
       {/* Open cohorts */}
       <section id="cohorts" className="space-y-6 scroll-mt-24">
         <div>
@@ -243,6 +390,14 @@ export default function ProgramLandingPage() {
                         </span>
                       </div>
                     )}
+                    {cohort.coach_name && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Coach</span>
+                        <span className="font-medium text-slate-900 text-right truncate max-w-[60%]">
+                          {cohort.coach_name}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500">Group size</span>
                       <span className="font-medium text-slate-900">Up to {cohort.capacity}</span>
@@ -284,6 +439,94 @@ export default function ProgramLandingPage() {
           </div>
         )}
       </section>
+
+      {/* FAQ (non-fatal — hidden if the program has no FAQ entries) */}
+      {program.faq_json && program.faq_json.length > 0 && (
+        <section className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-semibold text-slate-900">
+              Frequently asked questions
+            </h2>
+            <p className="text-slate-600 mt-2">
+              New to swimming? Here&apos;s what beginners ask us most.
+            </p>
+          </div>
+          <div className="space-y-3">
+            {program.faq_json.map((item, i) => (
+              <details
+                key={i}
+                className="group rounded-2xl border border-slate-200 bg-white open:border-cyan-200"
+              >
+                <summary className="flex cursor-pointer list-none items-center gap-4 p-4">
+                  <span className="flex-1 font-semibold text-slate-900">
+                    {item.question}
+                  </span>
+                  <svg
+                    className="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-180"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </summary>
+                <div className="px-4 pb-4">
+                  <p className="text-sm leading-relaxed text-slate-600 whitespace-pre-line">
+                    {item.answer}
+                  </p>
+                </div>
+              </details>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Academy gallery (non-fatal — hidden if no public academy album) */}
+      {galleryImages.length > 0 && (
+        <section className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-semibold text-slate-900">
+              Life at the Academy
+            </h2>
+            <p className="text-slate-600 mt-2">Real sessions, real swimmers.</p>
+          </div>
+          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-3xl bg-slate-100">
+            {galleryImages.map((img, i) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={i}
+                src={img.src}
+                alt={img.alt}
+                loading="lazy"
+                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${
+                  i === galleryIndex ? "opacity-100" : "opacity-0"
+                }`}
+              />
+            ))}
+            {galleryImages.length > 1 && (
+              <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
+                {galleryImages.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    aria-label={`Show image ${i + 1}`}
+                    onClick={() => setGalleryIndex(i)}
+                    className={`h-2 rounded-full transition-all ${
+                      i === galleryIndex ? "w-6 bg-white" : "w-2 bg-white/60"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Testimonials (live from backend, static fallback) */}
       <LiveTestimonials track="academy" />

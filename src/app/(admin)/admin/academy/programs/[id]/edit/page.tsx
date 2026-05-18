@@ -10,6 +10,7 @@ import {
   AcademyApi,
   BillingType,
   MilestoneType,
+  ProgramFAQItem,
   ProgramLevel,
   RequiredEvidence,
 } from "@/lib/academy";
@@ -50,7 +51,9 @@ export default function EditProgramPage() {
   const params = useParams();
   const id = params.id as string;
 
-  const [step, setStep] = useState<"basics" | "curriculum" | "milestones" | "review">("basics");
+  const [step, setStep] = useState<
+    "basics" | "curriculum" | "milestones" | "faq" | "review"
+  >("basics");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -93,6 +96,9 @@ export default function EditProgramPage() {
 
   // Milestones state
   const [milestones, setMilestones] = useState<MilestoneFormItem[]>([]);
+
+  // FAQ state
+  const [faqs, setFaqs] = useState<ProgramFAQItem[]>([]);
 
   // Load existing program data
   useEffect(() => {
@@ -137,6 +143,16 @@ export default function EditProgramPage() {
             })),
           }));
           if (weeks.length > 0) setCurriculum(weeks);
+        }
+
+        // Populate FAQ
+        if (Array.isArray(program.faq_json) && program.faq_json.length > 0) {
+          setFaqs(
+            program.faq_json.map((f: ProgramFAQItem) => ({
+              question: f.question || "",
+              answer: f.answer || "",
+            }))
+          );
         }
 
         // Populate milestones
@@ -264,6 +280,17 @@ export default function EditProgramPage() {
     setMilestones(updated);
   };
 
+  // --- FAQ Helpers ---
+  const addFaq = () => setFaqs([...faqs, { question: "", answer: "" }]);
+
+  const updateFaq = (index: number, field: "question" | "answer", value: string) => {
+    const updated = [...faqs];
+    updated[index][field] = value;
+    setFaqs(updated);
+  };
+
+  const removeFaq = (index: number) => setFaqs(faqs.filter((_, i) => i !== index));
+
   // --- Build curriculum JSON ---
   const buildCurriculumJson = () => {
     const weeks = curriculum
@@ -320,6 +347,7 @@ export default function EditProgramPage() {
         price_amount: formData.price_amount,
         prep_materials: prepMaterialsData,
         curriculum_json: buildCurriculumJson(),
+        faq_json: faqs.filter((f) => f.question.trim() && f.answer.trim()),
       });
 
       // For milestones: delete removed, update existing, create new
@@ -336,8 +364,8 @@ export default function EditProgramPage() {
     }
   };
 
-  const stepLabels = ["Basic Info", "Curriculum", "Milestones", "Review"];
-  const currentStepIndex = ["basics", "curriculum", "milestones", "review"].indexOf(step);
+  const stepLabels = ["Basic Info", "Curriculum", "Milestones", "FAQ", "Review"];
+  const currentStepIndex = ["basics", "curriculum", "milestones", "faq", "review"].indexOf(step);
 
   if (loading) {
     return <div className="flex items-center justify-center p-12">Loading program data...</div>;
@@ -362,7 +390,7 @@ export default function EditProgramPage() {
         {stepLabels.map((label, idx) => (
           <button
             key={label}
-            onClick={() => setStep(["basics", "curriculum", "milestones", "review"][idx] as any)}
+            onClick={() => setStep(["basics", "curriculum", "milestones", "faq", "review"][idx] as any)}
             className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
               idx === currentStepIndex
                 ? "bg-cyan-600 text-white"
@@ -714,6 +742,53 @@ export default function EditProgramPage() {
           </div>
         )}
 
+        {step === "faq" && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-900">FAQ</h2>
+                <p className="text-sm text-slate-600">
+                  Questions prospective students ask. Shown on the public program page.
+                </p>
+              </div>
+              <Button variant="outline" onClick={addFaq}>
+                + Add Question
+              </Button>
+            </div>
+            {faqs.length === 0 ? (
+              <p className="text-slate-500 text-center py-8">
+                No FAQ entries. Click + Add Question to create one.
+              </p>
+            ) : (
+              faqs.map((faq, index) => (
+                <div key={index} className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-slate-900">Question #{index + 1}</h3>
+                    <button
+                      onClick={() => removeFaq(index)}
+                      className="text-sm text-red-500 hover:text-red-700"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <Input
+                    label="Question *"
+                    value={faq.question}
+                    onChange={(e) => updateFaq(index, "question", e.target.value)}
+                    placeholder="e.g., Do I need to know how to swim before joining?"
+                  />
+                  <Textarea
+                    label="Answer *"
+                    value={faq.answer}
+                    onChange={(e) => updateFaq(index, "answer", e.target.value)}
+                    placeholder="Keep it reassuring and concrete."
+                  />
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
         {step === "review" && (
           <div className="space-y-6">
             <h2 className="text-xl font-semibold text-slate-900">Review & Save</h2>
@@ -765,6 +840,24 @@ export default function EditProgramPage() {
                   )}
                 </div>
               </div>
+              <div className="border rounded-lg p-4">
+                <h3 className="font-semibold text-slate-900 mb-2">
+                  FAQ ({faqs.filter((f) => f.question.trim() && f.answer.trim()).length})
+                </h3>
+                <div className="text-sm space-y-1">
+                  {faqs.filter((f) => f.question.trim() && f.answer.trim()).length === 0 ? (
+                    <p className="text-slate-500">No FAQ entries defined</p>
+                  ) : (
+                    faqs
+                      .filter((f) => f.question.trim() && f.answer.trim())
+                      .map((f, idx) => (
+                        <div key={idx} className="truncate">
+                          {idx + 1}. {f.question}
+                        </div>
+                      ))
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -775,7 +868,7 @@ export default function EditProgramPage() {
         <Button
           variant="ghost"
           onClick={() => {
-            const steps = ["basics", "curriculum", "milestones", "review"];
+            const steps = ["basics", "curriculum", "milestones", "faq", "review"];
             const idx = steps.indexOf(step);
             if (idx > 0) setStep(steps[idx - 1] as any);
             else router.push(`/admin/academy/programs/${id}`);
@@ -790,7 +883,7 @@ export default function EditProgramPage() {
         ) : (
           <Button
             onClick={() => {
-              const steps = ["basics", "curriculum", "milestones", "review"];
+              const steps = ["basics", "curriculum", "milestones", "faq", "review"];
               const idx = steps.indexOf(step);
               if (idx < steps.length - 1) setStep(steps[idx + 1] as any);
             }}

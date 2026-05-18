@@ -93,6 +93,11 @@ export interface PublicAcademyStats {
   completion_rate: number | null;
 }
 
+export interface ProgramFAQItem {
+  question: string;
+  answer: string;
+}
+
 export interface Program {
   id: string;
   name: string;
@@ -110,6 +115,7 @@ export interface Program {
   // Content
   curriculum_json?: any;
   prep_materials?: any;
+  faq_json?: ProgramFAQItem[] | null;
   // Status
   version?: number;
   is_published?: boolean;
@@ -145,6 +151,8 @@ export interface Cohort {
   pool_id?: string | null;
   // Coach
   coach_id?: string | null;
+  /** Resolved coach name (first + last) — best-effort from list endpoints. */
+  coach_name?: string | null;
   // Pricing
   price_override?: number;
   // ── Session defaults (applied to every generated session) ──

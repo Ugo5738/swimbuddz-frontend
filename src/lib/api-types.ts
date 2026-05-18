@@ -18020,6 +18020,8 @@ export interface components {
             program_id: string;
             /** Coach Id */
             coach_id?: string | null;
+            /** Coach Name */
+            coach_name?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -19053,6 +19055,8 @@ export interface components {
             prep_materials?: {
                 [key: string]: unknown;
             } | null;
+            /** Faq Json */
+            faq_json?: components["schemas"]["ProgramFAQItem"][] | null;
             /**
              * Is Published
              * @default false
@@ -19093,6 +19097,13 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /** ProgramFAQItem */
+        ProgramFAQItem: {
+            /** Question */
+            question: string;
+            /** Answer */
+            answer: string;
         };
         /**
          * ProgramLevel
@@ -19137,6 +19148,8 @@ export interface components {
             prep_materials?: {
                 [key: string]: unknown;
             } | null;
+            /** Faq Json */
+            faq_json?: components["schemas"]["ProgramFAQItem"][] | null;
             /**
              * Is Published
              * @default false
@@ -19193,6 +19206,8 @@ export interface components {
             prep_materials?: {
                 [key: string]: unknown;
             } | null;
+            /** Faq Json */
+            faq_json?: components["schemas"]["ProgramFAQItem"][] | null;
             /** Is Published */
             is_published?: boolean | null;
         };
