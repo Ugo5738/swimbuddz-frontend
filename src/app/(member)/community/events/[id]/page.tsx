@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { SessionVolunteerPanel } from "@/components/volunteer/SessionVolunteerPanel";
 import { apiGet, apiPost } from "@/lib/api";
 import { apiEndpoints } from "@/lib/config";
 import { format } from "date-fns";
@@ -107,9 +108,7 @@ export default function EventDetailPage() {
         toast.success(`RSVP confirmed! ${bubblesUsed} 🫧 Bubbles used.`);
       }
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to RSVP. Please try again.",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to RSVP. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -127,9 +126,7 @@ export default function EventDetailPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-4xl py-12 text-center text-slate-600">
-        Loading event...
-      </div>
+      <div className="mx-auto max-w-4xl py-12 text-center text-slate-600">Loading event...</div>
     );
   }
 
@@ -137,16 +134,13 @@ export default function EventDetailPage() {
     return (
       <div className="mx-auto max-w-4xl space-y-6 py-12 text-center">
         <h2 className="text-2xl font-bold text-slate-900">Event not found</h2>
-        <Button onClick={() => router.push("/community/events")}>
-          Back to Events
-        </Button>
+        <Button onClick={() => router.push("/community/events")}>Back to Events</Button>
       </div>
     );
   }
 
   const isPastEvent = new Date(event.start_time) < new Date();
-  const isFullyBooked =
-    event.max_capacity && rsvpCounts.going >= event.max_capacity;
+  const isFullyBooked = event.max_capacity && rsvpCounts.going >= event.max_capacity;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 py-8">
@@ -188,8 +182,7 @@ export default function EventDetailPage() {
                 </div>
                 <div className="text-slate-600">
                   {format(new Date(event.start_time), "h:mm a")}
-                  {event.end_time &&
-                    ` - ${format(new Date(event.end_time), "h:mm a")}`}
+                  {event.end_time && ` - ${format(new Date(event.end_time), "h:mm a")}`}
                 </div>
               </div>
             </div>
@@ -221,9 +214,7 @@ export default function EventDetailPage() {
                   <div className="font-medium">Entry Fee</div>
                   <div className="text-slate-600">
                     ₦{event.cost_naira!.toLocaleString()}{" "}
-                    <span className="text-xs text-slate-400">
-                      · {bubblesNeeded} 🫧
-                    </span>
+                    <span className="text-xs text-slate-400">· {bubblesNeeded} 🫧</span>
                   </div>
                 </div>
               </div>
@@ -232,9 +223,7 @@ export default function EventDetailPage() {
 
           {/* Description */}
           <div className="prose max-w-none">
-            <h3 className="text-lg font-semibold text-slate-900">
-              About this event
-            </h3>
+            <h3 className="text-lg font-semibold text-slate-900">About this event</h3>
             <p className="mt-2 text-slate-700">{event.description}</p>
           </div>
         </div>
@@ -243,14 +232,12 @@ export default function EventDetailPage() {
       {/* RSVP Section */}
       {!isPastEvent && (
         <Card className="p-6">
-          <h3 className="mb-4 text-lg font-semibold text-slate-900">
-            Your RSVP
-          </h3>
+          <h3 className="mb-4 text-lg font-semibold text-slate-900">Your RSVP</h3>
 
           {isFullyBooked && userRsvp !== "going" ? (
             <div className="rounded-lg bg-amber-50 p-4 text-sm text-amber-900">
-              <strong>Event is fully booked.</strong> You can still mark
-              yourself as &quot;Maybe&quot; to be notified if spots open up.
+              <strong>Event is fully booked.</strong> You can still mark yourself as
+              &quot;Maybe&quot; to be notified if spots open up.
             </div>
           ) : null}
 
@@ -259,7 +246,9 @@ export default function EventDetailPage() {
             <div className="mb-6 space-y-3">
               <div>
                 <h4 className="text-sm font-semibold text-slate-800">Entry Fee Payment</h4>
-                <p className="text-xs text-slate-500 mt-0.5">Choose how to pay the ₦{event.cost_naira!.toLocaleString()} entry fee</p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Choose how to pay the ₦{event.cost_naira!.toLocaleString()} entry fee
+                </p>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
@@ -273,25 +262,35 @@ export default function EventDetailPage() {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`flex-shrink-0 rounded-lg p-2 ${!payWithBubbles ? "bg-cyan-100" : "bg-slate-100"}`}>
-                      <CreditCard className={`h-5 w-5 ${!payWithBubbles ? "text-cyan-600" : "text-slate-400"}`} />
+                    <div
+                      className={`flex-shrink-0 rounded-lg p-2 ${!payWithBubbles ? "bg-cyan-100" : "bg-slate-100"}`}
+                    >
+                      <CreditCard
+                        className={`h-5 w-5 ${!payWithBubbles ? "text-cyan-600" : "text-slate-400"}`}
+                      />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <p className="font-semibold text-slate-900">Card Payment</p>
                         {!payWithBubbles && (
-                          <span className="text-xs font-medium px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded-full">Selected</span>
+                          <span className="text-xs font-medium px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded-full">
+                            Selected
+                          </span>
                         )}
                       </div>
                       <p className="text-xs text-slate-500 mt-0.5">Paystack · Card, bank, USSD</p>
                     </div>
                   </div>
-                  <p className="mt-3 text-xl font-bold text-slate-900">₦{event.cost_naira!.toLocaleString()}</p>
+                  <p className="mt-3 text-xl font-bold text-slate-900">
+                    ₦{event.cost_naira!.toLocaleString()}
+                  </p>
                 </div>
 
                 {/* Bubbles */}
                 <div
-                  onClick={() => { if (canPayWithBubbles) setPayWithBubbles(true); }}
+                  onClick={() => {
+                    if (canPayWithBubbles) setPayWithBubbles(true);
+                  }}
                   className={`rounded-xl border-2 p-4 transition-all ${
                     payWithBubbles
                       ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-300 cursor-pointer"
@@ -301,14 +300,18 @@ export default function EventDetailPage() {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`flex-shrink-0 rounded-lg p-2 text-xl leading-none ${payWithBubbles ? "bg-cyan-100" : "bg-slate-100"}`}>
+                    <div
+                      className={`flex-shrink-0 rounded-lg p-2 text-xl leading-none ${payWithBubbles ? "bg-cyan-100" : "bg-slate-100"}`}
+                    >
                       🫧
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <p className="font-semibold text-slate-900">Pay with Bubbles</p>
                         {payWithBubbles && (
-                          <span className="text-xs font-medium px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded-full">Selected</span>
+                          <span className="text-xs font-medium px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded-full">
+                            Selected
+                          </span>
                         )}
                       </div>
                       <p className="text-xs text-slate-500 mt-0.5">SwimBuddz wallet</p>
@@ -316,14 +319,17 @@ export default function EventDetailPage() {
                   </div>
 
                   <p className="mt-3 text-xl font-bold text-slate-900">
-                    {bubblesNeeded} <span className="text-sm font-normal text-slate-500">Bubbles</span>
+                    {bubblesNeeded}{" "}
+                    <span className="text-sm font-normal text-slate-500">Bubbles</span>
                   </p>
 
                   {walletBalance !== null ? (
                     <div className="mt-2 space-y-1.5">
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-slate-500">Your balance</span>
-                        <span className={`font-semibold ${canPayWithBubbles ? "text-emerald-600" : "text-red-500"}`}>
+                        <span
+                          className={`font-semibold ${canPayWithBubbles ? "text-emerald-600" : "text-red-500"}`}
+                        >
                           {walletBalance} 🫧 {canPayWithBubbles ? "✓" : ""}
                         </span>
                       </div>
@@ -371,7 +377,9 @@ export default function EventDetailPage() {
                 <div>Going</div>
                 {hasCost && (
                   <div className="text-xs font-normal opacity-75 mt-0.5">
-                    {payWithBubbles ? `${bubblesNeeded} 🫧` : `₦${event.cost_naira!.toLocaleString()}`}
+                    {payWithBubbles
+                      ? `${bubblesNeeded} 🫧`
+                      : `₦${event.cost_naira!.toLocaleString()}`}
                   </div>
                 )}
               </div>
@@ -407,21 +415,15 @@ export default function EventDetailPage() {
           {/* RSVP Stats */}
           <div className="mt-6 flex gap-6 border-t border-slate-200 pt-4 text-sm">
             <div>
-              <span className="font-semibold text-emerald-700">
-                {rsvpCounts.going}
-              </span>
+              <span className="font-semibold text-emerald-700">{rsvpCounts.going}</span>
               <span className="ml-1 text-slate-600">going</span>
             </div>
             <div>
-              <span className="font-semibold text-amber-700">
-                {rsvpCounts.maybe}
-              </span>
+              <span className="font-semibold text-amber-700">{rsvpCounts.maybe}</span>
               <span className="ml-1 text-slate-600">maybe</span>
             </div>
             <div>
-              <span className="font-semibold text-slate-700">
-                {rsvpCounts.not_going}
-              </span>
+              <span className="font-semibold text-slate-700">{rsvpCounts.not_going}</span>
               <span className="ml-1 text-slate-600">can't go</span>
             </div>
           </div>
@@ -433,6 +435,10 @@ export default function EventDetailPage() {
           <p className="text-slate-600">This event has already passed.</p>
         </Card>
       )}
+
+      {/* Volunteer opportunities attached to this event — renders nothing
+          if there are no open slots the viewer can claim. */}
+      {!isPastEvent && <SessionVolunteerPanel eventId={event.id} />}
     </div>
   );
 }

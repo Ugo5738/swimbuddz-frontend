@@ -18,10 +18,11 @@ import {
   TableRow,
 } from "@/components/ui/Table";
 import { Textarea } from "@/components/ui/Textarea";
+import { apiGet } from "@/lib/api";
+import { SessionsApi } from "@/lib/sessions";
 import {
   CATEGORY_GROUPS,
   CATEGORY_LABELS,
-  TIER_SHORT_LABELS,
   VolunteersApi,
   type DashboardSummary,
   type VolunteerOpportunity,
@@ -35,7 +36,6 @@ import {
   Clock,
   Eye,
   MapPin,
-  Pencil,
   Plus,
   Settings,
   Star,
@@ -53,6 +53,7 @@ import {
   RoleCard,
   TierBadge,
 } from "./components";
+import { VolunteerTemplatesTab } from "./TemplatesTab";
 import type { Tab } from "./types";
 import { formatDate, getErrorMessage } from "./utils";
 
@@ -97,7 +98,34 @@ export default function AdminVolunteersPage() {
     opportunity_type: "open_claim" as "open_claim" | "approval_required",
     min_tier: "tier_1" as "tier_1" | "tier_2" | "tier_3",
     qr_checkin_enabled: false,
+    // "Attach to" picker — when set, date/time/location are inherited
+    // from the chosen session/event and the corresponding fields lock.
+    attach_mode: "standalone" as "standalone" | "session" | "event",
+    session_id: "",
+    event_id: "",
   });
+  // Lazy-loaded lookup data for the attach-to picker. Both lists are
+  // fetched once when the picker mode flips off "standalone" — keeps
+  // page-load fast for the common (no-attach) flow.
+  const [attachSessions, setAttachSessions] = useState<
+    {
+      id: string;
+      title: string;
+      starts_at: string;
+      ends_at: string;
+      location_name?: string | null;
+    }[]
+  >([]);
+  const [attachEvents, setAttachEvents] = useState<
+    {
+      id: string;
+      title: string;
+      start_time: string;
+      end_time?: string | null;
+      location?: string | null;
+    }[]
+  >([]);
+  const [attachLoading, setAttachLoading] = useState(false);
 
   // Manual hours
   const [showHoursModal, setShowHoursModal] = useState(false);
@@ -280,6 +308,13 @@ export default function AdminVolunteersPage() {
         min_tier: oppForm.min_tier,
         qr_checkin_enabled: oppForm.qr_checkin_enabled,
         status: "draft",
+        // Cross-service refs — set only when the admin explicitly
+        // attaches this opportunity to a session / event. Volunteer
+        // service stores them as plain UUIDs.
+        session_id:
+          oppForm.attach_mode === "session" && oppForm.session_id ? oppForm.session_id : undefined,
+        event_id:
+          oppForm.attach_mode === "event" && oppForm.event_id ? oppForm.event_id : undefined,
       } as Partial<VolunteerOpportunity>);
       setShowCreateOpp(false);
       setOppForm({
@@ -294,6 +329,9 @@ export default function AdminVolunteersPage() {
         opportunity_type: "open_claim",
         min_tier: "tier_1",
         qr_checkin_enabled: false,
+        attach_mode: "standalone",
+        session_id: "",
+        event_id: "",
       });
       const oppsData = await VolunteersApi.admin.listOpportunities({
         status: undefined,
@@ -301,6 +339,97 @@ export default function AdminVolunteersPage() {
       setOpportunities(oppsData);
     } catch (error) {
       setError(getErrorMessage(error, "Failed to create opportunity."));
+    }
+  };
+
+  // Lazy-load sessions + events the first time the admin flips the
+  // attach-to picker off "standalone". Cheap, and avoids loading them on
+  // every page render.
+  const ensureAttachLookups = async (mode: "session" | "event") => {
+    if (mode === "session" && attachSessions.length === 0) {
+      setAttachLoading(true);
+      try {
+        const sessions = await SessionsApi.listSessions({ include_drafts: true });
+        const todayIso = new Date().toISOString();
+        // Limit to the next 90 days — same window as the design doc.
+        const cutoffMs = Date.now() + 90 * 24 * 60 * 60 * 1000;
+        setAttachSessions(
+          sessions
+            .filter((s) => s.starts_at >= todayIso && new Date(s.starts_at).getTime() <= cutoffMs)
+            .map((s) => ({
+              id: s.id,
+              title: s.title,
+              starts_at: s.starts_at,
+              ends_at: s.ends_at,
+              location_name: (s as { location_name?: string | null }).location_name,
+            }))
+        );
+      } finally {
+        setAttachLoading(false);
+      }
+    }
+    if (mode === "event" && attachEvents.length === 0) {
+      setAttachLoading(true);
+      try {
+        const events = await apiGet<
+          {
+            id: string;
+            title: string;
+            start_time: string;
+            end_time?: string | null;
+            location?: string | null;
+          }[]
+        >("/api/v1/events/", { auth: true });
+        const todayIso = new Date().toISOString();
+        setAttachEvents(events.filter((ev) => ev.start_time >= todayIso));
+      } finally {
+        setAttachLoading(false);
+      }
+    }
+  };
+
+  // When the admin picks a session/event from the attach-to dropdown,
+  // copy date/start/end/location into the form fields. The form fields
+  // themselves stay editable — the picker is convenience, not coercion.
+  const handleAttachSelect = (id: string) => {
+    if (oppForm.attach_mode === "session") {
+      const s = attachSessions.find((x) => x.id === id);
+      if (!s) {
+        setOppForm({ ...oppForm, session_id: id });
+        return;
+      }
+      const startDt = new Date(s.starts_at);
+      const endDt = new Date(s.ends_at);
+      const isoDate = startDt.toISOString().slice(0, 10);
+      const isoStart = startDt.toTimeString().slice(0, 5);
+      const isoEnd = endDt.toTimeString().slice(0, 5);
+      setOppForm({
+        ...oppForm,
+        session_id: id,
+        date: isoDate,
+        start_time: isoStart,
+        end_time: isoEnd,
+        location_name: s.location_name || oppForm.location_name,
+      });
+    } else if (oppForm.attach_mode === "event") {
+      const ev = attachEvents.find((x) => x.id === id);
+      if (!ev) {
+        setOppForm({ ...oppForm, event_id: id });
+        return;
+      }
+      const startDt = new Date(ev.start_time);
+      const endDt = ev.end_time ? new Date(ev.end_time) : null;
+      const isoDate = startDt.toISOString().slice(0, 10);
+      const isoStart = startDt.toTimeString().slice(0, 5);
+      const isoEnd = endDt ? endDt.toTimeString().slice(0, 5) : "";
+      setOppForm({
+        ...oppForm,
+        event_id: id,
+        date: isoDate,
+        start_time: isoStart,
+        end_time: isoEnd,
+        location_name: ev.location || oppForm.location_name,
+      });
     }
   };
 
@@ -425,6 +554,7 @@ export default function AdminVolunteersPage() {
                 count: profiles.length,
               },
               { key: "roles", label: "Roles", count: roles.length },
+              { key: "templates", label: "Templates" },
             ] as { key: Tab; label: string; count?: number }[]
           ).map((t) => (
             <button
@@ -716,6 +846,83 @@ export default function AdminVolunteersPage() {
                 rows={2}
                 placeholder="Optional details..."
               />
+
+              {/* Attach-to picker — tie this opportunity to a session/event
+                  so it surfaces on the corresponding booking/RSVP page. */}
+              <div className="rounded-md border border-slate-200 bg-slate-50 p-3 space-y-3">
+                <Select
+                  label="Attach to"
+                  value={oppForm.attach_mode}
+                  onChange={async (e) => {
+                    const mode = e.target.value as "standalone" | "session" | "event";
+                    setOppForm({
+                      ...oppForm,
+                      attach_mode: mode,
+                      session_id: "",
+                      event_id: "",
+                    });
+                    if (mode !== "standalone") {
+                      await ensureAttachLookups(mode);
+                    }
+                  }}
+                >
+                  <option value="standalone">Standalone (no link)</option>
+                  <option value="session">Session</option>
+                  <option value="event">Event</option>
+                </Select>
+                {oppForm.attach_mode === "session" && (
+                  <Select
+                    label="Session"
+                    value={oppForm.session_id}
+                    onChange={(e) => handleAttachSelect(e.target.value)}
+                  >
+                    <option value="">
+                      {attachLoading ? "Loading sessions…" : "— Select session —"}
+                    </option>
+                    {attachSessions.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {new Date(s.starts_at).toLocaleString("en-NG", {
+                          weekday: "short",
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}{" "}
+                        — {s.title}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+                {oppForm.attach_mode === "event" && (
+                  <Select
+                    label="Event"
+                    value={oppForm.event_id}
+                    onChange={(e) => handleAttachSelect(e.target.value)}
+                  >
+                    <option value="">
+                      {attachLoading ? "Loading events…" : "— Select event —"}
+                    </option>
+                    {attachEvents.map((ev) => (
+                      <option key={ev.id} value={ev.id}>
+                        {new Date(ev.start_time).toLocaleString("en-NG", {
+                          weekday: "short",
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}{" "}
+                        — {ev.title}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+                {oppForm.attach_mode !== "standalone" && (
+                  <p className="text-xs text-slate-500">
+                    Date, time, and location below are pre-filled from the selected{" "}
+                    {oppForm.attach_mode === "session" ? "session" : "event"} but remain editable.
+                  </p>
+                )}
+              </div>
               <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                 <Select
                   label="Role"
@@ -1496,6 +1703,8 @@ export default function AdminVolunteersPage() {
           </Modal>
         </div>
       )}
+
+      {tab === "templates" && <VolunteerTemplatesTab roles={roles} />}
     </div>
   );
 }

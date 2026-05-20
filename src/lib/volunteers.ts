@@ -350,14 +350,20 @@ export const VolunteersApi = {
     role_id?: string;
     from_date?: string;
     to_date?: string;
+    session_id?: string;
+    event_id?: string;
   }) => {
     const search = new URLSearchParams();
     if (params?.status) search.set("status", params.status);
     if (params?.role_id) search.set("role_id", params.role_id);
     if (params?.from_date) search.set("from_date", params.from_date);
     if (params?.to_date) search.set("to_date", params.to_date);
+    if (params?.session_id) search.set("session_id", params.session_id);
+    if (params?.event_id) search.set("event_id", params.event_id);
     const qs = search.toString();
-    return apiGet<VolunteerOpportunity[]>(`${V}/opportunities${qs ? `?${qs}` : ""}`);
+    return apiGet<VolunteerOpportunity[]>(`${V}/opportunities${qs ? `?${qs}` : ""}`, {
+      auth: true,
+    });
   },
 
   listUpcomingOpportunities: () => apiGet<VolunteerOpportunity[]>(`${V}/opportunities/upcoming`),
@@ -433,12 +439,16 @@ export const VolunteersApi = {
       role_id?: string;
       from_date?: string;
       to_date?: string;
+      session_id?: string;
+      event_id?: string;
     }) => {
       const search = new URLSearchParams();
       if (params?.status) search.set("status", params.status);
       if (params?.role_id) search.set("role_id", params.role_id);
       if (params?.from_date) search.set("from_date", params.from_date);
       if (params?.to_date) search.set("to_date", params.to_date);
+      if (params?.session_id) search.set("session_id", params.session_id);
+      if (params?.event_id) search.set("event_id", params.event_id);
       const qs = search.toString();
       return apiGet<VolunteerOpportunity[]>(`${VA}/opportunities${qs ? `?${qs}` : ""}`, {
         auth: true,
@@ -535,5 +545,118 @@ export const VolunteersApi = {
 
     unfeatureVolunteer: (memberId: string) =>
       apiDelete<void>(`${VA}/profiles/${memberId}/feature`, { auth: true }),
+
+    // ── Templates ────────────────────────────────────────────────
+    // Volunteer slots attached to a session template — materialised
+    // automatically when sessions_service generates a session from the
+    // parent template. See VOLUNTEER_OPPORTUNITY_CONTEXT_DESIGN.md.
+
+    listSessionTemplateSlots: (sessionTemplateId: string) =>
+      apiGet<SessionTemplateVolunteerSlot[]>(`${VA}/session-templates/${sessionTemplateId}/slots`, {
+        auth: true,
+      }),
+
+    createSessionTemplateSlot: (
+      sessionTemplateId: string,
+      data: Omit<SessionTemplateVolunteerSlot, "id" | "created_at" | "updated_at"> & {
+        session_template_id: string;
+      }
+    ) =>
+      apiPost<SessionTemplateVolunteerSlot>(
+        `${VA}/session-templates/${sessionTemplateId}/slots`,
+        data,
+        { auth: true }
+      ),
+
+    updateSessionTemplateSlot: (
+      sessionTemplateId: string,
+      slotId: string,
+      data: Partial<SessionTemplateVolunteerSlot>
+    ) =>
+      apiPatch<SessionTemplateVolunteerSlot>(
+        `${VA}/session-templates/${sessionTemplateId}/slots/${slotId}`,
+        data,
+        { auth: true }
+      ),
+
+    deleteSessionTemplateSlot: (sessionTemplateId: string, slotId: string) =>
+      apiDelete<void>(`${VA}/session-templates/${sessionTemplateId}/slots/${slotId}`, {
+        auth: true,
+      }),
+
+    // Standalone recurring volunteer opportunity templates.
+
+    listOpportunityTemplates: (activeOnly = false) =>
+      apiGet<VolunteerOpportunityTemplate[]>(
+        `${VA}/opportunity-templates${activeOnly ? "?active_only=true" : ""}`,
+        { auth: true }
+      ),
+
+    createOpportunityTemplate: (data: Partial<VolunteerOpportunityTemplate>) =>
+      apiPost<VolunteerOpportunityTemplate>(`${VA}/opportunity-templates`, data, { auth: true }),
+
+    updateOpportunityTemplate: (id: string, data: Partial<VolunteerOpportunityTemplate>) =>
+      apiPatch<VolunteerOpportunityTemplate>(`${VA}/opportunity-templates/${id}`, data, {
+        auth: true,
+      }),
+
+    deleteOpportunityTemplate: (id: string) =>
+      apiDelete<void>(`${VA}/opportunity-templates/${id}`, { auth: true }),
+
+    materialiseOpportunityTemplate: (id: string, throughDate: string) =>
+      apiPost<{
+        success: boolean;
+        created_count: number;
+        last_materialised_through: string;
+      }>(
+        `${VA}/opportunity-templates/${id}/materialise`,
+        { through_date: throughDate },
+        { auth: true }
+      ),
   },
 };
+
+// ============================================================================
+// TEMPLATE TYPES
+// ============================================================================
+
+export interface SessionTemplateVolunteerSlot {
+  id: string;
+  session_template_id: string;
+  role_id: string;
+  slots_needed: number;
+  opportunity_type: OpportunityType;
+  min_tier: VolunteerTier;
+  qr_checkin_enabled: boolean;
+  title_override: string | null;
+  description_override: string | null;
+  cancellation_deadline_hours: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  role_title?: string | null;
+  role_category?: string | null;
+}
+
+export interface VolunteerOpportunityTemplate {
+  id: string;
+  title: string;
+  description: string | null;
+  role_id: string;
+  day_of_week: number; // 0=Mon … 6=Sun
+  start_time: string; // ISO time "HH:MM:SS"
+  duration_minutes: number;
+  location_name: string | null;
+  slots_needed: number;
+  opportunity_type: OpportunityType;
+  min_tier: VolunteerTier;
+  qr_checkin_enabled: boolean;
+  cancellation_deadline_hours: number;
+  auto_generate: boolean;
+  is_active: boolean;
+  last_materialised_through: string | null;
+  created_at: string;
+  updated_at: string;
+  role_title?: string | null;
+  role_category?: string | null;
+}

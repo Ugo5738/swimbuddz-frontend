@@ -6,6 +6,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Textarea } from "@/components/ui/Textarea";
 import { supabase } from "@/lib/auth";
 import { API_BASE_URL, buildAppUrl } from "@/lib/config";
+import { getLocationDisplayName } from "@/lib/sessions";
 import { Ban, Link as LinkIcon, Pencil, Send, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -14,12 +15,7 @@ type SessionStatusType = "draft" | "scheduled" | "in_progress" | "completed" | "
 interface Session {
   id: string;
   title: string;
-  session_type?:
-    | "club"
-    | "academy"
-    | "community"
-    | "cohort_class"
-    | "event";
+  session_type?: "club" | "academy" | "community" | "cohort_class" | "event";
   status?: SessionStatusType;
   pool_id?: string | null;
   location: string | null;
@@ -183,7 +179,12 @@ function SessionDetailsModal({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-sm font-medium text-slate-700">Location</p>
-            <p className="text-slate-900">{session.location}</p>
+            <p className="text-slate-900">
+              {getLocationDisplayName(
+                session.location ?? undefined,
+                session.location_name ?? undefined
+              )}
+            </p>
           </div>
           <div>
             <p className="text-sm font-medium text-slate-700">Capacity</p>
