@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { Select } from "@/components/ui/Select";
+import { EnrollmentEvidenceGallery } from "@/components/admin/EnrollmentEvidenceGallery";
 import {
   AcademyApi,
   Cohort,
@@ -13,6 +14,7 @@ import {
   EnrollmentInstallment,
   EnrollmentStatus,
   InstallmentStatus,
+  Milestone,
   PaymentStatus,
 } from "@/lib/academy";
 import { apiGet, apiPost } from "@/lib/api";
@@ -39,6 +41,9 @@ export default function EnrollmentDetailPage({
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
   const [member, setMember] = useState<any | null>(null);
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
+  const [milestoneNames, setMilestoneNames] = useState<Record<string, string>>(
+    {},
+  );
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +83,18 @@ export default function EnrollmentDetailPage({
         if (programId) {
           const c = await AcademyApi.listCohorts(programId);
           setCohorts(c);
+
+          // Fetch milestones too so the evidence gallery can show
+          // human-readable names. Failure is non-fatal — tiles fall
+          // back to milestone UUIDs.
+          try {
+            const ms: Milestone[] = await AcademyApi.listMilestones(programId);
+            setMilestoneNames(
+              Object.fromEntries(ms.map((m) => [m.id, m.name])),
+            );
+          } catch (e) {
+            console.error("Milestone names fetch failed", e);
+          }
         }
       } else {
         setError("Enrollment not found");
@@ -767,6 +784,17 @@ export default function EnrollmentDetailPage({
           </Card>
         </div>
       </div>
+
+      {/* Milestone evidence — admin gallery of student-submitted videos / images. */}
+      <Card className="p-6">
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">
+          Milestone Evidence
+        </h2>
+        <EnrollmentEvidenceGallery
+          enrollmentId={params.id}
+          milestoneNames={milestoneNames}
+        />
+      </Card>
     </div>
   );
 }

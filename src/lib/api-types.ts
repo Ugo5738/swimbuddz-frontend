@@ -4339,6 +4339,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/academy/admin/progress/override": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Override Progress
+         * @description Admin (or AI service) override of a prior decision on a milestone claim.
+         *
+         *     Unlike ``POST /progress`` (the coach path), this endpoint:
+         *
+         *     * **Requires** ``override_reason`` (enforced by the schema).
+         *     * Records a separate ``OVERRIDE`` event on
+         *       ``milestone_review_events`` chained to the most recent prior
+         *       decision via ``override_of_event_id``. Override-of-override is
+         *       permitted — the chain just deepens.
+         *     * Does **not** touch ``StudentProgress.reviewed_by_coach_id`` — the
+         *       original coach stays attributed to the live row (see
+         *       ACADEMY_ADMIN_CONTROLS_DESIGN §5.4).
+         *     * Attributes the event to the synthetic AI principal when the
+         *       caller authenticated via ``service_role``; otherwise to the
+         *       admin user. ``ai_metadata`` is recorded on the event row
+         *       regardless of caller — it's attribution data that travels with
+         *       the event, not a control flag.
+         *
+         *     Returns the (possibly newly-created) ``StudentProgress`` row.
+         */
+        post: operations["override_progress_academy_admin_progress_override_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/academy/coach/me/dashboard": {
         parameters: {
             query?: never;
@@ -12320,6 +12358,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/media/admin/enrollments/{enrollment_id}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Enrollment Evidence
+         * @description Return every milestone-evidence media item for an enrollment.
+         *
+         *     Joins academy's StudentProgress (fetched over HTTP — services
+         *     cannot share a DB) with the local ``media_items`` rows. Items
+         *     that the academy reports but media can't locate are dropped from
+         *     the response with a logger.warning; this means a deleted media
+         *     row never surfaces an empty card but the operator sees the
+         *     discrepancy in logs.
+         */
+        get: operations["list_enrollment_evidence_media_admin_enrollments__enrollment_id__evidence_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/admin/items/{media_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Media Download Url
+         * @description Issue a 60-second presigned URL for an admin to download a media item.
+         *
+         *     The bytes do not stream through this service — see design §9.3.
+         *     The audit row is written when the URL is issued (records intent),
+         *     not when the download completes (which we can't observe).
+         */
+        get: operations["get_media_download_url_media_admin_items__media_id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/chat/channels": {
         parameters: {
             query?: never;
@@ -18790,7 +18879,7 @@ export interface components {
          * MilestoneEventType
          * @enum {string}
          */
-        MilestoneEventType: "claimed" | "approved" | "rejected" | "status_changed";
+        MilestoneEventType: "claimed" | "approved" | "rejected" | "status_changed" | "override";
         /** MilestoneResponse */
         MilestoneResponse: {
             /** Name */
@@ -18888,6 +18977,14 @@ export interface components {
             evidence_media_id_snapshot?: string | null;
             /** Score Snapshot */
             score_snapshot?: number | null;
+            /** Override Of Event Id */
+            override_of_event_id?: string | null;
+            /** Override Reason */
+            override_reason?: string | null;
+            /** Ai Metadata */
+            ai_metadata?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Created At
              * Format: date-time
@@ -18952,6 +19049,46 @@ export interface components {
             coach_name?: string | null;
             /** Total Milestones */
             total_milestones: number;
+        };
+        /**
+         * OverrideProgressRequest
+         * @description Admin (or AI service) override of a prior coach decision.
+         *
+         *     Distinct from ``StudentProgressUpdate`` because an override:
+         *
+         *     * **Must** carry an ``override_reason`` — every override is recorded
+         *       in the audit trail and the reason is required justification.
+         *     * Does **not** touch ``reviewed_by_coach_id`` — the original coach
+         *       stays attributed to the live row. See ACADEMY_ADMIN_CONTROLS_DESIGN §5.4.
+         *     * Optionally carries ``ai_metadata`` for AI-driven overrides
+         *       (model version, confidence score, etc.). Caller's role/identity is
+         *       derived from the JWT, not this field — including ``ai_metadata``
+         *       from a human admin token is allowed (it's just attribution data
+         *       that travels with the event row) but ``actor_role`` is always set
+         *       from the auth context.
+         */
+        OverrideProgressRequest: {
+            /**
+             * Enrollment Id
+             * Format: uuid
+             */
+            enrollment_id: string;
+            /**
+             * Milestone Id
+             * Format: uuid
+             */
+            milestone_id: string;
+            new_status: components["schemas"]["ProgressStatus"];
+            /** Override Reason */
+            override_reason: string;
+            /** Coach Notes */
+            coach_notes?: string | null;
+            /** Score */
+            score?: number | null;
+            /** Ai Metadata */
+            ai_metadata?: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * PaymentStatus
@@ -28175,6 +28312,79 @@ export interface components {
             updated_at: string;
         };
         /**
+         * AdminEvidenceItemResponse
+         * @description A single tile in the admin evidence gallery for an enrollment.
+         *
+         *     Composed by joining a ``StudentProgress`` row (fetched from the
+         *     academy service) with its ``MediaItem`` (looked up locally). The
+         *     URLs are presigned where applicable, matching the existing coach
+         *     view's behaviour — admins see the same view, plus a download
+         *     affordance.
+         */
+        AdminEvidenceItemResponse: {
+            /**
+             * Media Id
+             * Format: uuid
+             */
+            media_id: string;
+            /** Media Type */
+            media_type: string;
+            /** File Url */
+            file_url?: string | null;
+            /** Thumbnail Url */
+            thumbnail_url?: string | null;
+            /**
+             * Is Processed
+             * @default true
+             */
+            is_processed: boolean;
+            /**
+             * Media Created At
+             * Format: date-time
+             */
+            media_created_at: string;
+            /**
+             * Enrollment Id
+             * Format: uuid
+             */
+            enrollment_id: string;
+            /**
+             * Milestone Id
+             * Format: uuid
+             */
+            milestone_id: string;
+            /**
+             * Progress Id
+             * Format: uuid
+             */
+            progress_id: string;
+            /** Progress Status */
+            progress_status: string;
+            /** Student Notes */
+            student_notes?: string | null;
+            /** Claim Achieved At */
+            claim_achieved_at?: string | null;
+        };
+        /**
+         * AdminEvidenceListResponse
+         * @description Wrapper for the admin evidence-gallery list endpoint.
+         *
+         *     A wrapper rather than a bare list lets future pagination /
+         *     aggregate fields (total uploaded bytes, average review age, …)
+         *     land without a breaking change.
+         */
+        AdminEvidenceListResponse: {
+            /** Items */
+            items: components["schemas"]["AdminEvidenceItemResponse"][];
+            /**
+             * Enrollment Id
+             * Format: uuid
+             */
+            enrollment_id: string;
+            /** Total */
+            total: number;
+        };
+        /**
          * AlbumCoverPhoto
          * @description Lightweight album cover photo payload for album cards.
          */
@@ -28512,6 +28722,25 @@ export interface components {
             media_type: string;
             /** Album Id */
             album_id?: string | null;
+        };
+        /**
+         * MediaDownloadResponse
+         * @description Response from the admin download endpoint.
+         *
+         *     The URL is short-lived (60 seconds by design — see
+         *     ACADEMY_ADMIN_CONTROLS_DESIGN §9.3) and intended to be handed
+         *     straight to the browser. ``expires_at`` is included so the
+         *     client can show a "this link expires" hint and / or retry on
+         *     expiry.
+         */
+        MediaDownloadResponse: {
+            /** Download Url */
+            download_url: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
         };
         /**
          * MediaItemResponse
@@ -36155,6 +36384,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MilestoneReviewEventResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    override_progress_academy_admin_progress_override_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OverrideProgressRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentProgressResponse"];
                 };
             };
             /** @description Validation Error */
@@ -50711,6 +50973,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MediaItemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_enrollment_evidence_media_admin_enrollments__enrollment_id__evidence_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminEvidenceListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_media_download_url_media_admin_items__media_id__download_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaDownloadResponse"];
                 };
             };
             /** @description Validation Error */
