@@ -8,11 +8,7 @@
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import {
-  CATEGORY_LABELS,
-  TIER_SHORT_LABELS,
-  type VolunteerRole,
-} from "@/lib/volunteers";
+import { CATEGORY_LABELS, TIER_SHORT_LABELS, type VolunteerRole } from "@/lib/volunteers";
 import { Pencil } from "lucide-react";
 
 export function TierBadge({ tier }: { tier: string }) {
@@ -102,17 +98,30 @@ export function RoleCard({
               </span>
             )}
           </div>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggle(role.id, role.is_active);
-            }}
-            className="text-xs"
-          >
-            {role.is_active ? "Deactivate" : "Activate"}
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(role);
+              }}
+              className="text-xs"
+            >
+              Edit
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggle(role.id, role.is_active);
+              }}
+              className="text-xs"
+            >
+              {role.is_active ? "Deactivate" : "Activate"}
+            </Button>
+          </div>
         </div>
       </div>
     </Card>

@@ -7,6 +7,7 @@
 "use client";
 
 import { PoolPicker } from "@/components/admin/PoolPicker";
+import { SessionTemplateVolunteerSlotsSection } from "@/components/admin/SessionTemplateVolunteerSlotsSection";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -335,6 +336,12 @@ function TemplateFormInline({
           </div>
         ))}
       </div>
+
+      {/* Volunteer needs editor — only on edit (slots are scoped to a
+          saved template id). */}
+      {mode === "edit" && template && (
+        <SessionTemplateVolunteerSlotsSection sessionTemplateId={template.id} />
+      )}
 
       <div className="flex gap-3 pt-2">
         <Button type="button" variant="secondary" onClick={onCancel} className="flex-1">

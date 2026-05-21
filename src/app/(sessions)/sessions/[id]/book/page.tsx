@@ -14,11 +14,13 @@ import { notFound, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { SessionVolunteerPanel } from "@/components/volunteer/SessionVolunteerPanel";
 import { AlreadyBooked } from "./_components/AlreadyBooked";
 import { BookingError } from "./_components/BookingError";
 import { BookingSessionHeader } from "./_components/BookingSessionHeader";
 import { BookingSuccess } from "./_components/BookingSuccess";
 import { MobileStickyBar } from "./_components/MobileStickyBar";
+
 import { OrderSummary } from "./_components/OrderSummary";
 import { PaymentMethodPicker } from "./_components/PaymentMethodPicker";
 import { RideShareSection } from "./_components/RideShareSection";
@@ -603,6 +605,10 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
               onChangeSeats={setNumSeats}
             />
           )}
+
+          {/* Volunteer opportunities attached to this session — renders
+              nothing if there are no open slots the viewer can claim. */}
+          <SessionVolunteerPanel sessionId={session.id} />
 
           {/* Payment method */}
           {total > 0 && (
