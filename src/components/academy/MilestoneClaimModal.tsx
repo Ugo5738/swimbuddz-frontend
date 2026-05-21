@@ -23,6 +23,7 @@ export function MilestoneClaimModal({
 }: MilestoneClaimModalProps) {
   const [evidenceMediaId, setEvidenceMediaId] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isUploadingEvidence, setIsUploadingEvidence] = useState(false);
   const [studentNotes, setStudentNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [milestoneVideoUrl] = useMediaUrl(milestone.video_media_id);
@@ -30,7 +31,11 @@ export function MilestoneClaimModal({
   const requiresVideo =
     milestone.required_evidence === RequiredEvidence.VIDEO ||
     milestone.required_evidence === RequiredEvidence.TIME_TRIAL;
-  const canSubmit = !isSubmitting && !uploadError && (!requiresVideo || !!evidenceMediaId);
+  const canSubmit =
+    !isSubmitting &&
+    !isUploadingEvidence &&
+    !uploadError &&
+    (!requiresVideo || !!evidenceMediaId);
 
   if (!isOpen) return null;
 
@@ -125,10 +130,16 @@ export function MilestoneClaimModal({
                 if (mediaId) setUploadError(null);
               }}
               onError={(err) => setUploadError(err)}
+              onUploadingChange={setIsUploadingEvidence}
               label={requiresVideo ? "Evidence (Required)" : "Evidence (Video or Image)"}
               showPreview={true}
             />
-            {requiresVideo && !evidenceMediaId && !uploadError && (
+            {isUploadingEvidence && (
+              <p className="mt-1 text-xs text-slate-500">
+                Uploading evidence — please wait before submitting.
+              </p>
+            )}
+            {requiresVideo && !evidenceMediaId && !uploadError && !isUploadingEvidence && (
               <p className="mt-1 text-xs text-amber-600">
                 This milestone requires video evidence before you can submit.
               </p>

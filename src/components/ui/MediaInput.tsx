@@ -33,6 +33,10 @@ interface MediaInputProps {
   onChange: (mediaId: string | null, fileUrl?: string) => void;
   /** Callback when upload fails, exposes error to parent */
   onError?: (error: string | null) => void;
+  /** Callback when an upload starts or finishes. Lets the parent block submit
+   *  while a file is still being uploaded — without this, a user can hit
+   *  "Submit" before the media_id is set, and the upload becomes an orphan. */
+  onUploadingChange?: (uploading: boolean) => void;
   /** Optional label */
   label?: string;
   /** Accept attribute for file input */
@@ -51,6 +55,7 @@ export function MediaInput({
   value,
   onChange,
   onError,
+  onUploadingChange,
   label,
   accept,
   showPreview = true,
@@ -101,6 +106,7 @@ export function MediaInput({
       setError(null);
       onError?.(null);
       setIsUploading(true);
+      onUploadingChange?.(true);
 
       try {
         const mediaItem = await uploadMedia(file, purpose);
@@ -117,9 +123,10 @@ export function MediaInput({
         onError?.(errorMsg);
       } finally {
         setIsUploading(false);
+        onUploadingChange?.(false);
       }
     },
-    [purpose, onChange, onError]
+    [purpose, onChange, onError, onUploadingChange]
   );
 
   const handleDrop = useCallback(
@@ -144,6 +151,7 @@ export function MediaInput({
     setError(null);
     onError?.(null);
     setIsUploading(true);
+    onUploadingChange?.(true);
 
     try {
       const mediaType =
@@ -159,6 +167,7 @@ export function MediaInput({
       onError?.(errorMsg);
     } finally {
       setIsUploading(false);
+      onUploadingChange?.(false);
     }
   };
 
