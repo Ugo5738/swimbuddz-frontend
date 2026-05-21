@@ -1,3 +1,5 @@
+"use client";
+
 import { Badge } from "@/components/ui/Badge";
 import { hasTierAccess, requiredTierForSessionType, tierDisplayLabel } from "@/lib/sessionAccess";
 import {
@@ -7,10 +9,19 @@ import {
   getSessionTypeLabel,
   Session,
   SessionType,
+  signInToSession,
 } from "@/lib/sessions";
 import type { MembershipTier } from "@/lib/tiers";
 import { Calendar, CheckCircle2, Clock, Lock, MapPin, Users } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import { toast } from "sonner";
+
+// Members can self sign-in starting 30 min before session start and up
+// to 60 min after session end. Window is intentionally generous so a
+// late member can still confirm they came; admins can override later.
+const SIGN_IN_WINDOW_BEFORE_MS = 30 * 60 * 1000;
+const SIGN_IN_WINDOW_AFTER_MS = 60 * 60 * 1000;
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -95,6 +106,34 @@ export function SessionCard({
   const sessionEnded = new Date(session.ends_at).getTime() < Date.now();
   const effectivelyPast = isPast || sessionEnded;
   const canSelect = selectable && !isBooked && !effectivelyPast && canBook;
+
+  // Sign-in window for a booked, paid-up member to confirm they showed
+  // up. Only renders the button when we're inside the window AND the
+  // member hasn't already been marked PRESENT/LATE. ABSENT/EXCUSED do
+  // NOT re-open the window — those are admin-set states.
+  const now = Date.now();
+  const sessionStart = new Date(session.starts_at).getTime();
+  const sessionEnd = new Date(session.ends_at).getTime();
+  const inSignInWindow =
+    now >= sessionStart - SIGN_IN_WINDOW_BEFORE_MS && now <= sessionEnd + SIGN_IN_WINDOW_AFTER_MS;
+  const lowerStatus = attendanceStatus?.toLowerCase() ?? "";
+  const alreadySignedIn = lowerStatus === "present" || lowerStatus === "late";
+  const canSelfSignIn = isBooked && inSignInWindow && !alreadySignedIn;
+
+  const [signingIn, setSigningIn] = useState(false);
+  const [signedInLocal, setSignedInLocal] = useState(false);
+  const handleSelfSignIn = async () => {
+    setSigningIn(true);
+    try {
+      await signInToSession({ sessionId: session.id, status: "present" });
+      setSignedInLocal(true);
+      toast.success("Signed in — see you at the pool!");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't sign in.");
+    } finally {
+      setSigningIn(false);
+    }
+  };
 
   const isAcademy = session.session_type === SessionType.COHORT_CLASS;
   const cohortColor = isAcademy && session.cohort_id ? getCohortColor(session.cohort_id) : null;
@@ -269,13 +308,25 @@ export function SessionCard({
         {/* CTA */}
         <div className="mt-4">
           {isBooked ? (
-            <Link
-              href={`/sessions/${session.id}/book`}
-              className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
-            >
-              <CheckCircle2 className="h-4 w-4" />
-              View my booking
-            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              {canSelfSignIn && !signedInLocal ? (
+                <button
+                  type="button"
+                  onClick={handleSelfSignIn}
+                  disabled={signingIn}
+                  className="inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-cyan-700 disabled:opacity-60 transition-colors"
+                >
+                  {signingIn ? "Signing in…" : "I'm here — sign me in"}
+                </button>
+              ) : null}
+              <Link
+                href={`/sessions/${session.id}/book`}
+                className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                {signedInLocal || alreadySignedIn ? "Signed in" : "View my booking"}
+              </Link>
+            </div>
           ) : effectivelyPast ? null : !canBook ? (
             <div className="space-y-2 text-sm">
               <div className="flex items-center gap-1.5 text-amber-700">

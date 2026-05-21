@@ -42,6 +42,7 @@ type AttendanceRecord = {
   session_id: number;
   session_title: string;
   session_starts_at: string;
+  session_ends_at?: string;
   session_location?: string;
   status: string;
 };
@@ -68,6 +69,7 @@ export default function MemberDashboardPage() {
     session_id: string;
     session_title: string;
     session_starts_at: string;
+    session_ends_at?: string;
     session_location?: string;
   } | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -182,6 +184,7 @@ export default function MemberDashboardPage() {
               session_id: match.id,
               session_title: match.title,
               session_starts_at: match.starts_at,
+              session_ends_at: match.ends_at,
               session_location: match.location || undefined,
             });
             return;
@@ -194,6 +197,7 @@ export default function MemberDashboardPage() {
             session_id: s.id,
             session_title: s.title,
             session_starts_at: s.starts_at,
+            session_ends_at: s.ends_at,
             session_location: s.location || undefined,
           });
         }
@@ -510,7 +514,15 @@ export default function MemberDashboardPage() {
       {ytdStats && <YTDStatsOverview stats={ytdStats} year={currentYear} />}
 
       {/* ── Section 4: Next Session ── */}
-      <NextSessionCard session={nextSession} isBooked={upcomingBookings.length > 0} />
+      <NextSessionCard
+        session={nextSession}
+        isBooked={upcomingBookings.length > 0}
+        attendanceStatus={
+          // Only meaningful when the next session came from an existing
+          // attendance record (upcomingBookings path). Otherwise undefined.
+          upcomingBookings.length > 0 ? upcomingBookings[0]?.status : null
+        }
+      />
 
       {/* ── Section 4b: My Pod (Club members only — see docs/club/POD_OPERATIONS.md) ── */}
       {isClubMember && <MyPodCard pod={myPod} showJoinCta={!myPod} />}

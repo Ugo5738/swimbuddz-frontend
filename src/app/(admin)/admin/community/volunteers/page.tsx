@@ -35,6 +35,7 @@ import {
   Calendar,
   Clock,
   Eye,
+  Link2,
   MapPin,
   Plus,
   Settings,
@@ -126,6 +127,23 @@ export default function AdminVolunteersPage() {
     }[]
   >([]);
   const [attachLoading, setAttachLoading] = useState(false);
+
+  // "Find session for unattached opportunity" backfill flow. State lives
+  // on this page rather than in a child component because it interacts
+  // with `opportunities` (refresh after attach) and re-uses the same
+  // SessionsApi we already pull in for the create modal.
+  const [suggestForOpp, setSuggestForOpp] = useState<VolunteerOpportunity | null>(null);
+  const [suggestCandidates, setSuggestCandidates] = useState<
+    {
+      id: string;
+      title: string;
+      starts_at: string;
+      ends_at: string;
+      location_name?: string | null;
+    }[]
+  >([]);
+  const [suggestLoading, setSuggestLoading] = useState(false);
+  const [attachingSessionId, setAttachingSessionId] = useState<string | null>(null);
 
   // Manual hours
   const [showHoursModal, setShowHoursModal] = useState(false);
@@ -433,6 +451,64 @@ export default function AdminVolunteersPage() {
     }
   };
 
+  // Open the "Find session" modal for an unattached opportunity. Fetches
+  // sessions matching the opportunity's date + location_name (case
+  // insensitive, trimmed). Matching is intentionally fuzzy on time —
+  // an opportunity at 09:00 may belong to a 09:00–12:00 session.
+  const openSuggestModal = async (opp: VolunteerOpportunity) => {
+    setSuggestForOpp(opp);
+    setSuggestCandidates([]);
+    setSuggestLoading(true);
+    try {
+      const sessions = await SessionsApi.listSessions({ include_drafts: true });
+      const oppLoc = (opp.location_name ?? "").trim().toLowerCase();
+      const candidates = sessions
+        .filter((s) => {
+          const sessionDateIso = new Date(s.starts_at).toISOString().slice(0, 10);
+          if (sessionDateIso !== opp.date) return false;
+          if (!oppLoc) return true; // no opp location → date match is best we have
+          const sLoc = ((s as { location_name?: string | null }).location_name ?? "")
+            .trim()
+            .toLowerCase();
+          return sLoc === oppLoc;
+        })
+        .map((s) => ({
+          id: s.id,
+          title: s.title,
+          starts_at: s.starts_at,
+          ends_at: s.ends_at,
+          location_name: (s as { location_name?: string | null }).location_name,
+        }));
+      setSuggestCandidates(candidates);
+    } catch (e) {
+      setError(getErrorMessage(e, "Failed to find matching sessions."));
+    } finally {
+      setSuggestLoading(false);
+    }
+  };
+
+  const handleAttachOpportunityToSession = async (sessionId: string) => {
+    if (!suggestForOpp) return;
+    setAttachingSessionId(sessionId);
+    try {
+      await VolunteersApi.admin.updateOpportunity(suggestForOpp.id, {
+        session_id: sessionId,
+      } as Partial<VolunteerOpportunity>);
+      // Refresh the opportunities list so the "Unattached" pill goes
+      // away and the link reflects.
+      const oppsData = await VolunteersApi.admin.listOpportunities({
+        status: undefined,
+      });
+      setOpportunities(oppsData);
+      setSuggestForOpp(null);
+      setSuggestCandidates([]);
+    } catch (e) {
+      setError(getErrorMessage(e, "Failed to attach opportunity to session."));
+    } finally {
+      setAttachingSessionId(null);
+    }
+  };
+
   const handlePublish = async (oppId: string) => {
     try {
       await VolunteersApi.admin.publishOpportunity(oppId);
@@ -698,46 +774,59 @@ export default function AdminVolunteersPage() {
             <>
               {/* Mobile cards */}
               <div className="divide-y divide-slate-100 sm:hidden">
-                {opportunities.map((opp) => (
-                  <div key={opp.id} className="py-4 space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-medium text-slate-900 text-sm">{opp.title}</h3>
-                          <OppStatusBadge status={opp.status} />
-                        </div>
-                        <div className="flex flex-wrap gap-2 text-xs text-slate-500">
-                          <span>{formatDate(opp.date)}</span>
-                          {opp.start_time && <span>{opp.start_time.slice(0, 5)}</span>}
-                          {opp.location_name && (
-                            <span className="flex items-center gap-0.5">
-                              <MapPin className="h-3 w-3" />
-                              {opp.location_name}
+                {opportunities.map((opp) => {
+                  const isUnattached = !opp.session_id && !opp.event_id;
+                  return (
+                    <div key={opp.id} className="py-4 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-medium text-slate-900 text-sm">{opp.title}</h3>
+                            <OppStatusBadge status={opp.status} />
+                            {isUnattached && <Badge variant="default">Unattached</Badge>}
+                          </div>
+                          <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+                            <span>{formatDate(opp.date)}</span>
+                            {opp.start_time && <span>{opp.start_time.slice(0, 5)}</span>}
+                            {opp.location_name && (
+                              <span className="flex items-center gap-0.5">
+                                <MapPin className="h-3 w-3" />
+                                {opp.location_name}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex gap-2 text-xs">
+                            <span className="text-slate-500">
+                              {opp.slots_filled}/{opp.slots_needed} filled
                             </span>
-                          )}
-                        </div>
-                        <div className="flex gap-2 text-xs">
-                          <span className="text-slate-500">
-                            {opp.slots_filled}/{opp.slots_needed} filled
-                          </span>
-                          {opp.role_title && <Badge variant="outline">{opp.role_title}</Badge>}
+                            {opp.role_title && <Badge variant="outline">{opp.role_title}</Badge>}
+                          </div>
                         </div>
                       </div>
+                      <div className="flex gap-2 flex-wrap">
+                        {opp.status === "draft" && (
+                          <Button size="sm" onClick={() => handlePublish(opp.id)}>
+                            Publish
+                          </Button>
+                        )}
+                        {isUnattached && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => openSuggestModal(opp)}
+                          >
+                            Find session
+                          </Button>
+                        )}
+                        <Link href={`/admin/community/volunteers/opportunities/${opp.id}`}>
+                          <Button size="sm" variant="secondary">
+                            Manage
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      {opp.status === "draft" && (
-                        <Button size="sm" onClick={() => handlePublish(opp.id)}>
-                          Publish
-                        </Button>
-                      )}
-                      <Link href={`/admin/community/volunteers/opportunities/${opp.id}`}>
-                        <Button size="sm" variant="secondary">
-                          Manage
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Desktop table */}
@@ -755,70 +844,90 @@ export default function AdminVolunteersPage() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {opportunities.map((opp) => (
-                      <TableRow key={opp.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium text-slate-900">{opp.title}</p>
-                            {opp.location_name && (
-                              <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                                <MapPin className="h-3 w-3" />
-                                {opp.location_name}
-                              </p>
+                    {opportunities.map((opp) => {
+                      const isUnattached = !opp.session_id && !opp.event_id;
+                      return (
+                        <TableRow key={opp.id}>
+                          <TableCell>
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="font-medium text-slate-900">{opp.title}</p>
+                                {isUnattached && (
+                                  <span title="Not attached to a session or event — members on the booking page won't see it.">
+                                    <Badge variant="default">Unattached</Badge>
+                                  </span>
+                                )}
+                              </div>
+                              {opp.location_name && (
+                                <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                                  <MapPin className="h-3 w-3" />
+                                  {opp.location_name}
+                                </p>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm">{formatDate(opp.date)}</span>
+                            {opp.start_time && (
+                              <span className="text-xs text-slate-400 block">
+                                {opp.start_time.slice(0, 5)}
+                                {opp.end_time && ` – ${opp.end_time.slice(0, 5)}`}
+                              </span>
                             )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm">{formatDate(opp.date)}</span>
-                          {opp.start_time && (
-                            <span className="text-xs text-slate-400 block">
-                              {opp.start_time.slice(0, 5)}
-                              {opp.end_time && ` – ${opp.end_time.slice(0, 5)}`}
+                          </TableCell>
+                          <TableCell>
+                            {opp.role_title ? (
+                              <Badge variant="outline">{opp.role_title}</Badge>
+                            ) : (
+                              <span className="text-xs text-slate-400">Any</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`font-medium ${
+                                opp.slots_filled >= opp.slots_needed
+                                  ? "text-emerald-600"
+                                  : "text-slate-900"
+                              }`}
+                            >
+                              {opp.slots_filled}/{opp.slots_needed}
                             </span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {opp.role_title ? (
-                            <Badge variant="outline">{opp.role_title}</Badge>
-                          ) : (
-                            <span className="text-xs text-slate-400">Any</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={`font-medium ${
-                              opp.slots_filled >= opp.slots_needed
-                                ? "text-emerald-600"
-                                : "text-slate-900"
-                            }`}
-                          >
-                            {opp.slots_filled}/{opp.slots_needed}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-xs text-slate-500">
-                            {opp.opportunity_type === "approval_required" ? "Approval" : "Open"}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <OppStatusBadge status={opp.status} />
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2 justify-end">
-                            {opp.status === "draft" && (
-                              <Button size="sm" onClick={() => handlePublish(opp.id)}>
-                                Publish
-                              </Button>
-                            )}
-                            <Link href={`/admin/community/volunteers/opportunities/${opp.id}`}>
-                              <Button size="sm" variant="ghost">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-xs text-slate-500">
+                              {opp.opportunity_type === "approval_required" ? "Approval" : "Open"}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <OppStatusBadge status={opp.status} />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2 justify-end">
+                              {opp.status === "draft" && (
+                                <Button size="sm" onClick={() => handlePublish(opp.id)}>
+                                  Publish
+                                </Button>
+                              )}
+                              {isUnattached && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  title="Find a matching session and attach this opportunity"
+                                  onClick={() => openSuggestModal(opp)}
+                                >
+                                  <Link2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                              <Link href={`/admin/community/volunteers/opportunities/${opp.id}`}>
+                                <Button size="sm" variant="ghost">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </Link>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -1033,6 +1142,93 @@ export default function AdminVolunteersPage() {
                 <Button type="submit">Create as Draft</Button>
               </div>
             </form>
+          </Modal>
+
+          {/* "Find a session for this opportunity" modal — opens from the
+              Link2 button on unattached rows. Matches by date + location;
+              admin one-clicks a candidate to attach. */}
+          <Modal
+            isOpen={!!suggestForOpp}
+            onClose={() => {
+              setSuggestForOpp(null);
+              setSuggestCandidates([]);
+            }}
+            title={suggestForOpp ? `Find session — ${suggestForOpp.title}` : "Find session"}
+          >
+            {suggestForOpp && (
+              <div className="space-y-4">
+                <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+                  Looking for sessions on <strong>{formatDate(suggestForOpp.date)}</strong>
+                  {suggestForOpp.location_name && (
+                    <>
+                      {" "}
+                      at <strong>{suggestForOpp.location_name}</strong>
+                    </>
+                  )}
+                  . Click a session to attach this opportunity to it — members booking that session
+                  will then see this volunteer slot.
+                </div>
+
+                {suggestLoading ? (
+                  <p className="py-6 text-center text-sm text-slate-500">Searching…</p>
+                ) : suggestCandidates.length === 0 ? (
+                  <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                    No sessions found on this date
+                    {suggestForOpp.location_name ? ` at "${suggestForOpp.location_name}"` : ""}.
+                    Either the location string doesn't match any session's location, or no session
+                    exists yet on that date.
+                  </div>
+                ) : (
+                  <ul className="space-y-2">
+                    {suggestCandidates.map((s) => {
+                      const startDt = new Date(s.starts_at);
+                      const endDt = new Date(s.ends_at);
+                      const timeRange = `${startDt.toLocaleTimeString("en-NG", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })} – ${endDt.toLocaleTimeString("en-NG", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}`;
+                      return (
+                        <li
+                          key={s.id}
+                          className="flex items-center justify-between gap-2 rounded border border-slate-200 bg-white p-3"
+                        >
+                          <div className="min-w-0">
+                            <p className="font-medium text-slate-900 truncate">{s.title}</p>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              {timeRange}
+                              {s.location_name && ` · ${s.location_name}`}
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={() => handleAttachOpportunityToSession(s.id)}
+                            disabled={attachingSessionId !== null}
+                          >
+                            {attachingSessionId === s.id ? "Attaching…" : "Attach"}
+                          </Button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+
+                <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => {
+                      setSuggestForOpp(null);
+                      setSuggestCandidates([]);
+                    }}
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+            )}
           </Modal>
         </div>
       )}

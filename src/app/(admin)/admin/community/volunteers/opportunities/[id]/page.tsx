@@ -4,11 +4,16 @@ import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
+import { Modal } from "@/components/ui/Modal";
+import { Select } from "@/components/ui/Select";
+import { Textarea } from "@/components/ui/Textarea";
 import {
   SLOT_STATUS_LABELS,
   VolunteersApi,
   type VolunteerOpportunity,
+  type VolunteerRole,
   type VolunteerSlot,
 } from "@/lib/volunteers";
 import {
@@ -20,6 +25,7 @@ import {
   LogIn,
   LogOut,
   MapPin,
+  Pencil,
   Printer,
   QrCode,
   Users,
@@ -44,6 +50,25 @@ export default function AdminOpportunityDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
+
+  // Edit modal state — lazy-load roles only when the admin opens it,
+  // since most page visits are read-only.
+  const [showEdit, setShowEdit] = useState(false);
+  const [editRoles, setEditRoles] = useState<VolunteerRole[]>([]);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    description: "",
+    role_id: "",
+    date: "",
+    start_time: "",
+    end_time: "",
+    location_name: "",
+    slots_needed: "1",
+    opportunity_type: "open_claim" as "open_claim" | "approval_required",
+    min_tier: "tier_1" as "tier_1" | "tier_2" | "tier_3",
+    qr_checkin_enabled: false,
+  });
 
   useEffect(() => {
     loadData();
@@ -131,6 +156,75 @@ export default function AdminOpportunityDetailPage() {
       await loadData();
     } catch {
       setError("Failed to cancel.");
+    }
+  };
+
+  const openEditModal = async () => {
+    if (!opp) return;
+    setEditForm({
+      title: opp.title,
+      description: opp.description ?? "",
+      role_id: opp.role_id ?? "",
+      date: opp.date,
+      start_time: opp.start_time ? opp.start_time.slice(0, 5) : "",
+      end_time: opp.end_time ? opp.end_time.slice(0, 5) : "",
+      location_name: opp.location_name ?? "",
+      slots_needed: String(opp.slots_needed),
+      opportunity_type: opp.opportunity_type,
+      min_tier: opp.min_tier,
+      qr_checkin_enabled: opp.qr_checkin_enabled,
+    });
+    setShowEdit(true);
+    // Lazy-fetch roles for the picker. Failure is non-fatal — admin can
+    // still edit other fields with the current role_id.
+    if (editRoles.length === 0) {
+      try {
+        const data = await VolunteersApi.listRoles(false);
+        setEditRoles(data);
+      } catch {
+        /* swallow — Select will fall back to the existing role_id */
+      }
+    }
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!opp) return;
+    setEditSaving(true);
+    // Backend Pydantic `time` parsing wants ISO-style HH:MM:SS — HTML
+    // <input type="time"> emits HH:MM, which 3.10 rejects. Append :00.
+    const padTime = (v: string) => (v && v.length === 5 ? `${v}:00` : v || undefined);
+    const slots = parseInt(editForm.slots_needed, 10);
+    try {
+      await VolunteersApi.admin.updateOpportunity(id, {
+        title: editForm.title,
+        description: editForm.description || undefined,
+        role_id: editForm.role_id || undefined,
+        date: editForm.date,
+        start_time: padTime(editForm.start_time),
+        end_time: padTime(editForm.end_time),
+        location_name: editForm.location_name || undefined,
+        // Coerce defensively — a non-numeric value would send JSON `null`
+        // and trip the NOT NULL column. Fall back to the current value.
+        slots_needed: Number.isFinite(slots) && slots > 0 ? slots : opp.slots_needed,
+        opportunity_type: editForm.opportunity_type,
+        min_tier: editForm.min_tier,
+        qr_checkin_enabled: editForm.qr_checkin_enabled,
+      } as Partial<VolunteerOpportunity>);
+      setShowEdit(false);
+      setActionMsg("Opportunity updated.");
+      await loadData();
+    } catch (e) {
+      // Surface the actual server error instead of a generic "Failed to
+      // update opportunity." — the catch was swallowing the only useful
+      // signal we had.
+      const msg =
+        e instanceof Error && e.message
+          ? `Failed to update opportunity: ${e.message}`
+          : "Failed to update opportunity.";
+      setError(msg);
+    } finally {
+      setEditSaving(false);
     }
   };
 
@@ -243,10 +337,15 @@ export default function AdminOpportunityDetailPage() {
               </span>
             </div>
           </div>
-          <div className="flex gap-2 flex-shrink-0">
+          <div className="flex gap-2 flex-shrink-0 flex-wrap">
             {opp.status === "draft" && (
               <Button size="sm" onClick={handlePublish}>
                 Publish
+              </Button>
+            )}
+            {opp.status !== "cancelled" && opp.status !== "completed" && (
+              <Button size="sm" variant="secondary" onClick={openEditModal}>
+                <Pencil className="mr-1 h-4 w-4" /> Edit
               </Button>
             )}
             {opp.status !== "cancelled" && opp.status !== "completed" && (
@@ -449,6 +548,132 @@ export default function AdminOpportunityDetailPage() {
           </div>
         )}
       </section>
+
+      {/* Edit Opportunity Modal — uses the same VolunteerOpportunityUpdate
+          fields as the create form. Lazy-loads role list on first open. */}
+      <Modal isOpen={showEdit} onClose={() => setShowEdit(false)} title={`Edit: ${opp.title}`}>
+        <form onSubmit={handleSaveEdit} className="space-y-4">
+          <Input
+            label="Title"
+            value={editForm.title}
+            onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+            required
+          />
+          <Textarea
+            label="Description"
+            value={editForm.description}
+            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+            rows={2}
+          />
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+            <Select
+              label="Role"
+              value={editForm.role_id}
+              onChange={(e) => setEditForm({ ...editForm, role_id: e.target.value })}
+            >
+              <option value="">Any role</option>
+              {editRoles
+                .filter((r) => r.is_active || r.id === editForm.role_id)
+                .map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.icon} {r.title}
+                  </option>
+                ))}
+            </Select>
+            <Input
+              label="Slots Needed"
+              type="number"
+              min={1}
+              value={editForm.slots_needed}
+              onChange={(e) => setEditForm({ ...editForm, slots_needed: e.target.value })}
+              required
+            />
+          </div>
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+            <Input
+              label="Date"
+              type="date"
+              value={editForm.date}
+              onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
+              required
+            />
+            <Input
+              label="Location"
+              value={editForm.location_name}
+              onChange={(e) => setEditForm({ ...editForm, location_name: e.target.value })}
+            />
+          </div>
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+            <Input
+              label="Start Time"
+              type="time"
+              value={editForm.start_time}
+              onChange={(e) => setEditForm({ ...editForm, start_time: e.target.value })}
+            />
+            <Input
+              label="End Time"
+              type="time"
+              value={editForm.end_time}
+              onChange={(e) => setEditForm({ ...editForm, end_time: e.target.value })}
+            />
+          </div>
+
+          <div className="border-t border-slate-200 pt-4">
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+              <Select
+                label="Claim Type"
+                value={editForm.opportunity_type}
+                onChange={(e) =>
+                  setEditForm({
+                    ...editForm,
+                    opportunity_type: e.target.value as "open_claim" | "approval_required",
+                  })
+                }
+              >
+                <option value="open_claim">Open (anyone can claim)</option>
+                <option value="approval_required">Approval required</option>
+              </Select>
+              <Select
+                label="Minimum Tier"
+                value={editForm.min_tier}
+                onChange={(e) =>
+                  setEditForm({
+                    ...editForm,
+                    min_tier: e.target.value as "tier_1" | "tier_2" | "tier_3",
+                  })
+                }
+              >
+                <option value="tier_1">Tier 1 — Anyone</option>
+                <option value="tier_2">Tier 2 — Core</option>
+                <option value="tier_3">Tier 3 — Lead</option>
+              </Select>
+            </div>
+            <label className="flex items-center gap-3 mt-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={editForm.qr_checkin_enabled}
+                onChange={(e) => setEditForm({ ...editForm, qr_checkin_enabled: e.target.checked })}
+                className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+              />
+              <span className="text-sm text-slate-700">Enable QR self check-in</span>
+            </label>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setShowEdit(false)}
+              disabled={editSaving}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={editSaving}>
+              {editSaving ? "Saving…" : "Save changes"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

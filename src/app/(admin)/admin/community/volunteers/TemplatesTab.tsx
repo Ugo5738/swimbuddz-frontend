@@ -172,14 +172,14 @@ export function VolunteerTemplatesTab({ roles }: { roles: VolunteerRole[] }) {
       toast.success(
         resp.created_count > 0
           ? `Created ${resp.created_count} opportunities through ${materialiseThrough}.`
-          : `Nothing to create — already materialised through ${resp.last_materialised_through}.`
+          : `Nothing to create — opportunities already exist through ${resp.last_materialised_through}.`
       );
       setMaterialiseTarget(null);
       setMaterialiseThrough("");
       await refresh();
     } catch (e) {
       console.error(e);
-      toast.error("Could not materialise template.");
+      toast.error("Could not generate opportunities.");
     }
   };
 
@@ -187,15 +187,15 @@ export function VolunteerTemplatesTab({ roles }: { roles: VolunteerRole[] }) {
     <div className="space-y-4">
       {error && <Alert variant="error">{error}</Alert>}
 
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="max-w-2xl">
           <h3 className="text-base font-semibold text-slate-900">Opportunity templates</h3>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-slate-500 mt-1">
             Recurring volunteer needs that aren't tied to a specific session (e.g. weekly community
             outreach). Templates attached to session schedules live in the session template editor.
           </p>
         </div>
-        <Button onClick={openCreate}>
+        <Button onClick={openCreate} className="flex-shrink-0 self-start whitespace-nowrap">
           <Plus className="mr-1 h-4 w-4" /> New template
         </Button>
       </div>
@@ -254,8 +254,8 @@ export function VolunteerTemplatesTab({ roles }: { roles: VolunteerRole[] }) {
                 <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                   <p className="text-xs text-slate-400">
                     {t.last_materialised_through
-                      ? `Materialised through ${t.last_materialised_through}`
-                      : "Never materialised"}
+                      ? `Opportunities generated through ${t.last_materialised_through}`
+                      : "No opportunities generated yet"}
                   </p>
                   <Button
                     size="sm"
@@ -268,7 +268,7 @@ export function VolunteerTemplatesTab({ roles }: { roles: VolunteerRole[] }) {
                     }}
                     className="text-xs"
                   >
-                    Materialise…
+                    Generate…
                   </Button>
                 </div>
               </div>
@@ -424,8 +424,9 @@ export function VolunteerTemplatesTab({ roles }: { roles: VolunteerRole[] }) {
       >
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
-            Create concrete volunteer opportunities for this template up to and including the chosen
-            date. Already-materialised dates are skipped.
+            Generate real volunteer opportunities for this template up to and including the chosen
+            date. Dates that already have an opportunity for this role are skipped, so it's safe to
+            run this more than once.
           </p>
           <Input
             label="Through date"

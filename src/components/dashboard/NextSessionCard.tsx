@@ -1,17 +1,33 @@
+"use client";
+
 import { Button } from "@/components/ui/Button";
-import { LOCATION_LABELS } from "@/lib/sessions";
+import { LOCATION_LABELS, signInToSession } from "@/lib/sessions";
 import { ArrowRight, Calendar, MapPin } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import { toast } from "sonner";
+
+// Match the SessionCard component's sign-in window so the two surfaces
+// behave consistently.
+const SIGN_IN_WINDOW_BEFORE_MS = 30 * 60 * 1000;
+const SIGN_IN_WINDOW_AFTER_MS = 60 * 60 * 1000;
+// If no ends_at is available (AttendanceRecord path), assume a 2-hour
+// session for the sign-in window cut-off. The cost of getting this wrong
+// is showing the button slightly too long, which is harmless.
+const DEFAULT_SESSION_DURATION_MS = 2 * 60 * 60 * 1000;
 
 type NextSessionCardProps = {
   session?: {
     session_id?: string | number;
     session_title: string;
     session_starts_at: string;
+    session_ends_at?: string;
     session_location?: string;
   } | null;
   /** Whether this session is already booked by the member */
   isBooked?: boolean;
+  /** Existing attendance status if any (e.g. "present", "absent"). */
+  attendanceStatus?: string | null;
 };
 
 function formatSessionDate(dateStr: string): string {
@@ -42,7 +58,10 @@ function getCountdown(dateStr: string): string {
   return `in ${diffDays} days`;
 }
 
-export function NextSessionCard({ session, isBooked }: NextSessionCardProps) {
+export function NextSessionCard({ session, isBooked, attendanceStatus }: NextSessionCardProps) {
+  const [signingIn, setSigningIn] = useState(false);
+  const [signedInLocal, setSignedInLocal] = useState(false);
+
   if (!session) {
     return (
       <div className="rounded-2xl border-2 border-dashed border-slate-200 p-6 text-center">
@@ -64,6 +83,42 @@ export function NextSessionCard({ session, isBooked }: NextSessionCardProps) {
   const locationLabel = session.session_location
     ? LOCATION_LABELS[session.session_location] || session.session_location
     : null;
+
+  // Sign-in window. If the parent didn't pass ends_at (e.g. coming from
+  // an AttendanceRecord whose summary omits it), fall back to a 2-hour
+  // assumption — overshooting the button's visibility by a bit is fine.
+  const now = Date.now();
+  const sessionStart = new Date(session.session_starts_at).getTime();
+  const sessionEnd = session.session_ends_at
+    ? new Date(session.session_ends_at).getTime()
+    : sessionStart + DEFAULT_SESSION_DURATION_MS;
+  const inSignInWindow =
+    now >= sessionStart - SIGN_IN_WINDOW_BEFORE_MS && now <= sessionEnd + SIGN_IN_WINDOW_AFTER_MS;
+  const lowerStatus = attendanceStatus?.toLowerCase() ?? "";
+  const alreadySignedIn = lowerStatus === "present" || lowerStatus === "late";
+  const canSelfSignIn =
+    Boolean(isBooked) &&
+    Boolean(session.session_id) &&
+    inSignInWindow &&
+    !alreadySignedIn &&
+    !signedInLocal;
+
+  const handleSelfSignIn = async () => {
+    if (!session.session_id) return;
+    setSigningIn(true);
+    try {
+      await signInToSession({
+        sessionId: String(session.session_id),
+        status: "present",
+      });
+      setSignedInLocal(true);
+      toast.success("Signed in — see you at the pool!");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't sign in.");
+    } finally {
+      setSigningIn(false);
+    }
+  };
 
   return (
     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-cyan-50 via-blue-50 to-indigo-50 border border-cyan-100 p-5">
@@ -93,25 +148,34 @@ export function NextSessionCard({ session, isBooked }: NextSessionCardProps) {
       </div>
 
       {/* Actions */}
-      <div className="mt-4 flex items-center justify-between">
-        {isBooked ? (
-          <Link
-            href={
-              session.session_id ? `/sessions/${session.session_id}/book` : "/sessions?view=booked"
-            }
-          >
-            <Button size="sm" variant="outline">
-              View booking
+      <div className="mt-4 flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          {canSelfSignIn ? (
+            <Button size="sm" onClick={handleSelfSignIn} disabled={signingIn}>
+              {signingIn ? "Signing in…" : "I'm here — sign me in"}
             </Button>
-          </Link>
-        ) : (
-          <Link href={session.session_id ? `/sessions/${session.session_id}/book` : "/sessions"}>
-            <Button size="sm">
-              Book now
-              <ArrowRight className="ml-1.5 h-4 w-4" />
-            </Button>
-          </Link>
-        )}
+          ) : null}
+          {isBooked ? (
+            <Link
+              href={
+                session.session_id
+                  ? `/sessions/${session.session_id}/book`
+                  : "/sessions?view=booked"
+              }
+            >
+              <Button size="sm" variant="outline">
+                {signedInLocal || alreadySignedIn ? "Signed in" : "View booking"}
+              </Button>
+            </Link>
+          ) : (
+            <Link href={session.session_id ? `/sessions/${session.session_id}/book` : "/sessions"}>
+              <Button size="sm">
+                Book now
+                <ArrowRight className="ml-1.5 h-4 w-4" />
+              </Button>
+            </Link>
+          )}
+        </div>
         <Link
           href="/sessions"
           className="text-xs font-medium text-cyan-600 hover:text-cyan-700 flex items-center gap-1"

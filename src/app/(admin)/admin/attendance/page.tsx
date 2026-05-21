@@ -124,6 +124,18 @@ type MarkRow = {
   notes: string;
 };
 
+type TabKey = "expected" | "attendance" | "exceptions";
+
+// A session "has started" once its start time is in the past. We use this to
+// decide whether unmatched bookings should be labelled "Pending" (not yet
+// arrived) versus "No-show" (the session has begun without them).
+function hasSessionStarted(startsAt: string | null | undefined): boolean {
+  if (!startsAt) return false;
+  const d = new Date(startsAt);
+  if (isNaN(d.getTime())) return false;
+  return d.getTime() <= Date.now();
+}
+
 export default function AdminAttendancePage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [cohortNames, setCohortNames] = useState<Map<string, string>>(() => new Map());
@@ -149,6 +161,16 @@ export default function AdminAttendancePage() {
     [sessions, selectedSessionId]
   );
   const isCohortSession = Boolean(selectedSession?.cohort_id);
+  const sessionStarted = hasSessionStarted(selectedSession?.starts_at);
+
+  // Active tab. Default depends on whether the session has happened yet:
+  // upcoming → "expected" (you mostly want to see who paid);
+  // already started → "attendance" (you mostly want to see who arrived).
+  const [tab, setTab] = useState<TabKey>("expected");
+  useEffect(() => {
+    if (!selectedSessionId) return;
+    setTab(sessionStarted ? "attendance" : "expected");
+  }, [selectedSessionId, sessionStarted]);
 
   useEffect(() => {
     async function fetchSessions() {
@@ -275,28 +297,41 @@ export default function AdminAttendancePage() {
         setEnrollments(cohortEnrollments);
 
         // Build a member_id -> {name, email} lookup, merging known sources.
+        // Only seed entries when we actually have a name — otherwise leave the
+        // slot empty so the bulk-basic fallback below can fill it in.
         const lookup = new Map<string, { name: string; email: string }>();
         for (const a of mergedAttendance) {
-          if (a.member_id) {
+          if (a.member_id && a.member_name) {
             lookup.set(a.member_id, {
-              name: a.member_name || "(unknown)",
+              name: a.member_name,
               email: a.member_email || "",
             });
           }
         }
         for (const e of cohortEnrollments) {
-          if (e.member_id && !lookup.has(e.member_id)) {
+          if (e.member_id && e.member_name && !lookup.has(e.member_id)) {
             lookup.set(e.member_id, {
-              name: e.member_name || "(unknown)",
+              name: e.member_name,
               email: e.member_email || "",
             });
           }
         }
 
         // Fill in any remaining booking members via /members/bulk-basic.
-        const missingIds = sessionBookings
-          .map((b) => b.member_id)
-          .filter((id) => id && !lookup.has(id));
+        // Also include cohort enrollees who came back without a name so the
+        // mark-exceptions dropdown is never littered with "(unknown)".
+        const idsToFetch = new Set<string>();
+        for (const b of sessionBookings) {
+          if (b.member_id && !lookup.has(b.member_id)) {
+            idsToFetch.add(b.member_id);
+          }
+        }
+        for (const e of cohortEnrollments) {
+          if (e.member_id && !lookup.has(e.member_id)) {
+            idsToFetch.add(e.member_id);
+          }
+        }
+        const missingIds = Array.from(idsToFetch);
         if (missingIds.length > 0) {
           try {
             const basic = await apiPost<Record<string, MemberBasicResponse>>(
@@ -351,10 +386,12 @@ export default function AdminAttendancePage() {
     [bookings]
   );
 
-  const noShows = useMemo(() => {
+  // "Unmatched" bookings = confirmed but no PRESENT/LATE attendance row.
+  // Before the session starts we display these as "Pending arrivals";
+  // once the session has started they're proper "No-shows".
+  const unmatchedBookings = useMemo(() => {
     return confirmedBookings.filter((b) => {
       const a = attendanceByMember.get(b.member_id);
-      // No attendance row at all, OR explicit absent — counts as no-show.
       return !a || a.status?.toLowerCase() === "absent";
     });
   }, [confirmedBookings, attendanceByMember]);
@@ -407,6 +444,45 @@ export default function AdminAttendancePage() {
   const handleRemoveMarkRow = (memberId: string) => {
     setMarkRows((prev) => prev.filter((r) => r.member_id !== memberId));
     setMarkSuccess(null);
+  };
+
+  // One-click bulk mark for non-cohort sessions: every confirmed booking
+  // without a PRESENT/LATE row gets a PRESENT AttendanceRecord. Replaces
+  // the "click each booking" workflow when a coach just wants to confirm
+  // the whole expected list arrived (the typical case for small community
+  // sessions). The admin can still mark no-shows individually afterwards.
+  const handleBulkMarkPresent = async () => {
+    if (!selectedSessionId) return;
+    if (unmatchedBookings.length === 0) return;
+    setSubmittingMark(true);
+    setError(null);
+    setMarkSuccess(null);
+    try {
+      const entries: CoachMarkEntry[] = unmatchedBookings.map((b) => ({
+        member_id: b.member_id,
+        status: "present",
+        notes: null,
+      }));
+      await apiPost(
+        `/api/v1/attendance/sessions/${selectedSessionId}/coach-mark`,
+        { entries },
+        { auth: true }
+      );
+      setMarkSuccess(
+        `Marked ${entries.length} booking${entries.length === 1 ? "" : "s"} as present.`
+      );
+      // Refresh the attendance list so the new rows show up.
+      const refreshed = await apiGet<Attendance[]>(
+        `/api/v1/attendance/sessions/${selectedSessionId}/attendance`,
+        { auth: true }
+      );
+      setAttendanceList(refreshed);
+    } catch (err: any) {
+      console.error("Failed to bulk-mark attendance", err);
+      setError(`Failed to bulk-mark: ${err.message || "Unknown error"}`);
+    } finally {
+      setSubmittingMark(false);
+    }
   };
 
   const handleSubmitMark = async () => {
@@ -687,22 +763,35 @@ export default function AdminAttendancePage() {
         </div>
 
         {!loadingAttendance && selectedSessionId ? (
-          <div className="grid grid-cols-2 gap-3 print:hidden sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 print:hidden">
             <ReconciliationStat label="Confirmed bookings" value={confirmedBookings.length} />
             <ReconciliationStat
               label={isCohortSession ? "Recorded exceptions" : "Checked in"}
               value={attendanceList.length}
             />
             <ReconciliationStat
-              label="No-shows"
-              value={noShows.length}
-              tone={noShows.length > 0 ? "warn" : "ok"}
+              label={sessionStarted ? "No-shows" : "Pending arrivals"}
+              value={unmatchedBookings.length}
+              tone={unmatchedBookings.length === 0 ? "ok" : sessionStarted ? "warn" : "neutral"}
             />
             <ReconciliationStat
               label={isCohortSession ? "Cohort enrolled" : "Walk-ins"}
               value={isCohortSession ? cohortRoster.length : walkIns.length}
             />
           </div>
+        ) : null}
+
+        {!loadingAttendance && selectedSessionId ? (
+          <TabNav
+            tab={tab}
+            onChange={setTab}
+            isCohortSession={isCohortSession}
+            counts={{
+              expected: confirmedBookings.length,
+              attendance: attendanceList.length,
+              exceptions: markRows.length,
+            }}
+          />
         ) : null}
 
         {/* Print-only header */}
@@ -720,117 +809,151 @@ export default function AdminAttendancePage() {
             })()}
         </div>
 
-        {loadingAttendance ? (
-          <LoadingPage text="Loading attendance..." />
-        ) : attendanceList.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-slate-300 py-12 text-center text-slate-500">
-            No attendees found for this session.
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-lg border border-slate-200 shadow-sm print:border-0 print:shadow-none">
-            <table className="min-w-full divide-y divide-slate-200">
-              <thead className="bg-slate-50 print:bg-white">
-                <tr>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
-                  >
-                    Name
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
-                  >
-                    Status
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
-                  >
-                    Ride Info
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
-                  >
-                    Role
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
-                  >
-                    Notes
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 bg-white">
-                {attendanceList.map((attendance) => (
-                  <tr key={attendance.id}>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <div className="text-sm font-medium text-slate-900">
-                        {attendance.member_name}
-                      </div>
-                      <div className="text-sm text-slate-500">{attendance.member_email}</div>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <span
-                        className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${statusBadgeClass(attendance.status)}`}
-                      >
-                        {attendance.status}
-                      </span>
-                      {!isCohortSession &&
-                      attendance.member_id &&
-                      !confirmedBookings.some((b) => b.member_id === attendance.member_id) &&
-                      attendance.status?.toLowerCase() !== "absent" &&
-                      attendance.status?.toLowerCase() !== "excused" ? (
-                        <span className="ml-2 inline-flex rounded-full bg-violet-100 px-2 text-[10px] font-semibold uppercase tracking-wide text-violet-700">
-                          Walk-in
-                        </span>
-                      ) : null}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      {attendance.ride_info ? (
-                        <div className="text-sm text-slate-700">
-                          <div className="font-medium">{attendance.ride_info.pickup_location}</div>
-                          {(attendance.ride_info.area_name || attendance.ride_info.ride_number) && (
-                            <div className="text-xs text-slate-500">
-                              {[
-                                attendance.ride_info.area_name,
-                                attendance.ride_info.ride_number
-                                  ? `Ride #${attendance.ride_info.ride_number}`
-                                  : null,
-                              ]
-                                .filter(Boolean)
-                                .join(" • ")}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-sm text-slate-400">--</span>
-                      )}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-700">
-                      {attendance.role}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">
-                      {attendance.notes || "--"}
-                    </td>
+        {/* Attendance tab: actual presence rows. Always rendered for print. */}
+        <div className={tab === "attendance" ? "" : "hidden print:block"}>
+          {/* Bulk shortcut — only meaningful for non-cohort sessions, since
+            cohorts are default-present and the right workflow there is
+            Mark exceptions. */}
+          {!isCohortSession && unmatchedBookings.length > 0 && (
+            <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 print:hidden">
+              <p className="text-sm text-slate-700">
+                {unmatchedBookings.length} booked attendee
+                {unmatchedBookings.length === 1 ? "" : "s"} not yet marked.
+              </p>
+              <Button size="sm" onClick={handleBulkMarkPresent} disabled={submittingMark}>
+                {submittingMark ? "Marking…" : `Mark all ${unmatchedBookings.length} as present`}
+              </Button>
+            </div>
+          )}
+          {loadingAttendance ? (
+            <LoadingPage text="Loading attendance..." />
+          ) : attendanceList.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-500">
+              {isCohortSession
+                ? "No exception rows recorded — everyone in this cohort session is assumed present. Switch to the Mark exceptions tab to record an absence."
+                : sessionStarted
+                  ? "No sign-ins recorded for this session yet."
+                  : "Sign-ins will appear here once members check in on session day."}
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-lg border border-slate-200 shadow-sm print:border-0 print:shadow-none">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50 print:bg-white">
+                  <tr>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
+                    >
+                      Name
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
+                    >
+                      Status
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
+                    >
+                      Ride Info
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
+                    >
+                      Role
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
+                    >
+                      Notes
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody className="divide-y divide-slate-200 bg-white">
+                  {attendanceList.map((attendance) => (
+                    <tr key={attendance.id}>
+                      <td className="whitespace-nowrap px-6 py-4">
+                        <div className="text-sm font-medium text-slate-900">
+                          {attendance.member_name}
+                        </div>
+                        <div className="text-sm text-slate-500">{attendance.member_email}</div>
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4">
+                        <span
+                          className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${statusBadgeClass(attendance.status)}`}
+                        >
+                          {attendance.status}
+                        </span>
+                        {!isCohortSession &&
+                        attendance.member_id &&
+                        !confirmedBookings.some((b) => b.member_id === attendance.member_id) &&
+                        attendance.status?.toLowerCase() !== "absent" &&
+                        attendance.status?.toLowerCase() !== "excused" ? (
+                          <span className="ml-2 inline-flex rounded-full bg-violet-100 px-2 text-[10px] font-semibold uppercase tracking-wide text-violet-700">
+                            Walk-in
+                          </span>
+                        ) : null}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4">
+                        {attendance.ride_info ? (
+                          <div className="text-sm text-slate-700">
+                            <div className="font-medium">
+                              {attendance.ride_info.pickup_location}
+                            </div>
+                            {(attendance.ride_info.area_name ||
+                              attendance.ride_info.ride_number) && (
+                              <div className="text-xs text-slate-500">
+                                {[
+                                  attendance.ride_info.area_name,
+                                  attendance.ride_info.ride_number
+                                    ? `Ride #${attendance.ride_info.ride_number}`
+                                    : null,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" • ")}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-slate-400">--</span>
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-700">
+                        {attendance.role}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">
+                        {attendance.notes || "--"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
 
-        {!loadingAttendance && selectedSessionId && bookings.length > 0 ? (
-          <ExpectedBookingsPanel
-            bookings={bookings}
-            attendanceByMember={attendanceByMember}
-            memberLookup={memberLookup}
-          />
+        {!loadingAttendance && selectedSessionId && tab === "expected" ? (
+          bookings.length > 0 ? (
+            <ExpectedBookingsPanel
+              bookings={bookings}
+              attendanceByMember={attendanceByMember}
+              memberLookup={memberLookup}
+              sessionStarted={sessionStarted}
+            />
+          ) : (
+            <div className="rounded-lg border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500 print:hidden">
+              No paid bookings for this session yet.
+              {isCohortSession
+                ? " Cohort members can still attend without a per-session booking."
+                : ""}
+            </div>
+          )
         ) : null}
 
-        {!loadingAttendance && selectedSessionId && isCohortSession ? (
+        {!loadingAttendance && selectedSessionId && isCohortSession && tab === "exceptions" ? (
           <CohortMarkForm
             markRows={markRows}
             memberLookup={memberLookup}
@@ -843,15 +966,79 @@ export default function AdminAttendancePage() {
             onSubmit={handleSubmitMark}
           />
         ) : null}
-
-        {!loadingAttendance &&
-        selectedSessionId &&
-        !isCohortSession &&
-        attendanceList.length === 0 &&
-        bookings.length === 0
-          ? null
-          : null}
       </div>
+    </div>
+  );
+}
+
+function TabNav({
+  tab,
+  onChange,
+  isCohortSession,
+  counts,
+}: {
+  tab: TabKey;
+  onChange: (next: TabKey) => void;
+  isCohortSession: boolean;
+  counts: { expected: number; attendance: number; exceptions: number };
+}) {
+  const items: Array<{ key: TabKey; label: string; count: number; show: boolean; hint: string }> = [
+    {
+      key: "expected",
+      label: "Expected",
+      count: counts.expected,
+      show: true,
+      hint: "Members who paid for a seat (SessionBookings)",
+    },
+    {
+      key: "attendance",
+      label: "Attendance",
+      count: counts.attendance,
+      show: true,
+      hint: "Members who actually checked in",
+    },
+    {
+      key: "exceptions",
+      label: "Mark exceptions",
+      count: counts.exceptions,
+      show: isCohortSession,
+      hint: "Cohort default-present model — record absences/late/excused",
+    },
+  ];
+  return (
+    <div
+      className="flex flex-wrap gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1 print:hidden"
+      role="tablist"
+    >
+      {items
+        .filter((i) => i.show)
+        .map((i) => {
+          const active = tab === i.key;
+          return (
+            <button
+              key={i.key}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              title={i.hint}
+              onClick={() => onChange(i.key)}
+              className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                active
+                  ? "bg-white text-cyan-700 shadow-sm"
+                  : "text-slate-600 hover:bg-white/60 hover:text-slate-900"
+              }`}
+            >
+              <span>{i.label}</span>
+              <span
+                className={`inline-flex min-w-[1.5rem] justify-center rounded-full px-2 text-xs ${
+                  active ? "bg-cyan-100 text-cyan-800" : "bg-slate-200 text-slate-700"
+                }`}
+              >
+                {i.count}
+              </span>
+            </button>
+          );
+        })}
     </div>
   );
 }
@@ -883,10 +1070,12 @@ function ExpectedBookingsPanel({
   bookings,
   attendanceByMember,
   memberLookup,
+  sessionStarted,
 }: {
   bookings: SessionBookingResponse[];
   attendanceByMember: Map<string, Attendance>;
   memberLookup: Map<string, { name: string; email: string }>;
+  sessionStarted: boolean;
 }) {
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200 shadow-sm print:hidden">
@@ -924,10 +1113,9 @@ function ExpectedBookingsPanel({
             const lower = attendance?.status?.toLowerCase();
             let arrival: { label: string; cls: string };
             if (!attendance) {
-              arrival = {
-                label: "Awaiting",
-                cls: "bg-slate-100 text-slate-700",
-              };
+              arrival = sessionStarted
+                ? { label: "No-show", cls: "bg-rose-100 text-rose-800" }
+                : { label: "Awaiting", cls: "bg-slate-100 text-slate-700" };
             } else if (lower === "absent") {
               arrival = { label: "No-show", cls: "bg-rose-100 text-rose-800" };
             } else if (lower === "excused") {

@@ -606,10 +606,6 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
             />
           )}
 
-          {/* Volunteer opportunities attached to this session — renders
-              nothing if there are no open slots the viewer can claim. */}
-          <SessionVolunteerPanel sessionId={session.id} />
-
           {/* Payment method */}
           {total > 0 && (
             <Card className="p-5 space-y-4">
@@ -673,6 +669,11 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
               ) : null}
             </Card>
           )}
+
+          {/* Volunteer opportunities attached to this session — placed
+              below payment as a secondary "while you're here" prompt.
+              Renders nothing if no open slots match the viewer's tier. */}
+          <SessionVolunteerPanel sessionId={session.id} />
 
           {/* Validation message (mobile only, since desktop has it in sidebar) */}
           {validationMessage && (
