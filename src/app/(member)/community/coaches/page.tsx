@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { Member, MembersApi } from "@/lib/members";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -56,10 +57,12 @@ export default function CoachDirectoryPage() {
                 <div className="aspect-[4/3] w-full bg-slate-100 relative">
                   {/* Coach Photo */}
                   {coach.coach_profile_photo_url ? (
-                    <img
+                    <Image
                       src={coach.coach_profile_photo_url}
                       alt={coach.display_name || member.first_name}
-                      className="h-full w-full object-cover"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                      className="object-cover"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-cyan-100 text-cyan-600">

@@ -8,6 +8,7 @@ import { apiEndpoints } from "@/lib/config";
 import { format } from "date-fns";
 import { ArrowLeft, Calendar, MessageCircle, User } from "lucide-react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -178,11 +179,13 @@ export default function ContentDetailPage() {
         <Card className="overflow-hidden">
           {/* Featured Image */}
           {post.featured_image_url && (
-            <div className="aspect-video w-full overflow-hidden bg-slate-100">
-              <img
+            <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
+              <Image
                 src={post.featured_image_url}
                 alt={post.title}
-                className="h-full w-full object-cover"
+                fill
+                sizes="(max-width: 768px) 100vw, 800px"
+                className="object-cover"
               />
             </div>
           )}

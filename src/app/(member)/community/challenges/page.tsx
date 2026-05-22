@@ -12,6 +12,7 @@ import {
   SubmissionStatus,
 } from "@/lib/challenges";
 import { Trophy, Users } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -219,10 +220,12 @@ function ChallengeTile({
                 className="h-full w-full object-cover"
               />
             ) : (
-              <img
+              <Image
                 src={previewUrl}
                 alt={challenge.title}
-                className="h-full w-full object-cover"
+                fill
+                sizes="(max-width: 768px) 100vw, 33vw"
+                className="object-cover"
               />
             )
           ) : (

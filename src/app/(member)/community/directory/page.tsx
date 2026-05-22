@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/Card";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { useApi } from "@/hooks/useApi";
 import { Award, MapPin, Search } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 
 interface Member {
@@ -146,12 +147,14 @@ export default function MemberDirectoryPage() {
                 <div className="space-y-4">
                   {/* Profile Photo */}
                   <div className="flex items-center gap-4">
-                    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-cyan-400 to-blue-500">
+                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-cyan-400 to-blue-500">
                       {member.profile_photo_url ? (
-                        <img
+                        <Image
                           src={member.profile_photo_url}
                           alt={`${member.first_name} ${member.last_name}`}
-                          className="h-full w-full object-cover"
+                          fill
+                          sizes="64px"
+                          className="object-cover"
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-white">

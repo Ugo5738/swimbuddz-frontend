@@ -11,6 +11,7 @@ import {
   Search,
   Tag,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -174,11 +175,13 @@ export default function CommunityTipsPage() {
                   <Card className="h-full transition-all hover:shadow-lg cursor-pointer group overflow-hidden">
                     {/* Featured Image */}
                     {post.featured_image_url && (
-                      <div className="aspect-video w-full overflow-hidden bg-slate-100">
-                        <img
+                      <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
+                        <Image
                           src={post.featured_image_url}
                           alt={post.title}
-                          className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          fill
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       </div>
                     )}

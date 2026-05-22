@@ -23,6 +23,7 @@ import {
   submitChallenge,
 } from "@/lib/challenges";
 import { uploadMedia } from "@/lib/media";
+import NextImage from "next/image";
 import {
   Image as ImageIcon,
   Loader2,
@@ -218,7 +219,7 @@ export function SubmitForm({ challenge, onSuccess }: SubmitFormProps) {
             {uploads.map((u) => (
               <div
                 key={u.media_id}
-                className="relative overflow-hidden rounded-md border border-slate-200"
+                className="relative aspect-video w-full overflow-hidden rounded-md border border-slate-200"
               >
                 {u.is_video ? (
                   <video
@@ -226,13 +227,15 @@ export function SubmitForm({ challenge, onSuccess }: SubmitFormProps) {
                     controls
                     playsInline
                     preload="metadata"
-                    className="aspect-video w-full bg-slate-900"
+                    className="h-full w-full bg-slate-900"
                   />
                 ) : (
-                  <img
+                  <NextImage
                     src={u.file_url}
                     alt={u.filename}
-                    className="aspect-video w-full object-cover"
+                    fill
+                    sizes="(max-width: 640px) 100vw, 50vw"
+                    className="object-cover"
                   />
                 )}
                 <button
@@ -374,11 +377,15 @@ function TeamPicker({
             className="inline-flex items-center gap-1.5 rounded-full bg-cyan-50 px-2 py-0.5 text-xs font-medium text-cyan-700"
           >
             {m.profile_photo_url ? (
-              <img
-                src={m.profile_photo_url}
-                alt={m.display_name}
-                className="h-4 w-4 rounded-full object-cover"
-              />
+              <div className="relative h-4 w-4 overflow-hidden rounded-full">
+                <NextImage
+                  src={m.profile_photo_url}
+                  alt={m.display_name}
+                  fill
+                  sizes="16px"
+                  className="object-cover"
+                />
+              </div>
             ) : (
               <ImageIcon className="h-3 w-3" />
             )}
@@ -439,11 +446,15 @@ function TeamPicker({
                     className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-cyan-50"
                   >
                     {m.profile_photo_url ? (
-                      <img
-                        src={m.profile_photo_url}
-                        alt={m.display_name}
-                        className="h-7 w-7 rounded-full object-cover"
-                      />
+                      <div className="relative h-7 w-7 overflow-hidden rounded-full">
+                        <NextImage
+                          src={m.profile_photo_url}
+                          alt={m.display_name}
+                          fill
+                          sizes="28px"
+                          className="object-cover"
+                        />
+                      </div>
                     ) : (
                       <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100">
                         <ImageIcon className="h-4 w-4 text-slate-400" />

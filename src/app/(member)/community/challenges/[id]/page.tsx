@@ -13,6 +13,7 @@ import {
 } from "@/lib/challenges";
 import { Calendar, ChevronRight, Trophy, Users } from "lucide-react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -204,11 +205,15 @@ export default function MemberChallengeDetailPage() {
                         className="aspect-video w-full bg-slate-900"
                       />
                     ) : (
-                      <img
-                        src={url}
-                        alt={m.caption || challenge.title}
-                        className="aspect-video w-full object-cover"
-                      />
+                      <div className="relative aspect-video w-full">
+                        <Image
+                          src={url}
+                          alt={m.caption || challenge.title}
+                          fill
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                          className="object-cover"
+                        />
+                      </div>
                     )
                   ) : (
                     <div className="flex aspect-video items-center justify-center bg-slate-100 text-slate-300">
@@ -350,7 +355,7 @@ function PastAttemptRow({
         )}
       </div>
       {sub.proof_media[0]?.thumbnail_url && (
-        <div className="h-14 w-20 shrink-0 overflow-hidden rounded">
+        <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded">
           {isVideoUrl(sub.proof_media[0].file_url) ? (
             <video
               src={sub.proof_media[0].file_url ?? undefined}
@@ -360,10 +365,12 @@ function PastAttemptRow({
               className="h-full w-full object-cover"
             />
           ) : (
-            <img
+            <Image
               src={sub.proof_media[0].thumbnail_url}
               alt=""
-              className="h-full w-full object-cover"
+              fill
+              sizes="80px"
+              className="object-cover"
             />
           )}
         </div>
