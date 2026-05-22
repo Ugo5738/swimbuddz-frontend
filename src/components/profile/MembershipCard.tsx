@@ -5,6 +5,7 @@
 import { Card } from "@/components/ui/Card";
 import { Maximize2, X } from "lucide-react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -146,13 +147,15 @@ export function MembershipCard({
             {/* Profile Photo */}
             <div className="relative flex-shrink-0">
               <div
-                className={`h-20 w-20 md:h-24 md:w-24 overflow-hidden rounded-2xl border-2 border-white/30 shadow-xl ${config.accent} backdrop-blur-sm`}
+                className={`relative h-20 w-20 md:h-24 md:w-24 overflow-hidden rounded-2xl border-2 border-white/30 shadow-xl ${config.accent} backdrop-blur-sm`}
               >
                 {photoUrl ? (
-                  <img
+                  <Image
                     src={photoUrl}
                     alt={name}
-                    className="h-full w-full object-cover"
+                    fill
+                    sizes="(min-width: 768px) 96px, 80px"
+                    className="object-cover"
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-3xl font-bold">

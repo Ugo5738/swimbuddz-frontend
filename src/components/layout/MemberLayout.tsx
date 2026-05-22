@@ -507,11 +507,15 @@ export function MemberLayout({ children }: MemberLayoutProps) {
           <div className="p-4">
             <div className="flex items-center gap-3 rounded-xl bg-white/10 backdrop-blur-sm p-3">
               {member?.profile_photo_url ? (
-                <img
-                  src={member.profile_photo_url}
-                  alt={memberName}
-                  className="h-12 w-12 rounded-full object-cover ring-2 ring-white/30"
-                />
+                <div className="relative h-12 w-12 overflow-hidden rounded-full ring-2 ring-white/30">
+                  <Image
+                    src={member.profile_photo_url}
+                    alt={memberName}
+                    fill
+                    sizes="48px"
+                    className="object-cover"
+                  />
+                </div>
               ) : (
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-lg font-bold text-white">
                   {initials}
@@ -647,11 +651,15 @@ export function MemberLayout({ children }: MemberLayoutProps) {
             <NotificationBell memberId={member?.id} hoverColor="hover:text-cyan-700" />
             <Link href="/account/profile" className="flex items-center gap-2">
               {member?.profile_photo_url ? (
-                <img
-                  src={member.profile_photo_url}
-                  alt={memberName}
-                  className="h-9 w-9 rounded-full object-cover ring-2 ring-cyan-100"
-                />
+                <div className="relative h-9 w-9 overflow-hidden rounded-full ring-2 ring-cyan-100">
+                  <Image
+                    src={member.profile_photo_url}
+                    alt={memberName}
+                    fill
+                    sizes="36px"
+                    className="object-cover"
+                  />
+                </div>
               ) : (
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-100 text-sm font-bold text-cyan-700">
                   {initials}

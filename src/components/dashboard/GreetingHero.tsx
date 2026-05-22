@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/Badge";
 import { useMediaUrl } from "@/hooks/useMediaUrl";
 import { LOCATION_LABELS } from "@/lib/sessions";
+import Image from "next/image";
 
 type GreetingHeroProps = {
   firstName: string;
@@ -85,11 +86,15 @@ export function GreetingHero(props: GreetingHeroProps) {
       {/* Avatar */}
       <div className="flex-shrink-0">
         {photoUrl ? (
-          <img
-            src={photoUrl}
-            alt={firstName}
-            className="h-14 w-14 rounded-full object-cover ring-2 ring-cyan-200"
-          />
+          <div className="relative h-14 w-14 overflow-hidden rounded-full ring-2 ring-cyan-200">
+            <Image
+              src={photoUrl}
+              alt={firstName}
+              fill
+              sizes="56px"
+              className="object-cover"
+            />
+          </div>
         ) : (
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 text-xl font-bold text-white ring-2 ring-cyan-200">
             {firstName.charAt(0).toUpperCase()}

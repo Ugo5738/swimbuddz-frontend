@@ -4,13 +4,14 @@
  * BadgesCard — renders the authenticated member's earned challenge badges.
  *
  * Reads from `GET /api/v1/members/me/badges`. The endpoint already hydrates
- * badge_image_url so we just render <img> for visuals; falls back to a
+ * badge_image_url so we render the artwork via next/image; falls back to a
  * generic Trophy icon when the challenge has no badge artwork.
  */
 
 import { Card } from "@/components/ui/Card";
 import { ChallengeBadgeAward, listMyBadges } from "@/lib/challenges";
 import { Trophy } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -80,11 +81,15 @@ export function BadgesCard() {
               className="group flex flex-col items-center gap-1.5 rounded-lg p-2 text-center transition-colors hover:bg-cyan-50"
             >
               {b.badge_image_url ? (
-                <img
-                  src={b.badge_image_url}
-                  alt={b.badge_name}
-                  className="h-12 w-12 rounded-full bg-amber-50 object-cover"
-                />
+                <div className="relative h-12 w-12 overflow-hidden rounded-full bg-amber-50">
+                  <Image
+                    src={b.badge_image_url}
+                    alt={b.badge_name}
+                    fill
+                    sizes="48px"
+                    className="object-cover"
+                  />
+                </div>
               ) : (
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-amber-600 ring-1 ring-amber-200">
                   <Trophy className="h-6 w-6" />

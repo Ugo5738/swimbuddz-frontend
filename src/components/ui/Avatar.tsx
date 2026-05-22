@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import Image from "next/image";
 
 type AvatarSize = "sm" | "md" | "lg";
 
@@ -16,6 +17,12 @@ const sizeClass: Record<AvatarSize, string> = {
   lg: "h-14 w-14 text-base",
 };
 
+const sizePx: Record<AvatarSize, number> = {
+  sm: 32,
+  md: 40,
+  lg: 56,
+};
+
 export function Avatar({
   src,
   alt,
@@ -28,7 +35,7 @@ export function Avatar({
   return (
     <div
       className={clsx(
-        "inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-slate-700",
+        "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-slate-700",
         sizeClass[size],
         className,
       )}
@@ -36,11 +43,12 @@ export function Avatar({
       title={alt}
     >
       {hasImage ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           src={src as string}
           alt={alt || "Avatar"}
-          className="h-full w-full object-cover"
+          fill
+          sizes={`${sizePx[size]}px`}
+          className="object-cover"
         />
       ) : (
         <span className="font-semibold">{fallback || "—"}</span>

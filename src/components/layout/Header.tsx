@@ -13,6 +13,7 @@ import {
   Video,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -390,10 +391,13 @@ export function Header() {
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 group">
-          <img
+          <Image
             src="/logo.png"
             alt="SwimBuddz Logo"
+            width={500}
+            height={500}
             className="h-9 w-auto md:h-11 transition-transform group-hover:scale-105"
+            priority
           />
           <span className="text-xl font-bold tracking-tight text-cyan-700 md:text-2xl">
             SwimBuddz
