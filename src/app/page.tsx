@@ -2,7 +2,6 @@
 
 import { ChallengesCarousel } from "@/components/home/ChallengesCarousel";
 import { Card } from "@/components/ui/Card";
-import { API_BASE_URL } from "@/lib/config";
 import { fetchTestimonials, getTestimonials, type Testimonial } from "@/lib/testimonials";
 import {
   CATEGORY_LABELS,
@@ -14,6 +13,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import {
+  fetchHomepageBanners,
+  fetchHomepageMedia,
+  fetchSpotlightPhotoMap,
+} from "./_homepage/api";
 import {
   comparisonFeatures,
   defaultHeroImages,
@@ -58,29 +62,9 @@ export default function HomePage() {
 
   // Fetch admin-uploaded banner images
   useEffect(() => {
-    const fetchBanners = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/media/assets`);
-        if (response.ok) {
-          const assets = await response.json();
-          const bannerUrls = assets
-            .filter((a: any) => a.key.startsWith("homepage_banner_") && a.media_item?.file_url)
-            .sort((a: any, b: any) => {
-              const orderA = parseInt(a.key.split("_").pop() || "0");
-              const orderB = parseInt(b.key.split("_").pop() || "0");
-              return orderA - orderB;
-            })
-            .map((a: any) => a.media_item.file_url);
-
-          if (bannerUrls.length > 0) {
-            setHeroImages(bannerUrls);
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch banners:", error);
-      }
-    };
-    fetchBanners();
+    fetchHomepageBanners().then((urls) => {
+      if (urls.length > 0) setHeroImages(urls);
+    });
   }, []);
 
   // Rotate hero images
@@ -93,74 +77,11 @@ export default function HomePage() {
 
   // Fetch community showcase photos, gallery video, and video testimonials
   useEffect(() => {
-    const fetchPhotos = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/media/assets`);
-        if (response.ok) {
-          const assets = await response.json();
-          const communityPhotos = assets
-            .filter((a: any) => a.key.startsWith("community_photo_") && a.media_item?.file_url)
-            .sort((a: any, b: any) => {
-              const orderA = parseInt(a.key.split("_").pop() || "0");
-              const orderB = parseInt(b.key.split("_").pop() || "0");
-              return orderA - orderB;
-            })
-            .map((a: any) => ({
-              id: a.id,
-              file_url: a.media_item.file_url,
-              thumbnail_url: a.media_item.thumbnail_url,
-              title: a.description || "SwimBuddz community",
-            }));
-
-          if (communityPhotos.length > 0) {
-            setGalleryPhotos(communityPhotos);
-          }
-
-          // Gallery video
-          const galleryVideoAsset = assets.find(
-            (a: any) => a.key === "homepage_gallery_video" && a.media_item?.file_url
-          );
-          if (galleryVideoAsset) {
-            setGalleryVideo(galleryVideoAsset.media_item.file_url);
-          }
-
-          // Video testimonials
-          const videoTestimonialAssets = assets
-            .filter(
-              (a: any) => a.key.startsWith("homepage_video_testimonial_") && a.media_item?.file_url
-            )
-            .sort((a: any, b: any) => {
-              const orderA = parseInt(a.key.split("_").pop() || "0");
-              const orderB = parseInt(b.key.split("_").pop() || "0");
-              return orderA - orderB;
-            })
-            .map((a: any) => {
-              let name = "SwimBuddz Member";
-              let role = "";
-              if (a.description?.includes("|")) {
-                const parts = a.description.split("|").map((s: string) => s.trim());
-                name = parts[0] || name;
-                role = parts[1] || "";
-              } else if (a.description) {
-                name = a.description;
-              }
-              return {
-                id: a.id,
-                file_url: a.media_item.file_url,
-                name,
-                role,
-              };
-            });
-
-          if (videoTestimonialAssets.length > 0) {
-            setVideoTestimonials(videoTestimonialAssets);
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch community photos:", error);
-      }
-    };
-    fetchPhotos();
+    fetchHomepageMedia().then(({ galleryPhotos, galleryVideo, videoTestimonials }) => {
+      if (galleryPhotos.length > 0) setGalleryPhotos(galleryPhotos);
+      if (galleryVideo) setGalleryVideo(galleryVideo);
+      if (videoTestimonials.length > 0) setVideoTestimonials(videoTestimonials);
+    });
   }, []);
 
   // Fetch volunteer spotlight data (with fallback)
@@ -188,28 +109,9 @@ export default function HomePage() {
 
     if (memberIds.size === 0) return;
 
-    const fetchPhotos = async () => {
-      const map: Record<string, string> = {};
-      await Promise.allSettled(
-        Array.from(memberIds).map(async (id) => {
-          try {
-            const res = await fetch(`${API_BASE_URL}/api/v1/members/public/${id}`);
-            if (res.ok) {
-              const data = await res.json();
-              if (data.profile_photo_url) {
-                map[id] = data.profile_photo_url;
-              }
-            }
-          } catch {
-            // ignore per-member failures
-          }
-        })
-      );
-      if (Object.keys(map).length > 0) {
-        setPhotoMap(map);
-      }
-    };
-    fetchPhotos();
+    fetchSpotlightPhotoMap(memberIds).then((map) => {
+      if (Object.keys(map).length > 0) setPhotoMap(map);
+    });
   }, [spotlight]);
 
   // Fetch volunteer role names so we can resolve UUIDs → titles

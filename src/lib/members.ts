@@ -20,6 +20,10 @@ export const MembersApi = {
 
   getCoach: (id: string) => apiGet<Member>(`/api/v1/members/coaches/${id}`),
 
+  /** Public member surface — used for spotlight/contributor photo lookups. */
+  getPublicMember: (id: string) =>
+    apiGet<Member>(`/api/v1/members/public/${id}`),
+
   // Admin
   listMembers: (skip = 0, limit = 100) =>
     apiGet<MemberListItem[]>(`/api/v1/members/?skip=${skip}&limit=${limit}`, {
