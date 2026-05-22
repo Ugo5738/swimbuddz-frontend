@@ -10,6 +10,7 @@ import {
   VolunteersApi,
   type VolunteerRoleCategory,
 } from "@/lib/volunteers";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -23,7 +24,7 @@ import {
   type VideoTestimonial,
 } from "./_homepage/data";
 import { HowItWorks } from "./_homepage/HowItWorks";
-import { getDisplayName, getSeasonalTagline } from "./_homepage/utils";
+import { getDisplayName } from "./_homepage/utils";
 import { WaveDecoration } from "./_homepage/WaveDecoration";
 import { WhoItsFor } from "./_homepage/WhoItsFor";
 
@@ -258,11 +259,13 @@ export default function HomePage() {
                 idx === currentImageIndex ? "opacity-100" : "opacity-0"
               }`}
             >
-              <img
+              <Image
                 src={img}
                 alt=""
-                className="w-full h-full object-cover object-top sm:object-center"
-                loading={idx === 0 ? "eager" : "lazy"}
+                fill
+                sizes="100vw"
+                className="object-cover object-top sm:object-center"
+                priority={idx === 0}
               />
             </div>
           ))}
@@ -378,10 +381,12 @@ export default function HomePage() {
                       <span className="text-4xl">🏊</span>
                     </div>
                   )}
-                  <img
-                    src={photo.file_url || photo.thumbnail_url}
+                  <Image
+                    src={photo.thumbnail_url || photo.file_url}
                     alt={photo.title || "SwimBuddz community"}
-                    className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${
+                    fill
+                    sizes="(max-width: 768px) 50vw, 33vw"
+                    className={`object-cover transition-all duration-500 group-hover:scale-105 ${
                       loadedImages.has(photo.id) ? "opacity-100" : "opacity-0"
                     }`}
                     onLoad={() => handleImageLoad(photo.id)}
@@ -481,14 +486,18 @@ export default function HomePage() {
                   <div className="flex-shrink-0">
                     {photoMap[spotlight.featured_volunteer.member_id] ||
                     spotlight.featured_volunteer.profile_photo_url ? (
-                      <img
-                        src={
-                          photoMap[spotlight.featured_volunteer.member_id] ||
-                          spotlight.featured_volunteer.profile_photo_url!
-                        }
-                        alt={getDisplayName(spotlight.featured_volunteer.member_name)}
-                        className="w-32 h-32 rounded-full object-cover ring-4 ring-amber-200 shadow-lg"
-                      />
+                      <div className="relative w-32 h-32 overflow-hidden rounded-full ring-4 ring-amber-200 shadow-lg">
+                        <Image
+                          src={
+                            photoMap[spotlight.featured_volunteer.member_id] ||
+                            spotlight.featured_volunteer.profile_photo_url!
+                          }
+                          alt={getDisplayName(spotlight.featured_volunteer.member_name)}
+                          fill
+                          sizes="128px"
+                          className="object-cover"
+                        />
+                      </div>
                     ) : (
                       <div className="w-32 h-32 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center text-white text-4xl font-bold ring-4 ring-amber-200 shadow-lg">
                         {getDisplayName(spotlight.featured_volunteer.member_name)
@@ -541,11 +550,15 @@ export default function HomePage() {
                   className="p-6 text-center hover:shadow-md transition-shadow flex flex-col items-center"
                 >
                   {photoMap[volunteer.member_id] ? (
-                    <img
-                      src={photoMap[volunteer.member_id]}
-                      alt={getDisplayName(volunteer.member_name)}
-                      className="w-32 h-32 rounded-full object-cover ring-4 ring-cyan-200 shadow-lg mb-3"
-                    />
+                    <div className="relative w-32 h-32 overflow-hidden rounded-full ring-4 ring-cyan-200 shadow-lg mb-3">
+                      <Image
+                        src={photoMap[volunteer.member_id]}
+                        alt={getDisplayName(volunteer.member_name)}
+                        fill
+                        sizes="128px"
+                        className="object-cover"
+                      />
+                    </div>
                   ) : (
                     <div className="w-32 h-32 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-500 flex items-center justify-center text-white text-3xl font-bold mb-3 ring-4 ring-cyan-200 shadow-lg">
                       {getDisplayName(volunteer.member_name)

@@ -26,24 +26,13 @@ import {
   SubmissionListStatus,
 } from "@/lib/challenges";
 import { listPodsILead, podDisplayName, PodSummary } from "@/lib/pods";
-import {
-  AlertCircle,
-  ArrowLeft,
-  Check,
-  Loader2,
-  RefreshCw,
-  Users,
-  X,
-} from "lucide-react";
+import { AlertCircle, ArrowLeft, Check, Loader2, RefreshCw, Users, X } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-type Tab = SubmissionListStatus extends infer T
-  ? T extends "all"
-    ? never
-    : T
-  : never; // "pending" | "approved" | "rejected"
+type Tab = SubmissionListStatus extends infer T ? (T extends "all" ? never : T) : never; // "pending" | "approved" | "rejected"
 
 export default function PodLeadReviewPage() {
   const router = useRouter();
@@ -83,31 +72,24 @@ export default function PodLeadReviewPage() {
     };
   }, [router]);
 
-  const load = useCallback(
-    async (tabToLoad: Tab, mode: "initial" | "refresh" = "initial") => {
-      if (mode === "refresh") setRefreshing(true);
-      else setLoading(true);
-      setError(null);
-      try {
-        const [activeSubs, pending] = await Promise.all([
-          listSubmissions(tabToLoad),
-          tabToLoad === "pending"
-            ? Promise.resolve(null)
-            : listSubmissions("pending"),
-        ]);
-        setSubmissions(activeSubs);
-        setPendingCount(
-          tabToLoad === "pending" ? activeSubs.length : pending!.length,
-        );
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to load");
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [],
-  );
+  const load = useCallback(async (tabToLoad: Tab, mode: "initial" | "refresh" = "initial") => {
+    if (mode === "refresh") setRefreshing(true);
+    else setLoading(true);
+    setError(null);
+    try {
+      const [activeSubs, pending] = await Promise.all([
+        listSubmissions(tabToLoad),
+        tabToLoad === "pending" ? Promise.resolve(null) : listSubmissions("pending"),
+      ]);
+      setSubmissions(activeSubs);
+      setPendingCount(tabToLoad === "pending" ? activeSubs.length : pending!.length);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
   // Once we know the user leads pods, load the queue.
   useEffect(() => {
@@ -156,16 +138,14 @@ export default function PodLeadReviewPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-cyan-600">
             Pod Lead Tools
           </p>
-          <h1 className="text-2xl font-bold text-slate-900 md:text-3xl">
-            Submission Review
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-900 md:text-3xl">Submission Review</h1>
           <p className="flex items-center gap-1.5 text-sm text-slate-600">
             <Users className="h-3.5 w-3.5" />
             Reviewing for: <span className="font-medium">{podsLine}</span>
           </p>
           <p className="text-xs text-slate-500">
-            You'll only see submissions from your pod members. Competition
-            challenges are reviewed by SwimBuddz HQ — those won't appear here.
+            You'll only see submissions from your pod members. Competition challenges are reviewed
+            by SwimBuddz HQ — those won't appear here.
           </p>
         </div>
         <Button
@@ -226,12 +206,8 @@ export default function PodLeadReviewPage() {
             <PodLeadSubmissionCard
               key={sub.id}
               submission={sub}
-              onApprove={() =>
-                setReviewModal({ submission: sub, action: "approved" })
-              }
-              onReject={() =>
-                setReviewModal({ submission: sub, action: "rejected" })
-              }
+              onApprove={() => setReviewModal({ submission: sub, action: "approved" })}
+              onReject={() => setReviewModal({ submission: sub, action: "rejected" })}
             />
           ))}
         </div>
@@ -260,20 +236,17 @@ function PodLeadSubmissionCard({
   onApprove: () => void;
   onReject: () => void;
 }) {
-  const captainName =
-    submission.member_name || `Member ${submission.member_id.slice(0, 8)}…`;
+  const captainName = submission.member_name || `Member ${submission.member_id.slice(0, 8)}…`;
 
   return (
     <Card className="space-y-4 p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <p className="text-xs uppercase tracking-wider text-slate-400">
-            {submission.challenge_title ??
-              `Challenge ${submission.challenge_id}`}
+            {submission.challenge_title ?? `Challenge ${submission.challenge_id}`}
           </p>
           <p className="text-sm text-slate-700">
-            <strong>{submission.is_team_submission ? "Team" : "Solo"}</strong>{" "}
-            attempt by{" "}
+            <strong>{submission.is_team_submission ? "Team" : "Solo"}</strong> attempt by{" "}
             <span className="font-medium text-slate-900">{captainName}</span>
           </p>
           <p className="text-xs text-slate-500">
@@ -284,8 +257,7 @@ function PodLeadSubmissionCard({
               Roster:{" "}
               {submission.members
                 .map((m) => {
-                  const name =
-                    m.member_name || `Member ${m.member_id.slice(0, 8)}…`;
+                  const name = m.member_name || `Member ${m.member_id.slice(0, 8)}…`;
                   return m.role ? `${name} (${m.role})` : name;
                 })
                 .join(", ")}
@@ -300,9 +272,7 @@ function PodLeadSubmissionCard({
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
             Member note
           </p>
-          <p className="mt-1 whitespace-pre-wrap">
-            {submission.submission_note}
-          </p>
+          <p className="mt-1 whitespace-pre-wrap">{submission.submission_note}</p>
         </div>
       )}
 
@@ -314,7 +284,7 @@ function PodLeadSubmissionCard({
             return (
               <div
                 key={m.id ?? m.media_id}
-                className="overflow-hidden rounded-md border border-slate-200"
+                className="relative aspect-video w-full overflow-hidden rounded-md border border-slate-200"
               >
                 {isVideoUrl(url) ? (
                   <video
@@ -322,13 +292,15 @@ function PodLeadSubmissionCard({
                     controls
                     playsInline
                     preload="metadata"
-                    className="aspect-video w-full bg-slate-900"
+                    className="h-full w-full bg-slate-900"
                   />
                 ) : (
-                  <img
+                  <Image
                     src={url}
                     alt="Proof"
-                    className="aspect-video w-full object-cover"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover"
                   />
                 )}
               </div>
@@ -341,9 +313,7 @@ function PodLeadSubmissionCard({
 
       {submission.review_note && submission.status !== "pending" && (
         <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          <p className="text-xs font-semibold uppercase tracking-wider">
-            Your earlier review note
-          </p>
+          <p className="text-xs font-semibold uppercase tracking-wider">Your earlier review note</p>
           <p className="mt-1 whitespace-pre-wrap">{submission.review_note}</p>
         </div>
       )}
@@ -359,11 +329,7 @@ function PodLeadSubmissionCard({
             <X className="mr-1 h-4 w-4" />
             Reject
           </Button>
-          <Button
-            type="button"
-            onClick={onApprove}
-            className="bg-emerald-600 hover:bg-emerald-700"
-          >
+          <Button type="button" onClick={onApprove} className="bg-emerald-600 hover:bg-emerald-700">
             <Check className="mr-1 h-4 w-4" />
             Approve
           </Button>
@@ -425,11 +391,7 @@ function ReviewModal({
             : `${submission.member_name ?? "The member"} will be notified that their attempt wasn't approved this time.`}
         </p>
         <Textarea
-          label={
-            action === "approved"
-              ? "Note (optional)"
-              : "Reason (optional but recommended)"
-          }
+          label={action === "approved" ? "Note (optional)" : "Reason (optional but recommended)"}
           rows={3}
           value={note}
           onChange={(e) => setNote(e.target.value)}

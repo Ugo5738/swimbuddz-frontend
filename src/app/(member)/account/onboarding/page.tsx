@@ -22,23 +22,14 @@ import { apiGet, apiPatch } from "@/lib/api";
 import { uploadMedia } from "@/lib/media";
 import { VolunteersApi } from "@/lib/volunteers";
 import { Camera, Loader2, X } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import type {
-  Member,
-  OnboardingDraft,
-  Step,
-  StepKey,
-} from "./types";
-import {
-  formatDateForInput,
-  getDraftKey,
-  ONBOARDING_DRAFT_VERSION,
-  safeParseDraft,
-} from "./utils";
+import type { Member, OnboardingDraft, Step, StepKey } from "./types";
+import { formatDateForInput, getDraftKey, ONBOARDING_DRAFT_VERSION, safeParseDraft } from "./utils";
 
 export default function DashboardOnboardingPage() {
   const router = useRouter();
@@ -571,9 +562,7 @@ export default function DashboardOnboardingPage() {
   // Restricted to same-origin relative paths to avoid open-redirect issues.
   const nextParam = searchParams.get("next");
   const safeNext =
-    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//")
-      ? nextParam
-      : null;
+    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : null;
 
   // Academy intent wins over Club: an academy registrant pays for a cohort
   // (which auto-confers academy tier), so we send them to cohort selection
@@ -969,17 +958,19 @@ export default function DashboardOnboardingPage() {
                 <label className="relative group cursor-pointer">
                   <div
                     className={[
-                      "h-24 w-24 overflow-hidden rounded-full transition-all",
+                      "relative h-24 w-24 overflow-hidden rounded-full transition-all",
                       coreForm.profilePhotoUrl
                         ? "ring-4 ring-cyan-200"
                         : "bg-gradient-to-br from-cyan-100 to-cyan-200 hover:from-cyan-200 hover:to-cyan-300",
                     ].join(" ")}
                   >
                     {coreForm.profilePhotoUrl ? (
-                      <img
+                      <Image
                         src={coreForm.profilePhotoUrl}
                         alt="Profile preview"
-                        className="h-full w-full object-cover"
+                        fill
+                        sizes="96px"
+                        className="object-cover"
                       />
                     ) : (
                       <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-cyan-700">

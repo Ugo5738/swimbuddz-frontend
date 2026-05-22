@@ -13,6 +13,7 @@ import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet } from "@/lib/api";
 import { WHATSAPP_GROUP_URL } from "@/lib/config";
 import { completePendingRegistrationOnBackend } from "@/lib/registration";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
@@ -136,11 +137,15 @@ function ProfileContent() {
         {/* Profile Photo */}
         <div className="flex-shrink-0">
           {profile?.profilePhotoUrl && profile.profilePhotoUrl.trim() !== "" ? (
-            <img
-              src={profile.profilePhotoUrl}
-              alt={profile?.name || "Profile"}
-              className="h-24 w-24 rounded-full object-cover ring-4 ring-white/30"
-            />
+            <div className="relative h-24 w-24 overflow-hidden rounded-full ring-4 ring-white/30">
+              <Image
+                src={profile.profilePhotoUrl}
+                alt={profile?.name || "Profile"}
+                fill
+                sizes="96px"
+                className="object-cover"
+              />
+            </div>
           ) : (
             <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white/20 text-3xl font-bold text-white ring-4 ring-white/30">
               {profile?.name

@@ -16,6 +16,7 @@ import {
 } from "@/lib/academy";
 import { Member, MembersApi } from "@/lib/members";
 import { UpgradeProvider, useUpgrade } from "@/lib/upgradeContext";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -90,8 +91,7 @@ function CohortDetailPageInner() {
         return;
       }
 
-      const enrollment =
-        myEnrollment ?? (await AcademyApi.selfEnroll({ cohort_id: cohort.id }));
+      const enrollment = myEnrollment ?? (await AcademyApi.selfEnroll({ cohort_id: cohort.id }));
 
       setTargetTier("academy");
       setSelectedCohort({
@@ -116,7 +116,9 @@ function CohortDetailPageInner() {
       });
 
       toast.success("Enrollment created! Proceeding to checkout...");
-      router.push(`/checkout?purpose=academy_cohort&cohort_id=${cohort.id}&enrollment_id=${enrollment.id}`);
+      router.push(
+        `/checkout?purpose=academy_cohort&cohort_id=${cohort.id}&enrollment_id=${enrollment.id}`
+      );
     } catch (error: any) {
       toast.error(error.message || "Failed to enroll. Please try again.");
     } finally {
@@ -137,7 +139,10 @@ function CohortDetailPageInner() {
     return (
       <Card className="p-12 text-center">
         <h2 className="text-xl font-semibold text-slate-900">Cohort not found</h2>
-        <Link href="/account/academy/browse" className="mt-4 inline-block text-cyan-600 hover:text-cyan-700">
+        <Link
+          href="/account/academy/browse"
+          className="mt-4 inline-block text-cyan-600 hover:text-cyan-700"
+        >
           ← Browse Programs
         </Link>
       </Card>
@@ -149,7 +154,9 @@ function CohortDetailPageInner() {
   const now = new Date();
   const startDate = new Date(cohort.start_date);
   const endDate = new Date(cohort.end_date);
-  const daysSinceStart = Math.floor((now.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
+  const daysSinceStart = Math.floor(
+    (now.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000)
+  );
   const currentWeek = Math.floor(daysSinceStart / 7) + 1;
   const midCutoff = cohort.mid_entry_cutoff_week ?? 2;
   const isMidEntryOpen =
@@ -178,7 +185,9 @@ function CohortDetailPageInner() {
               <div className="flex flex-wrap gap-2">
                 <Badge className="bg-white/20 text-white">{levelLabels[program.level]}</Badge>
                 {isEnrolledPaid && <Badge className="bg-green-500 text-white">✓ Enrolled</Badge>}
-                {isMidEntryOpen && <Badge className="bg-emerald-500 text-white">Mid-entry open</Badge>}
+                {isMidEntryOpen && (
+                  <Badge className="bg-emerald-500 text-white">Mid-entry open</Badge>
+                )}
                 {!isEnrollable && cohort.status !== CohortStatus.COMPLETED && (
                   <Badge className="bg-orange-400 text-white">Closed</Badge>
                 )}
@@ -199,12 +208,21 @@ function CohortDetailPageInner() {
             {
               icon: "📅",
               label: "Start Date",
-              value: startDate.toLocaleDateString("en-NG", { weekday: "short", month: "short", day: "numeric", year: "numeric" }),
+              value: startDate.toLocaleDateString("en-NG", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              }),
             },
             {
               icon: "🏁",
               label: "End Date",
-              value: endDate.toLocaleDateString("en-NG", { month: "short", day: "numeric", year: "numeric" }),
+              value: endDate.toLocaleDateString("en-NG", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              }),
             },
             {
               icon: "📍",
@@ -221,7 +239,9 @@ function CohortDetailPageInner() {
             <div key={item.label} className="px-5 py-4 text-center">
               <div className="text-xl">{item.icon}</div>
               <div className="mt-1 text-xs text-slate-400">{item.label}</div>
-              <div className={`mt-0.5 text-sm font-semibold ${item.urgent ? "text-orange-600" : "text-slate-900"}`}>
+              <div
+                className={`mt-0.5 text-sm font-semibold ${item.urgent ? "text-orange-600" : "text-slate-900"}`}
+              >
                 {item.value}
               </div>
             </div>
@@ -232,14 +252,19 @@ function CohortDetailPageInner() {
         {coach && (
           <div className="flex items-center gap-4 border-b bg-slate-50 px-6 py-4">
             {coach.profile_photo_url ? (
-              <img
-                src={coach.profile_photo_url}
-                alt={`${coach.first_name} ${coach.last_name}`}
-                className="h-12 w-12 rounded-full object-cover"
-              />
+              <div className="relative h-12 w-12 overflow-hidden rounded-full">
+                <Image
+                  src={coach.profile_photo_url}
+                  alt={`${coach.first_name} ${coach.last_name}`}
+                  fill
+                  sizes="48px"
+                  className="object-cover"
+                />
+              </div>
             ) : (
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-cyan-100 text-lg font-bold text-cyan-600">
-                {coach.first_name?.[0]}{coach.last_name?.[0]}
+                {coach.first_name?.[0]}
+                {coach.last_name?.[0]}
               </div>
             )}
             <div className="flex-1 min-w-0">
@@ -253,13 +278,16 @@ function CohortDetailPageInner() {
                 </p>
               )}
             </div>
-            {coach.coach_profile?.certifications && coach.coach_profile.certifications.length > 0 && (
-              <div className="hidden sm:flex flex-wrap gap-1">
-                {coach.coach_profile.certifications.slice(0, 2).map((cert, i) => (
-                  <Badge key={i} variant="info" className="text-xs">{cert}</Badge>
-                ))}
-              </div>
-            )}
+            {coach.coach_profile?.certifications &&
+              coach.coach_profile.certifications.length > 0 && (
+                <div className="hidden sm:flex flex-wrap gap-1">
+                  {coach.coach_profile.certifications.slice(0, 2).map((cert, i) => (
+                    <Badge key={i} variant="info" className="text-xs">
+                      {cert}
+                    </Badge>
+                  ))}
+                </div>
+              )}
           </div>
         )}
 
@@ -268,21 +296,33 @@ function CohortDetailPageInner() {
           {isEnrolledPaid ? (
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="font-semibold text-green-700">✓ You&apos;re enrolled in this cohort</p>
-                <p className="text-sm text-slate-500">View your progress, milestones, and upcoming sessions.</p>
+                <p className="font-semibold text-green-700">
+                  ✓ You&apos;re enrolled in this cohort
+                </p>
+                <p className="text-sm text-slate-500">
+                  View your progress, milestones, and upcoming sessions.
+                </p>
               </div>
               <Link href={`/account/academy/enrollments/${myEnrollment!.id}`}>
-                <Button className="bg-green-600 text-white hover:bg-green-700">View My Enrollment</Button>
+                <Button className="bg-green-600 text-white hover:bg-green-700">
+                  View My Enrollment
+                </Button>
               </Link>
             </div>
           ) : isEnrolled ? (
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="font-semibold text-amber-700">Enrollment pending payment</p>
-                <p className="text-sm text-slate-500">Complete your payment to activate your enrollment.</p>
+                <p className="text-sm text-slate-500">
+                  Complete your payment to activate your enrollment.
+                </p>
               </div>
-              <Link href={`/checkout?purpose=academy_cohort&cohort_id=${cohort.id}&enrollment_id=${myEnrollment!.id}`}>
-                <Button className="bg-amber-500 text-white hover:bg-amber-600">Complete Payment</Button>
+              <Link
+                href={`/checkout?purpose=academy_cohort&cohort_id=${cohort.id}&enrollment_id=${myEnrollment!.id}`}
+              >
+                <Button className="bg-amber-500 text-white hover:bg-amber-600">
+                  Complete Payment
+                </Button>
               </Link>
             </div>
           ) : isEnrollable ? (
@@ -330,9 +370,7 @@ function CohortDetailPageInner() {
                 <span className="mt-0.5 text-cyan-600">✓</span>
                 <div>
                   <span className="text-sm font-medium text-slate-900">{m.name}</span>
-                  {m.criteria && (
-                    <p className="mt-0.5 text-xs text-slate-500">{m.criteria}</p>
-                  )}
+                  {m.criteria && <p className="mt-0.5 text-xs text-slate-500">{m.criteria}</p>}
                 </div>
               </div>
             ))}

@@ -63,7 +63,10 @@ function LessonDescription({ text }: { text: string }) {
       )}
       {isLong && (
         <button
-          onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setExpanded((v) => !v);
+          }}
           className="mt-1 font-medium text-cyan-600 hover:text-cyan-700 text-xs"
         >
           {expanded ? "Show less ↑" : "Read more ↓"}
@@ -111,8 +114,11 @@ function CurriculumAccordion({ curriculum }: { curriculum: ProgramCurriculum }) 
           return (
             <div
               key={week.id}
-              className={`rounded-lg border transition-colors ${isOpen ? "border-cyan-200 bg-cyan-50/40" : "border-slate-100 bg-white hover:border-slate-200"
-                }`}
+              className={`rounded-lg border transition-colors ${
+                isOpen
+                  ? "border-cyan-200 bg-cyan-50/40"
+                  : "border-slate-100 bg-white hover:border-slate-200"
+              }`}
             >
               {/* Header row — always visible */}
               <button
@@ -129,8 +135,9 @@ function CurriculumAccordion({ curriculum }: { curriculum: ProgramCurriculum }) 
                 </span>
                 {/* Chevron */}
                 <span
-                  className={`flex-shrink-0 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""
-                    }`}
+                  className={`flex-shrink-0 text-slate-400 transition-transform duration-200 ${
+                    isOpen ? "rotate-180" : ""
+                  }`}
                 >
                   ▾
                 </span>
@@ -152,14 +159,16 @@ function CurriculumAccordion({ curriculum }: { curriculum: ProgramCurriculum }) 
                           <span className="mt-1 flex-shrink-0 text-cyan-400 text-sm">•</span>
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className="font-medium text-slate-700 text-sm">{lesson.title}</span>
+                              <span className="font-medium text-slate-700 text-sm">
+                                {lesson.title}
+                              </span>
                               {lesson.duration_minutes && (
-                                <span className="text-xs text-slate-400">({lesson.duration_minutes} min)</span>
+                                <span className="text-xs text-slate-400">
+                                  ({lesson.duration_minutes} min)
+                                </span>
                               )}
                             </div>
-                            {lesson.description && (
-                              <LessonDescription text={lesson.description} />
-                            )}
+                            {lesson.description && <LessonDescription text={lesson.description} />}
                           </div>
                         </div>
                       ))}
@@ -204,7 +213,9 @@ function CohortCard({
   const isEnrolledPaid = isEnrolled && enrollment?.payment_status === PaymentStatus.PAID;
   const isOpen = cohort.status === CohortStatus.OPEN;
   const isActive = cohort.status === CohortStatus.ACTIVE;
-  const daysSinceStart = Math.floor((now.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
+  const daysSinceStart = Math.floor(
+    (now.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000)
+  );
   const currentWeek = Math.floor(daysSinceStart / 7) + 1;
   const midCutoff = cohort.mid_entry_cutoff_week ?? 2;
   const isMidEntryOpen = isActive && Boolean(cohort.allow_mid_entry) && currentWeek <= midCutoff;
@@ -215,9 +226,7 @@ function CohortCard({
 
   // Urgency: spots left (capacity is total, not remaining — but we show it as urgency signal)
   const spotsLabel =
-    cohort.capacity <= 3
-      ? `⚠️ ${cohort.capacity} spots left`
-      : `${cohort.capacity} spots`;
+    cohort.capacity <= 3 ? `⚠️ ${cohort.capacity} spots left` : `${cohort.capacity} spots`;
   const spotsUrgent = cohort.capacity <= 5;
 
   // Format date range
@@ -225,21 +234,23 @@ function CohortCard({
 
   return (
     <div
-      className={`rounded-xl border-2 bg-white transition-all hover:shadow-md ${isEnrolledPaid
+      className={`rounded-xl border-2 bg-white transition-all hover:shadow-md ${
+        isEnrolledPaid
           ? "border-green-300 bg-green-50"
           : isEnrolled
             ? "border-amber-300 bg-amber-50"
             : isEnrollable
               ? "border-slate-200 hover:border-cyan-300"
               : "border-slate-100 bg-slate-50 opacity-70"
-        }`}
+      }`}
     >
       {/* Spot-held banner — shown when enrolled but not paid */}
       {isEnrolled && !isEnrolledPaid && (
         <div className="flex items-center gap-2 rounded-t-[10px] border-b border-amber-200 bg-amber-50 px-5 py-2">
           <span className="text-amber-500">⏳</span>
           <p className="text-xs text-amber-700">
-            <span className="font-semibold">Your spot is held.</span> Complete payment to confirm your place in this cohort.
+            <span className="font-semibold">Your spot is held.</span> Complete payment to confirm
+            your place in this cohort.
           </p>
         </div>
       )}
@@ -247,7 +258,9 @@ function CohortCard({
       {isEnrolledPaid && (
         <div className="flex items-center gap-2 rounded-t-[10px] border-b border-green-200 bg-green-50 px-5 py-2">
           <span className="text-green-500">✓</span>
-          <p className="text-xs font-semibold text-green-700">You&apos;re enrolled in this cohort.</p>
+          <p className="text-xs font-semibold text-green-700">
+            You&apos;re enrolled in this cohort.
+          </p>
         </div>
       )}
 
@@ -260,9 +273,7 @@ function CohortCard({
           <div className="text-3xl font-bold text-slate-900 leading-none mt-0.5">
             {startDate.getDate()}
           </div>
-          <div className="text-xs text-slate-500 mt-1">
-            {startDate.getFullYear()}
-          </div>
+          <div className="text-xs text-slate-500 mt-1">{startDate.getFullYear()}</div>
         </div>
 
         {/* Middle: details */}
@@ -287,14 +298,19 @@ function CohortCard({
           {coach && (
             <div className="mt-2 flex items-center gap-2">
               {coach.profile_photo_url ? (
-                <img
-                  src={coach.profile_photo_url}
-                  alt={`${coach.first_name} ${coach.last_name}`}
-                  className="h-6 w-6 rounded-full object-cover"
-                />
+                <div className="relative h-6 w-6 overflow-hidden rounded-full">
+                  <Image
+                    src={coach.profile_photo_url}
+                    alt={`${coach.first_name} ${coach.last_name}`}
+                    fill
+                    sizes="24px"
+                    className="object-cover"
+                  />
+                </div>
               ) : (
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-600">
-                  {coach.first_name?.[0]}{coach.last_name?.[0]}
+                  {coach.first_name?.[0]}
+                  {coach.last_name?.[0]}
                 </div>
               )}
               <span className="text-sm text-slate-600">
@@ -390,15 +406,21 @@ function ProgramDetailPageInner() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [programData, milestonesData, curriculumData, cohortsData, enrollmentsData, interestData] =
-        await Promise.all([
-          AcademyApi.getProgram(programId),
-          AcademyApi.listMilestones(programId),
-          AcademyApi.getCurriculum(programId).catch(() => null),
-          AcademyApi.getEnrollableCohorts(programId),
-          AcademyApi.getMyEnrollments().catch(() => []),
-          AcademyApi.checkProgramInterest(programId).catch(() => ({ registered: false })),
-        ]);
+      const [
+        programData,
+        milestonesData,
+        curriculumData,
+        cohortsData,
+        enrollmentsData,
+        interestData,
+      ] = await Promise.all([
+        AcademyApi.getProgram(programId),
+        AcademyApi.listMilestones(programId),
+        AcademyApi.getCurriculum(programId).catch(() => null),
+        AcademyApi.getEnrollableCohorts(programId),
+        AcademyApi.getMyEnrollments().catch(() => []),
+        AcademyApi.checkProgramInterest(programId).catch(() => ({ registered: false })),
+      ]);
 
       setProgram(programData);
       setMilestones(milestonesData);
@@ -410,7 +432,9 @@ function ProgramDetailPageInner() {
       // Fetch coaches for cohorts that have one
       const coachIds = [...new Set(cohortsData.map((c) => c.coach_id).filter(Boolean) as string[])];
       if (coachIds.length > 0) {
-        const coachResults = await Promise.allSettled(coachIds.map((id) => MembersApi.getMember(id)));
+        const coachResults = await Promise.allSettled(
+          coachIds.map((id) => MembersApi.getMember(id))
+        );
         const coachMap: Record<string, Member> = {};
         coachResults.forEach((r, i) => {
           if (r.status === "fulfilled") coachMap[coachIds[i]] = r.value;
@@ -436,7 +460,8 @@ function ProgramDetailPageInner() {
         return;
       }
 
-      const enrollment = existingEnrollment ?? (await AcademyApi.selfEnroll({ cohort_id: cohort.id }));
+      const enrollment =
+        existingEnrollment ?? (await AcademyApi.selfEnroll({ cohort_id: cohort.id }));
 
       setTargetTier("academy");
       setSelectedCohort({
@@ -461,7 +486,9 @@ function ProgramDetailPageInner() {
       });
 
       toast.success("Spot reserved! Taking you to payment...");
-      router.push(`/checkout?purpose=academy_cohort&cohort_id=${cohort.id}&enrollment_id=${enrollment.id}`);
+      router.push(
+        `/checkout?purpose=academy_cohort&cohort_id=${cohort.id}&enrollment_id=${enrollment.id}`
+      );
     } catch (error: any) {
       toast.error(error.message || "Failed to enroll. Please try again.");
     } finally {
@@ -493,7 +520,7 @@ function ProgramDetailPageInner() {
 
   // Only consider paid enrollments as "enrolled" — pending payment is not confirmed
   const isEnrolledInProgram = enrollments.some(
-    (e) => e.program_id === programId && e.payment_status === PaymentStatus.PAID,
+    (e) => e.program_id === programId && e.payment_status === PaymentStatus.PAID
   );
 
   if (loading) {
@@ -509,7 +536,10 @@ function ProgramDetailPageInner() {
     return (
       <Card className="p-12 text-center">
         <h2 className="text-xl font-semibold text-slate-900">Program not found</h2>
-        <Link href="/account/academy/browse" className="mt-4 inline-block text-cyan-600 hover:text-cyan-700">
+        <Link
+          href="/account/academy/browse"
+          className="mt-4 inline-block text-cyan-600 hover:text-cyan-700"
+        >
           ← Browse Programs
         </Link>
       </Card>
@@ -518,7 +548,9 @@ function ProgramDetailPageInner() {
 
   const price = program.price_amount ? `₦${program.price_amount.toLocaleString()}` : "Free";
   const MILESTONES_PREVIEW = 6;
-  const visibleMilestones = showAllMilestones ? milestones : milestones.slice(0, MILESTONES_PREVIEW);
+  const visibleMilestones = showAllMilestones
+    ? milestones
+    : milestones.slice(0, MILESTONES_PREVIEW);
 
   // Cohorts: open/active first, then others
   const sortedCohorts = [...cohorts].sort((a, b) => {
@@ -527,7 +559,7 @@ function ProgramDetailPageInner() {
   });
 
   const openCohortCount = cohorts.filter(
-    (c) => c.status === CohortStatus.OPEN || c.status === CohortStatus.ACTIVE,
+    (c) => c.status === CohortStatus.OPEN || c.status === CohortStatus.ACTIVE
   ).length;
 
   return (
@@ -559,7 +591,9 @@ function ProgramDetailPageInner() {
             <div className="space-y-2">
               <div className="flex flex-wrap gap-2">
                 <Badge className={levelColors[program.level]}>{levelLabels[program.level]}</Badge>
-                {isEnrolledInProgram && <Badge className="bg-green-500 text-white">✓ Enrolled</Badge>}
+                {isEnrolledInProgram && (
+                  <Badge className="bg-green-500 text-white">✓ Enrolled</Badge>
+                )}
                 {openCohortCount > 0 && (
                   <Badge className="bg-white/20 text-white">
                     {openCohortCount} cohort{openCohortCount > 1 ? "s" : ""} available
@@ -596,10 +630,8 @@ function ProgramDetailPageInner() {
 
       {/* ── Main layout ── */}
       <div className="grid gap-8 lg:grid-cols-3">
-
         {/* ── Left: program content ── */}
         <div className="space-y-6 lg:col-span-2">
-
           {/* About */}
           <Card className="p-6">
             <h2 className="mb-3 text-xl font-semibold text-slate-900">About This Program</h2>
@@ -669,7 +701,9 @@ function ProgramDetailPageInner() {
               </div>
               <div className="flex justify-between">
                 <dt className="text-slate-500">Available cohorts</dt>
-                <dd className={`font-medium ${openCohortCount > 0 ? "text-green-600" : "text-slate-400"}`}>
+                <dd
+                  className={`font-medium ${openCohortCount > 0 ? "text-green-600" : "text-slate-400"}`}
+                >
                   {openCohortCount > 0 ? openCohortCount : "None right now"}
                 </dd>
               </div>
