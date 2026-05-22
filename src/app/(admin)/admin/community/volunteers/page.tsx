@@ -1900,7 +1900,19 @@ export default function AdminVolunteersPage() {
         </div>
       )}
 
-      {tab === "templates" && <VolunteerTemplatesTab roles={roles} />}
+      {tab === "templates" && (
+        <VolunteerTemplatesTab
+          roles={roles}
+          onOpportunitiesChanged={async () => {
+            // Re-fetch opportunities after the admin generates from a
+            // template so the Opportunities tab reflects them immediately.
+            const oppsData = await VolunteersApi.admin.listOpportunities({
+              status: undefined,
+            });
+            setOpportunities(oppsData);
+          }}
+        />
+      )}
     </div>
   );
 }

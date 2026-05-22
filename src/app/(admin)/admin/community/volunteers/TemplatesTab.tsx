@@ -61,7 +61,17 @@ const EMPTY_FORM: FormState = {
   is_active: true,
 };
 
-export function VolunteerTemplatesTab({ roles }: { roles: VolunteerRole[] }) {
+export function VolunteerTemplatesTab({
+  roles,
+  onOpportunitiesChanged,
+}: {
+  roles: VolunteerRole[];
+  /** Fired after the admin generates concrete opportunities from a
+   * template, so the parent page can refresh its `opportunities` state.
+   * Otherwise the Opportunities tab silently stays stale until next
+   * page load. Optional for callers that don't care. */
+  onOpportunitiesChanged?: () => void | Promise<void>;
+}) {
   const [templates, setTemplates] = useState<VolunteerOpportunityTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -177,6 +187,12 @@ export function VolunteerTemplatesTab({ roles }: { roles: VolunteerRole[] }) {
       setMaterialiseTarget(null);
       setMaterialiseThrough("");
       await refresh();
+      // Tell the parent page to re-fetch its opportunities list. Without
+      // this, the Opportunities tab silently stays on its mount-time
+      // snapshot — the very confusion that triggered this fix.
+      if (resp.created_count > 0 && onOpportunitiesChanged) {
+        await onOpportunitiesChanged();
+      }
     } catch (e) {
       console.error(e);
       toast.error("Could not generate opportunities.");
