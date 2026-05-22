@@ -15,6 +15,7 @@ import {
   Upload,
   Video,
 } from "lucide-react";
+import NextImage from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 type TabType = "banners" | "community" | "videos";
@@ -558,10 +559,12 @@ export default function AdminHomepageMediaPage() {
                 <Card key={banner.id} className="overflow-hidden group">
                   <div className="relative aspect-video bg-slate-100">
                     {banner.file_url ? (
-                      <img
+                      <NextImage
                         src={banner.file_url}
-                        alt={banner.title}
-                        className="w-full h-full object-cover"
+                        alt={banner.title ?? "Banner"}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                        className="object-cover"
                       />
                     ) : (
                       <div className="flex items-center justify-center h-full">
@@ -634,10 +637,12 @@ export default function AdminHomepageMediaPage() {
 
                     {photo?.file_url ? (
                       <>
-                        <img
-                          src={photo.file_url || photo.thumbnail_url}
-                          alt={photo.title}
-                          className="w-full h-full object-cover"
+                        <NextImage
+                          src={photo.thumbnail_url || photo.file_url}
+                          alt={photo.title ?? "Community photo"}
+                          fill
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                          className="object-cover"
                         />
                         <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                           <button

@@ -16,6 +16,7 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -252,10 +253,12 @@ export default function AdminGalleryPage() {
                       {!loadedCovers.has(album.id) && (
                         <div className="absolute inset-0 bg-gradient-to-br from-slate-200 to-slate-100 animate-pulse" />
                       )}
-                      <img
+                      <Image
                         src={coverUrl}
                         alt={album.title}
-                        className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${
+                        fill
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                        className={`object-cover transition-all duration-500 group-hover:scale-105 ${
                           loadedCovers.has(album.id)
                             ? "opacity-100"
                             : "opacity-0"

@@ -36,6 +36,7 @@ import {
   RefreshCw,
   Shield,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -354,7 +355,7 @@ function AuditRow({
             return (
               <div
                 key={m.id ?? m.media_id}
-                className="overflow-hidden rounded-md border border-slate-200"
+                className="relative aspect-video w-full overflow-hidden rounded-md border border-slate-200"
               >
                 {isVideoUrl(url) ? (
                   <video
@@ -362,13 +363,15 @@ function AuditRow({
                     controls
                     playsInline
                     preload="metadata"
-                    className="aspect-video w-full bg-slate-900"
+                    className="h-full w-full bg-slate-900"
                   />
                 ) : (
-                  <img
+                  <Image
                     src={url}
                     alt="Proof"
-                    className="aspect-video w-full object-cover"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover"
                   />
                 )}
               </div>

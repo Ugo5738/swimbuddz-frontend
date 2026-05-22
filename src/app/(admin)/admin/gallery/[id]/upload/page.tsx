@@ -19,6 +19,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import NextImage from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
@@ -389,6 +390,9 @@ export default function AlbumUploadPage() {
                         muted
                       />
                     ) : (
+                      // Blob preview of just-selected file (URL.createObjectURL) — next/image
+                      // can't optimise these. Documented exception per CONVENTIONS §5.
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={filePreview.preview}
                         alt={filePreview.file.name}
@@ -535,10 +539,12 @@ export default function AlbumUploadPage() {
                         </div>
                       </>
                     ) : (
-                      <img
+                      <NextImage
                         src={photo.thumbnail_url || photo.file_url}
                         alt={photo.title || photo.description || "Photo"}
-                        className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-105 ${loadedImages.has(photo.id) ? "opacity-100" : "opacity-0"}`}
+                        fill
+                        sizes="(max-width: 768px) 50vw, 25vw"
+                        className={`object-cover transition-all duration-300 group-hover:scale-105 ${loadedImages.has(photo.id) ? "opacity-100" : "opacity-0"}`}
                         onLoad={() => handleImageLoad(photo.id)}
                       />
                     )}

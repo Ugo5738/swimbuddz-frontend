@@ -4,6 +4,7 @@ import { AudioOverlayPanel } from "@/components/media/AudioOverlayPanel";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { MediaInput } from "@/components/ui/MediaInput";
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -891,12 +892,15 @@ export default function EditProductPage() {
                                   {colorName}:
                                 </span>
                                 {colorSwatches[colorName] && (
-                                  /* eslint-disable-next-line @next/next/no-img-element */
-                                  <img
-                                    src={colorSwatches[colorName]}
-                                    alt={colorName}
-                                    className="w-6 h-6 rounded border border-slate-200 object-cover shrink-0"
-                                  />
+                                  <span className="relative w-6 h-6 overflow-hidden rounded border border-slate-200 shrink-0 inline-block">
+                                    <Image
+                                      src={colorSwatches[colorName]}
+                                      alt={colorName}
+                                      fill
+                                      sizes="24px"
+                                      className="object-cover"
+                                    />
+                                  </span>
                                 )}
                                 <input
                                   type="text"
@@ -1173,12 +1177,13 @@ export default function EditProductPage() {
                       const linkedColorName = linkedVariant?.options?.Color || linkedVariant?.name;
                       return (
                         <SortableImageWrapper key={img.id} id={img.id}>
-                          <div className="relative group rounded-lg overflow-hidden border border-slate-200">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
+                          <div className="relative aspect-square w-full group rounded-lg overflow-hidden border border-slate-200">
+                            <Image
                               src={img.url}
                               alt={img.alt_text || "Product image"}
-                              className="w-full aspect-square object-cover"
+                              fill
+                              sizes="(max-width: 768px) 50vw, 200px"
+                              className="object-cover"
                             />
                             {img.is_primary && (
                               <span className="absolute top-7 left-1 text-[10px] px-1.5 py-0.5 bg-cyan-600 text-white rounded font-medium">

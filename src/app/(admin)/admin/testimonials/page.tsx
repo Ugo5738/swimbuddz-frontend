@@ -16,6 +16,7 @@ import {
   TestimonialTrack,
   TestimonialsApi,
 } from "@/lib/communications";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 type FormState = TestimonialCreate & {
@@ -231,12 +232,15 @@ export default function AdminTestimonialsPage() {
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   {t.author_photo_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={t.author_photo_url}
-                      alt={t.author_name}
-                      className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                    />
+                    <div className="relative w-10 h-10 overflow-hidden rounded-full flex-shrink-0">
+                      <Image
+                        src={t.author_photo_url}
+                        alt={t.author_name}
+                        fill
+                        sizes="40px"
+                        className="object-cover"
+                      />
+                    </div>
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
                       {t.author_initials}

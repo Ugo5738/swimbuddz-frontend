@@ -38,6 +38,7 @@ import {
   Waves,
   XCircle,
 } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -282,12 +283,15 @@ function ProfileHeader({ member }: { member: MemberResponse }) {
         {/* Avatar */}
         <div className="flex-shrink-0">
           {member.profile_photo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={member.profile_photo_url}
-              alt={`${member.first_name} ${member.last_name}`}
-              className="h-20 w-20 rounded-full object-cover ring-2 ring-slate-100"
-            />
+            <div className="relative h-20 w-20 overflow-hidden rounded-full ring-2 ring-slate-100">
+              <Image
+                src={member.profile_photo_url}
+                alt={`${member.first_name} ${member.last_name}`}
+                fill
+                sizes="80px"
+                className="object-cover"
+              />
+            </div>
           ) : (
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-cyan-100 to-blue-100 text-2xl font-bold text-cyan-700 ring-2 ring-slate-100">
               {getInitials(member.first_name, member.last_name)}

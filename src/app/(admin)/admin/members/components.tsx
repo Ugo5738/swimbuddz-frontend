@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { CheckCircle, Clock, XCircle } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 import { EMPTY_FORM, MOBILE_CLR, TIER_CLR } from "./constants";
@@ -59,11 +60,15 @@ export function PayText({ m }: { m: Member }) {
 export function Av({ m }: { m: Member }) {
   if (m.profile_photo_url)
     return (
-      <img
-        src={m.profile_photo_url}
-        alt=""
-        className="h-8 w-8 shrink-0 rounded-full object-cover"
-      />
+      <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full inline-block">
+        <Image
+          src={m.profile_photo_url}
+          alt=""
+          fill
+          sizes="32px"
+          className="object-cover"
+        />
+      </span>
     );
   return (
     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-xs font-semibold text-cyan-700">

@@ -13,6 +13,7 @@ import {
   User,
   XCircle,
 } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -218,12 +219,14 @@ export default function PendingMembersPage() {
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-4">
-                  <div className="h-14 w-14 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center overflow-hidden">
+                  <div className="relative h-14 w-14 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center overflow-hidden">
                     {member.profile_photo_url ? (
-                      <img
+                      <Image
                         src={member.profile_photo_url}
                         alt={`${member.first_name} ${member.last_name}`}
-                        className="h-full w-full object-cover"
+                        fill
+                        sizes="56px"
+                        className="object-cover"
                       />
                     ) : (
                       <User className="h-6 w-6 text-white" />
@@ -314,12 +317,14 @@ export default function PendingMembersPage() {
             <div className="p-6 space-y-6">
               {/* Profile Header */}
               <div className="flex items-center gap-4">
-                <div className="h-20 w-20 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center overflow-hidden">
+                <div className="relative h-20 w-20 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center overflow-hidden">
                   {selectedMember.profile_photo_url ? (
-                    <img
+                    <Image
                       src={selectedMember.profile_photo_url}
                       alt={`${selectedMember.first_name} ${selectedMember.last_name}`}
-                      className="h-full w-full object-cover"
+                      fill
+                      sizes="80px"
+                      className="object-cover"
                     />
                   ) : (
                     <User className="h-8 w-8 text-white" />

@@ -20,6 +20,7 @@ import {
   Trash2,
 } from "lucide-react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 
 // Dynamic import to avoid SSR issues with BlockNote
@@ -379,10 +380,14 @@ export default function AdminContentPage() {
                     </h1>
                     {formData.featured_image_url && (
                       <div className="mb-6 -mx-6 -mt-2">
-                        <img
+                        <Image
                           src={formData.featured_image_url}
                           alt="Featured"
+                          width={0}
+                          height={0}
+                          sizes="(max-width: 768px) 100vw, 800px"
                           className="w-full max-h-96 object-contain bg-slate-100"
+                          style={{ width: "100%", height: "auto" }}
                         />
                       </div>
                     )}
