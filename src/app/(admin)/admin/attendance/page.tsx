@@ -33,6 +33,11 @@ type Session = {
   week_number: number | null;
   cohort_id: string | null;
   session_type: string | null;
+  // Per-session pool fee in NAIRA (the member endpoint converts kobo→naira
+  // before responding). The backend walk-in endpoint defaults to the session's
+  // own stored fee, so we don't need to pass this through — but we display it
+  // on rows that aren't yet booked so the admin sees the cost up front.
+  pool_fee: number | null;
 };
 
 type Cohort = {
@@ -417,26 +422,45 @@ export default function AdminAttendancePage() {
           return s as RosterRow["effectiveStatus"];
         }
       }
-      // No explicit attendance row:
-      //   - cohort member → default present (implicit)
-      //   - paid booking before/after session → "awaiting" if upcoming, "absent" once session is over
-      //   - walk-in (shouldn't hit this branch since walk-ins are derived from attendance rows)
-      if (source === "cohort") return "present";
+      // No explicit attendance row — derive from source + booking presence.
+      //   - cohort member with a booking → "awaiting" pre-session, "absent" post
+      //     (they paid but haven't been marked present yet)
+      //   - cohort member with NO booking → "absent" (they didn't pay the pool
+      //     fee, so the default is "not coming". Coach can flip via Mark walk-in
+      //     which also creates the booking.)
+      //   - non-cohort booking (drop-in pay-per-session) → same as cohort-booking
+      //   - walk-in row without booking (legacy data) → "absent"
       if (source === "booking") return sessionStarted ? "absent" : "awaiting";
-      return "awaiting";
+      if (source === "cohort") return "absent";
+      return "absent";
     };
+
+    // Index bookings by member so cohort rows can show booking status too.
+    const bookingByMember = new Map<string, SessionBookingResponse>();
+    for (const b of confirmedBookings) bookingByMember.set(b.member_id, b);
 
     if (isCohortSession) {
       for (const e of cohortRoster) {
         const att = attendanceByMember.get(e.member_id);
+        const booking = bookingByMember.get(e.member_id);
+        // If the cohort member has a booking, their default effective status
+        // is the same as a non-cohort booked attendee (awaiting → absent).
+        const effective = att
+          ? computeEffective("cohort", att)
+          : booking
+            ? sessionStarted
+              ? "absent"
+              : "awaiting"
+            : "absent";
         byMember.set(e.member_id, {
           member_id: e.member_id,
           name: memberLookup.get(e.member_id)?.name || e.member_name || "(unknown)",
           email: memberLookup.get(e.member_id)?.email || e.member_email || "",
           source: "cohort",
           attendance: att,
+          booking,
           ride_info: att?.ride_info,
-          effectiveStatus: computeEffective("cohort", att),
+          effectiveStatus: effective,
         });
       }
     }
@@ -469,7 +493,14 @@ export default function AdminAttendancePage() {
       });
     }
 
-    return Array.from(byMember.values()).sort((x, y) => x.name.localeCompare(y.name));
+    // Sort: booked first (paid attention up top), then unbooked, alphabetical
+    // within each group.
+    return Array.from(byMember.values()).sort((x, y) => {
+      const xHasBooking = x.booking ? 0 : 1;
+      const yHasBooking = y.booking ? 0 : 1;
+      if (xHasBooking !== yHasBooking) return xHasBooking - yHasBooking;
+      return x.name.localeCompare(y.name);
+    });
   }, [
     isCohortSession,
     cohortRoster,
@@ -498,6 +529,54 @@ export default function AdminAttendancePage() {
       next.set(memberId, status);
       return next;
     });
+  };
+
+  // Mark walk-in: cohort member showed up without pre-booking. Creates an
+  // admin-channel SessionBooking (fee defaulted by the backend to the
+  // session's own pool_fee) and marks them PRESENT — all in one click.
+  const handleMarkWalkIn = async (memberId: string) => {
+    if (!selectedSessionId) return;
+    setSubmittingMark(true);
+    setError(null);
+    setMarkSuccess(null);
+    try {
+      // 1) Create the booking. Backend defaults fee to session.pool_fee.
+      await apiPost(
+        `/api/v1/sessions/${selectedSessionId}/admin/walk-in`,
+        { member_id: memberId },
+        { auth: true }
+      );
+      // 2) Mark the member PRESENT for this session.
+      await apiPost(
+        `/api/v1/attendance/sessions/${selectedSessionId}/coach-mark`,
+        {
+          entries: [
+            { member_id: memberId, status: "present", notes: "Walk-in" },
+          ],
+        },
+        { auth: true }
+      );
+      // 3) Refresh both bookings and attendance so the row updates.
+      const [refreshedAttendance, refreshedBookings] = await Promise.all([
+        apiGet<Attendance[]>(
+          `/api/v1/attendance/sessions/${selectedSessionId}/attendance`,
+          { auth: true }
+        ),
+        apiGet<SessionBookingResponse[]>(
+          `/api/v1/sessions/${selectedSessionId}/bookings`,
+          { auth: true }
+        ).catch(() => bookings),
+      ]);
+      setAttendanceList(refreshedAttendance);
+      setBookings(refreshedBookings);
+      setMarkSuccess("Walk-in recorded.");
+    } catch (err: any) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      console.error("Failed to record walk-in", err);
+      setError(`Failed to record walk-in: ${msg}`);
+    } finally {
+      setSubmittingMark(false);
+    }
   };
 
   const handleSaveRoster = async () => {
@@ -832,8 +911,10 @@ export default function AdminAttendancePage() {
             drafts={drafts}
             isCohortSession={isCohortSession}
             sessionStarted={sessionStarted}
+            sessionPoolFeeNaira={selectedSession?.pool_fee ?? null}
             unmatchedBookingCount={unmatchedBookings.length}
             onDraftStatus={handleDraftStatus}
+            onMarkWalkIn={handleMarkWalkIn}
             onBulkMarkPresent={handleBulkMarkPresent}
             onSaveRoster={handleSaveRoster}
             submitting={submittingMark}
@@ -859,8 +940,10 @@ function UnifiedRoster({
   drafts,
   isCohortSession,
   sessionStarted,
+  sessionPoolFeeNaira,
   unmatchedBookingCount,
   onDraftStatus,
+  onMarkWalkIn,
   onBulkMarkPresent,
   onSaveRoster,
   submitting,
@@ -871,8 +954,10 @@ function UnifiedRoster({
   drafts: Map<string, DraftStatus>;
   isCohortSession: boolean;
   sessionStarted: boolean;
+  sessionPoolFeeNaira: number | null;
   unmatchedBookingCount: number;
   onDraftStatus: (memberId: string, status: DraftStatus) => void;
+  onMarkWalkIn: (memberId: string) => void;
   onBulkMarkPresent: () => void;
   onSaveRoster: () => void;
   submitting: boolean;
@@ -913,7 +998,10 @@ function UnifiedRoster({
                 Name
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
-                Source
+                Cohort?
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+                Booking
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
                 Status
@@ -935,7 +1023,9 @@ function UnifiedRoster({
                 key={row.member_id}
                 row={row}
                 draft={drafts.get(row.member_id)}
+                sessionPoolFeeNaira={sessionPoolFeeNaira}
                 onDraftStatus={onDraftStatus}
+                onMarkWalkIn={onMarkWalkIn}
                 disabled={submitting}
               />
             ))}
@@ -965,16 +1055,22 @@ function UnifiedRoster({
 function RosterTableRow({
   row,
   draft,
+  sessionPoolFeeNaira,
   onDraftStatus,
+  onMarkWalkIn,
   disabled,
 }: {
   row: RosterRow;
   draft: DraftStatus | undefined;
+  sessionPoolFeeNaira: number | null;
   onDraftStatus: (memberId: string, status: DraftStatus) => void;
+  onMarkWalkIn: (memberId: string) => void;
   disabled: boolean;
 }) {
-  // What the row will be saved as if no draft is set — used as the value of
-  // the dropdown so the displayed select reflects the current effective state.
+  // Map the effective status onto a DraftStatus value for the dropdown's
+  // initial selection. "awaiting" and "cancelled" both display as "absent"
+  // in the dropdown sense — they're not edits yet, so the dropdown reflects
+  // what would be saved if the admin hit Save without changing anything.
   const effectiveForSelect: DraftStatus =
     row.effectiveStatus === "awaiting"
       ? "absent"
@@ -985,21 +1081,59 @@ function RosterTableRow({
   const selectedValue: DraftStatus = draft ?? effectiveForSelect;
   const hasDraft = draft !== undefined && draft !== row.effectiveStatus;
 
-  const sourceBadge = (() => {
-    if (row.source === "cohort") {
-      return { label: "Cohort", cls: "bg-purple-100 text-purple-800" };
+  // Booking column display. Three states:
+  //   - has a confirmed booking → green "Paid ₦X · CHANNEL"
+  //   - no booking, cohort source → red "Not booked"
+  //   - walk-in row (legacy attendance without booking) → violet "Walk-in (unpaid)"
+  const bookingCell = (() => {
+    if (row.booking) {
+      const amountNaira = row.booking.fee_amount_kobo / 100;
+      const channel = row.booking.channel.replace("_", " ");
+      return {
+        cls: "bg-emerald-100 text-emerald-800",
+        primary: `✓ Paid ₦${amountNaira.toLocaleString("en-NG")}`,
+        secondary: channel,
+      };
     }
-    if (row.source === "booking") {
-      return { label: "Booking", cls: "bg-cyan-100 text-cyan-800" };
+    if (row.source === "walkin") {
+      return {
+        cls: "bg-violet-100 text-violet-800",
+        primary: "Walk-in (unpaid)",
+        secondary: null,
+      };
     }
-    return { label: "Walk-in", cls: "bg-violet-100 text-violet-800" };
+    return {
+      cls: "bg-rose-100 text-rose-800",
+      primary: "Not booked",
+      secondary: null,
+    };
   })();
 
+  // The "Mark walk-in" inline button shows for cohort rows that have no
+  // booking and no attendance row yet. Click creates an admin-channel
+  // booking + marks present in one action.
+  const canMarkWalkIn =
+    row.source === "cohort" && !row.booking && !row.attendance;
+
+  // Disable the Set dropdown when there's no booking AND no attendance —
+  // the workflow is "use Mark walk-in to bring them onto the roster
+  // properly". Walk-in rows (have attendance) stay editable.
+  const setDisabled = disabled || canMarkWalkIn;
+
+  const cohortBadge =
+    row.source === "cohort" ? (
+      <span className="inline-flex rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800">
+        Cohort
+      </span>
+    ) : (
+      <span className="text-xs text-slate-400">—</span>
+    );
+
   const statusLabel = (() => {
-    if (row.effectiveStatus === "awaiting") {
-      return sessionStartedLabel(row);
-    }
-    return row.effectiveStatus.charAt(0).toUpperCase() + row.effectiveStatus.slice(1);
+    if (row.effectiveStatus === "awaiting") return "Awaiting";
+    return (
+      row.effectiveStatus.charAt(0).toUpperCase() + row.effectiveStatus.slice(1)
+    );
   })();
 
   return (
@@ -1008,12 +1142,40 @@ function RosterTableRow({
         <div className="text-sm font-medium text-slate-900">{row.name}</div>
         {row.email && <div className="text-xs text-slate-500">{row.email}</div>}
       </td>
+      <td className="px-4 py-3">{cohortBadge}</td>
       <td className="px-4 py-3">
-        <span
-          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${sourceBadge.cls}`}
-        >
-          {sourceBadge.label}
-        </span>
+        <div className="flex flex-col gap-1">
+          <span
+            className={`inline-flex w-fit rounded-full px-2 py-0.5 text-xs font-medium ${bookingCell.cls}`}
+          >
+            {bookingCell.primary}
+          </span>
+          {bookingCell.secondary && (
+            <span className="text-[10px] uppercase tracking-wide text-slate-500">
+              {bookingCell.secondary}
+            </span>
+          )}
+          {canMarkWalkIn && (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => onMarkWalkIn(row.member_id)}
+              className="mt-1 inline-flex w-fit rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 print:hidden"
+              title={
+                sessionPoolFeeNaira !== null && sessionPoolFeeNaira > 0
+                  ? `Create a paid booking (₦${sessionPoolFeeNaira.toLocaleString("en-NG")}) + mark present`
+                  : "Create a booking + mark present"
+              }
+            >
+              + Mark walk-in
+              {sessionPoolFeeNaira !== null && sessionPoolFeeNaira > 0 ? (
+                <span className="ml-1 opacity-70">
+                  (₦{sessionPoolFeeNaira.toLocaleString("en-NG")})
+                </span>
+              ) : null}
+            </button>
+          )}
+        </div>
       </td>
       <td className="px-4 py-3">
         <span
@@ -1027,9 +1189,14 @@ function RosterTableRow({
       <td className="px-4 py-3 print:hidden">
         <select
           value={selectedValue}
-          disabled={disabled}
+          disabled={setDisabled}
           onChange={(e) => onDraftStatus(row.member_id, e.target.value as DraftStatus)}
-          className="rounded-md border border-slate-200 px-2 py-1 text-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+          className="rounded-md border border-slate-200 px-2 py-1 text-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 disabled:bg-slate-50 disabled:text-slate-400"
+          title={
+            canMarkWalkIn
+              ? "Use Mark walk-in first — a booking is required before recording attendance."
+              : undefined
+          }
         >
           <option value="present">Present</option>
           <option value="late">Late</option>
@@ -1059,15 +1226,6 @@ function RosterTableRow({
       <td className="px-4 py-3 text-xs text-slate-500">{row.attendance?.notes || "—"}</td>
     </tr>
   );
-}
-
-// Show "Awaiting" pre-session and "No-show" post-session for paid bookings
-// without an attendance row.
-function sessionStartedLabel(row: RosterRow): string {
-  if (row.effectiveStatus !== "awaiting") {
-    return row.effectiveStatus;
-  }
-  return "Awaiting";
 }
 
 function ReconciliationStat({
