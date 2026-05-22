@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { AcademyApi, Cohort, CohortStatus } from "@/lib/academy";
 import { Member, MembersApi } from "@/lib/members";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -100,11 +101,15 @@ export default function CoachProfilePage() {
             {/* Photo */}
             <div className="mb-4">
               {photoUrl ? (
-                <img
-                  src={photoUrl}
-                  alt={displayName}
-                  className="w-28 h-28 md:w-32 md:h-32 rounded-full object-cover border-4 border-cyan-400/30 shadow-xl"
-                />
+                <div className="relative w-28 h-28 md:w-32 md:h-32 overflow-hidden rounded-full border-4 border-cyan-400/30 shadow-xl">
+                  <Image
+                    src={photoUrl}
+                    alt={displayName}
+                    fill
+                    sizes="(max-width: 768px) 112px, 128px"
+                    className="object-cover"
+                  />
+                </div>
               ) : (
                 <div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-3xl md:text-4xl font-bold shadow-xl">
                   {coach.first_name?.[0]}

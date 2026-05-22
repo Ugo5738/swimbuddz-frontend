@@ -32,6 +32,7 @@ import {
   X,
   XCircle,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -605,11 +606,14 @@ function EvidenceMedia({ mediaId }: { mediaId: string }) {
           </video>
         ) : (
           <button onClick={() => setShowFullscreen(true)} className="w-full cursor-pointer">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={url}
               alt="Student milestone evidence"
+              width={0}
+              height={0}
+              sizes="(max-width: 768px) 100vw, 50vw"
               className="w-full max-h-72 object-contain bg-slate-50"
+              style={{ width: "100%", height: "auto" }}
             />
           </button>
         )}
@@ -633,11 +637,14 @@ function EvidenceMedia({ mediaId }: { mediaId: string }) {
                 Your browser does not support video playback.
               </video>
             ) : (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
+              <Image
                 src={url}
                 alt="Student milestone evidence"
+                width={0}
+                height={0}
+                sizes="100vw"
                 className="w-full max-h-[90vh] object-contain rounded-lg"
+                style={{ width: "100%", height: "auto" }}
               />
             )}
           </div>

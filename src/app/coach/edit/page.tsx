@@ -10,6 +10,7 @@ import { MediaInput } from "@/components/ui/MediaInput";
 import { apiPatch } from "@/lib/api";
 import { getMyCoachProfile, type CoachProfile } from "@/lib/coach";
 import { ArrowLeft, Loader2, Save, User } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -145,11 +146,15 @@ export default function CoachEditPage() {
           <div className="flex items-start gap-4">
             <div className="flex-shrink-0">
               {profilePhotoUrl ? (
-                <img
-                  src={profilePhotoUrl}
-                  alt="Profile"
-                  className="h-24 w-24 rounded-full object-cover border border-slate-200"
-                />
+                <div className="relative h-24 w-24 overflow-hidden rounded-full border border-slate-200">
+                  <Image
+                    src={profilePhotoUrl}
+                    alt="Profile"
+                    fill
+                    sizes="96px"
+                    className="object-cover"
+                  />
+                </div>
               ) : (
                 <div className="h-24 w-24 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center">
                   <User className="h-10 w-10 text-slate-400" />

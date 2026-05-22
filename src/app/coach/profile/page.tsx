@@ -11,6 +11,7 @@ import {
   type CoachProfile as CoachProfileType,
 } from "@/lib/coach";
 import { Award, Calendar, Edit, MapPin, User } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -77,11 +78,15 @@ export default function CoachProfilePage() {
       <Card className="p-6">
         <div className="flex items-start gap-4">
           {profile?.coach_profile_photo_url ? (
-            <img
-              src={profile.coach_profile_photo_url}
-              alt={profile?.display_name || "Coach"}
-              className="h-16 w-16 rounded-full object-cover border border-slate-200"
-            />
+            <div className="relative h-16 w-16 overflow-hidden rounded-full border border-slate-200">
+              <Image
+                src={profile.coach_profile_photo_url}
+                alt={profile?.display_name || "Coach"}
+                fill
+                sizes="64px"
+                className="object-cover"
+              />
+            </div>
           ) : (
             <div className="p-4 rounded-full bg-emerald-100">
               <User className="h-8 w-8 text-emerald-600" />

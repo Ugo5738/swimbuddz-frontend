@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { Member, MembersApi } from "@/lib/members";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -74,10 +75,12 @@ export default function PublicCoachesPage() {
                   {/* Coach Photo - Smaller on mobile */}
                   <div className="aspect-square sm:aspect-[4/3] w-full relative">
                     {photoUrl ? (
-                      <img
+                      <Image
                         src={photoUrl}
                         alt={displayName}
-                        className="h-full w-full object-cover"
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover"
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-cyan-500/20 to-blue-600/20">

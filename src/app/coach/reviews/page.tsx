@@ -21,6 +21,7 @@ import {
   Play,
   XCircle,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -352,11 +353,14 @@ function EvidenceViewer({
           Open full size
         </a>
       </div>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <Image
         src={evidenceUrl}
         alt="Milestone evidence"
+        width={0}
+        height={0}
+        sizes="(max-width: 768px) 100vw, 50vw"
         className="w-full max-h-64 object-contain bg-slate-50"
+        style={{ width: "100%", height: "auto" }}
       />
     </div>
   );
