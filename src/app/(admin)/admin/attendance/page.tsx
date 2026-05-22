@@ -11,28 +11,8 @@ import { useEffect, useMemo, useState } from "react";
 
 type SessionBookingResponse = components["schemas"]["SessionBookingResponse"];
 type EnrollmentResponse = components["schemas"]["EnrollmentResponse"];
-type BookingChannel = components["schemas"]["BookingChannel"];
-type AttendanceStatusEnum = components["schemas"]["AttendanceStatus"];
 type CoachMarkEntry = components["schemas"]["CoachAttendanceMarkEntry"];
 type MemberBasicResponse = components["schemas"]["MemberBasicResponse"];
-
-type ExceptionStatus = Exclude<AttendanceStatusEnum, "present" | "cancelled">;
-
-const EXCEPTION_STATUSES: ExceptionStatus[] = ["absent", "excused", "late"];
-
-const CHANNEL_LABELS: Record<BookingChannel, string> = {
-  member_self: "Self",
-  admin: "Admin",
-  corporate_bulk: "Corporate",
-  bundle_cart: "Bundle",
-};
-
-function formatNaira(kobo: number): string {
-  return `₦${(kobo / 100).toLocaleString("en-NG", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  })}`;
-}
 
 function statusBadgeClass(status: string): string {
   const s = status.toLowerCase();
@@ -118,13 +98,29 @@ type RideConfig = {
   }>;
 };
 
-type MarkRow = {
+type RosterSource = "cohort" | "booking" | "walkin";
+
+// Unified roster row: every member who matters for this session, regardless
+// of source. Replaces the old 3-tab split (Expected/Attendance/Mark
+// exceptions). One status dropdown per row, batched save at the bottom.
+type RosterRow = {
   member_id: string;
-  status: ExceptionStatus;
-  notes: string;
+  name: string;
+  email: string;
+  source: RosterSource;
+  // The attendance record, if one exists. Absence of a row + cohort source =
+  // default-present (the cohort attendance model).
+  attendance?: Attendance;
+  booking?: SessionBookingResponse;
+  ride_info?: Attendance["ride_info"];
+  // Effective status to display: derived from attendance/booking/source.
+  effectiveStatus: "present" | "absent" | "late" | "excused" | "cancelled" | "awaiting";
 };
 
-type TabKey = "expected" | "attendance" | "exceptions";
+// Draft edit per member: the status the admin wants to save. "present" for a
+// row with an existing exception row deletes that exception (or, for non-
+// cohort, materializes a PRESENT record). Unset means no change.
+type DraftStatus = "present" | "absent" | "late" | "excused";
 
 // A session "has started" once its start time is in the past. We use this to
 // decide whether unmatched bookings should be labelled "Pending" (not yet
@@ -145,7 +141,9 @@ export default function AdminAttendancePage() {
   const [memberLookup, setMemberLookup] = useState<Map<string, { name: string; email: string }>>(
     () => new Map()
   );
-  const [markRows, setMarkRows] = useState<MarkRow[]>([]);
+  // Pending status edits per member, keyed by member_id. Diffed against
+  // effectiveStatus on save so we only send actual changes to the backend.
+  const [drafts, setDrafts] = useState<Map<string, DraftStatus>>(() => new Map());
   const [submittingMark, setSubmittingMark] = useState(false);
   const [markSuccess, setMarkSuccess] = useState<string | null>(null);
   const [loadingSessions, setLoadingSessions] = useState(true);
@@ -163,14 +161,10 @@ export default function AdminAttendancePage() {
   const isCohortSession = Boolean(selectedSession?.cohort_id);
   const sessionStarted = hasSessionStarted(selectedSession?.starts_at);
 
-  // Active tab. Default depends on whether the session has happened yet:
-  // upcoming → "expected" (you mostly want to see who paid);
-  // already started → "attendance" (you mostly want to see who arrived).
-  const [tab, setTab] = useState<TabKey>("expected");
+  // Reset draft edits whenever the selected session changes.
   useEffect(() => {
-    if (!selectedSessionId) return;
-    setTab(sessionStarted ? "attendance" : "expected");
-  }, [selectedSessionId, sessionStarted]);
+    setDrafts(new Map());
+  }, [selectedSessionId]);
 
   useEffect(() => {
     async function fetchSessions() {
@@ -350,19 +344,6 @@ export default function AdminAttendancePage() {
           }
         }
         setMemberLookup(lookup);
-
-        // Pre-populate the cohort bulk-mark form with existing exceptions
-        // (anything not PRESENT). For non-cohort sessions this is ignored.
-        const seededRows: MarkRow[] = mergedAttendance
-          .filter(
-            (a) => a.status && (EXCEPTION_STATUSES as string[]).includes(a.status.toLowerCase())
-          )
-          .map((a) => ({
-            member_id: a.member_id,
-            status: a.status.toLowerCase() as ExceptionStatus,
-            notes: a.notes || "",
-          }));
-        setMarkRows(seededRows);
       } catch (err: any) {
         console.error("Failed to fetch attendance", err);
         setError(`Failed to load attendance list: ${err.message || "Unknown error"}`);
@@ -413,37 +394,151 @@ export default function AdminAttendancePage() {
     return enrollments.filter((e) => e.status === "enrolled");
   }, [enrollments, isCohortSession]);
 
-  const markRowMemberIds = useMemo(() => new Set(markRows.map((r) => r.member_id)), [markRows]);
+  // Build the unified roster: cohort enrollees + confirmed bookings + walk-ins,
+  // deduplicated by member_id. Each row carries its effective status — what
+  // it would be saved as right now (default-present for cohort, or the
+  // attendance row's status, or "awaiting" for a pre-session booking).
+  const roster = useMemo<RosterRow[]>(() => {
+    const byMember = new Map<string, RosterRow>();
 
-  const eligibleMembersForMark = useMemo(() => {
-    // Cohort enrollment is the source of truth for who can be marked.
-    return cohortRoster
-      .filter((e) => !markRowMemberIds.has(e.member_id))
-      .map((e) => ({
-        id: e.member_id,
-        name: memberLookup.get(e.member_id)?.name || e.member_name || "(unknown)",
-        email: memberLookup.get(e.member_id)?.email || e.member_email || "",
-      }));
-  }, [cohortRoster, markRowMemberIds, memberLookup]);
+    const computeEffective = (
+      source: RosterSource,
+      attendance: Attendance | undefined
+    ): RosterRow["effectiveStatus"] => {
+      if (attendance?.status) {
+        const s = attendance.status.toLowerCase();
+        if (
+          s === "present" ||
+          s === "absent" ||
+          s === "late" ||
+          s === "excused" ||
+          s === "cancelled"
+        ) {
+          return s as RosterRow["effectiveStatus"];
+        }
+      }
+      // No explicit attendance row:
+      //   - cohort member → default present (implicit)
+      //   - paid booking before/after session → "awaiting" if upcoming, "absent" once session is over
+      //   - walk-in (shouldn't hit this branch since walk-ins are derived from attendance rows)
+      if (source === "cohort") return "present";
+      if (source === "booking") return sessionStarted ? "absent" : "awaiting";
+      return "awaiting";
+    };
 
-  const handleAddMarkRow = (memberId: string) => {
-    if (!memberId) return;
-    setMarkRows((prev) =>
-      prev.some((r) => r.member_id === memberId)
-        ? prev
-        : [...prev, { member_id: memberId, status: "absent", notes: "" }]
-    );
+    if (isCohortSession) {
+      for (const e of cohortRoster) {
+        const att = attendanceByMember.get(e.member_id);
+        byMember.set(e.member_id, {
+          member_id: e.member_id,
+          name: memberLookup.get(e.member_id)?.name || e.member_name || "(unknown)",
+          email: memberLookup.get(e.member_id)?.email || e.member_email || "",
+          source: "cohort",
+          attendance: att,
+          ride_info: att?.ride_info,
+          effectiveStatus: computeEffective("cohort", att),
+        });
+      }
+    }
+
+    for (const b of confirmedBookings) {
+      if (byMember.has(b.member_id)) continue;
+      const att = attendanceByMember.get(b.member_id);
+      byMember.set(b.member_id, {
+        member_id: b.member_id,
+        name: memberLookup.get(b.member_id)?.name || "(unknown)",
+        email: memberLookup.get(b.member_id)?.email || "",
+        source: "booking",
+        attendance: att,
+        booking: b,
+        ride_info: att?.ride_info,
+        effectiveStatus: computeEffective("booking", att),
+      });
+    }
+
+    for (const a of walkIns) {
+      if (byMember.has(a.member_id)) continue;
+      byMember.set(a.member_id, {
+        member_id: a.member_id,
+        name: a.member_name || memberLookup.get(a.member_id)?.name || "(unknown)",
+        email: a.member_email || memberLookup.get(a.member_id)?.email || "",
+        source: "walkin",
+        attendance: a,
+        ride_info: a.ride_info,
+        effectiveStatus: computeEffective("walkin", a),
+      });
+    }
+
+    return Array.from(byMember.values()).sort((x, y) => x.name.localeCompare(y.name));
+  }, [
+    isCohortSession,
+    cohortRoster,
+    confirmedBookings,
+    walkIns,
+    attendanceByMember,
+    memberLookup,
+    sessionStarted,
+  ]);
+
+  // Count drafts whose target status differs from the current effective status
+  // — these are the rows that will produce coach-mark entries on save.
+  const pendingChangeCount = useMemo(() => {
+    let n = 0;
+    for (const r of roster) {
+      const d = drafts.get(r.member_id);
+      if (d && d !== r.effectiveStatus) n++;
+    }
+    return n;
+  }, [roster, drafts]);
+
+  const handleDraftStatus = (memberId: string, status: DraftStatus) => {
     setMarkSuccess(null);
+    setDrafts((prev) => {
+      const next = new Map(prev);
+      next.set(memberId, status);
+      return next;
+    });
   };
 
-  const handleUpdateMarkRow = (memberId: string, patch: Partial<MarkRow>) => {
-    setMarkRows((prev) => prev.map((r) => (r.member_id === memberId ? { ...r, ...patch } : r)));
+  const handleSaveRoster = async () => {
+    if (!selectedSessionId) return;
+    // Build entries from drafts whose target differs from current effective.
+    const entries: CoachMarkEntry[] = [];
+    for (const r of roster) {
+      const target = drafts.get(r.member_id);
+      if (!target || target === r.effectiveStatus) continue;
+      entries.push({
+        member_id: r.member_id,
+        status: target,
+        notes: null,
+      });
+    }
+    if (entries.length === 0) {
+      setMarkSuccess("No changes to save.");
+      return;
+    }
+    setSubmittingMark(true);
+    setError(null);
     setMarkSuccess(null);
-  };
-
-  const handleRemoveMarkRow = (memberId: string) => {
-    setMarkRows((prev) => prev.filter((r) => r.member_id !== memberId));
-    setMarkSuccess(null);
+    try {
+      await apiPost(
+        `/api/v1/attendance/sessions/${selectedSessionId}/coach-mark`,
+        { entries },
+        { auth: true }
+      );
+      const refreshed = await apiGet<Attendance[]>(
+        `/api/v1/attendance/sessions/${selectedSessionId}/attendance`,
+        { auth: true }
+      );
+      setAttendanceList(refreshed);
+      setDrafts(new Map());
+      setMarkSuccess(`Saved ${entries.length} change${entries.length === 1 ? "" : "s"}.`);
+    } catch (err: any) {
+      console.error("Failed to save attendance", err);
+      setError(`Failed to save: ${err.message || "Unknown error"}`);
+    } finally {
+      setSubmittingMark(false);
+    }
   };
 
   // One-click bulk mark for non-cohort sessions: every confirmed booking
@@ -480,71 +575,6 @@ export default function AdminAttendancePage() {
     } catch (err: any) {
       console.error("Failed to bulk-mark attendance", err);
       setError(`Failed to bulk-mark: ${err.message || "Unknown error"}`);
-    } finally {
-      setSubmittingMark(false);
-    }
-  };
-
-  const handleSubmitMark = async () => {
-    if (!selectedSessionId) return;
-    setSubmittingMark(true);
-    setError(null);
-    setMarkSuccess(null);
-    try {
-      // Submit current exceptions.
-      const entries: CoachMarkEntry[] = markRows.map((r) => ({
-        member_id: r.member_id,
-        status: r.status,
-        notes: r.notes || null,
-      }));
-
-      // Revert: any existing AttendanceRecord exception that's no longer in
-      // the form needs to be submitted as PRESENT so the server deletes it.
-      const currentExceptionIds = new Set(markRows.map((r) => r.member_id));
-      for (const a of attendanceList) {
-        const lower = a.status?.toLowerCase();
-        if (
-          a.member_id &&
-          lower &&
-          (EXCEPTION_STATUSES as string[]).includes(lower) &&
-          !currentExceptionIds.has(a.member_id)
-        ) {
-          entries.push({ member_id: a.member_id, status: "present" });
-        }
-      }
-
-      if (entries.length === 0) {
-        setMarkSuccess("No changes to submit.");
-        return;
-      }
-
-      await apiPost(
-        `/api/v1/attendance/sessions/${selectedSessionId}/coach-mark`,
-        { entries },
-        { auth: true }
-      );
-      setMarkSuccess(`Saved ${entries.length} change${entries.length === 1 ? "" : "s"}.`);
-
-      // Refresh attendance + reseed mark rows.
-      const refreshed = await apiGet<Attendance[]>(
-        `/api/v1/attendance/sessions/${selectedSessionId}/attendance`,
-        { auth: true }
-      );
-      setAttendanceList(refreshed);
-      setMarkRows(
-        refreshed
-          .filter(
-            (a) => a.status && (EXCEPTION_STATUSES as string[]).includes(a.status.toLowerCase())
-          )
-          .map((a) => ({
-            member_id: a.member_id,
-            status: a.status.toLowerCase() as ExceptionStatus,
-            notes: a.notes || "",
-          }))
-      );
-    } catch (err: any) {
-      console.error("Failed to submit attendance mark", err);
-      setError(`Failed to save attendance: ${err.message || "Unknown error"}`);
     } finally {
       setSubmittingMark(false);
     }
@@ -781,19 +811,6 @@ export default function AdminAttendancePage() {
           </div>
         ) : null}
 
-        {!loadingAttendance && selectedSessionId ? (
-          <TabNav
-            tab={tab}
-            onChange={setTab}
-            isCohortSession={isCohortSession}
-            counts={{
-              expected: confirmedBookings.length,
-              attendance: attendanceList.length,
-              exceptions: markRows.length,
-            }}
-          />
-        ) : null}
-
         {/* Print-only header */}
         <div className="hidden print:block">
           <h2 className="text-xl font-bold">Attendance List</h2>
@@ -809,238 +826,248 @@ export default function AdminAttendancePage() {
             })()}
         </div>
 
-        {/* Attendance tab: actual presence rows. Always rendered for print. */}
-        <div className={tab === "attendance" ? "" : "hidden print:block"}>
-          {/* Bulk shortcut — only meaningful for non-cohort sessions, since
-            cohorts are default-present and the right workflow there is
-            Mark exceptions. */}
-          {!isCohortSession && unmatchedBookings.length > 0 && (
-            <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 print:hidden">
-              <p className="text-sm text-slate-700">
-                {unmatchedBookings.length} booked attendee
-                {unmatchedBookings.length === 1 ? "" : "s"} not yet marked.
-              </p>
-              <Button size="sm" onClick={handleBulkMarkPresent} disabled={submittingMark}>
-                {submittingMark ? "Marking…" : `Mark all ${unmatchedBookings.length} as present`}
-              </Button>
-            </div>
-          )}
-          {loadingAttendance ? (
-            <LoadingPage text="Loading attendance..." />
-          ) : attendanceList.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-500">
-              {isCohortSession
-                ? "No exception rows recorded — everyone in this cohort session is assumed present. Switch to the Mark exceptions tab to record an absence."
-                : sessionStarted
-                  ? "No sign-ins recorded for this session yet."
-                  : "Sign-ins will appear here once members check in on session day."}
-            </div>
-          ) : (
-            <div className="overflow-hidden rounded-lg border border-slate-200 shadow-sm print:border-0 print:shadow-none">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50 print:bg-white">
-                  <tr>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
-                    >
-                      Name
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
-                    >
-                      Status
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
-                    >
-                      Ride Info
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
-                    >
-                      Role
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
-                    >
-                      Notes
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 bg-white">
-                  {attendanceList.map((attendance) => (
-                    <tr key={attendance.id}>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <div className="text-sm font-medium text-slate-900">
-                          {attendance.member_name}
-                        </div>
-                        <div className="text-sm text-slate-500">{attendance.member_email}</div>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <span
-                          className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${statusBadgeClass(attendance.status)}`}
-                        >
-                          {attendance.status}
-                        </span>
-                        {!isCohortSession &&
-                        attendance.member_id &&
-                        !confirmedBookings.some((b) => b.member_id === attendance.member_id) &&
-                        attendance.status?.toLowerCase() !== "absent" &&
-                        attendance.status?.toLowerCase() !== "excused" ? (
-                          <span className="ml-2 inline-flex rounded-full bg-violet-100 px-2 text-[10px] font-semibold uppercase tracking-wide text-violet-700">
-                            Walk-in
-                          </span>
-                        ) : null}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        {attendance.ride_info ? (
-                          <div className="text-sm text-slate-700">
-                            <div className="font-medium">
-                              {attendance.ride_info.pickup_location}
-                            </div>
-                            {(attendance.ride_info.area_name ||
-                              attendance.ride_info.ride_number) && (
-                              <div className="text-xs text-slate-500">
-                                {[
-                                  attendance.ride_info.area_name,
-                                  attendance.ride_info.ride_number
-                                    ? `Ride #${attendance.ride_info.ride_number}`
-                                    : null,
-                                ]
-                                  .filter(Boolean)
-                                  .join(" • ")}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-sm text-slate-400">--</span>
-                        )}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-700">
-                        {attendance.role}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">
-                        {attendance.notes || "--"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {!loadingAttendance && selectedSessionId && tab === "expected" ? (
-          bookings.length > 0 ? (
-            <ExpectedBookingsPanel
-              bookings={bookings}
-              attendanceByMember={attendanceByMember}
-              memberLookup={memberLookup}
-              sessionStarted={sessionStarted}
-            />
-          ) : (
-            <div className="rounded-lg border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500 print:hidden">
-              No paid bookings for this session yet.
-              {isCohortSession
-                ? " Cohort members can still attend without a per-session booking."
-                : ""}
-            </div>
-          )
-        ) : null}
-
-        {!loadingAttendance && selectedSessionId && isCohortSession && tab === "exceptions" ? (
-          <CohortMarkForm
-            markRows={markRows}
-            memberLookup={memberLookup}
-            eligibleMembers={eligibleMembersForMark}
+        {!loadingAttendance && selectedSessionId ? (
+          <UnifiedRoster
+            roster={roster}
+            drafts={drafts}
+            isCohortSession={isCohortSession}
+            sessionStarted={sessionStarted}
+            unmatchedBookingCount={unmatchedBookings.length}
+            onDraftStatus={handleDraftStatus}
+            onBulkMarkPresent={handleBulkMarkPresent}
+            onSaveRoster={handleSaveRoster}
             submitting={submittingMark}
             successMessage={markSuccess}
-            onAdd={handleAddMarkRow}
-            onUpdate={handleUpdateMarkRow}
-            onRemove={handleRemoveMarkRow}
-            onSubmit={handleSubmitMark}
+            pendingChangeCount={pendingChangeCount}
           />
         ) : null}
+
+        {loadingAttendance && <LoadingPage text="Loading attendance..." />}
       </div>
     </div>
   );
 }
 
-function TabNav({
-  tab,
-  onChange,
+// =========================================================================
+// UnifiedRoster — single merged view of cohort enrollees + paid bookings +
+// walk-ins. Replaces the previous Expected / Attendance / Mark exceptions
+// tabs. One status dropdown per row; batched save at the bottom.
+// =========================================================================
+
+function UnifiedRoster({
+  roster,
+  drafts,
   isCohortSession,
-  counts,
+  sessionStarted,
+  unmatchedBookingCount,
+  onDraftStatus,
+  onBulkMarkPresent,
+  onSaveRoster,
+  submitting,
+  successMessage,
+  pendingChangeCount,
 }: {
-  tab: TabKey;
-  onChange: (next: TabKey) => void;
+  roster: RosterRow[];
+  drafts: Map<string, DraftStatus>;
   isCohortSession: boolean;
-  counts: { expected: number; attendance: number; exceptions: number };
+  sessionStarted: boolean;
+  unmatchedBookingCount: number;
+  onDraftStatus: (memberId: string, status: DraftStatus) => void;
+  onBulkMarkPresent: () => void;
+  onSaveRoster: () => void;
+  submitting: boolean;
+  successMessage: string | null;
+  pendingChangeCount: number;
 }) {
-  const items: Array<{ key: TabKey; label: string; count: number; show: boolean; hint: string }> = [
-    {
-      key: "expected",
-      label: "Expected",
-      count: counts.expected,
-      show: true,
-      hint: "Members who paid for a seat (SessionBookings)",
-    },
-    {
-      key: "attendance",
-      label: "Attendance",
-      count: counts.attendance,
-      show: true,
-      hint: "Members who actually checked in",
-    },
-    {
-      key: "exceptions",
-      label: "Mark exceptions",
-      count: counts.exceptions,
-      show: isCohortSession,
-      hint: "Cohort default-present model — record absences/late/excused",
-    },
-  ];
+  if (roster.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500">
+        {isCohortSession
+          ? "No members are enrolled in this cohort yet."
+          : sessionStarted
+            ? "No bookings or walk-ins recorded for this session."
+            : "No bookings yet — paid attendees will appear here."}
+      </div>
+    );
+  }
+
   return (
-    <div
-      className="flex flex-wrap gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1 print:hidden"
-      role="tablist"
-    >
-      {items
-        .filter((i) => i.show)
-        .map((i) => {
-          const active = tab === i.key;
-          return (
-            <button
-              key={i.key}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              title={i.hint}
-              onClick={() => onChange(i.key)}
-              className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition ${
-                active
-                  ? "bg-white text-cyan-700 shadow-sm"
-                  : "text-slate-600 hover:bg-white/60 hover:text-slate-900"
-              }`}
-            >
-              <span>{i.label}</span>
-              <span
-                className={`inline-flex min-w-[1.5rem] justify-center rounded-full px-2 text-xs ${
-                  active ? "bg-cyan-100 text-cyan-800" : "bg-slate-200 text-slate-700"
-                }`}
-              >
-                {i.count}
-              </span>
-            </button>
-          );
-        })}
+    <div className="space-y-3 print:space-y-1">
+      {!isCohortSession && unmatchedBookingCount > 0 && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 print:hidden">
+          <p className="text-sm text-slate-700">
+            {unmatchedBookingCount} booked attendee
+            {unmatchedBookingCount === 1 ? "" : "s"} not yet marked present.
+          </p>
+          <Button size="sm" onClick={onBulkMarkPresent} disabled={submitting}>
+            {submitting ? "Marking…" : `Mark all ${unmatchedBookingCount} as present`}
+          </Button>
+        </div>
+      )}
+
+      <div className="overflow-hidden rounded-lg border border-slate-200 shadow-sm print:border-0 print:shadow-none">
+        <table className="min-w-full divide-y divide-slate-200">
+          <thead className="bg-slate-50 print:bg-white">
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+                Name
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+                Source
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+                Status
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 print:hidden">
+                Set
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+                Ride
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+                Notes
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200 bg-white">
+            {roster.map((row) => (
+              <RosterTableRow
+                key={row.member_id}
+                row={row}
+                draft={drafts.get(row.member_id)}
+                onDraftStatus={onDraftStatus}
+                disabled={submitting}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
+        <div className="text-sm text-slate-600">
+          {successMessage ? (
+            <span className="text-emerald-700">{successMessage}</span>
+          ) : pendingChangeCount > 0 ? (
+            <span>
+              {pendingChangeCount} unsaved change
+              {pendingChangeCount === 1 ? "" : "s"}
+            </span>
+          ) : null}
+        </div>
+        <Button onClick={onSaveRoster} disabled={submitting || pendingChangeCount === 0}>
+          {submitting ? "Saving…" : "Save attendance"}
+        </Button>
+      </div>
     </div>
   );
+}
+
+function RosterTableRow({
+  row,
+  draft,
+  onDraftStatus,
+  disabled,
+}: {
+  row: RosterRow;
+  draft: DraftStatus | undefined;
+  onDraftStatus: (memberId: string, status: DraftStatus) => void;
+  disabled: boolean;
+}) {
+  // What the row will be saved as if no draft is set — used as the value of
+  // the dropdown so the displayed select reflects the current effective state.
+  const effectiveForSelect: DraftStatus =
+    row.effectiveStatus === "awaiting"
+      ? "absent"
+      : row.effectiveStatus === "cancelled"
+        ? "absent"
+        : (row.effectiveStatus as DraftStatus);
+
+  const selectedValue: DraftStatus = draft ?? effectiveForSelect;
+  const hasDraft = draft !== undefined && draft !== row.effectiveStatus;
+
+  const sourceBadge = (() => {
+    if (row.source === "cohort") {
+      return { label: "Cohort", cls: "bg-purple-100 text-purple-800" };
+    }
+    if (row.source === "booking") {
+      return { label: "Booking", cls: "bg-cyan-100 text-cyan-800" };
+    }
+    return { label: "Walk-in", cls: "bg-violet-100 text-violet-800" };
+  })();
+
+  const statusLabel = (() => {
+    if (row.effectiveStatus === "awaiting") {
+      return sessionStartedLabel(row);
+    }
+    return row.effectiveStatus.charAt(0).toUpperCase() + row.effectiveStatus.slice(1);
+  })();
+
+  return (
+    <tr className={`hover:bg-slate-50 ${hasDraft ? "bg-amber-50/50" : ""}`}>
+      <td className="px-4 py-3">
+        <div className="text-sm font-medium text-slate-900">{row.name}</div>
+        {row.email && <div className="text-xs text-slate-500">{row.email}</div>}
+      </td>
+      <td className="px-4 py-3">
+        <span
+          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${sourceBadge.cls}`}
+        >
+          {sourceBadge.label}
+        </span>
+      </td>
+      <td className="px-4 py-3">
+        <span
+          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${statusBadgeClass(
+            row.effectiveStatus === "awaiting" ? "absent" : row.effectiveStatus
+          )}`}
+        >
+          {statusLabel}
+        </span>
+      </td>
+      <td className="px-4 py-3 print:hidden">
+        <select
+          value={selectedValue}
+          disabled={disabled}
+          onChange={(e) => onDraftStatus(row.member_id, e.target.value as DraftStatus)}
+          className="rounded-md border border-slate-200 px-2 py-1 text-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+        >
+          <option value="present">Present</option>
+          <option value="late">Late</option>
+          <option value="excused">Excused</option>
+          <option value="absent">Absent</option>
+        </select>
+      </td>
+      <td className="px-4 py-3">
+        {row.ride_info ? (
+          <div className="text-xs text-slate-700">
+            <div className="font-medium">{row.ride_info.pickup_location}</div>
+            {(row.ride_info.area_name || row.ride_info.ride_number) && (
+              <div className="text-slate-500">
+                {[
+                  row.ride_info.area_name,
+                  row.ride_info.ride_number ? `Ride #${row.ride_info.ride_number}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" • ")}
+              </div>
+            )}
+          </div>
+        ) : (
+          <span className="text-xs text-slate-400">—</span>
+        )}
+      </td>
+      <td className="px-4 py-3 text-xs text-slate-500">{row.attendance?.notes || "—"}</td>
+    </tr>
+  );
+}
+
+// Show "Awaiting" pre-session and "No-show" post-session for paid bookings
+// without an attendance row.
+function sessionStartedLabel(row: RosterRow): string {
+  if (row.effectiveStatus !== "awaiting") {
+    return row.effectiveStatus;
+  }
+  return "Awaiting";
 }
 
 function ReconciliationStat({
@@ -1062,229 +1089,6 @@ function ReconciliationStat({
     <div className={`rounded-lg border px-4 py-3 shadow-sm ${toneClass}`}>
       <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
       <div className="mt-1 text-2xl font-bold">{value}</div>
-    </div>
-  );
-}
-
-function ExpectedBookingsPanel({
-  bookings,
-  attendanceByMember,
-  memberLookup,
-  sessionStarted,
-}: {
-  bookings: SessionBookingResponse[];
-  attendanceByMember: Map<string, Attendance>;
-  memberLookup: Map<string, { name: string; email: string }>;
-  sessionStarted: boolean;
-}) {
-  return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 shadow-sm print:hidden">
-      <div className="border-b border-slate-200 bg-slate-50 px-6 py-3">
-        <h2 className="text-sm font-semibold text-slate-900">Expected (paid bookings)</h2>
-        <p className="text-xs text-slate-500">
-          Confirmed SessionBookings for this session. Walk-ins and self sign-ins are not listed
-          here.
-        </p>
-      </div>
-      <table className="min-w-full divide-y divide-slate-200">
-        <thead className="bg-slate-50">
-          <tr>
-            <th className="px-6 py-2 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
-              Member
-            </th>
-            <th className="px-6 py-2 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
-              Channel
-            </th>
-            <th className="px-6 py-2 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
-              Amount
-            </th>
-            <th className="px-6 py-2 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
-              Booking status
-            </th>
-            <th className="px-6 py-2 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
-              Arrival
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-200 bg-white">
-          {bookings.map((b) => {
-            const member = memberLookup.get(b.member_id);
-            const attendance = attendanceByMember.get(b.member_id);
-            const lower = attendance?.status?.toLowerCase();
-            let arrival: { label: string; cls: string };
-            if (!attendance) {
-              arrival = sessionStarted
-                ? { label: "No-show", cls: "bg-rose-100 text-rose-800" }
-                : { label: "Awaiting", cls: "bg-slate-100 text-slate-700" };
-            } else if (lower === "absent") {
-              arrival = { label: "No-show", cls: "bg-rose-100 text-rose-800" };
-            } else if (lower === "excused") {
-              arrival = { label: "Excused", cls: "bg-sky-100 text-sky-800" };
-            } else if (lower === "late") {
-              arrival = { label: "Late", cls: "bg-amber-100 text-amber-800" };
-            } else {
-              arrival = {
-                label: "Arrived",
-                cls: "bg-emerald-100 text-emerald-800",
-              };
-            }
-            return (
-              <tr key={b.id}>
-                <td className="whitespace-nowrap px-6 py-3">
-                  <div className="text-sm font-medium text-slate-900">
-                    {member?.name || "(unknown)"}
-                  </div>
-                  {member?.email ? (
-                    <div className="text-xs text-slate-500">{member.email}</div>
-                  ) : null}
-                </td>
-                <td className="whitespace-nowrap px-6 py-3 text-xs text-slate-700">
-                  {CHANNEL_LABELS[b.channel]}
-                </td>
-                <td className="whitespace-nowrap px-6 py-3 text-sm text-slate-700">
-                  {formatNaira(b.fee_amount_kobo)}
-                </td>
-                <td className="whitespace-nowrap px-6 py-3">
-                  <span className="inline-flex rounded-full bg-slate-100 px-2 text-xs font-semibold text-slate-700">
-                    {b.status}
-                  </span>
-                </td>
-                <td className="whitespace-nowrap px-6 py-3">
-                  <span
-                    className={`inline-flex rounded-full px-2 text-xs font-semibold ${arrival.cls}`}
-                  >
-                    {arrival.label}
-                  </span>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function CohortMarkForm({
-  markRows,
-  memberLookup,
-  eligibleMembers,
-  submitting,
-  successMessage,
-  onAdd,
-  onUpdate,
-  onRemove,
-  onSubmit,
-}: {
-  markRows: MarkRow[];
-  memberLookup: Map<string, { name: string; email: string }>;
-  eligibleMembers: Array<{ id: string; name: string; email: string }>;
-  submitting: boolean;
-  successMessage: string | null;
-  onAdd: (memberId: string) => void;
-  onUpdate: (memberId: string, patch: Partial<MarkRow>) => void;
-  onRemove: (memberId: string) => void;
-  onSubmit: () => void;
-}) {
-  const [pickerValue, setPickerValue] = useState("");
-  return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 shadow-sm print:hidden">
-      <div className="border-b border-slate-200 bg-slate-50 px-6 py-3">
-        <h2 className="text-sm font-semibold text-slate-900">
-          Mark exceptions (default = present)
-        </h2>
-        <p className="text-xs text-slate-500">
-          Cohort sessions use a default-present model. Only enter rows for students who were absent,
-          excused, or late. Remove a row to revert a student back to present.
-        </p>
-      </div>
-      <div className="space-y-3 px-6 py-4">
-        {markRows.length === 0 ? (
-          <p className="text-sm text-slate-500">
-            No exceptions yet — everyone in the cohort is assumed present.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {markRows.map((row) => {
-              const member = memberLookup.get(row.member_id);
-              return (
-                <div
-                  key={row.member_id}
-                  className="grid grid-cols-12 items-center gap-2 rounded-md border border-slate-200 p-2"
-                >
-                  <div className="col-span-4 text-sm">
-                    <div className="font-medium text-slate-900">{member?.name || "(unknown)"}</div>
-                    {member?.email ? (
-                      <div className="text-xs text-slate-500">{member.email}</div>
-                    ) : null}
-                  </div>
-                  <select
-                    className="col-span-2 rounded-md border border-slate-200 px-2 py-1 text-sm"
-                    value={row.status}
-                    onChange={(e) =>
-                      onUpdate(row.member_id, {
-                        status: e.target.value as ExceptionStatus,
-                      })
-                    }
-                  >
-                    {EXCEPTION_STATUSES.map((s) => (
-                      <option key={s} value={s}>
-                        {s.charAt(0).toUpperCase() + s.slice(1)}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="text"
-                    placeholder="Notes (optional)"
-                    className="col-span-5 rounded-md border border-slate-200 px-2 py-1 text-sm"
-                    value={row.notes}
-                    onChange={(e) => onUpdate(row.member_id, { notes: e.target.value })}
-                  />
-                  <button
-                    type="button"
-                    className="col-span-1 text-sm text-rose-600 hover:underline"
-                    onClick={() => onRemove(row.member_id)}
-                  >
-                    Remove
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        <div className="flex flex-wrap items-end gap-2 border-t border-slate-100 pt-3">
-          <div className="flex-1 min-w-[16rem]">
-            <label className="mb-1 block text-xs font-medium text-slate-600">Add student</label>
-            <select
-              className="w-full rounded-md border border-slate-200 px-2 py-1 text-sm"
-              value={pickerValue}
-              onChange={(e) => {
-                const v = e.target.value;
-                setPickerValue("");
-                if (v) onAdd(v);
-              }}
-            >
-              <option value="">
-                {eligibleMembers.length === 0
-                  ? "All cohort members already added"
-                  : "Select a student…"}
-              </option>
-              {eligibleMembers.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                  {m.email ? ` · ${m.email}` : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-          <Button onClick={onSubmit} disabled={submitting}>
-            {submitting ? "Saving…" : "Save attendance"}
-          </Button>
-        </div>
-
-        {successMessage ? <p className="text-sm text-emerald-700">{successMessage}</p> : null}
-      </div>
     </div>
   );
 }

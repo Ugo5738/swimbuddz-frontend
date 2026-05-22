@@ -1,12 +1,16 @@
 "use client";
 
+import {
+  LateJoinAvailabilityCard,
+  extractLateJoinPrefs,
+} from "@/components/academy/LateJoinAvailabilityCard";
+import { EnrollmentEvidenceGallery } from "@/components/admin/EnrollmentEvidenceGallery";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { Select } from "@/components/ui/Select";
-import { EnrollmentEvidenceGallery } from "@/components/admin/EnrollmentEvidenceGallery";
 import {
   AcademyApi,
   Cohort,
@@ -19,39 +23,24 @@ import {
 } from "@/lib/academy";
 import { apiGet, apiPost } from "@/lib/api";
 import { formatDate } from "@/lib/format";
-import {
-  ArrowLeft,
-  CheckCircle,
-  Clock,
-  CreditCard,
-  User,
-  XCircle,
-} from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, CreditCard, User, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-export default function EnrollmentDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function EnrollmentDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
   const [member, setMember] = useState<any | null>(null);
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
-  const [milestoneNames, setMilestoneNames] = useState<Record<string, string>>(
-    {},
-  );
+  const [milestoneNames, setMilestoneNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Form State
-  const [status, setStatus] = useState<EnrollmentStatus>(
-    EnrollmentStatus.PENDING_APPROVAL,
-  );
+  const [status, setStatus] = useState<EnrollmentStatus>(EnrollmentStatus.PENDING_APPROVAL);
   const [cohortId, setCohortId] = useState<string>("");
 
   useEffect(() => {
@@ -89,9 +78,7 @@ export default function EnrollmentDetailPage({
           // back to milestone UUIDs.
           try {
             const ms: Milestone[] = await AcademyApi.listMilestones(programId);
-            setMilestoneNames(
-              Object.fromEntries(ms.map((m) => [m.id, m.name])),
-            );
+            setMilestoneNames(Object.fromEntries(ms.map((m) => [m.id, m.name])));
           } catch (e) {
             console.error("Milestone names fetch failed", e);
           }
@@ -179,12 +166,10 @@ export default function EnrollmentDetailPage({
       await apiPost(
         `/api/v1/academy/admin/enrollments/${params.id}/dropout-action`,
         { action },
-        { auth: true },
+        { auth: true }
       );
       toast.success(
-        action === "approve"
-          ? "Student has been dropped."
-          : "Student reinstated successfully.",
+        action === "approve" ? "Student has been dropped." : "Student reinstated successfully."
       );
       await loadData();
     } catch (e) {
@@ -202,11 +187,9 @@ export default function EnrollmentDetailPage({
       </Alert>
     );
 
-  const isPendingApproval =
-    enrollment.status === EnrollmentStatus.PENDING_APPROVAL;
+  const isPendingApproval = enrollment.status === EnrollmentStatus.PENDING_APPROVAL;
   const isWaitlisted = enrollment.status === EnrollmentStatus.WAITLIST;
-  const isDropoutPending =
-    enrollment.status === EnrollmentStatus.DROPOUT_PENDING;
+  const isDropoutPending = enrollment.status === EnrollmentStatus.DROPOUT_PENDING;
   const isPaid = enrollment.payment_status === PaymentStatus.PAID;
   const isSuspended = !!enrollment.access_suspended;
   const installments: EnrollmentInstallment[] = enrollment.installments ?? [];
@@ -260,9 +243,7 @@ export default function EnrollmentDetailPage({
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">
-              Enrollment Details
-            </h1>
+            <h1 className="text-2xl font-bold text-slate-900">Enrollment Details</h1>
             <p className="text-sm text-slate-500">ID: {enrollment.id}</p>
           </div>
         </div>
@@ -290,12 +271,7 @@ export default function EnrollmentDetailPage({
               </div>
             </div>
             <div className="flex gap-2">
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleQuickApprove}
-                disabled={updating}
-              >
+              <Button variant="primary" size="sm" onClick={handleQuickApprove} disabled={updating}>
                 <CheckCircle className="h-4 w-4 mr-1" />
                 Approve
               </Button>
@@ -346,13 +322,11 @@ export default function EnrollmentDetailPage({
             <div className="flex items-start gap-3">
               <XCircle className="h-5 w-5 text-orange-600 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="font-medium text-orange-900">
-                  Dropout Approval Required
-                </p>
+                <p className="font-medium text-orange-900">Dropout Approval Required</p>
                 <p className="text-sm text-orange-700">
                   This student has missed {missedCount} installment
-                  {missedCount !== 1 ? "s" : ""} and requires admin action.
-                  Their access is currently suspended.
+                  {missedCount !== 1 ? "s" : ""} and requires admin action. Their access is
+                  currently suspended.
                 </p>
               </div>
             </div>
@@ -390,36 +364,26 @@ export default function EnrollmentDetailPage({
               <div className="p-2 rounded-lg bg-slate-100">
                 <User className="h-5 w-5 text-slate-600" />
               </div>
-              <h2 className="text-lg font-semibold text-slate-900">
-                Member Details
-              </h2>
+              <h2 className="text-lg font-semibold text-slate-900">Member Details</h2>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <p className="text-sm text-slate-500">Name</p>
                 <p className="font-medium text-slate-900">
-                  {member
-                    ? `${member.first_name} ${member.last_name}`
-                    : "Loading..."}
+                  {member ? `${member.first_name} ${member.last_name}` : "Loading..."}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-slate-500">Email</p>
-                <p className="font-medium text-slate-900">
-                  {member?.email || "-"}
-                </p>
+                <p className="font-medium text-slate-900">{member?.email || "-"}</p>
               </div>
               <div>
                 <p className="text-sm text-slate-500">Phone</p>
-                <p className="font-medium text-slate-900">
-                  {member?.phone || "-"}
-                </p>
+                <p className="font-medium text-slate-900">{member?.phone || "-"}</p>
               </div>
               <div>
                 <p className="text-sm text-slate-500">Member ID</p>
-                <p className="font-mono text-sm text-slate-600">
-                  {enrollment.member_id}
-                </p>
+                <p className="font-mono text-sm text-slate-600">{enrollment.member_id}</p>
               </div>
             </div>
             {member && (
@@ -435,9 +399,7 @@ export default function EnrollmentDetailPage({
 
           {/* Program & Cohort Info */}
           <Card className="p-6">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">
-              Program & Cohort
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Program & Cohort</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <p className="text-sm text-slate-500">Program</p>
@@ -464,41 +426,51 @@ export default function EnrollmentDetailPage({
               </div>
             </div>
 
-            {enrollment.preferences &&
-              Object.keys(enrollment.preferences).length > 0 && (
-                <div className="mt-4 pt-4 border-t">
-                  <p className="text-sm text-slate-500 mb-2">Preferences</p>
-                  <div className="bg-slate-50 p-3 rounded-lg">
-                    <pre className="text-xs text-slate-600 whitespace-pre-wrap">
-                      {JSON.stringify(enrollment.preferences, null, 2)}
-                    </pre>
+            {(() => {
+              const lateJoin = extractLateJoinPrefs(
+                enrollment.preferences as Record<string, unknown> | null
+              );
+              if (lateJoin) {
+                return (
+                  <div className="mt-4 pt-4 border-t">
+                    <LateJoinAvailabilityCard prefs={lateJoin} variant="card" />
                   </div>
-                </div>
-              )}
+                );
+              }
+              // Fall back to raw JSON for any non-late_join preferences captured
+              // by other flows we don't have a dedicated renderer for yet.
+              if (enrollment.preferences && Object.keys(enrollment.preferences).length > 0) {
+                return (
+                  <div className="mt-4 pt-4 border-t">
+                    <p className="text-sm text-slate-500 mb-2">Preferences</p>
+                    <div className="bg-slate-50 p-3 rounded-lg">
+                      <pre className="text-xs text-slate-600 whitespace-pre-wrap">
+                        {JSON.stringify(enrollment.preferences, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
           </Card>
 
           {/* Installment Schedule */}
           {installments.length > 0 && (
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-slate-900">
-                  Payment Schedule
-                </h2>
+                <h2 className="text-lg font-semibold text-slate-900">Payment Schedule</h2>
                 <div className="flex gap-3 text-sm">
-                  <span className="text-green-600 font-medium">
-                    {paidCount} paid
-                  </span>
+                  <span className="text-green-600 font-medium">{paidCount} paid</span>
                   {missedCount > 0 && (
-                    <span className="text-red-600 font-medium">
-                      {missedCount} missed
-                    </span>
+                    <span className="text-red-600 font-medium">{missedCount} missed</span>
                   )}
                 </div>
               </div>
               {isSuspended && (
                 <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                  ⚠️ Access is currently <strong>suspended</strong>. Restore by
-                  reinstating the enrollment or waiving the missed installment.
+                  ⚠️ Access is currently <strong>suspended</strong>. Restore by reinstating the
+                  enrollment or waiving the missed installment.
                 </div>
               )}
               <div className="space-y-2">
@@ -512,14 +484,15 @@ export default function EnrollmentDetailPage({
                   return (
                     <div
                       key={inst.id}
-                      className={`flex items-center justify-between rounded-lg border px-4 py-3 text-sm ${isPaidInst
+                      className={`flex items-center justify-between rounded-lg border px-4 py-3 text-sm ${
+                        isPaidInst
                           ? "border-green-200 bg-green-50"
                           : isMissed
                             ? "border-red-200 bg-red-50"
                             : isWaived
                               ? "border-blue-200 bg-blue-50"
                               : "border-slate-200 bg-white"
-                        }`}
+                      }`}
                     >
                       <div>
                         <span className="font-medium text-slate-900">
@@ -536,10 +509,10 @@ export default function EnrollmentDetailPage({
                         {inst.paid_at && (
                           <span className="ml-2 text-green-600">
                             · Paid{" "}
-                            {new Date(inst.paid_at).toLocaleDateString(
-                              "en-NG",
-                              { month: "short", day: "numeric" },
-                            )}
+                            {new Date(inst.paid_at).toLocaleDateString("en-NG", {
+                              month: "short",
+                              day: "numeric",
+                            })}
                           </span>
                         )}
                       </div>
@@ -548,14 +521,15 @@ export default function EnrollmentDetailPage({
                           ₦{amountNgn.toLocaleString()}
                         </span>
                         <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${isPaidInst
+                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                            isPaidInst
                               ? "bg-green-100 text-green-700"
                               : isMissed
                                 ? "bg-red-100 text-red-700"
                                 : isWaived
                                   ? "bg-blue-100 text-blue-700"
                                   : "bg-slate-100 text-slate-600"
-                            }`}
+                          }`}
                         >
                           {isPaidInst
                             ? "✓ Paid"
@@ -573,10 +547,7 @@ export default function EnrollmentDetailPage({
               <div className="mt-3 flex justify-between rounded-lg bg-slate-50 px-4 py-2 text-sm">
                 <span className="text-slate-500">Total</span>
                 <span className="font-semibold text-slate-900">
-                  ₦
-                  {(
-                    installments.reduce((s, i) => s + i.amount, 0) / 100
-                  ).toLocaleString()}
+                  ₦{(installments.reduce((s, i) => s + i.amount, 0) / 100).toLocaleString()}
                 </span>
               </div>
             </Card>
@@ -584,9 +555,7 @@ export default function EnrollmentDetailPage({
 
           {/* Update Form */}
           <Card className="p-6">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">
-              Update Enrollment
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Update Enrollment</h2>
             <div className="space-y-4">
               <Select
                 label="Status"
@@ -594,16 +563,10 @@ export default function EnrollmentDetailPage({
                 value={status}
                 onChange={(e) => setStatus(e.target.value as EnrollmentStatus)}
               >
-                <option value={EnrollmentStatus.PENDING_APPROVAL}>
-                  Pending Approval
-                </option>
-                <option value={EnrollmentStatus.ENROLLED}>
-                  Enrolled (Active)
-                </option>
+                <option value={EnrollmentStatus.PENDING_APPROVAL}>Pending Approval</option>
+                <option value={EnrollmentStatus.ENROLLED}>Enrolled (Active)</option>
                 <option value={EnrollmentStatus.WAITLIST}>Waitlist</option>
-                <option value={EnrollmentStatus.DROPOUT_PENDING}>
-                  Dropout Pending
-                </option>
+                <option value={EnrollmentStatus.DROPOUT_PENDING}>Dropout Pending</option>
                 <option value={EnrollmentStatus.DROPPED}>Dropped</option>
                 <option value={EnrollmentStatus.GRADUATED}>Graduated</option>
               </Select>
@@ -618,8 +581,7 @@ export default function EnrollmentDetailPage({
                 <option value="">No Cohort Assigned</option>
                 {cohorts.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name} ({formatDate(c.start_date)} - Capacity:{" "}
-                    {c.capacity})
+                    {c.name} ({formatDate(c.start_date)} - Capacity: {c.capacity})
                   </option>
                 ))}
               </Select>
@@ -646,9 +608,7 @@ export default function EnrollmentDetailPage({
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-slate-500">Status</span>
-                <Badge
-                  variant={getPaymentBadgeVariant(enrollment.payment_status)}
-                >
+                <Badge variant={getPaymentBadgeVariant(enrollment.payment_status)}>
                   {enrollment.payment_status}
                 </Badge>
               </div>
@@ -690,9 +650,7 @@ export default function EnrollmentDetailPage({
                   {missedCount > 0 && (
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-slate-500">Missed</span>
-                      <span className="font-semibold text-red-600">
-                        {missedCount}
-                      </span>
+                      <span className="font-semibold text-red-600">{missedCount}</span>
                     </div>
                   )}
                   {isSuspended && (
@@ -710,9 +668,7 @@ export default function EnrollmentDetailPage({
 
           {/* Timeline */}
           <Card className="p-6">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">
-              Timeline
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Timeline</h2>
             <div className="space-y-4">
               <div className="flex gap-3">
                 <div className="flex flex-col items-center">
@@ -720,12 +676,8 @@ export default function EnrollmentDetailPage({
                   <div className="w-0.5 h-full bg-slate-200" />
                 </div>
                 <div className="pb-4">
-                  <p className="text-sm font-medium text-slate-900">
-                    Enrollment Created
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {formatDate(enrollment.created_at)}
-                  </p>
+                  <p className="text-sm font-medium text-slate-900">Enrollment Created</p>
+                  <p className="text-xs text-slate-500">{formatDate(enrollment.created_at)}</p>
                 </div>
               </div>
               {(enrollment as any).enrolled_at && (
@@ -735,9 +687,7 @@ export default function EnrollmentDetailPage({
                     <div className="w-0.5 h-full bg-slate-200" />
                   </div>
                   <div className="pb-4">
-                    <p className="text-sm font-medium text-slate-900">
-                      Enrolled
-                    </p>
+                    <p className="text-sm font-medium text-slate-900">Enrolled</p>
                     <p className="text-xs text-slate-500">
                       {formatDate((enrollment as any).enrolled_at)}
                     </p>
@@ -750,9 +700,7 @@ export default function EnrollmentDetailPage({
                     <div className="w-2 h-2 rounded-full bg-emerald-500" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-slate-900">
-                      Payment Received
-                    </p>
+                    <p className="text-sm font-medium text-slate-900">Payment Received</p>
                     <p className="text-xs text-slate-500">
                       {formatDate((enrollment as any).paid_at)}
                     </p>
@@ -764,21 +712,15 @@ export default function EnrollmentDetailPage({
 
           {/* Source Info */}
           <Card className="p-6">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">
-              Enrollment Source
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Enrollment Source</h2>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-500">Source</span>
-                <span className="text-slate-900">
-                  {(enrollment as any).source || "web"}
-                </span>
+                <span className="text-slate-900">{(enrollment as any).source || "web"}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Last Updated</span>
-                <span className="text-slate-900">
-                  {formatDate(enrollment.updated_at)}
-                </span>
+                <span className="text-slate-900">{formatDate(enrollment.updated_at)}</span>
               </div>
             </div>
           </Card>
@@ -787,13 +729,8 @@ export default function EnrollmentDetailPage({
 
       {/* Milestone evidence — admin gallery of student-submitted videos / images. */}
       <Card className="p-6">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">
-          Milestone Evidence
-        </h2>
-        <EnrollmentEvidenceGallery
-          enrollmentId={params.id}
-          milestoneNames={milestoneNames}
-        />
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Milestone Evidence</h2>
+        <EnrollmentEvidenceGallery enrollmentId={params.id} milestoneNames={milestoneNames} />
       </Card>
     </div>
   );

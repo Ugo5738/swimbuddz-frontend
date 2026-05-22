@@ -1,12 +1,6 @@
 "use client";
 
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 // ============================================================================
 // Types
@@ -58,6 +52,17 @@ export type UpgradeState = {
     preferredCoachGender: string;
     lessonPreference: string;
   } | null;
+  // Late-join: collected when a member joins a cohort that's already running.
+  // Sent through to the academy enrollment endpoint as part of `preferences`
+  // so coaches/admins can schedule make-up sessions around the member's
+  // actual availability.
+  lateJoinPreferences: {
+    sessionsMissed: number;
+    availableDays: string[]; // "mon" | "tue" | … | "sun"
+    availableTimes: string[]; // "morning" | "afternoon" | "evening"
+    notes: string;
+    acknowledgedAt: string; // ISO timestamp
+  } | null;
 
   // Common
   discountCode: string;
@@ -84,6 +89,7 @@ type UpgradeContextValue = {
   setSelectedCohort: (cohort: Cohort) => void;
   setAcademyDetailsData: (data: UpgradeState["academyDetailsData"]) => void;
   markAcademyDetailsComplete: () => void;
+  setLateJoinPreferences: (prefs: UpgradeState["lateJoinPreferences"]) => void;
   setDiscountCode: (code: string) => void;
   setIncludeCommunityExtension: (include: boolean) => void;
   setExtensionInfo: (info: UpgradeState["extensionInfo"]) => void;
@@ -159,6 +165,7 @@ const defaultState: UpgradeState = {
   selectedCohort: null,
   academyDetailsComplete: false,
   academyDetailsData: null,
+  lateJoinPreferences: null,
   discountCode: "",
   includeCommunityExtension: true,
   extensionInfo: null,
@@ -200,12 +207,9 @@ export function UpgradeProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, clubBillingCycle: cycle }));
   }, []);
 
-  const setClubReadinessData = useCallback(
-    (data: UpgradeState["clubReadinessData"]) => {
-      setState((prev) => ({ ...prev, clubReadinessData: data }));
-    },
-    [],
-  );
+  const setClubReadinessData = useCallback((data: UpgradeState["clubReadinessData"]) => {
+    setState((prev) => ({ ...prev, clubReadinessData: data }));
+  }, []);
 
   const markClubReadinessComplete = useCallback(() => {
     setState((prev) => ({ ...prev, clubReadinessComplete: true }));
@@ -219,15 +223,16 @@ export function UpgradeProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
-  const setAcademyDetailsData = useCallback(
-    (data: UpgradeState["academyDetailsData"]) => {
-      setState((prev) => ({ ...prev, academyDetailsData: data }));
-    },
-    [],
-  );
+  const setAcademyDetailsData = useCallback((data: UpgradeState["academyDetailsData"]) => {
+    setState((prev) => ({ ...prev, academyDetailsData: data }));
+  }, []);
 
   const markAcademyDetailsComplete = useCallback(() => {
     setState((prev) => ({ ...prev, academyDetailsComplete: true }));
+  }, []);
+
+  const setLateJoinPreferences = useCallback((prefs: UpgradeState["lateJoinPreferences"]) => {
+    setState((prev) => ({ ...prev, lateJoinPreferences: prefs }));
   }, []);
 
   const setDiscountCode = useCallback((code: string) => {
@@ -238,12 +243,9 @@ export function UpgradeProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, includeCommunityExtension: include }));
   }, []);
 
-  const setExtensionInfo = useCallback(
-    (info: UpgradeState["extensionInfo"]) => {
-      setState((prev) => ({ ...prev, extensionInfo: info }));
-    },
-    [],
-  );
+  const setExtensionInfo = useCallback((info: UpgradeState["extensionInfo"]) => {
+    setState((prev) => ({ ...prev, extensionInfo: info }));
+  }, []);
 
   const setReturnTo = useCallback((path: string) => {
     setState((prev) => ({ ...prev, returnTo: path }));
@@ -255,10 +257,8 @@ export function UpgradeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Computed
-  const isClubFlowComplete =
-    state.clubReadinessComplete && state.clubBillingCycle !== null;
-  const isAcademyFlowComplete =
-    state.academyDetailsComplete && state.selectedCohortId !== null;
+  const isClubFlowComplete = state.clubReadinessComplete && state.clubBillingCycle !== null;
+  const isAcademyFlowComplete = state.academyDetailsComplete && state.selectedCohortId !== null;
 
   const value: UpgradeContextValue = {
     state,
@@ -269,6 +269,7 @@ export function UpgradeProvider({ children }: { children: React.ReactNode }) {
     setSelectedCohort,
     setAcademyDetailsData,
     markAcademyDetailsComplete,
+    setLateJoinPreferences,
     setDiscountCode,
     setIncludeCommunityExtension,
     setExtensionInfo,
@@ -278,9 +279,7 @@ export function UpgradeProvider({ children }: { children: React.ReactNode }) {
     isAcademyFlowComplete,
   };
 
-  return (
-    <UpgradeContext.Provider value={value}>{children}</UpgradeContext.Provider>
-  );
+  return <UpgradeContext.Provider value={value}>{children}</UpgradeContext.Provider>;
 }
 
 export function useUpgrade(): UpgradeContextValue {

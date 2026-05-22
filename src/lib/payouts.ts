@@ -3,16 +3,11 @@
  * For bank account management and payout history.
  */
 
-import { apiDelete, apiGet, apiPatch, apiPost } from "./api";
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./api";
 
 // --- Types ---
 
-export type PayoutStatus =
-  | "pending"
-  | "approved"
-  | "processing"
-  | "paid"
-  | "failed";
+export type PayoutStatus = "pending" | "approved" | "processing" | "paid" | "failed";
 export type PayoutMethod = "paystack_transfer" | "bank_transfer" | "other";
 
 export interface BankAccount {
@@ -96,8 +91,7 @@ export async function getMyBankAccount(): Promise<BankAccount | null> {
       status?: number;
       message?: string;
     }
-    const message =
-      err instanceof Error ? err.message : (err as ApiError)?.message || "";
+    const message = err instanceof Error ? err.message : (err as ApiError)?.message || "";
 
     if (
       (err as ApiError)?.status === 404 ||
@@ -134,7 +128,7 @@ export async function listBanks(): Promise<Bank[]> {
 /** Verify a bank account and get the account holder name. */
 export async function resolveAccount(
   bank_code: string,
-  account_number: string,
+  account_number: string
 ): Promise<ResolvedAccount> {
   return apiPost<ResolvedAccount>(
     "/api/v1/coaches/resolve-account",
@@ -142,7 +136,7 @@ export async function resolveAccount(
       bank_code,
       account_number,
     },
-    { auth: true },
+    { auth: true }
   );
 }
 
@@ -160,10 +154,7 @@ export async function getMyPayouts(options?: {
   if (options?.page_size) params.append("page_size", String(options.page_size));
 
   const query = params.toString() ? `?${params.toString()}` : "";
-  return apiGet<PayoutListResponse>(
-    `/api/v1/payments/coach/me/payouts/${query}`,
-    { auth: true },
-  );
+  return apiGet<PayoutListResponse>(`/api/v1/payments/coach/me/payouts/${query}`, { auth: true });
 }
 
 /** Get a single payout detail. */
@@ -184,8 +175,7 @@ export async function adminListPayouts(options?: {
 }): Promise<PayoutListResponse> {
   const params = new URLSearchParams();
   if (options?.status) params.append("status", options.status);
-  if (options?.coach_member_id)
-    params.append("coach_member_id", options.coach_member_id);
+  if (options?.coach_member_id) params.append("coach_member_id", options.coach_member_id);
   if (options?.page) params.append("page", String(options.page));
   if (options?.page_size) params.append("page_size", String(options.page_size));
 
@@ -219,16 +209,13 @@ export async function adminCreatePayout(data: {
 }
 
 /** Admin: Approve a pending payout. */
-export async function adminApprovePayout(
-  payoutId: string,
-  admin_notes?: string,
-): Promise<Payout> {
-  return apiPost<Payout>(
+export async function adminApprovePayout(payoutId: string, admin_notes?: string): Promise<Payout> {
+  return apiPut<Payout>(
     `/api/v1/payments/admin/payouts/${payoutId}/approve`,
     {
       admin_notes,
     },
-    { auth: true },
+    { auth: true }
   );
 }
 
@@ -237,7 +224,7 @@ export async function adminInitiateTransfer(payoutId: string): Promise<Payout> {
   return apiPost<Payout>(
     `/api/v1/payments/admin/payouts/${payoutId}/initiate-transfer`,
     {},
-    { auth: true },
+    { auth: true }
   );
 }
 
@@ -248,28 +235,26 @@ export async function adminCompleteManual(
     payout_method?: PayoutMethod;
     payment_reference: string;
     admin_notes?: string;
-  },
+  }
 ): Promise<Payout> {
-  return apiPost<Payout>(
-    `/api/v1/payments/admin/payouts/${payoutId}/complete-manual`,
-    data,
-    { auth: true },
-  );
+  return apiPut<Payout>(`/api/v1/payments/admin/payouts/${payoutId}/complete-manual`, data, {
+    auth: true,
+  });
 }
 
 /** Admin: Mark payout as failed. */
 export async function adminFailPayout(
   payoutId: string,
   failure_reason: string,
-  admin_notes?: string,
+  admin_notes?: string
 ): Promise<Payout> {
-  return apiPost<Payout>(
+  return apiPut<Payout>(
     `/api/v1/payments/admin/payouts/${payoutId}/fail`,
     {
       failure_reason,
       admin_notes,
     },
-    { auth: true },
+    { auth: true }
   );
 }
 
@@ -277,11 +262,7 @@ export async function adminFailPayout(
 // Recurring payout configs
 // =============================================================================
 
-export type RecurringPayoutStatus =
-  | "active"
-  | "paused"
-  | "completed"
-  | "cancelled";
+export type RecurringPayoutStatus = "active" | "paused" | "completed" | "cancelled";
 
 export interface RecurringPayoutConfig {
   id: string;
@@ -340,8 +321,7 @@ export async function adminListRecurringPayouts(options?: {
   page_size?: number;
 }): Promise<RecurringPayoutConfigListResponse> {
   const params = new URLSearchParams();
-  if (options?.coach_member_id)
-    params.set("coach_member_id", options.coach_member_id);
+  if (options?.coach_member_id) params.set("coach_member_id", options.coach_member_id);
   if (options?.cohort_id) params.set("cohort_id", options.cohort_id);
   if (options?.status) params.set("status", options.status);
   if (options?.page) params.set("page", String(options.page));
@@ -349,18 +329,15 @@ export async function adminListRecurringPayouts(options?: {
   const query = params.toString();
   return apiGet<RecurringPayoutConfigListResponse>(
     `/api/v1/payments/admin/recurring-payouts/${query ? `?${query}` : ""}`,
-    { auth: true },
+    { auth: true }
   );
 }
 
 /** Admin: fetch a single recurring config. */
-export async function adminGetRecurringPayout(
-  configId: string,
-): Promise<RecurringPayoutConfig> {
-  return apiGet<RecurringPayoutConfig>(
-    `/api/v1/payments/admin/recurring-payouts/${configId}`,
-    { auth: true },
-  );
+export async function adminGetRecurringPayout(configId: string): Promise<RecurringPayoutConfig> {
+  return apiGet<RecurringPayoutConfig>(`/api/v1/payments/admin/recurring-payouts/${configId}`, {
+    auth: true,
+  });
 }
 
 /** Admin: create a new recurring config for a (coach, cohort) pair.
@@ -373,11 +350,9 @@ export async function adminCreateRecurringPayout(data: {
   band_percentage: number | string;
   notes?: string;
 }): Promise<RecurringPayoutConfig> {
-  return apiPost<RecurringPayoutConfig>(
-    `/api/v1/payments/admin/recurring-payouts/`,
-    data,
-    { auth: true },
-  );
+  return apiPost<RecurringPayoutConfig>(`/api/v1/payments/admin/recurring-payouts/`, data, {
+    auth: true,
+  });
 }
 
 /** Admin: update band % / status / notes on an existing config. */
@@ -387,35 +362,30 @@ export async function adminUpdateRecurringPayout(
     band_percentage?: number | string;
     status?: RecurringPayoutStatus;
     notes?: string | null;
-  },
+  }
 ): Promise<RecurringPayoutConfig> {
   return apiPatch<RecurringPayoutConfig>(
     `/api/v1/payments/admin/recurring-payouts/${configId}`,
     data,
-    { auth: true },
+    { auth: true }
   );
 }
 
 /** Admin: dry-run the next block payout. Returns per-student breakdown.
  * No DB writes happen.
  */
-export async function adminPreviewRecurringPayout(
-  configId: string,
-): Promise<PayoutPreview> {
-  return apiGet<PayoutPreview>(
-    `/api/v1/payments/admin/recurring-payouts/${configId}/preview`,
-    { auth: true },
-  );
+export async function adminPreviewRecurringPayout(configId: string): Promise<PayoutPreview> {
+  return apiGet<PayoutPreview>(`/api/v1/payments/admin/recurring-payouts/${configId}/preview`, {
+    auth: true,
+  });
 }
 
 /** Admin: force-run the next block now (back-pay / first-block trigger). */
-export async function adminRunRecurringPayoutNow(
-  configId: string,
-): Promise<RecurringPayoutConfig> {
+export async function adminRunRecurringPayoutNow(configId: string): Promise<RecurringPayoutConfig> {
   return apiPost<RecurringPayoutConfig>(
     `/api/v1/payments/admin/recurring-payouts/${configId}/run-now`,
     {},
-    { auth: true },
+    { auth: true }
   );
 }
 
@@ -423,17 +393,9 @@ export async function adminRunRecurringPayoutNow(
 // Make-up obligations (coach + admin)
 // =============================================================================
 
-export type MakeupStatus =
-  | "pending"
-  | "scheduled"
-  | "completed"
-  | "expired"
-  | "cancelled";
+export type MakeupStatus = "pending" | "scheduled" | "completed" | "expired" | "cancelled";
 
-export type MakeupReason =
-  | "late_join"
-  | "excused_absence"
-  | "session_cancelled";
+export type MakeupReason = "late_join" | "excused_absence" | "session_cancelled";
 
 export interface MakeupObligation {
   id: string;
@@ -471,7 +433,7 @@ export async function coachListMyMakeups(options?: {
   const query = params.toString();
   return apiGet<MakeupObligationListResponse>(
     `/api/v1/payments/coach/me/cohort-makeups/${query ? `?${query}` : ""}`,
-    { auth: true },
+    { auth: true }
   );
 }
 
@@ -482,12 +444,12 @@ export async function coachListMyMakeups(options?: {
 export async function coachScheduleMakeup(
   obligationId: string,
   scheduled_session_id: string,
-  notes?: string,
+  notes?: string
 ): Promise<MakeupObligation> {
   return apiPatch<MakeupObligation>(
     `/api/v1/payments/coach/me/cohort-makeups/${obligationId}/schedule`,
     { scheduled_session_id, notes },
-    { auth: true },
+    { auth: true }
   );
 }
 
@@ -547,8 +509,5 @@ export interface CoachEarningsSummary {
 
 /** Coach: forward + backward looking earnings dashboard data. */
 export async function getCoachEarningsSummary(): Promise<CoachEarningsSummary> {
-  return apiGet<CoachEarningsSummary>(
-    `/api/v1/payments/coach/me/earnings/`,
-    { auth: true },
-  );
+  return apiGet<CoachEarningsSummary>(`/api/v1/payments/coach/me/earnings/`, { auth: true });
 }

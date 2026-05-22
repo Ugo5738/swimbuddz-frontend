@@ -83,7 +83,7 @@ export default function AdminPayoutsPage() {
   const handleApprove = async (payout: Payout) => {
     if (
       !confirm(
-        `Approve payout of ${formatNaira(payout.total_amount / 100)} for ${payout.period_label}?`,
+        `Approve payout of ${formatNaira(payout.total_amount / 100)} for ${payout.period_label}?`
       )
     ) {
       return;
@@ -93,16 +93,13 @@ export default function AdminPayoutsPage() {
       toast.success("Payout approved");
       loadData();
     } catch (err) {
-      toast.error("Failed to approve payout");
+      const msg = err instanceof Error ? err.message : "Failed to approve payout";
+      toast.error(msg);
     }
   };
 
   const handleInitiateTransfer = async (payout: Payout) => {
-    if (
-      !confirm(
-        `Initiate Paystack transfer of ${formatNaira(payout.total_amount / 100)}?`,
-      )
-    ) {
+    if (!confirm(`Initiate Paystack transfer of ${formatNaira(payout.total_amount / 100)}?`)) {
       return;
     }
     try {
@@ -127,7 +124,8 @@ export default function AdminPayoutsPage() {
       toast.success("Payout marked as paid");
       loadData();
     } catch (err) {
-      toast.error("Failed to mark as paid");
+      const msg = err instanceof Error ? err.message : "Failed to mark as paid";
+      toast.error(msg);
     }
   };
 
@@ -140,7 +138,8 @@ export default function AdminPayoutsPage() {
       toast.success("Payout marked as failed");
       loadData();
     } catch (err) {
-      toast.error("Failed to update payout");
+      const msg = err instanceof Error ? err.message : "Failed to update payout";
+      toast.error(msg);
     }
   };
 
@@ -153,9 +152,7 @@ export default function AdminPayoutsPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Coach Payouts</h1>
-        <p className="text-slate-600 mt-1">
-          Manage coach payouts and process transfers.
-        </p>
+        <p className="text-slate-600 mt-1">Manage coach payouts and process transfers.</p>
       </div>
 
       {/* Summary Stats */}
@@ -224,9 +221,7 @@ export default function AdminPayoutsPage() {
       <Card className="p-4">
         <div className="flex flex-wrap items-center gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Status Filter
-            </label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Status Filter</label>
             <select
               value={statusFilter}
               onChange={(e) => {
@@ -255,13 +250,9 @@ export default function AdminPayoutsPage() {
         {payouts.length === 0 ? (
           <div className="p-8 text-center">
             <DollarSign className="h-12 w-12 mx-auto text-slate-300 mb-3" />
-            <h3 className="text-lg font-medium text-slate-700">
-              No payouts found
-            </h3>
+            <h3 className="text-lg font-medium text-slate-700">No payouts found</h3>
             <p className="text-sm text-slate-500 mt-1">
-              {statusFilter
-                ? "Try a different filter"
-                : "No payouts have been created yet"}
+              {statusFilter ? "Try a different filter" : "No payouts have been created yet"}
             </p>
           </div>
         ) : (
@@ -349,9 +340,7 @@ function PayoutRow({
         </div>
       </td>
       <td className="px-4 py-3">
-        <p className="font-semibold text-slate-900">
-          {formatNaira(payout.total_amount / 100)}
-        </p>
+        <p className="font-semibold text-slate-900">{formatNaira(payout.total_amount / 100)}</p>
         <div className="text-xs text-slate-500">
           {payout.academy_earnings > 0 && (
             <span>A: {formatNaira(payout.academy_earnings / 100)} </span>
@@ -362,10 +351,7 @@ function PayoutRow({
         </div>
       </td>
       <td className="px-4 py-3">
-        <Badge
-          variant={config.variant}
-          className="flex items-center gap-1 w-fit"
-        >
+        <Badge variant={config.variant} className="flex items-center gap-1 w-fit">
           <StatusIcon
             className={`h-3 w-3 ${payout.status === "processing" ? "animate-spin" : ""}`}
           />
@@ -387,14 +373,10 @@ function PayoutRow({
           </p>
         )}
         {payout.payment_reference && (
-          <p className="text-xs text-slate-500">
-            Ref: {payout.payment_reference}
-          </p>
+          <p className="text-xs text-slate-500">Ref: {payout.payment_reference}</p>
         )}
         {payout.payout_method && (
-          <p className="text-xs text-slate-500">
-            Via: {payout.payout_method.replace("_", " ")}
-          </p>
+          <p className="text-xs text-slate-500">Via: {payout.payout_method.replace("_", " ")}</p>
         )}
       </td>
       <td className="px-4 py-3 text-right">
@@ -405,23 +387,14 @@ function PayoutRow({
                 <CheckCircle className="h-3 w-3 mr-1" />
                 Approve
               </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onMarkFailed}
-                className="text-red-600"
-              >
+              <Button size="sm" variant="outline" onClick={onMarkFailed} className="text-red-600">
                 <XCircle className="h-3 w-3" />
               </Button>
             </>
           )}
           {(payout.status === "approved" || payout.status === "failed") && (
             <>
-              <Button
-                size="sm"
-                onClick={onInitiateTransfer}
-                title="Paystack Transfer"
-              >
+              <Button size="sm" onClick={onInitiateTransfer} title="Paystack Transfer">
                 <Send className="h-3 w-3 mr-1" />
                 Send
               </Button>

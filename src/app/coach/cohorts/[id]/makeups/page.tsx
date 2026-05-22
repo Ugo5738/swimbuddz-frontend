@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  LateJoinAvailabilityCard,
+  extractLateJoinPrefs,
+} from "@/components/academy/LateJoinAvailabilityCard";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -35,16 +39,14 @@ const REASON_LABEL: Record<MakeupReason, string> = {
   session_cancelled: "Session cancelled",
 };
 
-const STATUS_VARIANT: Record<
-  MakeupStatus,
-  "warning" | "info" | "success" | "default" | "danger"
-> = {
-  pending: "warning",
-  scheduled: "info",
-  completed: "success",
-  expired: "default",
-  cancelled: "danger",
-};
+const STATUS_VARIANT: Record<MakeupStatus, "warning" | "info" | "success" | "default" | "danger"> =
+  {
+    pending: "warning",
+    scheduled: "info",
+    completed: "success",
+    expired: "default",
+    cancelled: "danger",
+  };
 
 export default function CoachCohortMakeupsPage() {
   const params = useParams();
@@ -58,28 +60,25 @@ export default function CoachCohortMakeupsPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Per-row local state for the scheduling form: { [obligationId]: { sessionId, notes } }
-  const [draft, setDraft] = useState<
-    Record<string, { sessionId: string; notes: string }>
-  >({});
+  const [draft, setDraft] = useState<Record<string, { sessionId: string; notes: string }>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
 
   async function loadAll() {
     setLoading(true);
     try {
-      const [cohortData, studentsData, allSessions, makeupResp] =
-        await Promise.all([
-          getCohort(cohortId),
-          getCohortStudents(cohortId),
-          getMyCoachSessions(),
-          coachListMyMakeups({ cohort_id: cohortId, page_size: 200 }),
-        ]);
+      const [cohortData, studentsData, allSessions, makeupResp] = await Promise.all([
+        getCohort(cohortId),
+        getCohortStudents(cohortId),
+        getMyCoachSessions(),
+        coachListMyMakeups({ cohort_id: cohortId, page_size: 200 }),
+      ]);
       setCohort(cohortData);
       setStudents(studentsData);
       const nowIso = new Date().toISOString();
       setFutureSessions(
         allSessions
           .filter((s) => s.cohort_id === cohortId && s.starts_at > nowIso)
-          .sort((a, b) => a.starts_at.localeCompare(b.starts_at)),
+          .sort((a, b) => a.starts_at.localeCompare(b.starts_at))
       );
       setObligations(makeupResp.items);
     } catch (err) {
@@ -107,13 +106,21 @@ export default function CoachCohortMakeupsPage() {
     return m;
   }, [students]);
 
+  // member_id → late_join availability captured at enrollment, used to surface
+  // each student's preferred make-up days inline next to their pending row.
+  const lateJoinByStudent = useMemo(() => {
+    const m = new Map<string, ReturnType<typeof extractLateJoinPrefs>>();
+    for (const s of students) {
+      const prefs = extractLateJoinPrefs(s.preferences);
+      if (prefs) m.set(s.member_id, prefs);
+    }
+    return m;
+  }, [students]);
+
   const sessionLabelById = useMemo(() => {
     const m = new Map<string, string>();
     for (const s of futureSessions) {
-      m.set(
-        s.id,
-        `${formatDate(s.starts_at)} — ${s.title || s.lesson_title || "Session"}`,
-      );
+      m.set(s.id, `${formatDate(s.starts_at)} — ${s.title || s.lesson_title || "Session"}`);
     }
     return m;
   }, [futureSessions]);
@@ -124,16 +131,11 @@ export default function CoachCohortMakeupsPage() {
       pending: obligations.filter((o) => o.status === "pending"),
       scheduled: obligations.filter((o) => o.status === "scheduled"),
       completed: obligations.filter((o) => o.status === "completed"),
-      other: obligations.filter(
-        (o) => o.status === "expired" || o.status === "cancelled",
-      ),
+      other: obligations.filter((o) => o.status === "expired" || o.status === "cancelled"),
     };
   }, [obligations]);
 
-  function setDraftFor(
-    obligationId: string,
-    patch: Partial<{ sessionId: string; notes: string }>,
-  ) {
+  function setDraftFor(obligationId: string, patch: Partial<{ sessionId: string; notes: string }>) {
     setDraft((prev) => ({
       ...prev,
       [obligationId]: {
@@ -178,19 +180,16 @@ export default function CoachCohortMakeupsPage() {
           <ArrowLeft className="h-4 w-4" />
           Back to cohort
         </Link>
-        <h1 className="text-2xl font-semibold text-slate-900">
-          Make-up Sessions
-        </h1>
+        <h1 className="text-2xl font-semibold text-slate-900">Make-up Sessions</h1>
         <p className="text-sm text-slate-600">{cohort.name}</p>
       </div>
 
       <Alert variant="info">
-        Make-ups are auto-created when a student joins late, when you mark
-        them <em>Excused</em> for a session, or when a session is cancelled.
-        Schedule each one to a future session in this cohort. Once you mark
-        the student PRESENT or LATE on the linked session, the obligation
-        flips to <strong>Completed</strong> and the corresponding ₦ amount is
-        included in your next block payout.
+        Make-ups are auto-created when a student joins late, when you mark them <em>Excused</em> for
+        a session, or when a session is cancelled. Schedule each one to a future session in this
+        cohort. Once you mark the student PRESENT or LATE on the linked session, the obligation
+        flips to <strong>Completed</strong> and the corresponding ₦ amount is included in your next
+        block payout.
       </Alert>
 
       {/* Pending — needs scheduling */}
@@ -200,13 +199,12 @@ export default function CoachCohortMakeupsPage() {
         </h2>
         {grouped.pending.length === 0 ? (
           <p className="text-sm text-slate-500">
-            Nothing to schedule. Make-ups appear here when students miss
-            sessions.
+            Nothing to schedule. Make-ups appear here when students miss sessions.
           </p>
         ) : futureSessions.length === 0 ? (
           <Alert variant="error">
-            No future sessions in this cohort to schedule make-ups against.
-            Ask an admin to create extra sessions, then return here.
+            No future sessions in this cohort to schedule make-ups against. Ask an admin to create
+            extra sessions, then return here.
           </Alert>
         ) : (
           <div className="space-y-3">
@@ -226,13 +224,18 @@ export default function CoachCohortMakeupsPage() {
                     <Badge variant={STATUS_VARIANT[o.status]} className="mt-1">
                       {REASON_LABEL[o.reason]}
                     </Badge>
+                    {o.reason === "late_join" &&
+                      (() => {
+                        const prefs = lateJoinByStudent.get(o.student_member_id);
+                        return prefs ? (
+                          <LateJoinAvailabilityCard prefs={prefs} variant="inline" />
+                        ) : null;
+                      })()}
                   </div>
                   <div className="md:col-span-4">
                     <Select
                       value={d.sessionId}
-                      onChange={(e) =>
-                        setDraftFor(o.id, { sessionId: e.target.value })
-                      }
+                      onChange={(e) => setDraftFor(o.id, { sessionId: e.target.value })}
                     >
                       <option value="">— Pick a session —</option>
                       {futureSessions.map((s) => (
@@ -248,9 +251,7 @@ export default function CoachCohortMakeupsPage() {
                     <Input
                       placeholder="Notes (optional)"
                       value={d.notes}
-                      onChange={(e) =>
-                        setDraftFor(o.id, { notes: e.target.value })
-                      }
+                      onChange={(e) => setDraftFor(o.id, { notes: e.target.value })}
                     />
                   </div>
                   <div className="md:col-span-2 flex md:justify-end">
@@ -280,8 +281,8 @@ export default function CoachCohortMakeupsPage() {
             {grouped.scheduled.map((o) => {
               const student = studentNameById.get(o.student_member_id);
               const sessionLabel = o.scheduled_session_id
-                ? sessionLabelById.get(o.scheduled_session_id) ??
-                  o.scheduled_session_id.slice(0, 8)
+                ? (sessionLabelById.get(o.scheduled_session_id) ??
+                  o.scheduled_session_id.slice(0, 8))
                 : "(unscheduled)";
               return (
                 <div
@@ -304,10 +305,7 @@ export default function CoachCohortMakeupsPage() {
           </div>
           <p className="text-xs text-slate-500 mt-3">
             Mark the student PRESENT or LATE on the linked session via{" "}
-            <Link
-              href={`/coach/cohorts/${cohortId}/attendance`}
-              className="underline"
-            >
+            <Link href={`/coach/cohorts/${cohortId}/attendance`} className="underline">
               attendance
             </Link>{" "}
             to complete the make-up.
@@ -366,9 +364,7 @@ export default function CoachCohortMakeupsPage() {
                     </p>
                     <p className="text-xs">{REASON_LABEL[o.reason]}</p>
                   </div>
-                  <Badge variant={STATUS_VARIANT[o.status]}>
-                    {o.status}
-                  </Badge>
+                  <Badge variant={STATUS_VARIANT[o.status]}>{o.status}</Badge>
                 </div>
               );
             })}

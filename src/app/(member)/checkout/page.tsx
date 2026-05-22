@@ -66,19 +66,13 @@ function CheckoutContent() {
   // code and the always-visible input invites typos / fishing for codes.
   // Auto-expand if the upgrade state already has a code (e.g. user came
   // back from a "Back to previous step" loop with a pre-filled code).
-  const [showDiscountInput, setShowDiscountInput] = useState<boolean>(
-    Boolean(state.discountCode),
-  );
+  const [showDiscountInput, setShowDiscountInput] = useState<boolean>(Boolean(state.discountCode));
   const [validatingDiscount, setValidatingDiscount] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<
-    "paystack" | "manual_transfer"
-  >("paystack");
+  const [paymentMethod, setPaymentMethod] = useState<"paystack" | "manual_transfer">("paystack");
 
   // Installment billing mode — "full" or "installments"
   // Only relevant when purpose === "academy_cohort" and cohort.installment_plan_enabled
-  const [billingMode, setBillingMode] = useState<"full" | "installments">(
-    "full",
-  );
+  const [billingMode, setBillingMode] = useState<"full" | "installments">("full");
 
   // Determine purpose from URL ONLY — do not fall back to context.targetTier.
   // The context-based fallback was a money-leak: a member arriving with stale
@@ -89,11 +83,7 @@ function CheckoutContent() {
   const purpose = searchParams.get("purpose");
 
   // Get club plan from URL params (fallback) or context
-  const urlPlan = searchParams.get("plan") as
-    | "quarterly"
-    | "biannual"
-    | "annual"
-    | null;
+  const urlPlan = searchParams.get("plan") as "quarterly" | "biannual" | "annual" | null;
   const clubBillingCycle = urlPlan || state.clubBillingCycle;
 
   // Get cohort_id from URL (for resuming pending payments)
@@ -140,10 +130,9 @@ function CheckoutContent() {
           }
 
           if (!state.selectedCohort) {
-            const cohortResponse = await apiGet<Cohort>(
-              `/api/v1/academy/cohorts/${urlCohortId}`,
-              { auth: true },
-            ).catch(() => null);
+            const cohortResponse = await apiGet<Cohort>(`/api/v1/academy/cohorts/${urlCohortId}`, {
+              auth: true,
+            }).catch(() => null);
             if (cohortResponse) {
               setSelectedCohort(cohortResponse);
             }
@@ -172,8 +161,7 @@ function CheckoutContent() {
   })();
 
   // Calculate line items based on purpose (using API pricing)
-  const lineItems: { label: string; amount: number; highlight?: boolean }[] =
-    [];
+  const lineItems: { label: string; amount: number; highlight?: boolean }[] = [];
   let subtotal = 0;
 
   const communityFee = pricing?.community_annual || 0;
@@ -214,8 +202,7 @@ function CheckoutContent() {
     // Academy enrollment - use price_override or program.price_amount
     // Price is stored in naira (major unit)
     const cohortPrice =
-      state.selectedCohort?.price_override ??
-      state.selectedCohort?.program?.price_amount;
+      state.selectedCohort?.price_override ?? state.selectedCohort?.program?.price_amount;
     if (cohortPrice) {
       lineItems.push({
         label: `Academy: ${state.selectedCohort?.name}`,
@@ -237,23 +224,18 @@ function CheckoutContent() {
   const total = Math.max(0, subtotal - discountAmount);
 
   // ── Installment plan preview (mirrors installments.py logic) ─────────────
-  const cohortForInstallments =
-    purpose === "academy_cohort" ? state.selectedCohort : null;
-  const installmentsEnabled =
-    cohortForInstallments?.installment_plan_enabled === true;
+  const cohortForInstallments = purpose === "academy_cohort" ? state.selectedCohort : null;
+  const installmentsEnabled = cohortForInstallments?.installment_plan_enabled === true;
 
   const installmentPreview = (() => {
     if (!installmentsEnabled || !cohortForInstallments) return null;
     const totalFee = total; // after any discount
     const durationWeeks =
-      cohortForInstallments.duration_weeks ??
-      cohortForInstallments.program?.duration_weeks ??
-      8;
+      cohortForInstallments.duration_weeks ?? cohortForInstallments.program?.duration_weeks ?? 8;
 
     // Auto-compute count: one per 4-week block, capped at 3 if fee > ₦150,000
     let count =
-      cohortForInstallments.installment_count ??
-      Math.max(1, Math.floor(durationWeeks / 4));
+      cohortForInstallments.installment_count ?? Math.max(1, Math.floor(durationWeeks / 4));
     if (totalFee > 150_000 && count > 3) count = 3;
     if (count < 2) count = 2; // minimum 2 installments to be meaningful
 
@@ -313,7 +295,7 @@ function CheckoutContent() {
           subtotal: subtotal,
           components: components,
         },
-        { auth: true },
+        { auth: true }
       );
 
       if (response.valid) {
@@ -323,15 +305,12 @@ function CheckoutContent() {
           amount: response.discount_amount,
           appliesTo: response.applies_to_component,
         });
-        toast.success(
-          response.message || `Discount "${response.code}" applied`,
-        );
+        toast.success(response.message || `Discount "${response.code}" applied`);
       } else {
         toast.error(response.message || "Invalid discount code");
       }
     } catch (e) {
-      const message =
-        e instanceof Error ? e.message : "Failed to validate discount code";
+      const message = e instanceof Error ? e.message : "Failed to validate discount code";
       toast.error(message);
     } finally {
       setValidatingDiscount(false);
@@ -374,12 +353,25 @@ function CheckoutContent() {
         let enrollmentId: string | undefined = urlEnrollmentId || undefined;
 
         if (!enrollmentId) {
-          // Try to create a new enrollment, or use existing one if already enrolled
+          // Try to create a new enrollment, or use existing one if already enrolled.
+          // Include late-join preferences when the member acknowledged the
+          // mid-cohort disclosure on the cohort selection page — the academy
+          // service stores them on Enrollment.preferences so coaches/admins
+          // can schedule make-ups around the member's availability.
+          const enrollmentBody: {
+            cohort_id: string;
+            preferences?: { late_join: typeof state.lateJoinPreferences };
+          } = { cohort_id: state.selectedCohortId! };
+          if (state.lateJoinPreferences) {
+            enrollmentBody.preferences = {
+              late_join: state.lateJoinPreferences,
+            };
+          }
           try {
             const newEnrollment = await apiPost<{ id: string }>(
               "/api/v1/academy/enrollments/me",
-              { cohort_id: state.selectedCohortId },
-              { auth: true },
+              enrollmentBody,
+              { auth: true }
             );
             enrollmentId = newEnrollment.id;
           } catch (enrollError: any) {
@@ -390,16 +382,12 @@ function CheckoutContent() {
                 { id: string; cohort_id: string; payment_status: string }[]
               >("/api/v1/academy/my-enrollments", { auth: true });
               const existingEnrollment = existingEnrollments.find(
-                (e) =>
-                  e.cohort_id === state.selectedCohortId &&
-                  e.payment_status !== "paid",
+                (e) => e.cohort_id === state.selectedCohortId && e.payment_status !== "paid"
               );
               if (existingEnrollment) {
                 enrollmentId = existingEnrollment.id;
               } else {
-                throw new Error(
-                  "You already have a paid enrollment for this cohort",
-                );
+                throw new Error("You already have a paid enrollment for this cohort");
               }
             } else {
               throw enrollError;
@@ -411,11 +399,8 @@ function CheckoutContent() {
           ...intentPayload,
           purpose: "academy_cohort",
           enrollment_id: enrollmentId,
-          use_installments:
-            installmentsEnabled && billingMode === "installments",
-          ...(urlAmountOverrideKobo
-            ? { amount_override_kobo: urlAmountOverrideKobo }
-            : {}),
+          use_installments: installmentsEnabled && billingMode === "installments",
+          ...(urlAmountOverrideKobo ? { amount_override_kobo: urlAmountOverrideKobo } : {}),
         };
       } else if (purpose === "community") {
         intentPayload = {
@@ -425,11 +410,9 @@ function CheckoutContent() {
         };
       }
 
-      const intent = await apiPost<PaymentIntent>(
-        "/api/v1/payments/intents",
-        intentPayload,
-        { auth: true },
-      );
+      const intent = await apiPost<PaymentIntent>("/api/v1/payments/intents", intentPayload, {
+        auth: true,
+      });
 
       // Cache the intent
       savePaymentIntentCache(intent, member?.id || member?.email || "me");
@@ -511,17 +494,13 @@ function CheckoutContent() {
 
       {/* Order Summary */}
       <Card className="p-6">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">
-          Order Summary
-        </h2>
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Order Summary</h2>
 
         <div className="space-y-3">
           {lineItems.map((item, index) => (
             <div key={index} className="flex justify-between py-2">
               <span className="text-slate-700">{item.label}</span>
-              <span className="text-slate-900">
-                {formatCurrency(item.amount)}
-              </span>
+              <span className="text-slate-900">{formatCurrency(item.amount)}</span>
             </div>
           ))}
 
@@ -538,18 +517,14 @@ function CheckoutContent() {
                       </p>
                       {validatedDiscount.appliesTo && (
                         <p className="text-xs text-emerald-600">
-                          Applied to{" "}
-                          {validatedDiscount.appliesTo.replace("_", " ")}
+                          Applied to {validatedDiscount.appliesTo.replace("_", " ")}
                         </p>
                       )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <span className="text-sm font-semibold text-emerald-700">
-                      -
-                      {discountAmount > 0
-                        ? formatCurrency(discountAmount)
-                        : "Applied"}
+                      -{discountAmount > 0 ? formatCurrency(discountAmount) : "Applied"}
                     </span>
                     <button
                       onClick={handleClearDiscount}
@@ -579,9 +554,7 @@ function CheckoutContent() {
                 <input
                   type="text"
                   value={discountInput}
-                  onChange={(e) =>
-                    setDiscountInput(e.target.value.toUpperCase())
-                  }
+                  onChange={(e) => setDiscountInput(e.target.value.toUpperCase())}
                   placeholder="Discount code"
                   autoFocus
                   className="flex-1 min-w-0 px-3 py-2 text-sm border border-slate-200 rounded-lg text-slate-700 focus:ring-2 focus:ring-cyan-400 focus:border-transparent uppercase placeholder:text-slate-400"
@@ -604,12 +577,7 @@ function CheckoutContent() {
                   className="flex-shrink-0 p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                   aria-label="Cancel discount entry"
                 >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -632,12 +600,8 @@ function CheckoutContent() {
           </div>
 
           <div className="pt-4 border-t border-slate-200 flex justify-between">
-            <span className="text-base font-semibold text-slate-900">
-              Total
-            </span>
-            <span className="text-xl font-bold text-cyan-600">
-              {formatCurrency(total)}
-            </span>
+            <span className="text-base font-semibold text-slate-900">Total</span>
+            <span className="text-xl font-bold text-cyan-600">{formatCurrency(total)}</span>
           </div>
         </div>
       </Card>
@@ -651,7 +615,8 @@ function CheckoutContent() {
             onClick={() => setBillingMode("installments")}
             className="text-cyan-600 underline underline-offset-2 hover:text-cyan-700 font-medium"
           >
-            Pay in {installmentPreview.count} installments — {formatCurrency(installmentPreview.deposit)} now
+            Pay in {installmentPreview.count} installments —{" "}
+            {formatCurrency(installmentPreview.deposit)} now
           </button>
         </p>
       )}
@@ -659,8 +624,7 @@ function CheckoutContent() {
       {/* ── Installment details — shown when installments selected ── */}
       {installmentsEnabled && installmentPreview && billingMode === "installments" && (
         <p className="text-center text-sm text-slate-500 -mt-2">
-          {formatCurrency(installmentPreview.deposit)} now, then{" "}
-          {installmentPreview.count - 1} ×{" "}
+          {formatCurrency(installmentPreview.deposit)} now, then {installmentPreview.count - 1} ×{" "}
           {formatCurrency(installmentPreview.subsequentAmount)} every 4 weeks —{" "}
           <button
             type="button"
@@ -675,15 +639,14 @@ function CheckoutContent() {
       {/* Payment Method Selector - Only show for session payments, not membership */}
       {purpose === "session" && (
         <Card className="p-6">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">
-            Payment Method
-          </h2>
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">Payment Method</h2>
           <div className="grid gap-3 sm:grid-cols-2">
             <label
-              className={`relative flex cursor-pointer flex-col rounded-xl border-2 p-4 transition-all ${paymentMethod === "paystack"
+              className={`relative flex cursor-pointer flex-col rounded-xl border-2 p-4 transition-all ${
+                paymentMethod === "paystack"
                   ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-500"
                   : "border-slate-200 bg-white hover:border-slate-300"
-                }`}
+              }`}
             >
               <input
                 type="radio"
@@ -693,18 +656,15 @@ function CheckoutContent() {
                 onChange={() => setPaymentMethod("paystack")}
                 className="sr-only"
               />
-              <span className="text-lg font-medium text-slate-900">
-                💳 Pay Online
-              </span>
-              <span className="text-sm text-slate-500">
-                Instant payment via Paystack
-              </span>
+              <span className="text-lg font-medium text-slate-900">💳 Pay Online</span>
+              <span className="text-sm text-slate-500">Instant payment via Paystack</span>
             </label>
             <label
-              className={`relative flex cursor-pointer flex-col rounded-xl border-2 p-4 transition-all ${paymentMethod === "manual_transfer"
+              className={`relative flex cursor-pointer flex-col rounded-xl border-2 p-4 transition-all ${
+                paymentMethod === "manual_transfer"
                   ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-500"
                   : "border-slate-200 bg-white hover:border-slate-300"
-                }`}
+              }`}
             >
               <input
                 type="radio"
@@ -714,25 +674,18 @@ function CheckoutContent() {
                 onChange={() => setPaymentMethod("manual_transfer")}
                 className="sr-only"
               />
-              <span className="text-lg font-medium text-slate-900">
-                🏦 Bank Transfer
-              </span>
-              <span className="text-sm text-slate-500">
-                Manual transfer with proof
-              </span>
+              <span className="text-lg font-medium text-slate-900">🏦 Bank Transfer</span>
+              <span className="text-sm text-slate-500">Manual transfer with proof</span>
             </label>
           </div>
 
           {/* Bank Transfer Details */}
           {paymentMethod === "manual_transfer" && (
             <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
-              <h3 className="font-medium text-amber-900 mb-2">
-                📋 Bank Transfer Details
-              </h3>
+              <h3 className="font-medium text-amber-900 mb-2">📋 Bank Transfer Details</h3>
               <div className="space-y-1 text-sm text-amber-800">
                 <p>
-                  <span className="text-amber-600">Bank:</span>{" "}
-                  <strong>OPay</strong>
+                  <span className="text-amber-600">Bank:</span> <strong>OPay</strong>
                 </p>
                 <p>
                   <span className="text-amber-600">Account Number:</span>{" "}
@@ -748,8 +701,7 @@ function CheckoutContent() {
                 </p>
               </div>
               <p className="mt-3 text-xs text-amber-700">
-                💡 After transfer, you'll be asked to upload proof of payment
-                for verification.
+                💡 After transfer, you'll be asked to upload proof of payment for verification.
               </p>
             </div>
           )}
@@ -758,12 +710,7 @@ function CheckoutContent() {
 
       {/* Payment Button */}
       <div className="space-y-4">
-        <Button
-          onClick={handlePayment}
-          disabled={processing}
-          size="lg"
-          className="w-full"
-        >
+        <Button onClick={handlePayment} disabled={processing} size="lg" className="w-full">
           {processing
             ? "Processing..."
             : installmentsEnabled && billingMode === "installments"
