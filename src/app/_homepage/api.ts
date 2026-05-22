@@ -3,25 +3,10 @@
 // calls + ten `: any` callbacks out of the page and into a typed surface.
 
 import { apiGet } from "@/lib/api";
+import { type SiteAsset } from "@/lib/media";
 import { MembersApi } from "@/lib/members";
 
 import type { GalleryPhoto, VideoTestimonial } from "./data";
-
-/**
- * Narrow shape of the `GET /api/v1/media/assets` response, scoped to what
- * the homepage actually reads. The full generated shape is in
- * `lib/api-types.ts` (`SiteAssetResponse`); we mirror the fields used here
- * to keep the homepage decoupled from deeply-nested OpenAPI types.
- */
-type MediaAsset = {
-  id: string;
-  key: string;
-  description?: string | null;
-  media_item?: {
-    file_url?: string | null;
-    thumbnail_url?: string | null;
-  } | null;
-};
 
 /**
  * Pluck a trailing numeric ordering hint from an asset key like
@@ -31,7 +16,7 @@ function orderingHint(key: string): number {
   return parseInt(key.split("_").pop() || "0", 10);
 }
 
-function sortByKeyOrder(a: MediaAsset, b: MediaAsset): number {
+function sortByKeyOrder(a: SiteAsset, b: SiteAsset): number {
   return orderingHint(a.key) - orderingHint(b.key);
 }
 
@@ -41,7 +26,7 @@ function sortByKeyOrder(a: MediaAsset, b: MediaAsset): number {
  */
 export async function fetchHomepageBanners(): Promise<string[]> {
   try {
-    const assets = await apiGet<MediaAsset[]>("/api/v1/media/assets");
+    const assets = await apiGet<SiteAsset[]>("/api/v1/media/assets");
     return assets
       .filter((a) => a.key.startsWith("homepage_banner_") && a.media_item?.file_url)
       .sort(sortByKeyOrder)
@@ -61,7 +46,7 @@ export async function fetchHomepageMedia(): Promise<{
   videoTestimonials: VideoTestimonial[];
 }> {
   try {
-    const assets = await apiGet<MediaAsset[]>("/api/v1/media/assets");
+    const assets = await apiGet<SiteAsset[]>("/api/v1/media/assets");
 
     const galleryPhotos: GalleryPhoto[] = assets
       .filter((a) => a.key.startsWith("community_photo_") && a.media_item?.file_url)

@@ -2,8 +2,10 @@
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
 import { getCurrentAccessToken } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
+import { type SiteAsset } from "@/lib/media";
 import {
   AlertCircle,
   Check,
@@ -71,84 +73,77 @@ export default function AdminHomepageMediaPage() {
 
   const fetchAssets = async () => {
     try {
-      const token = await getCurrentAccessToken();
-      const response = await fetch(`${API_BASE_URL}/api/v1/media/assets`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const assets = await apiGet<SiteAsset[]>("/api/v1/media/assets", {
+        auth: true,
       });
 
-      if (response.ok) {
-        const assets = await response.json();
+      // Parse banners
+      const bannerAssets = assets
+        .filter((a) => a.key.startsWith("homepage_banner_"))
+        .map((a, idx) => ({
+          id: a.id,
+          file_url: a.media_item?.file_url || "",
+          thumbnail_url: a.media_item?.thumbnail_url ?? undefined,
+          title: a.description || `Banner ${idx + 1}`,
+          order: parseInt(a.key.split("_").pop() || "0"),
+        }))
+        .sort((a, b) => a.order - b.order);
 
-        // Parse banners
-        const bannerAssets = assets
-          .filter((a: any) => a.key.startsWith("homepage_banner_"))
-          .map((a: any, idx: number) => ({
-            id: a.id,
-            file_url: a.media_item?.file_url || "",
-            thumbnail_url: a.media_item?.thumbnail_url,
-            title: a.description || `Banner ${idx + 1}`,
-            order: parseInt(a.key.split("_").pop() || "0"),
-          }))
-          .sort((a: MediaAsset, b: MediaAsset) => a.order - b.order);
+      // Parse community photos
+      const communityAssets = assets
+        .filter((a) => a.key.startsWith("community_photo_"))
+        .map((a) => ({
+          id: a.id,
+          file_url: a.media_item?.file_url || "",
+          thumbnail_url: a.media_item?.thumbnail_url ?? undefined,
+          title: a.description || `Photo ${a.key.split("_").pop()}`,
+          order: parseInt(a.key.split("_").pop() || "0"),
+        }))
+        .sort((a, b) => a.order - b.order);
 
-        // Parse community photos
-        const communityAssets = assets
-          .filter((a: any) => a.key.startsWith("community_photo_"))
-          .map((a: any) => ({
-            id: a.id,
-            file_url: a.media_item?.file_url || "",
-            thumbnail_url: a.media_item?.thumbnail_url,
-            title: a.description || `Photo ${a.key.split("_").pop()}`,
-            order: parseInt(a.key.split("_").pop() || "0"),
-          }))
-          .sort((a: MediaAsset, b: MediaAsset) => a.order - b.order);
+      // Parse gallery video
+      const galleryVideoAsset = assets.find((a) => a.key === "homepage_gallery_video");
+      if (galleryVideoAsset?.media_item?.file_url) {
+        setGalleryVideo({
+          id: galleryVideoAsset.id,
+          file_url: galleryVideoAsset.media_item.file_url,
+          title: galleryVideoAsset.description || "Gallery Video",
+          description: galleryVideoAsset.description ?? undefined,
+        });
+      } else {
+        setGalleryVideo(null);
+      }
 
-        // Parse gallery video
-        const galleryVideoAsset = assets.find((a: any) => a.key === "homepage_gallery_video");
-        if (galleryVideoAsset?.media_item?.file_url) {
-          setGalleryVideo({
-            id: galleryVideoAsset.id,
-            file_url: galleryVideoAsset.media_item.file_url,
-            title: galleryVideoAsset.description || "Gallery Video",
-            description: galleryVideoAsset.description,
-          });
-        } else {
-          setGalleryVideo(null);
-        }
-
-        // Parse video testimonials (slots 1-3)
-        const newTestimonials: (VideoAsset | null)[] = [null, null, null];
-        const newMeta: VideoTestimonialMeta[] = [
-          { name: "", role: "" },
-          { name: "", role: "" },
-          { name: "", role: "" },
-        ];
-        for (let i = 1; i <= 3; i++) {
-          const asset = assets.find((a: any) => a.key === `homepage_video_testimonial_${i}`);
-          if (asset?.media_item?.file_url) {
-            newTestimonials[i - 1] = {
-              id: asset.id,
-              file_url: asset.media_item.file_url,
-              title: asset.description,
-              description: asset.description,
-            };
-            // Parse "Name | Role" from description
-            if (asset.description?.includes("|")) {
-              const [name, role] = asset.description.split("|").map((s: string) => s.trim());
-              newMeta[i - 1] = { name: name || "", role: role || "" };
-            } else if (asset.description) {
-              newMeta[i - 1] = { name: asset.description, role: "" };
-            }
+      // Parse video testimonials (slots 1-3)
+      const newTestimonials: (VideoAsset | null)[] = [null, null, null];
+      const newMeta: VideoTestimonialMeta[] = [
+        { name: "", role: "" },
+        { name: "", role: "" },
+        { name: "", role: "" },
+      ];
+      for (let i = 1; i <= 3; i++) {
+        const asset = assets.find((a) => a.key === `homepage_video_testimonial_${i}`);
+        if (asset?.media_item?.file_url) {
+          newTestimonials[i - 1] = {
+            id: asset.id,
+            file_url: asset.media_item.file_url,
+            title: asset.description ?? undefined,
+            description: asset.description ?? undefined,
+          };
+          // Parse "Name | Role" from description
+          if (asset.description?.includes("|")) {
+            const [name, role] = asset.description.split("|").map((s) => s.trim());
+            newMeta[i - 1] = { name: name || "", role: role || "" };
+          } else if (asset.description) {
+            newMeta[i - 1] = { name: asset.description, role: "" };
           }
         }
-        setVideoTestimonials(newTestimonials);
-        setTestimonialMeta(newMeta);
-
-        setBanners(bannerAssets);
-        setCommunityPhotos(communityAssets);
       }
+      setVideoTestimonials(newTestimonials);
+      setTestimonialMeta(newMeta);
+
+      setBanners(bannerAssets);
+      setCommunityPhotos(communityAssets);
     } catch (err) {
       console.error("Failed to fetch assets:", err);
       setError("Failed to load media assets");
@@ -166,7 +161,8 @@ export default function AdminHomepageMediaPage() {
   ) => {
     const token = await getCurrentAccessToken();
 
-    // Upload the media item
+    // Upload the media item. Raw fetch retained intentionally: apiPost
+    // serialises JSON, so it can't carry a multipart FormData payload.
     const formData = new FormData();
     formData.append("file", file);
     formData.append("title", title);
@@ -188,30 +184,21 @@ export default function AdminHomepageMediaPage() {
 
     // Create or update the site asset
     if (isUpdate) {
-      await fetch(`${API_BASE_URL}/api/v1/media/assets/${assetKey}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          media_item_id: mediaItem.id,
-          description: title,
-        }),
-      });
+      await apiPut(
+        `/api/v1/media/assets/${assetKey}`,
+        { media_item_id: mediaItem.id, description: title },
+        { auth: true },
+      );
     } else {
-      await fetch(`${API_BASE_URL}/api/v1/media/assets`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      await apiPost(
+        `/api/v1/media/assets`,
+        {
           key: assetKey,
           media_item_id: mediaItem.id,
           description: title,
-        }),
-      });
+        },
+        { auth: true },
+      );
     }
   };
 
@@ -244,10 +231,8 @@ export default function AdminHomepageMediaPage() {
     if (!confirm("Are you sure you want to delete this banner?")) return;
 
     try {
-      const token = await getCurrentAccessToken();
-      await fetch(`${API_BASE_URL}/api/v1/media/assets/homepage_banner_${banner.order}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+      await apiDelete(`/api/v1/media/assets/homepage_banner_${banner.order}`, {
+        auth: true,
       });
       setBanners((prev) => prev.filter((b) => b.id !== banner.id));
     } catch (err) {
@@ -284,11 +269,7 @@ export default function AdminHomepageMediaPage() {
     if (!confirm("Are you sure you want to remove this photo?")) return;
 
     try {
-      const token = await getCurrentAccessToken();
-      await fetch(`${API_BASE_URL}/api/v1/media/assets/community_photo_${slot}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await apiDelete(`/api/v1/media/assets/community_photo_${slot}`, { auth: true });
       setCommunityPhotos((prev) => prev.filter((p) => p.order !== slot));
     } catch (err) {
       console.error("Delete error:", err);
@@ -325,11 +306,7 @@ export default function AdminHomepageMediaPage() {
     if (!confirm("Are you sure you want to remove the gallery video?")) return;
 
     try {
-      const token = await getCurrentAccessToken();
-      await fetch(`${API_BASE_URL}/api/v1/media/assets/homepage_gallery_video`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await apiDelete(`/api/v1/media/assets/homepage_gallery_video`, { auth: true });
       setGalleryVideo(null);
     } catch (err) {
       console.error("Delete error:", err);
@@ -369,10 +346,8 @@ export default function AdminHomepageMediaPage() {
     if (!confirm("Are you sure you want to remove this video testimonial?")) return;
 
     try {
-      const token = await getCurrentAccessToken();
-      await fetch(`${API_BASE_URL}/api/v1/media/assets/homepage_video_testimonial_${slot}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+      await apiDelete(`/api/v1/media/assets/homepage_video_testimonial_${slot}`, {
+        auth: true,
       });
       setVideoTestimonials((prev) => {
         const next = [...prev];
@@ -401,17 +376,11 @@ export default function AdminHomepageMediaPage() {
 
     setSavingSlots((prev) => new Set(prev).add(slot));
     try {
-      const token = await getCurrentAccessToken();
-      await fetch(`${API_BASE_URL}/api/v1/media/assets/homepage_video_testimonial_${slot}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          description,
-        }),
-      });
+      await apiPut(
+        `/api/v1/media/assets/homepage_video_testimonial_${slot}`,
+        { description },
+        { auth: true },
+      );
       // Show "Saved" indicator briefly
       setSavedSlots((prev) => new Set(prev).add(slot));
       setTimeout(() => {

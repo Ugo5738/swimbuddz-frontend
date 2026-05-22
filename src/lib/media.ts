@@ -16,6 +16,23 @@ export interface MediaItem {
 }
 
 /**
+ * Narrow shape of `GET /api/v1/media/assets`. Mirrors the fields used by
+ * the homepage data loaders and admin's homepage-media manager. The full
+ * generated type is `components["schemas"]["SiteAssetResponse"]` in
+ * api-types.ts — kept narrow here to keep call sites independent of
+ * deeply-nested OpenAPI types.
+ */
+export type SiteAsset = {
+  id: string;
+  key: string;
+  description?: string | null;
+  media_item?: {
+    file_url?: string | null;
+    thumbnail_url?: string | null;
+  } | null;
+};
+
+/**
  * Upload a file to the media service
  */
 export async function uploadMedia(
