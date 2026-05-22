@@ -1,47 +1,40 @@
 "use client";
 
-import { TimezoneCombobox } from "@/components/forms/TimezoneCombobox";
 import { ClubReadinessStep } from "@/components/onboarding/ClubReadinessStep";
 import { CommunitySignalsStep } from "@/components/onboarding/CommunitySignalsStep";
 import {
-  buildGoalsNarrative,
   OTHER_GOAL_VALUE,
   parseGoalsNarrative,
   SwimBackgroundStep,
 } from "@/components/onboarding/SwimBackgroundStep";
 import { AcademyDetailsStep } from "@/components/registration/AcademyDetailsStep";
 import { ClubDetailsStep } from "@/components/registration/ClubDetailsStep";
-import { RegistrationEssentialsStep } from "@/components/registration/RegistrationEssentialsStep";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
 import { LoadingCard } from "@/components/ui/LoadingCard";
-import { Select } from "@/components/ui/Select";
-import { apiGet, apiPatch } from "@/lib/api";
-import { uploadMedia } from "@/lib/media";
-import { VolunteersApi } from "@/lib/volunteers";
-import { Camera, Loader2, X } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
+import { apiGet } from "@/lib/api";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import type { Member, OnboardingDraft, Step, StepKey } from "./types";
-import { formatDateForInput, getDraftKey, ONBOARDING_DRAFT_VERSION, safeParseDraft } from "./utils";
+import { CoreStep } from "./_onboarding/CoreStep";
+import { ProgressHeader } from "./_onboarding/ProgressHeader";
+import { ReviewStep } from "./_onboarding/ReviewStep";
+import { useOnboardingDraft } from "./_onboarding/useOnboardingDraft";
+import { useSaveOnboarding } from "./_onboarding/useSaveOnboarding";
+import type { Member, Step, StepKey } from "./types";
+import { formatDateForInput, safeParseDraft } from "./utils";
 
 export default function DashboardOnboardingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [member, setMember] = useState<Member | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [navigatingToBilling, setNavigatingToBilling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState<StepKey>("core");
   const hasInitializedStep = useRef(false);
-  const draftSaveTimer = useRef<number | null>(null);
 
   const loadMember = async (options?: { silent?: boolean }) => {
     if (!options?.silent) setLoading(true);
@@ -60,6 +53,7 @@ export default function DashboardOnboardingPage() {
     loadMember();
   }, []);
 
+  // ── Member-derived context ───────────────────────────────────────
   const approvedTiers = useMemo(() => {
     const membership = member?.membership;
     const tiers =
@@ -81,7 +75,7 @@ export default function DashboardOnboardingPage() {
 
   const requestedTiers = useMemo(
     () => (member?.membership?.requested_tiers || []).map((t: string) => String(t).toLowerCase()),
-    [member]
+    [member],
   );
   const wantsAcademy = requestedTiers.includes("academy");
   const wantsClub = requestedTiers.includes("club") || wantsAcademy;
@@ -93,7 +87,6 @@ export default function DashboardOnboardingPage() {
   const needsCoreProfile = useMemo(() => {
     if (!member) return false;
     const profile = member.profile;
-    // Check profile_photo_media_id - the source of truth (URL is just computed for display)
     return (
       !member.profile_photo_media_id ||
       !profile?.gender ||
@@ -141,7 +134,7 @@ export default function DashboardOnboardingPage() {
     const hasAssessment =
       assessment &&
       ["canFloat", "headUnderwater", "deepWaterComfort", "canSwim25m"].some((k) =>
-        Object.prototype.hasOwnProperty.call(assessment, k)
+        Object.prototype.hasOwnProperty.call(assessment, k),
       );
     return (
       !hasAssessment ||
@@ -151,6 +144,7 @@ export default function DashboardOnboardingPage() {
     );
   }, [member, academyContext]);
 
+  // ── Form state ────────────────────────────────────────────────────
   const [coreForm, setCoreForm] = useState({
     firstName: "",
     lastName: "",
@@ -206,24 +200,10 @@ export default function DashboardOnboardingPage() {
     volunteerInterest: [] as string[],
   });
 
-  const draftKey = useMemo(
-    () => (member ? getDraftKey(member) : null),
-    [member?.id, member?.email]
-  );
-
-  const clearDraft = useCallback(() => {
-    if (!draftKey) return;
-    try {
-      localStorage.removeItem(draftKey);
-    } catch {
-      // ignore
-    }
-  }, [draftKey]);
-
+  // ── Hydrate form state from member ────────────────────────────────
   useEffect(() => {
     if (!member) return;
 
-    // Extract nested records (may be null)
     const profile = member.profile;
     const emergency = member.emergency_contact;
     const availability = member.availability;
@@ -280,9 +260,10 @@ export default function DashboardOnboardingPage() {
     });
   }, [member]);
 
+  // ── Toggle helpers ───────────────────────────────────────────────
   const toggleClubMulti = (
     field: "locationPreference" | "timeOfDayAvailability",
-    option: string
+    option: string,
   ) => {
     setClubForm((prev) => {
       const current = prev[field];
@@ -320,11 +301,7 @@ export default function DashboardOnboardingPage() {
     setSwimForm((prev) => {
       const exists = prev.goals.includes(goal);
       const nextGoals = exists ? prev.goals.filter((x) => x !== goal) : [...prev.goals, goal];
-      return {
-        ...prev,
-        goals: nextGoals,
-        otherGoals: exists && goal === OTHER_GOAL_VALUE ? "" : prev.otherGoals,
-      };
+      return { ...prev, goals: nextGoals };
     });
   };
 
@@ -339,53 +316,53 @@ export default function DashboardOnboardingPage() {
     });
   };
 
+  // ── Validity flags ───────────────────────────────────────────────
   const coreFormValid = Boolean(
     coreForm.firstName &&
-    coreForm.lastName &&
-    coreForm.phone &&
-    coreForm.country &&
-    coreForm.state &&
-    coreForm.city &&
-    coreForm.gender &&
-    coreForm.dateOfBirth &&
-    (coreForm.profilePhotoMediaId || coreForm.profilePhotoUrl) &&
-    coreForm.timeZone
+      coreForm.lastName &&
+      coreForm.phone &&
+      coreForm.country &&
+      coreForm.state &&
+      coreForm.city &&
+      coreForm.gender &&
+      coreForm.dateOfBirth &&
+      (coreForm.profilePhotoMediaId || coreForm.profilePhotoUrl) &&
+      coreForm.timeZone,
   );
 
   const safetyFormValid = Boolean(
     clubForm.emergencyContactName &&
-    clubForm.emergencyContactRelationship &&
-    clubForm.emergencyContactPhone &&
-    clubForm.locationPreference.length > 0 &&
-    clubForm.timeOfDayAvailability.length > 0
+      clubForm.emergencyContactRelationship &&
+      clubForm.emergencyContactPhone &&
+      clubForm.locationPreference.length > 0 &&
+      clubForm.timeOfDayAvailability.length > 0,
   );
 
   const swimFormValid = Boolean(
     swimForm.swimLevel &&
-    swimForm.deepWaterComfort &&
-    swimForm.goals.length > 0 &&
-    (!swimForm.goals.includes(OTHER_GOAL_VALUE) ||
-      Boolean(swimForm.otherGoals && swimForm.otherGoals.trim()))
+      swimForm.deepWaterComfort &&
+      swimForm.goals.length > 0 &&
+      (!swimForm.goals.includes(OTHER_GOAL_VALUE) ||
+        Boolean(swimForm.otherGoals && swimForm.otherGoals.trim())),
   );
 
   const clubReadinessValid = !clubContext || clubReadinessForm.availabilitySlots.length > 0;
 
   const academyFormValid = Boolean(
     academyForm.academyGoals &&
-    academyForm.academyPreferredCoachGender &&
-    academyForm.academyLessonPreference
+      academyForm.academyPreferredCoachGender &&
+      academyForm.academyLessonPreference,
   );
 
+  // ── Steps + progress derivations ─────────────────────────────────
   const steps = useMemo<Step[]>(() => {
     const base: Step[] = [
       { key: "core", title: "Core profile", required: true },
       { key: "safety", title: "Safety & logistics", required: true },
       { key: "swim", title: "Swimming background", required: true },
     ];
-
     if (clubContext) base.push({ key: "club", title: "Club readiness", required: true });
     if (academyContext) base.push({ key: "academy", title: "Academy readiness", required: true });
-
     base.push({ key: "signals", title: "Community signals", required: false });
     base.push({ key: "review", title: "Finish", required: true });
     return base;
@@ -417,104 +394,6 @@ export default function DashboardOnboardingPage() {
     return "review";
   }
 
-  useEffect(() => {
-    if (!member) return;
-    if (hasInitializedStep.current) return;
-    hasInitializedStep.current = true;
-
-    // Check for step query param (e.g., ?step=club from upgrade flow)
-    const requestedStep = searchParams.get("step") as StepKey | null;
-    const allowedSteps = new Set(steps.map((s) => s.key));
-
-    const draft = safeParseDraft(draftKey ? localStorage.getItem(draftKey) : null);
-    if (draft) {
-      setCoreForm((prev) => ({
-        ...prev,
-        ...draft.coreForm,
-        profilePhotoUrl: draft.coreForm.profilePhotoUrl || prev.profilePhotoUrl,
-      }));
-      setClubForm((prev) => ({ ...prev, ...draft.clubForm }));
-      setClubReadinessForm((prev) => ({ ...prev, ...draft.clubReadinessForm }));
-      setSwimForm((prev) => ({ ...prev, ...draft.swimForm }));
-      setAcademyForm((prev) => ({ ...prev, ...draft.academyForm }));
-      setSignalsForm((prev) => ({ ...prev, ...draft.signalsForm }));
-
-      // If step query param is valid and in the allowed steps, use it; otherwise use draft or first incomplete
-      if (requestedStep && allowedSteps.has(requestedStep)) {
-        setCurrentStep(requestedStep);
-      } else {
-        setCurrentStep(
-          allowedSteps.has(draft.currentStep) ? draft.currentStep : firstIncompleteStep()
-        );
-        toast.message("Restored your in-progress onboarding");
-      }
-      return;
-    }
-
-    // If step query param is valid, jump directly to it
-    if (requestedStep && allowedSteps.has(requestedStep)) {
-      setCurrentStep(requestedStep);
-    } else {
-      setCurrentStep(firstIncompleteStep());
-    }
-  }, [
-    member,
-    needsAcademyReadiness,
-    needsClubReadiness,
-    needsCoreProfile,
-    needsSafetyLogistics,
-    needsSwimBackground,
-    searchParams,
-    steps,
-  ]);
-
-  useEffect(() => {
-    if (!draftKey) return;
-    if (!hasInitializedStep.current) return;
-
-    if (draftSaveTimer.current) {
-      window.clearTimeout(draftSaveTimer.current);
-    }
-
-    draftSaveTimer.current = window.setTimeout(() => {
-      const profilePhotoUrlToPersist =
-        coreForm.profilePhotoUrl && !coreForm.profilePhotoUrl.startsWith("data:")
-          ? coreForm.profilePhotoUrl
-          : "";
-
-      const draft: OnboardingDraft = {
-        version: ONBOARDING_DRAFT_VERSION,
-        updatedAt: Date.now(),
-        currentStep,
-        coreForm: { ...coreForm, profilePhotoUrl: profilePhotoUrlToPersist },
-        clubForm,
-        clubReadinessForm,
-        swimForm,
-        academyForm,
-        signalsForm,
-      };
-
-      try {
-        localStorage.setItem(draftKey, JSON.stringify(draft));
-      } catch {
-        // ignore (e.g., quota exceeded)
-      }
-    }, 250);
-
-    return () => {
-      if (draftSaveTimer.current) window.clearTimeout(draftSaveTimer.current);
-    };
-  }, [
-    academyForm,
-    clubForm,
-    clubReadinessForm,
-    coreForm,
-    currentStep,
-    draftKey,
-    signalsForm,
-    swimForm,
-  ]);
-
   function isStepSatisfied(step: StepKey, opts?: { assumeSatisfied?: StepKey }) {
     if (opts?.assumeSatisfied && step === opts.assumeSatisfied) return true;
     if (step === "core") return !needsCoreProfile;
@@ -539,8 +418,9 @@ export default function DashboardOnboardingPage() {
 
   const missingRequiredSteps = useMemo(() => {
     return steps.filter(
-      (step) => step.required && step.key !== "review" && !isStepSatisfied(step.key)
+      (step) => step.required && step.key !== "review" && !isStepSatisfied(step.key),
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     steps,
     needsCoreProfile,
@@ -553,7 +433,7 @@ export default function DashboardOnboardingPage() {
   const hasMissingRequiredSteps = missingRequiredSteps.length > 0;
   const firstMissingRequiredStep = missingRequiredSteps[0];
 
-  // Check for upgrade flow via URL param
+  // ── URL params + activation target ────────────────────────────────
   const upgradeStepFromUrl = searchParams.get("step") as StepKey | null;
   const isClubUpgradeFlow = upgradeStepFromUrl === "club";
 
@@ -566,8 +446,7 @@ export default function DashboardOnboardingPage() {
 
   // Academy intent wins over Club: an academy registrant pays for a cohort
   // (which auto-confers academy tier), so we send them to cohort selection
-  // rather than the Club plan picker. The duplicate `/upgrade/academy/details`
-  // form is bypassed because onboarding already collected those 4 fields.
+  // rather than the Club plan picker.
   const activationTarget = wantsAcademy
     ? "academy"
     : wantsClub || isClubUpgradeFlow
@@ -584,7 +463,6 @@ export default function DashboardOnboardingPage() {
         : activationTarget === "community"
           ? "/checkout?purpose=community"
           : "/account/billing";
-  // Prefer `?next=` when present (deep link from a specific cohort page).
   const billingHref = safeNext ?? defaultBillingHref;
   const billingCtaLabel =
     activationTarget === "academy"
@@ -609,217 +487,99 @@ export default function DashboardOnboardingPage() {
           ? "You're almost set. Activate your Community membership to unlock full access."
           : "Your onboarding details are saved. Your dashboard will guide you to activation or Academy programs when you're ready.";
 
-  const saveCore = async (): Promise<boolean> => {
-    setSaving(true);
-    try {
-      await apiPatch(
-        "/api/v1/members/me",
-        {
-          first_name: coreForm.firstName,
-          last_name: coreForm.lastName,
-          profile_photo_media_id: coreForm.profilePhotoMediaId || null,
-          profile: {
-            phone: coreForm.phone,
-            area_in_lagos: coreForm.areaInLagos || undefined,
-            address: coreForm.areaInLagos || undefined,
-            country: coreForm.country,
-            city: coreForm.city,
-            state: coreForm.state,
-            gender: coreForm.gender,
-            date_of_birth: coreForm.dateOfBirth,
-            time_zone: coreForm.timeZone,
-          },
-        },
-        { auth: true }
-      );
-      toast.success("Core profile saved");
-      clearDraft();
-      await loadMember({ silent: true });
-      return true;
-    } catch (e) {
-      toast.error("Failed to save core profile");
-      return false;
-    } finally {
-      setSaving(false);
-    }
-    return false;
-  };
+  // ── Save + draft hooks ────────────────────────────────────────────
+  const { draftKey, clearDraft } = useOnboardingDraft({
+    member,
+    currentStep,
+    coreForm,
+    clubForm,
+    clubReadinessForm,
+    swimForm,
+    academyForm,
+    signalsForm,
+    initialized: hasInitializedStep.current,
+  });
 
-  const saveSafety = async (): Promise<boolean> => {
-    setSaving(true);
-    try {
-      await apiPatch(
-        "/api/v1/members/me",
-        {
-          emergency_contact: {
-            name: clubForm.emergencyContactName,
-            contact_relationship: clubForm.emergencyContactRelationship,
-            phone: clubForm.emergencyContactPhone,
-            medical_info: clubForm.medicalInfo,
-          },
-          availability: {
-            preferred_locations: clubForm.locationPreference,
-            preferred_times: clubForm.timeOfDayAvailability,
-          },
-        },
-        { auth: true }
-      );
-      toast.success("Safety & logistics saved");
-      clearDraft();
-      await loadMember({ silent: true });
-      return true;
-    } catch (e) {
-      toast.error("Failed to save safety & logistics");
-      return false;
-    } finally {
-      setSaving(false);
-    }
-    return false;
-  };
+  const { saving, setSaving, handleContinue } = useSaveOnboarding({
+    coreForm,
+    clubForm,
+    clubReadinessForm,
+    swimForm,
+    academyForm,
+    signalsForm,
+    clubContext,
+    academyContext,
+    coreFormValid,
+    safetyFormValid,
+    swimFormValid,
+    clubReadinessValid,
+    academyFormValid,
+    currentStep,
+    setCurrentStep,
+    nextStepFrom,
+    clearDraft,
+    loadMemberSilent: () => loadMember({ silent: true }),
+  });
 
-  const saveSwimBackground = async (): Promise<boolean> => {
-    setSaving(true);
-    try {
-      await apiPatch(
-        "/api/v1/members/me",
-        {
-          profile: {
-            swim_level: swimForm.swimLevel,
-            deep_water_comfort: swimForm.deepWaterComfort,
-            strokes: swimForm.strokes,
-            personal_goals: buildGoalsNarrative(swimForm.goals, swimForm.otherGoals),
-          },
-        },
-        { auth: true }
-      );
-      toast.success("Swimming background saved");
-      clearDraft();
-      await loadMember({ silent: true });
-      return true;
-    } catch {
-      toast.error("Failed to save swimming background");
-      return false;
-    } finally {
-      setSaving(false);
-    }
-    return false;
-  };
+  // ── Initial step setup: URL param > restored draft > first incomplete
+  useEffect(() => {
+    if (!member) return;
+    if (hasInitializedStep.current) return;
+    hasInitializedStep.current = true;
 
-  const saveClubReadiness = async (): Promise<boolean> => {
-    if (!clubContext) return true;
-    setSaving(true);
-    try {
-      await apiPatch(
-        "/api/v1/members/me",
-        {
-          availability: {
-            available_days: clubReadinessForm.availabilitySlots,
-          },
-          membership: {
-            club_notes: clubReadinessForm.clubNotes || undefined,
-          },
-        },
-        { auth: true }
-      );
-      toast.success("Club readiness saved");
-      clearDraft();
-      await loadMember({ silent: true });
-      return true;
-    } catch {
-      toast.error("Failed to save Club readiness");
-      return false;
-    } finally {
-      setSaving(false);
-    }
-    return false;
-  };
+    const requestedStep = searchParams.get("step") as StepKey | null;
+    const allowedSteps = new Set(steps.map((s) => s.key));
 
-  const saveAcademy = async (): Promise<boolean> => {
-    if (!academyContext) return true;
-    setSaving(true);
-    try {
-      await apiPatch(
-        "/api/v1/members/me",
-        {
-          membership: {
-            academy_skill_assessment: academyForm.academySkillAssessment,
-            academy_goals: academyForm.academyGoals,
-            academy_preferred_coach_gender: academyForm.academyPreferredCoachGender,
-            academy_lesson_preference: academyForm.academyLessonPreference,
-          },
-        },
-        { auth: true }
-      );
-      toast.success("Academy readiness saved");
-      clearDraft();
-      await loadMember({ silent: true });
-      return true;
-    } catch (e) {
-      toast.error("Failed to save Academy readiness");
-      return false;
-    } finally {
-      setSaving(false);
-    }
-    return false;
-  };
+    const draft = safeParseDraft(draftKey ? localStorage.getItem(draftKey) : null);
+    if (draft) {
+      setCoreForm((prev) => ({
+        ...prev,
+        ...draft.coreForm,
+        profilePhotoUrl: draft.coreForm.profilePhotoUrl || prev.profilePhotoUrl,
+      }));
+      setClubForm((prev) => ({ ...prev, ...draft.clubForm }));
+      setClubReadinessForm((prev) => ({ ...prev, ...draft.clubReadinessForm }));
+      setSwimForm((prev) => ({ ...prev, ...draft.swimForm }));
+      setAcademyForm((prev) => ({ ...prev, ...draft.academyForm }));
+      setSignalsForm((prev) => ({ ...prev, ...draft.signalsForm }));
 
-  const saveSignals = async () => {
-    setSaving(true);
-    try {
-      await apiPatch(
-        "/api/v1/members/me",
-        {
-          profile: {
-            interests: signalsForm.interests,
-          },
-          preferences: {
-            volunteer_interest: signalsForm.volunteerInterest,
-          },
-        },
-        { auth: true }
-      );
-
-      // Also create/update volunteer profile in volunteer service
-      // Map category codes from registration to role IDs
-      if (signalsForm.volunteerInterest.length > 0) {
-        try {
-          const allRoles = await VolunteersApi.listRoles();
-          const roleIds = signalsForm.volunteerInterest
-            .map((cat) => {
-              const match = allRoles.find((r) => r.category.toLowerCase() === cat.toLowerCase());
-              return match?.id;
-            })
-            .filter(Boolean) as string[];
-
-          if (roleIds.length > 0) {
-            try {
-              // Try to create new profile
-              await VolunteersApi.registerAsVolunteer({
-                preferred_roles: roleIds,
-              });
-            } catch {
-              // 409 = already registered → update instead
-              await VolunteersApi.updateMyProfile({
-                preferred_roles: roleIds,
-              }).catch(() => {});
-            }
-          }
-        } catch {
-          // Non-critical — volunteer profile sync is best-effort
-          console.warn("Could not sync volunteer profile from onboarding");
-        }
+      if (requestedStep && allowedSteps.has(requestedStep)) {
+        setCurrentStep(requestedStep);
+      } else {
+        setCurrentStep(
+          allowedSteps.has(draft.currentStep) ? draft.currentStep : firstIncompleteStep(),
+        );
+        toast.message("Restored your in-progress onboarding");
       }
-
-      toast.success("Preferences saved");
-      clearDraft();
-      await loadMember({ silent: true });
-    } catch {
-      toast.error("Failed to save preferences");
-    } finally {
-      setSaving(false);
+      return;
     }
+
+    if (requestedStep && allowedSteps.has(requestedStep)) {
+      setCurrentStep(requestedStep);
+    } else {
+      setCurrentStep(firstIncompleteStep());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    member,
+    needsAcademyReadiness,
+    needsClubReadiness,
+    needsCoreProfile,
+    needsSafetyLogistics,
+    needsSwimBackground,
+    searchParams,
+    steps,
+    draftKey,
+  ]);
+
+  // ── Nav helpers ───────────────────────────────────────────────────
+  const prevStepKey = steps[stepIndex - 1]?.key;
+  const canGoBack = Boolean(prevStepKey);
+  const goBack = () => {
+    if (prevStepKey) setCurrentStep(prevStepKey);
   };
 
+  // ── Render ────────────────────────────────────────────────────────
   if (loading) {
     return <LoadingCard text="Loading onboarding..." />;
   }
@@ -836,78 +596,6 @@ export default function DashboardOnboardingPage() {
 
   if (!member) return null;
 
-  const nextStepKey = steps[stepIndex + 1]?.key;
-  const prevStepKey = steps[stepIndex - 1]?.key;
-
-  const canGoBack = Boolean(prevStepKey);
-
-  const goNext = () => {
-    if (nextStepKey) setCurrentStep(nextStepKey);
-  };
-
-  const goBack = () => {
-    if (prevStepKey) setCurrentStep(prevStepKey);
-  };
-
-  const handleContinue = async () => {
-    if (currentStep === "core") {
-      if (!coreFormValid) return;
-      const saved = await saveCore();
-      if (!saved) return;
-      setCurrentStep(nextStepFrom("core", { assumeSatisfied: "core" }));
-      return;
-    }
-
-    if (currentStep === "safety") {
-      if (!safetyFormValid) return;
-      const saved = await saveSafety();
-      if (!saved) return;
-      setCurrentStep(nextStepFrom("safety", { assumeSatisfied: "safety" }));
-      return;
-    }
-
-    if (currentStep === "swim") {
-      if (!swimFormValid) return;
-      const saved = await saveSwimBackground();
-      if (!saved) return;
-      setCurrentStep(nextStepFrom("swim", { assumeSatisfied: "swim" }));
-      return;
-    }
-
-    if (currentStep === "club") {
-      if (!clubReadinessValid) return;
-      const saved = await saveClubReadiness();
-      if (!saved) return;
-      setCurrentStep(nextStepFrom("club", { assumeSatisfied: "club" }));
-      return;
-    }
-
-    if (currentStep === "academy") {
-      if (!academyFormValid) return;
-      const saved = await saveAcademy();
-      if (!saved) return;
-      setCurrentStep(nextStepFrom("academy", { assumeSatisfied: "academy" }));
-      return;
-    }
-
-    if (currentStep === "signals") {
-      const hasAnything =
-        (signalsForm.interests && signalsForm.interests.length > 0) ||
-        (signalsForm.volunteerInterest && signalsForm.volunteerInterest.length > 0);
-      if (hasAnything) await saveSignals();
-      setCurrentStep("review");
-      return;
-    }
-
-    if (currentStep === "review") {
-      clearDraft();
-      router.push("/account");
-      return;
-    }
-
-    goNext();
-  };
-
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <header className="space-y-2">
@@ -917,16 +605,12 @@ export default function DashboardOnboardingPage() {
         </p>
       </header>
 
-      <Card className="p-4 space-y-3">
-        <div className="flex items-center justify-between gap-4">
-          <div className="text-sm text-slate-600">
-            Step {currentNumber} of {stepCount} • {currentStepTitle} • {progressPercent}% complete
-          </div>
-        </div>
-        <div className="h-2 w-full rounded-full bg-slate-100">
-          <div className="h-2 rounded-full bg-cyan-600" style={{ width: `${progressPercent}%` }} />
-        </div>
-      </Card>
+      <ProgressHeader
+        currentNumber={currentNumber}
+        stepCount={stepCount}
+        currentStepTitle={currentStepTitle}
+        progressPercent={progressPercent}
+      />
 
       {wantsAcademy &&
       member?.membership?.requested_tiers &&
@@ -942,162 +626,12 @@ export default function DashboardOnboardingPage() {
 
       <Card className="p-6 space-y-6">
         {currentStep === "core" ? (
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <h2 className="text-xl font-semibold text-slate-900">Core profile</h2>
-              <p className="text-sm text-slate-600">
-                Basic identity and contact details so we can support you safely.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <label className="block text-sm font-medium text-slate-700">
-                Profile photo <span className="text-rose-500">*</span>
-              </label>
-              <div className="flex items-center gap-6">
-                <label className="relative group cursor-pointer">
-                  <div
-                    className={[
-                      "relative h-24 w-24 overflow-hidden rounded-full transition-all",
-                      coreForm.profilePhotoUrl
-                        ? "ring-4 ring-cyan-200"
-                        : "bg-gradient-to-br from-cyan-100 to-cyan-200 hover:from-cyan-200 hover:to-cyan-300",
-                    ].join(" ")}
-                  >
-                    {coreForm.profilePhotoUrl ? (
-                      <Image
-                        src={coreForm.profilePhotoUrl}
-                        alt="Profile preview"
-                        fill
-                        sizes="96px"
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-cyan-700">
-                        {saving ? (
-                          <Loader2 className="h-7 w-7 animate-spin" />
-                        ) : (
-                          <>
-                            <Camera className="h-7 w-7" />
-                            <span className="text-xs font-medium">Add photo</span>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="sr-only"
-                    disabled={saving}
-                    onChange={async (event) => {
-                      const input = event.currentTarget;
-                      const file = input.files?.[0];
-                      if (!file) return;
-                      input.value = "";
-
-                      setSaving(true);
-                      try {
-                        const mediaItem = await uploadMedia(file, "profile_photo");
-                        setCoreForm((prev) => ({
-                          ...prev,
-                          profilePhotoMediaId: mediaItem.id,
-                          profilePhotoUrl: mediaItem.file_url,
-                        }));
-                        toast.success("Photo uploaded!");
-                      } catch (err) {
-                        toast.error(err instanceof Error ? err.message : "Failed to upload photo");
-                      } finally {
-                        setSaving(false);
-                      }
-                    }}
-                  />
-                  {coreForm.profilePhotoUrl && !saving ? (
-                    <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 flex items-center justify-center">
-                      <Camera className="h-8 w-8 text-white" />
-                    </div>
-                  ) : null}
-                </label>
-                <div className="flex-1 space-y-2">
-                  <p className="text-sm text-slate-700 font-medium">
-                    {coreForm.profilePhotoUrl ? "Tap to change photo" : "Tap the circle to upload"}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    JPG/PNG/GIF. This helps members recognize you.
-                  </p>
-                  {coreForm.profilePhotoUrl ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        setCoreForm((prev) => ({
-                          ...prev,
-                          profilePhotoMediaId: "",
-                          profilePhotoUrl: "",
-                        }))
-                      }
-                      className="gap-2"
-                    >
-                      <X className="h-4 w-4" />
-                      Remove photo
-                    </Button>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-
-            <RegistrationEssentialsStep
-              mode="onboarding"
-              includeSwimLevel={false}
-              includeAcquisitionSource={false}
-              formData={{
-                firstName: coreForm.firstName,
-                lastName: coreForm.lastName,
-                phone: coreForm.phone,
-                city: coreForm.city,
-                state: coreForm.state,
-                country: coreForm.country,
-              }}
-              onUpdate={(field, value) => setCoreForm((prev) => ({ ...prev, [field]: value }))}
-            />
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <Select
-                label="Gender"
-                name="gender"
-                value={coreForm.gender}
-                onChange={(e) => setCoreForm((prev) => ({ ...prev, gender: e.target.value }))}
-                required
-              >
-                <option value="">Select gender</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-              </Select>
-
-              <Input
-                label="Date of birth"
-                name="dateOfBirth"
-                type="date"
-                value={coreForm.dateOfBirth}
-                onChange={(e) =>
-                  setCoreForm((prev) => ({
-                    ...prev,
-                    dateOfBirth: e.target.value,
-                  }))
-                }
-                required
-              />
-            </div>
-
-            <TimezoneCombobox
-              label="Time zone"
-              value={coreForm.timeZone}
-              onChange={(value) => setCoreForm((prev) => ({ ...prev, timeZone: value }))}
-              required
-              name="timeZone"
-            />
-          </div>
+          <CoreStep
+            coreForm={coreForm}
+            setCoreForm={setCoreForm}
+            saving={saving}
+            setSaving={setSaving}
+          />
         ) : null}
 
         {currentStep === "safety" ? (
@@ -1105,7 +639,9 @@ export default function DashboardOnboardingPage() {
             mode="onboarding"
             includeNotesField={false}
             formData={clubForm}
-            onUpdate={(field, value) => setClubForm((prev) => ({ ...prev, [field]: value as any }))}
+            onUpdate={(field, value) =>
+              setClubForm((prev) => ({ ...prev, [field]: value as any }))
+            }
             onToggleMulti={(field, option) => {
               if (field === "locationPreference" || field === "timeOfDayAvailability") {
                 toggleClubMulti(field, option);
@@ -1117,7 +653,9 @@ export default function DashboardOnboardingPage() {
         {currentStep === "swim" ? (
           <SwimBackgroundStep
             formData={swimForm}
-            onUpdate={(field, value) => setSwimForm((prev) => ({ ...prev, [field]: value as any }))}
+            onUpdate={(field, value) =>
+              setSwimForm((prev) => ({ ...prev, [field]: value as any }))
+            }
             onToggleStroke={toggleStroke}
             onToggleGoal={toggleGoal}
           />
@@ -1166,54 +704,20 @@ export default function DashboardOnboardingPage() {
         ) : null}
 
         {currentStep === "review" ? (
-          <div className="space-y-4 text-center">
-            {hasMissingRequiredSteps ? (
-              <>
-                <h2 className="text-xl font-semibold text-slate-900">Almost there</h2>
-                <p className="text-sm text-slate-600">
-                  Finish {missingRequiredSteps.map((step) => step.title).join(", ")} to complete
-                  setup.
-                </p>
-                <div className="flex justify-center gap-3">
-                  {firstMissingRequiredStep ? (
-                    <Button onClick={() => setCurrentStep(firstMissingRequiredStep.key)}>
-                      Continue {firstMissingRequiredStep.title}
-                    </Button>
-                  ) : null}
-                  <Link href="/account">
-                    <Button variant="outline">Go to Dashboard</Button>
-                  </Link>
-                </div>
-              </>
-            ) : (
-              <>
-                <h2 className="text-xl font-semibold text-slate-900">Onboarding complete</h2>
-                <p className="text-sm text-slate-600">{reviewDescription}</p>
-                <div className="flex justify-center gap-3">
-                  {showBillingCta ? (
-                    <Button
-                      onClick={() => {
-                        setNavigatingToBilling(true);
-                        router.push(billingHref);
-                      }}
-                      disabled={navigatingToBilling}
-                    >
-                      {navigatingToBilling ? "Loading..." : billingCtaLabel}
-                    </Button>
-                  ) : (
-                    <Link href="/account">
-                      <Button>Go to Dashboard</Button>
-                    </Link>
-                  )}
-                  {!showBillingCta ? (
-                    <Link href="/account/profile">
-                      <Button variant="outline">Review Profile</Button>
-                    </Link>
-                  ) : null}
-                </div>
-              </>
-            )}
-          </div>
+          <ReviewStep
+            hasMissingRequiredSteps={hasMissingRequiredSteps}
+            missingRequiredSteps={missingRequiredSteps}
+            firstMissingRequiredStep={firstMissingRequiredStep}
+            onJumpToStep={setCurrentStep}
+            reviewDescription={reviewDescription}
+            showBillingCta={showBillingCta}
+            billingCtaLabel={billingCtaLabel}
+            navigatingToBilling={navigatingToBilling}
+            onActivate={() => {
+              setNavigatingToBilling(true);
+              router.push(billingHref);
+            }}
+          />
         ) : null}
 
         {currentStep !== "review" ? (
