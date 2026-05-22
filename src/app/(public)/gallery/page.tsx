@@ -1,11 +1,11 @@
 "use client";
 
 import { Card } from "@/components/ui/Card";
-import { apiEndpoints } from "@/lib/config";
+import { useApi } from "@/hooks/useApi";
 import { Camera, Images } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 
 type Photo = {
   id: string;
@@ -88,32 +88,14 @@ function AlbumSkeleton() {
 }
 
 export default function GalleryPage() {
-  const [albums, setAlbums] = useState<Album[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string | null>(null);
   const [loadedCovers, setLoadedCovers] = useState<Set<string>>(new Set());
 
-  const fetchAlbums = useCallback(async () => {
-    try {
-      setLoading(true);
-      const url = filter
-        ? `${apiEndpoints.media}/albums?album_type=${filter}`
-        : `${apiEndpoints.media}/albums`;
-      const response = await fetch(url);
-      if (response.ok) {
-        const data = await response.json();
-        setAlbums(data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch albums:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [filter]);
-
-  useEffect(() => {
-    fetchAlbums();
-  }, [fetchAlbums]);
+  const path = filter
+    ? `/api/v1/media/albums?album_type=${filter}`
+    : `/api/v1/media/albums`;
+  const { data, loading } = useApi<Album[]>(path, { auth: false });
+  const albums = data ?? [];
 
   const handleCoverLoad = (albumId: string) => {
     setLoadedCovers((prev) => new Set(prev).add(albumId));

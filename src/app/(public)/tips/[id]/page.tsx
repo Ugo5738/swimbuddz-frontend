@@ -3,7 +3,7 @@
 import { BlockViewer } from "@/components/editor/BlockViewer";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
-import { apiEndpoints } from "@/lib/config";
+import { useApi } from "@/hooks/useApi";
 import { format } from "date-fns";
 import {
   ArrowLeft,
@@ -15,7 +15,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 
 interface ContentPost {
   id: string;
@@ -56,63 +56,44 @@ export default function TipDetailPage() {
   const params = useParams();
   const postId = params?.id as string;
 
-  const [post, setPost] = useState<ContentPost | null>(null);
-  const [relatedPosts, setRelatedPosts] = useState<ContentPost[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Primary post fetch. useApi handles abort/unmount + maps non-2xx + network
+  // errors into a string. We layer the content-based access checks (status,
+  // tier_access) on top of the loaded payload.
+  const {
+    data: postData,
+    loading,
+    error: fetchError,
+  } = useApi<ContentPost>(postId ? `/api/v1/content/${postId}` : null, {
+    auth: false,
+  });
 
-  useEffect(() => {
-    if (postId) {
-      fetchPost();
-    }
-  }, [postId]);
+  const error: string | null = fetchError
+    ? "Failed to load article."
+    : postData && postData.status !== "published"
+      ? "This article is not available."
+      : postData && postData.tier_access !== "community"
+        ? "This article is only available to members."
+        : null;
 
-  const fetchPost = async () => {
-    try {
-      const response = await fetch(`${apiEndpoints.content}/${postId}`);
-      if (response.ok) {
-        const data = await response.json();
+  // Only render the post once we've cleared the content-based access gates.
+  const post: ContentPost | null = postData && !error ? postData : null;
 
-        // Check if post is published and accessible
-        if (data.status !== "published") {
-          setError("This article is not available.");
-          return;
-        }
+  // Related posts: fetch only after we have a valid post + category. Passing
+  // `null` to useApi short-circuits the request.
+  const { data: relatedData } = useApi<ContentPost[]>(
+    post
+      ? `/api/v1/content/?published_only=true&category=${post.category}`
+      : null,
+    { auth: false },
+  );
 
-        // Check tier access - only show community posts to public
-        if (data.tier_access !== "community") {
-          setError("This article is only available to members.");
-          return;
-        }
-
-        setPost(data);
-
-        // Fetch related posts in same category
-        const relatedResponse = await fetch(
-          `${apiEndpoints.content}/?published_only=true&category=${data.category}`,
-        );
-        if (relatedResponse.ok) {
-          const relatedData = await relatedResponse.json();
-          const filtered = relatedData
-            .filter(
-              (p: ContentPost) =>
-                p.id !== postId && p.tier_access === "community",
-            )
-            .slice(0, 3);
-          setRelatedPosts(filtered);
-        }
-      } else if (response.status === 404) {
-        setError("Article not found.");
-      } else {
-        setError("Failed to load article.");
-      }
-    } catch (err) {
-      console.error("Failed to fetch post:", err);
-      setError("Failed to load article.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const relatedPosts = useMemo(
+    () =>
+      (relatedData ?? [])
+        .filter((p) => p.id !== postId && p.tier_access === "community")
+        .slice(0, 3),
+    [relatedData, postId],
+  );
 
   if (loading) {
     return <LoadingCard text="Loading article..." />;

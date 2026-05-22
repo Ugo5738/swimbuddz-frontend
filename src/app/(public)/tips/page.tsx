@@ -2,12 +2,12 @@
 
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
-import { apiEndpoints } from "@/lib/config";
+import { useApi } from "@/hooks/useApi";
 import { format } from "date-fns";
 import { BookOpen, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 
 interface ContentPost {
   id: string;
@@ -43,33 +43,18 @@ const categoryColors: Record<string, string> = {
 };
 
 export default function TipsPage() {
-  const [posts, setPosts] = useState<ContentPost[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchPosts();
-  }, []);
+  const { data, loading } = useApi<ContentPost[]>(
+    "/api/v1/content/?published_only=true",
+    { auth: false },
+  );
 
-  const fetchPosts = async () => {
-    try {
-      const response = await fetch(
-        `${apiEndpoints.content}/?published_only=true`,
-      );
-      if (response.ok) {
-        const data = await response.json();
-        // Only show community-accessible posts to public visitors
-        const publicPosts = data.filter(
-          (post: ContentPost) => post.tier_access === "community",
-        );
-        setPosts(publicPosts);
-      }
-    } catch (error) {
-      console.error("Failed to fetch content:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Only show community-accessible posts to public visitors
+  const posts = useMemo(
+    () => (data ?? []).filter((post) => post.tier_access === "community"),
+    [data],
+  );
 
   const filteredPosts = selectedCategory
     ? posts.filter((post) => post.category === selectedCategory)
