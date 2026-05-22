@@ -10,6 +10,7 @@ import { MediaInput } from "@/components/ui/MediaInput";
 import { getMediaUrl } from "@/lib/media";
 import { PoolsApi, type PoolAsset, type PoolAssetCreate, type PoolAssetType } from "@/lib/pools";
 import { Image as ImageIcon, Pencil, Plus, Star, Trash2 } from "lucide-react";
+import NextImage from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -138,12 +139,15 @@ function AssetCard({
     <Card className="p-3">
       <div className="flex items-start gap-3">
         {isPhoto && resolvedUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={resolvedUrl}
-            alt={asset.title ?? "pool asset"}
-            className="w-20 h-20 rounded-lg object-cover border border-slate-200"
-          />
+          <div className="relative w-20 h-20 overflow-hidden rounded-lg border border-slate-200">
+            <NextImage
+              src={resolvedUrl}
+              alt={asset.title ?? "pool asset"}
+              fill
+              sizes="80px"
+              className="object-cover"
+            />
+          </div>
         ) : isVideo && resolvedUrl ? (
           <video
             src={resolvedUrl}

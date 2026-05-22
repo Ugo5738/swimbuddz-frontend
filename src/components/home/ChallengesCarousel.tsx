@@ -30,6 +30,7 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -234,10 +235,12 @@ function ChallengeTile({ challenge }: { challenge: PublicChallenge }) {
               className="h-full w-full object-cover"
             />
           ) : (
-            <img
+            <Image
               src={previewUrl}
               alt={challenge.title}
-              className="h-full w-full object-cover transition-transform group-hover:scale-105"
+              fill
+              sizes="(max-width: 640px) 100vw, 320px"
+              className="object-cover transition-transform group-hover:scale-105"
             />
           )
         ) : (
@@ -353,10 +356,12 @@ function SingleChallengeHero({ challenge }: { challenge: PublicChallenge }) {
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <img
+                <Image
                   src={previewUrl}
                   alt={challenge.title}
-                  className="h-full w-full object-cover"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover"
                 />
               )
             ) : (

@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/Card";
 import type { Testimonial } from "@/lib/testimonials";
+import Image from "next/image";
 
 type Props = {
   testimonials: Testimonial[];
@@ -36,12 +37,15 @@ export function TestimonialStrip({ testimonials }: Props) {
             </blockquote>
             <div className="flex items-center gap-3 pt-2 border-t border-slate-100">
               {t.photo_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={t.photo_url}
-                  alt={t.name}
-                  className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                />
+                <div className="relative w-10 h-10 overflow-hidden rounded-full flex-shrink-0">
+                  <Image
+                    src={t.photo_url}
+                    alt={t.name}
+                    fill
+                    sizes="40px"
+                    className="object-cover"
+                  />
+                </div>
               ) : (
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
                   {t.initials}

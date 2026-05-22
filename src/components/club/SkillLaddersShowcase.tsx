@@ -26,6 +26,7 @@ import {
   listChallengesBySeries,
 } from "@/lib/challenges";
 import { Check, ChevronRight, Lock, Trophy } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -224,10 +225,12 @@ function SkillStepTile({
               className="h-full w-full object-cover"
             />
           ) : (
-            <img
+            <Image
               src={previewUrl}
               alt=""
-              className="h-full w-full object-cover"
+              fill
+              sizes="260px"
+              className="object-cover"
             />
           )
         ) : (
