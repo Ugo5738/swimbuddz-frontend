@@ -14,6 +14,14 @@ import {
   computeLateJoinContext,
 } from "./LateJoinDisclosureModal";
 
+// TEMP FLAG (re-enable 2026-05-24 / "in 2 days"):
+//   Flip to `true` to restore the late-join disclosure flow — the amber badge
+//   on mid-cohort cards AND the modal that fires when the member clicks
+//   Continue. All other plumbing (modal component, upgrade context, checkout
+//   payload, admin/coach prefs view) is intentionally left intact so this is
+//   a single-line revert.
+const LATE_JOIN_DISCLOSURE_ENABLED = false;
+
 function formatDate(value?: string | null) {
   if (!value) return "—";
   const date = new Date(value);
@@ -85,10 +93,12 @@ export default function AcademyCohortSelectionPage() {
     // Intercept mid-cohort joins with a disclosure modal. The modal calls
     // proceedToCheckout once the member has acknowledged & supplied their
     // make-up availability preferences.
-    const ctx = computeLateJoinContext(cohort);
-    if (ctx.isLateJoin) {
-      setLateJoinFor(cohort);
-      return;
+    if (LATE_JOIN_DISCLOSURE_ENABLED) {
+      const ctx = computeLateJoinContext(cohort);
+      if (ctx.isLateJoin) {
+        setLateJoinFor(cohort);
+        return;
+      }
     }
 
     // Clear any stale late-join prefs from a previously-selected cohort.
@@ -181,7 +191,7 @@ export default function AcademyCohortSelectionPage() {
                     )}
                   </div>
 
-                  {ctx.isLateJoin && (
+                  {LATE_JOIN_DISCLOSURE_ENABLED && ctx.isLateJoin && (
                     <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">
                       <AlertCircle className="h-3.5 w-3.5" />
                       <span>
