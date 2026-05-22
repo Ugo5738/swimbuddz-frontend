@@ -1,0 +1,76 @@
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import Link from "next/link";
+
+import type { Member } from "../types";
+import { formatDate } from "../utils";
+
+type Props = {
+  member: Member | null;
+  clubActive: boolean;
+  communityActive: boolean;
+};
+
+export function ClubCard({ member, clubActive, communityActive }: Props) {
+  if (clubActive) {
+    return (
+      <Card className="p-4 md:p-6 space-y-3 md:space-y-4">
+        <div>
+          <h2 className="text-base md:text-lg font-semibold text-slate-900">Club</h2>
+          <p className="text-xs md:text-sm text-slate-600 mt-0.5 md:mt-1">
+            Recurring membership for regular sessions with coaches.
+          </p>
+        </div>
+
+        <dl className="space-y-1.5 md:space-y-2 text-sm">
+          <div className="flex justify-between md:grid md:grid-cols-3 md:gap-2">
+            <dt className="text-slate-600">Status</dt>
+            <dd className="md:col-span-2 font-medium text-emerald-600">✓ Active</dd>
+          </div>
+          <div className="flex justify-between md:grid md:grid-cols-3 md:gap-2">
+            <dt className="text-slate-600">Valid until</dt>
+            <dd className="md:col-span-2 font-medium text-slate-900">
+              {formatDate(member?.membership?.club_paid_until)}
+            </dd>
+          </div>
+        </dl>
+
+        <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3 md:p-4 text-xs md:text-sm text-emerald-800">
+          <p className="font-medium">Your Club membership is active!</p>
+          <p className="mt-0.5 md:mt-1 text-emerald-600">
+            You can book sessions and access all Club features.
+          </p>
+        </div>
+      </Card>
+    );
+  }
+
+  if (communityActive) {
+    return (
+      <Card className="p-4 md:p-6 space-y-3 md:space-y-4">
+        <div>
+          <h2 className="text-base md:text-lg font-semibold text-slate-900">
+            Want to join Club?
+          </h2>
+          <p className="text-xs md:text-sm text-slate-600 mt-0.5 md:mt-1">
+            Get access to regular swimming sessions with coaches. Pay quarterly,
+            bi-annually, or annually.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:items-center">
+          <Link href="/upgrade/club/readiness" className="block">
+            <Button className="w-full sm:w-auto">Upgrade to Club</Button>
+          </Link>
+          <Link
+            href="/membership"
+            className="text-sm text-cyan-600 hover:text-cyan-800 text-center sm:text-left"
+          >
+            How it works →
+          </Link>
+        </div>
+      </Card>
+    );
+  }
+
+  return null;
+}
