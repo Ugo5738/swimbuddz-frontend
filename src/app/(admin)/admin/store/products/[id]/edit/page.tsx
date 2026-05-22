@@ -1,26 +1,20 @@
 "use client";
 
-import { AudioOverlayPanel } from "@/components/media/AudioOverlayPanel";
 import { LoadingCard } from "@/components/ui/LoadingCard";
-import { MediaInput } from "@/components/ui/MediaInput";
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
-import Image from "next/image";
+import { DragEndEvent } from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
-// DnD Kit imports for image reordering
-import {
-  DndContext,
-  DragEndEvent,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
-
-import { SortableImageWrapper } from "./components";
+import { BasicInfoSection } from "./_edit/BasicInfoSection";
+import { ImagesCard } from "./_edit/ImagesCard";
+import { PricingSection } from "./_edit/PricingSection";
+import { SettingsSection } from "./_edit/SettingsSection";
+import { VariantOptionsEditor } from "./_edit/VariantOptionsEditor";
+import { VariantsSidebar } from "./_edit/VariantsSidebar";
+import { VideosCard } from "./_edit/VideosCard";
 import type {
   Category,
   Product,
@@ -45,7 +39,7 @@ export default function EditProductPage() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Variant creation form state
+  // Variant form state
   const [showVariantForm, setShowVariantForm] = useState(false);
   const [savingVariant, setSavingVariant] = useState(false);
   const [deletingVariantId, setDeletingVariantId] = useState<string | null>(null);
@@ -54,7 +48,7 @@ export default function EditProductPage() {
     sku: "",
     price_override_ngn: "",
     weight_grams: "",
-    options: "" as string, // JSON string or simple "Size: XL" format
+    options: "" as string,
   });
 
   // Image management state
@@ -80,20 +74,13 @@ export default function EditProductPage() {
   // Image ↔ variant linking state
   const [linkingImageId, setLinkingImageId] = useState<string | null>(null);
 
-  // DnD sensors for image reordering
-  const dndSensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
-  );
-
   useEffect(() => {
     const loadData = async () => {
       try {
         const [cats, suppData, prod] = await Promise.all([
           apiGet<Category[]>("/api/v1/admin/store/categories", { auth: true }),
           apiGet<SuppliersResponse>("/api/v1/admin/store/suppliers?page_size=100", { auth: true }),
-          apiGet<Product>(`/api/v1/admin/store/products/${productId}`, {
-            auth: true,
-          }),
+          apiGet<Product>(`/api/v1/admin/store/products/${productId}`, { auth: true }),
         ]);
         setCategories(cats);
         setSuppliers(suppData.items);
@@ -102,7 +89,7 @@ export default function EditProductPage() {
         setImages(
           (prod.images || [])
             .slice()
-            .sort((a: ProductImage, b: ProductImage) => a.sort_order - b.sort_order)
+            .sort((a: ProductImage, b: ProductImage) => a.sort_order - b.sort_order),
         );
         setVideos(prod.videos || []);
 
@@ -134,7 +121,9 @@ export default function EditProductPage() {
           description: prod.description || "",
           short_description: prod.short_description || "",
           base_price_ngn: String(prod.base_price_ngn),
-          compare_at_price_ngn: prod.compare_at_price_ngn ? String(prod.compare_at_price_ngn) : "",
+          compare_at_price_ngn: prod.compare_at_price_ngn
+            ? String(prod.compare_at_price_ngn)
+            : "",
           status: prod.status,
           is_featured: prod.is_featured,
           sourcing_type: prod.sourcing_type,
@@ -155,12 +144,11 @@ export default function EditProductPage() {
   }, [productId]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const target = e.target;
     const name = target.name;
     const value = target.type === "checkbox" ? (target as HTMLInputElement).checked : target.value;
-
     setFormData((prev) => (prev ? { ...prev, [name]: value } : null));
   };
 
@@ -201,9 +189,7 @@ export default function EditProductPage() {
         variant_options: builtVariantOptions,
       };
 
-      await apiPatch(`/api/v1/admin/store/products/${productId}`, payload, {
-        auth: true,
-      });
+      await apiPatch(`/api/v1/admin/store/products/${productId}`, payload, { auth: true });
       toast.success("Product updated successfully");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update product");
@@ -242,7 +228,6 @@ export default function EditProductPage() {
       if (variantForm.sku.trim()) {
         payload.sku = variantForm.sku.trim();
       }
-
       if (variantForm.price_override_ngn) {
         payload.price_override_ngn = parseFloat(variantForm.price_override_ngn);
       }
@@ -253,7 +238,7 @@ export default function EditProductPage() {
       const newVariant = await apiPost<Variant>(
         `/api/v1/admin/store/products/${productId}/variants`,
         payload,
-        { auth: true }
+        { auth: true },
       );
 
       setVariants((prev) => [...prev, newVariant]);
@@ -286,7 +271,6 @@ export default function EditProductPage() {
       delete next[dim];
       return next;
     });
-    // Clean up swatches for this dimension if it was Color
     if (dim.toLowerCase() === "color") {
       setColorSwatches({});
     }
@@ -316,7 +300,6 @@ export default function EditProductPage() {
       ...prev,
       [dim]: (prev[dim] || []).filter((v) => v !== val),
     }));
-    // Clean up swatch if removing a color value
     if (dim.toLowerCase() === "color") {
       setColorSwatches((prev) => {
         const next = { ...prev };
@@ -358,9 +341,9 @@ export default function EditProductPage() {
             apiPatch(
               `/api/v1/admin/store/products/${productId}/images/${img.id}`,
               { sort_order: idx },
-              { auth: true }
-            )
-          )
+              { auth: true },
+            ),
+          ),
         );
         toast.success("Image order updated");
       } catch (error) {
@@ -368,7 +351,7 @@ export default function EditProductPage() {
         toast.error("Failed to save image order");
       }
     },
-    [images, productId]
+    [images, productId],
   );
 
   // ─── Image ↔ Variant Linking ───
@@ -377,7 +360,7 @@ export default function EditProductPage() {
       const updated = await apiPatch<ProductImage>(
         `/api/v1/admin/store/products/${productId}/images/${imageId}`,
         { variant_id: variantId },
-        { auth: true }
+        { auth: true },
       );
       setImages((prev) => prev.map((img) => (img.id === imageId ? updated : img)));
       setLinkingImageId(null);
@@ -403,7 +386,7 @@ export default function EditProductPage() {
       const newImage = await apiPost<ProductImage>(
         `/api/v1/admin/store/products/${productId}/images`,
         payload,
-        { auth: true }
+        { auth: true },
       );
 
       setImages((prev) => [...prev, newImage]);
@@ -438,7 +421,7 @@ export default function EditProductPage() {
       await apiPatch(
         `/api/v1/admin/store/products/${productId}/images/${imageId}`,
         { is_primary: true },
-        { auth: true }
+        { auth: true },
       );
       setImages((prev) => prev.map((img) => ({ ...img, is_primary: img.id === imageId })));
       toast.success("Primary image updated");
@@ -455,7 +438,7 @@ export default function EditProductPage() {
       const updated = await apiPatch<ProductImage>(
         `/api/v1/admin/store/products/${productId}/images/${replacingImageId}`,
         { url: fileUrl },
-        { auth: true }
+        { auth: true },
       );
       setImages((prev) => prev.map((img) => (img.id === replacingImageId ? updated : img)));
       setReplacingImageId(null);
@@ -483,7 +466,7 @@ export default function EditProductPage() {
       const newVideo = await apiPost<ProductVideo>(
         `/api/v1/admin/store/products/${productId}/videos`,
         payload,
-        { auth: true }
+        { auth: true },
       );
 
       setVideos((prev) => [...prev, newVideo]);
@@ -554,394 +537,35 @@ export default function EditProductPage() {
             onSubmit={handleSubmit}
             className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6"
           >
-            {/* Basic Info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Product Name *
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Slug</label>
-                <input
-                  type="text"
-                  name="slug"
-                  value={formData.slug}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                />
-              </div>
-            </div>
+            <BasicInfoSection
+              formData={formData}
+              categories={categories}
+              suppliers={suppliers}
+              onChange={handleChange}
+            />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
-                <select
-                  name="category_id"
-                  value={formData.category_id}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                >
-                  <option value="">No category</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Supplier</label>
-                <select
-                  name="supplier_id"
-                  value={formData.supplier_id}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                >
-                  <option value="">No supplier</option>
-                  {suppliers.map((sup) => (
-                    <option key={sup.id} value={sup.id}>
-                      {sup.name}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-slate-500 mt-1">Third-party supplier for this product</p>
-              </div>
-            </div>
+            <PricingSection formData={formData} onChange={handleChange} />
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Short Description
-              </label>
-              <input
-                type="text"
-                name="short_description"
-                value={formData.short_description}
-                onChange={handleChange}
-                maxLength={500}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-              />
-            </div>
+            <SettingsSection
+              formData={formData}
+              setFormData={setFormData}
+              onChange={handleChange}
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows={4}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-              />
-            </div>
-
-            {/* Pricing */}
-            <div className="pt-4 border-t border-slate-200">
-              <h3 className="text-lg font-medium text-slate-900 mb-4">Pricing</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Price (₦) *
-                  </label>
-                  <input
-                    type="number"
-                    name="base_price_ngn"
-                    value={formData.base_price_ngn}
-                    onChange={handleChange}
-                    min="0"
-                    step="100"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Compare at Price (₦)
-                  </label>
-                  <input
-                    type="number"
-                    name="compare_at_price_ngn"
-                    value={formData.compare_at_price_ngn}
-                    onChange={handleChange}
-                    min="0"
-                    step="100"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Cost Price (₦)
-                  </label>
-                  <input
-                    type="number"
-                    name="cost_price_ngn"
-                    value={formData.cost_price_ngn}
-                    onChange={handleChange}
-                    min="0"
-                    step="100"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                  />
-                  <p className="text-xs text-slate-500 mt-1">COGS — internal only</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Settings */}
-            <div className="pt-4 border-t border-slate-200">
-              <h3 className="text-lg font-medium text-slate-900 mb-4">Settings</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                  >
-                    <option value="draft">Draft</option>
-                    <option value="active">Active</option>
-                    <option value="archived">Archived</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Sourcing Type
-                  </label>
-                  <select
-                    name="sourcing_type"
-                    value={formData.sourcing_type}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                  >
-                    <option value="stocked">Stocked</option>
-                    <option value="preorder">Pre-order</option>
-                  </select>
-                </div>
-              </div>
-
-              {formData.sourcing_type === "preorder" && (
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Pre-order Lead Days
-                  </label>
-                  <input
-                    type="number"
-                    name="preorder_lead_days"
-                    value={formData.preorder_lead_days}
-                    onChange={handleChange}
-                    min="1"
-                    className="w-32 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                  />
-                </div>
-              )}
-
-              <div className="mt-4 space-y-3">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    name="is_featured"
-                    checked={formData.is_featured}
-                    onChange={handleChange}
-                    className="rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
-                  />
-                  <span className="text-sm text-slate-700">Featured product</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    name="has_variants"
-                    checked={formData.has_variants}
-                    onChange={handleChange}
-                    className="rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
-                  />
-                  <span className="text-sm text-slate-700">Has variants</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    name="requires_size_chart_ack"
-                    checked={formData.requires_size_chart_ack}
-                    onChange={handleChange}
-                    className="rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
-                  />
-                  <span className="text-sm text-slate-700">Require size chart acknowledgment</span>
-                </label>
-              </div>
-
-              {formData.requires_size_chart_ack && (
-                <div className="mt-4">
-                  <MediaInput
-                    label="Size Chart"
-                    purpose="size_chart"
-                    mode="both"
-                    value={formData.size_chart_media_id || null}
-                    onChange={(mediaId, fileUrl) =>
-                      setFormData((prev) =>
-                        prev
-                          ? {
-                              ...prev,
-                              size_chart_media_id: mediaId || "",
-                              size_chart_url: fileUrl || "",
-                            }
-                          : null
-                      )
-                    }
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Variant Options Editor (visible when has_variants is checked) */}
             {formData.has_variants && (
-              <div className="pt-4 border-t border-slate-200">
-                <h3 className="text-lg font-medium text-slate-900 mb-1">Variant Options</h3>
-                <p className="text-sm text-slate-500 mb-4">
-                  Define dimensions (e.g. Color, Size) and their possible values. These are saved as
-                  product-level metadata.
-                </p>
-
-                {/* Existing dimensions */}
-                <div className="space-y-4">
-                  {Object.entries(variantOptions).map(([dim, values]) => (
-                    <div key={dim} className="border border-slate-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-medium text-slate-800">{dim}</h4>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveDimension(dim)}
-                          className="text-xs text-red-500 hover:text-red-700"
-                        >
-                          Remove
-                        </button>
-                      </div>
-
-                      {/* Value tags */}
-                      <div className="flex flex-wrap gap-1.5 mb-3">
-                        {values.map((val) => (
-                          <span
-                            key={val}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-700 rounded-md text-sm"
-                          >
-                            {dim.toLowerCase() === "color" && colorSwatches[val] && (
-                              <span
-                                className="w-3 h-3 rounded-full border border-slate-300 inline-block"
-                                style={{
-                                  backgroundImage: `url(${colorSwatches[val]})`,
-                                  backgroundSize: "cover",
-                                }}
-                              />
-                            )}
-                            {val}
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveValue(dim, val)}
-                              className="text-slate-400 hover:text-red-500 ml-0.5"
-                            >
-                              ×
-                            </button>
-                          </span>
-                        ))}
-                        {values.length === 0 && (
-                          <span className="text-xs text-slate-400 italic">No values yet</span>
-                        )}
-                      </div>
-
-                      {/* Add value input */}
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={newValueInputs[dim] || ""}
-                          onChange={(e) =>
-                            setNewValueInputs((prev) => ({ ...prev, [dim]: e.target.value }))
-                          }
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              handleAddValue(dim);
-                            }
-                          }}
-                          placeholder={`Add ${dim.toLowerCase()} value...`}
-                          className="flex-1 px-2.5 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleAddValue(dim)}
-                          className="px-3 py-1.5 text-sm bg-slate-100 text-slate-700 rounded-md hover:bg-slate-200 font-medium"
-                        >
-                          +
-                        </button>
-                      </div>
-
-                      {/* Color swatches sub-section */}
-                      {dim.toLowerCase() === "color" && values.length > 0 && (
-                        <div className="mt-4 pt-3 border-t border-slate-100">
-                          <p className="text-xs font-medium text-slate-600 mb-2">
-                            Color Swatches (optional image URLs)
-                          </p>
-                          <div className="space-y-2">
-                            {values.map((colorName) => (
-                              <div key={colorName} className="flex items-center gap-2">
-                                <span className="text-xs text-slate-600 w-16 shrink-0 truncate">
-                                  {colorName}:
-                                </span>
-                                {colorSwatches[colorName] && (
-                                  <span className="relative w-6 h-6 overflow-hidden rounded border border-slate-200 shrink-0 inline-block">
-                                    <Image
-                                      src={colorSwatches[colorName]}
-                                      alt={colorName}
-                                      fill
-                                      sizes="24px"
-                                      className="object-cover"
-                                    />
-                                  </span>
-                                )}
-                                <input
-                                  type="text"
-                                  value={colorSwatches[colorName] || ""}
-                                  onChange={(e) => handleSwatchChange(colorName, e.target.value)}
-                                  placeholder="https://..."
-                                  className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded-md focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500"
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Add new dimension */}
-                <div className="mt-4 flex gap-2">
-                  <input
-                    type="text"
-                    value={newDimensionName}
-                    onChange={(e) => setNewDimensionName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleAddDimension();
-                      }
-                    }}
-                    placeholder="New dimension name (e.g. Color, Size)"
-                    className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddDimension}
-                    className="px-4 py-2 text-sm bg-cyan-50 text-cyan-700 rounded-lg hover:bg-cyan-100 font-medium whitespace-nowrap"
-                  >
-                    + Add Dimension
-                  </button>
-                </div>
-              </div>
+              <VariantOptionsEditor
+                variantOptions={variantOptions}
+                colorSwatches={colorSwatches}
+                newDimensionName={newDimensionName}
+                setNewDimensionName={setNewDimensionName}
+                newValueInputs={newValueInputs}
+                setNewValueInputs={setNewValueInputs}
+                onAddDimension={handleAddDimension}
+                onRemoveDimension={handleRemoveDimension}
+                onAddValue={handleAddValue}
+                onRemoveValue={handleRemoveValue}
+                onSwatchChange={handleSwatchChange}
+              />
             )}
 
             {/* Actions */}
@@ -964,451 +588,50 @@ export default function EditProductPage() {
           </form>
         </div>
 
-        {/* Variants Sidebar */}
+        {/* Sidebar */}
         <div className="lg:col-span-1 space-y-4">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-medium text-slate-900">
-                Variants <span className="text-slate-400 font-normal">({variants.length})</span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowVariantForm(!showVariantForm)}
-                className="text-xs px-2.5 py-1 bg-cyan-50 text-cyan-700 rounded-md hover:bg-cyan-100 font-medium"
-              >
-                {showVariantForm ? "Cancel" : "+ Add"}
-              </button>
-            </div>
+          <VariantsSidebar
+            variants={variants}
+            showVariantForm={showVariantForm}
+            setShowVariantForm={setShowVariantForm}
+            variantForm={variantForm}
+            setVariantForm={setVariantForm}
+            onAddVariant={handleAddVariant}
+            onDeleteVariant={handleDeleteVariant}
+            savingVariant={savingVariant}
+            deletingVariantId={deletingVariantId}
+          />
 
-            {/* Add Variant Form */}
-            {showVariantForm && (
-              <form
-                onSubmit={handleAddVariant}
-                className="mb-4 p-3 bg-cyan-50/50 border border-cyan-100 rounded-lg space-y-3"
-              >
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Variant Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={variantForm.name}
-                    onChange={(e) => setVariantForm((prev) => ({ ...prev, name: e.target.value }))}
-                    placeholder="e.g. S, M, L or Red"
-                    className="w-full px-2.5 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500"
-                    required
-                  />
-                </div>
+          <ImagesCard
+            images={images}
+            variants={variants}
+            showImageForm={showImageForm}
+            setShowImageForm={setShowImageForm}
+            savingImage={savingImage}
+            deletingImageId={deletingImageId}
+            replacingImageId={replacingImageId}
+            setReplacingImageId={setReplacingImageId}
+            linkingImageId={linkingImageId}
+            setLinkingImageId={setLinkingImageId}
+            onImageUploaded={handleMediaUploaded}
+            onReplaceImage={handleReplaceImage}
+            onDeleteImage={handleDeleteImage}
+            onSetPrimary={handleSetPrimary}
+            onLinkImageToVariant={handleLinkImageToVariant}
+            onImageDragEnd={handleImageDragEnd}
+          />
 
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    SKU{" "}
-                    <span className="font-normal text-slate-400">(auto-generated if empty)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={variantForm.sku}
-                    onChange={(e) => setVariantForm((prev) => ({ ...prev, sku: e.target.value }))}
-                    placeholder="Leave blank to auto-generate"
-                    className="w-full px-2.5 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Options{" "}
-                    <span className="font-normal text-slate-400">(one per line, Key: Value)</span>
-                  </label>
-                  <textarea
-                    value={variantForm.options}
-                    onChange={(e) =>
-                      setVariantForm((prev) => ({ ...prev, options: e.target.value }))
-                    }
-                    placeholder={"Size: L\nColor: Blue"}
-                    rows={2}
-                    className="w-full px-2.5 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">
-                      Price Override (₦)
-                    </label>
-                    <input
-                      type="number"
-                      value={variantForm.price_override_ngn}
-                      onChange={(e) =>
-                        setVariantForm((prev) => ({
-                          ...prev,
-                          price_override_ngn: e.target.value,
-                        }))
-                      }
-                      min="0"
-                      step="100"
-                      placeholder="Base price"
-                      className="w-full px-2.5 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">
-                      Weight (g)
-                    </label>
-                    <input
-                      type="number"
-                      value={variantForm.weight_grams}
-                      onChange={(e) =>
-                        setVariantForm((prev) => ({
-                          ...prev,
-                          weight_grams: e.target.value,
-                        }))
-                      }
-                      min="0"
-                      placeholder="Optional"
-                      className="w-full px-2.5 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={savingVariant}
-                  className="w-full px-3 py-1.5 text-sm bg-cyan-600 text-white rounded-md font-medium hover:bg-cyan-700 disabled:opacity-50"
-                >
-                  {savingVariant ? "Creating..." : "Create Variant"}
-                </button>
-              </form>
-            )}
-
-            {/* Existing Variants List */}
-            {variants.length === 0 ? (
-              <p className="text-sm text-slate-500">
-                No variants yet. Add one to enable inventory tracking.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {variants.map((variant) => (
-                  <div key={variant.id} className="p-3 bg-slate-50 rounded-lg group">
-                    <div className="flex justify-between items-start">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-sm text-slate-900 truncate">
-                          {variant.name || "Default"}
-                        </p>
-                        <p className="text-xs text-slate-500 font-mono">{variant.sku}</p>
-                        {variant.price_override_ngn && (
-                          <p className="text-xs text-slate-600 mt-0.5">
-                            ₦{Number(variant.price_override_ngn).toLocaleString()}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 ml-2">
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded whitespace-nowrap ${
-                            (variant.quantity_available ?? variant.quantity_on_hand ?? 0) > 0
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-red-100 text-red-700"
-                          }`}
-                        >
-                          {variant.quantity_available ?? variant.quantity_on_hand ?? 0}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteVariant(variant.id)}
-                          disabled={deletingVariantId === variant.id}
-                          className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity disabled:opacity-50"
-                          title="Deactivate variant"
-                        >
-                          {deletingVariantId === variant.id ? "..." : "×"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Images Card */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-medium text-slate-900">
-                Images <span className="text-slate-400 font-normal">({images.length})</span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowImageForm(!showImageForm)}
-                className="text-xs px-2.5 py-1 bg-cyan-50 text-cyan-700 rounded-md hover:bg-cyan-100 font-medium"
-              >
-                {showImageForm ? "Cancel" : "+ Add"}
-              </button>
-            </div>
-
-            {/* Add Image via MediaInput (upload or URL) */}
-            {showImageForm && (
-              <div className="mb-4 p-3 bg-cyan-50/50 border border-cyan-100 rounded-lg">
-                {savingImage ? (
-                  <p className="text-sm text-slate-500 text-center py-2">Saving to product...</p>
-                ) : (
-                  <MediaInput
-                    purpose="product_image"
-                    mode="both"
-                    onChange={handleMediaUploaded}
-                    showPreview={false}
-                  />
-                )}
-              </div>
-            )}
-
-            {/* Existing Images */}
-            {images.length === 0 ? (
-              <p className="text-sm text-slate-500">No images yet.</p>
-            ) : (
-              <DndContext
-                sensors={dndSensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleImageDragEnd}
-              >
-                <SortableContext items={images.map((img) => img.id)} strategy={rectSortingStrategy}>
-                  <div className="grid grid-cols-2 gap-2">
-                    {images.map((img) => {
-                      const linkedVariant = img.variant_id
-                        ? variants.find((v) => v.id === img.variant_id)
-                        : null;
-                      const linkedColorName = linkedVariant?.options?.Color || linkedVariant?.name;
-                      return (
-                        <SortableImageWrapper key={img.id} id={img.id}>
-                          <div className="relative aspect-square w-full group rounded-lg overflow-hidden border border-slate-200">
-                            <Image
-                              src={img.url}
-                              alt={img.alt_text || "Product image"}
-                              fill
-                              sizes="(max-width: 768px) 50vw, 200px"
-                              className="object-cover"
-                            />
-                            {img.is_primary && (
-                              <span className="absolute top-7 left-1 text-[10px] px-1.5 py-0.5 bg-cyan-600 text-white rounded font-medium">
-                                Primary
-                              </span>
-                            )}
-
-                            {/* Variant link badge */}
-                            {linkedColorName && linkingImageId !== img.id && (
-                              <span className="absolute bottom-1 left-1 text-[10px] px-1.5 py-0.5 bg-purple-600 text-white rounded font-medium max-w-[calc(100%-2.5rem)] truncate">
-                                {linkedColorName}
-                              </span>
-                            )}
-
-                            {/* Action buttons (hover) */}
-                            <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              {!img.is_primary && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleSetPrimary(img.id)}
-                                  className="w-5 h-5 flex items-center justify-center rounded-full bg-slate-700/70 text-white hover:bg-amber-500 text-[10px]"
-                                  title="Set as primary image"
-                                >
-                                  ★
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setReplacingImageId(replacingImageId === img.id ? null : img.id)
-                                }
-                                className={`w-5 h-5 flex items-center justify-center rounded-full text-[10px] ${
-                                  replacingImageId === img.id
-                                    ? "bg-blue-500 text-white"
-                                    : "bg-slate-700/70 text-white hover:bg-blue-500"
-                                }`}
-                                title="Replace image"
-                              >
-                                ↻
-                              </button>
-                              {variants.length > 0 && (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setLinkingImageId(linkingImageId === img.id ? null : img.id)
-                                  }
-                                  className={`w-5 h-5 flex items-center justify-center rounded-full text-[10px] ${
-                                    linkingImageId === img.id
-                                      ? "bg-purple-500 text-white"
-                                      : "bg-slate-700/70 text-white hover:bg-purple-500"
-                                  }`}
-                                  title="Link to variant"
-                                >
-                                  🔗
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteImage(img.id)}
-                                disabled={deletingImageId === img.id}
-                                className="w-5 h-5 flex items-center justify-center bg-red-500 text-white rounded-full text-xs hover:bg-red-600 disabled:opacity-50"
-                                title="Remove image"
-                              >
-                                {deletingImageId === img.id ? "..." : "×"}
-                              </button>
-                            </div>
-
-                            {/* Replace image panel */}
-                            {replacingImageId === img.id && (
-                              <div className="absolute inset-x-0 bottom-0 bg-white/95 border-t border-slate-200 p-2">
-                                {savingImage ? (
-                                  <p className="text-[11px] text-slate-500 text-center py-1">
-                                    Replacing...
-                                  </p>
-                                ) : (
-                                  <MediaInput
-                                    purpose="product_image"
-                                    mode="both"
-                                    onChange={handleReplaceImage}
-                                    showPreview={false}
-                                  />
-                                )}
-                              </div>
-                            )}
-
-                            {/* Variant linking dropdown */}
-                            {linkingImageId === img.id && (
-                              <div className="absolute inset-x-0 bottom-0 bg-white/95 border-t border-slate-200 p-1.5 space-y-0.5 max-h-32 overflow-y-auto">
-                                <button
-                                  type="button"
-                                  onClick={() => handleLinkImageToVariant(img.id, null)}
-                                  className={`w-full text-left text-[11px] px-2 py-1 rounded hover:bg-slate-100 ${
-                                    !img.variant_id
-                                      ? "font-semibold text-slate-900"
-                                      : "text-slate-600"
-                                  }`}
-                                >
-                                  No variant (unlinked)
-                                </button>
-                                {variants.map((v) => (
-                                  <button
-                                    key={v.id}
-                                    type="button"
-                                    onClick={() => handleLinkImageToVariant(img.id, v.id)}
-                                    className={`w-full text-left text-[11px] px-2 py-1 rounded hover:bg-purple-50 ${
-                                      img.variant_id === v.id
-                                        ? "font-semibold text-purple-700 bg-purple-50"
-                                        : "text-slate-600"
-                                    }`}
-                                  >
-                                    {v.options?.Color || v.name || v.sku}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </SortableImageWrapper>
-                      );
-                    })}
-                  </div>
-                </SortableContext>
-              </DndContext>
-            )}
-          </div>
-
-          {/* Videos Card */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-medium text-slate-900">
-                Videos <span className="text-slate-400 font-normal">({videos.length})</span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowVideoForm(!showVideoForm)}
-                className="text-xs px-2.5 py-1 bg-cyan-50 text-cyan-700 rounded-md hover:bg-cyan-100 font-medium"
-              >
-                {showVideoForm ? "Cancel" : "+ Add"}
-              </button>
-            </div>
-
-            {/* Add Video via MediaInput */}
-            {showVideoForm && (
-              <div className="mb-4 p-3 bg-cyan-50/50 border border-cyan-100 rounded-lg">
-                {savingVideo ? (
-                  <p className="text-sm text-slate-500 text-center py-2">Saving to product...</p>
-                ) : (
-                  <MediaInput
-                    purpose="product_video"
-                    mode="both"
-                    onChange={handleVideoUploaded}
-                    showPreview={false}
-                  />
-                )}
-              </div>
-            )}
-
-            {/* Existing Videos */}
-            {videos.length === 0 ? (
-              <p className="text-sm text-slate-500">
-                No videos yet. Add product demos or features.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {videos.map((vid) => (
-                  <div key={vid.id} className="space-y-2">
-                    <div className="relative group rounded-lg overflow-hidden border border-slate-200">
-                      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                      <video
-                        src={vid.url}
-                        className="w-full aspect-video object-cover bg-black"
-                        controls
-                        preload="metadata"
-                      />
-                      {!vid.is_processed && (
-                        <span className="absolute top-1 left-1 text-[10px] px-1.5 py-0.5 bg-amber-500 text-white rounded font-medium">
-                          Processing...
-                        </span>
-                      )}
-                      {vid.title && (
-                        <p className="px-2 py-1 text-xs text-slate-600 truncate">{vid.title}</p>
-                      )}
-                      <div className="absolute top-1 right-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {vid.is_processed && vid.media_item_id && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setAudioOverlayVideoId(audioOverlayVideoId === vid.id ? null : vid.id)
-                            }
-                            className={`w-5 h-5 flex items-center justify-center rounded-full text-xs transition-colors ${
-                              audioOverlayVideoId === vid.id
-                                ? "bg-cyan-500 text-white"
-                                : "bg-slate-700/70 text-white hover:bg-cyan-600"
-                            }`}
-                            title="Audio overlay"
-                          >
-                            ♫
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteVideo(vid.id)}
-                          disabled={deletingVideoId === vid.id}
-                          className="w-5 h-5 flex items-center justify-center bg-red-500 text-white rounded-full text-xs hover:bg-red-600 disabled:opacity-50"
-                          title="Remove video"
-                        >
-                          {deletingVideoId === vid.id ? "..." : "×"}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Audio overlay panel for this video */}
-                    {audioOverlayVideoId === vid.id && vid.media_item_id && (
-                      <AudioOverlayPanel
-                        mediaId={vid.media_item_id}
-                        onApplied={() => {
-                          toast.success("Audio overlay queued for processing");
-                          setAudioOverlayVideoId(null);
-                        }}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <VideosCard
+            videos={videos}
+            showVideoForm={showVideoForm}
+            setShowVideoForm={setShowVideoForm}
+            savingVideo={savingVideo}
+            deletingVideoId={deletingVideoId}
+            audioOverlayVideoId={audioOverlayVideoId}
+            setAudioOverlayVideoId={setAudioOverlayVideoId}
+            onVideoUploaded={handleVideoUploaded}
+            onDeleteVideo={handleDeleteVideo}
+          />
         </div>
       </div>
     </div>
