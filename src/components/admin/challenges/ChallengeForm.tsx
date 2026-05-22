@@ -23,6 +23,7 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Image as ImageIcon, Trash2 } from "lucide-react";
 import dynamic from "next/dynamic";
+import NextImage from "next/image";
 import { useMemo, useState } from "react";
 import {
   AUDIENCES,
@@ -454,8 +455,11 @@ function MediaPreview({
       />
     );
   }
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={url} alt={alt} className={`object-cover ${className ?? ""}`} />;
+  return (
+    <div className={`relative overflow-hidden ${className ?? ""}`}>
+      <NextImage src={url} alt={alt} fill sizes="160px" className="object-cover" />
+    </div>
+  );
 }
 
 function ExampleMediaList({

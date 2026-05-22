@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, X, ZoomIn, ZoomOut } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 type Photo = {
@@ -200,12 +201,16 @@ export function PhotoModal({
             onLoadedData={() => setIsLoaded(true)}
           />
         ) : (
-          <img
+          <Image
             src={photo.file_url}
             alt={caption || "Photo"}
+            width={0}
+            height={0}
+            sizes="100vw"
             className={`max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl transition-all duration-300 ${
               isZoomed ? "scale-150 cursor-zoom-out" : "scale-100"
             } ${isLoaded ? "opacity-100" : "opacity-0"}`}
+            style={{ width: "auto", height: "auto" }}
             onLoad={() => setIsLoaded(true)}
             draggable={false}
           />

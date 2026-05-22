@@ -3,6 +3,7 @@
 import { useMediaUrl } from "@/hooks/useMediaUrl";
 import { Milestone, ProgressStatus, StudentProgress } from "@/lib/academy";
 import { reviewMilestone } from "@/lib/coach";
+import Image from "next/image";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -168,11 +169,14 @@ export function MilestoneProgressModal({
                       rel="noopener noreferrer"
                       className="block"
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                      <Image
                         src={evidenceUrl}
                         alt="Student evidence"
+                        width={0}
+                        height={0}
+                        sizes="(max-width: 768px) 100vw, 50vw"
                         className="w-full max-h-48 object-contain rounded border border-amber-200"
+                        style={{ width: "100%", height: "auto" }}
                       />
                     </a>
                   )

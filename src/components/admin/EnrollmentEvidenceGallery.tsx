@@ -18,6 +18,7 @@
  *   before any meaningful state-retention window).
  */
 
+import Image from "next/image";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -189,11 +190,14 @@ function EvidenceTile({
             Your browser does not support video playback.
           </video>
         ) : isImage && item.file_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={item.file_url}
             alt={`Evidence for ${milestoneName}`}
+            width={0}
+            height={0}
+            sizes="(max-width: 768px) 100vw, 50vw"
             className="w-full max-h-72 object-contain bg-slate-50"
+            style={{ width: "100%", height: "auto" }}
           />
         ) : (
           <div className="p-4 text-xs text-slate-500">
