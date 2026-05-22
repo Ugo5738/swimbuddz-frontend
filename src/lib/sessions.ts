@@ -302,6 +302,51 @@ interface SignInToSessionParams {
   pickup_location_id?: string;
 }
 
+// =============================================================================
+// Booking self-report — member-facing "I can't make it" / "I'll be late"
+// =============================================================================
+
+/** Marker the backend prefixes onto booking.notes when the member has
+ *  signalled they will arrive late. Stored inline (no dedicated column)
+ *  for backwards-compatible deploys. */
+const RUNNING_LATE_PREFIX = "[running_late_at:";
+
+/** Marker for a member self-excuse audit hint on booking.notes. */
+const SELF_EXCUSED_PREFIX = "[self_excused_at:";
+
+export function isRunningLate(notes?: string | null): boolean {
+  return !!notes && notes.startsWith(RUNNING_LATE_PREFIX);
+}
+
+export function isSelfExcused(notes?: string | null): boolean {
+  return !!notes && notes.startsWith(SELF_EXCUSED_PREFIX);
+}
+
+/** Member self-excuse — creates an EXCUSED attendance record + makeup
+ *  obligation downstream. Cohort sessions only; non-cohort members
+ *  should use the regular cancel endpoint for a Bubbles refund. */
+export const excuseBooking = async (
+  bookingId: string
+): Promise<{ id: string; notes?: string | null }> => {
+  return apiPost(
+    `/api/v1/sessions/bookings/${bookingId}/excuse`,
+    {},
+    { auth: true }
+  );
+};
+
+/** Member toggles "I'll be late" flag on a booking. */
+export const setRunningLate = async (
+  bookingId: string,
+  runningLate: boolean
+): Promise<{ id: string; notes?: string | null }> => {
+  return apiPost(
+    `/api/v1/sessions/bookings/${bookingId}/running-late`,
+    { running_late: runningLate },
+    { auth: true }
+  );
+};
+
 /**
  * Sign in to a session with optional ride share booking
  */

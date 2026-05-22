@@ -7,6 +7,7 @@ import { SessionCard, type SessionWithRides } from "@/components/sessions/Sessio
 import { Badge } from "@/components/ui/Badge";
 import { type CohortInfo, getSessionTypeLabel } from "@/lib/sessions";
 import { getEffectiveTier, type MembershipTier } from "@/lib/tiers";
+import type { MyBooking } from "./types";
 import {
   ArrowRight,
   Calendar,
@@ -265,6 +266,7 @@ export function NextSessionPanel({ session }: { session: SessionWithRides }) {
 export function DateGroupedSessions({
   sessions,
   bookedSessionIds,
+  bookingsBySession,
   membership,
   isPast = false,
   attendanceBySession,
@@ -276,6 +278,11 @@ export function DateGroupedSessions({
 }: {
   sessions: SessionWithRides[];
   bookedSessionIds: Set<string>;
+  /** Maps session_id → the member's active booking, used by SessionCard
+   *  to render per-booking self-report actions ("I can't make it" /
+   *  "I'll be late"). Optional for back-compat with callers that don't
+   *  surface those controls (e.g. coach schedule view). */
+  bookingsBySession?: Map<string, MyBooking>;
   membership: MembershipTier;
   isPast?: boolean;
   attendanceBySession?: Map<string, string>;
@@ -308,6 +315,7 @@ export function DateGroupedSessions({
                 key={session.id}
                 session={session}
                 isBooked={bookedSessionIds.has(session.id)}
+                myBooking={bookingsBySession?.get(session.id)}
                 membership={membership}
                 isPast={isPast}
                 attendanceStatus={attendanceBySession?.get(session.id)}

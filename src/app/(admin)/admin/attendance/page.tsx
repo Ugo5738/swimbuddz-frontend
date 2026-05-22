@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { apiGet, apiPost } from "@/lib/api";
 import type { components } from "@/lib/api-types";
+import { isRunningLate, isSelfExcused } from "@/lib/sessions";
 import { format } from "date-fns";
 import type { jsPDF as JsPDFType } from "jspdf";
 import { useEffect, useMemo, useState } from "react";
@@ -1129,6 +1130,11 @@ function RosterTableRow({
       <span className="text-xs text-slate-400">—</span>
     );
 
+  // Member self-report flags stored as sentinel prefixes on booking.notes.
+  // Surfaced alongside the booking cell so the coach sees them at a glance.
+  const memberFlagRunningLate = isRunningLate(row.booking?.notes);
+  const memberFlagSelfExcused = isSelfExcused(row.booking?.notes);
+
   const statusLabel = (() => {
     if (row.effectiveStatus === "awaiting") return "Awaiting";
     return (
@@ -1153,6 +1159,22 @@ function RosterTableRow({
           {bookingCell.secondary && (
             <span className="text-[10px] uppercase tracking-wide text-slate-500">
               {bookingCell.secondary}
+            </span>
+          )}
+          {memberFlagSelfExcused && (
+            <span
+              className="inline-flex w-fit items-center gap-1 rounded-md border border-sky-200 bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium text-sky-800"
+              title="Member self-excused via the app. A make-up obligation has been recorded."
+            >
+              Self-excused
+            </span>
+          )}
+          {memberFlagRunningLate && !memberFlagSelfExcused && (
+            <span
+              className="inline-flex w-fit items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-800"
+              title="Member said they'll be late."
+            >
+              Running late
             </span>
           )}
           {canMarkWalkIn && (

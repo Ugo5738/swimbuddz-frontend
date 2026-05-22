@@ -4,18 +4,40 @@ import { Badge } from "@/components/ui/Badge";
 import { hasTierAccess, requiredTierForSessionType, tierDisplayLabel } from "@/lib/sessionAccess";
 import {
   type CohortInfo,
+  excuseBooking,
   getCohortColor,
   getSessionTypeColor,
   getSessionTypeLabel,
+  isRunningLate,
+  isSelfExcused,
   Session,
   SessionType,
+  setRunningLate,
   signInToSession,
 } from "@/lib/sessions";
 import type { MembershipTier } from "@/lib/tiers";
-import { Calendar, CheckCircle2, Clock, Lock, MapPin, Users } from "lucide-react";
+import {
+  Calendar,
+  CheckCircle2,
+  Clock,
+  Clock3,
+  Lock,
+  MapPin,
+  Users,
+  XCircle,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+
+// Booking shape needed by self-report controls. Mirrors the relevant
+// subset of MyBooking — kept inline so this shared component doesn't take
+// a hard dependency on the member-app type file.
+type MemberBookingMinimal = {
+  id?: string;
+  status?: string;
+  notes?: string | null;
+};
 
 // Members can self sign-in starting 30 min before session start and up
 // to 60 min after session end. Window is intentionally generous so a
@@ -72,6 +94,11 @@ export type SessionWithRides = Session & {
 type SessionCardProps = {
   session: SessionWithRides;
   isBooked: boolean;
+  /** The member's active booking for this session, when known. Powers
+   *  the per-row self-report actions ("I can't make it" / "I'll be
+   *  late"). Optional — callers that don't have this (e.g. coach
+   *  views) won't render those controls. */
+  myBooking?: MemberBookingMinimal;
   membership: MembershipTier;
   isPast?: boolean;
   attendanceStatus?: string;
@@ -90,6 +117,7 @@ type SessionCardProps = {
 export function SessionCard({
   session,
   isBooked,
+  myBooking,
   membership,
   isPast = false,
   attendanceStatus,
@@ -132,6 +160,69 @@ export function SessionCard({
       toast.error(e instanceof Error ? e.message : "Couldn't sign in.");
     } finally {
       setSigningIn(false);
+    }
+  };
+
+  // ── Self-report controls ("I can't make it" / "I'll be late") ─────────
+  // Only render when we have a confirmed booking AND the session hasn't
+  // started yet (running-late is allowed up to session start; excuse is
+  // server-gated by a 24h cutoff). Local optimistic state mirrors the
+  // server response so the buttons reflect intent immediately.
+  const bookingId = myBooking?.id ?? null;
+  const bookingStatus = (myBooking?.status ?? "").toLowerCase();
+  const [bookingNotes, setBookingNotes] = useState<string | null | undefined>(
+    myBooking?.notes
+  );
+  const [excusing, setExcusing] = useState(false);
+  const [excusedLocal, setExcusedLocal] = useState(false);
+  const [flaggingLate, setFlaggingLate] = useState(false);
+
+  const sessionUpcoming = sessionStart > now;
+  const canSelfReport =
+    !!bookingId &&
+    bookingStatus === "confirmed" &&
+    sessionUpcoming &&
+    !alreadySignedIn &&
+    !signedInLocal &&
+    !excusedLocal;
+  const memberHasLateFlag = isRunningLate(bookingNotes) || flaggingLate;
+  const memberHasExcused = isSelfExcused(bookingNotes) || excusedLocal;
+
+  const handleSelfExcuse = async () => {
+    if (!bookingId) return;
+    if (
+      !window.confirm(
+        "Let us know you can't make it — we'll schedule a make-up. " +
+          "Continue?"
+      )
+    ) {
+      return;
+    }
+    setExcusing(true);
+    try {
+      const updated = await excuseBooking(bookingId);
+      setBookingNotes(updated.notes ?? null);
+      setExcusedLocal(true);
+      toast.success("Got it — coach has been notified, make-up will be scheduled.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't record excuse.");
+    } finally {
+      setExcusing(false);
+    }
+  };
+
+  const handleToggleLate = async () => {
+    if (!bookingId) return;
+    const next = !memberHasLateFlag;
+    setFlaggingLate(next);
+    try {
+      const updated = await setRunningLate(bookingId, next);
+      setBookingNotes(updated.notes ?? null);
+      toast.success(next ? "Coach knows you're running late." : "Late flag cleared.");
+    } catch (e) {
+      // Roll the optimistic flag back on failure.
+      setFlaggingLate(!next);
+      toast.error(e instanceof Error ? e.message : "Couldn't update flag.");
     }
   };
 
@@ -308,24 +399,67 @@ export function SessionCard({
         {/* CTA */}
         <div className="mt-4">
           {isBooked ? (
-            <div className="flex flex-wrap items-center gap-2">
-              {canSelfSignIn && !signedInLocal ? (
-                <button
-                  type="button"
-                  onClick={handleSelfSignIn}
-                  disabled={signingIn}
-                  className="inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-cyan-700 disabled:opacity-60 transition-colors"
-                >
-                  {signingIn ? "Signing in…" : "I'm here — sign me in"}
-                </button>
+            <div className="space-y-2">
+              {memberHasExcused ? (
+                <div className="flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-medium text-sky-800">
+                  <XCircle className="h-3.5 w-3.5 shrink-0" />
+                  <span>
+                    You've let us know you can't make it. A make-up will
+                    be scheduled.
+                  </span>
+                </div>
+              ) : memberHasLateFlag ? (
+                <div className="flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+                  <Clock3 className="h-3.5 w-3.5 shrink-0" />
+                  <span>Coach knows you're running late.</span>
+                </div>
               ) : null}
-              <Link
-                href={`/sessions/${session.id}/book`}
-                className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
-              >
-                <CheckCircle2 className="h-4 w-4" />
-                {signedInLocal || alreadySignedIn ? "Signed in" : "View my booking"}
-              </Link>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {canSelfSignIn && !signedInLocal ? (
+                  <button
+                    type="button"
+                    onClick={handleSelfSignIn}
+                    disabled={signingIn}
+                    className="inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-cyan-700 disabled:opacity-60 transition-colors"
+                  >
+                    {signingIn ? "Signing in…" : "I'm here — sign me in"}
+                  </button>
+                ) : null}
+                <Link
+                  href={`/sessions/${session.id}/book`}
+                  className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  {signedInLocal || alreadySignedIn ? "Signed in" : "View my booking"}
+                </Link>
+              </div>
+
+              {canSelfReport && (
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleToggleLate}
+                    className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                      memberHasLateFlag
+                        ? "border-amber-300 bg-amber-100 text-amber-900 hover:bg-amber-200"
+                        : "border-slate-200 bg-white text-slate-700 hover:border-amber-300 hover:bg-amber-50"
+                    }`}
+                  >
+                    <Clock3 className="h-3.5 w-3.5" />
+                    {memberHasLateFlag ? "I'm on time" : "I'll be late"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSelfExcuse}
+                    disabled={excusing}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-60 transition-colors"
+                  >
+                    <XCircle className="h-3.5 w-3.5" />
+                    {excusing ? "Recording…" : "I can't make it"}
+                  </button>
+                </div>
+              )}
             </div>
           ) : effectivelyPast ? null : !canBook ? (
             <div className="space-y-2 text-sm">

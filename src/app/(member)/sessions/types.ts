@@ -26,7 +26,12 @@ export type AttendanceRecord = {
 // default active set; the booking lifecycle is intent-only so a booking
 // never shows up in attendance until day-of sign-in — the Booked tab
 // reads bookings directly.
+//
+// ``id`` and ``notes`` are needed for the self-report actions
+// ("I can't make it" / "I'll be late") on each booking row.
 export type MyBooking = {
+  id?: string;
   session_id: string;
   status?: string;
+  notes?: string | null;
 };

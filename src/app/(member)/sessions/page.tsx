@@ -271,6 +271,20 @@ function SessionsHub() {
     return ids;
   }, [attendance, myBookings]);
 
+  // Map session_id → the member's active booking for that session. Powers
+  // per-card self-report actions ("I can't make it" / "I'll be late") that
+  // need the booking_id, not just whether-the-session-is-booked.
+  const bookingsBySession = useMemo(() => {
+    const map = new Map<string, MyBooking>();
+    for (const booking of myBookings) {
+      if (!booking.session_id) continue;
+      if (isActiveBooking(booking.status)) {
+        map.set(booking.session_id, booking);
+      }
+    }
+    return map;
+  }, [myBookings]);
+
   const attendanceBySession = useMemo(() => {
     const map = new Map<string, string>();
     for (const record of attendance) {
@@ -470,6 +484,7 @@ function SessionsHub() {
         <DateGroupedSessions
           sessions={filteredSessions}
           bookedSessionIds={bookedSessionIds}
+          bookingsBySession={bookingsBySession}
           membership={membership}
           isPast={activeTab === "past"}
           attendanceBySession={activeTab === "past" ? attendanceBySession : undefined}
