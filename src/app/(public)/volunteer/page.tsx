@@ -7,6 +7,7 @@ import {
   type SpotlightData,
   type VolunteerRoleCategory,
 } from "@/lib/volunteers";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -173,11 +174,15 @@ export default function PublicVolunteerPage() {
               <div className="relative">
                 <div className="absolute -top-2 -right-2 text-2xl">🏆</div>
                 {spotlight.featured_volunteer.profile_photo_url ? (
-                  <img
-                    src={spotlight.featured_volunteer.profile_photo_url}
-                    alt={getDisplayName(spotlight.featured_volunteer.member_name)}
-                    className="w-24 h-24 rounded-full object-cover ring-4 ring-amber-200"
-                  />
+                  <div className="relative w-24 h-24 overflow-hidden rounded-full ring-4 ring-amber-200">
+                    <Image
+                      src={spotlight.featured_volunteer.profile_photo_url}
+                      alt={getDisplayName(spotlight.featured_volunteer.member_name)}
+                      fill
+                      sizes="96px"
+                      className="object-cover"
+                    />
+                  </div>
                 ) : (
                   <div className="w-24 h-24 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center text-white text-2xl font-bold ring-4 ring-amber-200">
                     {getDisplayName(spotlight.featured_volunteer.member_name)

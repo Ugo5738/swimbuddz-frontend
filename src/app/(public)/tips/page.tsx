@@ -5,6 +5,7 @@ import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiEndpoints } from "@/lib/config";
 import { format } from "date-fns";
 import { BookOpen, ChevronRight } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -148,11 +149,13 @@ export default function TipsPage() {
               <Card className="group h-full overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
                 {/* Featured Image */}
                 {post.featured_image_url ? (
-                  <div className="aspect-video overflow-hidden bg-slate-100">
-                    <img
+                  <div className="relative aspect-video overflow-hidden bg-slate-100">
+                    <Image
                       src={post.featured_image_url}
                       alt={post.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>
                 ) : (

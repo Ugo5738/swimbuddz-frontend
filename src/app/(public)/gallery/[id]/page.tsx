@@ -4,6 +4,7 @@ import { PhotoModal } from "@/components/gallery/PhotoModal";
 import { Card } from "@/components/ui/Card";
 import { apiEndpoints } from "@/lib/config";
 import { ArrowLeft, ImageOff, Images, Play } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -259,10 +260,12 @@ export default function AlbumDetailPage() {
                   </div>
                 </>
               ) : (
-                <img
+                <Image
                   src={photo.thumbnail_url || photo.file_url}
                   alt={photo.caption || photo.description || "Photo"}
-                  className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-105 ${
+                  fill
+                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  className={`object-cover transition-all duration-300 group-hover:scale-105 ${
                     loadedImages.has(photo.id) ? "opacity-100" : "opacity-0"
                   }`}
                   onLoad={() => handleImageLoad(photo.id)}

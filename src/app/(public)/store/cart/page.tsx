@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { useStoreCart } from "@/lib/storeCart";
 import { ArrowLeft, Minus, Plus, ShoppingBag, Tag, Trash2 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -76,10 +77,12 @@ export default function CartPage() {
                   {/* Image */}
                   <div className="relative w-28 h-28 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
                     {item.image_url ? (
-                      <img
+                      <Image
                         src={item.image_url}
                         alt={item.product_name || "Product"}
-                        className="w-full h-full object-cover"
+                        fill
+                        sizes="112px"
+                        className="object-cover"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-slate-300">

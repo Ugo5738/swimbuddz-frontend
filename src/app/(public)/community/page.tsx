@@ -15,6 +15,7 @@ import {
   type SpotlightData,
   type VolunteerRole,
 } from "@/lib/volunteers";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -417,16 +418,20 @@ export default function CommunityPage() {
               <div className="flex-shrink-0">
                 {photoMap[spotlight.featured_volunteer.member_id] ||
                 spotlight.featured_volunteer.profile_photo_url ? (
-                  <img
-                    src={
-                      photoMap[spotlight.featured_volunteer.member_id] ||
-                      spotlight.featured_volunteer.profile_photo_url!
-                    }
-                    alt={getDisplayName(
-                      spotlight.featured_volunteer.member_name,
-                    )}
-                    className="w-24 h-24 rounded-full object-cover ring-4 ring-amber-200 shadow-lg"
-                  />
+                  <div className="relative w-24 h-24 overflow-hidden rounded-full ring-4 ring-amber-200 shadow-lg">
+                    <Image
+                      src={
+                        photoMap[spotlight.featured_volunteer.member_id] ||
+                        spotlight.featured_volunteer.profile_photo_url!
+                      }
+                      alt={getDisplayName(
+                        spotlight.featured_volunteer.member_name,
+                      )}
+                      fill
+                      sizes="96px"
+                      className="object-cover"
+                    />
+                  </div>
                 ) : (
                   <div className="w-24 h-24 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center text-white text-3xl font-bold ring-4 ring-amber-200 shadow-lg">
                     {getDisplayName(spotlight.featured_volunteer.member_name)
@@ -547,11 +552,15 @@ export default function CommunityPage() {
 
                   {/* Avatar */}
                   {photoMap[volunteer.member_id] ? (
-                    <img
-                      src={photoMap[volunteer.member_id]}
-                      alt={getDisplayName(volunteer.member_name)}
-                      className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                    />
+                    <div className="relative w-10 h-10 overflow-hidden rounded-full flex-shrink-0">
+                      <Image
+                        src={photoMap[volunteer.member_id]}
+                        alt={getDisplayName(volunteer.member_name)}
+                        fill
+                        sizes="40px"
+                        className="object-cover"
+                      />
+                    </div>
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
                       {getDisplayName(volunteer.member_name)
@@ -629,11 +638,12 @@ export default function CommunityPage() {
                     <span className="text-3xl">🏊</span>
                   </div>
                 )}
-                <img
-                  src={photo.file_url || photo.thumbnail_url}
+                <Image
+                  src={photo.thumbnail_url || photo.file_url}
                   alt={photo.title || "SwimBuddz community"}
-                  loading="lazy"
-                  className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${
+                  fill
+                  sizes="(max-width: 768px) 50vw, 33vw"
+                  className={`object-cover transition-all duration-500 group-hover:scale-105 ${
                     loadedImages.has(photo.id) ? "opacity-100" : "opacity-0"
                   }`}
                   onLoad={() => handleImageLoad(photo.id)}

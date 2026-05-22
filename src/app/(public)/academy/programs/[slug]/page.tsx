@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { AcademyApi, Cohort, Program, ProgramCurriculum } from "@/lib/academy";
 import { apiEndpoints } from "@/lib/config";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -203,11 +204,13 @@ export default function ProgramLandingPage() {
       {/* Cover image */}
       {program.cover_image_url && (
         <div className="relative aspect-[16/7] w-full overflow-hidden rounded-3xl bg-slate-100">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={program.cover_image_url}
             alt={program.name}
-            className="h-full w-full object-cover"
+            fill
+            sizes="(max-width: 768px) 100vw, 1024px"
+            className="object-cover"
+            priority
           />
         </div>
       )}
@@ -498,13 +501,13 @@ export default function ProgramLandingPage() {
           </div>
           <div className="relative aspect-[16/9] w-full overflow-hidden rounded-3xl bg-slate-100">
             {galleryImages.map((img, i) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 key={i}
                 src={img.src}
                 alt={img.alt}
-                loading="lazy"
-                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${
+                fill
+                sizes="(max-width: 768px) 100vw, 1024px"
+                className={`object-cover transition-opacity duration-1000 ${
                   i === galleryIndex ? "opacity-100" : "opacity-0"
                 }`}
               />

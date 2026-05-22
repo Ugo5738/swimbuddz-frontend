@@ -6,6 +6,7 @@ import { LoadingCard } from "@/components/ui/LoadingCard";
 import { API_BASE_URL } from "@/lib/config";
 import { AlertCircle, CheckCircle, XCircle } from "lucide-react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -185,11 +186,15 @@ export default function VerifyMemberPage() {
           {/* Profile */}
           <div className="flex items-center gap-4">
             {member.profile_photo_url ? (
-              <img
-                src={member.profile_photo_url}
-                alt={fullName}
-                className="w-16 h-16 rounded-full object-cover ring-2 ring-slate-200"
-              />
+              <div className="relative w-16 h-16 overflow-hidden rounded-full ring-2 ring-slate-200">
+                <Image
+                  src={member.profile_photo_url}
+                  alt={fullName}
+                  fill
+                  sizes="64px"
+                  className="object-cover"
+                />
+              </div>
             ) : (
               <div className="w-16 h-16 rounded-full bg-cyan-100 flex items-center justify-center text-xl font-bold text-cyan-700">
                 {member.first_name[0]}

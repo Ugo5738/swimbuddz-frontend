@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Lock,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -208,10 +209,15 @@ export default function TipDetailPage() {
         {/* Featured Image */}
         {post.featured_image_url && (
           <div className="mb-8 rounded-2xl overflow-hidden">
-            <img
+            <Image
               src={post.featured_image_url}
               alt={post.title}
+              width={0}
+              height={0}
+              sizes="(max-width: 768px) 100vw, 800px"
               className="w-full max-h-96 object-cover"
+              style={{ width: "100%", height: "auto" }}
+              priority
             />
           </div>
         )}
@@ -233,11 +239,13 @@ export default function TipDetailPage() {
               <Link key={relatedPost.id} href={`/tips/${relatedPost.id}`}>
                 <Card className="group h-full hover:shadow-lg transition-all duration-300">
                   {relatedPost.featured_image_url ? (
-                    <div className="aspect-video overflow-hidden bg-slate-100 rounded-t-xl">
-                      <img
+                    <div className="relative aspect-video overflow-hidden bg-slate-100 rounded-t-xl">
+                      <Image
                         src={relatedPost.featured_image_url}
                         alt={relatedPost.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
                   ) : (

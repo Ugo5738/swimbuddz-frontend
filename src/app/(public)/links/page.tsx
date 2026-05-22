@@ -2,6 +2,7 @@ import { LinkCard, type LinkCardProps } from "@/components/links/LinkCard";
 import { SocialLinks } from "@/components/ui/SocialLinks";
 import { API_BASE_URL } from "@/lib/config";
 import type { Metadata } from "next";
+import Image from "next/image";
 
 export const metadata: Metadata = {
   title: "Start here · SwimBuddz",
@@ -128,10 +129,13 @@ export default async function LinksPage() {
   return (
     <div className="mx-auto flex w-full max-w-md flex-col items-center px-4 py-8 sm:py-12">
       {/* Header */}
-      <img
+      <Image
         src="/logo.png"
         alt="SwimBuddz"
+        width={500}
+        height={500}
         className="mb-4 h-20 w-20 rounded-full object-cover shadow-sm ring-1 ring-slate-200"
+        priority
       />
       <h1 className="text-2xl font-bold text-slate-900">SwimBuddz</h1>
       <p className="mt-1 text-center text-sm text-slate-600">

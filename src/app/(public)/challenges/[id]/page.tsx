@@ -24,6 +24,7 @@ import {
 } from "@/lib/challenges";
 import { ArrowLeft, Calendar, Trophy, Users } from "lucide-react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -129,11 +130,15 @@ export default function PublicChallengeDetailPage() {
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
           <span className="inline-flex items-center gap-1.5">
             {challenge.badge_image_url ? (
-              <img
-                src={challenge.badge_image_url}
-                alt={challenge.badge_name}
-                className="h-4 w-4 rounded-full object-cover"
-              />
+              <span className="relative inline-block h-4 w-4 overflow-hidden rounded-full">
+                <Image
+                  src={challenge.badge_image_url}
+                  alt={challenge.badge_name}
+                  fill
+                  sizes="16px"
+                  className="object-cover"
+                />
+              </span>
             ) : (
               <span>🏅</span>
             )}
@@ -203,11 +208,15 @@ export default function PublicChallengeDetailPage() {
                             className="aspect-video w-full bg-slate-900"
                           />
                         ) : (
-                          <img
-                            src={url}
-                            alt="Winning attempt"
-                            className="aspect-video w-full object-cover"
-                          />
+                          <div className="relative aspect-video w-full">
+                            <Image
+                              src={url}
+                              alt="Winning attempt"
+                              fill
+                              sizes="(max-width: 768px) 100vw, 50vw"
+                              className="object-cover"
+                            />
+                          </div>
                         )}
                       </div>
                     );
@@ -250,11 +259,15 @@ export default function PublicChallengeDetailPage() {
                         className="aspect-video w-full bg-slate-900"
                       />
                     ) : (
-                      <img
-                        src={url}
-                        alt={m.caption || challenge.title}
-                        className="aspect-video w-full object-cover"
-                      />
+                      <div className="relative aspect-video w-full">
+                        <Image
+                          src={url}
+                          alt={m.caption || challenge.title}
+                          fill
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                          className="object-cover"
+                        />
+                      </div>
                     )
                   ) : (
                     <div className="flex aspect-video items-center justify-center bg-slate-100 text-slate-300">

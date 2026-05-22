@@ -19,6 +19,7 @@ import {
   PublicChallenge,
 } from "@/lib/challenges";
 import { Calendar, Trophy, Users } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -156,10 +157,12 @@ function PublicChallengeTile({ challenge }: { challenge: PublicChallenge }) {
                 className="h-full w-full object-cover"
               />
             ) : (
-              <img
+              <Image
                 src={previewUrl}
                 alt={challenge.title}
-                className="h-full w-full object-cover"
+                fill
+                sizes="(max-width: 768px) 100vw, 33vw"
+                className="object-cover"
               />
             )
           ) : (
