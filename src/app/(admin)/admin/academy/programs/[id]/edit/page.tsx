@@ -35,6 +35,23 @@ interface CurriculumWeek {
   lessons: CurriculumLesson[];
 }
 
+// Narrow shape of the curriculum_json blob persisted on Program. The
+// backend stores this as a freeform JSON column; we mirror the fields the
+// editor reads/writes here so the .map callbacks aren't `any`.
+interface CurriculumJsonLesson {
+  title?: string;
+  description?: string;
+  duration_minutes?: number;
+  video_url?: string;
+}
+
+interface CurriculumJsonWeek {
+  week: number;
+  theme?: string;
+  objectives?: string;
+  lessons?: CurriculumJsonLesson[];
+}
+
 interface MilestoneFormItem {
   id: string;
   name: string;
@@ -51,9 +68,9 @@ export default function EditProgramPage() {
   const params = useParams();
   const id = params.id as string;
 
-  const [step, setStep] = useState<
-    "basics" | "curriculum" | "milestones" | "faq" | "review"
-  >("basics");
+  const STEPS = ["basics", "curriculum", "milestones", "faq", "review"] as const;
+  type Step = (typeof STEPS)[number];
+  const [step, setStep] = useState<Step>("basics");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -128,13 +145,17 @@ export default function EditProgramPage() {
             : "",
         });
 
-        // Populate curriculum from curriculum_json
-        if (program.curriculum_json?.weeks && Array.isArray(program.curriculum_json.weeks)) {
-          const weeks: CurriculumWeek[] = program.curriculum_json.weeks.map((w: any) => ({
+        // Populate curriculum from curriculum_json. The persisted column is
+        // freeform JSON; CurriculumJsonWeek/Lesson narrow it to the fields
+        // the editor reads.
+        const rawWeeks: CurriculumJsonWeek[] | undefined =
+          program.curriculum_json?.weeks;
+        if (Array.isArray(rawWeeks)) {
+          const weeks: CurriculumWeek[] = rawWeeks.map((w) => ({
             week: w.week,
             theme: w.theme || "",
             objectives: w.objectives || "",
-            lessons: (w.lessons || []).map((l: any, i: number) => ({
+            lessons: (w.lessons || []).map((l, i) => ({
               id: `lesson-${Date.now()}-${i}`,
               title: l.title || "",
               description: l.description || "",
@@ -234,9 +255,18 @@ export default function EditProgramPage() {
     field: keyof CurriculumLesson,
     value: string | number
   ) => {
-    const updated = [...curriculum];
-    (updated[weekIndex].lessons[lessonIndex] as any)[field] = value;
-    setCurriculum(updated);
+    setCurriculum((prev) =>
+      prev.map((week, wi) =>
+        wi === weekIndex
+          ? {
+              ...week,
+              lessons: week.lessons.map((lesson, li) =>
+                li === lessonIndex ? { ...lesson, [field]: value } : lesson,
+              ),
+            }
+          : week,
+      ),
+    );
   };
 
   const removeLesson = (weekIndex: number, lessonIndex: number) => {
@@ -269,9 +299,11 @@ export default function EditProgramPage() {
     field: keyof MilestoneFormItem,
     value: string | number
   ) => {
-    const updated = [...milestones];
-    (updated[index] as any)[field] = value;
-    setMilestones(updated);
+    setMilestones((prev) =>
+      prev.map((milestone, i) =>
+        i === index ? { ...milestone, [field]: value } : milestone,
+      ),
+    );
   };
 
   const removeMilestone = (index: number) => {
@@ -390,7 +422,7 @@ export default function EditProgramPage() {
         {stepLabels.map((label, idx) => (
           <button
             key={label}
-            onClick={() => setStep(["basics", "curriculum", "milestones", "faq", "review"][idx] as any)}
+            onClick={() => setStep(STEPS[idx])}
             className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
               idx === currentStepIndex
                 ? "bg-cyan-600 text-white"
@@ -868,9 +900,8 @@ export default function EditProgramPage() {
         <Button
           variant="ghost"
           onClick={() => {
-            const steps = ["basics", "curriculum", "milestones", "faq", "review"];
-            const idx = steps.indexOf(step);
-            if (idx > 0) setStep(steps[idx - 1] as any);
+            const idx = STEPS.indexOf(step);
+            if (idx > 0) setStep(STEPS[idx - 1]);
             else router.push(`/admin/academy/programs/${id}`);
           }}
         >
@@ -883,9 +914,8 @@ export default function EditProgramPage() {
         ) : (
           <Button
             onClick={() => {
-              const steps = ["basics", "curriculum", "milestones", "faq", "review"];
-              const idx = steps.indexOf(step);
-              if (idx < steps.length - 1) setStep(steps[idx + 1] as any);
+              const idx = STEPS.indexOf(step);
+              if (idx < STEPS.length - 1) setStep(STEPS[idx + 1]);
             }}
           >
             Next →
