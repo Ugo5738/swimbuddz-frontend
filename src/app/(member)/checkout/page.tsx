@@ -599,10 +599,24 @@ function CheckoutContent() {
             )}
           </div>
 
-          <div className="pt-4 border-t border-slate-200 flex justify-between">
-            <span className="text-base font-semibold text-slate-900">Total</span>
-            <span className="text-xl font-bold text-cyan-600">{formatCurrency(total)}</span>
-          </div>
+          {billingMode === "installments" && installmentPreview ? (
+            <div className="pt-4 border-t border-slate-200 flex justify-between items-start gap-3">
+              <div className="min-w-0">
+                <span className="text-base font-semibold text-slate-900 block">Due today</span>
+                <span className="text-xs text-slate-500">
+                  Installment 1 of {installmentPreview.count} • {formatCurrency(total)} total
+                </span>
+              </div>
+              <span className="text-xl font-bold text-cyan-600 whitespace-nowrap">
+                {formatCurrency(installmentPreview.deposit)}
+              </span>
+            </div>
+          ) : (
+            <div className="pt-4 border-t border-slate-200 flex justify-between">
+              <span className="text-base font-semibold text-slate-900">Total</span>
+              <span className="text-xl font-bold text-cyan-600">{formatCurrency(total)}</span>
+            </div>
+          )}
         </div>
       </Card>
 
@@ -624,7 +638,7 @@ function CheckoutContent() {
       {/* ── Installment details — shown when installments selected ── */}
       {installmentsEnabled && installmentPreview && billingMode === "installments" && (
         <p className="text-center text-sm text-slate-500 -mt-2">
-          {formatCurrency(installmentPreview.deposit)} now, then {installmentPreview.count - 1} ×{" "}
+          Then {installmentPreview.count - 1} ×{" "}
           {formatCurrency(installmentPreview.subsequentAmount)} every 4 weeks —{" "}
           <button
             type="button"
