@@ -245,7 +245,7 @@ export default function AdminAttendancePage() {
         const normalizeId = (id?: string | null) => (id ? id.toString().trim().toLowerCase() : "");
         const bookingsMap = new Map(
           bookingsData
-            .map((b) => [normalizeId((b as any).member_id ?? (b as any).memberId), b] as const)
+            .map((b) => [normalizeId(b.member_id), b] as const)
             .filter(([key]) => Boolean(key))
         );
         const pickupLocationsMap = new Map<string, { name: string; area_name: string }>();
@@ -259,7 +259,7 @@ export default function AdminAttendancePage() {
         });
 
         const mergedAttendance = attendanceData.map((record) => {
-          const recordMemberId = normalizeId((record as any).member_id ?? (record as any).memberId);
+          const recordMemberId = normalizeId(record.member_id);
           const booking = recordMemberId ? bookingsMap.get(recordMemberId) : undefined;
 
           let rideInfo: Attendance["ride_info"] = booking
@@ -350,9 +350,10 @@ export default function AdminAttendancePage() {
           }
         }
         setMemberLookup(lookup);
-      } catch (err: any) {
+      } catch (err) {
         console.error("Failed to fetch attendance", err);
-        setError(`Failed to load attendance list: ${err.message || "Unknown error"}`);
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        setError(`Failed to load attendance list: ${msg}`);
       } finally {
         setLoadingAttendance(false);
       }
@@ -571,7 +572,7 @@ export default function AdminAttendancePage() {
       setAttendanceList(refreshedAttendance);
       setBookings(refreshedBookings);
       setMarkSuccess("Walk-in recorded.");
-    } catch (err: any) {
+    } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
       console.error("Failed to record walk-in", err);
       setError(`Failed to record walk-in: ${msg}`);
@@ -613,9 +614,10 @@ export default function AdminAttendancePage() {
       setAttendanceList(refreshed);
       setDrafts(new Map());
       setMarkSuccess(`Saved ${entries.length} change${entries.length === 1 ? "" : "s"}.`);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Failed to save attendance", err);
-      setError(`Failed to save: ${err.message || "Unknown error"}`);
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      setError(`Failed to save: ${msg}`);
     } finally {
       setSubmittingMark(false);
     }
@@ -652,9 +654,10 @@ export default function AdminAttendancePage() {
         { auth: true }
       );
       setAttendanceList(refreshed);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Failed to bulk-mark attendance", err);
-      setError(`Failed to bulk-mark: ${err.message || "Unknown error"}`);
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      setError(`Failed to bulk-mark: ${msg}`);
     } finally {
       setSubmittingMark(false);
     }
@@ -712,7 +715,7 @@ export default function AdminAttendancePage() {
       link.download = `attendance-${dateLabel}.csv`;
       link.click();
       URL.revokeObjectURL(url);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Failed to download pool list", err);
       setError("Failed to download attendance CSV. Please try again.");
     } finally {
@@ -814,7 +817,7 @@ export default function AdminAttendancePage() {
       const fileDate =
         startDate && !isNaN(startDate.getTime()) ? format(startDate, "yyyy-MM-dd") : "session";
       doc.save(`attendance-${fileDate}.pdf`);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Failed to generate PDF", err);
       setError("Failed to generate PDF. Please try again.");
     } finally {
