@@ -50,6 +50,40 @@ export interface RideShareConfigEntry {
   capacity: number;
 }
 
+/**
+ * Ride-share config row as persisted on a session
+ * (`/transport/sessions/{id}/ride-configs`). Mirrors the server shape
+ * narrowly — only the fields the session-form modals read/write.
+ */
+export interface SessionRideConfig {
+  ride_area_id: string;
+  cost: number;
+  capacity: number;
+  /** ISO-8601 timestamp (sent serialized; received as ISO from API). */
+  departure_time: string | null;
+}
+
+/**
+ * Body shape submitted to the create-session endpoint by SessionFormModal.
+ * Mirrors what the form actually sends (the keys it spreads from form
+ * state). Optional fields default to `null` server-side.
+ */
+export interface SessionPayload {
+  title: string;
+  session_type: SessionType;
+  cohort_id: string | null;
+  event_id: string | null;
+  pool_id: string | null;
+  location: string | null;
+  location_name: string | null;
+  starts_at: string;
+  ends_at: string;
+  pool_fee: number;
+  capacity: number;
+  description?: string;
+  pod_id: string | null;
+}
+
 export interface Template {
   id: string;
   title: string;

@@ -14,8 +14,24 @@ import { Textarea } from "@/components/ui/Textarea";
 import { apiGet } from "@/lib/api";
 import { useEffect, useState } from "react";
 
-import type { RideArea, Session } from "@/app/(admin)/admin/sessions/types";
+import type {
+  RideArea,
+  Session,
+  SessionPayload,
+  SessionRideConfig,
+  SessionType,
+} from "@/app/(admin)/admin/sessions/types";
 import { formatDateTimeLocal } from "@/app/(admin)/admin/sessions/utils";
+
+// In-form shape of a ride-config row before submit. `departure_time` is a
+// local-datetime string (input[type=datetime-local]); it gets serialized
+// to ISO in handleSubmit.
+type RideConfigDraft = {
+  ride_area_id: string;
+  cost: number;
+  capacity: number;
+  departure_time: string;
+};
 
 export function SessionFormModal({
   mode,
@@ -33,8 +49,16 @@ export function SessionFormModal({
   rideAreas: RideArea[];
   submitting: boolean;
   onClose: () => void;
-  onCreate: (data: any, rideConfigs: any[], publishAfter?: boolean) => void;
-  onUpdate: (id: string, data: any, rideConfigs: any[]) => void;
+  onCreate: (
+    data: SessionPayload,
+    rideConfigs: SessionRideConfig[],
+    publishAfter?: boolean,
+  ) => void;
+  onUpdate: (
+    id: string,
+    data: SessionPayload,
+    rideConfigs: SessionRideConfig[],
+  ) => void;
 }) {
   const now = new Date();
   const defaultStart = initialDate || now;
@@ -143,9 +167,7 @@ export function SessionFormModal({
     })();
   }, [form.session_type, events.length]);
 
-  const [rideConfigs, setRideConfigs] = useState<
-    Array<{ ride_area_id: string; cost: number; capacity: number; departure_time: string }>
-  >([]);
+  const [rideConfigs, setRideConfigs] = useState<RideConfigDraft[]>([]);
   const [showRide, setShowRide] = useState(false);
 
   const addRideConfig = () => {
@@ -167,7 +189,11 @@ export function SessionFormModal({
     setRideConfigs((prev) => prev.filter((_, idx) => idx !== i));
   };
 
-  const updateRideConfig = (i: number, field: string, value: any) => {
+  const updateRideConfig = <K extends keyof RideConfigDraft>(
+    i: number,
+    field: K,
+    value: RideConfigDraft[K],
+  ) => {
     setRideConfigs((prev) => prev.map((c, idx) => (idx === i ? { ...c, [field]: value } : c)));
   };
 
@@ -185,7 +211,7 @@ export function SessionFormModal({
       return;
     }
 
-    const sessionData = {
+    const sessionData: SessionPayload = {
       title: form.title,
       session_type: form.session_type,
       // Send ONLY the context FK that matches the session_type so we
@@ -208,12 +234,14 @@ export function SessionFormModal({
       pod_id: form.session_type === "club" ? form.pod_id ?? null : null,
     };
 
-    const validRides = rideConfigs
+    const validRides: SessionRideConfig[] = rideConfigs
       .filter((c) => c.ride_area_id)
       .map((c) => ({
         ride_area_id: c.ride_area_id,
-        cost: parseFloat(c.cost as any) || 0,
-        capacity: parseInt(c.capacity as any) || 4,
+        // cost/capacity already arrive as `number` from controlled inputs
+        // (we type them in state). Number(...) guards a stray non-numeric.
+        cost: Number(c.cost) || 0,
+        capacity: Number(c.capacity) || 4,
         departure_time: c.departure_time ? new Date(c.departure_time).toISOString() : null,
       }));
 
@@ -237,7 +265,7 @@ export function SessionFormModal({
           <Select
             label="Session Type"
             value={form.session_type}
-            onChange={(e) => setForm({ ...form, session_type: e.target.value as any })}
+            onChange={(e) => setForm({ ...form, session_type: e.target.value as SessionType })}
           >
             <option value="club">Club</option>
             <option value="cohort_class">Academy / Cohort Class</option>

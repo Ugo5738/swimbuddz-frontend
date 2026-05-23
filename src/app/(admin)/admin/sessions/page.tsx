@@ -5,7 +5,10 @@ import { PoolPicker } from "@/components/admin/PoolPicker";
 import { SessionCalendar } from "@/components/admin/SessionCalendar";
 import { SessionDetailsModal } from "@/components/admin/SessionDetailsModal";
 import { SessionFormModal } from "@/components/admin/SessionFormModal";
-import { TemplatesDrawer } from "@/components/admin/TemplatesDrawer";
+import {
+  TemplatesDrawer,
+  type TemplateFormPayload,
+} from "@/components/admin/TemplatesDrawer";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -40,6 +43,8 @@ import type {
   FilterTab,
   RideArea,
   Session,
+  SessionPayload,
+  SessionRideConfig,
   SessionStatusType,
   SessionType,
   Template,
@@ -183,7 +188,11 @@ export default function AdminSessionsPage() {
 
   // ---- API actions ----
   const handleCreateSession = useCallback(
-    async (sessionData: any, rideConfigs: any[], publishAfter?: boolean) => {
+    async (
+      sessionData: SessionPayload,
+      rideConfigs: SessionRideConfig[],
+      publishAfter?: boolean,
+    ) => {
       setIsSubmitting(true);
       try {
         const res = await apiFetch("/api/v1/sessions/", {
@@ -218,7 +227,7 @@ export default function AdminSessionsPage() {
   );
 
   const handleUpdateSession = useCallback(
-    async (id: string, sessionData: any, rideConfigs: any[]) => {
+    async (id: string, sessionData: SessionPayload, rideConfigs: SessionRideConfig[]) => {
       setIsSubmitting(true);
       try {
         await apiFetch(`/api/v1/sessions/${id}`, {
@@ -307,7 +316,7 @@ export default function AdminSessionsPage() {
   );
 
   const handleCreateTemplate = useCallback(
-    async (data: any) => {
+    async (data: TemplateFormPayload) => {
       try {
         await apiFetch("/api/v1/sessions/templates", {
           method: "POST",
@@ -324,7 +333,7 @@ export default function AdminSessionsPage() {
   );
 
   const handleUpdateTemplate = useCallback(
-    async (id: string, data: any) => {
+    async (id: string, data: TemplateFormPayload) => {
       try {
         await apiFetch(`/api/v1/sessions/templates/${id}`, {
           method: "PATCH",
