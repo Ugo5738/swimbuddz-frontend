@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AcademySection } from "./_billing/AcademySection";
 import { ClubCard } from "./_billing/ClubCard";
 import { CommunityCard } from "./_billing/CommunityCard";
+import { OutstandingSessionFeesCard } from "./_billing/OutstandingSessionFeesCard";
 import { PaystackReturnAlerts } from "./_billing/PaystackReturnAlerts";
 import { PendingTransfersCard } from "./_billing/PendingTransfersCard";
 import { usePaystackReturn } from "./_billing/usePaystackReturn";
@@ -220,6 +221,8 @@ export default function BillingPage() {
         isClubPayment={isClubPayment}
         isMembershipPayment={isMembershipPayment}
       />
+
+      <OutstandingSessionFeesCard />
 
       <PendingTransfersCard pendingTransfers={pendingTransfers} onReload={load} />
 

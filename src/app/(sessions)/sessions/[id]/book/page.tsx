@@ -113,6 +113,13 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [existingBookingStatus, setExistingBookingStatus] = useState<string | null>(null);
+  // When the existing booking has an outstanding fee (e.g. admin walk-in
+  // where the member never paid online), the AlreadyBooked screen exposes
+  // a "Pay outstanding" button. Populated by the unpaid-bookings fetch.
+  const [unpaidBooking, setUnpaidBooking] = useState<{
+    id: string;
+    fee_amount_kobo: number;
+  } | null>(null);
 
   // Ride share
   const [selectedRideAreaId, setSelectedRideAreaId] = useState<string | null>(null);
@@ -307,6 +314,22 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
         }
 
         setExistingBookingStatus(foundStatus);
+
+        // Best-effort: if this confirmed booking still has an outstanding
+        // pool fee (no payment + no Bubbles linked), surface a Pay button
+        // in the AlreadyBooked screen.
+        try {
+          const unpaid = await apiGet<
+            Array<{ id: string; session_id: string; fee_amount_kobo: number }>
+          >("/api/v1/sessions/bookings/me/unpaid", { auth: true });
+          if (cancelled) return;
+          const match = (unpaid || []).find((b) => b.session_id === params.id);
+          if (match) {
+            setUnpaidBooking({ id: match.id, fee_amount_kobo: match.fee_amount_kobo });
+          }
+        } catch {
+          // Endpoint may be unavailable — fine, just don't surface the button.
+        }
 
         // Check for existing ride booking
         let hasRideBooking = false;
@@ -554,6 +577,7 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
         existingRideBooking={existingRideBooking}
         hasRideShareAreas={!!hasRideShareAreas}
         onAddRideShare={() => setIsRideOnlyFlow(true)}
+        unpaidBooking={unpaidBooking}
       />
     );
   }

@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { apiPost } from "@/lib/api";
 import { getLocationDisplayName, type Session } from "@/lib/sessions";
 import Link from "next/link";
+import { useState } from "react";
+import { toast } from "sonner";
 
 type AlreadyBookedProps = {
   session: Session;
@@ -9,7 +12,16 @@ type AlreadyBookedProps = {
   existingRideBooking: any;
   hasRideShareAreas: boolean;
   onAddRideShare?: () => void;
+  /** If present, the existing booking has an outstanding pool fee that the
+   * member can settle in-place. Typically set when an admin recorded a
+   * walk-in but the member hadn't paid online. */
+  unpaidBooking?: {
+    id: string;
+    fee_amount_kobo: number;
+  } | null;
 };
+
+const formatNgn = (naira: number) => `₦${naira.toLocaleString("en-NG")}`;
 
 export function AlreadyBooked({
   session,
@@ -17,7 +29,39 @@ export function AlreadyBooked({
   existingRideBooking,
   hasRideShareAreas,
   onAddRideShare,
+  unpaidBooking,
 }: AlreadyBookedProps) {
+  const [paying, setPaying] = useState(false);
+
+  const handlePayOutstanding = async () => {
+    if (!unpaidBooking) return;
+    setPaying(true);
+    try {
+      const intent = await apiPost<{ checkout_url: string | null }>(
+        "/api/v1/payments/intents",
+        {
+          purpose: "session_booking",
+          currency: "NGN",
+          payment_method: "paystack",
+          session_id: session.id,
+          direct_amount: unpaidBooking.fee_amount_kobo / 100,
+          payment_metadata: { booking_id: unpaidBooking.id },
+        },
+        { auth: true },
+      );
+      if (intent.checkout_url) {
+        window.location.href = intent.checkout_url;
+      } else {
+        toast.error("Unable to start payment. Please try again.");
+        setPaying(false);
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Unable to start payment.";
+      toast.error(msg);
+      setPaying(false);
+    }
+  };
+
   const startsAt = new Date(session.starts_at);
   const formattedDate = startsAt.toLocaleDateString("en-GB", {
     weekday: "long",
@@ -110,6 +154,33 @@ export function AlreadyBooked({
               </svg>
             </div>
           </button>
+        )}
+
+        {/* Outstanding pool fee — typically an admin-recorded walk-in
+            where the member hadn't paid online. Pay button reuses the
+            same Paystack/session_booking flow as the regular book page. */}
+        {unpaidBooking && (
+          <div className="rounded-xl border-2 border-rose-200 bg-rose-50 p-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <span className="text-xl">💳</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-rose-900">Pool fee outstanding</p>
+                <p className="text-sm text-rose-700">
+                  Your booking is confirmed but the pool fee for this session
+                  hasn't been paid yet.
+                </p>
+              </div>
+            </div>
+            <Button
+              className="w-full"
+              onClick={handlePayOutstanding}
+              disabled={paying}
+            >
+              {paying
+                ? "Starting payment…"
+                : `Pay ${formatNgn(unpaidBooking.fee_amount_kobo / 100)}`}
+            </Button>
+          </div>
         )}
 
         <div className="flex flex-col gap-3">
