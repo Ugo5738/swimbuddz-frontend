@@ -44,6 +44,12 @@ export interface Session {
   timezone?: string;
 }
 
+export interface RideShareConfigEntry {
+  ride_area_id: string;
+  cost: number;
+  capacity: number;
+}
+
 export interface Template {
   id: string;
   title: string;
@@ -60,7 +66,7 @@ export interface Template {
   auto_generate: boolean;
   is_active: boolean;
   description?: string;
-  ride_share_config?: any;
+  ride_share_config?: RideShareConfigEntry[] | null;
 }
 
 export interface RideArea {

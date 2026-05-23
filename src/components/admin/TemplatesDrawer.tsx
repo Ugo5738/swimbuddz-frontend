@@ -15,8 +15,33 @@ import { Calendar, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
 
 import { IBtn } from "@/app/(admin)/admin/sessions/components";
-import type { RideArea, Template } from "@/app/(admin)/admin/sessions/types";
+import type {
+  RideArea,
+  RideShareConfigEntry,
+  Template,
+} from "@/app/(admin)/admin/sessions/types";
 import { DAY_NAMES, locationLabel } from "@/app/(admin)/admin/sessions/utils";
+
+/**
+ * Payload sent to the page's create/update template handlers. Mirrors the
+ * form state in TemplateFormInline below — kept here (rather than in
+ * sessions/types.ts) because the shape is owned by this widget, not by
+ * the persisted Template record.
+ */
+export type TemplateFormPayload = {
+  title: string;
+  session_type: string;
+  pool_id: string | null;
+  location: string | null;
+  location_name: string | null;
+  day_of_week: number;
+  start_time: string;
+  duration_minutes: number;
+  pool_fee: number;
+  capacity: number;
+  auto_generate: boolean;
+  ride_share_config: RideShareConfigEntry[];
+};
 
 export function TemplatesDrawer({
   templates,
@@ -35,11 +60,12 @@ export function TemplatesDrawer({
   templateForm: "create" | "edit" | null;
   editingTemplate: Template | null;
   onClose: () => void;
-  onCreateTemplate: (data: any) => void;
-  onUpdateTemplate: (id: string, data: any) => void;
+  onCreateTemplate: (data: TemplateFormPayload) => void;
+  onUpdateTemplate: (id: string, data: TemplateFormPayload) => void;
   onDeleteTemplate: (id: string) => void;
   onGenerate: (t: Template) => void;
-  onOpenForm: (mode: "create" | "edit", tmpl?: Template) => void;
+  // `null` mode closes the inline form and returns to the list view.
+  onOpenForm: (mode: "create" | "edit" | null, tmpl?: Template) => void;
 }) {
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -61,7 +87,7 @@ export function TemplatesDrawer({
               mode={templateForm}
               template={editingTemplate}
               rideAreas={rideAreas}
-              onCancel={() => onOpenForm(null as any)}
+              onCancel={() => onOpenForm(null)}
               onCreate={onCreateTemplate}
               onUpdate={onUpdateTemplate}
             />
@@ -147,8 +173,8 @@ function TemplateFormInline({
   template: Template | null;
   rideAreas: RideArea[];
   onCancel: () => void;
-  onCreate: (data: any) => void;
-  onUpdate: (id: string, data: any) => void;
+  onCreate: (data: TemplateFormPayload) => void;
+  onUpdate: (id: string, data: TemplateFormPayload) => void;
 }) {
   const [form, setForm] = useState({
     title: template?.title || "",
@@ -165,11 +191,9 @@ function TemplateFormInline({
     auto_generate: template?.auto_generate || false,
   });
 
-  const [rideConfigs, setRideConfigs] = useState<
-    Array<{ ride_area_id: string; cost: number; capacity: number }>
-  >(
+  const [rideConfigs, setRideConfigs] = useState<RideShareConfigEntry[]>(
     template?.ride_share_config && Array.isArray(template.ride_share_config)
-      ? template.ride_share_config.map((c: any) => ({
+      ? template.ride_share_config.map((c) => ({
           ride_area_id: c.ride_area_id || "",
           cost: c.cost || 0,
           capacity: c.capacity || 4,
@@ -179,14 +203,17 @@ function TemplateFormInline({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const data = {
+    const data: TemplateFormPayload = {
       ...form,
       ride_share_config: rideConfigs
         .filter((c) => c.ride_area_id)
         .map((c) => ({
           ride_area_id: c.ride_area_id,
-          cost: parseFloat(c.cost as any) || 0,
-          capacity: parseInt(c.capacity as any) || 4,
+          // cost/capacity arrive as `number` from the inputs (we store them
+          // numerically in state). Number(...) guards against any stray
+          // non-numeric value rather than the old `parseFloat(x as any)`.
+          cost: Number(c.cost) || 0,
+          capacity: Number(c.capacity) || 4,
         })),
     };
     if (mode === "edit" && template) {
