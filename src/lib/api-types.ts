@@ -2783,6 +2783,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sessions/bookings/me/unpaid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List My Unpaid Bookings
+         * @description List the current member's CONFIRMED bookings with an outstanding fee.
+         *
+         *     A booking is "unpaid" when:
+         *       - status = CONFIRMED
+         *       - fee_amount_kobo > 0
+         *       - no payment_intent_id linked (no Paystack payment recorded)
+         *       - no wallet_transaction_id linked (not paid via Bubbles)
+         *
+         *     The typical source is admin walk-in records: the coach marked a member
+         *     present at the pool, but the member hadn't booked online. The billing
+         *     UI surfaces this list so the member can pay the pool fee after-the-fact
+         *     via a generated Paystack link (POST /api/v1/payments/intents with
+         *     purpose=session_booking, payment_metadata.booking_id=<this id>).
+         */
+        get: operations["list_my_unpaid_bookings_sessions_bookings_me_unpaid_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sessions/{session_id}/admin/walk-in": {
         parameters: {
             query?: never;
@@ -18136,6 +18168,51 @@ export interface components {
             week_number?: number | null;
             /** Lesson Title */
             lesson_title?: string | null;
+        };
+        /**
+         * UnpaidBookingResponse
+         * @description A confirmed booking with an outstanding pool fee.
+         *
+         *     Returned by GET /sessions/bookings/me/unpaid so the billing UI can
+         *     surface "you owe ₦X,XXX for Session Y" with a one-click Pay button.
+         *
+         *     A booking lands here when fee_amount_kobo > 0 and neither a payment
+         *     intent nor a wallet transaction is linked — typically admin-recorded
+         *     walk-ins where the member hadn't paid online at session time.
+         */
+        UnpaidBookingResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /** Session Title */
+            session_title: string;
+            /**
+             * Session Starts At
+             * Format: date-time
+             */
+            session_starts_at: string;
+            /**
+             * Session Ends At
+             * Format: date-time
+             */
+            session_ends_at: string;
+            /** Fee Amount Kobo */
+            fee_amount_kobo: number;
+            channel: components["schemas"]["BookingChannel"];
+            /**
+             * Booked At
+             * Format: date-time
+             */
+            booked_at: string;
+            /** Notes */
+            notes?: string | null;
         };
         /** AttendanceCreate */
         AttendanceCreate: {
@@ -36253,6 +36330,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_my_unpaid_bookings_sessions_bookings_me_unpaid_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnpaidBookingResponse"][];
                 };
             };
         };
