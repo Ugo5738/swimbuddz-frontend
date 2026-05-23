@@ -622,19 +622,19 @@ export default function EnrollmentDetailPage({ params }: { params: { id: string 
                   </span>
                 </div>
               )}
-              {(enrollment as any).payment_reference && (
+              {enrollment.payment_reference && (
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-500">Reference</span>
                   <span className="font-mono text-xs text-slate-600">
-                    {(enrollment as any).payment_reference}
+                    {enrollment.payment_reference}
                   </span>
                 </div>
               )}
-              {(enrollment as any).paid_at && (
+              {enrollment.paid_at && (
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-500">Paid At</span>
                   <span className="text-sm text-slate-900">
-                    {formatDate((enrollment as any).paid_at)}
+                    {formatDate(enrollment.paid_at)}
                   </span>
                 </div>
               )}
@@ -680,7 +680,7 @@ export default function EnrollmentDetailPage({ params }: { params: { id: string 
                   <p className="text-xs text-slate-500">{formatDate(enrollment.created_at)}</p>
                 </div>
               </div>
-              {(enrollment as any).enrolled_at && (
+              {enrollment.enrolled_at && (
                 <div className="flex gap-3">
                   <div className="flex flex-col items-center">
                     <div className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -689,12 +689,12 @@ export default function EnrollmentDetailPage({ params }: { params: { id: string 
                   <div className="pb-4">
                     <p className="text-sm font-medium text-slate-900">Enrolled</p>
                     <p className="text-xs text-slate-500">
-                      {formatDate((enrollment as any).enrolled_at)}
+                      {formatDate(enrollment.enrolled_at)}
                     </p>
                   </div>
                 </div>
               )}
-              {(enrollment as any).paid_at && (
+              {enrollment.paid_at && (
                 <div className="flex gap-3">
                   <div className="flex flex-col items-center">
                     <div className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -702,7 +702,7 @@ export default function EnrollmentDetailPage({ params }: { params: { id: string 
                   <div>
                     <p className="text-sm font-medium text-slate-900">Payment Received</p>
                     <p className="text-xs text-slate-500">
-                      {formatDate((enrollment as any).paid_at)}
+                      {formatDate(enrollment.paid_at)}
                     </p>
                   </div>
                 </div>
@@ -716,7 +716,7 @@ export default function EnrollmentDetailPage({ params }: { params: { id: string 
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-500">Source</span>
-                <span className="text-slate-900">{(enrollment as any).source || "web"}</span>
+                <span className="text-slate-900">{enrollment.source || "web"}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Last Updated</span>
