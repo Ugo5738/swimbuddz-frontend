@@ -8,6 +8,7 @@ import {
   Award,
   Banknote,
   BarChart3,
+  Briefcase,
   Calendar,
   CalendarClock,
   CalendarDays,
@@ -139,6 +140,12 @@ const navSections: NavSection[] = [
       // /admin/community/clubs to see and create its pods. The pod CRUD
       // pages still exist at /admin/community/pods/* (deep-linkable from
       // the club detail page) but aren't surfaced as a top-level nav item.
+    ],
+  },
+  {
+    title: "Sales",
+    items: [
+      { href: "/admin/corporate", label: "Corporate Wellness", icon: Briefcase },
     ],
   },
   {

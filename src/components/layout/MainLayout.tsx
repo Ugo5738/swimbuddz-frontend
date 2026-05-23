@@ -21,6 +21,12 @@ export function MainLayout({ children }: MainLayoutProps) {
   // Store routes use their own dedicated layout (header, footer, cart provider)
   const isStoreRoute = pathname?.startsWith("/store");
 
+  // HR corporate-portal routes have their own minimal chrome — no public
+  // nav (HR users aren't members and shouldn't see member CTAs like Join).
+  // Note: the marketing /corporate page intentionally KEEPS the public
+  // header, so this is /corporate-portal only.
+  const isCorporatePortalRoute = pathname?.startsWith("/corporate-portal");
+
   // Member/coach portal routes should use their own layouts without the public chrome.
   // Note: /challenges (no /community prefix) intentionally stays public — that's the
   // unauthenticated landing-page surface; only the member-side /community/challenges
@@ -39,7 +45,13 @@ export function MainLayout({ children }: MainLayoutProps) {
     pathname?.startsWith("/sessions/") ||
     pathname === "/sessions";
 
-  if (isAdminRoute || isMemberPortalRoute || isCoachRoute || isStoreRoute) {
+  if (
+    isAdminRoute ||
+    isMemberPortalRoute ||
+    isCoachRoute ||
+    isStoreRoute ||
+    isCorporatePortalRoute
+  ) {
     return <>{children}</>;
   }
 
