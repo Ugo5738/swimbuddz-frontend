@@ -19,6 +19,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  MessageCircle,
   Package,
   ShoppingBag,
   Trophy,
@@ -133,6 +134,7 @@ const navSections: NavSection[] = [
   {
     title: "Community",
     items: [
+      { href: "/account/chat", label: "Chat", icon: MessageCircle },
       { href: "/community/directory", label: "Members", icon: Users },
       { href: "/community/events", label: "Events", icon: CalendarDays },
       { href: "/community/challenges", label: "Challenges", icon: Trophy },
@@ -449,9 +451,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
     // (The page itself also redirects them to the dashboard, but
     // hiding the entry up-front keeps the sidebar clean for everyone
     // who isn't a Pod Lead.)
-    .filter(
-      (section) => section.title !== "Pod Lead Tools" || leadsAnyPod,
-    )
+    .filter((section) => section.title !== "Pod Lead Tools" || leadsAnyPod)
     .filter((section) => section.items.length > 0);
 
   const memberName = member?.first_name
