@@ -247,8 +247,8 @@ export default function PoolRegistryPage() {
       setOpenStatusDropdown(null);
       loadPools();
       loadStatusCounts();
-    } catch (e: any) {
-      toast.error(e?.message || "Failed to update status");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update status");
     }
   };
 
@@ -259,8 +259,8 @@ export default function PoolRegistryPage() {
       toast.success("Pool removed");
       loadPools();
       loadStatusCounts();
-    } catch (e: any) {
-      toast.error(e?.message || "Failed to delete pool");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to delete pool");
     }
   };
 
