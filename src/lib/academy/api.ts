@@ -135,12 +135,13 @@ export const AcademyApi = {
   createMilestone: (data: Partial<Milestone>) =>
     apiPost<Milestone>("/api/v1/academy/milestones", data, { auth: true }),
 
-  // Enrollments
+  // Enrollments. `preferences` is a free-form JSONB bag (e.g. preferred
+  // session time, language) — see Enrollment.preferences in ./types.
   enrollStudent: (data: {
     cohort_id?: string;
     program_id: string;
     member_id: string;
-    preferences?: any;
+    preferences?: Record<string, unknown>;
   }) => apiPost<Enrollment>("/api/v1/academy/enrollments", data, { auth: true }),
 
   getEnrollment: (id: string) =>
@@ -208,8 +209,11 @@ export const AcademyApi = {
   /**
    * Request enrollment in a program or specific cohort.
    */
-  selfEnroll: (data: { program_id?: string; cohort_id?: string; preferences?: any }) =>
-    apiPost<Enrollment>(`/api/v1/academy/enrollments/me`, data, { auth: true }),
+  selfEnroll: (data: {
+    program_id?: string;
+    cohort_id?: string;
+    preferences?: Record<string, unknown>;
+  }) => apiPost<Enrollment>(`/api/v1/academy/enrollments/me`, data, { auth: true }),
 
   listCohortStudents: (cohortId: string) =>
     apiGet<Enrollment[]>(`/api/v1/academy/cohorts/${cohortId}/students`, {
