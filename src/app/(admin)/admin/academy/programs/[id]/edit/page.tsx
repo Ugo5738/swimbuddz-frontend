@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/Textarea";
 import {
   AcademyApi,
   BillingType,
+  type CurriculumJsonLesson,
+  type CurriculumJsonWeek,
   MilestoneType,
   ProgramFAQItem,
   ProgramLevel,
@@ -35,22 +37,9 @@ interface CurriculumWeek {
   lessons: CurriculumLesson[];
 }
 
-// Narrow shape of the curriculum_json blob persisted on Program. The
-// backend stores this as a freeform JSON column; we mirror the fields the
-// editor reads/writes here so the .map callbacks aren't `any`.
-interface CurriculumJsonLesson {
-  title?: string;
-  description?: string;
-  duration_minutes?: number;
-  video_url?: string;
-}
-
-interface CurriculumJsonWeek {
-  week: number;
-  theme?: string;
-  objectives?: string;
-  lessons?: CurriculumJsonLesson[];
-}
+// `CurriculumJsonWeek` / `CurriculumJsonLesson` are now hoisted into
+// lib/academy/types.ts (shared with the view page). They mirror the
+// freeform JSON column on Program so the .map callbacks aren't `any`.
 
 interface MilestoneFormItem {
   id: string;

@@ -98,6 +98,61 @@ export interface ProgramFAQItem {
   answer: string;
 }
 
+/**
+ * One lesson within a curriculum week. Persisted as freeform JSON on
+ * `Program.curriculum_json`; the editor + viewer agree on these
+ * fields, which is why they're hoisted here instead of redeclared
+ * per route.
+ */
+export interface CurriculumJsonLesson {
+  title?: string;
+  description?: string;
+  duration_minutes?: number;
+  video_url?: string;
+}
+
+export interface CurriculumJsonWeek {
+  week: number;
+  theme?: string;
+  objectives?: string;
+  lessons?: CurriculumJsonLesson[];
+}
+
+export interface CurriculumJson {
+  weeks?: CurriculumJsonWeek[];
+}
+
+/**
+ * A pre-program reading entry. Persisted-rows can be either a bare
+ * string title or an object with title + optional url/description —
+ * the viewer narrows with `typeof item === "string"`.
+ */
+export type PrepMaterialsReadingItem =
+  | string
+  | { title: string; url?: string; description?: string };
+
+/**
+ * Prep-materials blob persisted on `Program.prep_materials`. All
+ * fields optional — older programs may have just a single string,
+ * which the viewer detects via `typeof === "object"` before reading
+ * any sub-fields.
+ */
+export interface PrepMaterials {
+  safety_briefing?: string;
+  required_equipment?: string[];
+  optional_equipment?: string[];
+  pre_program_reading?: PrepMaterialsReadingItem[];
+  /**
+   * Legacy field written by `admin/academy/programs/new` — wraps a
+   * single freeform textarea as `{ content: "<text>" }`. No reader
+   * currently consumes it (the view page handles only structured
+   * fields above + the bare `string` fallback on Program). Kept here
+   * so persistence-side writes still type-check; future cleanup can
+   * either migrate the textarea to `safety_briefing` or drop this.
+   */
+  content?: string;
+}
+
 export interface Program {
   id: string;
   name: string;
@@ -112,9 +167,12 @@ export interface Program {
   currency?: string;
   price_amount?: number;
   billing_type?: BillingType;
-  // Content
-  curriculum_json?: any;
-  prep_materials?: any;
+  // Content. `curriculum_json` and `prep_materials` are JSONB columns
+  // server-side; the shapes above mirror what the editor writes and
+  // the viewer reads. `string` fallback is for older drafts that
+  // stored a single freeform string in `prep_materials`.
+  curriculum_json?: CurriculumJson | null;
+  prep_materials?: PrepMaterials | string | null;
   faq_json?: ProgramFAQItem[] | null;
   // Status
   version?: number;
@@ -293,7 +351,10 @@ export interface Enrollment {
   member_id: string;
   status: EnrollmentStatus;
   payment_status: PaymentStatus;
-  preferences?: any;
+  // Free-form enrollment-time preferences bag (e.g. "preferred session
+  // time", "language"). Shape is intentionally open — every field is
+  // optional and the persisted column is JSONB.
+  preferences?: Record<string, unknown>;
   // Payment tracking
   price_snapshot_amount?: number;
   currency_snapshot?: string;
@@ -338,8 +399,11 @@ export interface Milestone {
   // Organization
   order_index?: number;
   milestone_type?: MilestoneType;
-  // Assessment
-  rubric_json?: any;
+  // Assessment. Persisted as freeform JSONB — the rubric shape varies
+  // by milestone_type (skill-check rubrics, video rubrics, etc.). Use
+  // a typed read at the consumer site that knows which milestone_type
+  // it's handling.
+  rubric_json?: Record<string, unknown>;
   required_evidence?: RequiredEvidence;
   created_at: string;
   updated_at: string;
@@ -587,7 +651,7 @@ export interface OnboardingInfo {
   end_date: string;
   location?: string;
   next_session?: NextSessionInfo;
-  prep_materials?: any;
+  prep_materials?: PrepMaterials | string | null;
   dashboard_link: string;
   resources_link: string;
   sessions_link: string;

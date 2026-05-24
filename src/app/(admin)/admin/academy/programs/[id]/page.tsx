@@ -225,7 +225,7 @@ export default function ProgramDetailsPage() {
             ) : (
               <div className="space-y-4">
                 {program.curriculum_json.weeks.map(
-                  (week: any, index: number) => (
+                  (week, index) => (
                     <div key={index} className="border rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="font-semibold text-slate-900">
@@ -246,7 +246,7 @@ export default function ProgramDetailsPage() {
                       {week.lessons && week.lessons.length > 0 && (
                         <div className="space-y-2">
                           {week.lessons.map(
-                            (lesson: any, lessonIdx: number) => (
+                            (lesson, lessonIdx) => (
                               <div
                                 key={lessonIdx}
                                 className="bg-slate-50 rounded-lg p-3"
@@ -371,7 +371,7 @@ export default function ProgramDetailsPage() {
                 <dt className="text-sm text-slate-500">Lessons</dt>
                 <dd className="text-sm font-medium text-slate-900">
                   {program.curriculum_json?.weeks?.reduce(
-                    (acc: number, w: any) => acc + (w.lessons?.length || 0),
+                    (acc, w) => acc + (w.lessons?.length || 0),
                     0,
                   ) || 0}
                 </dd>
@@ -453,7 +453,7 @@ export default function ProgramDetailsPage() {
                           </h3>
                           <div className="space-y-3">
                             {program.prep_materials.pre_program_reading.map(
-                              (item: any, idx: number) => (
+                              (item, idx) => (
                                 <div
                                   key={idx}
                                   className="bg-slate-50 p-3 rounded-lg border border-slate-100"
