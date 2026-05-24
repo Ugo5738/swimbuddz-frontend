@@ -3,8 +3,6 @@
 import { Card } from "@/components/ui/Card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { apiGet } from "@/lib/api";
-import { supabase } from "@/lib/auth";
-import { API_BASE_URL } from "@/lib/config";
 import type { FlywheelOverview } from "@/lib/types/flywheel";
 import {
   AlertCircle,
@@ -70,69 +68,45 @@ export default function AdminDashboardPage() {
       try {
         setIsLoading(true);
 
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        const token = session?.access_token;
+        // Run the four primary lists in parallel via the typed client
+        // (apiGet handles auth + JSON parsing + thrown errors), then
+        // do the optional flywheel snapshot last so its 404 doesn't
+        // block the rest of the page.
+        const [statsData, sessionsData, announcementsData, enrollmentsData] =
+          await Promise.all([
+            apiGet<DashboardStats>("/api/v1/admin/dashboard-stats", {
+              auth: true,
+            }),
+            apiGet<Session[]>("/api/v1/sessions/", { auth: true }),
+            apiGet<Announcement[]>("/api/v1/communications/announcements/", {
+              auth: true,
+            }),
+            apiGet<Enrollment[]>("/api/v1/academy/enrollments/", {
+              auth: true,
+            }),
+          ]);
 
-        if (!token) {
-          setError("Not authenticated");
-          setIsLoading(false);
-          return;
-        }
+        setStats(statsData);
 
-        const headers = {
-          Authorization: `Bearer ${token}`,
-        };
+        // Filter for upcoming and take top 5
+        const now = new Date();
+        const upcoming = sessionsData
+          .filter((s) => new Date(s.starts_at) > now)
+          .sort(
+            (a, b) =>
+              new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime(),
+          )
+          .slice(0, 5);
+        setSessions(upcoming);
 
-        // Fetch Stats
-        const statsRes = await fetch(`${API_BASE_URL}/api/v1/admin/dashboard-stats`, { headers });
-        if (statsRes.ok) {
-          const statsData = await statsRes.json();
-          setStats(statsData);
-        }
-
-        // Fetch Sessions (for list)
-        const sessionsRes = await fetch(`${API_BASE_URL}/api/v1/sessions/`, {
-          headers,
-        });
-        if (sessionsRes.ok) {
-          const sessionsData = await sessionsRes.json();
-          // Filter for upcoming and take top 5
-          const now = new Date();
-          const upcoming = sessionsData
-            .filter((s: any) => new Date(s.starts_at) > now)
-            .sort(
-              (a: any, b: any) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
-            )
-            .slice(0, 5);
-          setSessions(upcoming);
-        }
-
-        // Fetch Announcements (for list)
-        const announcementsRes = await fetch(
-          `${API_BASE_URL}/api/v1/communications/announcements/`,
-          { headers }
-        );
-        if (announcementsRes.ok) {
-          const announcementsData = await announcementsRes.json();
-          setAnnouncements(announcementsData.slice(0, 5));
-        }
-
-        // Fetch Recent Enrollments
-        const enrollmentsRes = await fetch(`${API_BASE_URL}/api/v1/academy/enrollments/`, {
-          headers,
-        });
-        if (enrollmentsRes.ok) {
-          const enrollmentsData = await enrollmentsRes.json();
-          setRecentEnrollments(enrollmentsData.slice(0, 5));
-        }
+        setAnnouncements(announcementsData.slice(0, 5));
+        setRecentEnrollments(enrollmentsData.slice(0, 5));
 
         // Fetch Flywheel Overview (best-effort — fails silently if no snapshot yet)
         try {
           const flywheelData = await apiGet<FlywheelOverview>(
             "/api/v1/admin/reports/flywheel/overview",
-            { auth: true }
+            { auth: true },
           );
           setFlywheel(flywheelData);
         } catch {
