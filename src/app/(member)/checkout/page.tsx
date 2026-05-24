@@ -5,7 +5,10 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet, apiPost } from "@/lib/api";
+import type { components } from "@/lib/api-types";
 import { savePaymentIntentCache } from "@/lib/paymentCache";
+
+type PaymentIntentRequest = components["schemas"]["CreatePaymentIntentRequest"];
 import {
   Cohort,
   formatCurrency,
@@ -332,7 +335,13 @@ function CheckoutContent() {
 
     setProcessing(true);
     try {
-      let intentPayload: any = {
+      // Intent body is assembled in branches below based on `purpose` —
+      // a Partial of the canonical CreatePaymentIntentRequest covers
+      // every shape we send (the backend's Pydantic model defaults the
+      // unset booleans/numbers). Avoids both `any` and the noise of a
+      // discriminated union with five variants that each duplicate the
+      // shared currency / payment_method / discount_code prefix.
+      let intentPayload: Partial<PaymentIntentRequest> = {
         currency: "NGN",
         payment_method: paymentMethod,
         discount_code: state.discountCode || undefined,
@@ -374,9 +383,11 @@ function CheckoutContent() {
               { auth: true }
             );
             enrollmentId = newEnrollment.id;
-          } catch (enrollError: any) {
+          } catch (enrollError) {
             // If already enrolled, try to get existing enrollment
-            if (enrollError?.message?.includes("already")) {
+            const enrollMessage =
+              enrollError instanceof Error ? enrollError.message : "";
+            if (enrollMessage.includes("already")) {
               // Fetch existing enrollments and find the one for this cohort
               const existingEnrollments = await apiGet<
                 { id: string; cohort_id: string; payment_status: string }[]
