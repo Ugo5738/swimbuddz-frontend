@@ -31,6 +31,13 @@ const rideShareOptions = [
 ];
 
 export default function AttendancePage() {
+  type Route = {
+    destination_name: string;
+    distance: string;
+    duration: string;
+    departure_offset: number;
+  };
+
   type RideConfigArea = {
     id: string;
     name: string;
@@ -39,16 +46,11 @@ export default function AttendancePage() {
       id: string;
       name: string;
       description: string;
+      // Some pickup locations carry their own route overrides; if absent,
+      // the consumer falls back to the area-level `routes` map.
+      routes?: Record<string, Route>;
     }[];
-    routes: Record<
-      string,
-      {
-        destination_name: string;
-        distance: string;
-        duration: string;
-        departure_offset: number;
-      }
-    >;
+    routes: Record<string, Route>;
   };
 
   const [members, setMembers] = useState<Member[]>([]);
@@ -136,8 +138,7 @@ export default function AttendancePage() {
         // Check if the location has specific route info for "main_pool"
         // If not, fall back to area default.
 
-        // Note: We need to update the type definition to include routes on pickup_locations
-        const locRoutes = (loc as any).routes;
+        const locRoutes = loc.routes;
         const areaRoutes = area.routes;
 
         const destinationKey = "main_pool"; // Default for now
@@ -238,9 +239,11 @@ export default function AttendancePage() {
         `/api/v1/attendance/sessions/${selectedSessionId}/ride-summary`,
       );
       setRideSummary(summary);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Submission failed", err);
-      setError(err.message || "Failed to mark attendance.");
+      setError(
+        err instanceof Error ? err.message : "Failed to mark attendance.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -384,7 +387,7 @@ export default function AttendancePage() {
                         activeLocation && activeLocation !== loc.name;
 
                       // Resolve route for this location
-                      const locRoutes = (loc as any).routes;
+                      const locRoutes = loc.routes;
                       const areaRoutes = area.routes;
                       const destinationKey = "main_pool";
 
