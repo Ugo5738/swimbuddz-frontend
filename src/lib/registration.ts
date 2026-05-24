@@ -65,7 +65,7 @@ type MemberForRedirect = {
   coach_profile?: CoachProfileData | null;
 };
 
-function parseDateMs(value: any): number | null {
+function parseDateMs(value: unknown): number | null {
   if (!value) return null;
   const ms = Date.parse(String(value));
   return Number.isFinite(ms) ? ms : null;
@@ -117,12 +117,18 @@ export async function completePendingRegistrationOnBackend(): Promise<PendingCom
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to finish registration.";
-    // If the member already exists or pending is gone (race condition/idempotency), consider success
+    // Treat idempotency races as success: either the member was already
+    // created by a concurrent request (typical "already exists" /
+    // pending-row gone), or the API surfaced a 400/404 in the error
+    // text. `apiPost` throws plain `Error` whose message embeds the
+    // FastAPI detail or "Request failed with status N", so string
+    // matching is the right shape here — no `.response.status`
+    // axios-style field exists.
     if (
       message.includes("already exists") ||
       message.includes("Pending registration not found") ||
-      (error as any)?.response?.status === 400 ||
-      (error as any)?.response?.status === 404
+      message.includes("status 400") ||
+      message.includes("status 404")
     ) {
       return { status: "completed" };
     }
