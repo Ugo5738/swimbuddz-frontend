@@ -1209,8 +1209,13 @@ function UnifiedRoster({
         </div>
       )}
 
-      <div className="overflow-hidden rounded-lg border border-slate-200 shadow-sm print:border-0 print:shadow-none">
-        <table className="min-w-full divide-y divide-slate-200">
+      {/* overflow-x-auto so the table can scroll sideways on phone portrait
+          instead of clipping the Set / Ride / Notes columns off-screen.
+          min-w-[760px] on the table guarantees columns stay readable on
+          narrow screens rather than getting crushed. print:overflow-visible
+          so PDF/print output doesn't truncate. */}
+      <div className="overflow-x-auto rounded-lg border border-slate-200 shadow-sm print:overflow-visible print:border-0 print:shadow-none">
+        <table className="min-w-[760px] md:min-w-full divide-y divide-slate-200">
           <thead className="bg-slate-50 print:bg-white">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
