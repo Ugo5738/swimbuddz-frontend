@@ -3412,6 +3412,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/sessions/bookings/{booking_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Booking Internal
+         * @description Service-role: fetch a single SessionBooking by id.
+         *
+         *     Used by payments_service to generate an admin-issued pay link for a
+         *     booking (purpose=session_booking). Returns 404 if not found.
+         */
+        get: operations["get_booking_internal_internal_sessions_bookings__booking_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/sessions/bookings/{booking_id}/confirm": {
         parameters: {
             query?: never;
@@ -5689,6 +5712,39 @@ export interface paths {
          * @description Replay entitlement fulfillment for a paid payment.
          */
         post: operations["replay_payment_entitlement_payments_admin__reference__replay_entitlement_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/bookings/{booking_id}/payment-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin Generate Booking Pay Link
+         * @description Generate a Paystack checkout link for an outstanding-fee booking.
+         *
+         *     Looks up the booking + member via the sessions/members services,
+         *     inserts a PENDING SESSION_BOOKING payment row tied to the booking,
+         *     initializes Paystack, and returns the authorization URL for the
+         *     admin to forward to the member (WhatsApp / email / SMS).
+         *
+         *     Validation:
+         *       - booking exists, status=confirmed, fee_amount_kobo > 0
+         *       - no existing PAID payment already references the booking_id
+         *
+         *     Once the member pays, the standard webhook flow flips the payment to
+         *     PAID and the session_booking entitlement handler backfills the
+         *     booking's payment_intent_id (already-confirmed case).
+         */
+        post: operations["admin_generate_booking_pay_link_payments_admin_bookings__booking_id__payment_link_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -20765,6 +20821,31 @@ export interface components {
             payment_references: string[];
             /** Refund Note */
             refund_note: string;
+        };
+        /**
+         * AdminBookingPayLinkRequest
+         * @description Optional overrides when generating an admin pay-link for a booking.
+         */
+        AdminBookingPayLinkRequest: {
+            /** Amount Naira */
+            amount_naira?: number | null;
+            /** Note */
+            note?: string | null;
+        };
+        /** AdminBookingPayLinkResponse */
+        AdminBookingPayLinkResponse: {
+            /** Reference */
+            reference: string;
+            /** Authorization Url */
+            authorization_url: string;
+            /** Payer Email */
+            payer_email: string;
+            /** Amount */
+            amount: number;
+            /** Booking Id */
+            booking_id: string;
+            /** Session Id */
+            session_id: string;
         };
         /**
          * AdminReviewRequest
@@ -37214,6 +37295,37 @@ export interface operations {
             };
         };
     };
+    get_booking_internal_internal_sessions_bookings__booking_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionBookingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     internal_confirm_booking_internal_sessions_bookings__booking_id__confirm_post: {
         parameters: {
             query?: never;
@@ -41016,6 +41128,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaymentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_generate_booking_pay_link_payments_admin_bookings__booking_id__payment_link_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminBookingPayLinkRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminBookingPayLinkResponse"];
                 };
             };
             /** @description Validation Error */

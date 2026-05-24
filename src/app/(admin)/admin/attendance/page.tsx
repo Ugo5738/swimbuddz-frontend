@@ -160,6 +160,61 @@ export default function AdminAttendancePage() {
 
   const [selectedSessionId, setSelectedSessionId] = useState("");
 
+  // Admin-issued Paystack pay-link for an outstanding-fee booking. Modal
+  // surface: { booking_id (which row), result | "loading" }. Closed = null.
+  // The actual API call is fired on button click; result holds the URL +
+  // metadata so the admin can copy / share to the member.
+  const [payLinkModal, setPayLinkModal] = useState<{
+    bookingId: string;
+    memberName: string;
+    state:
+      | { kind: "loading" }
+      | {
+          kind: "ready";
+          reference: string;
+          authorization_url: string;
+          payer_email: string;
+          amount: number;
+        }
+      | { kind: "error"; message: string };
+  } | null>(null);
+
+  const handleGeneratePayLink = async (bookingId: string, memberName: string) => {
+    setPayLinkModal({ bookingId, memberName, state: { kind: "loading" } });
+    try {
+      const resp = await apiPost<{
+        reference: string;
+        authorization_url: string;
+        payer_email: string;
+        amount: number;
+        booking_id: string;
+        session_id: string;
+      }>(
+        `/api/v1/payments/admin/bookings/${bookingId}/payment-link`,
+        {},
+        { auth: true }
+      );
+      setPayLinkModal({
+        bookingId,
+        memberName,
+        state: {
+          kind: "ready",
+          reference: resp.reference,
+          authorization_url: resp.authorization_url,
+          payer_email: resp.payer_email,
+          amount: resp.amount,
+        },
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to generate link";
+      setPayLinkModal({
+        bookingId,
+        memberName,
+        state: { kind: "error", message: msg },
+      });
+    }
+  };
+
   const selectedSession = useMemo(
     () => sessions.find((s) => s.id === selectedSessionId) ?? null,
     [sessions, selectedSessionId]
@@ -919,6 +974,7 @@ export default function AdminAttendancePage() {
             unmatchedBookingCount={unmatchedBookings.length}
             onDraftStatus={handleDraftStatus}
             onMarkWalkIn={handleMarkWalkIn}
+            onGeneratePayLink={handleGeneratePayLink}
             onBulkMarkPresent={handleBulkMarkPresent}
             onSaveRoster={handleSaveRoster}
             submitting={submittingMark}
@@ -929,8 +985,165 @@ export default function AdminAttendancePage() {
 
         {loadingAttendance && <LoadingPage text="Loading attendance..." />}
       </div>
+
+      {payLinkModal && (
+        <PayLinkModal modal={payLinkModal} onClose={() => setPayLinkModal(null)} />
+      )}
     </div>
   );
+}
+
+// =========================================================================
+// PayLinkModal — admin-issued Paystack link surface. Shows the generated
+// authorization URL with copy / WhatsApp share / email actions. The link
+// itself is hot from the moment it returns; admin forwards it through any
+// channel and the member clicks to pay (entitlement flow handles the rest).
+// =========================================================================
+
+function PayLinkModal({
+  modal,
+  onClose,
+}: {
+  modal: NonNullable<ReturnType<typeof usePayLinkModalState>>;
+  onClose: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard API can fail on insecure contexts — fall back silently.
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <h3 className="text-base font-semibold text-slate-900">
+              Pay link for {modal.memberName}
+            </h3>
+            <p className="text-xs text-slate-500">
+              Booking {modal.bookingId.slice(0, 8)}…
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600"
+            aria-label="Close"
+          >
+            ✕
+          </button>
+        </div>
+
+        {modal.state.kind === "loading" && (
+          <div className="py-6 text-center text-sm text-slate-500">
+            Generating link…
+          </div>
+        )}
+
+        {modal.state.kind === "error" && (
+          <Alert variant="error" title="Couldn't generate link">
+            {modal.state.message}
+          </Alert>
+        )}
+
+        {modal.state.kind === "ready" && (
+          <div className="space-y-3">
+            <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-sm text-emerald-900">
+              <div className="font-medium">
+                ✓ Link ready — ₦{modal.state.amount.toLocaleString("en-NG")}
+              </div>
+              <div className="mt-0.5 text-xs text-emerald-700">
+                Reference: {modal.state.reference} · Payer:{" "}
+                {modal.state.payer_email}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-slate-600">
+                Paystack URL
+              </label>
+              <div className="mt-1 flex gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={modal.state.authorization_url}
+                  onFocus={(e) => e.target.select()}
+                  className="flex-1 min-w-0 rounded-md border border-slate-300 bg-slate-50 px-2 py-1.5 text-xs font-mono text-slate-700"
+                />
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => copyToClipboard(modal.state.kind === "ready" ? modal.state.authorization_url : "")}
+                >
+                  {copied ? "Copied!" : "Copy"}
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(
+                  `Hi ${modal.memberName}, here's your SwimBuddz payment link (₦${modal.state.amount.toLocaleString("en-NG")}): ${modal.state.authorization_url}`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+              >
+                💬 Share via WhatsApp
+              </a>
+              <a
+                href={`mailto:${modal.state.payer_email}?subject=${encodeURIComponent("Your SwimBuddz payment link")}&body=${encodeURIComponent(
+                  `Hi ${modal.memberName},\n\nHere's your payment link for ₦${modal.state.amount.toLocaleString("en-NG")}:\n${modal.state.authorization_url}\n\nThanks,\nSwimBuddz`
+                )}`}
+                className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                ✉️ Email
+              </a>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              The link stays valid until paid. Once the member pays, the
+              row's "Owes ₦X" badge flips to "Paid" on the next refresh.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Helper type so the modal component knows the exact shape of its
+// `modal` prop without us having to re-declare the union inline.
+function usePayLinkModalState() {
+  return null as
+    | null
+    | {
+        bookingId: string;
+        memberName: string;
+        state:
+          | { kind: "loading" }
+          | {
+              kind: "ready";
+              reference: string;
+              authorization_url: string;
+              payer_email: string;
+              amount: number;
+            }
+          | { kind: "error"; message: string };
+      };
 }
 
 // =========================================================================
@@ -948,6 +1161,7 @@ function UnifiedRoster({
   unmatchedBookingCount,
   onDraftStatus,
   onMarkWalkIn,
+  onGeneratePayLink,
   onBulkMarkPresent,
   onSaveRoster,
   submitting,
@@ -962,6 +1176,7 @@ function UnifiedRoster({
   unmatchedBookingCount: number;
   onDraftStatus: (memberId: string, status: DraftStatus) => void;
   onMarkWalkIn: (memberId: string) => void;
+  onGeneratePayLink: (bookingId: string, memberName: string) => void;
   onBulkMarkPresent: () => void;
   onSaveRoster: () => void;
   submitting: boolean;
@@ -1030,6 +1245,7 @@ function UnifiedRoster({
                 sessionPoolFeeNaira={sessionPoolFeeNaira}
                 onDraftStatus={onDraftStatus}
                 onMarkWalkIn={onMarkWalkIn}
+                onGeneratePayLink={onGeneratePayLink}
                 disabled={submitting}
               />
             ))}
@@ -1062,6 +1278,7 @@ function RosterTableRow({
   sessionPoolFeeNaira,
   onDraftStatus,
   onMarkWalkIn,
+  onGeneratePayLink,
   disabled,
 }: {
   row: RosterRow;
@@ -1069,6 +1286,7 @@ function RosterTableRow({
   sessionPoolFeeNaira: number | null;
   onDraftStatus: (memberId: string, status: DraftStatus) => void;
   onMarkWalkIn: (memberId: string) => void;
+  onGeneratePayLink: (bookingId: string, memberName: string) => void;
   disabled: boolean;
 }) {
   // Map the effective status onto a DraftStatus value for the dropdown's
@@ -1085,14 +1303,33 @@ function RosterTableRow({
   const selectedValue: DraftStatus = draft ?? effectiveForSelect;
   const hasDraft = draft !== undefined && draft !== row.effectiveStatus;
 
-  // Booking column display. Three states:
-  //   - has a confirmed booking → green "Paid ₦X · CHANNEL"
+  // A confirmed booking is "outstanding" when it carries a fee but no
+  // payment / wallet linkage. Typical case: admin walk-in. We use this to
+  // render an amber "Owes ₦X" badge + a Generate pay-link button instead
+  // of the misleading green "Paid" badge.
+  const bookingIsOutstanding =
+    !!row.booking &&
+    row.booking.fee_amount_kobo > 0 &&
+    !row.booking.payment_intent_id &&
+    !row.booking.wallet_transaction_id;
+
+  // Booking column display. Four states:
+  //   - confirmed booking, paid → green "Paid ₦X · CHANNEL"
+  //   - confirmed booking, unpaid (walk-in) → amber "Owes ₦X · CHANNEL"
   //   - no booking, cohort source → red "Not booked"
-  //   - walk-in row (legacy attendance without booking) → violet "Walk-in (unpaid)"
+  //   - walk-in row (legacy attendance without booking) → violet
+  //     "Walk-in (unpaid)"
   const bookingCell = (() => {
     if (row.booking) {
       const amountNaira = row.booking.fee_amount_kobo / 100;
       const channel = row.booking.channel.replace("_", " ");
+      if (bookingIsOutstanding) {
+        return {
+          cls: "bg-amber-100 text-amber-800",
+          primary: `Owes ₦${amountNaira.toLocaleString("en-NG")}`,
+          secondary: channel,
+        };
+      }
       return {
         cls: "bg-emerald-100 text-emerald-800",
         primary: `✓ Paid ₦${amountNaira.toLocaleString("en-NG")}`,
@@ -1198,6 +1435,17 @@ function RosterTableRow({
                   (₦{sessionPoolFeeNaira.toLocaleString("en-NG")})
                 </span>
               ) : null}
+            </button>
+          )}
+          {bookingIsOutstanding && row.booking && (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => onGeneratePayLink(row.booking!.id, row.name)}
+              className="mt-1 inline-flex w-fit rounded-md border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[11px] font-medium text-cyan-700 hover:bg-cyan-100 disabled:opacity-50 print:hidden"
+              title={`Generate a Paystack pay link for ${row.name} to settle the ₦${(row.booking.fee_amount_kobo / 100).toLocaleString("en-NG")} fee — copy/share via WhatsApp`}
+            >
+              💳 Generate pay link
             </button>
           )}
         </div>
