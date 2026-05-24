@@ -35,15 +35,36 @@ export const LEGEND_ITEMS: { key: SessionType; label: string; cls: string }[] = 
   { key: "event", label: "Event", cls: "bg-rose-600" },
 ];
 
-export function formatApiError(body: any, status: number): string {
-  const detail = body?.detail;
+/**
+ * FastAPI validation-error item from a 422 response.
+ * Pydantic's `.errors()` returns objects with at least these fields;
+ * we only consume `loc` and `msg`, but typing the shape keeps the
+ * format function honest about what it's reading.
+ */
+type FastApiValidationError = {
+  loc: (string | number)[];
+  msg: string;
+  type?: string;
+};
+
+/**
+ * Body shape of a FastAPI error response. The gateway proxies the
+ * service's JSONResponse through unchanged, so this is what reaches
+ * the browser for any 4xx/5xx with a structured body.
+ */
+type FastApiErrorBody = {
+  detail?: string | FastApiValidationError[] | Record<string, unknown>;
+};
+
+export function formatApiError(body: unknown, status: number): string {
+  const detail = (body as FastApiErrorBody | null)?.detail;
   if (typeof detail === "string" && detail) return detail;
-  // FastAPI 422: detail is an array of { loc: string[], msg: string, type: string }
+  // FastAPI 422: detail is an array of { loc, msg, type }
   if (Array.isArray(detail)) {
     const parts = detail
       .map((d) => {
         const loc = Array.isArray(d?.loc)
-          ? d.loc.filter((p: any) => p !== "body").join(".")
+          ? d.loc.filter((p) => p !== "body").join(".")
           : "";
         const msg = d?.msg || "";
         return loc ? `${loc}: ${msg}` : msg;
