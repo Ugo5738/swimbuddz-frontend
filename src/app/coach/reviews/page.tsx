@@ -12,6 +12,7 @@ import {
   type PendingMilestoneReview,
 } from "@/lib/coach";
 import { formatRelativeTime } from "@/lib/format";
+import { buildMediaPlaybackUrl, isLikelyVideoUrl } from "@/lib/media";
 import {
   ArrowLeft,
   CheckCircle,
@@ -247,6 +248,7 @@ function ReviewCard({
             {/* Evidence Media */}
             {review.evidence_media_id && (
               <EvidenceViewer
+                mediaId={review.evidence_media_id}
                 evidenceUrl={evidenceUrl}
                 hasMedia={!!review.evidence_media_id}
               />
@@ -293,9 +295,11 @@ function ReviewCard({
 }
 
 function EvidenceViewer({
+  mediaId,
   evidenceUrl,
   hasMedia,
 }: {
+  mediaId: string;
   evidenceUrl: string | null;
   hasMedia: boolean;
 }) {
@@ -311,9 +315,8 @@ function EvidenceViewer({
     );
   }
 
-  const isVideo =
-    /\.(mp4|mov|webm|ogg|avi)(\?|$)/i.test(evidenceUrl) ||
-    evidenceUrl.includes("video");
+  const isVideo = isLikelyVideoUrl(evidenceUrl);
+  const playbackUrl = isVideo ? buildMediaPlaybackUrl(mediaId) : evidenceUrl;
 
   if (isVideo) {
     return (
@@ -328,7 +331,7 @@ function EvidenceViewer({
           controls
           preload="metadata"
           className="w-full max-h-64"
-          src={evidenceUrl}
+          src={playbackUrl}
         >
           Your browser does not support video playback.
         </video>

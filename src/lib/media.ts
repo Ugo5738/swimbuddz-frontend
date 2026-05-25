@@ -15,6 +15,14 @@ export interface MediaItem {
   updated_at: string;
 }
 
+export function isLikelyVideoUrl(url: string): boolean {
+  return /\.(mp4|mov|webm|ogg|avi|m4v)(\?|$)/i.test(url) || url.includes("video");
+}
+
+export function buildMediaPlaybackUrl(mediaId: string): string {
+  return `${API_BASE_URL}/api/v1/media/media/${mediaId}/play`;
+}
+
 /**
  * Narrow shape of `GET /api/v1/media/assets`. Mirrors the fields used by
  * the homepage data loaders and admin's homepage-media manager. The full

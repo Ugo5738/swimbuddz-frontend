@@ -68,12 +68,11 @@ export default function AdminDashboardPage() {
       try {
         setIsLoading(true);
 
-        // Run the four primary lists in parallel via the typed client
-        // (apiGet handles auth + JSON parsing + thrown errors), then
-        // do the optional flywheel snapshot last so its 404 doesn't
-        // block the rest of the page.
-        const [statsData, sessionsData, announcementsData, enrollmentsData] =
-          await Promise.all([
+        // Load the main stats plus supporting lists in parallel, but only
+        // treat the stats call as page-critical so one flaky side panel
+        // doesn't blank the entire dashboard.
+        const [statsResult, sessionsResult, announcementsResult, enrollmentsResult] =
+          await Promise.allSettled([
             apiGet<DashboardStats>("/api/v1/admin/dashboard-stats", {
               auth: true,
             }),
@@ -81,26 +80,54 @@ export default function AdminDashboardPage() {
             apiGet<Announcement[]>("/api/v1/communications/announcements/", {
               auth: true,
             }),
-            apiGet<Enrollment[]>("/api/v1/academy/enrollments/", {
+            // Academy declares this list route without a trailing slash.
+            // Avoid the redirecting variant here because the gateway has
+            // intermittently surfaced it as a 503 in production.
+            apiGet<Enrollment[]>("/api/v1/academy/enrollments", {
               auth: true,
             }),
           ]);
 
-        setStats(statsData);
+        if (statsResult.status !== "fulfilled") {
+          throw statsResult.reason;
+        }
+        setStats(statsResult.value);
 
-        // Filter for upcoming and take top 5
-        const now = new Date();
-        const upcoming = sessionsData
-          .filter((s) => new Date(s.starts_at) > now)
-          .sort(
-            (a, b) =>
-              new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime(),
-          )
-          .slice(0, 5);
-        setSessions(upcoming);
+        if (sessionsResult.status === "fulfilled") {
+          const now = new Date();
+          const upcoming = sessionsResult.value
+            .filter((s) => new Date(s.starts_at) > now)
+            .sort(
+              (a, b) =>
+                new Date(a.starts_at).getTime() -
+                new Date(b.starts_at).getTime(),
+            )
+            .slice(0, 5);
+          setSessions(upcoming);
+        } else {
+          console.warn("Failed to load admin sessions", sessionsResult.reason);
+          setSessions([]);
+        }
 
-        setAnnouncements(announcementsData.slice(0, 5));
-        setRecentEnrollments(enrollmentsData.slice(0, 5));
+        if (announcementsResult.status === "fulfilled") {
+          setAnnouncements(announcementsResult.value.slice(0, 5));
+        } else {
+          console.warn(
+            "Failed to load admin announcements",
+            announcementsResult.reason,
+          );
+          setAnnouncements([]);
+        }
+
+        if (enrollmentsResult.status === "fulfilled") {
+          setRecentEnrollments(enrollmentsResult.value.slice(0, 5));
+        } else {
+          console.warn(
+            "Failed to load recent academy enrollments",
+            enrollmentsResult.reason,
+          );
+          setRecentEnrollments([]);
+        }
 
         // Fetch Flywheel Overview (best-effort — fails silently if no snapshot yet)
         try {

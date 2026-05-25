@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { Textarea } from "@/components/ui/Textarea";
 import { useMediaUrl } from "@/hooks/useMediaUrl";
+import { buildMediaPlaybackUrl, isLikelyVideoUrl } from "@/lib/media";
 import { apiGet } from "@/lib/api";
 import {
   calculateProgressPercentage,
@@ -582,7 +583,8 @@ function EvidenceMedia({ mediaId }: { mediaId: string }) {
     );
   }
 
-  const isVideo = /\.(mp4|mov|webm|ogg|avi)(\?|$)/i.test(url) || url.includes("video");
+  const isVideo = isLikelyVideoUrl(url);
+  const playbackUrl = isVideo ? buildMediaPlaybackUrl(mediaId) : url;
 
   return (
     <>
@@ -601,7 +603,7 @@ function EvidenceMedia({ mediaId }: { mediaId: string }) {
           </button>
         </div>
         {isVideo ? (
-          <video controls preload="metadata" className="w-full max-h-72" src={url}>
+          <video controls preload="metadata" className="w-full max-h-72" src={playbackUrl}>
             Your browser does not support video playback.
           </video>
         ) : (
@@ -633,7 +635,7 @@ function EvidenceMedia({ mediaId }: { mediaId: string }) {
           </button>
           <div className="max-w-5xl w-full max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
             {isVideo ? (
-              <video controls autoPlay className="w-full max-h-[90vh] rounded-lg" src={url}>
+              <video controls autoPlay className="w-full max-h-[90vh] rounded-lg" src={playbackUrl}>
                 Your browser does not support video playback.
               </video>
             ) : (
