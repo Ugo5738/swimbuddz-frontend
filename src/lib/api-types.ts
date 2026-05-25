@@ -727,6 +727,53 @@ export interface paths {
         patch: operations["admin_patch_membership_by_auth_admin_members_by_auth__auth_id__membership_patch"];
         trace?: never;
     };
+    "/api/v1/admin/members/tasks/reconcile-pod-chat-memberships": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger Pod Chat Reconciliation
+         * @description Manually run the pod chat reconciliation pass.
+         *
+         *     Same logic the members-worker runs hourly (and at startup). Use to
+         *     immediately heal drift after a chat-service outage or known missed
+         *     hook, without waiting for the next cron tick.
+         */
+        post: operations["trigger_pod_chat_reconciliation_admin_members_tasks_reconcile_pod_chat_memberships_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/members/tasks/reconcile-location-chat-memberships": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger Location Chat Reconciliation
+         * @description Manually run the location (city) chat reconciliation pass.
+         *
+         *     Walks every distinct ``Member.city`` and re-asserts the city's
+         *     chat channel + every member assigned to that city. Idempotent.
+         */
+        post: operations["trigger_location_chat_reconciliation_admin_members_tasks_reconcile_location_chat_memberships_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/challenges/public/all": {
         parameters: {
             query?: never;
@@ -4908,6 +4955,30 @@ export interface paths {
          *     Useful for testing or manual corrections.
          */
         post: operations["trigger_cohort_status_transitions_academy_admin_tasks_transition_cohort_statuses_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/tasks/reconcile-chat-memberships": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger Chat Reconciliation
+         * @description Manually run the cohort chat reconciliation pass.
+         *
+         *     Same logic the academy-worker runs hourly (and at startup). Use to
+         *     immediately heal drift after a chat-service outage or a known missed
+         *     hook, without waiting for the next cron tick.
+         */
+        post: operations["trigger_chat_reconciliation_academy_admin_tasks_reconcile_chat_memberships_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9586,6 +9657,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/transport/admin/tasks/reconcile-trip-chat-memberships": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger Trip Chat Reconciliation
+         * @description Manually run the trip chat reconciliation pass.
+         *
+         *     Same logic the transport-worker runs hourly (and at startup). Use to
+         *     immediately heal drift after a chat-service outage or known missed
+         *     hook, without waiting for the next cron tick.
+         */
+        post: operations["trigger_trip_chat_reconciliation_transport_admin_tasks_reconcile_trip_chat_memberships_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/transport/member-summary/{member_auth_id}": {
         parameters: {
             query?: never;
@@ -12329,6 +12424,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/events/admin/tasks/reconcile-event-chat-memberships": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger Event Chat Reconciliation
+         * @description Manually run the event chat reconciliation pass.
+         *
+         *     Same logic the events-worker runs hourly (and at startup). Use to
+         *     immediately heal drift after a chat-service outage or known missed
+         *     hook, without waiting for the next cron tick.
+         */
+        post: operations["trigger_event_chat_reconciliation_events_admin_tasks_reconcile_event_chat_memberships_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/media/albums": {
         parameters: {
             query?: never;
@@ -12489,6 +12608,35 @@ export interface paths {
         delete: operations["delete_media_media_media__media_id__delete"];
         options?: never;
         head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/media/{media_id}/play": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Media Item Playback
+         * @description Return a browser-stable playback URL for media.
+         *
+         *     Private S3 video evidence is served via presigned GET URLs, but some
+         *     browsers issue a HEAD probe first. A raw GET presign fails that HEAD
+         *     check with 403, so this endpoint answers HEAD itself and only redirects
+         *     GET requests to the signed object URL.
+         */
+        get: operations["get_media_item_playback"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        /**
+         * Head Media Item Playback
+         * @description Answer browser HEAD probes for media playback.
+         */
+        head: operations["head_media_item_playback"];
         patch?: never;
         trace?: never;
     };
@@ -24043,21 +24191,35 @@ export interface components {
          * @enum {string}
          */
         AuditAction: "freeze" | "unfreeze" | "suspend" | "close" | "admin_credit" | "admin_debit" | "tier_change" | "limit_change";
-        /** AuditLogEntry */
+        /**
+         * AuditLogEntry
+         * @description Wallet-flavoured view of a canonical audit row (B4).
+         *
+         *     Mirrors :class:`libs.common.audit.AuditLogRead` field-for-field —
+         *     callers (admin UI) get the full canonical surface, namespaced
+         *     action strings included (e.g. ``"wallet.freeze"``).
+         */
         AuditLogEntry: {
             /**
              * Id
              * Format: uuid
              */
             id: string;
+            /** Domain */
+            domain: string;
+            /** Entity Type */
+            entity_type: string;
             /**
-             * Wallet Id
+             * Entity Id
              * Format: uuid
              */
-            wallet_id: string;
-            action: components["schemas"]["AuditAction"];
-            /** Performed By */
-            performed_by: string;
+            entity_id: string;
+            /** Action */
+            action: string;
+            /** Actor Id */
+            actor_id?: string | null;
+            /** Actor Label */
+            actor_label?: string | null;
             /** Old Value */
             old_value?: {
                 [key: string]: unknown;
@@ -24067,7 +24229,7 @@ export interface components {
                 [key: string]: unknown;
             } | null;
             /** Reason */
-            reason: string;
+            reason?: string | null;
             /** Ip Address */
             ip_address?: string | null;
             /**
@@ -33203,6 +33365,46 @@ export interface operations {
             };
         };
     };
+    trigger_pod_chat_reconciliation_admin_members_tasks_reconcile_pod_chat_memberships_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    trigger_location_chat_reconciliation_admin_members_tasks_reconcile_location_chat_memberships_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     list_public_challenges_challenges_public_all_get: {
         parameters: {
             query?: {
@@ -39740,6 +39942,26 @@ export interface operations {
             };
         };
     };
+    trigger_chat_reconciliation_academy_admin_tasks_reconcile_chat_memberships_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     admin_delete_member_academy_records_academy_admin_members__member_id__delete: {
         parameters: {
             query?: never;
@@ -45747,7 +45969,9 @@ export interface operations {
             query?: {
                 skip?: number;
                 limit?: number;
+                /** @description Filter to a single wallet (queries the canonical entity_id column). Kept named `wallet_id` for caller compatibility. */
                 wallet_id?: string | null;
+                /** @description Filter to a single action. Accepts the wallet-local enum value (e.g. `freeze`); converted to the namespaced `wallet.freeze` string before querying. */
                 action?: components["schemas"]["AuditAction"] | null;
             };
             header?: never;
@@ -47676,6 +47900,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trigger_trip_chat_reconciliation_transport_admin_tasks_reconcile_trip_chat_memberships_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };
@@ -53235,6 +53479,26 @@ export interface operations {
             };
         };
     };
+    trigger_event_chat_reconciliation_events_admin_tasks_reconcile_event_chat_memberships_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     list_albums_media_albums_get: {
         parameters: {
             query?: {
@@ -53631,6 +53895,68 @@ export interface operations {
         };
     };
     delete_media_media_media__media_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_media_item_playback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    head_media_item_playback: {
         parameters: {
             query?: never;
             header?: never;
