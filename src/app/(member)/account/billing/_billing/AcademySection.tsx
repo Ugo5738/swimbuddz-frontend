@@ -2,8 +2,10 @@
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { apiPost } from "@/lib/api";
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import type { Cohort, Enrollment } from "../types";
 import { formatCurrency, formatDate } from "../utils";
@@ -15,6 +17,38 @@ type Props = {
 };
 
 export function AcademySection({ myEnrollments, openCohorts, communityActive }: Props) {
+  const [payingEnrollmentId, setPayingEnrollmentId] = useState<string | null>(null);
+
+  // Pay the next outstanding installment for an enrollment. The backend's
+  // academy_cohort intent always charges the earliest unpaid installment, so
+  // we just pass enrollment_id and redirect to Paystack. Works for both
+  // overdue (missed) and paying-ahead (future pending) installments.
+  const handlePayInstallment = async (enrollmentId: string) => {
+    setPayingEnrollmentId(enrollmentId);
+    try {
+      const intent = await apiPost<{ checkout_url: string | null }>(
+        "/api/v1/payments/intents",
+        {
+          purpose: "academy_cohort",
+          enrollment_id: enrollmentId,
+          currency: "NGN",
+          payment_method: "paystack",
+        },
+        { auth: true },
+      );
+      if (intent.checkout_url) {
+        window.location.href = intent.checkout_url;
+      } else {
+        toast.error("Unable to start payment. Please try again.");
+        setPayingEnrollmentId(null);
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Unable to start payment.";
+      toast.error(msg);
+      setPayingEnrollmentId(null);
+    }
+  };
+
   const { paidEnrollments, pendingEnrollments, availableCohorts } = useMemo(() => {
     const paid = myEnrollments.filter(
       (e) => e.payment_status === "paid" || e.status === "enrolled",
@@ -73,16 +107,26 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive }: 
               </p>
               {paidEnrollments
                 .filter((e) => e.installments && e.installments.length > 0)
-                .map((e) =>
-                  e.installments!.map((inst) => {
+                .map((e) => {
+                  // The next-payable installment = earliest one (by number)
+                  // that isn't paid/waived. The backend's academy_cohort
+                  // intent charges exactly this one, so we only render the
+                  // Pay button here — paying it covers overdue OR pays ahead.
+                  const nextPayable = [...e.installments!]
+                    .sort((a, b) => a.installment_number - b.installment_number)
+                    .find(
+                      (i) => i.status !== "paid" && i.status !== "waived",
+                    );
+                  return e.installments!.map((inst) => {
                     const isPaid = inst.status === "paid";
                     const isMissed = inst.status === "missed";
                     const isUpcoming =
                       !isPaid && !isMissed && new Date(inst.due_at) > new Date();
+                    const isNextPayable = nextPayable?.id === inst.id;
                     return (
                       <div
                         key={inst.id}
-                        className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm ${
+                        className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm ${
                           isPaid
                             ? "bg-emerald-50 text-emerald-800"
                             : isMissed
@@ -92,20 +136,35 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive }: 
                                 : "bg-amber-50 text-amber-800"
                         }`}
                       >
-                        <span className="flex items-center gap-2">
+                        <span className="flex items-center gap-2 min-w-0">
                           <span>{isPaid ? "✓" : isMissed ? "✗" : "·"}</span>
-                          <span>
+                          <span className="truncate">
                             Installment {inst.installment_number} —{" "}
                             {formatDate(inst.due_at)}
                           </span>
                         </span>
-                        <span className="font-medium tabular-nums">
-                          {formatCurrency(Math.round(inst.amount / 100))}
+                        <span className="flex items-center gap-3 flex-shrink-0">
+                          <span className="font-medium tabular-nums">
+                            {formatCurrency(Math.round(inst.amount / 100))}
+                          </span>
+                          {isNextPayable && (
+                            <Button
+                              size="sm"
+                              onClick={() => handlePayInstallment(e.id)}
+                              disabled={payingEnrollmentId === e.id}
+                            >
+                              {payingEnrollmentId === e.id
+                                ? "…"
+                                : isMissed
+                                  ? "Pay now"
+                                  : "Pay"}
+                            </Button>
+                          )}
                         </span>
                       </div>
                     );
-                  }),
-                )}
+                  });
+                })}
             </div>
           )}
 
