@@ -18,12 +18,22 @@ type Props = {
 
 export function AcademySection({ myEnrollments, openCohorts, communityActive }: Props) {
   const [payingEnrollmentId, setPayingEnrollmentId] = useState<string | null>(null);
+  // How many of the next consecutive unpaid installments the member has
+  // selected to pay, keyed by enrollment id. Defaults to 1 (the next one).
+  // Selection is always a prefix because the backend rolls a payment forward
+  // from the earliest unpaid installment — you can't skip ahead.
+  const [selectedCounts, setSelectedCounts] = useState<Record<string, number>>({});
 
-  // Pay the next outstanding installment for an enrollment. The backend's
-  // academy_cohort intent always charges the earliest unpaid installment, so
-  // we just pass enrollment_id and redirect to Paystack. Works for both
-  // overdue (missed) and paying-ahead (future pending) installments.
-  const handlePayInstallment = async (enrollmentId: string) => {
+  // Pay one or more consecutive installments for an enrollment. When paying a
+  // single (next) installment we omit amount_override_kobo so the backend
+  // charges the stipulated amount. When paying ahead (count > 1) we pass the
+  // summed amount as amount_override_kobo; the backend's
+  // apply_member_payment_across_installments rolls it forward, marking each
+  // installment PAID in turn.
+  const handlePayInstallment = async (
+    enrollmentId: string,
+    amountOverrideKobo?: number,
+  ) => {
     setPayingEnrollmentId(enrollmentId);
     try {
       const intent = await apiPost<{ checkout_url: string | null }>(
@@ -33,6 +43,7 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive }: 
           enrollment_id: enrollmentId,
           currency: "NGN",
           payment_method: "paystack",
+          ...(amountOverrideKobo ? { amount_override_kobo: amountOverrideKobo } : {}),
         },
         { auth: true },
       );
@@ -101,69 +112,120 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive }: 
 
           {/* Installment schedule for installment-paying enrollments */}
           {paidEnrollments.some((e) => e.installments && e.installments.length > 0) && (
-            <div className="space-y-2">
+            <div className="space-y-4">
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
                 Payment schedule
               </p>
               {paidEnrollments
                 .filter((e) => e.installments && e.installments.length > 0)
                 .map((e) => {
-                  // The next-payable installment = earliest one (by number)
-                  // that isn't paid/waived. The backend's academy_cohort
-                  // intent charges exactly this one, so we only render the
-                  // Pay button here — paying it covers overdue OR pays ahead.
-                  const nextPayable = [...e.installments!]
-                    .sort((a, b) => a.installment_number - b.installment_number)
-                    .find(
-                      (i) => i.status !== "paid" && i.status !== "waived",
-                    );
-                  return e.installments!.map((inst) => {
-                    const isPaid = inst.status === "paid";
-                    const isMissed = inst.status === "missed";
-                    const isUpcoming =
-                      !isPaid && !isMissed && new Date(inst.due_at) > new Date();
-                    const isNextPayable = nextPayable?.id === inst.id;
-                    return (
-                      <div
-                        key={inst.id}
-                        className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm ${
-                          isPaid
-                            ? "bg-emerald-50 text-emerald-800"
-                            : isMissed
-                              ? "bg-red-50 text-red-800"
-                              : isUpcoming
-                                ? "bg-slate-50 text-slate-700"
-                                : "bg-amber-50 text-amber-800"
-                        }`}
-                      >
-                        <span className="flex items-center gap-2 min-w-0">
-                          <span>{isPaid ? "✓" : isMissed ? "✗" : "·"}</span>
-                          <span className="truncate">
-                            Installment {inst.installment_number} —{" "}
-                            {formatDate(inst.due_at)}
-                          </span>
-                        </span>
-                        <span className="flex items-center gap-3 flex-shrink-0">
-                          <span className="font-medium tabular-nums">
-                            {formatCurrency(Math.round(inst.amount / 100))}
-                          </span>
-                          {isNextPayable && (
-                            <Button
-                              size="sm"
-                              onClick={() => handlePayInstallment(e.id)}
-                              disabled={payingEnrollmentId === e.id}
-                            >
-                              {payingEnrollmentId === e.id
-                                ? "…"
+                  const sorted = [...e.installments!].sort(
+                    (a, b) => a.installment_number - b.installment_number,
+                  );
+                  // Unpaid installments are payable only in order (the backend
+                  // rolls a payment forward from the earliest unpaid one), so
+                  // a member's selection is always a prefix of this list.
+                  const unpaid = sorted.filter(
+                    (i) => i.status !== "paid" && i.status !== "waived",
+                  );
+                  const selectedCount = Math.min(
+                    Math.max(selectedCounts[e.id] ?? 1, 1),
+                    Math.max(unpaid.length, 1),
+                  );
+                  const selectedIds = new Set(
+                    unpaid.slice(0, selectedCount).map((i) => i.id),
+                  );
+                  const selectedTotalKobo = unpaid
+                    .slice(0, selectedCount)
+                    .reduce((sum, i) => sum + i.amount, 0);
+                  const isPaying = payingEnrollmentId === e.id;
+                  // Checkboxes only make sense when there's a choice to make.
+                  const multiSelectable = unpaid.length > 1;
+
+                  return (
+                    <div key={e.id} className="space-y-2">
+                      {sorted.map((inst) => {
+                        const isPaid = inst.status === "paid";
+                        const isMissed = inst.status === "missed";
+                        const isUpcoming =
+                          !isPaid && !isMissed && new Date(inst.due_at) > new Date();
+                        const unpaidIdx = unpaid.findIndex((i) => i.id === inst.id);
+                        const isSelectable = multiSelectable && unpaidIdx >= 0;
+                        const isSelected = selectedIds.has(inst.id);
+                        return (
+                          <div
+                            key={inst.id}
+                            className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm ${
+                              isPaid
+                                ? "bg-emerald-50 text-emerald-800"
                                 : isMissed
-                                  ? "Pay now"
-                                  : "Pay"}
-                            </Button>
-                          )}
-                        </span>
-                      </div>
-                    );
-                  });
+                                  ? "bg-red-50 text-red-800"
+                                  : isUpcoming
+                                    ? "bg-slate-50 text-slate-700"
+                                    : "bg-amber-50 text-amber-800"
+                            }`}
+                          >
+                            <span className="flex items-center gap-2 min-w-0">
+                              {isSelectable ? (
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  aria-label={`Pay installment ${inst.installment_number}`}
+                                  onChange={() =>
+                                    setSelectedCounts((prev) => ({
+                                      ...prev,
+                                      // Clicking the last-selected box drops it
+                                      // (min 1); otherwise select up to here.
+                                      [e.id]:
+                                        unpaidIdx + 1 === selectedCount
+                                          ? Math.max(1, unpaidIdx)
+                                          : unpaidIdx + 1,
+                                    }))
+                                  }
+                                  className="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                                />
+                              ) : (
+                                <span>{isPaid ? "✓" : isMissed ? "✗" : "·"}</span>
+                              )}
+                              <span className="truncate">
+                                Installment {inst.installment_number} —{" "}
+                                {formatDate(inst.due_at)}
+                              </span>
+                            </span>
+                            <span className="font-medium tabular-nums flex-shrink-0">
+                              {formatCurrency(Math.round(inst.amount / 100))}
+                            </span>
+                          </div>
+                        );
+                      })}
+
+                      {unpaid.length > 0 && (
+                        <div className="flex items-center justify-between gap-3 pt-0.5">
+                          <span className="text-xs text-slate-500">
+                            {selectedCount > 1
+                              ? `Paying ${selectedCount} installments together`
+                              : multiSelectable
+                                ? "Tick more to pay ahead"
+                                : "Next installment"}
+                          </span>
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              handlePayInstallment(
+                                e.id,
+                                selectedCount > 1 ? selectedTotalKobo : undefined,
+                              )
+                            }
+                            disabled={isPaying}
+                          >
+                            {isPaying
+                              ? "…"
+                              : `Pay ${formatCurrency(Math.round(selectedTotalKobo / 100))}`}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  );
                 })}
             </div>
           )}
