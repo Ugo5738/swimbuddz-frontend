@@ -470,10 +470,15 @@ export default function HomePage() {
                         .slice(0, 2)}
                     </div>
                   )}
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-cyan-600">
+                    Top Contributor
+                  </p>
                   <p className="font-semibold text-slate-900 text-sm">
                     {getDisplayName(volunteer.member_name)}
                   </p>
-                  <p className="text-xs text-slate-500 mt-1">{volunteer.total_hours} hours</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {volunteer.total_hours} hrs (all-time)
+                  </p>
                   {volunteer.recognition_tier && (
                     <span
                       className={`inline-block mt-2 text-xs px-2 py-0.5 rounded-full font-medium ${
