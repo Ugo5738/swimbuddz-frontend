@@ -78,10 +78,8 @@ export default function MemberDashboardPage() {
 
   const currentYear = new Date().getFullYear();
   const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
-  // Use last completed quarter for leaderboard/report links (current quarter has no data early on)
-  const lastCompletedQuarter = currentQuarter > 1 ? currentQuarter - 1 : 4;
-  const lastCompletedYear = currentQuarter > 1 ? currentYear : currentYear - 1;
-  const leaderboardSlug = quarterSlug(lastCompletedYear, lastCompletedQuarter);
+  // Leaderboard/report links point at the current quarter (matches the report widget)
+  const leaderboardSlug = quarterSlug(currentYear, currentQuarter);
 
   useEffect(() => {
     apiGet("/api/v1/members/me", { auth: true })
@@ -688,30 +686,17 @@ function QuarterlyReportWidget() {
   const quarter = Math.ceil((now.getMonth() + 1) / 3);
 
   useEffect(() => {
-    // Try current quarter first, fall back to last completed quarter
+    // Always show the current quarter. The backend computes it on the fly when
+    // no snapshot exists yet, so the dashboard never falls back to a past quarter.
     fetchQuarterlyReport(year, quarter)
       .then((r) => {
-        if (r && r.total_sessions_attended > 0) {
+        if (r) {
           setReport(r);
           setReportSlug(`q${quarter}-${year}`);
           setReportLabel(`Q${quarter} ${year}`);
-        } else {
-          throw new Error("Empty current quarter");
         }
       })
-      .catch(() => {
-        // Fall back to last completed quarter
-        const prevQ = quarter > 1 ? quarter - 1 : 4;
-        const prevY = quarter > 1 ? year : year - 1;
-        fetchQuarterlyReport(prevY, prevQ)
-          .then((r) => {
-            setReport(r);
-            setReportSlug(`q${prevQ}-${prevY}`);
-            setReportLabel(`Q${prevQ} ${prevY}`);
-          })
-          .catch(() => {})
-          .finally(() => setLoaded(true));
-      })
+      .catch(() => {})
       .finally(() => setLoaded(true));
   }, [year, quarter]);
 
