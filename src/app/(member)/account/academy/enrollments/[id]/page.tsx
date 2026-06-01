@@ -1,5 +1,6 @@
 "use client";
 
+import { EvidenceMedia } from "@/components/academy/EvidenceMedia";
 import { MilestoneClaimModal } from "@/components/academy/MilestoneClaimModal";
 import {
   WithdrawEnrollmentModal,
@@ -542,6 +543,14 @@ export default function EnrollmentDetailPage() {
                               📹 Video evidence required
                             </p>
                           )}
+                        {milestoneProgress?.evidence_media_id && (
+                          <div className="mt-2">
+                            <EvidenceMedia
+                              mediaId={milestoneProgress.evidence_media_id}
+                              label="Your Evidence"
+                            />
+                          </div>
+                        )}
                         {milestoneProgress?.student_notes && (
                           <div className="mt-2 rounded bg-slate-100 p-2 text-sm text-slate-700">
                             <span className="font-medium">Your note: </span>
