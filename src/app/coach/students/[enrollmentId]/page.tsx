@@ -1,13 +1,12 @@
 "use client";
 
+import { EvidenceMedia } from "@/components/academy/EvidenceMedia";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { Textarea } from "@/components/ui/Textarea";
-import { useMediaUrl } from "@/hooks/useMediaUrl";
-import { buildMediaPlaybackUrl, isLikelyVideoUrl } from "@/lib/media";
 import { apiGet } from "@/lib/api";
 import {
   calculateProgressPercentage,
@@ -26,14 +25,10 @@ import {
   CheckCircle2,
   Circle,
   Clock,
-  Expand,
   GraduationCap,
   Loader2,
-  Play,
-  X,
   XCircle,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -558,100 +553,4 @@ function MilestoneHistoryEntry({ event }: { event: MilestoneReviewEvent }) {
   );
 }
 
-/**
- * In-app media viewer for student evidence.
- * Shows inline preview + click to open full-screen overlay.
- */
-function EvidenceMedia({ mediaId }: { mediaId: string }) {
-  const [url, isLoading] = useMediaUrl(mediaId);
-  const [showFullscreen, setShowFullscreen] = useState(false);
-
-  if (isLoading) {
-    return (
-      <div className="p-3 bg-cyan-50 rounded-lg flex items-center gap-2 text-sm text-cyan-600">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Loading student evidence...
-      </div>
-    );
-  }
-
-  if (!url) {
-    return (
-      <div className="p-3 bg-slate-50 rounded-lg text-sm text-slate-500">
-        Evidence uploaded but could not be loaded.
-      </div>
-    );
-  }
-
-  const isVideo = isLikelyVideoUrl(url);
-  const playbackUrl = isVideo ? buildMediaPlaybackUrl(mediaId) : url;
-
-  return (
-    <>
-      <div className="rounded-lg overflow-hidden border border-slate-200">
-        <div className="px-3 py-1.5 bg-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <Play className="h-3.5 w-3.5 text-slate-600" />
-            <span className="text-xs font-medium text-slate-600">Student Evidence</span>
-          </div>
-          <button
-            onClick={() => setShowFullscreen(true)}
-            className="text-xs text-cyan-600 hover:text-cyan-700 flex items-center gap-1"
-          >
-            <Expand className="h-3 w-3" />
-            Full screen
-          </button>
-        </div>
-        {isVideo ? (
-          <video controls preload="metadata" className="w-full max-h-72" src={playbackUrl}>
-            Your browser does not support video playback.
-          </video>
-        ) : (
-          <button onClick={() => setShowFullscreen(true)} className="w-full cursor-pointer">
-            <Image
-              src={url}
-              alt="Student milestone evidence"
-              width={0}
-              height={0}
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="w-full max-h-72 object-contain bg-slate-50"
-              style={{ width: "100%", height: "auto" }}
-            />
-          </button>
-        )}
-      </div>
-
-      {/* Fullscreen in-app overlay */}
-      {showFullscreen && (
-        <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
-          onClick={() => setShowFullscreen(false)}
-        >
-          <button
-            onClick={() => setShowFullscreen(false)}
-            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
-          >
-            <X className="h-6 w-6" />
-          </button>
-          <div className="max-w-5xl w-full max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-            {isVideo ? (
-              <video controls autoPlay className="w-full max-h-[90vh] rounded-lg" src={playbackUrl}>
-                Your browser does not support video playback.
-              </video>
-            ) : (
-              <Image
-                src={url}
-                alt="Student milestone evidence"
-                width={0}
-                height={0}
-                sizes="100vw"
-                className="w-full max-h-[90vh] object-contain rounded-lg"
-                style={{ width: "100%", height: "auto" }}
-              />
-            )}
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
+// EvidenceMedia is now shared at @/components/academy/EvidenceMedia.
