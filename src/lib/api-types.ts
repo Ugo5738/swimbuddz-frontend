@@ -14108,6 +14108,168 @@ export interface paths {
         patch: operations["update_contact_admin_corporate_contacts__contact_id__patch"];
         trace?: never;
     };
+    "/api/v1/admin/finance/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Accounts */
+        get: operations["list_accounts_admin_finance_accounts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/journal-entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Journal Entries */
+        get: operations["list_journal_entries_admin_finance_journal_entries_get"];
+        put?: never;
+        /** Create Manual Entry */
+        post: operations["create_manual_entry_admin_finance_journal_entries_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/journal-entries/{entry_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Journal Entry */
+        get: operations["get_journal_entry_admin_finance_journal_entries__entry_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/reports/trial-balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Trial Balance */
+        get: operations["get_trial_balance_admin_finance_reports_trial_balance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/reports/profit-loss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Profit Loss */
+        get: operations["get_profit_loss_admin_finance_reports_profit_loss_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/journal-entries/{entry_id}/reverse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reverse Journal Entry */
+        post: operations["reverse_journal_entry_admin_finance_journal_entries__entry_id__reverse_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Finance Users */
+        get: operations["list_finance_users_admin_finance_users_get"];
+        put?: never;
+        /** Add Finance User */
+        post: operations["add_finance_user_admin_finance_users_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/users/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Deactivate Finance User */
+        delete: operations["deactivate_finance_user_admin_finance_users__user_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Finance User Role */
+        patch: operations["update_finance_user_role_admin_finance_users__user_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/internal/ledger/journal-entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Journal Entry
+         * @description Post a balanced journal entry (idempotent). Service-role only.
+         *
+         *     400 — unbalanced or unknown account_ref; 409 — period closed; 201 — posted
+         *     (or idempotent replay, indicated by ``idempotent_replay`` in the body).
+         */
+        post: operations["post_journal_entry_internal_ledger_journal_entries_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -32276,6 +32438,337 @@ export interface components {
             company_name: string;
             /** Primary Contact Name */
             primary_contact_name: string;
+        };
+        /** AccountOut */
+        AccountOut: {
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Type */
+            type: string;
+            /** Normal Balance */
+            normal_balance: string;
+            /** Is Active */
+            is_active: boolean;
+            /** Is System */
+            is_system: boolean;
+        };
+        /**
+         * JournalEntryCreate
+         * @description A balanced journal entry to post. sum(debits) must equal sum(credits).
+         */
+        JournalEntryCreate: {
+            /** Idempotency Key */
+            idempotency_key: string;
+            /**
+             * Entry Date
+             * Format: date
+             */
+            entry_date: string;
+            /** Description */
+            description: string;
+            /** Source Service */
+            source_service: string;
+            /** Source Type */
+            source_type: string;
+            /** Source Id */
+            source_id?: string | null;
+            /**
+             * Org Id
+             * @description Phase 1: ignored; server uses LEDGER_DEFAULT_ORG_ID
+             */
+            org_id?: string | null;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /** Lines */
+            lines: components["schemas"]["JournalLineInput"][];
+        };
+        /** JournalEntryDetail */
+        JournalEntryDetail: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Entry Date
+             * Format: date
+             */
+            entry_date: string;
+            /**
+             * Posting Date
+             * Format: date-time
+             */
+            posting_date: string;
+            /** Description */
+            description: string;
+            /** Source Service */
+            source_service: string;
+            /** Source Type */
+            source_type: string;
+            /** Source Id */
+            source_id?: string | null;
+            /** Status */
+            status: string;
+            /**
+             * Period Id
+             * Format: uuid
+             */
+            period_id: string;
+            /** Reversal Of Entry Id */
+            reversal_of_entry_id?: string | null;
+            /** Reversed By Entry Id */
+            reversed_by_entry_id?: string | null;
+            /**
+             * Lines
+             * @default []
+             */
+            lines: components["schemas"]["JournalLineOut"][];
+        };
+        /**
+         * JournalEntryResult
+         * @description Returned on successful post (or idempotent replay).
+         */
+        JournalEntryResult: {
+            /**
+             * Entry Id
+             * Format: uuid
+             */
+            entry_id: string;
+            /** Status */
+            status: string;
+            /**
+             * Period Id
+             * Format: uuid
+             */
+            period_id: string;
+            /**
+             * Idempotent Replay
+             * @default false
+             */
+            idempotent_replay: boolean;
+        };
+        /** JournalEntrySummary */
+        JournalEntrySummary: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Entry Date
+             * Format: date
+             */
+            entry_date: string;
+            /**
+             * Posting Date
+             * Format: date-time
+             */
+            posting_date: string;
+            /** Description */
+            description: string;
+            /** Source Service */
+            source_service: string;
+            /** Source Type */
+            source_type: string;
+            /** Source Id */
+            source_id?: string | null;
+            /** Status */
+            status: string;
+            /**
+             * Period Id
+             * Format: uuid
+             */
+            period_id: string;
+            /** Reversal Of Entry Id */
+            reversal_of_entry_id?: string | null;
+            /** Reversed By Entry Id */
+            reversed_by_entry_id?: string | null;
+        };
+        /**
+         * JournalLineInput
+         * @description One debit or credit line. Exactly one of debit/credit must be > 0.
+         */
+        JournalLineInput: {
+            /**
+             * Account Ref
+             * @description Stable CoA maps_to ref, e.g. 'paystack_clearing'
+             */
+            account_ref: string;
+            /**
+             * Debit
+             * @description Minor units (kobo); 0 for a credit line
+             * @default 0
+             */
+            debit: number;
+            /**
+             * Credit
+             * @description Minor units (kobo); 0 for a debit line
+             * @default 0
+             */
+            credit: number;
+            /**
+             * Currency
+             * @description ISO 4217; defaults to org base
+             */
+            currency?: string | null;
+            /** Cost Center */
+            cost_center?: string | null;
+            /** Dimension 1 */
+            dimension_1?: string | null;
+            /** Dimension 2 */
+            dimension_2?: string | null;
+            /** Member Ref */
+            member_ref?: string | null;
+            /** External Ref */
+            external_ref?: string | null;
+            /** Tax Code Ref */
+            tax_code_ref?: string | null;
+            /** Description */
+            description?: string | null;
+        };
+        /** JournalLineOut */
+        JournalLineOut: {
+            /**
+             * Account Id
+             * Format: uuid
+             */
+            account_id: string;
+            /** Account Code */
+            account_code?: string | null;
+            /** Debit Minor */
+            debit_minor: number;
+            /** Credit Minor */
+            credit_minor: number;
+            /** Currency */
+            currency: string;
+            /** Cost Center Id */
+            cost_center_id?: string | null;
+            /** Dimension 1 */
+            dimension_1?: string | null;
+            /** Dimension 2 */
+            dimension_2?: string | null;
+            /** Member Ref */
+            member_ref?: string | null;
+            /** External Ref */
+            external_ref?: string | null;
+            /** Description */
+            description?: string | null;
+        };
+        /**
+         * LedgerRole
+         * @description Finance-team roles (design doc §15). Hierarchy: owner > admin > accountant > viewer.
+         * @enum {string}
+         */
+        LedgerRole: "viewer" | "accountant" | "admin" | "owner";
+        /**
+         * LedgerUserCreate
+         * @description Register a finance-team member by email and/or auth_id.
+         */
+        LedgerUserCreate: {
+            role: components["schemas"]["LedgerRole"];
+            /** Email */
+            email?: string | null;
+            /** Auth Id */
+            auth_id?: string | null;
+        };
+        /** LedgerUserOut */
+        LedgerUserOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Auth Id */
+            auth_id?: string | null;
+            /** Email */
+            email?: string | null;
+            role: components["schemas"]["LedgerRole"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Deactivated At */
+            deactivated_at?: string | null;
+        };
+        /** LedgerUserUpdate */
+        LedgerUserUpdate: {
+            role: components["schemas"]["LedgerRole"];
+        };
+        /** ProfitLossReport */
+        ProfitLossReport: {
+            /**
+             * From Date
+             * Format: date
+             */
+            from_date: string;
+            /**
+             * To Date
+             * Format: date
+             */
+            to_date: string;
+            /** Group By */
+            group_by: string;
+            /** Rows */
+            rows: components["schemas"]["ProfitLossRow"][];
+            /** Total Revenue Minor */
+            total_revenue_minor: number;
+            /** Total Expense Minor */
+            total_expense_minor: number;
+            /** Net Income Minor */
+            net_income_minor: number;
+        };
+        /** ProfitLossRow */
+        ProfitLossRow: {
+            /** Key */
+            key: string;
+            /** Revenue Minor */
+            revenue_minor: number;
+            /** Expense Minor */
+            expense_minor: number;
+            /** Net Minor */
+            net_minor: number;
+        };
+        /**
+         * ReverseRequest
+         * @description Optional body for reversing an entry.
+         */
+        ReverseRequest: {
+            /** Reason */
+            reason?: string | null;
+        };
+        /** TrialBalanceReport */
+        TrialBalanceReport: {
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+            /** Rows */
+            rows: components["schemas"]["TrialBalanceRow"][];
+            /** Total Debit Minor */
+            total_debit_minor: number;
+            /** Total Credit Minor */
+            total_credit_minor: number;
+            /** Balanced */
+            balanced: boolean;
+        };
+        /** TrialBalanceRow */
+        TrialBalanceRow: {
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Type */
+            type: string;
+            /** Debit Minor */
+            debit_minor: number;
+            /** Credit Minor */
+            credit_minor: number;
         };
     };
     responses: never;
@@ -56664,6 +57157,382 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CorporateContactResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_accounts_admin_finance_accounts_get: {
+        parameters: {
+            query?: {
+                active_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_journal_entries_admin_finance_journal_entries_get: {
+        parameters: {
+            query?: {
+                source_service?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntrySummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_manual_entry_admin_finance_journal_entries_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JournalEntryCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_journal_entry_admin_finance_journal_entries__entry_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_trial_balance_admin_finance_reports_trial_balance_get: {
+        parameters: {
+            query?: {
+                as_of?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrialBalanceReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_profit_loss_admin_finance_reports_profit_loss_get: {
+        parameters: {
+            query: {
+                from_date: string;
+                to_date: string;
+                group_by?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfitLossReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reverse_journal_entry_admin_finance_journal_entries__entry_id__reverse_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReverseRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_finance_users_admin_finance_users_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerUserOut"][];
+                };
+            };
+        };
+    };
+    add_finance_user_admin_finance_users_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LedgerUserCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerUserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    deactivate_finance_user_admin_finance_users__user_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_finance_user_role_admin_finance_users__user_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LedgerUserUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerUserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_journal_entry_internal_ledger_journal_entries_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JournalEntryCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryResult"];
                 };
             };
             /** @description Validation Error */
