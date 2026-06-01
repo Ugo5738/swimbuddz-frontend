@@ -1,21 +1,13 @@
 "use client";
 
 import { GenerateSessionsModal } from "@/components/admin/GenerateSessionsModal";
-import { PoolPicker } from "@/components/admin/PoolPicker";
 import { SessionCalendar } from "@/components/admin/SessionCalendar";
 import { SessionDetailsModal } from "@/components/admin/SessionDetailsModal";
 import { SessionFormModal } from "@/components/admin/SessionFormModal";
-import {
-  TemplatesDrawer,
-  type TemplateFormPayload,
-} from "@/components/admin/TemplatesDrawer";
+import { TemplatesDrawer, type TemplateFormPayload } from "@/components/admin/TemplatesDrawer";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { Modal } from "@/components/ui/Modal";
-import { Select } from "@/components/ui/Select";
-import { Textarea } from "@/components/ui/Textarea";
 import type { DateSelectArg, EventClickArg, EventInput } from "@fullcalendar/core";
 import {
   Calendar,
@@ -32,10 +24,9 @@ import {
   Search,
   Send,
   Trash2,
-  X,
   XCircle,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { IBtn, StatCard, StatusBadge, TypeBadge } from "./components";
@@ -46,23 +37,10 @@ import type {
   SessionPayload,
   SessionRideConfig,
   SessionStatusType,
-  SessionType,
   Template,
   ViewMode,
 } from "./types";
-import {
-  apiFetch,
-  DAY_NAMES,
-  fmtDate,
-  fmtTime,
-  formatApiError,
-  formatDateTimeLocal,
-  LEGEND_ITEMS,
-  LOCATION_LABELS,
-  PER_PAGE,
-  TYPE_LABELS,
-  locationLabel,
-} from "./utils";
+import { apiFetch, fmtDate, fmtTime, LEGEND_ITEMS, locationLabel, PER_PAGE } from "./utils";
 
 // ---------------------------------------------------------------------------
 // Main page component
@@ -89,6 +67,11 @@ export default function AdminSessionsPage() {
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
   const [generateTemplate, setGenerateTemplate] = useState<Template | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Re-entrancy guard for session creation. The submit button is disabled
+  // via isSubmitting, but React state updates are async, so a fast
+  // double-click can fire a second create before the disable lands. This
+  // ref blocks the second call synchronously, preventing duplicate sessions.
+  const creatingRef = useRef(false);
 
   // ---- Fetch ----
   const fetchData = useCallback(async () => {
@@ -191,8 +174,12 @@ export default function AdminSessionsPage() {
     async (
       sessionData: SessionPayload,
       rideConfigs: SessionRideConfig[],
-      publishAfter?: boolean,
+      publishAfter?: boolean
     ) => {
+      // Block re-entrant calls (e.g. a fast double-click) before the
+      // isSubmitting-driven button disable has a chance to render.
+      if (creatingRef.current) return;
+      creatingRef.current = true;
       setIsSubmitting(true);
       try {
         const res = await apiFetch("/api/v1/sessions/", {
@@ -208,12 +195,16 @@ export default function AdminSessionsPage() {
           }).catch((err) => console.error("Ride config error:", err));
         }
 
-        if (publishAfter) {
+        // Cohort-class sessions are auto-scheduled (already published) at
+        // creation time by the backend, so calling /publish again returns a
+        // 400 "already scheduled". Only publish a session that came back as
+        // a DRAFT; otherwise it's already live.
+        let published = created.status !== "draft";
+        if (publishAfter && created.status === "draft") {
           await apiFetch(`/api/v1/sessions/${created.id}/publish`, { method: "POST" });
-          toast.success("Session created and published");
-        } else {
-          toast.success("Session created as draft");
+          published = true;
         }
+        toast.success(published ? "Session created and published" : "Session created as draft");
 
         setFormModal(null);
         await fetchData();
@@ -221,6 +212,7 @@ export default function AdminSessionsPage() {
         toast.error(err instanceof Error ? err.message : "Failed to create session");
       } finally {
         setIsSubmitting(false);
+        creatingRef.current = false;
       }
     },
     [fetchData]
