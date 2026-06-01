@@ -149,6 +149,10 @@ const navSections: NavSection[] = [
     ],
   },
   {
+    title: "Finance",
+    items: [{ href: "/admin/finance/reports", label: "Reports", icon: Banknote }],
+  },
+  {
     title: "Operations",
     items: [
       { href: "/admin/store", label: "Store", icon: ShoppingBag },
