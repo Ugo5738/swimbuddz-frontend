@@ -14232,6 +14232,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/finance/reports/balance-sheet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Balance Sheet
+         * @description Statement of financial position (A = L + E) as of a date (design §14).
+         */
+        get: operations["get_balance_sheet_admin_finance_reports_balance_sheet_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/reports/cash-position": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Cash Position
+         * @description Cash by location — settled in bank vs in-transit at the PSP (design §14).
+         */
+        get: operations["get_cash_position_admin_finance_reports_cash_position_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/reports/bubbles-liability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Bubbles Liability
+         * @description Outstanding Bubbles liability, purchased vs promotional (§19-B).
+         */
+        get: operations["get_bubbles_liability_admin_finance_reports_bubbles_liability_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/reports/margin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Margin
+         * @description Gross margin (revenue − COGS) per domain over a date range (design §14).
+         */
+        get: operations["get_margin_admin_finance_reports_margin_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/finance/periods": {
         parameters: {
             query?: never;
@@ -32581,6 +32661,80 @@ export interface components {
             /** Is System */
             is_system: boolean;
         };
+        /** BalanceSheetReport */
+        BalanceSheetReport: {
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+            assets: components["schemas"]["BalanceSheetSection"];
+            liabilities: components["schemas"]["BalanceSheetSection"];
+            equity: components["schemas"]["BalanceSheetSection"];
+            /** Total Assets Minor */
+            total_assets_minor: number;
+            /** Total Liabilities And Equity Minor */
+            total_liabilities_and_equity_minor: number;
+            /** Balanced */
+            balanced: boolean;
+        };
+        /** BalanceSheetRow */
+        BalanceSheetRow: {
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Amount Minor */
+            amount_minor: number;
+        };
+        /** BalanceSheetSection */
+        BalanceSheetSection: {
+            /** Rows */
+            rows: components["schemas"]["BalanceSheetRow"][];
+            /** Total Minor */
+            total_minor: number;
+        };
+        /** BubblesLiabilityReport */
+        BubblesLiabilityReport: {
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+            /** Purchased Minor */
+            purchased_minor: number;
+            /** Promotional Minor */
+            promotional_minor: number;
+            /** Total Minor */
+            total_minor: number;
+        };
+        /** CashPositionReport */
+        CashPositionReport: {
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+            /** Rows */
+            rows: components["schemas"]["CashPositionRow"][];
+            /** Bank Minor */
+            bank_minor: number;
+            /** Clearing Minor */
+            clearing_minor: number;
+            /** Total Minor */
+            total_minor: number;
+        };
+        /** CashPositionRow */
+        CashPositionRow: {
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Kind */
+            kind: string;
+            /** Amount Minor */
+            amount_minor: number;
+        };
         /** DeferredRevenueReport */
         DeferredRevenueReport: {
             /**
@@ -32902,6 +33056,40 @@ export interface components {
         /** LedgerUserUpdate */
         LedgerUserUpdate: {
             role: components["schemas"]["LedgerRole"];
+        };
+        /** MarginReport */
+        MarginReport: {
+            /**
+             * From Date
+             * Format: date
+             */
+            from_date: string;
+            /**
+             * To Date
+             * Format: date
+             */
+            to_date: string;
+            /** Rows */
+            rows: components["schemas"]["MarginRow"][];
+            /** Total Revenue Minor */
+            total_revenue_minor: number;
+            /** Total Cogs Minor */
+            total_cogs_minor: number;
+            /** Total Margin Minor */
+            total_margin_minor: number;
+        };
+        /** MarginRow */
+        MarginRow: {
+            /** Domain */
+            domain: string;
+            /** Revenue Minor */
+            revenue_minor: number;
+            /** Cogs Minor */
+            cogs_minor: number;
+            /** Margin Minor */
+            margin_minor: number;
+            /** Margin Pct */
+            margin_pct: number;
         };
         /** PeriodOut */
         PeriodOut: {
@@ -57702,6 +57890,131 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReconciliationReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_balance_sheet_admin_finance_reports_balance_sheet_get: {
+        parameters: {
+            query?: {
+                as_of?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BalanceSheetReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_cash_position_admin_finance_reports_cash_position_get: {
+        parameters: {
+            query?: {
+                as_of?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashPositionReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_bubbles_liability_admin_finance_reports_bubbles_liability_get: {
+        parameters: {
+            query?: {
+                as_of?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BubblesLiabilityReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_margin_admin_finance_reports_margin_get: {
+        parameters: {
+            query: {
+                from_date: string;
+                to_date: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarginReport"];
                 };
             };
             /** @description Validation Error */
