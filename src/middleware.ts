@@ -93,6 +93,15 @@ export async function middleware(request: NextRequest) {
         return redirectToLogin(request, "not_logged_in");
       }
 
+      // Finance area: any authenticated user may *reach* /admin/finance/* — the
+      // finance layout (client) and the ledger API (server, require_ledger_role)
+      // are the real boundary. This lets finance staff who are NOT global admins
+      // use /admin/finance without the admin role. All other /admin/* still
+      // require admin (checked below).
+      if (pathname.startsWith("/admin/finance")) {
+        return response;
+      }
+
       // Admin detection: read from the signed JWT's app_metadata.roles claim.
       // This matches the backend (`require_admin` in libs/auth/dependencies.py
       // checks `app_metadata.roles contains "admin"`) and matches the

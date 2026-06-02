@@ -14229,6 +14229,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/finance/users/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get My Finance Membership
+         * @description Return the caller's own finance-team membership (gated at the lowest role).
+         *
+         *     403 if the caller has no active ledger_users row. The frontend calls this to
+         *     gate the finance area for finance staff who are NOT global SwimBuddz admins,
+         *     without exposing the rest of /admin. Declared before the /{user_id} routes so
+         *     "me" is never captured as a user id.
+         */
+        get: operations["get_my_finance_membership_admin_finance_users_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/finance/users/{user_id}": {
         parameters: {
             query?: never;
@@ -57445,6 +57470,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_finance_membership_admin_finance_users_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerUserOut"];
                 };
             };
         };

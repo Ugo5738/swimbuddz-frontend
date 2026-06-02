@@ -190,6 +190,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string>("");
+  const [isGlobalAdmin, setIsGlobalAdmin] = useState(false);
   const [adminMemberId, setAdminMemberId] = useState<string | undefined>();
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [newOrderCount, setNewOrderCount] = useState(0);
@@ -236,6 +237,9 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       if (user?.email) {
         setUserEmail(user.email);
       }
+      // Global admin (full nav) vs finance-only staff (Finance section only).
+      const roles = (user?.app_metadata?.roles as string[] | undefined) ?? [];
+      setIsGlobalAdmin(Array.isArray(roles) && roles.includes("admin"));
       // Fetch member ID for announcement notifications
       try {
         const member = await apiGet<{ id: string }>("/api/v1/members/me", { auth: true });
@@ -274,6 +278,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   // Build a set of all nav hrefs so we can find the most specific match
   const allHrefs = navSections.flatMap((s) => s.items.map((i) => i.href));
+
+  // Finance-only staff (a ledger role but not the global admin role) see only
+  // the Finance section; global admins see the full nav.
+  const visibleSections = isGlobalAdmin
+    ? navSections
+    : navSections.filter((section) => section.title === "Finance");
 
   const isActive = (href: string) => {
     if (!pathname) return false;
@@ -355,7 +365,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto p-3 lg:p-4 space-y-1 lg:space-y-2">
-            {navSections.map((section) => {
+            {visibleSections.map((section) => {
               const isCollapsed = collapsedSections.has(section.title);
               const hasActiveItem = isSectionActive(section);
 
@@ -468,18 +478,20 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 iconSize="h-6 w-6"
                 hoverColor="hover:text-cyan-700"
               />
-              <Link
-                href="/admin/store/orders"
-                className="relative p-2 text-slate-600 hover:text-cyan-700 transition"
-                title="Store orders"
-              >
-                <ShoppingBag className="h-6 w-6" />
-                {newOrderCount > 0 && (
-                  <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
-                    {newOrderCount > 9 ? "9+" : newOrderCount}
-                  </span>
-                )}
-              </Link>
+              {isGlobalAdmin && (
+                <Link
+                  href="/admin/store/orders"
+                  className="relative p-2 text-slate-600 hover:text-cyan-700 transition"
+                  title="Store orders"
+                >
+                  <ShoppingBag className="h-6 w-6" />
+                  {newOrderCount > 0 && (
+                    <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
+                      {newOrderCount > 9 ? "9+" : newOrderCount}
+                    </span>
+                  )}
+                </Link>
+              )}
             </div>
           </div>
         </header>
@@ -491,18 +503,20 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           </div>
           <div className="flex items-center gap-4">
             <NotificationBell memberId={adminMemberId} hoverColor="hover:text-cyan-700" />
-            <Link
-              href="/admin/store/orders"
-              className="relative p-2 rounded-full text-slate-500 hover:text-cyan-700 hover:bg-slate-100 transition"
-              title="Store orders"
-            >
-              <ShoppingBag className="h-5 w-5" />
-              {newOrderCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
-                  {newOrderCount > 9 ? "9+" : newOrderCount}
-                </span>
-              )}
-            </Link>
+            {isGlobalAdmin && (
+              <Link
+                href="/admin/store/orders"
+                className="relative p-2 rounded-full text-slate-500 hover:text-cyan-700 hover:bg-slate-100 transition"
+                title="Store orders"
+              >
+                <ShoppingBag className="h-5 w-5" />
+                {newOrderCount > 0 && (
+                  <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
+                    {newOrderCount > 9 ? "9+" : newOrderCount}
+                  </span>
+                )}
+              </Link>
+            )}
             <div className="h-8 w-8 rounded-full bg-cyan-100 flex items-center justify-center">
               <span className="text-xs font-semibold text-cyan-700">
                 {userEmail ? userEmail[0].toUpperCase() : "A"}
