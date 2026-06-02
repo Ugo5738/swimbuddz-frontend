@@ -164,6 +164,7 @@ const navSections: NavSection[] = [
         icon: FileText,
       },
       { href: "/admin/finance/users", label: "Finance Team", icon: Users },
+      { href: "/admin/finance/periods", label: "Periods", icon: CalendarClock },
     ],
   },
   {

@@ -14211,6 +14211,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/finance/periods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Periods
+         * @description All accounting periods, newest first (design §10.2).
+         */
+        get: operations["list_periods_admin_finance_periods_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/periods/{period_id}/transition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Transition Period Route
+         * @description Open / soft-close / hard-close a period (admin+; hard ops are owner-only).
+         */
+        post: operations["transition_period_route_admin_finance_periods__period_id__transition_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/finance/journal-entries/{entry_id}/reverse": {
         parameters: {
             query?: never;
@@ -32767,6 +32807,37 @@ export interface components {
         /** LedgerUserUpdate */
         LedgerUserUpdate: {
             role: components["schemas"]["LedgerRole"];
+        };
+        /** PeriodOut */
+        PeriodOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Period Name */
+            period_name: string;
+            /** Period Type */
+            period_type: string;
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+            /**
+             * End Date
+             * Format: date
+             */
+            end_date: string;
+            /** Status */
+            status: string;
+            /** Closed At */
+            closed_at?: string | null;
+        };
+        /** PeriodTransitionRequest */
+        PeriodTransitionRequest: {
+            /** To Status */
+            to_status: string;
         };
         /** ProfitLossReport */
         ProfitLossReport: {
@@ -57448,6 +57519,61 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DeferredRevenueReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_periods_admin_finance_periods_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodOut"][];
+                };
+            };
+        };
+    };
+    transition_period_route_admin_finance_periods__period_id__transition_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                period_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PeriodTransitionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodOut"];
                 };
             };
             /** @description Validation Error */
