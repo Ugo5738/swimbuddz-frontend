@@ -28,6 +28,7 @@ import {
   Menu,
   MessageSquareQuote,
   Repeat,
+  Scale,
   ShoppingBag,
   TrendingUp,
   Trophy,
@@ -165,6 +166,11 @@ const navSections: NavSection[] = [
       },
       { href: "/admin/finance/users", label: "Finance Team", icon: Users },
       { href: "/admin/finance/periods", label: "Periods", icon: CalendarClock },
+      {
+        href: "/admin/finance/reconciliation",
+        label: "Reconciliation",
+        icon: Scale,
+      },
     ],
   },
   {

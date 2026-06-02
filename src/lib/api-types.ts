@@ -14211,6 +14211,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/finance/reports/reconciliation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Reconciliation
+         * @description Open reconciliation breaks + match summary (PSP settlements vs the books,
+         *     design §11.2).
+         */
+        get: operations["get_reconciliation_admin_finance_reports_reconciliation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/finance/periods": {
         parameters: {
             query?: never;
@@ -14346,6 +14367,30 @@ export interface paths {
          *     (or idempotent replay, indicated by ``idempotent_replay`` in the body).
          */
         post: operations["post_journal_entry_internal_ledger_journal_entries_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/ledger/external-transactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post External Transactions
+         * @description Ingest PSP settlement transactions and reconcile them against the books.
+         *
+         *     Each transaction is upserted (idempotent per (org, psp, external_txn_id)) and
+         *     matched against ``journal_lines.external_ref``; unmatched or amount-mismatched
+         *     items open a reconciliation break. Service-role only (design §11.2).
+         */
+        post: operations["post_external_transactions_internal_ledger_external_transactions_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -32564,6 +32609,56 @@ export interface components {
             remaining_minor: number;
         };
         /**
+         * ExternalTransactionBatch
+         * @description Bulk intake of PSP transactions. Idempotent per (org, psp, txn id).
+         */
+        ExternalTransactionBatch: {
+            /**
+             * Org Id
+             * @description Phase 1: ignored; server uses LEDGER_DEFAULT_ORG_ID
+             */
+            org_id?: string | null;
+            /** Transactions */
+            transactions?: components["schemas"]["ExternalTransactionIn"][];
+        };
+        /**
+         * ExternalTransactionIn
+         * @description One PSP settlement transaction pushed for reconciliation.
+         */
+        ExternalTransactionIn: {
+            /** Psp */
+            psp: string;
+            /** External Txn Id */
+            external_txn_id: string;
+            /** External Ref */
+            external_ref?: string | null;
+            /** Settlement Ref */
+            settlement_ref?: string | null;
+            /**
+             * Amount Minor
+             * @default 0
+             */
+            amount_minor: number;
+            /**
+             * Fee Minor
+             * @default 0
+             */
+            fee_minor: number;
+            /**
+             * Currency
+             * @default NGN
+             */
+            currency: string;
+            /** Status */
+            status?: string | null;
+            /** Occurred At */
+            occurred_at?: string | null;
+            /** Raw Payload */
+            raw_payload?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
          * JournalEntryCreate
          * @description A balanced journal entry to post. sum(debits) must equal sum(credits).
          */
@@ -32872,6 +32967,63 @@ export interface components {
             expense_minor: number;
             /** Net Minor */
             net_minor: number;
+        };
+        /** ReconciliationBreakOut */
+        ReconciliationBreakOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Break Type */
+            break_type: string;
+            /** Psp */
+            psp?: string | null;
+            /** External Ref */
+            external_ref?: string | null;
+            /** External Txn Id */
+            external_txn_id?: string | null;
+            /** Settlement Ref */
+            settlement_ref?: string | null;
+            /** Expected Minor */
+            expected_minor?: number | null;
+            /** Actual Minor */
+            actual_minor?: number | null;
+            /** Currency */
+            currency: string;
+            /** Status */
+            status: string;
+            /** Detail */
+            detail?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** ReconciliationIntakeResult */
+        ReconciliationIntakeResult: {
+            /** Received */
+            received: number;
+            /** Inserted */
+            inserted: number;
+            /** Matched */
+            matched: number;
+            /** Breaks Opened */
+            breaks_opened: number;
+        };
+        /** ReconciliationReport */
+        ReconciliationReport: {
+            /** Open Breaks */
+            open_breaks: number;
+            /** Open Break Amount Minor */
+            open_break_amount_minor: number;
+            /** Matched Count */
+            matched_count: number;
+            /** Unmatched Count */
+            unmatched_count: number;
+            /** Breaks */
+            breaks: components["schemas"]["ReconciliationBreakOut"][];
         };
         /**
          * ReverseRequest
@@ -57532,6 +57684,37 @@ export interface operations {
             };
         };
     };
+    get_reconciliation_admin_finance_reports_reconciliation_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReconciliationReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_periods_admin_finance_periods_get: {
         parameters: {
             query?: never;
@@ -57779,6 +57962,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JournalEntryResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_external_transactions_internal_ledger_external_transactions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExternalTransactionBatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReconciliationIntakeResult"];
                 };
             };
             /** @description Validation Error */
