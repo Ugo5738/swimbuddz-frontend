@@ -44,9 +44,9 @@ export default function CorporateLandingPage() {
     (async () => {
       setLoading(true);
       try {
-        // Pull recent deals (large page_size — sales pipelines stay small for now)
+        // Pull recent deals (page_size capped at 100 by the backend; pipelines stay small for now)
         const [dealsResp, programsResp, contactsResp] = await Promise.all([
-          corporateApi.listDeals({ page: 1, page_size: 200 }),
+          corporateApi.listDeals({ page: 1, page_size: 100 }),
           corporateApi.listPrograms({ page: 1, page_size: 50 }),
           corporateApi.listContacts({ page: 1, page_size: 1, is_active: true }),
         ]);

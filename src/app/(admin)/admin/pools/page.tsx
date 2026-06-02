@@ -205,14 +205,31 @@ export default function PoolRegistryPage() {
 
   const loadStatusCounts = useCallback(async () => {
     try {
-      const counts: Record<string, number> = {};
-      // Fetch all active pools (no status filter) just to compute counts.
-      // If the backend doesn't expose a stats endpoint, we compute from the full list.
-      const all = await apiGet<PoolListResponse>(
-        "/api/v1/admin/pools?page_size=1000&is_active=true",
+      // No dedicated stats endpoint, so compute counts from the full list.
+      // The backend caps page_size at 100, so page through using the returned
+      // total: fetch page 1 first, then any remaining pages in parallel.
+      const COUNT_PAGE_SIZE = 100;
+      const first = await apiGet<PoolListResponse>(
+        `/api/v1/admin/pools?page=1&page_size=${COUNT_PAGE_SIZE}&is_active=true`,
         { auth: true }
       );
-      for (const pool of all.items) {
+
+      const items = [...first.items];
+      const totalPages = Math.ceil(first.total / COUNT_PAGE_SIZE);
+      if (totalPages > 1) {
+        const rest = await Promise.all(
+          Array.from({ length: totalPages - 1 }, (_, i) =>
+            apiGet<PoolListResponse>(
+              `/api/v1/admin/pools?page=${i + 2}&page_size=${COUNT_PAGE_SIZE}&is_active=true`,
+              { auth: true }
+            )
+          )
+        );
+        for (const resp of rest) items.push(...resp.items);
+      }
+
+      const counts: Record<string, number> = {};
+      for (const pool of items) {
         counts[pool.partnership_status] = (counts[pool.partnership_status] || 0) + 1;
       }
       setStatusCounts(counts);
