@@ -14194,6 +14194,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/finance/reports/deferred-revenue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Deferred Revenue */
+        get: operations["get_deferred_revenue_admin_finance_reports_deferred_revenue_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/finance/journal-entries/{entry_id}/reverse": {
         parameters: {
             query?: never;
@@ -32478,6 +32495,33 @@ export interface components {
             is_active: boolean;
             /** Is System */
             is_system: boolean;
+        };
+        /** DeferredRevenueReport */
+        DeferredRevenueReport: {
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+            /** Rows */
+            rows: components["schemas"]["DeferredRevenueRow"][];
+            /** Total Remaining Minor */
+            total_remaining_minor: number;
+        };
+        /** DeferredRevenueRow */
+        DeferredRevenueRow: {
+            /** Deferred Account Ref */
+            deferred_account_ref: string;
+            /** Domain */
+            domain: string;
+            /** Schedule Count */
+            schedule_count: number;
+            /** Total Minor */
+            total_minor: number;
+            /** Recognized Minor */
+            recognized_minor: number;
+            /** Remaining Minor */
+            remaining_minor: number;
         };
         /**
          * JournalEntryCreate
@@ -57373,6 +57417,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProfitLossReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_deferred_revenue_admin_finance_reports_deferred_revenue_get: {
+        parameters: {
+            query?: {
+                as_of?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeferredRevenueReport"];
                 };
             };
             /** @description Validation Error */

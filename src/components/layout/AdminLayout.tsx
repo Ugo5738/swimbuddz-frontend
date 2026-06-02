@@ -19,6 +19,7 @@ import {
   FileText,
   GraduationCap,
   HandHeart,
+  Hourglass,
   Image,
   LayoutDashboard,
   LogOut,
@@ -152,6 +153,11 @@ const navSections: NavSection[] = [
     title: "Finance",
     items: [
       { href: "/admin/finance/reports", label: "Reports", icon: Banknote },
+      {
+        href: "/admin/finance/deferred-revenue",
+        label: "Deferred Revenue",
+        icon: Hourglass,
+      },
       {
         href: "/admin/finance/journal-entries",
         label: "Journal Entries",
