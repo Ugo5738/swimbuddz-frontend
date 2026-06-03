@@ -1621,6 +1621,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/coaches/me/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get My Availability
+         * @description Return the current coach's availability calendar + spacing override.
+         */
+        get: operations["get_my_availability_coaches_me_availability_get"];
+        /**
+         * Set My Availability
+         * @description Replace the current coach's availability calendar (and spacing override).
+         *
+         *     The body is fully validated (weekday, 24-hour times, no same-day overlaps,
+         *     known IANA timezone). ``min_hours_between_sessions`` is left unchanged when
+         *     omitted. Stored as JSON on the coach profile.
+         */
+        put: operations["set_my_availability_coaches_me_availability_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/coaches/me/grades": {
         parameters: {
             query?: never;
@@ -14312,6 +14340,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/finance/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin List Invoices
+         * @description List invoices, newest first (optionally filtered by status).
+         */
+        get: operations["admin_list_invoices_admin_finance_invoices_get"];
+        put?: never;
+        /**
+         * Admin Create Invoice
+         * @description Manually issue an invoice (accountant+) — gapless number, persisted.
+         */
+        post: operations["admin_create_invoice_admin_finance_invoices_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/invoices/{invoice_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin Get Invoice */
+        get: operations["admin_get_invoice_admin_finance_invoices__invoice_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/invoices/{invoice_id}/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin Void Invoice
+         * @description Void an invoice (accountant+). The number is retained for the audit trail.
+         */
+        post: operations["admin_void_invoice_admin_finance_invoices__invoice_id__void_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/finance/periods": {
         parameters: {
             query?: never;
@@ -14471,6 +14560,29 @@ export interface paths {
          *     items open a reconciliation break. Service-role only (design §11.2).
          */
         post: operations["post_external_transactions_internal_ledger_external_transactions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/ledger/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Invoice
+         * @description Issue an invoice — allocate a gapless number + persist header/lines.
+         *
+         *     Service-role only (design §13). Other services (corporate, payments) call this
+         *     to issue an invoice for a deal/payment.
+         */
+        post: operations["post_invoice_internal_ledger_invoices_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -14937,6 +15049,24 @@ export interface components {
             email: string;
             /** Age */
             age: number;
+        };
+        /**
+         * BlackoutDateInput
+         * @description A date range the coach is unavailable (subtracts from recurring blocks).
+         */
+        BlackoutDateInput: {
+            /**
+             * Start
+             * Format: date
+             */
+            start: string;
+            /**
+             * End
+             * Format: date
+             */
+            end: string;
+            /** Reason */
+            reason?: string | null;
         };
         /** BulkMembersRequest */
         BulkMembersRequest: {
@@ -15935,6 +16065,99 @@ export interface components {
              * @default false
              */
             can_access_dashboard: boolean;
+        };
+        /**
+         * CoachAvailabilityCalendar
+         * @description Canonical shape of CoachProfile.availability_calendar (JSONB).
+         *
+         *     Recurring weekly blocks + blackout dates in the coach's local timezone.
+         *     sessions_service slices this into bookable make-up slots.
+         */
+        "CoachAvailabilityCalendar-Input": {
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
+            /**
+             * Timezone
+             * @description IANA timezone name
+             * @default Africa/Lagos
+             */
+            timezone: string;
+            /** Recurring */
+            recurring?: components["schemas"]["RecurringBlockInput"][];
+            /** Blackouts */
+            blackouts?: components["schemas"]["BlackoutDateInput"][];
+            /**
+             * Slot Minutes
+             * @description Default lesson/make-up length in minutes
+             * @default 60
+             */
+            slot_minutes: number;
+            /**
+             * Buffer Minutes
+             * @description Gap between consecutive slots in minutes
+             * @default 0
+             */
+            buffer_minutes: number;
+        };
+        /**
+         * CoachAvailabilityCalendar
+         * @description Canonical shape of CoachProfile.availability_calendar (JSONB).
+         *
+         *     Recurring weekly blocks + blackout dates in the coach's local timezone.
+         *     sessions_service slices this into bookable make-up slots.
+         */
+        "CoachAvailabilityCalendar-Output": {
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
+            /**
+             * Timezone
+             * @description IANA timezone name
+             * @default Africa/Lagos
+             */
+            timezone: string;
+            /** Recurring */
+            recurring?: components["schemas"]["RecurringBlockInput"][];
+            /** Blackouts */
+            blackouts?: components["schemas"]["BlackoutDateInput"][];
+            /**
+             * Slot Minutes
+             * @description Default lesson/make-up length in minutes
+             * @default 60
+             */
+            slot_minutes: number;
+            /**
+             * Buffer Minutes
+             * @description Gap between consecutive slots in minutes
+             * @default 0
+             */
+            buffer_minutes: number;
+        };
+        /**
+         * CoachAvailabilityResponse
+         * @description GET response: a coach's current availability + spacing override.
+         */
+        CoachAvailabilityResponse: {
+            availability?: components["schemas"]["CoachAvailabilityCalendar-Output"] | null;
+            /** Min Hours Between Sessions */
+            min_hours_between_sessions?: number | null;
+        };
+        /**
+         * CoachAvailabilityUpdate
+         * @description PUT body: a coach sets their own availability + spacing override.
+         */
+        CoachAvailabilityUpdate: {
+            availability: components["schemas"]["CoachAvailabilityCalendar-Input"];
+            /**
+             * Min Hours Between Sessions
+             * @description Per-coach spacing override in hours; null → 48h policy default
+             */
+            min_hours_between_sessions?: number | null;
         };
         /** CoachBankAccountResponse */
         CoachBankAccountResponse: {
@@ -17774,6 +17997,23 @@ export interface components {
          */
         ProgramCategoryEnum: "learn_to_swim" | "special_populations" | "institutional" | "competitive_elite" | "certifications" | "specialized_disciplines" | "adjacent_services";
         /**
+         * RecurringBlockInput
+         * @description A weekly availability window, sliced into bookable slots downstream.
+         */
+        RecurringBlockInput: {
+            weekday: components["schemas"]["WeekdayEnum"];
+            /**
+             * Start
+             * @description Local start time, 24-hour 'HH:MM'
+             */
+            start: string;
+            /**
+             * End
+             * @description Local end time, 24-hour 'HH:MM'
+             */
+            end: string;
+        };
+        /**
          * ResolveAccountRequest
          * @description Request to resolve/verify a bank account.
          */
@@ -17962,6 +18202,12 @@ export interface components {
             /** Is Active */
             is_active?: boolean | null;
         };
+        /**
+         * WeekdayEnum
+         * @description Lowercase 3-letter weekday keys for recurring availability.
+         * @enum {string}
+         */
+        WeekdayEnum: "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
         /** MemberMembershipResponse */
         services__members_service__routers__internal___schemas__MemberMembershipResponse: {
             /** Member Id */
@@ -32812,6 +33058,191 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** InvoiceCreate */
+        InvoiceCreate: {
+            /**
+             * Org Id
+             * @description Phase 1: ignored; server uses LEDGER_DEFAULT_ORG_ID
+             */
+            org_id?: string | null;
+            /** Source Service */
+            source_service?: string | null;
+            /** Source Type */
+            source_type?: string | null;
+            /** Source Id */
+            source_id?: string | null;
+            /** Customer Ref */
+            customer_ref?: string | null;
+            /** Customer Name */
+            customer_name?: string | null;
+            /** Customer Email */
+            customer_email?: string | null;
+            /** Customer Tin */
+            customer_tin?: string | null;
+            /**
+             * Currency
+             * @default NGN
+             */
+            currency: string;
+            /** Issue Date */
+            issue_date?: string | null;
+            /** Due Date */
+            due_date?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Status
+             * @default issued
+             */
+            status: string;
+            /**
+             * Prefix
+             * @default SB
+             */
+            prefix: string;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /** Lines */
+            lines: components["schemas"]["InvoiceLineIn"][];
+        };
+        /** InvoiceLineIn */
+        InvoiceLineIn: {
+            /** Description */
+            description: string;
+            /**
+             * Quantity
+             * @default 1
+             */
+            quantity: number;
+            /** Unit Price Minor */
+            unit_price_minor: number;
+            /** Amount Minor */
+            amount_minor?: number | null;
+            /** Dimension 1 */
+            dimension_1?: string | null;
+        };
+        /** InvoiceLineOut */
+        InvoiceLineOut: {
+            /** Position */
+            position: number;
+            /** Description */
+            description: string;
+            /** Quantity */
+            quantity: number;
+            /** Unit Price Minor */
+            unit_price_minor: number;
+            /** Amount Minor */
+            amount_minor: number;
+            /** Tax Code Ref */
+            tax_code_ref?: string | null;
+            /** Tax Minor */
+            tax_minor: number;
+            /** Dimension 1 */
+            dimension_1?: string | null;
+        };
+        /** InvoiceList */
+        InvoiceList: {
+            /** Items */
+            items: components["schemas"]["InvoiceListItem"][];
+            /** Total */
+            total: number;
+        };
+        /** InvoiceListItem */
+        InvoiceListItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Invoice Number */
+            invoice_number: string;
+            /** Status */
+            status: string;
+            /** Customer Name */
+            customer_name?: string | null;
+            /** Currency */
+            currency: string;
+            /** Total Minor */
+            total_minor: number;
+            /**
+             * Issue Date
+             * Format: date
+             */
+            issue_date: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** InvoiceOut */
+        InvoiceOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Invoice Number */
+            invoice_number: string;
+            /** Status */
+            status: string;
+            /** Source Service */
+            source_service?: string | null;
+            /** Source Type */
+            source_type?: string | null;
+            /** Source Id */
+            source_id?: string | null;
+            /** Customer Ref */
+            customer_ref?: string | null;
+            /** Customer Name */
+            customer_name?: string | null;
+            /** Customer Email */
+            customer_email?: string | null;
+            /** Customer Tin */
+            customer_tin?: string | null;
+            /** Currency */
+            currency: string;
+            /** Subtotal Minor */
+            subtotal_minor: number;
+            /** Tax Minor */
+            tax_minor: number;
+            /** Total Minor */
+            total_minor: number;
+            /**
+             * Issue Date
+             * Format: date
+             */
+            issue_date: string;
+            /** Due Date */
+            due_date?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Irn */
+            irn?: string | null;
+            /** Firs Status */
+            firs_status?: string | null;
+            /** Voided At */
+            voided_at?: string | null;
+            /** Void Reason */
+            void_reason?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Lines
+             * @default []
+             */
+            lines: components["schemas"]["InvoiceLineOut"][];
+        };
+        /** InvoiceVoidRequest */
+        InvoiceVoidRequest: {
+            /** Reason */
+            reason?: string | null;
+        };
         /**
          * JournalEntryCreate
          * @description A balanced journal entry to post. sum(debits) must equal sum(credits).
@@ -35754,6 +36185,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_availability_coaches_me_availability_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachAvailabilityResponse"];
+                };
+            };
+        };
+    };
+    set_my_availability_coaches_me_availability_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoachAvailabilityUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachAvailabilityResponse"];
                 };
             };
             /** @description Validation Error */
@@ -58028,6 +58512,138 @@ export interface operations {
             };
         };
     };
+    admin_list_invoices_admin_finance_invoices_get: {
+        parameters: {
+            query?: {
+                status?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_create_invoice_admin_finance_invoices_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvoiceCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_get_invoice_admin_finance_invoices__invoice_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_void_invoice_admin_finance_invoices__invoice_id__void_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvoiceVoidRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_periods_admin_finance_periods_get: {
         parameters: {
             query?: never;
@@ -58308,6 +58924,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReconciliationIntakeResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_invoice_internal_ledger_invoices_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvoiceCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceOut"];
                 };
             };
             /** @description Validation Error */

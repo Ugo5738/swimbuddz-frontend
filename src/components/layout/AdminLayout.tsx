@@ -27,6 +27,7 @@ import {
   Megaphone,
   Menu,
   MessageSquareQuote,
+  Receipt,
   Repeat,
   Scale,
   ShoppingBag,
@@ -164,6 +165,7 @@ const navSections: NavSection[] = [
         label: "Journal Entries",
         icon: FileText,
       },
+      { href: "/admin/finance/invoices", label: "Invoices", icon: Receipt },
       { href: "/admin/finance/users", label: "Finance Team", icon: Users },
       { href: "/admin/finance/periods", label: "Periods", icon: CalendarClock },
       {
