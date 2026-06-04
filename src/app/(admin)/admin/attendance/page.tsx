@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { apiGet, apiPost } from "@/lib/api";
 import type { components } from "@/lib/api-types";
-import { isRunningLate, isSelfExcused } from "@/lib/sessions";
+import { isPoolFeeRefunded, isRunningLate, isSelfExcused } from "@/lib/sessions";
 import { format } from "date-fns";
 import type { jsPDF as JsPDFType } from "jspdf";
 import { useEffect, useMemo, useState } from "react";
@@ -636,6 +636,52 @@ export default function AdminAttendancePage() {
     }
   };
 
+  // Refund a paid booking's pool fee to the member's Bubbles — the rain-out /
+  // make-up case: they paid, were marked absent/excused, and are owed it back
+  // to fund a make-up. Routes through the accounted session_booking refund path
+  // (NOT the "Adjust Bubbles" tool), so the ledger reverses the pool-fee
+  // revenue and restores the liability.
+  const handleRefundPoolFee = async (
+    bookingId: string,
+    memberName: string,
+    feeNaira: number
+  ) => {
+    const reason = window.prompt(
+      `Refund the ₦${feeNaira.toLocaleString("en-NG")} pool fee to ${memberName}'s ` +
+        `Bubbles (for a make-up)? Enter a reason — e.g. "Rained out".`
+    );
+    if (reason === null) return; // admin cancelled the prompt
+    if (!reason.trim()) {
+      setError("A reason is required to refund the pool fee.");
+      return;
+    }
+    setSubmittingMark(true);
+    setError(null);
+    setMarkSuccess(null);
+    try {
+      await apiPost(
+        `/api/v1/sessions/bookings/${bookingId}/refund-pool-fee`,
+        { reason: reason.trim() },
+        { auth: true }
+      );
+      // Refresh bookings so the row flips to "refunded" + the button hides.
+      const refreshed = await apiGet<SessionBookingResponse[]>(
+        `/api/v1/sessions/${selectedSessionId}/bookings`,
+        { auth: true }
+      ).catch(() => bookings);
+      setBookings(refreshed);
+      setMarkSuccess(
+        `Refunded ₦${feeNaira.toLocaleString("en-NG")} to ${memberName} as Bubbles.`
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      console.error("Failed to refund pool fee", err);
+      setError(`Failed to refund pool fee: ${msg}`);
+    } finally {
+      setSubmittingMark(false);
+    }
+  };
+
   const handleSaveRoster = async () => {
     if (!selectedSessionId) return;
     // Build entries from drafts whose target differs from current effective.
@@ -975,6 +1021,7 @@ export default function AdminAttendancePage() {
             onDraftStatus={handleDraftStatus}
             onMarkWalkIn={handleMarkWalkIn}
             onGeneratePayLink={handleGeneratePayLink}
+            onRefundPoolFee={handleRefundPoolFee}
             onBulkMarkPresent={handleBulkMarkPresent}
             onSaveRoster={handleSaveRoster}
             submitting={submittingMark}
@@ -1162,6 +1209,7 @@ function UnifiedRoster({
   onDraftStatus,
   onMarkWalkIn,
   onGeneratePayLink,
+  onRefundPoolFee,
   onBulkMarkPresent,
   onSaveRoster,
   submitting,
@@ -1177,6 +1225,7 @@ function UnifiedRoster({
   onDraftStatus: (memberId: string, status: DraftStatus) => void;
   onMarkWalkIn: (memberId: string) => void;
   onGeneratePayLink: (bookingId: string, memberName: string) => void;
+  onRefundPoolFee: (bookingId: string, memberName: string, feeNaira: number) => void;
   onBulkMarkPresent: () => void;
   onSaveRoster: () => void;
   submitting: boolean;
@@ -1251,6 +1300,7 @@ function UnifiedRoster({
                 onDraftStatus={onDraftStatus}
                 onMarkWalkIn={onMarkWalkIn}
                 onGeneratePayLink={onGeneratePayLink}
+                onRefundPoolFee={onRefundPoolFee}
                 disabled={submitting}
               />
             ))}
@@ -1284,6 +1334,7 @@ function RosterTableRow({
   onDraftStatus,
   onMarkWalkIn,
   onGeneratePayLink,
+  onRefundPoolFee,
   disabled,
 }: {
   row: RosterRow;
@@ -1292,6 +1343,7 @@ function RosterTableRow({
   onDraftStatus: (memberId: string, status: DraftStatus) => void;
   onMarkWalkIn: (memberId: string) => void;
   onGeneratePayLink: (bookingId: string, memberName: string) => void;
+  onRefundPoolFee: (bookingId: string, memberName: string, feeNaira: number) => void;
   disabled: boolean;
 }) {
   // Map the effective status onto a DraftStatus value for the dropdown's
@@ -1317,6 +1369,19 @@ function RosterTableRow({
     row.booking.fee_amount_kobo > 0 &&
     !row.booking.payment_intent_id &&
     !row.booking.wallet_transaction_id;
+
+  // Pool-fee refund — the make-up / rain-out case. Offer it when a PAID,
+  // confirmed, fee-bearing booking belongs to someone who didn't attend
+  // (absent/excused) and hasn't already been refunded. The refund routes the
+  // pool fee back to Bubbles via the accounted path so it funds their make-up.
+  const poolFeeAlreadyRefunded = isPoolFeeRefunded(row.booking?.notes);
+  const canRefundPoolFee =
+    !!row.booking &&
+    row.booking.status === "confirmed" &&
+    row.booking.fee_amount_kobo > 0 &&
+    (!!row.booking.payment_intent_id || !!row.booking.wallet_transaction_id) &&
+    (row.effectiveStatus === "absent" || row.effectiveStatus === "excused") &&
+    !poolFeeAlreadyRefunded;
 
   // Booking column display. Four states:
   //   - confirmed booking, paid → green "Paid ₦X · CHANNEL"
@@ -1452,6 +1517,27 @@ function RosterTableRow({
             >
               💳 Generate pay link
             </button>
+          )}
+          {canRefundPoolFee && row.booking && (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() =>
+                onRefundPoolFee(row.booking!.id, row.name, row.booking!.fee_amount_kobo / 100)
+              }
+              className="mt-1 inline-flex w-fit rounded-md border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 print:hidden"
+              title={`Refund the ₦${(row.booking.fee_amount_kobo / 100).toLocaleString("en-NG")} pool fee to ${row.name}'s Bubbles for a make-up — reverses the session revenue in the ledger (not the Adjust-Bubbles tool)`}
+            >
+              ↩ Refund pool fee → Bubbles
+            </button>
+          )}
+          {poolFeeAlreadyRefunded && (
+            <span
+              className="mt-1 inline-flex w-fit items-center gap-1 rounded-md border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700"
+              title="The pool fee for this booking was refunded to the member's Bubbles for a make-up."
+            >
+              ↩ Pool fee refunded
+            </span>
           )}
         </div>
       </td>

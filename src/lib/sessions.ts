@@ -314,12 +314,21 @@ const RUNNING_LATE_PREFIX = "[running_late_at:";
 /** Marker for a member self-excuse audit hint on booking.notes. */
 const SELF_EXCUSED_PREFIX = "[self_excused_at:";
 
+/** Marker the backend appends to booking.notes when an admin has refunded the
+ *  per-session pool fee to Bubbles (the rain-out / make-up case). Appended
+ *  rather than prefixed, so detect with includes() not startsWith(). */
+const POOL_FEE_REFUNDED_PREFIX = "[pool_fee_refunded_at:";
+
 export function isRunningLate(notes?: string | null): boolean {
   return !!notes && notes.startsWith(RUNNING_LATE_PREFIX);
 }
 
 export function isSelfExcused(notes?: string | null): boolean {
   return !!notes && notes.startsWith(SELF_EXCUSED_PREFIX);
+}
+
+export function isPoolFeeRefunded(notes?: string | null): boolean {
+  return !!notes && notes.includes(POOL_FEE_REFUNDED_PREFIX);
 }
 
 /** Member self-excuse — creates an EXCUSED attendance record + makeup
