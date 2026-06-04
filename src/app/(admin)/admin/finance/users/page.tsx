@@ -17,9 +17,23 @@ type LedgerUserOut = {
   role: LedgerRole;
   created_at: string;
   deactivated_at: string | null;
+  // Set on add / resend responses: "invited" | "exists" | "error".
+  invite_status?: string | null;
 };
 
 const ROLES: LedgerRole[] = ["viewer", "accountant", "admin", "owner"];
+
+/** Human-readable result of provisioning a finance member's login. */
+function inviteMessage(status: string | null | undefined, email: string): string {
+  switch (status) {
+    case "invited":
+      return `Added. An invite email was sent to ${email} — they click it to set a password, then log in and open /admin/finance.`;
+    case "exists":
+      return `Added. ${email} already has a SwimBuddz login, so they can sign in now and open /admin/finance.`;
+    default:
+      return `Added, but the invite email could not be sent. Use "Resend invite", or invite ${email} from the Supabase dashboard.`;
+  }
+}
 
 export default function FinanceTeamPage() {
   const [users, setUsers] = useState<LedgerUserOut[] | null>(null);
@@ -29,6 +43,7 @@ export default function FinanceTeamPage() {
   const [newEmail, setNewEmail] = useState("");
   const [newRole, setNewRole] = useState<LedgerRole>("viewer");
   const [adding, setAdding] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -52,17 +67,20 @@ export default function FinanceTeamPage() {
 
   const addUser = async () => {
     if (!newEmail.trim()) return;
+    const email = newEmail.trim();
     setAdding(true);
     setError(null);
+    setMessage(null);
     try {
-      await apiPost(
+      const created = await apiPost<LedgerUserOut>(
         "/api/v1/admin/finance/users",
-        { email: newEmail.trim(), role: newRole },
+        { email, role: newRole },
         { auth: true },
       );
       setNewEmail("");
       setNewRole("viewer");
       await load();
+      setMessage(inviteMessage(created.invite_status, email));
     } catch (e) {
       console.error("Failed to add finance user:", e);
       setError(
@@ -70,6 +88,22 @@ export default function FinanceTeamPage() {
       );
     } finally {
       setAdding(false);
+    }
+  };
+
+  const resendInvite = async (id: string, email: string | null) => {
+    setError(null);
+    setMessage(null);
+    try {
+      const res = await apiPost<LedgerUserOut>(
+        `/api/v1/admin/finance/users/${id}/invite`,
+        {},
+        { auth: true },
+      );
+      setMessage(inviteMessage(res.invite_status, email ?? "them"));
+    } catch (e) {
+      console.error("Failed to resend invite:", e);
+      setError("Could not resend the invite email.");
     }
   };
 
@@ -102,6 +136,9 @@ export default function FinanceTeamPage() {
         <h1 className="text-2xl font-semibold text-slate-900">Finance — Team</h1>
         <p className="mt-1 text-sm text-slate-500">
           Who can see and act on the books. owner ⊇ admin ⊇ accountant ⊇ viewer.
+          Adding someone emails them an invite to set a password — no Supabase
+          step needed. They sign in and open /admin/finance; they see nothing
+          else in admin.
         </p>
       </div>
 
@@ -138,6 +175,7 @@ export default function FinanceTeamPage() {
       </Card>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
+      {message && <p className="text-sm text-emerald-700">{message}</p>}
 
       <Card>
         {loading ? (
@@ -191,7 +229,16 @@ export default function FinanceTeamPage() {
                       <td className="py-2 pr-4 whitespace-nowrap text-slate-500">
                         {formatDate(u.created_at)}
                       </td>
-                      <td className="py-2 pr-4">
+                      <td className="space-x-3 py-2 pr-4 whitespace-nowrap">
+                        {active && u.email && (
+                          <button
+                            type="button"
+                            onClick={() => resendInvite(u.id, u.email)}
+                            className="text-sm text-cyan-700 hover:underline"
+                          >
+                            Resend invite
+                          </button>
+                        )}
                         {active && (
                           <button
                             type="button"
