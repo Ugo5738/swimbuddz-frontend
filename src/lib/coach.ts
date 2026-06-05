@@ -3,7 +3,7 @@
  * Used by coach dashboard, cohort management, and student progress pages.
  */
 
-import { apiGet, apiPost } from "./api";
+import { apiGet, apiPost, apiPut } from "./api";
 
 // Re-export AgreementStatus type from coaches.ts for convenience
 export type { AgreementStatus } from "./coaches";
@@ -539,6 +539,55 @@ export async function updateCoachPreferences(data: {
   show_in_directory?: boolean;
 }): Promise<CoachProfile> {
   return apiPost<CoachProfile>("/api/v1/coaches/me/preferences", data, {
+    auth: true,
+  });
+}
+
+// --- Availability (Phase 0 make-up scheduling) ---
+
+export type WeekdayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
+
+export type RecurringBlock = {
+  weekday: WeekdayKey;
+  /** 24-hour "HH:MM" local time. */
+  start: string;
+  end: string;
+};
+
+export type BlackoutDate = {
+  /** "YYYY-MM-DD". */
+  start: string;
+  end: string;
+  reason?: string | null;
+};
+
+export type AvailabilityCalendar = {
+  version?: number;
+  timezone?: string;
+  recurring: RecurringBlock[];
+  blackouts: BlackoutDate[];
+  slot_minutes?: number;
+  buffer_minutes?: number;
+};
+
+export type CoachAvailability = {
+  availability: AvailabilityCalendar | null;
+  min_hours_between_sessions: number | null;
+};
+
+/** Get the current coach's availability calendar + spacing override. */
+export async function getMyAvailability(): Promise<CoachAvailability> {
+  return apiGet<CoachAvailability>("/api/v1/coaches/me/availability", {
+    auth: true,
+  });
+}
+
+/** Replace the current coach's availability calendar (+ optional spacing override). */
+export async function saveMyAvailability(payload: {
+  availability: AvailabilityCalendar;
+  min_hours_between_sessions?: number | null;
+}): Promise<CoachAvailability> {
+  return apiPut<CoachAvailability>("/api/v1/coaches/me/availability", payload, {
     auth: true,
   });
 }

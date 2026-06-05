@@ -70,6 +70,7 @@ const navSections: NavSection[] = [
       { href: "/admin/members", label: "Members", icon: Users },
       { href: "/admin/coaches", label: "Coaches", icon: UserCheck },
       { href: "/admin/sessions", label: "Sessions", icon: Calendar },
+      { href: "/admin/makeups", label: "Make-ups", icon: CalendarClock },
       { href: "/admin/discounts", label: "Discounts", icon: Trophy },
       { href: "/admin/transport", label: "Transport", icon: Car },
       { href: "/admin/attendance", label: "Attendance", icon: ClipboardCheck },

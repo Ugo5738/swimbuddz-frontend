@@ -2563,6 +2563,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/members/coaches/{member_id}/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Coach Availability
+         * @description Return a coach's availability calendar + spacing override.
+         *
+         *     Service-to-service: consumed by sessions_service to compute bookable
+         *     make-up slots. Returns the raw stored calendar (caller parses it).
+         */
+        get: operations["get_coach_availability_internal_members_coaches__member_id__availability_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/members/coaches/{member_id}/readiness": {
         parameters: {
             query?: never;
@@ -2959,6 +2982,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sessions/bookings/{booking_id}/refund-pool-fee": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin Refund Pool Fee
+         * @description Admin: refund a booking's per-session pool fee to the member's Bubbles.
+         *
+         *     The make-up case: a learner paid the ~₦3,500 pool fee, couldn't attend
+         *     (rain-out / excused / marked ABSENT) and is owed it back so it funds the
+         *     make-up session — otherwise they'd pay the pool fee twice.
+         *
+         *     Why a dedicated endpoint (not ``/cancel`` or the Adjust-Bubbles tool):
+         *       - ``/cancel`` is member-only and refuses once the session has started; a
+         *         rain-out is marked ABSENT *during/after* the session, so it can't apply.
+         *       - The "Adjust Bubbles" admin tool posts a generic ``admin_adjustment`` the
+         *         ledger SKIPS — the refund would be invisible and the pool-fee revenue
+         *         double-counted once the make-up is rebooked.
+         *       - This routes through the **accounted** ``session_booking`` refund path
+         *         (``transaction_type=refund``), so the ledger reverses
+         *         ``revenue_club_session`` and restores the Bubble liability. The make-up
+         *         rebook re-recognises it — revenue lands once, for the delivered session.
+         *
+         *     The booking is **not** cancelled — it stays (with its ABSENT/EXCUSED
+         *     attendance row) as the audit trail. Idempotent per booking (notes marker +
+         *     the wallet's shared ``booking-refund-<id>`` key). Phase 1 make-up *confirm*
+         *     will call this same primitive automatically; until then it's an admin tap.
+         */
+        post: operations["admin_refund_pool_fee_sessions_bookings__booking_id__refund_pool_fee_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sessions/bookings/{booking_id}/excuse": {
         parameters: {
             query?: never;
@@ -2973,11 +3036,13 @@ export interface paths {
          * @description Member self-excuses a booking — "I can't make it".
          *
          *     Distinct from cancel:
-         *       - For COHORT sessions, the pool fee is not refunded. Instead, an
-         *         EXCUSED attendance record is created which the coach payout cron
-         *         converts into a CohortMakeupObligation. The member gets a make-up
-         *         session later. This matches the cohort model: program fee is a
-         *         commitment, not a per-session refundable purchase.
+         *       - For COHORT sessions, this endpoint moves no money. It creates an
+         *         EXCUSED attendance record which the coach payout cron converts into a
+         *         CohortMakeupObligation — the member gets a make-up session later. The
+         *         *program* fee stays (a cohort commitment, not a per-session refundable
+         *         purchase). The *per-session pool fee* the member paid is refunded to
+         *         Bubbles separately — by an admin via the refund-pool-fee action, or
+         *         automatically on make-up confirm (Phase 1) — so it funds the make-up.
          *       - For non-cohort sessions, callers should use the regular
          *         ``/cancel`` endpoint instead (which refunds in Bubbles). This
          *         endpoint rejects non-cohort bookings.
@@ -3073,6 +3138,61 @@ export interface paths {
         get: operations["list_session_bookings_sessions__session_id__bookings_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/makeups/bookable-slots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Bookable Slots
+         * @description Return bookable make-up options for a coach + learner over [from, to].
+         *
+         *     Admin-facing (the booker, per policy §3). Returns "open" slots (gaps in the
+         *     coach's published availability) and "join_session" options (existing sessions
+         *     with room — a make-up needn't be 1:1, policy §1). Spacing violations are
+         *     *flagged*, not removed (decision D2). ``availability_set`` is False when the
+         *     coach hasn't published a calendar — join options may still be returned.
+         */
+        get: operations["get_bookable_slots_makeups_bookable_slots_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/makeups/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Makeup Bookings
+         * @description List make-up bookings (admin), newest first; filter by learner/coach/status.
+         */
+        get: operations["list_makeup_bookings_makeups_bookings_get"];
+        put?: never;
+        /**
+         * Confirm Makeup Booking
+         * @description Confirm a make-up for a learner against a chosen session (admin; policy §3).
+         *
+         *     The session is either a dedicated make-up session (pre-created) or an existing
+         *     one the learner joins (policy §1). Enforces: a reason for reschedules (1b), one
+         *     outstanding make-up at a time, one grace per block, the 14-day window, and
+         *     session capacity. Writes a CONFIRMED MakeupBooking and books the learner in.
+         */
+        post: operations["confirm_makeup_booking_makeups_bookings_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5983,6 +6103,30 @@ export interface paths {
          * @description Update a discount code (Admin only).
          */
         patch: operations["update_discount_payments_admin_discounts__discount_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/internal/payments/makeup-obligations/{obligation_id}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Internal Schedule Makeup Obligation
+         * @description Schedule a cohort make-up obligation to a session (service-to-service).
+         *
+         *     Called by sessions_service when an admin confirms a make-up that satisfies an
+         *     existing cohort obligation: links the session and flips PENDING/SCHEDULED →
+         *     SCHEDULED so the coach's payout includes it. Mirrors the admin endpoint.
+         */
+        post: operations["internal_schedule_makeup_obligation_internal_payments_makeup_obligations__obligation_id__schedule_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/internal/payments/initialize": {
@@ -14501,6 +14645,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/finance/users/{user_id}/invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resend Finance User Invite
+         * @description Re-send the Supabase invite email for a finance user (admin/owner).
+         *
+         *     For when the original invite was lost. Idempotent at Supabase: an already-
+         *     registered user comes back as ``invite_status="exists"`` (they can just log
+         *     in); no second account is created.
+         */
+        post: operations["resend_finance_user_invite_admin_finance_users__user_id__invite_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/finance/users/{user_id}": {
         parameters: {
             query?: never;
@@ -16137,6 +16305,23 @@ export interface components {
              * @default 0
              */
             buffer_minutes: number;
+        };
+        /**
+         * CoachAvailabilityInternal
+         * @description Coach availability calendar + spacing override (service-to-service).
+         *
+         *     ``availability_calendar`` is the raw stored JSONB; the caller
+         *     (sessions_service) parses it. None when the coach hasn't published.
+         */
+        CoachAvailabilityInternal: {
+            /** Member Id */
+            member_id: string;
+            /** Availability Calendar */
+            availability_calendar?: {
+                [key: string]: unknown;
+            } | null;
+            /** Min Hours Between Sessions */
+            min_hours_between_sessions?: number | null;
         };
         /**
          * CoachAvailabilityResponse
@@ -18302,6 +18487,20 @@ export interface components {
             updated_at?: string | null;
         };
         /**
+         * AdminPoolFeeRefundRequest
+         * @description Admin refunds a booking's per-session pool fee to the member's Bubble
+         *     wallet — the make-up case: a learner paid the ~₦3,500 pool fee, couldn't
+         *     attend (rain-out / excused), and is owed it back to fund their make-up.
+         *
+         *     The server routes this through the accounted ``session_booking`` refund
+         *     path so the ledger reverses the pool-fee revenue — never the manual
+         *     "Adjust Bubbles" tool. ``reason`` is recorded on the booking for audit.
+         */
+        AdminPoolFeeRefundRequest: {
+            /** Reason */
+            reason: string;
+        };
+        /**
          * AdminWalkInRequest
          * @description Admin creates a CONFIRMED booking for a member who showed up without
          *     pre-booking online (the "walk-in" case).
@@ -18321,6 +18520,58 @@ export interface components {
             fee_amount_kobo?: number | null;
             /** Notes */
             notes?: string | null;
+        };
+        /**
+         * BookableSlotResponse
+         * @description A candidate make-up option (UTC) with policy spacing flags.
+         *
+         *     ``kind`` is "open" (a dedicated availability gap) or "join_session" (an
+         *     existing session the learner can join — policy §1). For "join_session",
+         *     session_id / session_title / spots_left describe the session.
+         */
+        BookableSlotResponse: {
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /**
+             * Kind
+             * @default open
+             */
+            kind: string;
+            /** Session Id */
+            session_id?: string | null;
+            /** Session Title */
+            session_title?: string | null;
+            /** Spots Left */
+            spots_left?: number | null;
+            /**
+             * Ok
+             * @default true
+             */
+            ok: boolean;
+            /** Warnings */
+            warnings?: string[];
+        };
+        /**
+         * BookableSlotsResponse
+         * @description Bookable slots for a coach + learner over a date window.
+         */
+        BookableSlotsResponse: {
+            /** Coach Id */
+            coach_id: string;
+            /** Learner Id */
+            learner_id: string;
+            /** Availability Set */
+            availability_set: boolean;
+            /** Slots */
+            slots: components["schemas"]["BookableSlotResponse"][];
         };
         /**
          * BookingChannel
@@ -18426,6 +18677,117 @@ export interface components {
              */
             skip_conflicts: boolean;
         };
+        /**
+         * MakeupBlockKind
+         * @description What the make-up's grace/window 'block' is anchored to.
+         * @enum {string}
+         */
+        MakeupBlockKind: "cohort_term" | "lesson_package";
+        /**
+         * MakeupBookingCreate
+         * @description Admin request to confirm a make-up for a learner against a chosen session.
+         *
+         *     The session is either a dedicated make-up session (pre-created) or an
+         *     existing one the learner joins (policy §1). ``reason`` is required when
+         *     ``origin`` is ``learner_reschedule`` (policy §4 / 1b).
+         */
+        MakeupBookingCreate: {
+            /**
+             * Learner Member Id
+             * Format: uuid
+             */
+            learner_member_id: string;
+            /**
+             * Coach Member Id
+             * Format: uuid
+             */
+            coach_member_id: string;
+            /**
+             * Scheduled Session Id
+             * Format: uuid
+             */
+            scheduled_session_id: string;
+            origin: components["schemas"]["MakeupOrigin"];
+            /** Reason */
+            reason?: string | null;
+            /** Original Session Id */
+            original_session_id?: string | null;
+            block_kind?: components["schemas"]["MakeupBlockKind"] | null;
+            /** Block Id */
+            block_id?: string | null;
+            /** Obligation Id */
+            obligation_id?: string | null;
+            /**
+             * Used Grace
+             * @default false
+             */
+            used_grace: boolean;
+            /**
+             * Spacing Overridden
+             * @default false
+             */
+            spacing_overridden: boolean;
+        };
+        /**
+         * MakeupBookingResponse
+         * @description A make-up booking record.
+         */
+        MakeupBookingResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Learner Member Id
+             * Format: uuid
+             */
+            learner_member_id: string;
+            /**
+             * Coach Member Id
+             * Format: uuid
+             */
+            coach_member_id: string;
+            learner_type: components["schemas"]["MakeupLearnerType"];
+            origin: components["schemas"]["MakeupOrigin"];
+            status: components["schemas"]["MakeupStatus"];
+            block_kind?: components["schemas"]["MakeupBlockKind"] | null;
+            /** Block Id */
+            block_id?: string | null;
+            /** Original Session Id */
+            original_session_id?: string | null;
+            /** Scheduled Session Id */
+            scheduled_session_id?: string | null;
+            /** Used Grace */
+            used_grace: boolean;
+            /** Notice Hours At Request */
+            notice_hours_at_request?: number | null;
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * MakeupLearnerType
+         * @description Which learner population the make-up belongs to.
+         * @enum {string}
+         */
+        MakeupLearnerType: "cohort" | "one_on_one";
+        /**
+         * MakeupOrigin
+         * @description Why a make-up exists.
+         * @enum {string}
+         */
+        MakeupOrigin: "learner_reschedule" | "excused_absence" | "session_cancelled" | "late_join";
+        /**
+         * MakeupStatus
+         * @description Lifecycle of a MakeupBooking (individual-learner make-up / reschedule).
+         * @enum {string}
+         */
+        MakeupStatus: "requested" | "held" | "confirmed" | "completed" | "forfeited" | "expired" | "cancelled";
         /** NextSessionResponse */
         NextSessionResponse: {
             /** Starts At */
@@ -22196,12 +22558,6 @@ export interface components {
             /** Notes */
             notes?: string | null;
         };
-        /**
-         * MakeupStatus
-         * @description Lifecycle of a make-up obligation owed to a student.
-         * @enum {string}
-         */
-        MakeupStatus: "pending" | "scheduled" | "completed" | "expired" | "cancelled";
         /**
          * MarkRefundDisbursedRequest
          * @description Admin marks one refund obligation as disbursed (paid out).
@@ -33483,6 +33839,8 @@ export interface components {
             created_at: string;
             /** Deactivated At */
             deactivated_at?: string | null;
+            /** Invite Status */
+            invite_status?: string | null;
         };
         /** LedgerUserUpdate */
         LedgerUserUpdate: {
@@ -37558,6 +37916,37 @@ export interface operations {
             };
         };
     };
+    get_coach_availability_internal_members_coaches__member_id__availability_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachAvailabilityInternal"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_coach_readiness_data_internal_members_coaches__member_id__readiness_get: {
         parameters: {
             query?: never;
@@ -38160,6 +38549,41 @@ export interface operations {
             };
         };
     };
+    admin_refund_pool_fee_sessions_bookings__booking_id__refund_pool_fee_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminPoolFeeRefundRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionBookingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     excuse_booking_sessions_bookings__booking_id__excuse_post: {
         parameters: {
             query?: never;
@@ -38277,6 +38701,113 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionBookingResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_bookable_slots_makeups_bookable_slots_get: {
+        parameters: {
+            query: {
+                /** @description Coach member id */
+                coach_id: string;
+                /** @description Learner member id */
+                learner_id: string;
+                /** @description Window start (coach-local date) */
+                from: string;
+                /** @description Window end, inclusive */
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookableSlotsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_makeup_bookings_makeups_bookings_get: {
+        parameters: {
+            query?: {
+                /** @description Filter by learner */
+                learner_id?: string | null;
+                /** @description Filter by coach */
+                coach_id?: string | null;
+                /** @description Filter by make-up status */
+                status?: components["schemas"]["MakeupStatus"] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MakeupBookingResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_makeup_booking_makeups_bookings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MakeupBookingCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MakeupBookingResponse"];
                 };
             };
             /** @description Validation Error */
@@ -43085,6 +43616,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DiscountResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    internal_schedule_makeup_obligation_internal_payments_makeup_obligations__obligation_id__schedule_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                obligation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MakeupScheduleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MakeupObligationResponse"];
                 };
             };
             /** @description Validation Error */
@@ -58803,6 +59369,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LedgerUserOut"];
+                };
+            };
+        };
+    };
+    resend_finance_user_invite_admin_finance_users__user_id__invite_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerUserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
