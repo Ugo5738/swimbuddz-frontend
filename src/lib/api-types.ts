@@ -3199,6 +3199,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/makeups/bookings/{booking_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete Makeup Booking
+         * @description Mark a make-up as delivered (admin). Sets COMPLETED + completed_at.
+         *
+         *     The linked cohort payout obligation completes via payments' own
+         *     attendance-driven flow — it is not flipped here, to avoid payout side effects.
+         */
+        post: operations["complete_makeup_booking_makeups_bookings__booking_id__complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/makeups/bookings/{booking_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel Makeup Booking
+         * @description Cancel a make-up (admin). Sets CANCELLED; terminal states are rejected.
+         */
+        post: operations["cancel_makeup_booking_makeups_bookings__booking_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sessions/": {
         parameters: {
             query?: never;
@@ -18764,6 +18807,8 @@ export interface components {
             notice_hours_at_request?: number | null;
             /** Notes */
             notes?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -38803,6 +38848,68 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MakeupBookingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_makeup_booking_makeups_bookings__booking_id__complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MakeupBookingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_makeup_booking_makeups_bookings__booking_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
