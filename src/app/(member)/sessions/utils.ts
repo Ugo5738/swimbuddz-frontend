@@ -62,6 +62,18 @@ export function isActiveBooking(status?: string): boolean {
   return s !== "cancelled" && s !== "canceled" && s !== "no_show";
 }
 
+/**
+ * A SessionBooking only counts as "booked" once payment has cleared
+ * (status CONFIRMED). PENDING is a reservation whose payment is still in
+ * flight — or was abandoned — and must NOT read as booked, otherwise an
+ * unpaid/abandoned online attempt shows the session as booked to the
+ * member. Distinct from {@link isActiveBooking}, which is the right test
+ * for day-of attendance records but too loose for booking status.
+ */
+export function isConfirmedBooking(status?: string): boolean {
+  return String(status || "").toLowerCase() === "confirmed";
+}
+
 /** Get the start of this week (Monday) */
 export function getStartOfWeek(): Date {
   const d = new Date();

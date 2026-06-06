@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { ActiveFilterChips, DateGroupedSessions, FilterBar, NextSessionPanel } from "./components";
 import { SESSION_TYPES_QUERY, TABS } from "./constants";
 import type { AttendanceRecord, DateFilter, MemberProfile, MyBooking, ViewTab } from "./types";
-import { filterByDate, filterByType, isActiveBooking } from "./utils";
+import { filterByDate, filterByType, isActiveBooking, isConfirmedBooking } from "./utils";
 
 // ── Inner component (needs searchParams) ────────────────────────────────
 
@@ -119,16 +119,17 @@ function SessionsHub() {
         resolvedTier = getEffectiveTier(profile);
 
         // Attendance = day-of presence (only exists after sign-in).
-        // Bookings = paid/pending reservations (intent-only, no
+        // Bookings = CONFIRMED (paid) reservations (intent-only, no
         // attendance row until sign-in). The Booked tab needs both:
         // attendance covers legacy/older flows, bookings covers the
         // SessionBooking flow where a confirmed booking has no
-        // attendance record yet.
+        // attendance record yet. Scope to status_filter=confirmed so an
+        // in-flight / abandoned PENDING booking never shows as "Booked".
         [attendanceData, bookingsData] = await Promise.all([
           apiGet<AttendanceRecord[]>("/api/v1/attendance/me", {
             auth: true,
           }).catch(() => []),
-          apiGet<MyBooking[]>("/api/v1/sessions/bookings/me", {
+          apiGet<MyBooking[]>("/api/v1/sessions/bookings/me?status_filter=confirmed", {
             auth: true,
           }).catch(() => []),
         ]);
@@ -257,14 +258,14 @@ function SessionsHub() {
         ids.add(record.session_id);
       }
     }
-    // SessionBooking path: a paid/pending reservation that has no
+    // SessionBooking path: a CONFIRMED (paid) reservation that has no
     // attendance record yet (attendance is created day-of at sign-in).
-    // The /bookings/me endpoint already scopes to the active set
-    // (pending + confirmed), but guard with isActiveBooking anyway in
-    // case a status_filter or future status leaks through.
+    // The fetch already scopes to status_filter=confirmed; guard with
+    // isConfirmedBooking anyway so a PENDING (unpaid / abandoned) booking
+    // never counts as "Booked" even if the filter is ever dropped.
     for (const booking of myBookings) {
       if (!booking.session_id) continue;
-      if (isActiveBooking(booking.status)) {
+      if (isConfirmedBooking(booking.status)) {
         ids.add(booking.session_id);
       }
     }
@@ -278,7 +279,9 @@ function SessionsHub() {
     const map = new Map<string, MyBooking>();
     for (const booking of myBookings) {
       if (!booking.session_id) continue;
-      if (isActiveBooking(booking.status)) {
+      // Self-report actions (excuse / running-late) require a CONFIRMED
+      // booking server-side, so only map confirmed ones here.
+      if (isConfirmedBooking(booking.status)) {
         map.set(booking.session_id, booking);
       }
     }
