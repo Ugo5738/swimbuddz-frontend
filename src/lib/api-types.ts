@@ -2845,11 +2845,23 @@ export interface paths {
         put?: never;
         /**
          * Book Session
-         * @description Pre-book a session as the authenticated member.
+         * @description Book a session as the authenticated member.
          *
-         *     Creates a SessionBooking(status=PENDING) with a 15-minute TTL.
-         *     Frontend / payments_service is expected to call
-         *     POST /sessions/bookings/{id}/confirm after payment clears.
+         *     Reconciles against the single existing booking row for this
+         *     (session, member), if any (a unique constraint forbids a second row):
+         *
+         *     * CONFIRMED already → returned unchanged (idempotent; never re-charged).
+         *     * PENDING (payment in flight / abandoned) or dead (EXPIRED / CANCELLED)
+         *       → driven forward by *this* attempt rather than rejected. A dead row is
+         *       revived with its stale payment linkage cleared.
+         *
+         *     Then, for that row (existing or freshly created):
+         *
+         *     * ``pay_with_bubbles`` (or a free session) → debit the wallet for the
+         *       pool fee, if any, and flip to CONFIRMED in one transaction.
+         *     * otherwise → PENDING with a 15-minute TTL; the frontend pays via
+         *       Paystack and confirms on verify (the sweep retires it if payment
+         *       never clears).
          */
         post: operations["book_session_sessions__session_id__book_post"];
         delete?: never;
@@ -6166,6 +6178,30 @@ export interface paths {
          *     SCHEDULED so the coach's payout includes it. Mirrors the admin endpoint.
          */
         post: operations["internal_schedule_makeup_obligation_internal_payments_makeup_obligations__obligation_id__schedule_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/payments/makeup-obligations/{obligation_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Internal Complete Makeup Obligation
+         * @description Mark a cohort make-up obligation COMPLETED (service-to-service).
+         *
+         *     Called by sessions_service when a make-up is delivered (attended). Sets
+         *     ``completed_at`` so the coach's payout for the covering block includes it.
+         *     Idempotent: an already-COMPLETED obligation is returned unchanged.
+         */
+        post: operations["internal_complete_makeup_obligation_internal_payments_makeup_obligations__obligation_id__complete_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -43750,6 +43786,37 @@ export interface operations {
                 "application/json": components["schemas"]["MakeupScheduleRequest"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MakeupObligationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    internal_complete_makeup_obligation_internal_payments_makeup_obligations__obligation_id__complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                obligation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
