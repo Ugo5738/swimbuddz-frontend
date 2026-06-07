@@ -117,6 +117,7 @@ const navSections: NavSection[] = [
         label: "My Attendance",
         icon: ClipboardCheck,
       },
+      { href: "/account/makeups", label: "Make-ups", icon: Calendar },
     ],
   },
   {

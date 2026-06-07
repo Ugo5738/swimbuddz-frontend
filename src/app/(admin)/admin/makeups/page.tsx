@@ -38,6 +38,7 @@ export default function AdminMakeupsPage() {
   const [coaches, setCoaches] = useState<Member[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [refLoading, setRefLoading] = useState(true);
+  const [pending, setPending] = useState<MakeupBooking[]>([]);
 
   const [coachId, setCoachId] = useState("");
   const [learnerId, setLearnerId] = useState("");
@@ -73,6 +74,7 @@ export default function AdminMakeupsPage() {
         if (!active) return;
         setCoaches(c ?? []);
         setMembers(m ?? []);
+        await loadPending();
       } catch {
         if (active) toast.error("Failed to load coaches / members");
       } finally {
@@ -86,6 +88,24 @@ export default function AdminMakeupsPage() {
 
   const label = (m: Member) =>
     `${m.first_name ?? ""} ${m.last_name ?? ""}`.trim() || m.email || m.id;
+
+  async function loadPending() {
+    try {
+      setPending(await MakeupsApi.list({ status: "requested" }));
+    } catch {
+      /* non-fatal */
+    }
+  }
+
+  async function confirmPending(id: string) {
+    try {
+      await MakeupsApi.confirmRequest(id);
+      toast.success("Request confirmed");
+      await loadPending();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to confirm");
+    }
+  }
 
   async function findOptions() {
     if (!coachId || !learnerId) {
@@ -175,6 +195,31 @@ export default function AdminMakeupsPage() {
           confirm a make-up. Spacing conflicts are flagged, not blocked.
         </p>
       </header>
+
+      {pending.length > 0 ? (
+        <Card className="space-y-3 p-5">
+          <h2 className="font-semibold text-slate-900">
+            Pending requests ({pending.length})
+          </h2>
+          {pending.map((mk) => (
+            <div
+              key={mk.id}
+              className="flex items-center justify-between gap-3 rounded-md border border-amber-100 bg-amber-50/40 p-3"
+            >
+              <div className="text-sm text-slate-700">
+                <span className="font-medium">
+                  {mk.origin.replace(/_/g, " ")}
+                </span>
+                {mk.notes ? ` — ${mk.notes}` : ""}
+                {mk.created_at ? ` · ${fmt(mk.created_at)}` : ""}
+              </div>
+              <Button size="sm" onClick={() => confirmPending(mk.id)}>
+                Confirm
+              </Button>
+            </div>
+          ))}
+        </Card>
+      ) : null}
 
       <Card className="space-y-4 p-5">
         <div className="grid gap-4 sm:grid-cols-2">
