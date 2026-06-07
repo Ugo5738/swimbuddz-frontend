@@ -4,7 +4,7 @@ import { CoachPicker } from "@/components/admin/CoachPicker";
 import { PoolPicker } from "@/components/admin/PoolPicker";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-import { CohortStatus, LocationType, type Program } from "@/lib/academy";
+import { CohortStatus, CohortType, LocationType, type Program } from "@/lib/academy";
 
 import type { CohortFormData, RideArea } from "../types";
 import { InstallmentPlanField } from "./InstallmentPlanField";
@@ -55,6 +55,24 @@ export function BasicsStep({ selectedProgram, formData, rideAreas, onChange }: P
       </div>
 
       <div className="grid grid-cols-2 gap-4">
+        <Select
+          label="Cohort Type"
+          value={formData.type}
+          onChange={(e) => {
+            const newType = e.target.value as CohortType;
+            onChange({
+              ...formData,
+              type: newType,
+              // A private (1:1) cohort is a single learner.
+              capacity: newType === CohortType.PRIVATE ? 1 : formData.capacity,
+            });
+          }}
+        >
+          <option value={CohortType.GROUP}>Group (8–12)</option>
+          <option value={CohortType.PRIVATE}>Private (1:1)</option>
+          <option value={CohortType.SMALL_GROUP}>Small group (2–6)</option>
+          <option value={CohortType.CORPORATE}>Corporate</option>
+        </Select>
         <Input
           label="Capacity"
           type="number"

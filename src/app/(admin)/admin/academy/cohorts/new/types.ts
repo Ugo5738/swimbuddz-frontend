@@ -1,6 +1,11 @@
 // Types extracted from page.tsx during the file-size sweep.
 
-import type { CohortRideConfigEntry, CohortStatus, LocationType } from "@/lib/academy";
+import type {
+  CohortRideConfigEntry,
+  CohortStatus,
+  CohortType,
+  LocationType,
+} from "@/lib/academy";
 
 export interface RideArea {
   id: string;
@@ -20,6 +25,7 @@ export type CohortFormData = {
   start_date: string;
   end_date: string;
   capacity: number;
+  type: CohortType;
   status: CohortStatus;
   allow_mid_entry: boolean;
   require_approval: boolean;

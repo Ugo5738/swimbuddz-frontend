@@ -81,6 +81,7 @@ export function useCreateCohort({
         start_date: formData.start_date,
         end_date: formData.end_date,
         capacity: formData.capacity,
+        type: formData.type,
         status: formData.status,
         allow_mid_entry: formData.allow_mid_entry,
         // Send lead coach_id for backward compat + coach_assignments for new system

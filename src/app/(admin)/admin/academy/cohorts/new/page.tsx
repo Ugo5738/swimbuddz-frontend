@@ -2,7 +2,13 @@
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { AcademyApi, CohortStatus, LocationType, type Program } from "@/lib/academy";
+import {
+  AcademyApi,
+  CohortStatus,
+  CohortType,
+  LocationType,
+  type Program,
+} from "@/lib/academy";
 import { apiGet } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -34,6 +40,7 @@ export default function NewCohortPage() {
     start_date: "",
     end_date: "",
     capacity: 10,
+    type: CohortType.GROUP,
     status: CohortStatus.OPEN,
     allow_mid_entry: false,
     require_approval: false,
