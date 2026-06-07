@@ -3254,6 +3254,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/makeups/me/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get My Bookable Options
+         * @description A learner's own bookable make-up options for a coach over [from, to].
+         */
+        get: operations["get_my_bookable_options_makeups_me_options_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/makeups/me/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List My Makeups
+         * @description The authenticated learner's make-up bookings (newest first).
+         */
+        get: operations["list_my_makeups_makeups_me_requests_get"];
+        put?: never;
+        /**
+         * Request Makeup
+         * @description A learner requests a make-up against a chosen session (REQUESTED + soft hold).
+         *
+         *     Admin one-tap confirms it later (booking the learner in + the obligation flip
+         *     happen then). Light gates: a reason for reschedules (1b), one outstanding
+         *     make-up at a time, and the session must exist, be led by the coach, and have
+         *     room.
+         */
+        post: operations["request_makeup_makeups_me_requests_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/makeups/bookings/{booking_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Makeup Request
+         * @description Admin one-tap confirm of a learner's REQUESTED/HELD make-up.
+         *
+         *     Books the learner into the session (capacity-checked) and flips the linked
+         *     obligation, mirroring the direct-confirm tail.
+         */
+        post: operations["confirm_makeup_request_makeups_bookings__booking_id__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sessions/": {
         parameters: {
             query?: never;
@@ -18863,6 +18935,28 @@ export interface components {
          * @enum {string}
          */
         MakeupOrigin: "learner_reschedule" | "excused_absence" | "session_cancelled" | "late_join";
+        /**
+         * MakeupRequestCreate
+         * @description A learner's self-serve make-up request (admin confirms it later).
+         */
+        MakeupRequestCreate: {
+            /**
+             * Coach Member Id
+             * Format: uuid
+             */
+            coach_member_id: string;
+            /**
+             * Scheduled Session Id
+             * Format: uuid
+             */
+            scheduled_session_id: string;
+            /** @default learner_reschedule */
+            origin: components["schemas"]["MakeupOrigin"];
+            /** Reason */
+            reason?: string | null;
+            /** Original Session Id */
+            original_session_id?: string | null;
+        };
         /**
          * MakeupStatus
          * @description Lifecycle of a MakeupBooking (individual-learner make-up / reschedule).
@@ -38934,6 +39028,124 @@ export interface operations {
         };
     };
     cancel_makeup_booking_makeups_bookings__booking_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MakeupBookingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_bookable_options_makeups_me_options_get: {
+        parameters: {
+            query: {
+                /** @description Coach member id */
+                coach_id: string;
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookableSlotsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_my_makeups_makeups_me_requests_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MakeupBookingResponse"][];
+                };
+            };
+        };
+    };
+    request_makeup_makeups_me_requests_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MakeupRequestCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MakeupBookingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_makeup_request_makeups_bookings__booking_id__confirm_post: {
         parameters: {
             query?: never;
             header?: never;
