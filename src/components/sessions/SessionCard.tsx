@@ -1,5 +1,6 @@
 "use client";
 
+import { SessionWeatherChip } from "@/components/sessions/SessionWeatherChip";
 import { Badge } from "@/components/ui/Badge";
 import { hasTierAccess, requiredTierForSessionType, tierDisplayLabel } from "@/lib/sessionAccess";
 import {
@@ -359,6 +360,13 @@ export function SessionCard({
               <MapPin className="h-4 w-4 shrink-0 text-slate-400" />
               <span>{session.location_name || session.location || "Location TBA"}</span>
             </div>
+          )}
+          {session.pool_id && (
+            <SessionWeatherChip
+              poolId={session.pool_id}
+              startsAt={session.starts_at}
+              isPast={effectivelyPast}
+            />
           )}
         </div>
 
