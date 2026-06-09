@@ -13,6 +13,8 @@ export type BookableSlotsResponse =
 export type MakeupBooking = components["schemas"]["MakeupBookingResponse"];
 export type MakeupBookingCreate = components["schemas"]["MakeupBookingCreate"];
 export type MakeupRequestCreate = components["schemas"]["MakeupRequestCreate"];
+export type MakeupOpenSlotCreate =
+  components["schemas"]["MakeupOpenSlotCreate"];
 export type MakeupOrigin = MakeupBookingCreate["origin"];
 
 /** Origins an admin can pick when confirming a make-up (matches backend enum). */
@@ -39,6 +41,10 @@ export const MakeupsApi = {
   /** Confirm a make-up against a chosen session. */
   confirm: (body: MakeupBookingCreate) =>
     apiPost<MakeupBooking>("/api/v1/makeups/bookings", body, { auth: true }),
+
+  /** Create a dedicated make-up session in an open slot + confirm, in one step. */
+  createOpenSlot: (body: MakeupOpenSlotCreate) =>
+    apiPost<MakeupBooking>("/api/v1/makeups/open-slot", body, { auth: true }),
 
   /** A learner's make-up bookings (newest first). */
   listForLearner: (learnerId: string) =>
