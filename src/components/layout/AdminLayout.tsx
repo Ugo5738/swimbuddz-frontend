@@ -4,6 +4,7 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { apiGet } from "@/lib/api";
 import { supabase } from "@/lib/auth";
 import {
+  Activity,
   AlertTriangle,
   Award,
   Banknote,
@@ -74,6 +75,7 @@ const navSections: NavSection[] = [
       { href: "/admin/discounts", label: "Discounts", icon: Trophy },
       { href: "/admin/transport", label: "Transport", icon: Car },
       { href: "/admin/attendance", label: "Attendance", icon: ClipboardCheck },
+      { href: "/admin/ai/queue", label: "Stroke Lab Queue", icon: Activity },
     ],
   },
   {

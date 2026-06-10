@@ -5,6 +5,7 @@ import { apiGet } from "@/lib/api";
 import { supabase } from "@/lib/auth";
 import { listPodsILead } from "@/lib/pods";
 import {
+  Activity,
   BookOpen,
   Briefcase,
   Calendar,
@@ -118,6 +119,7 @@ const navSections: NavSection[] = [
         icon: ClipboardCheck,
       },
       { href: "/account/makeups", label: "Make-ups", icon: Calendar },
+      { href: "/account/strokelab", label: "Stroke Lab", icon: Activity },
     ],
   },
   {
