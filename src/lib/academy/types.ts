@@ -29,6 +29,13 @@ export enum CohortStatus {
   CANCELLED = "cancelled",
 }
 
+export enum CohortType {
+  GROUP = "group",
+  PRIVATE = "private",
+  SMALL_GROUP = "small_group",
+  CORPORATE = "corporate",
+}
+
 export enum LocationType {
   POOL = "pool",
   OPEN_WATER = "open_water",
@@ -200,6 +207,7 @@ export interface Cohort {
   start_date: string;
   end_date: string;
   capacity: number;
+  type?: CohortType;
   // Location
   timezone?: string;
   location_type?: LocationType;

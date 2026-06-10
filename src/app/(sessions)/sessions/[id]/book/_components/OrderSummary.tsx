@@ -22,6 +22,7 @@ type OrderSummaryProps = {
   lineItems?: OrderSummaryLineItem[];
   // Single-session mode fields (used when lineItems is undefined)
   poolFee: number;
+  partySize?: number; // 1 (member) + guests — labels the session-fee line
   rideShareCost: number;
   selectedArea: RideShareArea | undefined;
   selectedPickupLocationId: string | null;
@@ -52,6 +53,7 @@ type OrderSummaryProps = {
 export function OrderSummary({
   lineItems,
   poolFee,
+  partySize,
   rideShareCost,
   selectedArea,
   selectedPickupLocationId,
@@ -95,7 +97,15 @@ export function OrderSummary({
             {/* Session fee line */}
             {!isRideOnlyFlow && (
               <div className="flex justify-between py-1.5 text-sm">
-                <span className="text-slate-600">Session Fee</span>
+                <span className="text-slate-600">
+                  Session Fee
+                  {partySize && partySize > 1 && (
+                    <span className="text-slate-400">
+                      {" "}
+                      (you + {partySize - 1} guest{partySize - 1 > 1 ? "s" : ""})
+                    </span>
+                  )}
+                </span>
                 <span className="text-slate-900 font-medium">{formatCurrency(poolFee)}</span>
               </div>
             )}

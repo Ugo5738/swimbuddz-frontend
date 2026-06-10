@@ -7790,6 +7790,202 @@
         }
       }
     },
+    "/api/v1/makeups/me/options": {
+      "get": {
+        "tags": [
+          "makeups"
+        ],
+        "summary": "Get My Bookable Options",
+        "description": "A learner's own bookable make-up options for a coach over [from, to].",
+        "operationId": "get_my_bookable_options_makeups_me_options_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "coach_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Coach member id",
+              "title": "Coach Id"
+            },
+            "description": "Coach member id"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookableSlotsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/makeups/me/requests": {
+      "get": {
+        "tags": [
+          "makeups"
+        ],
+        "summary": "List My Makeups",
+        "description": "The authenticated learner's make-up bookings (newest first).",
+        "operationId": "list_my_makeups_makeups_me_requests_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MakeupBookingResponse"
+                  },
+                  "type": "array",
+                  "title": "Response List My Makeups Makeups Me Requests Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "makeups"
+        ],
+        "summary": "Request Makeup",
+        "description": "A learner requests a make-up against a chosen session (REQUESTED + soft hold).\n\nAdmin one-tap confirms it later (booking the learner in + the obligation flip\nhappen then). Light gates: a reason for reschedules (1b), one outstanding\nmake-up at a time, and the session must exist, be led by the coach, and have\nroom.",
+        "operationId": "request_makeup_makeups_me_requests_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MakeupRequestCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MakeupBookingResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/makeups/bookings/{booking_id}/confirm": {
+      "post": {
+        "tags": [
+          "makeups"
+        ],
+        "summary": "Confirm Makeup Request",
+        "description": "Admin one-tap confirm of a learner's REQUESTED/HELD make-up.\n\nBooks the learner into the session (capacity-checked) and flips the linked\nobligation, mirroring the direct-confirm tail.",
+        "operationId": "confirm_makeup_request_makeups_bookings__booking_id__confirm_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "booking_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Booking Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MakeupBookingResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/sessions/": {
       "get": {
         "tags": [
@@ -42708,6 +42904,53 @@
           }
         ]
       }
+    },
+    "/api/v1/makeups/open-slot": {
+      "post": {
+        "tags": [
+          "makeups"
+        ],
+        "summary": "Create Open Slot Makeup",
+        "description": "Create a dedicated make-up session in a coach's open slot and confirm the\nlearner into it in one step (admin; design \u00a74 Phase 2).\n\nUse this for a brand-new dedicated slot; to drop a learner into a session the\ncoach already runs, use ``POST /makeups/bookings`` (policy \u00a71). The new\nsession is a COHORT_CLASS whose cohort is ``cohort_id`` or is derived from\n``original_session_id``. Eligibility (one-outstanding, window, grace) is\nenforced by the shared core *after* the session is built; if it fails the\nrequest rolls back and no orphan session is left behind.",
+        "operationId": "create_open_slot_makeup_makeups_open_slot_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MakeupOpenSlotCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MakeupBookingResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -54098,6 +54341,55 @@
         ],
         "title": "MakeupOrigin",
         "description": "Why a make-up exists."
+      },
+      "MakeupRequestCreate": {
+        "properties": {
+          "coach_member_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Coach Member Id"
+          },
+          "scheduled_session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Scheduled Session Id"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/MakeupOrigin",
+            "default": "learner_reschedule"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "original_session_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original Session Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "coach_member_id",
+          "scheduled_session_id"
+        ],
+        "title": "MakeupRequestCreate",
+        "description": "A learner's self-serve make-up request (admin confirms it later)."
       },
       "MakeupStatus": {
         "type": "string",
@@ -94497,6 +94789,154 @@
           "credit_minor"
         ],
         "title": "TrialBalanceRow"
+      },
+      "MakeupOpenSlotCreate": {
+        "properties": {
+          "learner_member_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Learner Member Id"
+          },
+          "coach_member_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Coach Member Id"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Starts At"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ends At"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/MakeupOrigin"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "original_session_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original Session Id"
+          },
+          "cohort_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cohort Id"
+          },
+          "pool_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pool Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "capacity": {
+            "type": "integer",
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Capacity",
+            "default": 1
+          },
+          "block_kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MakeupBlockKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "block_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block Id"
+          },
+          "obligation_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Obligation Id"
+          },
+          "used_grace": {
+            "type": "boolean",
+            "title": "Used Grace",
+            "default": false
+          },
+          "spacing_overridden": {
+            "type": "boolean",
+            "title": "Spacing Overridden",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "learner_member_id",
+          "coach_member_id",
+          "starts_at",
+          "ends_at",
+          "origin"
+        ],
+        "title": "MakeupOpenSlotCreate",
+        "description": "Admin request to create a dedicated make-up session in a coach's *open*\navailability slot and confirm a learner into it in one step (design \u00a74\nPhase 2). The join-an-existing-session path is ``POST /makeups/bookings``;\nthis is for booking a brand-new dedicated slot.\n\nThe new session is a ``COHORT_CLASS`` whose cohort comes from ``cohort_id``\nif given, else derived from ``original_session_id``. ``reason`` is required\nwhen ``origin`` is ``learner_reschedule`` (policy \u00a74 / 1b)."
       }
     }
   }

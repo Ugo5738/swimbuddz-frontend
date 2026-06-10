@@ -38,6 +38,7 @@ export default function AdminMakeupsPage() {
   const [coaches, setCoaches] = useState<Member[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [refLoading, setRefLoading] = useState(true);
+  const [pending, setPending] = useState<MakeupBooking[]>([]);
 
   const [coachId, setCoachId] = useState("");
   const [learnerId, setLearnerId] = useState("");
@@ -57,6 +58,7 @@ export default function AdminMakeupsPage() {
   const [origin, setOrigin] = useState<MakeupOrigin>("excused_absence");
   const [reason, setReason] = useState("");
   const [originalSessionId, setOriginalSessionId] = useState("");
+  const [cohortId, setCohortId] = useState("");
   const [obligationId, setObligationId] = useState("");
   const [usedGrace, setUsedGrace] = useState(false);
   const [spacingOverridden, setSpacingOverridden] = useState(false);
@@ -73,6 +75,7 @@ export default function AdminMakeupsPage() {
         if (!active) return;
         setCoaches(c ?? []);
         setMembers(m ?? []);
+        await loadPending();
       } catch {
         if (active) toast.error("Failed to load coaches / members");
       } finally {
@@ -86,6 +89,24 @@ export default function AdminMakeupsPage() {
 
   const label = (m: Member) =>
     `${m.first_name ?? ""} ${m.last_name ?? ""}`.trim() || m.email || m.id;
+
+  async function loadPending() {
+    try {
+      setPending(await MakeupsApi.list({ status: "requested" }));
+    } catch {
+      /* non-fatal */
+    }
+  }
+
+  async function confirmPending(id: string) {
+    try {
+      await MakeupsApi.confirmRequest(id);
+      toast.success("Request confirmed");
+      await loadPending();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to confirm");
+    }
+  }
 
   async function findOptions() {
     if (!coachId || !learnerId) {
@@ -123,32 +144,60 @@ export default function AdminMakeupsPage() {
     setOrigin("excused_absence");
     setReason("");
     setOriginalSessionId("");
+    setCohortId("");
     setObligationId("");
     setUsedGrace(false);
     setSpacingOverridden(!slot.ok); // pre-acknowledge spacing warnings
   }
 
   async function confirmBooking() {
-    const sessionId = bookingFor?.session_id;
-    if (!sessionId) return;
+    if (!bookingFor) return;
     if (origin === "learner_reschedule" && !reason.trim()) {
       toast.error("A reschedule needs a reason.");
       return;
     }
+    const isOpen = bookingFor.kind === "open";
+    if (isOpen && !originalSessionId.trim() && !cohortId.trim()) {
+      toast.error(
+        "For an open slot, give the original (missed) session ID or a cohort ID.",
+      );
+      return;
+    }
     setSaving(true);
-    const body: MakeupBookingCreate = {
-      learner_member_id: learnerId,
-      coach_member_id: coachId,
-      scheduled_session_id: sessionId,
-      origin,
-      reason: reason.trim() || null,
-      original_session_id: originalSessionId.trim() || null,
-      obligation_id: obligationId.trim() || null,
-      used_grace: usedGrace,
-      spacing_overridden: spacingOverridden,
-    };
     try {
-      await MakeupsApi.confirm(body);
+      if (isOpen) {
+        const learner = members.find((m) => m.id === learnerId);
+        await MakeupsApi.createOpenSlot({
+          learner_member_id: learnerId,
+          coach_member_id: coachId,
+          starts_at: bookingFor.start,
+          ends_at: bookingFor.end,
+          capacity: 1, // a dedicated make-up is a single learner
+          origin,
+          reason: reason.trim() || null,
+          original_session_id: originalSessionId.trim() || null,
+          cohort_id: cohortId.trim() || null,
+          title: learner ? `Make-up — ${label(learner)}` : null,
+          obligation_id: obligationId.trim() || null,
+          used_grace: usedGrace,
+          spacing_overridden: spacingOverridden,
+        });
+      } else {
+        const sessionId = bookingFor.session_id;
+        if (!sessionId) return;
+        const body: MakeupBookingCreate = {
+          learner_member_id: learnerId,
+          coach_member_id: coachId,
+          scheduled_session_id: sessionId,
+          origin,
+          reason: reason.trim() || null,
+          original_session_id: originalSessionId.trim() || null,
+          obligation_id: obligationId.trim() || null,
+          used_grace: usedGrace,
+          spacing_overridden: spacingOverridden,
+        };
+        await MakeupsApi.confirm(body);
+      }
       toast.success("Make-up confirmed");
       setBookingFor(null);
       await findOptions();
@@ -175,6 +224,31 @@ export default function AdminMakeupsPage() {
           confirm a make-up. Spacing conflicts are flagged, not blocked.
         </p>
       </header>
+
+      {pending.length > 0 ? (
+        <Card className="space-y-3 p-5">
+          <h2 className="font-semibold text-slate-900">
+            Pending requests ({pending.length})
+          </h2>
+          {pending.map((mk) => (
+            <div
+              key={mk.id}
+              className="flex items-center justify-between gap-3 rounded-md border border-amber-100 bg-amber-50/40 p-3"
+            >
+              <div className="text-sm text-slate-700">
+                <span className="font-medium">
+                  {mk.origin.replace(/_/g, " ")}
+                </span>
+                {mk.notes ? ` — ${mk.notes}` : ""}
+                {mk.created_at ? ` · ${fmt(mk.created_at)}` : ""}
+              </div>
+              <Button size="sm" onClick={() => confirmPending(mk.id)}>
+                Confirm
+              </Button>
+            </div>
+          ))}
+        </Card>
+      ) : null}
 
       <Card className="space-y-4 p-5">
         <div className="grid gap-4 sm:grid-cols-2">
@@ -275,18 +349,20 @@ export default function AdminMakeupsPage() {
               Coach&rsquo;s open time ({openSlots.length})
             </h2>
             <p className="text-sm text-slate-500">
-              Free slots — create a session at one of these times to book a
-              dedicated make-up.
+              Free slots — book one to spin up a dedicated make-up session at
+              that time and confirm the learner in, in one step.
             </p>
             <div className="flex flex-wrap gap-2">
               {openSlots.map((s, i) => (
-                <span
+                <button
                   key={i}
-                  className={`rounded-md border px-2 py-1 text-xs ${s.ok ? "border-slate-200 text-slate-600" : "border-amber-200 text-amber-700"}`}
+                  type="button"
+                  onClick={() => openBooking(s)}
+                  className={`rounded-md border px-2 py-1 text-xs transition hover:bg-slate-50 ${s.ok ? "border-slate-200 text-slate-600" : "border-amber-200 text-amber-700"}`}
                   title={(s.warnings ?? []).join("; ")}
                 >
-                  {fmt(s.start)}
-                </span>
+                  {fmt(s.start)} &ndash; {fmt(s.end)}
+                </button>
               ))}
             </div>
           </Card>
@@ -317,8 +393,10 @@ export default function AdminMakeupsPage() {
       >
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
-            {bookingFor?.session_title ?? "Session"} ·{" "}
-            {bookingFor ? fmt(bookingFor.start) : ""}
+            {bookingFor?.kind === "open"
+              ? "New dedicated make-up session"
+              : (bookingFor?.session_title ?? "Session")}{" "}
+            · {bookingFor ? fmt(bookingFor.start) : ""}
           </p>
           <Select
             label="Reason type"
@@ -339,10 +417,22 @@ export default function AdminMakeupsPage() {
           />
           <Input
             label="Original (missed) session ID"
-            hint="Optional — enables the 14-day window + auto cohort block."
+            hint={
+              bookingFor?.kind === "open"
+                ? "Sets the new session's cohort + the 14-day window. Give this or a cohort ID."
+                : "Optional — enables the 14-day window + auto cohort block."
+            }
             value={originalSessionId}
             onChange={(e) => setOriginalSessionId(e.target.value)}
           />
+          {bookingFor?.kind === "open" ? (
+            <Input
+              label="Cohort ID"
+              hint="Used for the new session if no original session ID is given."
+              value={cohortId}
+              onChange={(e) => setCohortId(e.target.value)}
+            />
+          ) : null}
           <Input
             label="Payout obligation ID"
             hint="Optional — flips the coach's cohort payout obligation to scheduled."

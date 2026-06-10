@@ -21,6 +21,7 @@ import { BookingSessionHeader } from "./_components/BookingSessionHeader";
 import { BookingSuccess } from "./_components/BookingSuccess";
 import { MobileStickyBar } from "./_components/MobileStickyBar";
 
+import { GuestsForm, guestIsValid, type GuestInfo } from "./_components/GuestsForm";
 import { OrderSummary } from "./_components/OrderSummary";
 import { PaymentMethodPicker } from "./_components/PaymentMethodPicker";
 import { RideShareSection } from "./_components/RideShareSection";
@@ -128,6 +129,9 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
   const [isRideOnlyFlow, setIsRideOnlyFlow] = useState(false);
   const [numSeats, setNumSeats] = useState(1);
 
+  // Guests (bring-a-friend). party_size = 1 (member) + guests.length.
+  const [guests, setGuests] = useState<GuestInfo[]>([]);
+
   // Discount
   const [discountInput, setDiscountInput] = useState("");
   const [validatedDiscount, setValidatedDiscount] = useState<{
@@ -154,7 +158,8 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
   const selectedArea = session?.rideShareAreas?.find((a) => a.id === selectedRideAreaId);
   const perSeatRideCost = selectedArea && selectedPickupLocationId ? selectedArea.cost : 0;
   const rideShareCost = perSeatRideCost * numSeats;
-  const poolFee = isRideOnlyFlow ? 0 : (session?.pool_fee ?? 0);
+  const partySize = 1 + guests.length;
+  const poolFee = isRideOnlyFlow ? 0 : (session?.pool_fee ?? 0) * partySize;
   const subtotal = poolFee + rideShareCost;
   const discountAmount = validatedDiscount?.amount ?? 0;
   const total = Math.max(0, subtotal - discountAmount);
@@ -406,6 +411,17 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
   };
 
   const handlePayment = async () => {
+    // Map the bring-a-friend guests to the backend BookingGuestCreate shape.
+    const guestsPayload = guests.map((g) => ({
+      full_name: g.name.trim(),
+      phone: g.phone.trim() || null,
+      intent: "social" as const,
+      date_of_birth: g.dob || null,
+      guardian_name: g.guardianName.trim() || null,
+      guardian_phone: g.guardianPhone.trim() || null,
+      waiver_accepted: g.waiverAccepted,
+    }));
+
     // Free session OR full Bubbles coverage → direct sign-in path (no Paystack)
     if (total <= 0 || coversFullWithBubbles || payWithBubbles) {
       setProcessing(true);
@@ -422,8 +438,9 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
             `/api/v1/sessions/${params.id}/book`,
             {
               session_id: params.id,
-              fee_amount_kobo: Math.round((session?.pool_fee ?? 0) * 100),
+              fee_amount_kobo: Math.round((session?.pool_fee ?? 0) * partySize * 100),
               pay_with_bubbles: fullBubbles || total <= 0,
+              guests: guestsPayload,
             },
             { auth: true }
           );
@@ -477,8 +494,9 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
           `/api/v1/sessions/${session!.id}/book`,
           {
             session_id: session!.id,
-            fee_amount_kobo: Math.round((session?.pool_fee ?? 0) * 100),
+            fee_amount_kobo: Math.round((session?.pool_fee ?? 0) * partySize * 100),
             pay_with_bubbles: false,
+            guests: guestsPayload,
           },
           { auth: true }
         );
@@ -592,7 +610,8 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
   const payDisabled =
     processing ||
     (!!selectedRideAreaId && !selectedPickupLocationId) ||
-    (isRideOnlyFlow && (!selectedRideAreaId || !selectedPickupLocationId));
+    (isRideOnlyFlow && (!selectedRideAreaId || !selectedPickupLocationId)) ||
+    (!isRideOnlyFlow && guests.some((g) => !guestIsValid(g)));
 
   const validationMessage: string | null = null;
 
@@ -614,6 +633,18 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
         {/* Left column: session details + form sections */}
         <div className="lg:col-span-2 space-y-5">
           <BookingSessionHeader session={session} member={member} isRideOnlyFlow={isRideOnlyFlow} />
+
+          {/* Bring-a-friend guests — only when the session accepts guests and
+              not in the ride-only flow. */}
+          {!isRideOnlyFlow && session?.allows_guests !== false && (
+            <GuestsForm
+              guests={guests}
+              onChange={setGuests}
+              maxGuests={session?.max_guests_per_booking ?? 4}
+              perHeadFee={session?.pool_fee ?? 0}
+              formatCurrency={formatCurrency}
+            />
+          )}
 
           {/* Ride share */}
           {hasRideShareAreas && (
@@ -708,6 +739,7 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
           <div className="lg:hidden">
             <OrderSummary
               poolFee={poolFee}
+              partySize={partySize}
               rideShareCost={rideShareCost}
               selectedArea={selectedArea}
               selectedPickupLocationId={selectedPickupLocationId}
@@ -739,6 +771,7 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
           <div className="sticky top-6">
             <OrderSummary
               poolFee={poolFee}
+              partySize={partySize}
               rideShareCost={rideShareCost}
               selectedArea={selectedArea}
               selectedPickupLocationId={selectedPickupLocationId}
