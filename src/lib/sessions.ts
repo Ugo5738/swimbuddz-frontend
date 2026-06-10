@@ -77,6 +77,10 @@ export interface Session {
   pool_fee: number;
   ride_share_fee: number;
 
+  // Guest booking — does this session accept non-member guests, and the cap.
+  allows_guests?: boolean;
+  max_guests_per_booking?: number;
+
   // Context links
   cohort_id?: string;
   event_id?: string;

@@ -634,11 +634,13 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
         <div className="lg:col-span-2 space-y-5">
           <BookingSessionHeader session={session} member={member} isRideOnlyFlow={isRideOnlyFlow} />
 
-          {/* Bring-a-friend guests (not shown in the ride-only flow) */}
-          {!isRideOnlyFlow && (
+          {/* Bring-a-friend guests — only when the session accepts guests and
+              not in the ride-only flow. */}
+          {!isRideOnlyFlow && session?.allows_guests !== false && (
             <GuestsForm
               guests={guests}
               onChange={setGuests}
+              maxGuests={session?.max_guests_per_booking ?? 4}
               perHeadFee={session?.pool_fee ?? 0}
               formatCurrency={formatCurrency}
             />
