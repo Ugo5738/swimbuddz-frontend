@@ -284,6 +284,15 @@ export async function getPostAuthRedirectPath(): Promise<string> {
 
     return "/account";
   } catch {
-    return "/account";
+    // No member profile. Finance-team users invited via /admin/finance/users
+    // have a ledger role but no member row, so /members/me 404s for them —
+    // route them to the books instead of the member surface, which would
+    // funnel them into member onboarding.
+    try {
+      await apiGet("/api/v1/admin/finance/users/me", { auth: true });
+      return "/admin/finance/reports";
+    } catch {
+      return "/account";
+    }
   }
 }

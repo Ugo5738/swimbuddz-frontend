@@ -150,10 +150,15 @@ function LoginContent() {
     }
 
     const redirectParam = searchParams.get("redirect");
+    // Without an explicit deep link, land on /confirm: it sees the live
+    // session and resolves the destination via getPostAuthRedirectPath
+    // (members → /account, finance-team users → /admin/finance/reports),
+    // matching password-login routing. /auth/callback redirects to `next`
+    // verbatim, so pointing it straight at /account would skip that logic.
     const nextPath =
       redirectParam && redirectParam.startsWith("/")
         ? redirectParam
-        : "/account";
+        : "/confirm";
 
     setMagicLoading(true);
     const { error: otpError } = await supabase.auth.signInWithOtp({

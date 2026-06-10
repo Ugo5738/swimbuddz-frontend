@@ -383,6 +383,44 @@ describe("getPostAuthRedirectPath", () => {
     expect(path).toBe("/account");
   });
 
+  // --- Finance-team routing (ledger users without a member row) ---
+
+  it("redirects finance-team user without member profile to /admin/finance/reports", async () => {
+    mockedApiGet.mockImplementation(async (path: string) => {
+      if (path === "/api/v1/members/me") {
+        throw new Error("Request failed with status 404");
+      }
+      if (path === "/api/v1/admin/finance/users/me") {
+        return { role: "accountant" };
+      }
+      throw new Error(`Unexpected apiGet path: ${path}`);
+    });
+
+    const path = await getPostAuthRedirectPath();
+    expect(path).toBe("/admin/finance/reports");
+    expect(mockedApiGet).toHaveBeenCalledWith(
+      "/api/v1/admin/finance/users/me",
+      { auth: true },
+    );
+  });
+
+  it("returns /account when member profile missing and user is not finance team", async () => {
+    mockedApiGet.mockRejectedValue(new Error("Request failed with status 404"));
+
+    const path = await getPostAuthRedirectPath();
+    expect(path).toBe("/account");
+  });
+
+  it("does not probe finance access when member profile loads", async () => {
+    mockedApiGet.mockResolvedValue(buildMember());
+
+    await getPostAuthRedirectPath();
+    expect(mockedApiGet).toHaveBeenCalledTimes(1);
+    expect(mockedApiGet).toHaveBeenCalledWith("/api/v1/members/me", {
+      auth: true,
+    });
+  });
+
   // --- Academy onboarding ---
 
   it("redirects to onboarding when academy requested but assessment missing", async () => {
