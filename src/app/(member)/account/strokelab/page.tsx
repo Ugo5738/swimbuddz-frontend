@@ -173,10 +173,6 @@ export default function StrokeLabPage() {
             >
               Freestyle video (mp4 / mov, ≤ {MAX_DURATION_SECONDS}s)
             </label>
-            <p className="mt-1 text-xs text-slate-400">
-              Big 4K clips are fine — we shrink them on your phone before
-              uploading, so it&apos;s fast even on mobile data.
-            </p>
             <div className="mt-2 flex items-center gap-3">
               <input
                 ref={fileInputRef}

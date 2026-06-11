@@ -174,8 +174,8 @@ export default function StrokeLabResultPage() {
                   : "Analysing — detecting your swimmer, then measuring."}
               </p>
               <p className="text-xs text-slate-500">
-                This page updates every few seconds. A 30–60s clip typically
-                takes 1–2 minutes on our shared workers.
+                This updates automatically — no need to refresh. Most clips
+                are ready within a couple of minutes.
               </p>
             </div>
           </div>
