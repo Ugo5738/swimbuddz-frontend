@@ -1,6 +1,28 @@
 import { describe, expect, it } from "vitest";
 
-import { daysUntilSession, summarizeDay, toDateParam } from "./weather";
+import {
+  conditionLabel,
+  daysUntilSession,
+  summarizeDay,
+  summarizeSession,
+  summarizeWindow,
+  toDateParam,
+} from "./weather";
+
+const forecast = {
+  hourly: {
+    time: [
+      "2026-06-20T10:00",
+      "2026-06-20T11:00",
+      "2026-06-20T12:00",
+      "2026-06-21T00:00",
+    ],
+    precipitation_probability: [40, 88, 60, 10],
+    precipitation: [0.2, 1.8, 0.4, 0.0],
+    temperature_2m: [27, 28.4, 29, 25],
+    weather_code: [3, 63, 61, 1],
+  },
+};
 
 describe("toDateParam", () => {
   it("formats a local YYYY-MM-DD", () => {
@@ -25,35 +47,25 @@ describe("daysUntilSession", () => {
   });
 });
 
-describe("summarizeDay", () => {
-  const forecast = {
-    hourly: {
-      time: [
-        "2026-06-20T10:00",
-        "2026-06-20T11:00",
-        "2026-06-20T12:00",
-        "2026-06-21T00:00",
-      ],
-      precipitation_probability: [40, 88, 60, 10],
-      precipitation: [0.2, 1.8, 0.4, 0.0],
-      temperature_2m: [27, 28.4, 29, 25],
-      weather_code: [3, 63, 61, 1],
-    },
-  };
+describe("conditionLabel", () => {
+  it("maps WMO codes to text, with a fallback", () => {
+    expect(conditionLabel(0)).toBe("Clear");
+    expect(conditionLabel(53)).toBe("Drizzle");
+    expect(conditionLabel(95)).toBe("Thunderstorm");
+    expect(conditionLabel(999)).toBe("Cloudy");
+  });
+});
 
-  it("reduces a day's hours to peak prob, total mm, and high temp", () => {
+describe("summarizeDay", () => {
+  it("reduces a day to peak prob, total mm, high temp, condition + explanation", () => {
     const s = summarizeDay(forecast, "2026-06-20");
     expect(s).not.toBeNull();
     expect(s!.maxProb).toBe(88);
     expect(s!.totalPrecip).toBe(2.4); // 0.2 + 1.8 + 0.4
     expect(s!.tempHigh).toBe(29);
-    expect(s!.kind).toBe("rain"); // peak hour weather_code 63 = rain
-  });
-
-  it("ignores hours from other days", () => {
-    const s = summarizeDay(forecast, "2026-06-21");
-    expect(s!.maxProb).toBe(10);
-    expect(s!.kind).toBe("partly"); // weather_code 1
+    expect(s!.kind).toBe("rain");
+    expect(s!.conditionText).toBe("Rain"); // peak hour weather_code 63
+    expect(s!.explanation).toMatch(/swimmable/i);
   });
 
   it("returns null when no hour matches the date", () => {
@@ -62,5 +74,37 @@ describe("summarizeDay", () => {
 
   it("returns null for an undefined forecast", () => {
     expect(summarizeDay(undefined, "2026-06-20")).toBeNull();
+  });
+});
+
+describe("summarizeWindow", () => {
+  it("limits to the given hours", () => {
+    const s = summarizeWindow(forecast, "2026-06-20", 10, 10);
+    expect(s!.maxProb).toBe(40); // excludes the 88% 11:00 hour
+    expect(s!.conditionText).toBe("Overcast"); // weather_code 3
+  });
+});
+
+describe("summarizeSession", () => {
+  it("summarizes the session's own hours", () => {
+    const s = summarizeSession(
+      forecast,
+      "2026-06-20T10:00:00",
+      "2026-06-20T12:00:00",
+    );
+    expect(s!.maxProb).toBe(88);
+    expect(s!.totalPrecip).toBe(2.4);
+    expect(s!.tempHigh).toBe(29);
+    expect(s!.conditionText).toBe("Rain");
+    expect(s!.explanation).toMatch(/swimmable/i);
+  });
+
+  it("narrows to a short window", () => {
+    const s = summarizeSession(
+      forecast,
+      "2026-06-20T10:00:00",
+      "2026-06-20T10:30:00",
+    );
+    expect(s!.maxProb).toBe(40); // only the 10:00 hour
   });
 });

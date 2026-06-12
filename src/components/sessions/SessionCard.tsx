@@ -365,6 +365,7 @@ export function SessionCard({
             <SessionWeatherChip
               poolId={session.pool_id}
               startsAt={session.starts_at}
+              endsAt={session.ends_at}
               isPast={effectivelyPast}
             />
           )}

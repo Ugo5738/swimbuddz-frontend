@@ -4,7 +4,7 @@ import { apiGet } from "@/lib/api";
 import {
   daysUntilSession,
   FORECAST_HORIZON_DAYS,
-  summarizeDay,
+  summarizeSession,
   toDateParam,
   type WeatherForecast,
   type WeatherKind,
@@ -20,27 +20,33 @@ import {
 } from "lucide-react";
 
 const KIND_STYLE: Record<WeatherKind, { Icon: LucideIcon; tone: string }> = {
-  clear: { Icon: Sun, tone: "bg-sky-50 text-sky-700" },
-  partly: { Icon: CloudSun, tone: "bg-sky-50 text-sky-700" },
-  cloudy: { Icon: Cloud, tone: "bg-amber-50 text-amber-700" },
-  rain: { Icon: CloudRain, tone: "bg-blue-50 text-blue-700" },
-  storm: { Icon: CloudLightning, tone: "bg-indigo-50 text-indigo-700" },
+  clear: { Icon: Sun, tone: "bg-sky-50 text-sky-800" },
+  partly: { Icon: CloudSun, tone: "bg-sky-50 text-sky-800" },
+  cloudy: { Icon: Cloud, tone: "bg-slate-100 text-slate-700" },
+  rain: { Icon: CloudRain, tone: "bg-blue-50 text-blue-800" },
+  storm: { Icon: CloudLightning, tone: "bg-indigo-50 text-indigo-800" },
 };
 
 type Props = {
   poolId?: string | null;
   startsAt: string;
+  endsAt: string;
   isPast?: boolean;
 };
 
 /**
- * Compact forecast chip for a session card. Fetches the cached pool forecast
- * (deduped across cards by react-query) and shows the day's rain chance + high.
- * Renders nothing for past sessions, sessions beyond the ~14-day forecast
- * horizon, or when no forecast is available — weather is an enhancement here,
- * never a blocker.
+ * Weather block for a session card. Fetches the cached pool forecast (deduped
+ * across cards by react-query) and summarizes the session's **own hours** —
+ * condition, peak rain chance, rainfall (mm), high temp, and a one-line read.
+ * Renders nothing for past/far-future sessions or when no forecast is
+ * available — weather is an enhancement here, never a blocker.
  */
-export function SessionWeatherChip({ poolId, startsAt, isPast = false }: Props) {
+export function SessionWeatherChip({
+  poolId,
+  startsAt,
+  endsAt,
+  isPast = false,
+}: Props) {
   const within = daysUntilSession(startsAt);
   const enabled =
     Boolean(poolId) && !isPast && within >= 0 && within <= FORECAST_HORIZON_DAYS;
@@ -61,39 +67,36 @@ export function SessionWeatherChip({ poolId, startsAt, isPast = false }: Props) 
 
   if (isLoading) {
     return (
-      <span className="inline-flex w-fit items-center gap-1 rounded-full bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-400">
-        <Cloud className="h-3 w-3 animate-pulse" />
-        Weather…
-      </span>
+      <div className="mt-1.5 inline-flex w-fit items-center gap-1.5 rounded-lg bg-slate-50 px-3 py-2 text-xs font-medium text-slate-400">
+        <Cloud className="h-4 w-4 animate-pulse" />
+        Loading weather…
+      </div>
     );
   }
 
-  const summary = summarizeDay(data, date);
+  const summary = summarizeSession(data, startsAt, endsAt);
   if (!summary) return null;
 
   const { Icon, tone } = KIND_STYLE[summary.kind];
-  const tempSuffix =
-    summary.tempHigh !== null ? ` · ${Math.round(summary.tempHigh)}°` : "";
-  const label =
-    summary.kind === "storm"
-      ? `Storm risk ${summary.maxProb}%`
-      : `${summary.maxProb}% rain${tempSuffix}`;
-
-  const tooltip =
-    `Forecast for ${date}: ${summary.maxProb}% chance of rain` +
-    `, ~${summary.totalPrecip}mm` +
-    (summary.tempHigh !== null
-      ? `, high ${Math.round(summary.tempHigh)}°C`
-      : "") +
-    (data?.stale ? " (cached)" : "");
 
   return (
-    <span
-      className={`inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${tone}`}
-      title={tooltip}
-    >
-      <Icon className="h-3 w-3" />
-      {label}
-    </span>
+    <div className={`mt-1.5 rounded-lg px-3 py-2 ${tone}`}>
+      <div className="flex items-center gap-1.5 text-sm font-semibold">
+        <Icon className="h-4 w-4 shrink-0" />
+        <span>{summary.conditionText}</span>
+        {summary.tempHigh !== null && (
+          <span className="font-normal opacity-80">
+            · {Math.round(summary.tempHigh)}°
+          </span>
+        )}
+      </div>
+      <div className="mt-0.5 text-xs opacity-90">
+        {summary.maxProb}% chance of rain · ~{summary.totalPrecip}mm during your
+        session
+      </div>
+      <p className="mt-1 text-xs leading-snug opacity-80">
+        {summary.explanation}
+      </p>
+    </div>
   );
 }
