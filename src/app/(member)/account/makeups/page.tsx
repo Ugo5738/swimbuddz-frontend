@@ -103,19 +103,28 @@ export default function MyMakeupsPage() {
   }
 
   async function submitRequest() {
-    const sessionId = requestFor?.session_id;
-    if (!sessionId) return;
+    if (!requestFor) return;
     if (!reason.trim()) {
       toast.error("Please add a brief reason.");
       return;
     }
+    const isOpen = requestFor.kind === "open";
+    if (!isOpen && !requestFor.session_id) return;
     setSaving(true);
-    const body: MakeupRequestCreate = {
-      coach_member_id: coachId,
-      scheduled_session_id: sessionId,
-      origin: "learner_reschedule",
-      reason: reason.trim(),
-    };
+    const body: MakeupRequestCreate = isOpen
+      ? {
+          coach_member_id: coachId,
+          starts_at: requestFor.start,
+          ends_at: requestFor.end,
+          origin: "learner_reschedule",
+          reason: reason.trim(),
+        }
+      : {
+          coach_member_id: coachId,
+          scheduled_session_id: requestFor.session_id as string,
+          origin: "learner_reschedule",
+          reason: reason.trim(),
+        };
     try {
       await MakeupsApi.request(body);
       toast.success("Make-up requested — your coach/admin will confirm it.");
@@ -133,6 +142,7 @@ export default function MyMakeupsPage() {
   if (loading) return <LoadingCard />;
 
   const joinable = (slots ?? []).filter((s) => s.kind === "join_session");
+  const openSlots = (slots ?? []).filter((s) => s.kind === "open");
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -181,45 +191,78 @@ export default function MyMakeupsPage() {
       </Card>
 
       {slots !== null ? (
-        <Card className="space-y-3 p-5">
-          <h2 className="font-semibold text-slate-900">
-            Available sessions ({joinable.length})
-          </h2>
-          {joinable.length === 0 ? (
-            <p className="text-sm text-slate-400">
-              No open sessions in this range — try a wider window or another
-              coach.
-            </p>
-          ) : (
-            joinable.map((s) => (
-              <div
-                key={s.session_id}
-                className="flex items-center justify-between gap-3 rounded-md border border-slate-100 p-3"
-              >
-                <div>
-                  <div className="font-medium text-slate-800">
-                    {s.session_title ?? "Session"}
-                  </div>
-                  <div className="text-sm text-slate-500">{fmt(s.start)}</div>
-                  {!s.ok ? (
-                    <div className="mt-1 text-xs text-amber-600">
-                      ⚠ {(s.warnings ?? []).join("; ")}
-                    </div>
-                  ) : null}
-                </div>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    setRequestFor(s);
-                    setReason("");
-                  }}
+        <>
+          <Card className="space-y-3 p-5">
+            <h2 className="font-semibold text-slate-900">
+              Sessions to join ({joinable.length})
+            </h2>
+            {joinable.length === 0 ? (
+              <p className="text-sm text-slate-400">
+                No existing sessions with room in this range.
+              </p>
+            ) : (
+              joinable.map((s) => (
+                <div
+                  key={s.session_id}
+                  className="flex items-center justify-between gap-3 rounded-md border border-slate-100 p-3"
                 >
-                  Request
-                </Button>
+                  <div>
+                    <div className="font-medium text-slate-800">
+                      {s.session_title ?? "Session"}
+                    </div>
+                    <div className="text-sm text-slate-500">{fmt(s.start)}</div>
+                    {!s.ok ? (
+                      <div className="mt-1 text-xs text-amber-600">
+                        ⚠ {(s.warnings ?? []).join("; ")}
+                      </div>
+                    ) : null}
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setRequestFor(s);
+                      setReason("");
+                    }}
+                  >
+                    Request
+                  </Button>
+                </div>
+              ))
+            )}
+          </Card>
+
+          <Card className="space-y-3 p-5">
+            <h2 className="font-semibold text-slate-900">
+              Coach&rsquo;s open times ({openSlots.length})
+            </h2>
+            <p className="text-sm text-slate-500">
+              Free slots — request one and your coach/admin will set up a
+              dedicated make-up at that time.
+            </p>
+            {openSlots.length === 0 ? (
+              <p className="text-sm text-slate-400">
+                No open times in this range — try a wider window or another coach.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {openSlots.map((s, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => {
+                      setRequestFor(s);
+                      setReason("");
+                    }}
+                    className={`rounded-md border px-2 py-1 text-xs transition hover:bg-slate-50 ${s.ok ? "border-slate-200 text-slate-600" : "border-amber-200 text-amber-700"}`}
+                    title={(s.warnings ?? []).join("; ")}
+                  >
+                    {fmt(s.start)} &ndash; {fmt(s.end)}
+                  </button>
+                ))}
               </div>
-            ))
-          )}
-        </Card>
+            )}
+          </Card>
+        </>
       ) : null}
 
       <Card className="space-y-2 p-5">
@@ -245,8 +288,10 @@ export default function MyMakeupsPage() {
       >
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
-            {requestFor?.session_title ?? "Session"} ·{" "}
-            {requestFor ? fmt(requestFor.start) : ""}
+            {requestFor?.kind === "open"
+              ? "Request a make-up at"
+              : (requestFor?.session_title ?? "Session")}{" "}
+            · {requestFor ? fmt(requestFor.start) : ""}
           </p>
           <Input
             label="Reason"

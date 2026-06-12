@@ -2870,6 +2870,97 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sessions/bookings/{booking_id}/trial-guest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Trial Guest
+         * @description Coach attaches a TRIAL guest to a CONFIRMED booking — a friend sampling a
+         *     cohort class before enrolling (D10 / Phase 1.5).
+         *
+         *     Coach-approved (never self-serve via require_coach), one trial per prospect
+         *     (by phone), capacity-checked and minor-gated. The trial head is **comped**:
+         *     party_size is bumped but the booking fee is unchanged — the per-swimmer pool
+         *     cost is a customer-acquisition cost (paid-trial pricing is deferred, O4).
+         */
+        post: operations["add_trial_guest_sessions_bookings__booking_id__trial_guest_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/bookings/{booking_id}/guests/{guest_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Name Booking Guest
+         * @description Name / update a guest on a booking — fills in a block booking's anonymous
+         *     placeholder slots before check-in (Phase 2). Booking owner only; a minor
+         *     gates the same as at booking time. The guest's ``intent`` is preserved.
+         */
+        patch: operations["name_booking_guest_sessions_bookings__booking_id__guests__guest_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/sessions/booking-guests/leads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Guest Leads
+         * @description Unconverted guest prospects, deduped by phone (Phase 3 funnel) — people
+         *     who keep coming as guests but haven't signed up yet. Most-frequent first.
+         */
+        get: operations["list_guest_leads_sessions_booking_guests_leads_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/booking-guests/convert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Convert Guest To Member
+         * @description Close the funnel loop: link a guest's prior appearances to the member
+         *     account they just created. Sets converted_member_id on every unconverted
+         *     BookingGuest row sharing the phone. Returns how many were linked.
+         */
+        post: operations["convert_guest_to_member_sessions_booking_guests_convert_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sessions/bookings/{booking_id}/confirm": {
         parameters: {
             query?: never;
@@ -3205,6 +3296,34 @@ export interface paths {
          *     session capacity. Writes a CONFIRMED MakeupBooking and books the learner in.
          */
         post: operations["confirm_makeup_booking_makeups_bookings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/makeups/open-slot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Open Slot Makeup
+         * @description Create a dedicated make-up session in a coach's open slot and confirm the
+         *     learner into it in one step (admin; design §4 Phase 2).
+         *
+         *     Use this for a brand-new dedicated slot; to drop a learner into a session the
+         *     coach already runs, use ``POST /makeups/bookings`` (policy §1). The new
+         *     session is a COHORT_CLASS whose cohort is ``cohort_id`` or is derived from
+         *     ``original_session_id``. Eligibility (one-outstanding, window, grace) is
+         *     enforced by the shared core *after* the session is built; if it fails the
+         *     request rolls back and no orphan session is left behind.
+         */
+        post: operations["create_open_slot_makeup_makeups_open_slot_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3842,6 +3961,34 @@ export interface paths {
          * @description Public sign in to a session (no auth required). Idempotent upsert.
          */
         post: operations["public_sign_in_to_session_attendance_sessions__session_id__attendance_public_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/attendance/sessions/{session_id}/attendance/guest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record Guest Attendance
+         * @description Coach/admin records a non-member GUEST's attendance at the door.
+         *
+         *     Keyed on (session_id, booking_guest_id) — member_id stays NULL and role is
+         *     forced to GUEST. Idempotent upsert. The guest itself lives in
+         *     sessions_service (booking_guests); here it is a plain UUID ref.
+         *
+         *     Minors are gated at booking time (slice 1b). A check-in-time minor re-gate
+         *     — needed once Phase 2 lets block bookings be named at the door — is
+         *     deferred; it would fetch the guest's DOB/guardian from sessions_service.
+         */
+        post: operations["record_guest_attendance_attendance_sessions__session_id__attendance_guest_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10164,6 +10311,186 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ai/analyze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a freestyle swim video and queue a Stroke Lab analysis
+         * @description Create a new analysis job from an uploaded video.
+         *
+         *     v0 limits: freestyle only, ≤50 MB body. Response is 202 ACCEPTED —
+         *     the client polls GET /ai/analyze/{id} for status.
+         */
+        post: operations["create_analysis_job_ai_analyze_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/analyze/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the caller's most recent Stroke Lab jobs
+         * @description Most recent first. Capped at MAX_LIST_LIMIT.
+         */
+        get: operations["list_my_analyses_ai_analyze_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/analyze/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fetch a Stroke Lab job's status + result + signed URLs */
+        get: operations["get_analysis_job_ai_analyze__job_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete a Stroke Lab job and its storage assets */
+        delete: operations["delete_analysis_job_ai_analyze__job_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/admin/analyze/queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stroke Lab queue health: counts by status, recent jobs, success rate */
+        get: operations["queue_snapshot_ai_admin_analyze_queue_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/admin/analyze/reanalyze/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reset a job to PENDING and re-enqueue the worker task */
+        post: operations["reanalyze_job_ai_admin_analyze_reanalyze__job_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/founding-members/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public counter */
+        get: operations["founding_stats_ai_founding_members_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/founding-members/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Has the authenticated caller already claimed? */
+        get: operations["my_founding_status_ai_founding_members_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/founding-members/initialize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a Paystack checkout for a founding-member spot */
+        post: operations["initialize_founding_payment_ai_founding_members_initialize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/founding-members/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Verify a reference via payments_service and record (client fallback) */
+        post: operations["claim_founding_member_ai_founding_members_claim_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/ai/founding-members/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record a founding member after payment clears (webhook-driven) */
+        post: operations["confirm_founding_member_internal_ai_founding_members_confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/volunteers/spotlight": {
         parameters: {
             query?: never;
@@ -11430,6 +11757,89 @@ export interface paths {
          * @description Update a pool's partnership status and auto-log the transition.
          */
         post: operations["update_partnership_status_admin_pools__pool_id__status_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/weather": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Weather
+         * @description Cached forecast for any coordinates (cache-aside).
+         */
+        get: operations["get_weather_weather_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/weather/pools/{pool_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Weather For Pool
+         * @description Cached forecast for a specific pool.
+         *
+         *     Fast path: the pre-fetched snapshot. On a cache miss, resolve the pool's
+         *     coordinates directly from the Pool table (same service, no HTTP).
+         */
+        get: operations["get_weather_for_pool_weather_pools__pool_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/weather/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger Refresh
+         * @description Force a synchronous pre-fetch of every active pool's forecast.
+         */
+        post: operations["trigger_refresh_admin_weather_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/weather/snapshots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Weather Snapshots
+         * @description List cached snapshots (debug/health view of what's been pre-fetched).
+         */
+        get: operations["list_weather_snapshots_admin_weather_snapshots_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -14902,34 +15312,6 @@ export interface paths {
          *     to issue an invoice for a deal/payment.
          */
         post: operations["post_invoice_internal_ledger_invoices_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/makeups/open-slot": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create Open Slot Makeup
-         * @description Create a dedicated make-up session in a coach's open slot and confirm the
-         *     learner into it in one step (admin; design §4 Phase 2).
-         *
-         *     Use this for a brand-new dedicated slot; to drop a learner into a session the
-         *     coach already runs, use ``POST /makeups/bookings`` (policy §1). The new
-         *     session is a COHORT_CLASS whose cohort is ``cohort_id`` or is derived from
-         *     ``original_session_id``. Eligibility (one-outstanding, window, grace) is
-         *     enforced by the shared core *after* the session is built; if it fails the
-         *     request rolls back and no orphan session is left behind.
-         */
-        post: operations["create_open_slot_makeup_makeups_open_slot_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -18674,10 +19056,16 @@ export interface components {
          *     The server routes this through the accounted ``session_booking`` refund
          *     path so the ledger reverses the pool-fee revenue — never the manual
          *     "Adjust Bubbles" tool. ``reason`` is recorded on the booking for audit.
+         *
+         *     ``refund_heads`` scales the refund for a multi-swimmer booking (member +
+         *     guests): None refunds the whole pool fee; N refunds N of party_size heads
+         *     (e.g. the guests who no-showed at a per-swimmer pool). See O3.
          */
         AdminPoolFeeRefundRequest: {
             /** Reason */
             reason: string;
+            /** Refund Heads */
+            refund_heads?: number | null;
         };
         /**
          * AdminWalkInRequest
@@ -18769,6 +19157,60 @@ export interface components {
             wallet_transaction_id?: string | null;
         };
         /**
+         * BookingGuestCreate
+         * @description A non-member swimmer to attach to a booking (bring-a-friend).
+         *
+         *     ``full_name`` is required in the Phase 1 named-guest flow. A minor
+         *     (``date_of_birth`` implying age < 18 at the session) must carry
+         *     ``guardian_name`` + ``guardian_phone`` + ``waiver_accepted`` — enforced at
+         *     booking and again at check-in. See
+         *     docs/design/GUEST_AND_GROUP_BOOKING_DESIGN.md §5b/§9.
+         */
+        BookingGuestCreate: {
+            /** Full Name */
+            full_name?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** @default social */
+            intent: components["schemas"]["GuestIntent"];
+            /** Date Of Birth */
+            date_of_birth?: string | null;
+            /** Guardian Name */
+            guardian_name?: string | null;
+            /** Guardian Phone */
+            guardian_phone?: string | null;
+            /**
+             * Waiver Accepted
+             * @default false
+             */
+            waiver_accepted: boolean;
+        };
+        /**
+         * BookingGuestResponse
+         * @description A persisted guest row (for future guest-echo / check-in views).
+         */
+        BookingGuestResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Full Name */
+            full_name?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Intent */
+            intent: string;
+            /** Date Of Birth */
+            date_of_birth?: string | null;
+            /** Guardian Name */
+            guardian_name?: string | null;
+            /** Guardian Phone */
+            guardian_phone?: string | null;
+            /** Waiver Accepted At */
+            waiver_accepted_at?: string | null;
+        };
+        /**
          * BulkBookingItem
          * @description One entry in a corporate-bulk booking payload.
          */
@@ -18857,6 +19299,54 @@ export interface components {
             skip_conflicts: boolean;
         };
         /**
+         * GuestConvertRequest
+         * @description Link a guest's prior appearances (by phone) to a new member account.
+         */
+        GuestConvertRequest: {
+            /** Phone */
+            phone: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+        };
+        /** GuestConvertResponse */
+        GuestConvertResponse: {
+            /** Phone */
+            phone: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Converted */
+            converted: number;
+        };
+        /**
+         * GuestIntent
+         * @description Why a non-member guest attends — drives approval + follow-up.
+         * @enum {string}
+         */
+        GuestIntent: "social" | "trial";
+        /**
+         * GuestLeadResponse
+         * @description An unconverted guest prospect, deduped by phone (Phase 3 funnel).
+         */
+        GuestLeadResponse: {
+            /** Phone */
+            phone: string;
+            /** Full Name */
+            full_name?: string | null;
+            /** Appearances */
+            appearances: number;
+            /**
+             * Last Seen
+             * Format: date-time
+             */
+            last_seen: string;
+        };
+        /**
          * MakeupBlockKind
          * @description What the make-up's grace/window 'block' is anchored to.
          * @enum {string}
@@ -18937,6 +19427,10 @@ export interface components {
             original_session_id?: string | null;
             /** Scheduled Session Id */
             scheduled_session_id?: string | null;
+            /** Requested Start At */
+            requested_start_at?: string | null;
+            /** Requested End At */
+            requested_end_at?: string | null;
             /** Used Grace */
             used_grace: boolean;
             /** Notice Hours At Request */
@@ -18958,6 +19452,70 @@ export interface components {
          */
         MakeupLearnerType: "cohort" | "one_on_one";
         /**
+         * MakeupOpenSlotCreate
+         * @description Admin request to create a dedicated make-up session in a coach's *open*
+         *     availability slot and confirm a learner into it in one step (design §4
+         *     Phase 2). The join-an-existing-session path is ``POST /makeups/bookings``;
+         *     this is for booking a brand-new dedicated slot.
+         *
+         *     The new session is a ``COHORT_CLASS`` whose cohort comes from ``cohort_id``
+         *     if given, else derived from ``original_session_id``. ``reason`` is required
+         *     when ``origin`` is ``learner_reschedule`` (policy §4 / 1b).
+         */
+        MakeupOpenSlotCreate: {
+            /**
+             * Learner Member Id
+             * Format: uuid
+             */
+            learner_member_id: string;
+            /**
+             * Coach Member Id
+             * Format: uuid
+             */
+            coach_member_id: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            origin: components["schemas"]["MakeupOrigin"];
+            /** Reason */
+            reason?: string | null;
+            /** Original Session Id */
+            original_session_id?: string | null;
+            /** Cohort Id */
+            cohort_id?: string | null;
+            /** Pool Id */
+            pool_id?: string | null;
+            /** Title */
+            title?: string | null;
+            /**
+             * Capacity
+             * @default 1
+             */
+            capacity: number;
+            block_kind?: components["schemas"]["MakeupBlockKind"] | null;
+            /** Block Id */
+            block_id?: string | null;
+            /** Obligation Id */
+            obligation_id?: string | null;
+            /**
+             * Used Grace
+             * @default false
+             */
+            used_grace: boolean;
+            /**
+             * Spacing Overridden
+             * @default false
+             */
+            spacing_overridden: boolean;
+        };
+        /**
          * MakeupOrigin
          * @description Why a make-up exists.
          * @enum {string}
@@ -18966,6 +19524,12 @@ export interface components {
         /**
          * MakeupRequestCreate
          * @description A learner's self-serve make-up request (admin confirms it later).
+         *
+         *     Two modes, exactly one required:
+         *       * **join** an existing session the coach runs → ``scheduled_session_id``.
+         *       * **open slot** → ``starts_at`` + ``ends_at`` for a coach's open time; the
+         *         admin creates the dedicated session on confirm (the cohort is auto-derived
+         *         from the learner's session history with that coach).
          */
         MakeupRequestCreate: {
             /**
@@ -18973,17 +19537,18 @@ export interface components {
              * Format: uuid
              */
             coach_member_id: string;
-            /**
-             * Scheduled Session Id
-             * Format: uuid
-             */
-            scheduled_session_id: string;
             /** @default learner_reschedule */
             origin: components["schemas"]["MakeupOrigin"];
             /** Reason */
             reason?: string | null;
             /** Original Session Id */
             original_session_id?: string | null;
+            /** Scheduled Session Id */
+            scheduled_session_id?: string | null;
+            /** Starts At */
+            starts_at?: string | null;
+            /** Ends At */
+            ends_at?: string | null;
         };
         /**
          * MakeupStatus
@@ -19085,6 +19650,13 @@ export interface components {
              * @default false
              */
             pay_with_bubbles: boolean;
+            /** Guests */
+            guests?: components["schemas"]["BookingGuestCreate"][];
+            /**
+             * Block Guests
+             * @default 0
+             */
+            block_guests: number;
         };
         /** SessionBookingResponse */
         SessionBookingResponse: {
@@ -19107,6 +19679,8 @@ export interface components {
             member_auth_id: string;
             status: components["schemas"]["SessionBookingStatus"];
             channel: components["schemas"]["BookingChannel"];
+            /** Party Size */
+            party_size: number;
             /** Fee Amount Kobo */
             fee_amount_kobo: number;
             /** Payment Intent Id */
@@ -19198,6 +19772,16 @@ export interface components {
              * @default 0
              */
             ride_share_fee: number;
+            /**
+             * Allows Guests
+             * @default true
+             */
+            allows_guests: boolean;
+            /**
+             * Max Guests Per Booking
+             * @default 4
+             */
+            max_guests_per_booking: number;
             /** Cohort Id */
             cohort_id?: string | null;
             /** Event Id */
@@ -19319,6 +19903,16 @@ export interface components {
              * @default 0
              */
             ride_share_fee: number;
+            /**
+             * Allows Guests
+             * @default true
+             */
+            allows_guests: boolean;
+            /**
+             * Max Guests Per Booking
+             * @default 4
+             */
+            max_guests_per_booking: number;
             /** Cohort Id */
             cohort_id?: string | null;
             /** Event Id */
@@ -19554,6 +20148,30 @@ export interface components {
             lesson_title?: string | null;
         };
         /**
+         * TrialGuestCreate
+         * @description A prospective-student trial guest attached to a cohort booking (D10).
+         *
+         *     ``intent`` is forced to 'trial' server-side; this is coach-approved, never
+         *     self-serve. Minor fields gate the same way as a normal guest.
+         */
+        TrialGuestCreate: {
+            /** Full Name */
+            full_name: string;
+            /** Phone */
+            phone?: string | null;
+            /** Date Of Birth */
+            date_of_birth?: string | null;
+            /** Guardian Name */
+            guardian_name?: string | null;
+            /** Guardian Phone */
+            guardian_phone?: string | null;
+            /**
+             * Waiver Accepted
+             * @default false
+             */
+            waiver_accepted: boolean;
+        };
+        /**
          * UnpaidBookingResponse
          * @description A confirmed booking with an outstanding pool fee.
          *
@@ -19669,11 +20287,10 @@ export interface components {
              * Format: uuid
              */
             session_id: string;
-            /**
-             * Member Id
-             * Format: uuid
-             */
-            member_id: string;
+            /** Member Id */
+            member_id?: string | null;
+            /** Booking Guest Id */
+            booking_guest_id?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -19764,6 +20381,24 @@ export interface components {
             total_sessions: number;
             /** Students */
             students: components["schemas"]["StudentAttendanceSummary"][];
+        };
+        /**
+         * GuestAttendanceCreate
+         * @description Coach/admin records a non-member guest's attendance at the door.
+         *
+         *     Keyed on (session_id, booking_guest_id); role is forced to GUEST and
+         *     member_id stays NULL. See GUEST_AND_GROUP_BOOKING_DESIGN.md §5c/§9.
+         */
+        GuestAttendanceCreate: {
+            /**
+             * Booking Guest Id
+             * Format: uuid
+             */
+            booking_guest_id: string;
+            /** @default present */
+            status: components["schemas"]["AttendanceStatus"];
+            /** Notes */
+            notes?: string | null;
         };
         /**
          * MemberAttendanceStats
@@ -22896,7 +23531,7 @@ export interface components {
          * PaymentPurpose
          * @enum {string}
          */
-        PaymentPurpose: "community" | "club" | "club_bundle" | "academy_cohort" | "session_fee" | "session_bundle" | "store_order" | "wallet_topup" | "ride_share" | "session_booking";
+        PaymentPurpose: "community" | "club" | "club_bundle" | "academy_cohort" | "session_fee" | "session_bundle" | "store_order" | "wallet_topup" | "ride_share" | "session_booking" | "strokelab_founding";
         /** PaymentResponse */
         PaymentResponse: {
             /**
@@ -27125,6 +27760,136 @@ export interface components {
             created_at: string;
         };
         /**
+         * AnalysisJobDetailResponse
+         * @description Single-job detail. Includes the result payload + signed URLs for
+         *     the original + annotated mp4s when available.
+         */
+        AnalysisJobDetailResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Member Auth Id
+             * Format: uuid
+             */
+            member_auth_id: string;
+            /** Stroke Type */
+            stroke_type: string;
+            /** Status */
+            status: string;
+            /** Error Message */
+            error_message?: string | null;
+            /** Is Public */
+            is_public: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Started At */
+            started_at?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+            result?: components["schemas"]["AnalysisResultPayload"] | null;
+            /** Original Video Url */
+            original_video_url?: string | null;
+            /** Annotated Video Url */
+            annotated_video_url?: string | null;
+        };
+        /**
+         * AnalysisJobResponse
+         * @description Job lifecycle row — what POST returns and what GET returns while
+         *     the worker is still processing.
+         */
+        AnalysisJobResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Member Auth Id
+             * Format: uuid
+             */
+            member_auth_id: string;
+            /** Stroke Type */
+            stroke_type: string;
+            /** Status */
+            status: string;
+            /** Error Message */
+            error_message?: string | null;
+            /** Is Public */
+            is_public: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Started At */
+            started_at?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+        };
+        /**
+         * AnalysisResultPayload
+         * @description The metrics + summary slice exposed to the client. Stripped of
+         *     debug fields like raw_metrics + pipeline_config — those are kept
+         *     server-side.
+         */
+        AnalysisResultPayload: {
+            /** Detected Stroke */
+            detected_stroke: string;
+            /** Pose Detection Rate */
+            pose_detection_rate: number;
+            /** Frames Total */
+            frames_total: number;
+            /** Frames With Pose */
+            frames_with_pose: number;
+            /** Stroke Rate Spm */
+            stroke_rate_spm?: number | null;
+            /** Body Roll Proxy Degrees */
+            body_roll_proxy_degrees?: number | null;
+            /** Breath Count Left */
+            breath_count_left?: number | null;
+            /** Breath Count Right */
+            breath_count_right?: number | null;
+            /** Breath Balance Left Ratio */
+            breath_balance_left_ratio?: number | null;
+            /** Summary Text */
+            summary_text?: string | null;
+            /**
+             * Observations
+             * @default []
+             */
+            observations: components["schemas"]["Observation"][];
+            /**
+             * Tracking Gaps
+             * @default []
+             */
+            tracking_gaps: components["schemas"]["TrackingGap"][];
+        };
+        /** Body_create_analysis_job_ai_analyze_post */
+        Body_create_analysis_job_ai_analyze_post: {
+            /**
+             * Video
+             * Format: binary
+             * @description Swim video, ≤50 MB, ≤60s
+             */
+            video: string;
+            /**
+             * Stroke Type
+             * @default freestyle
+             */
+            stroke_type: string;
+            /**
+             * Is Public
+             * @default false
+             */
+            is_public: boolean;
+        };
+        /**
          * CoachGradeScoringRequest
          * @description Input for AI-assisted coach grade assessment.
          */
@@ -27314,6 +28079,109 @@ export interface components {
             /** Model Used */
             model_used: string;
         };
+        /**
+         * DrillSuggestion
+         * @description A drill resolved from the drill bank for an observation.
+         */
+        DrillSuggestion: {
+            /** Key */
+            key: string;
+            /** Title */
+            title: string;
+            /** Why */
+            why: string;
+            /** How */
+            how: string;
+            /** Academy Ref */
+            academy_ref?: string | null;
+        };
+        /** FoundingClaimRequest */
+        FoundingClaimRequest: {
+            /** Paystack Reference */
+            paystack_reference: string;
+        };
+        /** FoundingClaimResponse */
+        FoundingClaimResponse: {
+            /** Seat Number */
+            seat_number: number;
+            /** Paystack Reference */
+            paystack_reference: string;
+            /** Amount Paid Kobo */
+            amount_paid_kobo: number;
+        };
+        /** FoundingConfirmRequest */
+        FoundingConfirmRequest: {
+            /** Member Auth Id */
+            member_auth_id: string;
+            /** Payment Reference */
+            payment_reference: string;
+            /** Amount Kobo */
+            amount_kobo: number;
+        };
+        /** FoundingConfirmResponse */
+        FoundingConfirmResponse: {
+            /** Recorded */
+            recorded: boolean;
+            /** Seat Number */
+            seat_number: number;
+        };
+        /** FoundingInitializeResponse */
+        FoundingInitializeResponse: {
+            /** Authorization Url */
+            authorization_url: string;
+            /** Reference */
+            reference: string;
+        };
+        /** FoundingMemberStatus */
+        FoundingMemberStatus: {
+            /** Is Founding Member */
+            is_founding_member: boolean;
+            /** Claimed At */
+            claimed_at?: string | null;
+            /** Paystack Reference */
+            paystack_reference?: string | null;
+        };
+        /** FoundingStatsResponse */
+        FoundingStatsResponse: {
+            /**
+             * Seats Total
+             * @default 100
+             */
+            seats_total: number;
+            /** Seats Taken */
+            seats_taken: number;
+            /** Seats Remaining */
+            seats_remaining: number;
+            /**
+             * Price Kobo
+             * @default 2000000
+             */
+            price_kobo: number;
+            /**
+             * Price Ngn
+             * @default 20000
+             */
+            price_ngn: number;
+            /** Is Sold Out */
+            is_sold_out: boolean;
+        };
+        /**
+         * Observation
+         * @description A single deterministic technique flag with a representative moment.
+         */
+        Observation: {
+            /** Key */
+            key: string;
+            /** Severity */
+            severity: string;
+            /** Title */
+            title: string;
+            /** Detail */
+            detail: string;
+            /** Timestamp S */
+            timestamp_s?: number | null;
+            drill?: components["schemas"]["DrillSuggestion"] | null;
+        };
         /** PaginatedResponse[AIRequestResponse] */
         PaginatedResponse_AIRequestResponse_: {
             /** Items */
@@ -27324,6 +28192,98 @@ export interface components {
             page: number;
             /** Page Size */
             page_size: number;
+        };
+        /** QueueRecentJob */
+        QueueRecentJob: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Member Auth Id
+             * Format: uuid
+             */
+            member_auth_id: string;
+            /** Status */
+            status: string;
+            /** Stroke Type */
+            stroke_type: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Completed At */
+            completed_at?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+        };
+        /**
+         * QueueSnapshot
+         * @description Snapshot the /admin/ai/queue page renders.
+         */
+        QueueSnapshot: {
+            /** Total Jobs */
+            total_jobs: number;
+            counts: components["schemas"]["QueueStatusCounts"];
+            counts_last_24h: components["schemas"]["QueueStatusCounts"];
+            /**
+             * Success Rate Pct
+             * @description Fraction of finished jobs (completed + failed) in the last 24h that completed successfully, ×100. Returns 0 when no finished jobs exist.
+             */
+            success_rate_pct: number;
+            /** Recent Jobs */
+            recent_jobs: components["schemas"]["QueueRecentJob"][];
+            /**
+             * Queue Depth Approx
+             * @description Pending + processing — what the worker has to chew through.
+             */
+            queue_depth_approx: number;
+        };
+        /** QueueStatusCounts */
+        QueueStatusCounts: {
+            /**
+             * Pending
+             * @default 0
+             */
+            pending: number;
+            /**
+             * Processing
+             * @default 0
+             */
+            processing: number;
+            /**
+             * Completed
+             * @default 0
+             */
+            completed: number;
+            /**
+             * Failed
+             * @default 0
+             */
+            failed: number;
+        };
+        /** ReanalyzeResponse */
+        ReanalyzeResponse: {
+            /**
+             * Job Id
+             * Format: uuid
+             */
+            job_id: string;
+            /** Status */
+            status: string;
+            /** Enqueued */
+            enqueued: boolean;
+        };
+        /** TrackingGap */
+        TrackingGap: {
+            /** Start S */
+            start_s: number;
+            /** End S */
+            end_s: number;
+            /** Duration S */
+            duration_s: number;
         };
         /** BulkCompleteRequest */
         BulkCompleteRequest: {
@@ -29307,6 +30267,83 @@ export interface components {
          * @enum {string}
          */
         PreferredContactChannel: "whatsapp" | "phone" | "email" | "in_person";
+        /**
+         * WeatherRefreshResult
+         * @description Summary of a pre-fetch refresh run (worker or admin-triggered).
+         */
+        WeatherRefreshResult: {
+            /**
+             * Refreshed
+             * @default 0
+             */
+            refreshed: number;
+            /**
+             * Failed
+             * @default 0
+             */
+            failed: number;
+            /**
+             * Skipped No Coords
+             * @default 0
+             */
+            skipped_no_coords: number;
+            /** Pool Ids */
+            pool_ids?: string[];
+        };
+        /**
+         * WeatherSnapshotResponse
+         * @description A cached forecast for one location.
+         *
+         *     ``hourly``/``daily`` are returned as-is from the provider (Open-Meteo's
+         *     parallel-array shape). When the caller passes ``?date=YYYY-MM-DD`` the
+         *     arrays are trimmed server-side to just that day to save mobile bandwidth.
+         */
+        WeatherSnapshotResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Location Key */
+            location_key: string;
+            /** Latitude */
+            latitude: number;
+            /** Longitude */
+            longitude: number;
+            /** Pool Id */
+            pool_id?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Provider */
+            provider: string;
+            /** Timezone */
+            timezone: string;
+            /** Forecast Days */
+            forecast_days: number;
+            /** Hourly */
+            hourly: {
+                [key: string]: unknown;
+            };
+            /** Daily */
+            daily?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Fetched At
+             * Format: date-time
+             */
+            fetched_at: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * Stale
+             * @default false
+             */
+            stale: boolean;
+        };
         /** ApplyDiscountRequest */
         ApplyDiscountRequest: {
             /** Code */
@@ -34242,70 +35279,6 @@ export interface components {
             /** Credit Minor */
             credit_minor: number;
         };
-        /**
-         * MakeupOpenSlotCreate
-         * @description Admin request to create a dedicated make-up session in a coach's *open*
-         *     availability slot and confirm a learner into it in one step (design §4
-         *     Phase 2). The join-an-existing-session path is ``POST /makeups/bookings``;
-         *     this is for booking a brand-new dedicated slot.
-         *
-         *     The new session is a ``COHORT_CLASS`` whose cohort comes from ``cohort_id``
-         *     if given, else derived from ``original_session_id``. ``reason`` is required
-         *     when ``origin`` is ``learner_reschedule`` (policy §4 / 1b).
-         */
-        MakeupOpenSlotCreate: {
-            /**
-             * Learner Member Id
-             * Format: uuid
-             */
-            learner_member_id: string;
-            /**
-             * Coach Member Id
-             * Format: uuid
-             */
-            coach_member_id: string;
-            /**
-             * Starts At
-             * Format: date-time
-             */
-            starts_at: string;
-            /**
-             * Ends At
-             * Format: date-time
-             */
-            ends_at: string;
-            origin: components["schemas"]["MakeupOrigin"];
-            /** Reason */
-            reason?: string | null;
-            /** Original Session Id */
-            original_session_id?: string | null;
-            /** Cohort Id */
-            cohort_id?: string | null;
-            /** Pool Id */
-            pool_id?: string | null;
-            /** Title */
-            title?: string | null;
-            /**
-             * Capacity
-             * @default 1
-             */
-            capacity: number;
-            block_kind?: components["schemas"]["MakeupBlockKind"] | null;
-            /** Block Id */
-            block_id?: string | null;
-            /** Obligation Id */
-            obligation_id?: string | null;
-            /**
-             * Used Grace
-             * @default false
-             */
-            used_grace: boolean;
-            /**
-             * Spacing Overridden
-             * @default false
-             */
-            spacing_overridden: boolean;
-        };
     };
     responses: never;
     parameters: never;
@@ -38695,6 +39668,141 @@ export interface operations {
             };
         };
     };
+    add_trial_guest_sessions_bookings__booking_id__trial_guest_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrialGuestCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionBookingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    name_booking_guest_sessions_bookings__booking_id__guests__guest_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+                guest_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingGuestCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingGuestResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_guest_leads_sessions_booking_guests_leads_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestLeadResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    convert_guest_to_member_sessions_booking_guests_convert_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuestConvertRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestConvertResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     confirm_booking_sessions_bookings__booking_id__confirm_post: {
         parameters: {
             query?: never;
@@ -39065,6 +40173,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["MakeupBookingCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MakeupBookingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_open_slot_makeup_makeups_open_slot_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MakeupOpenSlotCreate"];
             };
         };
         responses: {
@@ -40078,6 +41219,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["PublicAttendanceCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttendanceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_guest_attendance_attendance_sessions__session_id__attendance_guest_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuestAttendanceCreate"];
             };
         };
         responses: {
@@ -50708,6 +51884,318 @@ export interface operations {
             };
         };
     };
+    create_analysis_job_ai_analyze_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_create_analysis_job_ai_analyze_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisJobResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_my_analyses_ai_analyze_me_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisJobResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_analysis_job_ai_analyze__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisJobDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_analysis_job_ai_analyze__job_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    queue_snapshot_ai_admin_analyze_queue_get: {
+        parameters: {
+            query?: {
+                recent_limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueSnapshot"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reanalyze_job_ai_admin_analyze_reanalyze__job_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReanalyzeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    founding_stats_ai_founding_members_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FoundingStatsResponse"];
+                };
+            };
+        };
+    };
+    my_founding_status_ai_founding_members_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FoundingMemberStatus"];
+                };
+            };
+        };
+    };
+    initialize_founding_payment_ai_founding_members_initialize_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FoundingInitializeResponse"];
+                };
+            };
+        };
+    };
+    claim_founding_member_ai_founding_members_claim_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FoundingClaimRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FoundingClaimResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_founding_member_internal_ai_founding_members_confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FoundingConfirmRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FoundingConfirmResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_spotlight_volunteers_spotlight_get: {
         parameters: {
             query?: never;
@@ -53436,6 +54924,116 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_weather_weather_get: {
+        parameters: {
+            query: {
+                /** @description Latitude */
+                lat: number;
+                /** @description Longitude */
+                lon: number;
+                /** @description Optional YYYY-MM-DD to return only that day's hours */
+                date?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeatherSnapshotResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_weather_for_pool_weather_pools__pool_id__get: {
+        parameters: {
+            query?: {
+                /** @description Optional YYYY-MM-DD to return only that day's hours */
+                date?: string | null;
+            };
+            header?: never;
+            path: {
+                pool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeatherSnapshotResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trigger_refresh_admin_weather_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeatherRefreshResult"];
+                };
+            };
+        };
+    };
+    list_weather_snapshots_admin_weather_snapshots_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeatherSnapshotResponse"][];
                 };
             };
         };
@@ -60032,39 +61630,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InvoiceOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_open_slot_makeup_makeups_open_slot_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MakeupOpenSlotCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MakeupBookingResponse"];
                 };
             };
             /** @description Validation Error */
