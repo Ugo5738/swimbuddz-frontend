@@ -1,5 +1,6 @@
 "use client";
 
+import { MakeupGuidelines } from "@/components/makeups/MakeupGuidelines";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -224,6 +225,8 @@ export default function AdminMakeupsPage() {
           confirm a make-up. Spacing conflicts are flagged, not blocked.
         </p>
       </header>
+
+      <MakeupGuidelines audience="admin" />
 
       {pending.length > 0 ? (
         <Card className="space-y-3 p-5">

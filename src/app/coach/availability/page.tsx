@@ -1,5 +1,6 @@
 "use client";
 
+import { MakeupGuidelines } from "@/components/makeups/MakeupGuidelines";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -149,6 +150,8 @@ export default function CoachAvailabilityPage() {
           lessons against this &mdash; keeping it current saves the back-and-forth.
         </p>
       </header>
+
+      <MakeupGuidelines audience="coach" />
 
       {error ? <Alert variant="error">{error}</Alert> : null}
 

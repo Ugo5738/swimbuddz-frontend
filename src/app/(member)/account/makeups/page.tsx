@@ -1,5 +1,6 @@
 "use client";
 
+import { MakeupGuidelines } from "@/components/makeups/MakeupGuidelines";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -143,6 +144,8 @@ export default function MyMakeupsPage() {
           Missed a session? Find a time with your coach and request a make-up.
         </p>
       </header>
+
+      <MakeupGuidelines audience="learner" />
 
       <Card className="space-y-4 p-5">
         <div className="grid gap-4 sm:grid-cols-3">
