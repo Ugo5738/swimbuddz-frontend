@@ -1,7 +1,6 @@
 "use client";
 
 import { RegistrationConfirmStep } from "@/components/registration/RegistrationConfirmStep";
-import { RegistrationEssentialsStep } from "@/components/registration/RegistrationEssentialsStep";
 import { TierSelectionStep } from "@/components/registration/TierSelectionStep";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -10,8 +9,28 @@ import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet, apiPatch } from "@/lib/api";
 import { createPendingRegistration } from "@/lib/registration";
 import clsx from "clsx";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
+
+// The essentials step pulls in heavy, browser-only deps (country-state-city's
+// full country/state dataset + react-phone-number-input and its CSS). Code-split
+// it so those load only when the user actually reaches this step — the wizard
+// opens on the tier step, so they're not needed for the initial /register paint.
+const RegistrationEssentialsStep = dynamic(
+  () =>
+    import("@/components/registration/RegistrationEssentialsStep").then(
+      (m) => m.RegistrationEssentialsStep,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex min-h-[200px] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-cyan-200 border-t-cyan-600" />
+      </div>
+    ),
+  },
+);
 
 type Tier = "community" | "club" | "academy";
 type StepKey = "tier" | "essentials" | "confirm";

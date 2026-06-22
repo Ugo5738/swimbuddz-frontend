@@ -95,10 +95,11 @@ function LoginContent() {
     setLoading(true);
     setMagicSent(false);
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { data: signInData, error: signInError } =
+      await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
     if (signInError) {
       setLoading(false);
@@ -109,10 +110,10 @@ function LoginContent() {
     // Admin users bypass pending-registration completion (they may not have
     // a Member profile). Admin status comes from the signed JWT's
     // `app_metadata.roles` claim — same source the backend `require_admin`
-    // dependency reads.
-    const {
-      data: { user: signedInUser },
-    } = await supabase.auth.getUser();
+    // dependency reads. `signInWithPassword` already returns the authenticated
+    // user, so read roles from it directly rather than spending a second
+    // network round-trip on `getUser()`.
+    const signedInUser = signInData.user;
     const adminRoles = signedInUser?.app_metadata?.roles as
       | string[]
       | undefined;
