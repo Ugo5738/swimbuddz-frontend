@@ -287,15 +287,6 @@ export default function StrokeLabResultPage() {
               </div>
             </Card>
           ) : null}
-
-          <p className="mb-2 text-xs text-slate-500">
-            Pose tracking confidence:{" "}
-            {Math.round(result.pose_detection_rate * 100)}% of analysed
-            frames detected the swimmer.{" "}
-            {result.pose_detection_rate < 0.65
-              ? "Low — try a clip with one swimmer filling more of the frame next time."
-              : null}
-          </p>
         </>
       ) : null}
 

@@ -54,10 +54,11 @@ export type TrackingGap = {
 };
 
 export type AnalysisResultPayload = {
-  detected_stroke: string;
-  pose_detection_rate: number;
-  frames_total: number;
-  frames_with_pose: number;
+  // Null on coach-primary runs (the legacy pose/metrics pass is retired).
+  detected_stroke: string | null;
+  pose_detection_rate: number | null;
+  frames_total: number | null;
+  frames_with_pose: number | null;
   stroke_rate_spm: number | null;
   body_roll_proxy_degrees: number | null;
   breath_count_left: number | null;
