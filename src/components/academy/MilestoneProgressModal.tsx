@@ -38,12 +38,13 @@ export function MilestoneProgressModal({
 
   if (!isOpen) return null;
 
+  // A claim now sits in PENDING (awaiting review) until a coach approves it,
+  // at which point it becomes ACHIEVED. A rejection is PENDING with a
+  // reviewed_at stamp (the student must resubmit).
   const isPendingReview =
-    currentProgress?.status === ProgressStatus.ACHIEVED &&
+    currentProgress?.status === ProgressStatus.PENDING &&
     !currentProgress?.reviewed_at;
-  const isVerified =
-    currentProgress?.status === ProgressStatus.ACHIEVED &&
-    !!currentProgress?.reviewed_at;
+  const isVerified = currentProgress?.status === ProgressStatus.ACHIEVED;
   const isRejected =
     currentProgress?.status === ProgressStatus.PENDING &&
     !!currentProgress?.reviewed_at;

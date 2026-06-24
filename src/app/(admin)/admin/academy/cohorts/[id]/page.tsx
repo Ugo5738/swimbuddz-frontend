@@ -383,8 +383,14 @@ export default function CohortDetailsPage() {
                         const progress = (studentProgress[student.id] || []).find(
                           (p) => p.milestone_id === milestone.id
                         );
-                        const isAchieved = progress?.status === ProgressStatus.ACHIEVED;
-                        const isVerified = !!progress?.reviewed_at;
+                        // ACHIEVED only happens once a coach approves a claim, so
+                        // it always means "verified". A claim awaiting review is
+                        // PENDING with no reviewed_at; a rejected claim is PENDING
+                        // with a reviewed_at stamp (shown as plain Pending).
+                        const isVerified = progress?.status === ProgressStatus.ACHIEVED;
+                        const isClaimed =
+                          progress?.status === ProgressStatus.PENDING &&
+                          !progress?.reviewed_at;
 
                         // Determine status label and styling
                         let statusLabel = "Pending";
@@ -395,7 +401,7 @@ export default function CohortDetailsPage() {
                           statusLabel = "✓ Verified";
                           badgeClass = "bg-green-100 text-green-700 hover:bg-green-200";
                           dotClass = "bg-green-500";
-                        } else if (isAchieved) {
+                        } else if (isClaimed) {
                           statusLabel = "Claimed";
                           badgeClass = "bg-amber-100 text-amber-700 hover:bg-amber-200";
                           dotClass = "bg-amber-500";

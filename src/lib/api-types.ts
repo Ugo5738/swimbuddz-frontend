@@ -3786,6 +3786,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/sessions/cohorts/{cohort_id}/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Cohort Sessions
+         * @description Generate the weekly cohort_class sessions for a date window.
+         *
+         *     Called by academy-service when a cohort extension is approved so the added
+         *     weeks get sessions automatically (mirroring the create-cohort wizard).
+         *     Idempotent: dates that already have a session are skipped.
+         */
+        post: operations["generate_cohort_sessions_internal_sessions_cohorts__cohort_id__generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/sessions/{session_id}/coaches": {
         parameters: {
             query?: never;
@@ -10372,6 +10396,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ai/analyze/{job_id}/inspect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Coach one stored instance on demand (gated; 409 until unlocked) */
+        post: operations["inspect_analysis_ai_analyze__job_id__inspect_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ai/admin/analyze/queue": {
         parameters: {
             query?: never;
@@ -10400,6 +10441,127 @@ export interface paths {
         put?: never;
         /** Reset a job to PENDING and re-enqueue the worker task */
         post: operations["reanalyze_job_ai_admin_analyze_reanalyze__job_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/public/analyze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a freestyle swim video as a guest and queue an analysis
+         * @description Create a guest analysis job. Returns 202 — the client polls
+         *     GET /ai/public/analyze/{id} (and, from Phase 3, gets an email).
+         */
+        post: operations["create_public_analysis_job_ai_public_analyze_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/public/analyze/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Poll a guest Stroke Lab job's status + result (guest_token) */
+        get: operations["get_public_analysis_job_ai_public_analyze__job_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/public/analyze/{job_id}/inspect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Coach one stored instance on demand, guest (gated; 409 until unlocked) */
+        post: operations["inspect_public_analysis_ai_public_analyze__job_id__inspect_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/public/credits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Coarse analyzer credit balance for an email
+         * @description Coarse, non-enumerable balance for the paywall. ``free_used`` is not
+         *     exposed (it is the 'has this email been used' leak — design §4.3).
+         */
+        get: operations["get_public_credits_ai_public_credits_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/public/credits/redeem": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Redeem a Gumroad license key for analyzer credits
+         * @description Different-email fallback: a buyer whose Gumroad email differs from their
+         *     analyzer email pastes their license key. Verified against Gumroad; idempotent
+         *     on the sale so the webhook + redeem can't double-credit.
+         */
+        post: operations["redeem_license_ai_public_credits_redeem_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/public/gumroad/webhook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Gumroad Ping — grant credits on sale, revoke on refund/dispute
+         * @description Gumroad has no signature, so we layer three checks (design §7.2): an
+         *     unguessable shared-secret path token, a seller_id match, and a MANDATORY
+         *     license re-verify before granting. Always returns 200 (except a bad path
+         *     token → 403) so Gumroad does not retry-storm.
+         */
+        post: operations["gumroad_webhook_ai_public_gumroad_webhook_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -19284,6 +19446,30 @@ export interface components {
             /** Session Ids */
             session_ids: string[];
         };
+        /** GenerateCohortSessionsRequest */
+        GenerateCohortSessionsRequest: {
+            /**
+             * From Date
+             * Format: date-time
+             */
+            from_date: string;
+            /**
+             * To Date
+             * Format: date-time
+             */
+            to_date: string;
+        };
+        /** GenerateCohortSessionsResponse */
+        GenerateCohortSessionsResponse: {
+            /** Created */
+            created: number;
+            /** Skipped */
+            skipped: number;
+            /** Week Numbers */
+            week_numbers: number[];
+            /** Reason */
+            reason?: string | null;
+        };
         /** GenerateSessionsRequest */
         GenerateSessionsRequest: {
             /**
@@ -23861,6 +24047,13 @@ export interface components {
              */
             band_percentage: number | string;
             /**
+             * Role
+             * @description Coach's role on the cohort. With 2 active coaches the pay splits 70/30 (lead/assistant), applied at payout time.
+             * @default lead
+             * @enum {string}
+             */
+            role: "lead" | "assistant";
+            /**
              * Notes
              * @description Admin rationale, e.g. 'Mid-band: rewards 3yr coaching experience'.
              */
@@ -23910,6 +24103,15 @@ export interface components {
             cohort_price_amount: number;
             /** Currency */
             currency: string;
+            /** Total Classes */
+            total_classes?: number | null;
+            /** Per Class Amount Kobo */
+            per_class_amount_kobo?: number | null;
+            /**
+             * Role
+             * @default lead
+             */
+            role: string;
             /** Block Index */
             block_index: number;
             /**
@@ -27840,13 +28042,13 @@ export interface components {
          */
         AnalysisResultPayload: {
             /** Detected Stroke */
-            detected_stroke: string;
+            detected_stroke?: string | null;
             /** Pose Detection Rate */
-            pose_detection_rate: number;
+            pose_detection_rate?: number | null;
             /** Frames Total */
-            frames_total: number;
+            frames_total?: number | null;
             /** Frames With Pose */
-            frames_with_pose: number;
+            frames_with_pose?: number | null;
             /** Stroke Rate Spm */
             stroke_rate_spm?: number | null;
             /** Body Roll Proxy Degrees */
@@ -27869,6 +28071,22 @@ export interface components {
              * @default []
              */
             tracking_gaps: components["schemas"]["TrackingGap"][];
+            /** Instances */
+            instances?: {
+                [key: string]: unknown;
+            }[] | null;
+            /** Coach Result */
+            coach_result?: {
+                [key: string]: unknown;
+            } | null;
+            /** Coach Evidence Urls */
+            coach_evidence_urls?: {
+                [key: string]: string;
+            } | null;
+            /** Coach Share Urls */
+            coach_share_urls?: {
+                [key: string]: string;
+            } | null;
         };
         /** Body_create_analysis_job_ai_analyze_post */
         Body_create_analysis_job_ai_analyze_post: {
@@ -27888,6 +28106,44 @@ export interface components {
              * @default false
              */
             is_public: boolean;
+            /**
+             * Discipline
+             * @default general
+             */
+            discipline: string;
+            /** Level */
+            level?: string | null;
+            /** Focus Area */
+            focus_area?: string | null;
+            /** Goal Text */
+            goal_text?: string | null;
+        };
+        /** Body_create_public_analysis_job_ai_public_analyze_post */
+        Body_create_public_analysis_job_ai_public_analyze_post: {
+            /**
+             * Video
+             * Format: binary
+             * @description Freestyle swim video, ≤50 MB
+             */
+            video: string;
+            /** Guest Email */
+            guest_email: string;
+            /**
+             * Stroke Type
+             * @default freestyle
+             */
+            stroke_type: string;
+            /**
+             * Discipline
+             * @default general
+             */
+            discipline: string;
+            /** Level */
+            level?: string | null;
+            /** Focus Area */
+            focus_area?: string | null;
+            /** Goal Text */
+            goal_text?: string | null;
         };
         /**
          * CoachGradeScoringRequest
@@ -28166,6 +28422,42 @@ export interface components {
             is_sold_out: boolean;
         };
         /**
+         * GumroadRedeemRequest
+         * @description Body for POST /ai/public/credits/redeem — the different-email fallback.
+         */
+        GumroadRedeemRequest: {
+            /** Email */
+            email: string;
+            /** License Key */
+            license_key: string;
+            /** Product Permalink */
+            product_permalink: string;
+        };
+        /** GumroadRedeemResponse */
+        GumroadRedeemResponse: {
+            /** Granted */
+            granted: number;
+            /** Remaining Credits */
+            remaining_credits: number;
+        };
+        /**
+         * InspectRequest
+         * @description Per-instance drilldown request (§12.5) — coach one stored instance of an
+         *     aspect on demand. Gated (409) until segmentation count accuracy clears the bar.
+         */
+        InspectRequest: {
+            /**
+             * Aspect
+             * @description aspect id: body_line | recovery_elbow | …
+             */
+            aspect: string;
+            /**
+             * Instance Id
+             * @description which instance of that aspect/phase
+             */
+            instance_id: number;
+        };
+        /**
          * Observation
          * @description A single deterministic technique flag with a representative moment.
          */
@@ -28193,6 +28485,105 @@ export interface components {
             /** Page Size */
             page_size: number;
         };
+        /**
+         * PublicAnalysisJobDetailResponse
+         * @description GET /ai/public/analyze/{job_id} — guest-facing detail. Mirrors the
+         *     member detail minus ``member_auth_id``/``is_public`` (irrelevant to a
+         *     token-scoped guest read).
+         */
+        PublicAnalysisJobDetailResponse: {
+            /**
+             * Job Id
+             * Format: uuid
+             */
+            job_id: string;
+            /** Status */
+            status: string;
+            /** Stroke Type */
+            stroke_type: string;
+            /**
+             * Discipline
+             * @default general
+             */
+            discipline: string;
+            /**
+             * Drilldown Unlocked
+             * @default false
+             */
+            drilldown_unlocked: boolean;
+            /**
+             * Timeline Unlocked
+             * @default false
+             */
+            timeline_unlocked: boolean;
+            /** Error Message */
+            error_message?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Started At */
+            started_at?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+            result?: components["schemas"]["AnalysisResultPayload"] | null;
+            /** Original Video Url */
+            original_video_url?: string | null;
+            /** Annotated Video Url */
+            annotated_video_url?: string | null;
+        };
+        /**
+         * PublicAnalysisJobResponse
+         * @description What POST /ai/public/analyze returns. No ``member_auth_id`` (guests
+         *     have none); echoes the per-job ``guest_token`` so the FE can store it
+         *     for polling.
+         */
+        PublicAnalysisJobResponse: {
+            /**
+             * Job Id
+             * Format: uuid
+             */
+            job_id: string;
+            /** Status */
+            status: string;
+            /** Stroke Type */
+            stroke_type: string;
+            /** Guest Token */
+            guest_token: string;
+            /**
+             * Credits Remaining
+             * @default 0
+             */
+            credits_remaining: number;
+            /**
+             * Estimated Ready Hint
+             * @default We'll email you a link as soon as it's ready.
+             */
+            estimated_ready_hint: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Started At */
+            started_at?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+        };
+        /**
+         * PublicCreditsResponse
+         * @description GET /ai/public/credits — coarse, non-enumerable balance. ``free_used`` is
+         *     intentionally NOT exposed (it is the 'has this email been used' leak).
+         */
+        PublicCreditsResponse: {
+            /** Email */
+            email: string;
+            /** Can Submit Free */
+            can_submit_free: boolean;
+            /** Remaining Credits */
+            remaining_credits: number;
+        };
         /** QueueRecentJob */
         QueueRecentJob: {
             /**
@@ -28200,11 +28591,12 @@ export interface components {
              * Format: uuid
              */
             id: string;
-            /**
-             * Member Auth Id
-             * Format: uuid
-             */
-            member_auth_id: string;
+            /** Source */
+            source: string;
+            /** Member Auth Id */
+            member_auth_id?: string | null;
+            /** Guest Email */
+            guest_email?: string | null;
             /** Status */
             status: string;
             /** Stroke Type */
@@ -40975,6 +41367,41 @@ export interface operations {
             };
         };
     };
+    generate_cohort_sessions_internal_sessions_cohorts__cohort_id__generate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cohort_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateCohortSessionsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerateCohortSessionsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_session_coach_ids_internal_sessions__session_id__coaches_get: {
         parameters: {
             query?: never;
@@ -52008,10 +52435,48 @@ export interface operations {
             };
         };
     };
+    inspect_analysis_ai_analyze__job_id__inspect_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InspectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     queue_snapshot_ai_admin_analyze_queue_get: {
         parameters: {
             query?: {
                 recent_limit?: number;
+                source?: string | null;
             };
             header?: never;
             path?: never;
@@ -52057,6 +52522,212 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReanalyzeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_public_analysis_job_ai_public_analyze_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_create_public_analysis_job_ai_public_analyze_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicAnalysisJobResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_public_analysis_job_ai_public_analyze__job_id__get: {
+        parameters: {
+            query?: {
+                guest_token?: string | null;
+            };
+            header?: {
+                "X-Guest-Token"?: string | null;
+            };
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicAnalysisJobDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    inspect_public_analysis_ai_public_analyze__job_id__inspect_post: {
+        parameters: {
+            query?: {
+                guest_token?: string | null;
+            };
+            header?: {
+                "X-Guest-Token"?: string | null;
+            };
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InspectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_public_credits_ai_public_credits_get: {
+        parameters: {
+            query: {
+                email: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicCreditsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    redeem_license_ai_public_credits_redeem_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GumroadRedeemRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GumroadRedeemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    gumroad_webhook_ai_public_gumroad_webhook_post: {
+        parameters: {
+            query?: {
+                token?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */
