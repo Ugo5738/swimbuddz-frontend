@@ -32,6 +32,7 @@ import type {
   EligibleCoach,
   Enrollment,
   EnrollmentInstallment,
+  EnrollmentPauseResult,
   MemberBasicInfo,
   Milestone,
   MilestoneClaimRequest,
@@ -170,6 +171,33 @@ export const AcademyApi = {
     apiPost<WithdrawEnrollmentResponse>(
       `/api/v1/academy/my-enrollments/${id}/withdraw`,
       body ?? {},
+      { auth: true }
+    ),
+
+  // Temporary, resumable pause. While paused the student is off the attendance
+  // roster and the coach earns nothing for them from the pause date.
+  pauseMyEnrollment: (id: string) =>
+    apiPost<EnrollmentPauseResult>(
+      `/api/v1/academy/my-enrollments/${id}/pause`,
+      {},
+      { auth: true }
+    ),
+  resumeMyEnrollment: (id: string) =>
+    apiPost<EnrollmentPauseResult>(
+      `/api/v1/academy/my-enrollments/${id}/resume`,
+      {},
+      { auth: true }
+    ),
+  adminPauseEnrollment: (id: string) =>
+    apiPost<EnrollmentPauseResult>(
+      `/api/v1/academy/enrollments/${id}/pause`,
+      {},
+      { auth: true }
+    ),
+  adminResumeEnrollment: (id: string) =>
+    apiPost<EnrollmentPauseResult>(
+      `/api/v1/academy/enrollments/${id}/resume`,
+      {},
       { auth: true }
     ),
 

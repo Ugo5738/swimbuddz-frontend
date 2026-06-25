@@ -37,6 +37,7 @@ export default function CohortDetailsPage() {
   const [cohort, setCohort] = useState<Cohort | null>(null);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [students, setStudents] = useState<Enrollment[]>([]);
+  const [pausingId, setPausingId] = useState<string | null>(null);
   const [studentProgress, setStudentProgress] = useState<Record<string, StudentProgress[]>>({});
   const [memberLookup, setMemberLookup] = useState<Record<string, MemberBasicInfo>>({});
   const [loading, setLoading] = useState(true);
@@ -168,6 +169,22 @@ export default function CohortDetailsPage() {
       return `${member.first_name ?? ""} ${member.last_name ?? ""}`.trim();
     }
     return member?.email || enrollment.member_id;
+  };
+
+  const handleTogglePause = async (student: Enrollment) => {
+    setPausingId(student.id);
+    try {
+      if (student.paused_at) {
+        await AcademyApi.adminResumeEnrollment(student.id);
+      } else {
+        await AcademyApi.adminPauseEnrollment(student.id);
+      }
+      await loadData();
+    } catch (err) {
+      console.error("Failed to toggle pause", err);
+    } finally {
+      setPausingId(null);
+    }
   };
 
   if (loading) {
@@ -352,10 +369,29 @@ export default function CohortDetailsPage() {
                   return (
                     <tr key={student.id} className="hover:bg-slate-50/50">
                       <td className="p-4 font-medium text-slate-900">
-                        {formatStudentName(student)}
+                        <span className="inline-flex items-center gap-2">
+                          {formatStudentName(student)}
+                          {student.paused_at && (
+                            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                              Paused
+                            </span>
+                          )}
+                        </span>
                         <div className="text-xs font-normal text-slate-500">
                           {memberLookup[student.member_id]?.email || student.member_id}
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => handleTogglePause(student)}
+                          disabled={pausingId === student.id}
+                          className="mt-1 text-xs font-medium text-slate-500 hover:text-slate-800 disabled:opacity-50"
+                        >
+                          {pausingId === student.id
+                            ? "…"
+                            : student.paused_at
+                              ? "Resume"
+                              : "Pause"}
+                        </button>
                       </td>
                       <td className="p-4">
                         <button onClick={() => handleEnrollmentClick(student)}>

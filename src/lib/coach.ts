@@ -111,6 +111,9 @@ export type Enrollment = {
   preferences: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
+  // Resumable pause marker (NULL/undefined = active). Paused students are off
+  // the attendance roster and earn the coach nothing from this date.
+  paused_at?: string | null;
   cohort?: Cohort;
   program?: Program;
   // Additional fields populated by backend when returning students
@@ -391,10 +394,20 @@ export async function getSessionAttendance(
   );
 }
 
-/** Bulk-upsert attendance for a session.
- * Submitting status="present" deletes the existing exception row for that
- * member (returns to default-present). All other statuses upsert.
- */
+/** Member IDs with a confirmed booking for a session — used to default the
+ * attendance sheet (Present if booked, Absent if not). */
+export async function getSessionBookedMemberIds(
+  sessionId: string,
+): Promise<string[]> {
+  return apiGet<string[]>(
+    `/api/v1/attendance/sessions/${sessionId}/booked-member-ids`,
+    { auth: true },
+  );
+}
+
+/** Bulk-upsert attendance for a session. Every submitted status (including
+ * Present/Late) writes an explicit attendance row — coach pay accrues only from
+ * explicit Present/Late records. */
 export async function coachMarkSessionAttendance(
   sessionId: string,
   entries: CoachAttendanceMarkEntry[],

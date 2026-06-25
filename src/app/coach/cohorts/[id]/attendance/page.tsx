@@ -19,6 +19,7 @@ import {
   getCohortStudents,
   getMyCoachSessions,
   getSessionAttendance,
+  getSessionBookedMemberIds,
 } from "@/lib/coach";
 import { formatDate } from "@/lib/format";
 import { ArrowLeft, CheckCircle, Clock, Save, XCircle } from "lucide-react";
@@ -77,10 +78,13 @@ export default function CoachCohortAttendancePage() {
         ]);
         setCohort(cohortData);
         setStudents(
-          studentsData.filter((s) =>
-            ["enrolled", "dropout_pending", "dropped", "graduated"].includes(
-              s.status as string,
-            ),
+          studentsData.filter(
+            (s) =>
+              // Paused students are off the roster (auto-absent, no coach pay).
+              !s.paused_at &&
+              ["enrolled", "dropout_pending", "dropped", "graduated"].includes(
+                s.status as string,
+              ),
           ),
         );
         const cohortSessions = allSessions
@@ -111,13 +115,22 @@ export default function CoachCohortAttendancePage() {
     setSaveMessage(null);
     (async () => {
       try {
-        const records: SessionAttendanceRecord[] =
-          await getSessionAttendance(selectedSessionId);
+        const [records, bookedIds] = await Promise.all([
+          getSessionAttendance(selectedSessionId),
+          getSessionBookedMemberIds(selectedSessionId).catch(() => [] as string[]),
+        ]);
         const recordByMember = new Map(records.map((r) => [r.member_id, r]));
+        const bookedSet = new Set(bookedIds);
 
         const newRows: StudentRowState[] = students.map((s) => {
           const rec = recordByMember.get(s.member_id);
-          const status = (rec?.status ?? "present") as AttendanceStatus;
+          // Default: an existing record wins; otherwise Present if the student
+          // booked this session, Absent if not. The coach flips booked-no-shows
+          // to Absent/Excused and walk-ins to Present, then Saves.
+          const status = (rec?.status ??
+            (bookedSet.has(s.member_id)
+              ? "present"
+              : "absent")) as AttendanceStatus;
           const notes = rec?.notes ?? "";
           return {
             member_id: s.member_id,
@@ -157,18 +170,18 @@ export default function CoachCohortAttendancePage() {
 
   async function handleSave() {
     if (!selectedSessionId) return;
-    // Send only rows that differ from the server state. PRESENT entries
-    // for previously-recorded exceptions delete the row server-side.
-    const entries: CoachAttendanceMarkEntry[] = rows
-      .filter((r) => r.status !== r.serverStatus || r.notes !== r.serverNotes)
-      .map((r) => ({
-        member_id: r.member_id,
-        status: r.status,
-        notes: r.notes || null,
-      }));
+    // Send EVERY student's status so an explicit attendance row is written for
+    // each — coach pay accrues only from explicit Present/Late rows, so we must
+    // materialise them (the old "send only changes" left present students with
+    // no row, hence unpaid).
+    const entries: CoachAttendanceMarkEntry[] = rows.map((r) => ({
+      member_id: r.member_id,
+      status: r.status,
+      notes: r.notes || null,
+    }));
 
     if (entries.length === 0) {
-      setSaveMessage({ type: "success", text: "No changes to save." });
+      setSaveMessage({ type: "success", text: "No students to save." });
       return;
     }
 
@@ -217,11 +230,13 @@ export default function CoachCohortAttendancePage() {
 
       {/* Help card explaining default-present */}
       <Alert variant="info">
-        <strong>Default-present model:</strong> all enrolled students are
-        treated as present unless you mark otherwise. Use <em>Excused</em> for
-        absences with reasonable notice — these auto-create a make-up
-        obligation that you'll reschedule later. Use <em>Absent</em> for no-shows
-        without notice (counts as a held session for pay purposes).
+        <strong>Mark who attended, then Save.</strong> Each student is pre-set
+        to <em>Present</em> if they booked this session, <em>Absent</em> if not
+        — adjust as needed (booked but didn't show → Absent/Excused; walked in →
+        Present) and <strong>Save</strong>. You're paid only for students marked{" "}
+        <em>Present</em>/<em>Late</em>, so saving records every student's status.
+        Use <em>Excused</em> for absences with notice — these create a make-up
+        obligation to reschedule. Paused students aren't shown.
       </Alert>
 
       {/* Session picker */}
@@ -355,7 +370,7 @@ export default function CoachCohortAttendancePage() {
           <div className="mt-6 flex items-center justify-end gap-3">
             <Button
               onClick={handleSave}
-              disabled={saving || dirtyCount === 0}
+              disabled={saving || rows.length === 0}
               variant="primary"
             >
               <Save className="h-4 w-4 mr-1" />

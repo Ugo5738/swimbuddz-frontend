@@ -352,6 +352,12 @@ export interface EnrollmentInstallment {
   updated_at: string;
 }
 
+export interface EnrollmentPauseResult {
+  id: string;
+  status: string;
+  paused_at?: string | null;
+}
+
 export interface Enrollment {
   id: string;
   program_id?: string | null;
@@ -373,6 +379,9 @@ export interface Enrollment {
   paid_installments_count?: number;
   missed_installments_count?: number;
   access_suspended?: boolean;
+  // Resumable pause (NULL/undefined = active). Paused students are off the
+  // attendance roster and earn the coach nothing from this date.
+  paused_at?: string | null;
   // Enrollment tracking
   enrolled_at?: string;
   source?: EnrollmentSource;

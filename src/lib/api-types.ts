@@ -3766,6 +3766,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/sessions/{session_id}/confirmed-booking-member-ids": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Confirmed Booking Member Ids
+         * @description Member IDs with a CONFIRMED booking for this session (the 'expected to
+         *     attend' set). attendance-service uses this to pre-fill the coach attendance
+         *     sheet — default Present if booked, Absent if not.
+         */
+        get: operations["get_confirmed_booking_member_ids_internal_sessions__session_id__confirmed_booking_member_ids_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/sessions/cohorts/{cohort_id}/completed-session-ids": {
         parameters: {
             query?: never;
@@ -4068,6 +4090,28 @@ export interface paths {
          *     - Coaches: Can view attendance for sessions in their assigned cohorts
          */
         get: operations["list_session_attendance_attendance_sessions__session_id__attendance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/attendance/sessions/{session_id}/booked-member-ids": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Session Booked Member Ids
+         * @description Member IDs with a confirmed booking for this session, for the coach
+         *     attendance sheet's default (Present if booked, Absent if not). Same
+         *     access control as the attendance list (admin or the cohort's coach).
+         */
+        get: operations["list_session_booked_member_ids_attendance_sessions__session_id__booked_member_ids_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4668,6 +4712,48 @@ export interface paths {
         patch: operations["update_enrollment_academy_enrollments__enrollment_id__patch"];
         trace?: never;
     };
+    "/api/v1/academy/enrollments/{enrollment_id}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin Pause Enrollment
+         * @description Admin temporarily pauses a student (resumable). The student leaves the
+         *     attendance roster and the coach earns nothing for them from now on (the
+         *     payout clips eligible sessions at paused_at).
+         */
+        post: operations["admin_pause_enrollment_academy_enrollments__enrollment_id__pause_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/enrollments/{enrollment_id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin Resume Enrollment
+         * @description Admin resumes a paused enrollment (clears paused_at).
+         */
+        post: operations["admin_resume_enrollment_academy_enrollments__enrollment_id__resume_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/academy/enrollments/me": {
         parameters: {
             query?: never;
@@ -4744,6 +4830,51 @@ export interface paths {
         get: operations["get_my_enrollment_academy_my_enrollments__enrollment_id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/my-enrollments/{enrollment_id}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pause My Enrollment
+         * @description Member temporarily pauses their own participation in a cohort.
+         *
+         *     While paused they drop off the attendance roster and the coach earns
+         *     nothing for them from now (the payout clips eligible sessions at paused_at).
+         *     Reversible via /resume. Only an ENROLLED, not-already-paused enrollment can
+         *     be paused.
+         */
+        post: operations["pause_my_enrollment_academy_my_enrollments__enrollment_id__pause_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/my-enrollments/{enrollment_id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume My Enrollment
+         * @description Member resumes a paused enrollment (clears paused_at).
+         */
+        post: operations["resume_my_enrollment_academy_my_enrollments__enrollment_id__resume_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -22081,6 +22212,22 @@ export interface components {
             /** Amount Kobo */
             amount_kobo?: number | null;
         };
+        /**
+         * EnrollmentPauseResponse
+         * @description Lightweight result of a pause/resume action (avoids lazy-loading
+         *     cohort/program/progress relationships just to confirm a status change).
+         */
+        EnrollmentPauseResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Status */
+            status: string;
+            /** Paused At */
+            paused_at?: string | null;
+        };
         /** EnrollmentResponse */
         EnrollmentResponse: {
             /** @default enrolled */
@@ -22140,6 +22287,8 @@ export interface components {
              * @default false
              */
             uses_installments: boolean;
+            /** Paused At */
+            paused_at?: string | null;
             cohort?: components["schemas"]["CohortResponse"] | null;
             program?: components["schemas"]["ProgramResponse"] | null;
             /** Installments */
@@ -41333,6 +41482,37 @@ export interface operations {
             };
         };
     };
+    get_confirmed_booking_member_ids_internal_sessions__session_id__confirmed_booking_member_ids_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_completed_session_ids_for_cohort_internal_sessions_cohorts__cohort_id__completed_session_ids_get: {
         parameters: {
             query?: {
@@ -41757,6 +41937,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AttendanceResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_session_booked_member_ids_attendance_sessions__session_id__booked_member_ids_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string[];
                 };
             };
             /** @description Validation Error */
@@ -42925,6 +43136,68 @@ export interface operations {
             };
         };
     };
+    admin_pause_enrollment_academy_enrollments__enrollment_id__pause_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnrollmentPauseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_resume_enrollment_academy_enrollments__enrollment_id__resume_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnrollmentPauseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     self_enroll_academy_enrollments_me_post: {
         parameters: {
             query?: never;
@@ -43029,6 +43302,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EnrollmentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pause_my_enrollment_academy_my_enrollments__enrollment_id__pause_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnrollmentPauseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resume_my_enrollment_academy_my_enrollments__enrollment_id__resume_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnrollmentPauseResponse"];
                 };
             };
             /** @description Validation Error */

@@ -50,6 +50,7 @@ export default function EnrollmentDetailPage() {
     null,
   );
   const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [pausing, setPausing] = useState(false);
 
   useEffect(() => {
     if (enrollmentId) {
@@ -152,6 +153,23 @@ export default function EnrollmentDetailPage() {
 
   const handleClaimSuccess = () => {
     loadData();
+  };
+
+  const handleTogglePause = async () => {
+    if (!enrollment) return;
+    setPausing(true);
+    try {
+      if (enrollment.paused_at) {
+        await AcademyApi.resumeMyEnrollment(enrollment.id);
+      } else {
+        await AcademyApi.pauseMyEnrollment(enrollment.id);
+      }
+      await loadData();
+    } catch (err) {
+      console.error("Failed to toggle pause", err);
+    } finally {
+      setPausing(false);
+    }
   };
 
   if (loading) {
@@ -812,6 +830,30 @@ export default function EnrollmentDetailPage() {
             </Button>
             {/* Subtle, low-emphasis withdraw entry point. Members rarely need
                 this; if they do, the modal walks them through refund + waiver. */}
+            {!isDropped &&
+              (enrollment.paused_at ||
+                enrollment.status === EnrollmentStatus.ENROLLED) && (
+                <div className="mt-4 pt-3 border-t border-cyan-100 text-center">
+                  {enrollment.paused_at && (
+                    <p className="mb-2 text-xs text-amber-700">
+                      Your place is paused — you won't be marked for sessions
+                      until you resume.
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleTogglePause}
+                    disabled={pausing}
+                    className="text-sm font-medium text-cyan-700 hover:text-cyan-900 disabled:opacity-50"
+                  >
+                    {pausing
+                      ? "…"
+                      : enrollment.paused_at
+                        ? "Resume my place"
+                        : "Pause my place"}
+                  </button>
+                </div>
+              )}
             {!isDropped && (
               <div className="mt-4 pt-3 border-t border-cyan-100 text-center">
                 <WithdrawLink onClick={() => setWithdrawOpen(true)} />
