@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Calendar, MapPin, Users, Filter } from "lucide-react";
+import { Calendar, MapPin, Users, Filter, Plus } from "lucide-react";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -68,13 +68,23 @@ export default function EventsPage() {
     <div className="mx-auto max-w-6xl space-y-6 py-4 md:py-8">
       {/* Header */}
       <header className="space-y-3">
-        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
-          Community Events
-        </h1>
-        <p className="text-sm md:text-base text-slate-600">
-          Join us for social gatherings, beach days, volunteer activities, and
-          more!
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-1">
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
+              Community Events
+            </h1>
+            <p className="text-sm md:text-base text-slate-600">
+              Join us for social gatherings, beach days, volunteer activities,
+              and more!
+            </p>
+          </div>
+          <Link href="/community/events/create">
+            <Button className="flex items-center gap-2 whitespace-nowrap">
+              <Plus className="h-4 w-4" />
+              Host an open swim
+            </Button>
+          </Link>
+        </div>
       </header>
 
       {/* Filter Bar */}

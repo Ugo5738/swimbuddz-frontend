@@ -2,11 +2,13 @@
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { SessionVolunteerPanel } from "@/components/volunteer/SessionVolunteerPanel";
 import { apiGet, apiPost } from "@/lib/api";
 import { apiEndpoints } from "@/lib/config";
+import { MembersApi } from "@/lib/members";
 import { format } from "date-fns";
-import { ArrowLeft, Calendar, CheckCircle, CreditCard, MapPin, Users } from "lucide-react";
+import { ArrowLeft, Calendar, CheckCircle, CreditCard, MapPin, Pencil, Users } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -23,6 +25,9 @@ interface Event {
   max_capacity: number | null;
   tier_access: string;
   cost_naira: number | null;
+  total_cost_naira: number | null;
+  pool_id: string | null;
+  created_by: string;
   created_at: string;
 }
 
@@ -56,6 +61,8 @@ export default function EventDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [payWithBubbles, setPayWithBubbles] = useState(false);
+  const [waiverAccepted, setWaiverAccepted] = useState(false);
+  const [meId, setMeId] = useState<string | null>(null);
 
   useEffect(() => {
     if (eventId) {
@@ -64,6 +71,9 @@ export default function EventDetailPage() {
     }
     apiGet<WalletData>("/api/v1/wallet/me", { auth: true })
       .then((data) => setWalletBalance(data.balance))
+      .catch(() => {});
+    MembersApi.getMe()
+      .then((m) => setMeId(m.id as string))
       .catch(() => {});
   }, [eventId]);
 
@@ -94,17 +104,29 @@ export default function EventDetailPage() {
   };
 
   const handleRsvp = async (status: "going" | "maybe" | "not_going") => {
+    const cost = event?.total_cost_naira ?? event?.cost_naira ?? 0;
+    const paid = !!cost && cost > 0;
+    const openSwim = event?.event_type === "open_swim";
+
+    if (status === "going" && paid && openSwim && !waiverAccepted) {
+      toast.error("Please accept the liability waiver to join this meet.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const body: Record<string, unknown> = { status };
-      if (status === "going" && event?.cost_naira && event.cost_naira > 0) {
+      if (status === "going" && paid) {
         body.pay_with_bubbles = payWithBubbles;
+      }
+      if (status === "going" && openSwim && paid) {
+        body.waiver_accepted = waiverAccepted;
       }
       await apiPost(`/api/v1/events/${eventId}/rsvp`, body, { auth: true });
       setUserRsvp(status);
       await fetchRsvps();
-      if (status === "going" && payWithBubbles && event?.cost_naira && event.cost_naira > 0) {
-        const bubblesUsed = Math.ceil(event.cost_naira / 100);
+      if (status === "going" && payWithBubbles && paid) {
+        const bubblesUsed = Math.ceil(cost / 100);
         toast.success(`RSVP confirmed! ${bubblesUsed} 🫧 Bubbles used.`);
       }
     } catch (error) {
@@ -120,9 +142,13 @@ export default function EventDetailPage() {
     not_going: rsvps.filter((r) => r.status === "not_going").length,
   };
 
-  const hasCost = !!(event?.cost_naira && event.cost_naira > 0);
-  const bubblesNeeded = hasCost ? Math.ceil(event!.cost_naira! / 100) : 0;
+  const effectiveCost = event?.total_cost_naira ?? event?.cost_naira ?? null;
+  const hasCost = !!(effectiveCost && effectiveCost > 0);
+  const bubblesNeeded = hasCost ? Math.ceil(effectiveCost! / 100) : 0;
   const canPayWithBubbles = hasCost && walletBalance !== null && walletBalance >= bubblesNeeded;
+  const isOpenSwim = event?.event_type === "open_swim";
+  const requiresWaiver = hasCost && isOpenSwim;
+  const isOwner = !!meId && !!event && meId === event.created_by;
 
   if (loading) {
     return (
@@ -144,15 +170,25 @@ export default function EventDetailPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 py-8">
-      {/* Back Button */}
-      <Button
-        variant="secondary"
-        onClick={() => router.push("/community/events")}
-        className="flex items-center gap-2"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Events
-      </Button>
+      {/* Back Button + owner controls */}
+      <div className="flex items-center justify-between">
+        <Button
+          variant="secondary"
+          onClick={() => router.push("/community/events")}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Events
+        </Button>
+        {isOwner && isOpenSwim && (
+          <Link href={`/community/events/${eventId}/edit`}>
+            <Button variant="secondary" className="flex items-center gap-2">
+              <Pencil className="h-4 w-4" />
+              Edit meet
+            </Button>
+          </Link>
+        )}
+      </div>
 
       {/* Event Header */}
       <Card className="p-6">
@@ -213,7 +249,7 @@ export default function EventDetailPage() {
                 <div>
                   <div className="font-medium">Entry Fee</div>
                   <div className="text-slate-600">
-                    ₦{event.cost_naira!.toLocaleString()}{" "}
+                    ₦{effectiveCost!.toLocaleString()}{" "}
                     <span className="text-xs text-slate-400">· {bubblesNeeded} 🫧</span>
                   </div>
                 </div>
@@ -247,7 +283,7 @@ export default function EventDetailPage() {
               <div>
                 <h4 className="text-sm font-semibold text-slate-800">Entry Fee Payment</h4>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Choose how to pay the ₦{event.cost_naira!.toLocaleString()} entry fee
+                  Choose how to pay the ₦{effectiveCost!.toLocaleString()} entry fee
                 </p>
               </div>
 
@@ -282,7 +318,7 @@ export default function EventDetailPage() {
                     </div>
                   </div>
                   <p className="mt-3 text-xl font-bold text-slate-900">
-                    ₦{event.cost_naira!.toLocaleString()}
+                    ₦{effectiveCost!.toLocaleString()}
                   </p>
                 </div>
 
@@ -362,10 +398,29 @@ export default function EventDetailPage() {
             </div>
           )}
 
+          {requiresWaiver && (
+            <label className="mb-4 flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <Checkbox
+                checked={waiverAccepted}
+                onChange={(e) => setWaiverAccepted(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span className="text-sm text-slate-700">
+                I understand this is a peer-organized swim and I join at my own
+                risk. I accept the{" "}
+                <span className="font-medium">liability waiver</span>.
+              </span>
+            </label>
+          )}
+
           <div className="grid gap-3 sm:grid-cols-3">
             <button
               onClick={() => handleRsvp("going")}
-              disabled={submitting || !!(isFullyBooked && userRsvp !== "going")}
+              disabled={
+                submitting ||
+                !!(isFullyBooked && userRsvp !== "going") ||
+                (requiresWaiver && !waiverAccepted)
+              }
               className={`flex items-center justify-center gap-2 rounded-xl border-2 px-4 py-4 font-medium transition-all ${
                 userRsvp === "going"
                   ? "border-emerald-500 bg-emerald-50 text-emerald-700"
@@ -379,7 +434,7 @@ export default function EventDetailPage() {
                   <div className="text-xs font-normal opacity-75 mt-0.5">
                     {payWithBubbles
                       ? `${bubblesNeeded} 🫧`
-                      : `₦${event.cost_naira!.toLocaleString()}`}
+                      : `₦${effectiveCost!.toLocaleString()}`}
                   </div>
                 )}
               </div>
