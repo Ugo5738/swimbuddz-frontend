@@ -324,7 +324,7 @@ export default function OrderDetailPage() {
             <div className="mt-6 pt-6 border-t border-slate-100 text-center">
               <p className="text-sm text-slate-500">Need help with your order?</p>
               <a
-                href="mailto:hello@swimbuddz.com"
+                href="mailto:swimbuddz@gmail.com"
                 className="text-sm text-cyan-600 hover:underline"
               >
                 Contact Support

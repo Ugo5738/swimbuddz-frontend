@@ -193,7 +193,7 @@ function RegistrationSuccessContent() {
           <p>
             Have questions?{" "}
             <a
-              href="mailto:hello@swimbuddz.com"
+              href="mailto:swimbuddz@gmail.com"
               className="text-cyan-600 hover:text-cyan-700 hover:underline"
             >
               Contact our support team
@@ -336,7 +336,7 @@ function RegistrationSuccessContent() {
         <p>
           Have questions?{" "}
           <a
-            href="mailto:hello@swimbuddz.com"
+            href="mailto:swimbuddz@gmail.com"
             className="text-cyan-600 hover:text-cyan-700 hover:underline"
           >
             Contact our support team
