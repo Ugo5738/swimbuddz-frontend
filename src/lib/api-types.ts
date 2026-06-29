@@ -10578,6 +10578,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ai/public/analyze/uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a guest job and issue a media-service upload URL
+         * @description Issue a media-service-owned presigned PUT target for the analyzer.
+         *
+         *     This is the preferred browser path for real videos: the API never buffers the
+         *     multipart body, and analysis is not queued until /complete verifies the object.
+         *     The legacy multipart endpoint below remains as a fallback for local/dev.
+         */
+        post: operations["create_public_direct_upload_ai_public_analyze_uploads_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/public/analyze/{job_id}/complete-upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Verify a direct upload, reserve credit, and queue analysis */
+        post: operations["complete_public_direct_upload_ai_public_analyze__job_id__complete_upload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ai/public/analyze": {
         parameters: {
             query?: never;
@@ -10627,6 +10668,23 @@ export interface paths {
         put?: never;
         /** Coach one stored instance on demand, guest (gated; 409 until unlocked) */
         post: operations["inspect_public_analysis_ai_public_analyze__job_id__inspect_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/public/analyze/{job_id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Re-run a FAILED guest analysis on its stored clip — free (guest_token) */
+        post: operations["retry_public_analysis_ai_public_analyze__job_id__retry_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -13407,6 +13465,54 @@ export interface paths {
         patch: operations["update_event_events__event_id__patch"];
         trace?: never;
     };
+    "/api/v1/events/open-swim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Open Swim
+         * @description Create a member-hosted open-swim meet.
+         *
+         *     Adults-only (18+). If ``pool_id`` is set it must be an active-partner
+         *     per-swimmer pool; the per-swimmer fee is snapshotted and the optional
+         *     organizer surcharge is added. No pool = a free/informal meet.
+         */
+        post: operations["create_open_swim_events_open_swim_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/open-swim/{event_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Cancel Open Swim
+         * @description Cancel a meet you created (creator only); refund anyone who paid.
+         */
+        delete: operations["cancel_open_swim_events_open_swim__event_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Open Swim
+         * @description Edit a meet you created (creator only).
+         */
+        patch: operations["update_open_swim_events_open_swim__event_id__patch"];
+        trace?: never;
+    };
     "/api/v1/events/{event_id}/rsvp": {
         parameters: {
             query?: never;
@@ -13420,8 +13526,9 @@ export interface paths {
          * Create Or Update Rsvp
          * @description Create or update RSVP for an event.
          *
-         *     When pay_with_bubbles=True and status='going', the member's wallet is debited
-         *     for the event fee on the first 'going' RSVP.
+         *     When pay_with_bubbles=True and the member commits to 'going' (and hasn't
+         *     already paid), their wallet is debited for the event fee — this covers both
+         *     a new 'going' RSVP and a maybe/not_going → going switch.
          */
         post: operations["create_or_update_rsvp_events__event_id__rsvp_post"];
         delete?: never;
@@ -13904,6 +14011,106 @@ export interface paths {
          *     - 0.5 = mix both at equal volume
          */
         post: operations["apply_audio_to_video_media_videos__media_id__apply_audio_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/media/direct-uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Direct Upload
+         * @description Issue a media-owned presigned PUT URL for browser direct uploads.
+         */
+        post: operations["create_direct_upload_internal_media_direct_uploads_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/media/objects/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify Object
+         * @description Return object metadata after a direct upload completes.
+         */
+        post: operations["verify_object_internal_media_objects_verify_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/media/objects/sign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign Object
+         * @description Return a short-lived read URL for a private media object.
+         */
+        post: operations["sign_object_internal_media_objects_sign_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/media/objects/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Object
+         * @description Upload small generated media artifacts owned by another service.
+         */
+        post: operations["upload_object_internal_media_objects_upload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/media/objects/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete Object
+         * @description Best-effort object deletion by key.
+         */
+        post: operations["delete_object_internal_media_objects_delete_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -18006,6 +18213,8 @@ export interface components {
             community_paid_until?: string | null;
             /** Profile Photo Url */
             profile_photo_url?: string | null;
+            /** Date Of Birth */
+            date_of_birth?: string | null;
         };
         /**
          * MemberBasicResponse
@@ -28236,6 +28445,12 @@ export interface components {
             coach_share_urls?: {
                 [key: string]: string;
             } | null;
+            /** Inspect Statuses */
+            inspect_statuses?: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            } | null;
         };
         /** Body_create_analysis_job_ai_analyze_post */
         Body_create_analysis_job_ai_analyze_post: {
@@ -28681,6 +28896,8 @@ export interface components {
             original_video_url?: string | null;
             /** Annotated Video Url */
             annotated_video_url?: string | null;
+            /** Queue Depth */
+            queue_depth?: number | null;
         };
         /**
          * PublicAnalysisJobResponse
@@ -28710,6 +28927,8 @@ export interface components {
              * @default We'll email you a link as soon as it's ready.
              */
             estimated_ready_hint: string;
+            /** Queue Depth */
+            queue_depth?: number | null;
             /**
              * Created At
              * Format: date-time
@@ -28732,6 +28951,71 @@ export interface components {
             can_submit_free: boolean;
             /** Remaining Credits */
             remaining_credits: number;
+        };
+        /**
+         * PublicDirectUploadRequest
+         * @description Start a direct browser-to-S3 public analyzer upload.
+         */
+        PublicDirectUploadRequest: {
+            /** Guest Email */
+            guest_email: string;
+            /**
+             * Filename
+             * @default clip.mp4
+             */
+            filename: string;
+            /**
+             * Content Type
+             * @default video/mp4
+             */
+            content_type: string;
+            /** Size Bytes */
+            size_bytes: number;
+            /**
+             * Stroke Type
+             * @default freestyle
+             */
+            stroke_type: string;
+            /**
+             * Discipline
+             * @default general
+             */
+            discipline: string;
+            /** Level */
+            level?: string | null;
+            /** Focus Area */
+            focus_area?: string | null;
+            /** Goal Text */
+            goal_text?: string | null;
+        };
+        /**
+         * PublicDirectUploadResponse
+         * @description Private presigned PUT target for a public analyzer upload.
+         */
+        PublicDirectUploadResponse: {
+            /**
+             * Job Id
+             * Format: uuid
+             */
+            job_id: string;
+            /** Guest Token */
+            guest_token: string;
+            /** Upload Url */
+            upload_url: string;
+            /**
+             * Method
+             * @default PUT
+             */
+            method: string;
+            /**
+             * Headers
+             * @default {}
+             */
+            headers: {
+                [key: string]: string;
+            };
+            /** Expires In */
+            expires_in: number;
         };
         /** QueueRecentJob */
         QueueRecentJob: {
@@ -32748,6 +33032,14 @@ export interface components {
             tier_access: string;
             /** Cost Naira */
             cost_naira?: number | null;
+            /** Pool Id */
+            pool_id?: string | null;
+            /** Pool Fee Naira */
+            pool_fee_naira?: number | null;
+            /** Organizer Surcharge Naira */
+            organizer_surcharge_naira?: number | null;
+            /** Total Cost Naira */
+            total_cost_naira?: number | null;
             /**
              * Created By
              * Format: uuid
@@ -32793,6 +33085,60 @@ export interface components {
             cost_naira?: number | null;
         };
         /**
+         * OpenSwimCreate
+         * @description Schema for a member creating their own open-swim meet.
+         *
+         *     `event_type` is forced to "open_swim" server-side. If `pool_id` is set the
+         *     meet is a paid pool meet (the per-swimmer fee is snapshotted from the pool and
+         *     the optional surcharge added); if null it is a free/informal meet.
+         */
+        OpenSwimCreate: {
+            /** Title */
+            title: string;
+            /** Description */
+            description?: string | null;
+            /** Location */
+            location?: string | null;
+            /**
+             * Start Time
+             * Format: date-time
+             */
+            start_time: string;
+            /** End Time */
+            end_time?: string | null;
+            /** Max Capacity */
+            max_capacity?: number | null;
+            /**
+             * Tier Access
+             * @default community
+             */
+            tier_access: string;
+            /** Pool Id */
+            pool_id?: string | null;
+            /** Organizer Surcharge Naira */
+            organizer_surcharge_naira?: number | null;
+        };
+        /**
+         * OpenSwimUpdate
+         * @description Schema for a member editing their own open-swim meet (all fields optional).
+         */
+        OpenSwimUpdate: {
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Location */
+            location?: string | null;
+            /** Start Time */
+            start_time?: string | null;
+            /** End Time */
+            end_time?: string | null;
+            /** Max Capacity */
+            max_capacity?: number | null;
+            /** Organizer Surcharge Naira */
+            organizer_surcharge_naira?: number | null;
+        };
+        /**
          * RSVPCreate
          * @description Schema for creating/updating an RSVP.
          */
@@ -32804,6 +33150,11 @@ export interface components {
              * @default false
              */
             pay_with_bubbles: boolean;
+            /**
+             * Waiver Accepted
+             * @default false
+             */
+            waiver_accepted: boolean;
         };
         /**
          * RSVPResponse
@@ -33251,6 +33602,134 @@ export interface components {
             media_type: string;
             /** Album Id */
             album_id?: string | null;
+        };
+        /**
+         * InternalDirectUploadCreateRequest
+         * @description Service-to-service request for a browser direct-upload target.
+         */
+        InternalDirectUploadCreateRequest: {
+            /** Purpose */
+            purpose: string;
+            /**
+             * Filename
+             * @default upload.bin
+             */
+            filename: string;
+            /**
+             * Content Type
+             * @default application/octet-stream
+             */
+            content_type: string;
+            /** Size Bytes */
+            size_bytes: number;
+            /** Linked Id */
+            linked_id?: string | null;
+            /**
+             * Expires In
+             * @default 900
+             */
+            expires_in: number;
+        };
+        /**
+         * InternalDirectUploadCreateResponse
+         * @description Presigned PUT target plus the opaque media object key.
+         */
+        InternalDirectUploadCreateResponse: {
+            /** Object Key */
+            object_key: string;
+            /** Bucket Type */
+            bucket_type: string;
+            /** Upload Url */
+            upload_url: string;
+            /**
+             * Method
+             * @default PUT
+             */
+            method: string;
+            /** Headers */
+            headers: {
+                [key: string]: string;
+            };
+            /** Expires In */
+            expires_in: number;
+        };
+        /** InternalObjectMetadataResponse */
+        InternalObjectMetadataResponse: {
+            /** Object Key */
+            object_key: string;
+            /** Bucket Type */
+            bucket_type: string;
+            /** Size Bytes */
+            size_bytes: number;
+            /** Content Type */
+            content_type?: string | null;
+            /** Etag */
+            etag?: string | null;
+        };
+        /** InternalObjectSignRequest */
+        InternalObjectSignRequest: {
+            /** Object Key */
+            object_key: string;
+            /**
+             * Bucket Type
+             * @default private
+             */
+            bucket_type: string;
+            /**
+             * Expires In
+             * @default 3600
+             */
+            expires_in: number;
+        };
+        /** InternalObjectSignResponse */
+        InternalObjectSignResponse: {
+            /** Url */
+            url: string;
+            /** Expires In */
+            expires_in: number;
+        };
+        /**
+         * InternalObjectUploadRequest
+         * @description Service-to-service small-object upload.
+         *
+         *     Large browser uploads should use InternalDirectUploadCreateRequest instead.
+         */
+        InternalObjectUploadRequest: {
+            /** Purpose */
+            purpose: string;
+            /**
+             * Filename
+             * @default upload.bin
+             */
+            filename: string;
+            /**
+             * Content Type
+             * @default application/octet-stream
+             */
+            content_type: string;
+            /** Data Base64 */
+            data_base64: string;
+            /** Linked Id */
+            linked_id?: string | null;
+        };
+        /** InternalObjectUploadResponse */
+        InternalObjectUploadResponse: {
+            /** Object Key */
+            object_key: string;
+            /** Bucket Type */
+            bucket_type: string;
+            /** Url */
+            url: string;
+        };
+        /** InternalObjectVerifyRequest */
+        InternalObjectVerifyRequest: {
+            /** Object Key */
+            object_key: string;
+            /**
+             * Bucket Type
+             * @default private
+             */
+            bucket_type: string;
         };
         /**
          * MediaDownloadResponse
@@ -52870,6 +53349,74 @@ export interface operations {
             };
         };
     };
+    create_public_direct_upload_ai_public_analyze_uploads_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicDirectUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicDirectUploadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_public_direct_upload_ai_public_analyze__job_id__complete_upload_post: {
+        parameters: {
+            query?: {
+                guest_token?: string | null;
+            };
+            header?: {
+                "X-Guest-Token"?: string | null;
+            };
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicAnalysisJobResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_public_analysis_job_ai_public_analyze_post: {
         parameters: {
             query?: never;
@@ -52956,6 +53503,43 @@ export interface operations {
                 "application/json": components["schemas"]["InspectRequest"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_public_analysis_ai_public_analyze__job_id__retry_post: {
+        parameters: {
+            query?: {
+                guest_token?: string | null;
+            };
+            header?: {
+                "X-Guest-Token"?: string | null;
+            };
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -58515,6 +59099,103 @@ export interface operations {
             };
         };
     };
+    create_open_swim_events_open_swim_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpenSwimCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_open_swim_events_open_swim__event_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_open_swim_events_open_swim__event_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpenSwimUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_or_update_rsvp_events__event_id__rsvp_post: {
         parameters: {
             query?: never;
@@ -59577,6 +60258,173 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MediaItemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_direct_upload_internal_media_direct_uploads_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InternalDirectUploadCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalDirectUploadCreateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    verify_object_internal_media_objects_verify_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InternalObjectVerifyRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalObjectMetadataResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sign_object_internal_media_objects_sign_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InternalObjectSignRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalObjectSignResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_object_internal_media_objects_upload_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InternalObjectUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalObjectUploadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_object_internal_media_objects_delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InternalObjectVerifyRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */
