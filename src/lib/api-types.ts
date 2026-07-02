@@ -3684,6 +3684,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/sessions/member/{member_auth_id}/session-commitments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Member Session Commitments
+         * @description Confirmed, dated session commitments for member reporting.
+         *
+         *     This uses the session's scheduled time as the reporting window, not the
+         *     booking creation time. It lets reporting distinguish "expected to attend"
+         *     from attendance records that happen to exist.
+         */
+        get: operations["list_member_session_commitments_internal_sessions_member__member_auth_id__session_commitments_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/sessions/durations": {
         parameters: {
             query?: never;
@@ -3800,6 +3824,26 @@ export interface paths {
          * @description Get completed session IDs for a cohort, optionally filtered by date range.
          */
         get: operations["get_completed_session_ids_for_cohort_internal_sessions_cohorts__cohort_id__completed_session_ids_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/sessions/cohorts/{cohort_id}/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Sessions For Cohort Internal
+         * @description Get dated cohort sessions for reporting and academy integrations.
+         */
+        get: operations["get_sessions_for_cohort_internal_internal_sessions_cohorts__cohort_id__sessions_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5738,6 +5782,26 @@ export interface paths {
          *     Returns enrollment status and access info.
          */
         get: operations["check_cohort_enrollment_internal_internal_academy_cohorts__cohort_id__check_enrollment__member_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/academy/member-cohort-enrollments/{member_auth_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Member Cohort Enrollments Internal
+         * @description Return academy cohort enrollments that overlap a reporting window.
+         */
+        get: operations["get_member_cohort_enrollments_internal_internal_academy_member_cohort_enrollments__member_auth_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -19873,6 +19937,40 @@ export interface components {
          * @enum {string}
          */
         MakeupStatus: "requested" | "held" | "confirmed" | "completed" | "forfeited" | "expired" | "cancelled";
+        /**
+         * MemberSessionCommitment
+         * @description A confirmed member commitment joined to its scheduled session.
+         */
+        MemberSessionCommitment: {
+            /** Booking Id */
+            booking_id: string;
+            /** Session Id */
+            session_id: string;
+            /** Member Id */
+            member_id: string;
+            /** Member Auth Id */
+            member_auth_id: string;
+            /** Title */
+            title: string;
+            /** Session Type */
+            session_type: string;
+            /** Session Status */
+            session_status: string;
+            /** Starts At */
+            starts_at: string;
+            /** Ends At */
+            ends_at: string;
+            /** Location Name */
+            location_name?: string | null;
+            /** Cohort Id */
+            cohort_id?: string | null;
+            /** Pod Id */
+            pod_id?: string | null;
+            /** Event Id */
+            event_id?: string | null;
+            /** Week Number */
+            week_number?: number | null;
+        };
         /** NextSessionResponse */
         NextSessionResponse: {
             /** Starts At */
@@ -22353,6 +22451,27 @@ export interface components {
              * @default 0
              */
             certificates_earned: number;
+        };
+        /** MemberCohortEnrollment */
+        MemberCohortEnrollment: {
+            /** Enrollment Id */
+            enrollment_id: string;
+            /** Cohort Id */
+            cohort_id: string;
+            /** Member Id */
+            member_id: string;
+            /** Status */
+            status?: string | null;
+            /** Enrolled At */
+            enrolled_at?: string | null;
+            /** Dropped At */
+            dropped_at?: string | null;
+            /** Paused At */
+            paused_at?: string | null;
+            /** Cohort Start Date */
+            cohort_start_date?: string | null;
+            /** Cohort End Date */
+            cohort_end_date?: string | null;
         };
         /**
          * MemberMilestoneClaimRequest
@@ -41357,6 +41476,40 @@ export interface operations {
             };
         };
     };
+    list_member_session_commitments_internal_sessions_member__member_auth_id__session_commitments_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path: {
+                member_auth_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberSessionCommitment"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_session_durations_internal_sessions_durations_get: {
         parameters: {
             query: {
@@ -41534,6 +41687,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": string[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_sessions_for_cohort_internal_internal_sessions_cohorts__cohort_id__sessions_get: {
+        parameters: {
+            query?: {
+                start_date?: string | null;
+                end_date?: string | null;
+                /** @description Comma-separated session statuses to include. */
+                statuses?: string;
+            };
+            header?: never;
+            path: {
+                cohort_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionBasic"][];
                 };
             };
             /** @description Validation Error */
@@ -44574,6 +44763,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_member_cohort_enrollments_internal_internal_academy_member_cohort_enrollments__member_auth_id__get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path: {
+                member_auth_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberCohortEnrollment"][];
                 };
             };
             /** @description Validation Error */

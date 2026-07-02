@@ -127,10 +127,12 @@ export async function toggleLeaderboardPrivacy(
   );
 }
 
+export type CardImageFormat = "square" | "post" | "story";
+
 export function getCardImageUrl(
   year: number,
   quarter: number,
-  format: "square" | "story" = "square"
+  format: CardImageFormat = "square"
 ): string {
   return `${API_BASE_URL}/api/v1/reports/me/quarterly/card?year=${year}&quarter=${quarter}&format=${format}`;
 }
@@ -138,7 +140,7 @@ export function getCardImageUrl(
 export async function downloadCardImage(
   year: number,
   quarter: number,
-  format: "square" | "story" = "square"
+  format: CardImageFormat = "square"
 ): Promise<Blob> {
   const token = await getCurrentAccessToken();
   const url = getCardImageUrl(year, quarter, format);
