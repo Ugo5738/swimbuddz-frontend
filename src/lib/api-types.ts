@@ -10747,7 +10747,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Re-run a FAILED guest analysis on its stored clip — free (guest_token) */
+        /** Re-run a failed or partial guest analysis on its stored clip — free (guest_token) */
         post: operations["retry_public_analysis_ai_public_analyze__job_id__retry_post"];
         delete?: never;
         options?: never;
