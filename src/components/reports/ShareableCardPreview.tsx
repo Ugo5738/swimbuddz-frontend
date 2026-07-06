@@ -16,24 +16,108 @@ const FORMAT_OPTIONS: { value: CardImageFormat; label: string }[] = [
   { value: "story", label: "Story (9:16)" },
 ];
 
+const OBJECT_URL_REVOKE_DELAY_MS = 60_000;
+
+type ShareResult = "shared" | "unsupported" | "aborted" | "failed";
+
+function isIOSDevice(): boolean {
+  if (typeof navigator === "undefined") return false;
+
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+}
+
+function cardFilename(label: string, format: CardImageFormat): string {
+  return `swimbuddz-${label.replace(/\s+/g, "-")}-${format}.png`;
+}
+
+function cardFile(blob: Blob, filename: string): File {
+  return new File([blob], filename, { type: blob.type || "image/png" });
+}
+
+function canShareCardFile(file: File): boolean {
+  if (
+    typeof navigator === "undefined" ||
+    typeof navigator.share !== "function" ||
+    typeof navigator.canShare !== "function"
+  ) {
+    return false;
+  }
+
+  try {
+    return navigator.canShare({ files: [file] });
+  } catch {
+    return false;
+  }
+}
+
+async function shareCardFile(file: File, label: string): Promise<ShareResult> {
+  if (!canShareCardFile(file)) return "unsupported";
+
+  try {
+    await navigator.share({
+      title: `My SwimBuddz ${label} Report`,
+      text: `Check out my SwimBuddz swim report for ${label}!`,
+      files: [file],
+    });
+    return "shared";
+  } catch (e) {
+    if (e instanceof Error && e.name === "AbortError") return "aborted";
+    console.error("Share failed:", e);
+    return "failed";
+  }
+}
+
+function openBlobInBrowser(blob: Blob): void {
+  const url = URL.createObjectURL(blob);
+  const opened = window.open(url, "_blank");
+
+  if (opened) {
+    window.setTimeout(() => URL.revokeObjectURL(url), OBJECT_URL_REVOKE_DELAY_MS);
+    return;
+  }
+
+  window.location.assign(url);
+}
+
+function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.setTimeout(() => URL.revokeObjectURL(url), OBJECT_URL_REVOKE_DELAY_MS);
+}
+
 export function ShareableCardPreview({ year, quarter }: ShareableCardPreviewProps) {
   const [downloading, setDownloading] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [format, setFormat] = useState<CardImageFormat>("post");
   const label = quarterLabel(year, quarter);
   const cachedBlob = useRef<Blob | null>(null);
-  const cachedFormat = useRef<string>("");
+  const cachedKey = useRef<string>("");
+  const currentCacheKey = `${year}-${quarter}-${format}`;
 
   // Pre-fetch the card image when format changes
   const prefetch = useCallback(async () => {
     try {
       const blob = await downloadCardImage(year, quarter, format);
       cachedBlob.current = blob;
-      cachedFormat.current = format;
+      cachedKey.current = currentCacheKey;
     } catch {
       cachedBlob.current = null;
     }
-  }, [year, quarter, format]);
+  }, [year, quarter, format, currentCacheKey]);
+
+  const getCardBlob = useCallback(async () => {
+    return cachedBlob.current && cachedKey.current === currentCacheKey
+      ? cachedBlob.current
+      : downloadCardImage(year, quarter, format);
+  }, [year, quarter, format, currentCacheKey]);
 
   useEffect(() => {
     prefetch();
@@ -42,18 +126,18 @@ export function ShareableCardPreview({ year, quarter }: ShareableCardPreviewProp
   const handleDownload = async () => {
     setDownloading(true);
     try {
-      const blob =
-        cachedBlob.current && cachedFormat.current === format
-          ? cachedBlob.current
-          : await downloadCardImage(year, quarter, format);
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `swimbuddz-${label.replace(" ", "-")}-${format}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      const blob = await getCardBlob();
+      const filename = cardFilename(label, format);
+
+      if (isIOSDevice()) {
+        const shareResult = await shareCardFile(cardFile(blob, filename), label);
+        if (shareResult === "shared" || shareResult === "aborted") return;
+
+        openBlobInBrowser(blob);
+        return;
+      }
+
+      downloadBlob(blob, filename);
     } catch (e) {
       console.error("Download failed:", e);
     } finally {
@@ -64,29 +148,19 @@ export function ShareableCardPreview({ year, quarter }: ShareableCardPreviewProp
   const handleShare = async () => {
     setSharing(true);
     try {
-      // Use pre-fetched blob if available, otherwise fetch now
-      const blob =
-        cachedBlob.current && cachedFormat.current === format
-          ? cachedBlob.current
-          : await downloadCardImage(year, quarter, format);
+      const blob = await getCardBlob();
+      const filename = cardFilename(label, format);
+      const shareResult = await shareCardFile(cardFile(blob, filename), label);
 
-      const file = new File([blob], `swimbuddz-${label.replace(" ", "-")}-${format}.png`, {
-        type: "image/png",
-      });
-
-      if (navigator.share && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          title: `My SwimBuddz ${label} Report`,
-          text: `Check out my SwimBuddz swim report for ${label}!`,
-          files: [file],
-        });
-      } else {
-        handleDownload();
+      if (shareResult === "unsupported" || shareResult === "failed") {
+        if (isIOSDevice()) {
+          openBlobInBrowser(blob);
+        } else {
+          downloadBlob(blob, filename);
+        }
       }
     } catch (e) {
-      if (e instanceof Error && e.name !== "AbortError") {
-        console.error("Share failed:", e);
-      }
+      console.error("Share failed:", e);
     } finally {
       setSharing(false);
     }
