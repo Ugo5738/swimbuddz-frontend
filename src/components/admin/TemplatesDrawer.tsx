@@ -12,14 +12,10 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Calendar, Pencil, Plus, Trash2, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { IBtn } from "@/app/(admin)/admin/sessions/components";
-import type {
-  RideArea,
-  RideShareConfigEntry,
-  Template,
-} from "@/app/(admin)/admin/sessions/types";
+import type { RideArea, RideShareConfigEntry, Template } from "@/app/(admin)/admin/sessions/types";
 import { DAY_NAMES, locationLabel } from "@/app/(admin)/admin/sessions/utils";
 
 /**
@@ -34,6 +30,7 @@ export type TemplateFormPayload = {
   pool_id: string | null;
   location: string | null;
   location_name: string | null;
+  pod_id: string | null;
   day_of_week: number;
   start_time: string;
   duration_minutes: number;
@@ -183,6 +180,7 @@ function TemplateFormInline({
     pool_id: template?.pool_id ?? null,
     location: template?.location || null,
     location_name: template?.location_name ?? null,
+    pod_id: template?.pod_id ?? null,
     day_of_week: template?.day_of_week ?? 5,
     start_time: template?.start_time || "09:00",
     duration_minutes: template?.duration_minutes || 180,
@@ -201,10 +199,32 @@ function TemplateFormInline({
       : []
   );
 
+  const [pods, setPods] = useState<Array<{ id: string; label: string; club_id: string }>>([]);
+  useEffect(() => {
+    if (form.session_type !== "club") return;
+    if (pods.length > 0) return;
+    void (async () => {
+      try {
+        const { listPublicPods, podDisplayName } = await import("@/lib/pods");
+        const list = await listPublicPods();
+        setPods(
+          list.map((p) => ({
+            id: p.id,
+            label: podDisplayName(p),
+            club_id: p.club_id,
+          }))
+        );
+      } catch (e) {
+        console.warn("Failed to load pods for template form", e);
+      }
+    })();
+  }, [form.session_type, pods.length]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const data: TemplateFormPayload = {
       ...form,
+      pod_id: form.session_type === "club" ? (form.pod_id ?? null) : null,
       ride_share_config: rideConfigs
         .filter((c) => c.ride_area_id)
         .map((c) => ({
@@ -237,13 +257,34 @@ function TemplateFormInline({
       <Select
         label="Session Type"
         value={form.session_type}
-        onChange={(e) => setForm({ ...form, session_type: e.target.value })}
+        onChange={(e) =>
+          setForm({
+            ...form,
+            session_type: e.target.value,
+            pod_id: e.target.value === "club" ? form.pod_id : null,
+          })
+        }
       >
         <option value="club">Club</option>
         <option value="cohort_class">Academy / Cohort Class</option>
         <option value="community">Community</option>
         <option value="event">Event</option>
       </Select>
+      {form.session_type === "club" && (
+        <Select
+          label="Pod (optional)"
+          value={form.pod_id ?? ""}
+          onChange={(e) => setForm({ ...form, pod_id: e.target.value || null })}
+          hint="Leave blank for a general Club template. Pick a pod to scope generated sessions to that crew."
+        >
+          <option value="">— General Club template —</option>
+          {pods.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.label}
+            </option>
+          ))}
+        </Select>
+      )}
       <Select
         label="Day of Week"
         value={form.day_of_week.toString()}

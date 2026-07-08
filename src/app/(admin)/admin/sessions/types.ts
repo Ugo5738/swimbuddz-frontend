@@ -3,19 +3,9 @@
 // admin sessions page; if another route ends up needing them, promote
 // to `src/types/`.
 
-export type SessionStatusType =
-  | "draft"
-  | "scheduled"
-  | "in_progress"
-  | "completed"
-  | "cancelled";
+export type SessionStatusType = "draft" | "scheduled" | "in_progress" | "completed" | "cancelled";
 
-export type SessionType =
-  | "club"
-  | "academy"
-  | "community"
-  | "cohort_class"
-  | "event";
+export type SessionType = "club" | "academy" | "community" | "cohort_class" | "event";
 
 export type ViewMode = "calendar" | "list";
 export type FilterTab = "all" | SessionStatusType;
@@ -93,6 +83,7 @@ export interface Template {
   pool_id?: string | null;
   location: string | null;
   location_name?: string | null;
+  pod_id?: string | null;
   session_type?: string;
   pool_fee: number;
   ride_share_fee?: number;
