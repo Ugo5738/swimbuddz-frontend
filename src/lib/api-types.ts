@@ -10393,6 +10393,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/transport/sessions/{session_id}/ride-configs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Attach Ride Configs Internal
+         * @description Attach ride areas to a session from another backend service.
+         *
+         *     This mirrors the admin route's replace strategy, but authenticates via
+         *     service-role so sessions_service can materialise template ride configs
+         *     without an interactive admin token.
+         */
+        post: operations["attach_ride_configs_internal_internal_transport_sessions__session_id__ride_configs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ai/score/cohort-complexity": {
         parameters: {
             query?: never;
@@ -16334,6 +16358,8 @@ export interface components {
         BirthdayMember: {
             /** Id */
             id: string;
+            /** Auth Id */
+            auth_id?: string | null;
             /** First Name */
             first_name: string;
             /** Last Name */
@@ -18273,8 +18299,16 @@ export interface components {
             email: string;
             /** Phone */
             phone?: string | null;
+            /** Primary Tier */
+            primary_tier?: string | null;
+            /** Active Tiers */
+            active_tiers?: string[] | null;
             /** Community Paid Until */
             community_paid_until?: string | null;
+            /** Club Paid Until */
+            club_paid_until?: string | null;
+            /** Academy Paid Until */
+            academy_paid_until?: string | null;
             /** Profile Photo Url */
             profile_photo_url?: string | null;
             /** Date Of Birth */
@@ -20225,6 +20259,8 @@ export interface components {
             location?: string | null;
             /** Cohort Id */
             cohort_id?: string | null;
+            /** Pod Id */
+            pod_id?: string | null;
             /** Capacity */
             capacity: number;
             /** Pool Fee */
@@ -20591,6 +20627,8 @@ export interface components {
             location_name?: string | null;
             /** @default community */
             session_type: components["schemas"]["SessionType"];
+            /** Pod Id */
+            pod_id?: string | null;
             /**
              * Pool Fee
              * @default 0
@@ -20642,6 +20680,8 @@ export interface components {
             location_name?: string | null;
             /** @default community */
             session_type: components["schemas"]["SessionType"];
+            /** Pod Id */
+            pod_id?: string | null;
             /**
              * Pool Fee
              * @default 0
@@ -20705,6 +20745,9 @@ export interface components {
             location?: string | null;
             /** Location Name */
             location_name?: string | null;
+            session_type?: components["schemas"]["SessionType"] | null;
+            /** Pod Id */
+            pod_id?: string | null;
             /** Pool Fee */
             pool_fee?: number | null;
             /** Ride Share Fee */
@@ -27940,6 +27983,31 @@ export interface components {
             configs: {
                 [key: string]: components["schemas"]["SlimRideConfig"][];
             };
+        };
+        /** InternalSessionRideConfigAttachResponse */
+        InternalSessionRideConfigAttachResponse: {
+            /** Created */
+            created: number;
+        };
+        /** InternalSessionRideConfigCreate */
+        InternalSessionRideConfigCreate: {
+            /**
+             * Ride Area Id
+             * Format: uuid
+             */
+            ride_area_id: string;
+            /**
+             * Cost
+             * @default 0
+             */
+            cost: number;
+            /**
+             * Capacity
+             * @default 4
+             */
+            capacity: number;
+            /** Departure Time */
+            departure_time?: string | null;
         };
         /** MemberTransportSummary */
         MemberTransportSummary: {
@@ -53086,6 +53154,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberTransportSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attach_ride_configs_internal_internal_transport_sessions__session_id__ride_configs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InternalSessionRideConfigCreate"][];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalSessionRideConfigAttachResponse"];
                 };
             };
             /** @description Validation Error */
