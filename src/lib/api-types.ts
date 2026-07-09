@@ -8166,7 +8166,8 @@ export interface paths {
          * @description Trigger publish notifications for a session.
          *
          *     Called by sessions_service after a session transitions from draft → scheduled.
-         *     Schedules reminders and sends the immediate announcement email + in-app notification.
+         *     Schedules reminders immediately. Booking prompts are sent at the daily
+         *     booking window, except short-notice sessions which prompt immediately.
          */
         post: operations["handle_session_published_internal_communications_session_published_post"];
         delete?: never;
