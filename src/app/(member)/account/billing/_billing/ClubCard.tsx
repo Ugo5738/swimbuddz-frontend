@@ -45,32 +45,33 @@ export function ClubCard({ member, clubActive, communityActive }: Props) {
     );
   }
 
-  if (communityActive) {
-    return (
-      <Card className="p-4 md:p-6 space-y-3 md:space-y-4">
-        <div>
-          <h2 className="text-base md:text-lg font-semibold text-slate-900">
-            Want to join Club?
-          </h2>
-          <p className="text-xs md:text-sm text-slate-600 mt-0.5 md:mt-1">
-            Get access to regular swimming sessions with coaches. Pay quarterly,
-            bi-annually, or annually.
+  return (
+    <Card className="p-4 md:p-6 space-y-3 md:space-y-4">
+      <div>
+        <h2 className="text-base md:text-lg font-semibold text-slate-900">Want to join Club?</h2>
+        <p className="text-xs md:text-sm text-slate-600 mt-0.5 md:mt-1">
+          Get access to regular swimming sessions with coaches. Pay quarterly, bi-annually, or
+          annually.
+        </p>
+        {!communityActive && (
+          <p className="text-xs md:text-sm text-emerald-700 mt-2 font-medium">
+            Club includes Community access, so checkout will bundle both together.
           </p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:items-center">
-          <Link href="/upgrade/club/readiness" className="block">
-            <Button className="w-full sm:w-auto">Upgrade to Club</Button>
-          </Link>
-          <Link
-            href="/membership"
-            className="text-sm text-cyan-600 hover:text-cyan-800 text-center sm:text-left"
-          >
-            How it works →
-          </Link>
-        </div>
-      </Card>
-    );
-  }
-
-  return null;
+        )}
+      </div>
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:items-center">
+        <Link href="/upgrade/club/readiness" className="block">
+          <Button className="w-full sm:w-auto">
+            {communityActive ? "Upgrade to Club" : "Join Club"}
+          </Button>
+        </Link>
+        <Link
+          href="/membership"
+          className="text-sm text-cyan-600 hover:text-cyan-800 text-center sm:text-left"
+        >
+          How it works →
+        </Link>
+      </div>
+    </Card>
+  );
 }
