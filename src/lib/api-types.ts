@@ -20252,6 +20252,8 @@ export interface components {
             starts_at: string;
             /** Ends At */
             ends_at: string;
+            /** Pool Id */
+            pool_id?: string | null;
             /** Location Name */
             location_name?: string | null;
             /** Location Address */
