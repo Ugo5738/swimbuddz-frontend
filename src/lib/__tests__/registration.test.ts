@@ -16,9 +16,7 @@ vi.mock("../auth", () => ({
   getCurrentAccessToken: vi.fn(),
   supabase: {
     auth: {
-      getSession: vi
-        .fn()
-        .mockResolvedValue({ data: { session: null }, error: null }),
+      getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
     },
   },
 }));
@@ -72,10 +70,7 @@ describe("createPendingRegistration", () => {
 
     await createPendingRegistration(payload);
 
-    expect(mockedApiPost).toHaveBeenCalledWith(
-      "/api/v1/pending-registrations/",
-      payload,
-    );
+    expect(mockedApiPost).toHaveBeenCalledWith("/api/v1/pending-registrations/", payload);
   });
 });
 
@@ -99,7 +94,7 @@ describe("completePendingRegistrationOnBackend", () => {
     expect(mockedApiPost).toHaveBeenCalledWith(
       "/api/v1/pending-registrations/complete",
       undefined,
-      { auth: true },
+      { auth: true }
     );
   });
 
@@ -111,9 +106,7 @@ describe("completePendingRegistrationOnBackend", () => {
   });
 
   it('treats "Pending registration not found" as completed (race condition)', async () => {
-    mockedApiPost.mockRejectedValue(
-      new Error("Pending registration not found"),
-    );
+    mockedApiPost.mockRejectedValue(new Error("Pending registration not found"));
 
     const result = await completePendingRegistrationOnBackend();
     expect(result).toEqual({ status: "completed" });
@@ -193,7 +186,7 @@ describe("getPostAuthRedirectPath", () => {
       buildMember({
         roles: ["coach", "member"],
         coach_profile: { status: "approved" },
-      }),
+      })
     );
 
     const path = await getPostAuthRedirectPath();
@@ -205,7 +198,7 @@ describe("getPostAuthRedirectPath", () => {
       buildMember({
         roles: ["coach", "member"],
         coach_profile: { status: "active" },
-      }),
+      })
     );
 
     const path = await getPostAuthRedirectPath();
@@ -217,7 +210,7 @@ describe("getPostAuthRedirectPath", () => {
       buildMember({
         roles: ["coach", "member"],
         coach_profile: { status: "draft" },
-      }),
+      })
     );
 
     const path = await getPostAuthRedirectPath();
@@ -229,7 +222,7 @@ describe("getPostAuthRedirectPath", () => {
       buildMember({
         roles: ["coach", "member"],
         coach_profile: { status: null },
-      }),
+      })
     );
 
     const path = await getPostAuthRedirectPath();
@@ -241,7 +234,7 @@ describe("getPostAuthRedirectPath", () => {
       buildMember({
         roles: ["coach", "member"],
         coach_profile: { status: "pending_review" },
-      }),
+      })
     );
 
     const path = await getPostAuthRedirectPath();
@@ -251,9 +244,7 @@ describe("getPostAuthRedirectPath", () => {
   // --- Onboarding incomplete ---
 
   it("redirects to /account/onboarding when profile photo missing", async () => {
-    mockedApiGet.mockResolvedValue(
-      buildMember({ profile_photo_media_id: null }),
-    );
+    mockedApiGet.mockResolvedValue(buildMember({ profile_photo_media_id: null }));
 
     const path = await getPostAuthRedirectPath();
     expect(path).toBe("/account/onboarding");
@@ -280,7 +271,7 @@ describe("getPostAuthRedirectPath", () => {
           deep_water_comfort: null,
           personal_goals: null,
         },
-      }),
+      })
     );
 
     const path = await getPostAuthRedirectPath();
@@ -300,7 +291,7 @@ describe("getPostAuthRedirectPath", () => {
           club_paid_until: null,
           academy_paid_until: null,
         },
-      }),
+      })
     );
 
     const path = await getPostAuthRedirectPath();
@@ -318,7 +309,7 @@ describe("getPostAuthRedirectPath", () => {
           club_paid_until: null,
           academy_paid_until: null,
         },
-      }),
+      })
     );
 
     const path = await getPostAuthRedirectPath();
@@ -336,7 +327,54 @@ describe("getPostAuthRedirectPath", () => {
           club_paid_until: null,
           academy_paid_until: null,
         },
-      }),
+      })
+    );
+
+    const path = await getPostAuthRedirectPath();
+    expect(path).toBe("/account/billing?required=club");
+  });
+
+  it("uses backend active Community status when raw paid date is missing", async () => {
+    mockedApiGet.mockResolvedValue(
+      buildMember({
+        membership: {
+          primary_tier: "community",
+          active_tiers: [],
+          requested_tiers: [],
+          community_paid_until: null,
+          club_paid_until: null,
+          academy_paid_until: null,
+          paid_tier: "community",
+          paid_tiers: ["community"],
+          tier_statuses: {
+            community: { status: "active" },
+          },
+        },
+      })
+    );
+
+    const path = await getPostAuthRedirectPath();
+    expect(path).toBe("/account");
+  });
+
+  it("uses backend payment_pending Club status as club context", async () => {
+    mockedApiGet.mockResolvedValue(
+      buildMember({
+        membership: {
+          primary_tier: "community",
+          active_tiers: ["community"],
+          requested_tiers: [],
+          community_paid_until: "2025-12-31",
+          club_paid_until: null,
+          academy_paid_until: null,
+          paid_tier: "community",
+          paid_tiers: ["community"],
+          tier_statuses: {
+            community: { status: "active" },
+            club: { status: "payment_pending" },
+          },
+        },
+      })
     );
 
     const path = await getPostAuthRedirectPath();
@@ -367,7 +405,36 @@ describe("getPostAuthRedirectPath", () => {
           academy_preferred_coach_gender: "any",
           academy_lesson_preference: "group",
         },
-      }),
+      })
+    );
+
+    const path = await getPostAuthRedirectPath();
+    expect(path).toBe("/account/academy");
+  });
+
+  it("uses backend active Academy status when raw active tiers are missing", async () => {
+    mockedApiGet.mockResolvedValue(
+      buildMember({
+        membership: {
+          primary_tier: "community",
+          active_tiers: [],
+          requested_tiers: [],
+          community_paid_until: null,
+          club_paid_until: null,
+          academy_paid_until: null,
+          paid_tier: "academy",
+          paid_tiers: ["academy", "club", "community"],
+          tier_statuses: {
+            community: { status: "active" },
+            club: { status: "active" },
+            academy: { status: "active" },
+          },
+          academy_skill_assessment: { canFloat: true },
+          academy_goals: "Learn freestyle",
+          academy_preferred_coach_gender: "any",
+          academy_lesson_preference: "group",
+        },
+      })
     );
 
     const path = await getPostAuthRedirectPath();
@@ -398,10 +465,7 @@ describe("getPostAuthRedirectPath", () => {
 
     const path = await getPostAuthRedirectPath();
     expect(path).toBe("/admin/finance/reports");
-    expect(mockedApiGet).toHaveBeenCalledWith(
-      "/api/v1/admin/finance/users/me",
-      { auth: true },
-    );
+    expect(mockedApiGet).toHaveBeenCalledWith("/api/v1/admin/finance/users/me", { auth: true });
   });
 
   it("returns /account when member profile missing and user is not finance team", async () => {
@@ -438,7 +502,7 @@ describe("getPostAuthRedirectPath", () => {
           academy_preferred_coach_gender: null,
           academy_lesson_preference: null,
         },
-      }),
+      })
     );
 
     const path = await getPostAuthRedirectPath();

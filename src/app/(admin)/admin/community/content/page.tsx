@@ -3,6 +3,7 @@
 import { parseBlockContent, serializeBlocks } from "@/components/editor";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { Input } from "@/components/ui/Input";
 import { MediaInput } from "@/components/ui/MediaInput";
 import { Select } from "@/components/ui/Select";
@@ -56,6 +57,8 @@ interface ContentPost {
   status: string;
   tier_access: string;
   published_at: string | null;
+  scheduled_for: string | null;
+  email_on_publish: boolean;
   created_at: string;
 }
 
@@ -79,7 +82,21 @@ export default function AdminContentPage() {
     featured_image_url: "",
     featured_image_media_id: "",
     tier_access: "community",
+    scheduled_for: "",
+    email_on_publish: true,
   });
+
+  const toDateTimeLocal = (value?: string | null) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return format(date, "yyyy-MM-dd'T'HH:mm");
+  };
+
+  const scheduledForPayload = () =>
+    formData.scheduled_for
+      ? new Date(formData.scheduled_for).toISOString()
+      : null;
 
   useEffect(() => {
     fetchPosts();
@@ -135,6 +152,8 @@ export default function AdminContentPage() {
         body: serializeBlocks(editorContent),
         featured_image_url: formData.featured_image_url || null,
         featured_image_media_id: formData.featured_image_media_id || null,
+        scheduled_for: scheduledForPayload(),
+        email_on_publish: formData.email_on_publish,
       };
 
       const response = await fetch(
@@ -170,6 +189,8 @@ export default function AdminContentPage() {
         tier_access: formData.tier_access,
         featured_image_url: formData.featured_image_url || null,
         featured_image_media_id: formData.featured_image_media_id || null,
+        scheduled_for: scheduledForPayload(),
+        email_on_publish: formData.email_on_publish,
       };
 
       const response = await fetch(
@@ -243,6 +264,8 @@ export default function AdminContentPage() {
       featured_image_url: post.featured_image_url || "",
       featured_image_media_id: post.featured_image_media_id || "",
       tier_access: post.tier_access,
+      scheduled_for: toDateTimeLocal(post.scheduled_for),
+      email_on_publish: Boolean(post.email_on_publish),
     });
     // Parse existing content
     const blocks = parseBlockContent(post.body);
@@ -260,6 +283,8 @@ export default function AdminContentPage() {
       featured_image_url: "",
       featured_image_media_id: "",
       tier_access: "community",
+      scheduled_for: "",
+      email_on_publish: true,
     });
     setEditorContent([]);
     setEditingPost(null);
@@ -448,6 +473,34 @@ export default function AdminContentPage() {
                 </Select>
               </div>
 
+              <div className="grid gap-4 md:grid-cols-2">
+                <Input
+                  label="Schedule publish time"
+                  type="datetime-local"
+                  value={formData.scheduled_for}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      scheduled_for: e.target.value,
+                    })
+                  }
+                  hint="Leave blank to keep this as a draft until manually published."
+                />
+
+                <div className="flex items-end pb-2">
+                  <Checkbox
+                    checked={formData.email_on_publish}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        email_on_publish: e.target.checked,
+                      })
+                    }
+                    label="Email members when published"
+                  />
+                </div>
+              </div>
+
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
                 <Button
                   type="button"
@@ -460,7 +513,11 @@ export default function AdminContentPage() {
                   Cancel
                 </Button>
                 <Button type="submit">
-                  {editingPost ? "Update Post" : "Create Draft"}
+                  {editingPost
+                    ? "Update Post"
+                    : formData.scheduled_for
+                      ? "Create Scheduled Post"
+                      : "Create Draft"}
                 </Button>
               </div>
             </form>
@@ -495,7 +552,9 @@ export default function AdminContentPage() {
                       className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
                         post.status === "published"
                           ? "bg-emerald-100 text-emerald-700"
-                          : "bg-amber-100 text-amber-700"
+                          : post.status === "scheduled"
+                            ? "bg-sky-100 text-sky-700"
+                            : "bg-amber-100 text-amber-700"
                       }`}
                     >
                       {post.status}
@@ -519,6 +578,21 @@ export default function AdminContentPage() {
                         {format(new Date(post.published_at), "MMM d, yyyy")}
                       </div>
                     )}
+                    {post.scheduled_for && post.status !== "published" && (
+                      <div>
+                        <span className="font-medium">Scheduled:</span>{" "}
+                        {format(
+                          new Date(post.scheduled_for),
+                          "MMM d, yyyy h:mm a",
+                        )}
+                      </div>
+                    )}
+                    {post.email_on_publish && (
+                      <div>
+                        <span className="font-medium">Email on publish:</span>{" "}
+                        Yes
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -529,7 +603,7 @@ export default function AdminContentPage() {
                   >
                     Edit
                   </Button>
-                  {post.status === "draft" && (
+                  {post.status !== "published" && (
                     <Button onClick={() => handlePublishPost(post.id)}>
                       Publish
                     </Button>

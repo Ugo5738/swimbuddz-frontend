@@ -7,9 +7,9 @@ import { Badge } from "@/components/ui/Badge";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { AcademyApi, type Cohort, type Enrollment } from "@/lib/academy";
 import { apiGet, apiPost } from "@/lib/api";
-import { tierDisplayLabel } from "@/lib/sessionAccess";
+import type { SessionAccessTier } from "@/lib/sessionAccess";
 import { type CohortInfo } from "@/lib/sessions";
-import { getEffectiveTier, MembershipTier } from "@/lib/tiers";
+import { getMembershipLabel, getPaidMembershipTier } from "@/lib/tiers";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Calendar, CheckSquare, Waves, X } from "lucide-react";
 import Link from "next/link";
@@ -46,7 +46,8 @@ function SessionsHub() {
   const [myBookings, setMyBookings] = useState<MyBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [membership, setMembership] = useState<MembershipTier>("community");
+  const [membership, setMembership] = useState<SessionAccessTier>("prospect");
+  const [membershipLabel, setMembershipLabel] = useState("Prospect");
 
   // Cohort identity
   const [cohortMap, setCohortMap] = useState<Map<string, CohortInfo>>(new Map());
@@ -108,7 +109,8 @@ function SessionsHub() {
   const sessionsHubQuery = useQuery({
     queryKey: ["sessions-hub"],
     queryFn: async () => {
-      let resolvedTier: MembershipTier = "community";
+      let resolvedTier: SessionAccessTier = "prospect";
+      let resolvedMembershipLabel = "Prospect";
       let attendanceData: AttendanceRecord[] = [];
       let bookingsData: MyBooking[] = [];
 
@@ -116,7 +118,8 @@ function SessionsHub() {
         const profile = await apiGet<MemberProfile>("/api/v1/members/me", {
           auth: true,
         });
-        resolvedTier = getEffectiveTier(profile);
+        resolvedTier = getPaidMembershipTier(profile);
+        resolvedMembershipLabel = getMembershipLabel(profile);
 
         // Attendance = day-of presence (only exists after sign-in).
         // Bookings = CONFIRMED (paid) reservations (intent-only, no
@@ -134,7 +137,7 @@ function SessionsHub() {
           }).catch(() => []),
         ]);
       } catch {
-        // Not authenticated or profile fetch failed — default community
+        // Not authenticated or profile fetch failed — default prospect access
       }
 
       // Fetch cohort identity data for academy sessions
@@ -171,7 +174,8 @@ function SessionsHub() {
 
       // Fetch upcoming sessions
       const upcomingData = await apiGet<SessionWithRides[]>(
-        `/api/v1/sessions?types=${encodeURIComponent(SESSION_TYPES_QUERY)}`
+        `/api/v1/sessions?types=${encodeURIComponent(SESSION_TYPES_QUERY)}`,
+        { auth: true }
       );
 
       // Batch-fetch ride configs in a single HTTP call (Tier 1 optimization)
@@ -199,7 +203,8 @@ function SessionsHub() {
       let past: SessionWithRides[] = [];
       try {
         past = await apiGet<SessionWithRides[]>(
-          `/api/v1/sessions?types=${encodeURIComponent(SESSION_TYPES_QUERY)}&before=${sixtyDaysAgo.toISOString()}&status=completed`
+          `/api/v1/sessions?types=${encodeURIComponent(SESSION_TYPES_QUERY)}&before=${sixtyDaysAgo.toISOString()}&status=completed`,
+          { auth: true }
         );
       } catch {
         past = [];
@@ -207,6 +212,7 @@ function SessionsHub() {
 
       return {
         membership: resolvedTier,
+        membershipLabel: resolvedMembershipLabel,
         attendance: attendanceData,
         myBookings: bookingsData,
         cohortMap: cohortMapResult,
@@ -223,6 +229,7 @@ function SessionsHub() {
     if (!sessionsHubQuery.data) return;
     const d = sessionsHubQuery.data;
     setMembership(d.membership);
+    setMembershipLabel(d.membershipLabel);
     setAttendance(d.attendance);
     setMyBookings(d.myBookings);
     setCohortMap(d.cohortMap);
@@ -520,7 +527,7 @@ function SessionsHub() {
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">Sessions</p>
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-3xl font-bold text-slate-900 sm:text-4xl">Sessions Hub</h1>
-          <Badge variant="info">{tierDisplayLabel(membership)} member</Badge>
+          <Badge variant="info">{membershipLabel}</Badge>
         </div>
         <p className="text-base text-slate-600">
           Browse sessions, manage your bookings, and review past swims.

@@ -4,22 +4,12 @@
 "use client";
 
 import { SessionCard, type SessionWithRides } from "@/components/sessions/SessionCard";
-import { Badge } from "@/components/ui/Badge";
+import type { SessionAccessTier } from "@/lib/sessionAccess";
 import { type CohortInfo, getSessionTypeLabel } from "@/lib/sessions";
-import { getEffectiveTier, type MembershipTier } from "@/lib/tiers";
-import type { MyBooking } from "./types";
-import {
-  ArrowRight,
-  Calendar,
-  CheckSquare,
-  ChevronDown,
-  Clock,
-  Filter,
-  MapPin,
-  X,
-} from "lucide-react";
+import { Calendar, ChevronDown, Clock, Filter, MapPin, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import type { MyBooking } from "./types";
 
 import { DATE_FILTERS, TYPE_FILTER_OPTIONS } from "./constants";
 import type { DateFilter } from "./types";
@@ -283,7 +273,7 @@ export function DateGroupedSessions({
    *  "I'll be late"). Optional for back-compat with callers that don't
    *  surface those controls (e.g. coach schedule view). */
   bookingsBySession?: Map<string, MyBooking>;
-  membership: MembershipTier;
+  membership: SessionAccessTier;
   isPast?: boolean;
   attendanceBySession?: Map<string, string>;
   cohortMap?: Map<string, CohortInfo>;

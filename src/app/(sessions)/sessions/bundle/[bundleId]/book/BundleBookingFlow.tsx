@@ -95,8 +95,20 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
           setLoading(false);
           return;
         }
-        const sessionsData = await Promise.all(ids.map((id) => getSession(id)));
+        const sessionsData = await Promise.all(ids.map((id) => getSession(id, { auth: true })));
         if (cancelled) return;
+
+        const lockedSession = sessionsData.find((s) => !s.access || !s.access.bookable);
+        if (lockedSession) {
+          setError(
+            `${lockedSession.title}: ${
+              lockedSession.access?.message ||
+              "We could not verify access for this session. Please refresh and try again."
+            }`
+          );
+          setLoading(false);
+          return;
+        }
 
         await Promise.all(
           sessionsData.map(async (s) => {

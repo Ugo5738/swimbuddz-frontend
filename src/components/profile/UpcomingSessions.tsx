@@ -1,8 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/Button";
-import { apiGet } from "@/lib/api";
-import { getSessions, Session } from "@/lib/sessions";
+import { Session, SessionsApi } from "@/lib/sessions";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -10,36 +9,24 @@ export function UpcomingSessions() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [membership, setMembership] = useState<"community" | "club" | "academy">("community");
 
   useEffect(() => {
     async function load() {
       try {
         setLoading(true);
-        try {
-          const profile = await apiGet<any>("/api/v1/members/me", {
-            auth: true,
-          });
-          if (profile) {
-            const tier =
-              profile.membership?.primary_tier ||
-              (profile.membership?.active_tiers && profile.membership.active_tiers[0]) ||
-              "community";
-            setMembership((tier as string).toLowerCase() as "community" | "club" | "academy");
-          }
-        } catch {
-          setMembership("community");
-        }
-
-        const data = await getSessions();
-        // Filter for future sessions only using starts_at
+        const data = await SessionsApi.listSessions({ auth: true });
         const futureSessions = data
-          .filter((session: Session) => new Date(session.starts_at) >= new Date())
+          .filter(
+            (session: Session) =>
+              new Date(session.starts_at) >= new Date() &&
+              session.access?.bookable === true,
+          )
           .sort(
             (a: Session, b: Session) =>
-              new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
+              new Date(a.starts_at).getTime() -
+              new Date(b.starts_at).getTime(),
           )
-          .slice(0, 3); // Show next 3 sessions
+          .slice(0, 3);
         setSessions(futureSessions);
       } catch (err) {
         console.error("Failed to load sessions:", err);
@@ -69,7 +56,7 @@ export function UpcomingSessions() {
   if (sessions.length === 0) {
     return (
       <div className="text-sm text-slate-600">
-        No upcoming sessions scheduled.{" "}
+        No bookable upcoming sessions.{" "}
         <Link href="/sessions" className="text-cyan-600 hover:underline">
           View full calendar
         </Link>
@@ -95,16 +82,11 @@ export function UpcomingSessions() {
               • {formatTime(session.starts_at)}
             </p>
           </div>
-          {membership === "community" &&
-          (session.session_type === "club" || session.session_type === "cohort_class") ? (
-            <span className="text-xs font-medium text-amber-700">Club members only</span>
-          ) : (
-            <Link href={`/sessions/${session.id}/book`}>
-              <Button size="sm" variant="outline">
-                Book
-              </Button>
-            </Link>
-          )}
+          <Link href={`/sessions/${session.id}/book`}>
+            <Button size="sm" variant="outline">
+              Book
+            </Button>
+          </Link>
         </div>
       ))}
       <div className="text-center">

@@ -2,9 +2,8 @@
 
 import { SessionWeatherChip } from "@/components/sessions/SessionWeatherChip";
 import { Badge } from "@/components/ui/Badge";
-import { hasTierAccess, requiredTierForSessionType, tierDisplayLabel } from "@/lib/sessionAccess";
+import { tierDisplayLabel, type SessionAccessTier } from "@/lib/sessionAccess";
 import {
-  type CohortInfo,
   excuseBooking,
   getCohortColor,
   getSessionTypeColor,
@@ -15,18 +14,10 @@ import {
   SessionType,
   setRunningLate,
   signInToSession,
+  type CohortInfo,
 } from "@/lib/sessions";
 import type { MembershipTier } from "@/lib/tiers";
-import {
-  Calendar,
-  CheckCircle2,
-  Clock,
-  Clock3,
-  Lock,
-  MapPin,
-  Users,
-  XCircle,
-} from "lucide-react";
+import { Calendar, CheckCircle2, Clock, Clock3, Lock, MapPin, Users, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -100,7 +91,7 @@ type SessionCardProps = {
    *  late"). Optional — callers that don't have this (e.g. coach
    *  views) won't render those controls. */
   myBooking?: MemberBookingMinimal;
-  membership: MembershipTier;
+  membership: SessionAccessTier;
   isPast?: boolean;
   attendanceStatus?: string;
   /** Cohort identity info for academy sessions. */
@@ -119,7 +110,6 @@ export function SessionCard({
   session,
   isBooked,
   myBooking,
-  membership,
   isPast = false,
   attendanceStatus,
   cohortInfo,
@@ -127,8 +117,14 @@ export function SessionCard({
   selected = false,
   onToggleSelect,
 }: SessionCardProps) {
-  const requiredTier = requiredTierForSessionType(session.session_type);
-  const canBook = hasTierAccess(membership, requiredTier);
+  const access = session.access ?? null;
+  const requiredTier = access?.required_tier ?? "community";
+  const canBook = access?.bookable === true;
+  const lockReason = access?.reason ?? null;
+  const lockMessage = access?.message ?? "Sign in to view booking access.";
+  const canResolveWithUpgrade =
+    Boolean(access) &&
+    !["session_unavailable", "pod_required", "cohort_access_suspended"].includes(lockReason ?? "");
   const typeColor = getSessionTypeColor(session.session_type);
   // A session is "ended" if its end time has passed, regardless of which tab we're on.
   // This prevents users from trying to book past sessions via the All tab.
@@ -171,9 +167,7 @@ export function SessionCard({
   // server response so the buttons reflect intent immediately.
   const bookingId = myBooking?.id ?? null;
   const bookingStatus = (myBooking?.status ?? "").toLowerCase();
-  const [bookingNotes, setBookingNotes] = useState<string | null | undefined>(
-    myBooking?.notes
-  );
+  const [bookingNotes, setBookingNotes] = useState<string | null | undefined>(myBooking?.notes);
   const [excusing, setExcusing] = useState(false);
   const [excusedLocal, setExcusedLocal] = useState(false);
   const [flaggingLate, setFlaggingLate] = useState(false);
@@ -192,10 +186,7 @@ export function SessionCard({
   const handleSelfExcuse = async () => {
     if (!bookingId) return;
     if (
-      !window.confirm(
-        "Let us know you can't make it — we'll schedule a make-up. " +
-          "Continue?"
-      )
+      !window.confirm("Let us know you can't make it — we'll schedule a make-up. " + "Continue?")
     ) {
       return;
     }
@@ -312,7 +303,15 @@ export function SessionCard({
             )
           ) : !canBook ? (
             <Badge variant="warning" className="capitalize">
-              Requires {tierDisplayLabel(requiredTier)}
+              {lockReason === "session_unavailable"
+                ? "Unavailable"
+                : lockReason === "pod_required"
+                  ? "Pod only"
+                  : lockReason === "cohort_required"
+                    ? "Cohort only"
+                    : lockReason === "cohort_access_suspended"
+                      ? "Access suspended"
+                      : `Requires ${tierDisplayLabel(requiredTier)}`}
             </Badge>
           ) : (
             <Badge variant="success">Available</Badge>
@@ -412,10 +411,7 @@ export function SessionCard({
               {memberHasExcused ? (
                 <div className="flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-medium text-sky-800">
                   <XCircle className="h-3.5 w-3.5 shrink-0" />
-                  <span>
-                    You've let us know you can't make it. A make-up will
-                    be scheduled.
-                  </span>
+                  <span>You've let us know you can't make it. A make-up will be scheduled.</span>
                 </div>
               ) : memberHasLateFlag ? (
                 <div className="flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
@@ -474,14 +470,19 @@ export function SessionCard({
             <div className="space-y-2 text-sm">
               <div className="flex items-center gap-1.5 text-amber-700">
                 <Lock className="h-3.5 w-3.5 shrink-0" />
-                <p>Available to {tierDisplayLabel(requiredTier)} members</p>
+                <p>{lockMessage}</p>
               </div>
-              <Link
-                href={getUpgradeHref(requiredTier)}
-                className="inline-flex font-semibold text-cyan-700 hover:underline"
-              >
-                Upgrade to {tierDisplayLabel(requiredTier)} &rarr;
-              </Link>
+              {canResolveWithUpgrade && (
+                <Link
+                  href={getUpgradeHref(requiredTier)}
+                  className="inline-flex font-semibold text-cyan-700 hover:underline"
+                >
+                  {requiredTier === "academy"
+                    ? "Find an academy cohort"
+                    : `Upgrade to ${tierDisplayLabel(requiredTier)}`}{" "}
+                  &rarr;
+                </Link>
+              )}
             </div>
           ) : (
             <Link

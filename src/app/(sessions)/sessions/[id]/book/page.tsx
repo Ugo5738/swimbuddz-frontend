@@ -6,9 +6,8 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet, apiPost } from "@/lib/api";
-import { hasTierAccess, requiredTierForSessionType } from "@/lib/sessionAccess";
 import { getSession, type RideShareArea, type Session } from "@/lib/sessions";
-import { getEffectiveTier } from "@/lib/tiers";
+import { getPaidMembershipTier } from "@/lib/tiers";
 import Link from "next/link";
 import { notFound, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -208,7 +207,7 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
   useEffect(() => {
     async function loadData() {
       try {
-        const sessionData = await getSession(params.id);
+        const sessionData = await getSession(params.id, { auth: true });
 
         // Load ride configs
         try {
@@ -600,10 +599,26 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
     );
   }
 
-  const memberTier = member ? getEffectiveTier(member) : "community";
-  const requiredTier = requiredTierForSessionType(session.session_type);
-  if (!hasTierAccess(memberTier, requiredTier)) {
-    return <TierGate requiredTier={requiredTier} memberTier={memberTier} />;
+  const memberTier = member ? getPaidMembershipTier(member) : "prospect";
+  const requiredTier = session.access?.required_tier ?? "community";
+  const canBookSession = session.access?.bookable === true;
+  if (!isRideOnlyFlow && !canBookSession) {
+    const isAccessMissing = !session.access;
+    const isUnavailable = session.access?.reason === "session_unavailable";
+    return (
+      <TierGate
+        requiredTier={requiredTier}
+        memberTier={memberTier}
+        title={
+          isAccessMissing ? "Access unavailable" : isUnavailable ? "Session unavailable" : undefined
+        }
+        message={
+          session.access?.message ??
+          "We could not verify your booking access. Please refresh and try again."
+        }
+        showUpgrade={!isAccessMissing && !isUnavailable}
+      />
+    );
   }
 
   // --- Pay button disabled logic ---

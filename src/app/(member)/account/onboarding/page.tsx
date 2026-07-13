@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet } from "@/lib/api";
+import { getMemberTiers, getRequestedTiers, hasTierContext, isTierPaid } from "@/lib/tiers";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -55,34 +56,25 @@ export default function DashboardOnboardingPage() {
 
   // ── Member-derived context ───────────────────────────────────────
   const approvedTiers = useMemo(() => {
-    const membership = member?.membership;
-    const tiers =
-      membership?.active_tiers && membership.active_tiers.length > 0
-        ? membership.active_tiers
-        : membership?.primary_tier
-          ? [membership.primary_tier]
-          : ["community"];
-    return tiers.map((t: string) => String(t).toLowerCase());
+    return getMemberTiers(member);
   }, [member]);
 
-  const now = Date.now();
   const communityActive = useMemo(() => {
-    const until = member?.membership?.community_paid_until
-      ? Date.parse(String(member.membership.community_paid_until))
-      : NaN;
-    return Number.isFinite(until) && until > now;
-  }, [member, now]);
+    return isTierPaid(member, "community");
+  }, [member]);
 
-  const requestedTiers = useMemo(
-    () => (member?.membership?.requested_tiers || []).map((t: string) => String(t).toLowerCase()),
-    [member],
-  );
+  const requestedTiers = useMemo(() => getRequestedTiers(member), [member]);
   const wantsAcademy = requestedTiers.includes("academy");
   const wantsClub = requestedTiers.includes("club") || wantsAcademy;
 
   const clubContext =
-    wantsClub || approvedTiers.includes("club") || approvedTiers.includes("academy");
-  const academyContext = wantsAcademy || approvedTiers.includes("academy");
+    wantsClub ||
+    approvedTiers.includes("club") ||
+    approvedTiers.includes("academy") ||
+    hasTierContext(member, "club") ||
+    hasTierContext(member, "academy");
+  const academyContext =
+    wantsAcademy || approvedTiers.includes("academy") || hasTierContext(member, "academy");
 
   const needsCoreProfile = useMemo(() => {
     if (!member) return false;
@@ -134,7 +126,7 @@ export default function DashboardOnboardingPage() {
     const hasAssessment =
       assessment &&
       ["canFloat", "headUnderwater", "deepWaterComfort", "canSwim25m"].some((k) =>
-        Object.prototype.hasOwnProperty.call(assessment, k),
+        Object.prototype.hasOwnProperty.call(assessment, k)
       );
     return (
       !hasAssessment ||
@@ -263,7 +255,7 @@ export default function DashboardOnboardingPage() {
   // ── Toggle helpers ───────────────────────────────────────────────
   const toggleClubMulti = (
     field: "locationPreference" | "timeOfDayAvailability",
-    option: string,
+    option: string
   ) => {
     setClubForm((prev) => {
       const current = prev[field];
@@ -319,39 +311,39 @@ export default function DashboardOnboardingPage() {
   // ── Validity flags ───────────────────────────────────────────────
   const coreFormValid = Boolean(
     coreForm.firstName &&
-      coreForm.lastName &&
-      coreForm.phone &&
-      coreForm.country &&
-      coreForm.state &&
-      coreForm.city &&
-      coreForm.gender &&
-      coreForm.dateOfBirth &&
-      (coreForm.profilePhotoMediaId || coreForm.profilePhotoUrl) &&
-      coreForm.timeZone,
+    coreForm.lastName &&
+    coreForm.phone &&
+    coreForm.country &&
+    coreForm.state &&
+    coreForm.city &&
+    coreForm.gender &&
+    coreForm.dateOfBirth &&
+    (coreForm.profilePhotoMediaId || coreForm.profilePhotoUrl) &&
+    coreForm.timeZone
   );
 
   const safetyFormValid = Boolean(
     clubForm.emergencyContactName &&
-      clubForm.emergencyContactRelationship &&
-      clubForm.emergencyContactPhone &&
-      clubForm.locationPreference.length > 0 &&
-      clubForm.timeOfDayAvailability.length > 0,
+    clubForm.emergencyContactRelationship &&
+    clubForm.emergencyContactPhone &&
+    clubForm.locationPreference.length > 0 &&
+    clubForm.timeOfDayAvailability.length > 0
   );
 
   const swimFormValid = Boolean(
     swimForm.swimLevel &&
-      swimForm.deepWaterComfort &&
-      swimForm.goals.length > 0 &&
-      (!swimForm.goals.includes(OTHER_GOAL_VALUE) ||
-        Boolean(swimForm.otherGoals && swimForm.otherGoals.trim())),
+    swimForm.deepWaterComfort &&
+    swimForm.goals.length > 0 &&
+    (!swimForm.goals.includes(OTHER_GOAL_VALUE) ||
+      Boolean(swimForm.otherGoals && swimForm.otherGoals.trim()))
   );
 
   const clubReadinessValid = !clubContext || clubReadinessForm.availabilitySlots.length > 0;
 
   const academyFormValid = Boolean(
     academyForm.academyGoals &&
-      academyForm.academyPreferredCoachGender &&
-      academyForm.academyLessonPreference,
+    academyForm.academyPreferredCoachGender &&
+    academyForm.academyLessonPreference
   );
 
   // ── Steps + progress derivations ─────────────────────────────────
@@ -418,7 +410,7 @@ export default function DashboardOnboardingPage() {
 
   const missingRequiredSteps = useMemo(() => {
     return steps.filter(
-      (step) => step.required && step.key !== "review" && !isStepSatisfied(step.key),
+      (step) => step.required && step.key !== "review" && !isStepSatisfied(step.key)
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -547,7 +539,7 @@ export default function DashboardOnboardingPage() {
         setCurrentStep(requestedStep);
       } else {
         setCurrentStep(
-          allowedSteps.has(draft.currentStep) ? draft.currentStep : firstIncompleteStep(),
+          allowedSteps.has(draft.currentStep) ? draft.currentStep : firstIncompleteStep()
         );
         toast.message("Restored your in-progress onboarding");
       }
@@ -612,9 +604,7 @@ export default function DashboardOnboardingPage() {
         progressPercent={progressPercent}
       />
 
-      {wantsAcademy &&
-      member?.membership?.requested_tiers &&
-      member.membership.requested_tiers.length > 0 ? (
+      {wantsAcademy && requestedTiers.length > 0 ? (
         <Card className="p-4 space-y-1">
           <p className="text-sm font-medium text-slate-900">Your selection is saved</p>
           <p className="text-sm text-slate-600">
@@ -639,9 +629,7 @@ export default function DashboardOnboardingPage() {
             mode="onboarding"
             includeNotesField={false}
             formData={clubForm}
-            onUpdate={(field, value) =>
-              setClubForm((prev) => ({ ...prev, [field]: value as any }))
-            }
+            onUpdate={(field, value) => setClubForm((prev) => ({ ...prev, [field]: value as any }))}
             onToggleMulti={(field, option) => {
               if (field === "locationPreference" || field === "timeOfDayAvailability") {
                 toggleClubMulti(field, option);
@@ -653,9 +641,7 @@ export default function DashboardOnboardingPage() {
         {currentStep === "swim" ? (
           <SwimBackgroundStep
             formData={swimForm}
-            onUpdate={(field, value) =>
-              setSwimForm((prev) => ({ ...prev, [field]: value as any }))
-            }
+            onUpdate={(field, value) => setSwimForm((prev) => ({ ...prev, [field]: value as any }))}
             onToggleStroke={toggleStroke}
             onToggleGoal={toggleGoal}
           />

@@ -24,6 +24,13 @@ import {
 } from "@/lib/reports";
 import { SessionsApi, type Session } from "@/lib/sessions";
 import {
+  getMembershipLabel,
+  getPaidMembershipTier,
+  getRequestedTiers,
+  hasTierContext,
+  isTierPaid,
+} from "@/lib/tiers";
+import {
   ArrowRight,
   Bell,
   Calendar,
@@ -149,29 +156,32 @@ export default function MemberDashboardPage() {
   useEffect(() => {
     if (!member || upcomingBookings.length > 0) return;
 
-    const tiers =
-      member.membership?.active_tiers?.map((t: string) => t.toLowerCase()) ||
-      (member.membership?.primary_tier
-        ? [member.membership.primary_tier.toLowerCase()]
-        : ["community"]);
-    const isAcademy = tiers.includes("academy");
-    const isClub = tiers.includes("club");
+    const paidTier = getPaidMembershipTier(member);
 
     // Map tier to session type priority
-    // Academy without club only sees cohort_class + community (not club sessions)
     const tierSessionTypes: string[] =
-      isAcademy && isClub
+      paidTier === "academy"
         ? ["cohort_class", "club", "community"]
-        : isAcademy
-          ? ["cohort_class", "community"]
-          : isClub
-            ? ["club", "community"]
-            : ["community"];
+        : paidTier === "club"
+          ? ["club", "community"]
+          : paidTier === "community"
+            ? ["community"]
+            : [];
 
-    SessionsApi.listSessions()
+    if (tierSessionTypes.length === 0) {
+      setNextAvailableSession(null);
+      return;
+    }
+
+    SessionsApi.listSessions({ auth: true })
       .then((sessions: Session[]) => {
         const futurePublished = sessions
-          .filter((s) => s.status === "scheduled" && new Date(s.starts_at) > new Date())
+          .filter(
+            (s) =>
+              s.status === "scheduled" &&
+              new Date(s.starts_at) > new Date() &&
+              s.access?.bookable === true
+          )
           .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
 
         // Find first session matching tier priority
@@ -208,39 +218,20 @@ export default function MemberDashboardPage() {
   }
 
   const firstName = member?.first_name || "Member";
-  const now = Date.now();
-
   // Extract nested data with safe defaults
   const membership = member?.membership || {};
   const profile = member?.profile || {};
   const emergency = member?.emergency_contact || {};
   const availability = member?.availability || {};
 
-  const communityPaidUntilMs = membership.community_paid_until
-    ? Date.parse(String(membership.community_paid_until))
-    : NaN;
-  const communityActive = Number.isFinite(communityPaidUntilMs) && communityPaidUntilMs > now;
-  const clubPaidUntilMs = membership.club_paid_until
-    ? Date.parse(String(membership.club_paid_until))
-    : NaN;
-  const clubActive = Number.isFinite(clubPaidUntilMs) && clubPaidUntilMs > now;
-  const academyPaidUntilMs = membership.academy_paid_until
-    ? Date.parse(String(membership.academy_paid_until))
-    : NaN;
-  const academyActive = Number.isFinite(academyPaidUntilMs) && academyPaidUntilMs > now;
-
-  const memberTiers =
-    membership.active_tiers?.map((t: string) => t.toLowerCase()) ||
-    (membership.primary_tier ? [membership.primary_tier.toLowerCase()] : ["community"]);
-
-  const requestedTiers: string[] = (membership.requested_tiers || []).map((t: any) =>
-    String(t).toLowerCase()
-  );
+  const communityActive = isTierPaid(member, "community");
+  const requestedTiers = getRequestedTiers(member);
   const wantsAcademy = requestedTiers.includes("academy");
   const wantsClub = requestedTiers.includes("club") || wantsAcademy;
 
-  const clubContext = wantsClub || memberTiers.includes("club") || memberTiers.includes("academy");
-  const academyContext = wantsAcademy || memberTiers.includes("academy");
+  const clubContext =
+    wantsClub || hasTierContext(member, "club") || hasTierContext(member, "academy");
+  const academyContext = wantsAcademy || hasTierContext(member, "academy");
 
   const hasProfileBasics = Boolean(
     member?.profile_photo_media_id && profile.gender && profile.date_of_birth
@@ -310,30 +301,25 @@ export default function MemberDashboardPage() {
   if (academyContext && !needsAcademyReadiness) completedSteps++;
   const progressPercent = Math.round((completedSteps / totalSteps) * 100);
 
-  // Tier label — match sidebar logic: prioritize active/enrolled status first
-  const isAcademyMember = academyActive || memberTiers.includes("academy");
-  const isClubMember = clubActive || memberTiers.includes("club");
-
-  const tierLabel = isAcademyMember
-    ? "Academy"
-    : isClubMember
-      ? "Club"
-      : wantsAcademy
-        ? "Academy (Pending)"
-        : wantsClub
-          ? "Club (Pending)"
-          : "Community";
+  const paidTier = getPaidMembershipTier(member);
+  const tierLabel = getMembershipLabel(member);
+  const isAcademyMember = paidTier === "academy";
+  const isClubMember = paidTier === "club" || paidTier === "academy";
 
   const tierVariant: "info" | "success" | "warning" | "default" = isAcademyMember
     ? "warning"
     : isClubMember
       ? "success"
-      : "info";
+      : tierLabel.includes("Pending")
+        ? "warning"
+        : paidTier === "prospect"
+          ? "default"
+          : "info";
 
   const resumeCheckoutUrl = resumePaymentIntent?.checkout_url || null;
   const showPaymentRecoveryBanner = !communityActive && onboardingReadyForPayment;
   const showCommunityActivationBanner = !communityActive && !onboardingReadyForPayment;
-  const showAcademy = academyContext || memberTiers.includes("academy");
+  const showAcademy = wantsAcademy || isAcademyMember;
 
   // Show booked session first, fall back to next available session
   const nextSession = upcomingBookings.length > 0 ? upcomingBookings[0] : nextAvailableSession;
@@ -388,7 +374,7 @@ export default function MemberDashboardPage() {
                     Activate Community membership
                   </span>
                 </li>
-                {(wantsClub || memberTiers.includes("club") || memberTiers.includes("academy")) && (
+                {clubContext && (
                   <li className="flex items-center gap-2 text-sm">
                     {needsClubReadiness ? (
                       <Circle className="h-4 w-4 text-cyan-200" />

@@ -7,8 +7,7 @@ import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet, apiPost } from "@/lib/api";
 import type { components } from "@/lib/api-types";
 import { savePaymentIntentCache } from "@/lib/paymentCache";
-
-type PaymentIntentRequest = components["schemas"]["CreatePaymentIntentRequest"];
+import { isTierPaid } from "@/lib/tiers";
 import {
   Cohort,
   formatCurrency,
@@ -21,6 +20,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+
+type PaymentIntentRequest = components["schemas"]["CreatePaymentIntentRequest"];
 
 type Member = {
   id?: string;
@@ -156,12 +157,7 @@ function CheckoutContent() {
   }, [loadData]);
 
   // Check if community is active
-  const communityActive = (() => {
-    const until = member?.membership?.community_paid_until;
-    if (!until) return false;
-    const untilMs = Date.parse(until);
-    return Number.isFinite(untilMs) && untilMs > Date.now();
-  })();
+  const communityActive = isTierPaid(member, "community");
 
   // Calculate line items based on purpose (using API pricing)
   const lineItems: { label: string; amount: number; highlight?: boolean }[] = [];
@@ -385,8 +381,7 @@ function CheckoutContent() {
             enrollmentId = newEnrollment.id;
           } catch (enrollError) {
             // If already enrolled, try to get existing enrollment
-            const enrollMessage =
-              enrollError instanceof Error ? enrollError.message : "";
+            const enrollMessage = enrollError instanceof Error ? enrollError.message : "";
             if (enrollMessage.includes("already")) {
               // Fetch existing enrollments and find the one for this cohort
               const existingEnrollments = await apiGet<

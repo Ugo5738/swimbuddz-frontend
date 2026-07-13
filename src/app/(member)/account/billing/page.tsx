@@ -3,6 +3,7 @@
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { apiGet } from "@/lib/api";
+import { isTierPaid } from "@/lib/tiers";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -13,20 +14,12 @@ import { OutstandingSessionFeesCard } from "./_billing/OutstandingSessionFeesCar
 import { PaystackReturnAlerts } from "./_billing/PaystackReturnAlerts";
 import { PendingTransfersCard } from "./_billing/PendingTransfersCard";
 import { usePaystackReturn } from "./_billing/usePaystackReturn";
-import type {
-  Cohort,
-  Enrollment,
-  Member,
-  PaymentRecord,
-  PricingConfig,
-} from "./types";
+import type { Cohort, Enrollment, Member, PaymentRecord, PricingConfig } from "./types";
 
 export default function BillingPage() {
   const searchParams = useSearchParams();
-  const providerReference =
-    searchParams.get("reference") || searchParams.get("trxref");
-  const isMembershipPaymentReference =
-    providerReference?.startsWith("PAY-") ?? false;
+  const providerReference = searchParams.get("reference") || searchParams.get("trxref");
+  const isMembershipPaymentReference = providerReference?.startsWith("PAY-") ?? false;
   const isTopupReference = providerReference?.startsWith("TOP-") ?? false;
   const isPaystackReturn = Boolean(providerReference && isMembershipPaymentReference);
 
@@ -54,9 +47,7 @@ export default function BillingPage() {
       const pending = paymentsData.filter(
         (p) =>
           p.payment_method === "manual_transfer" &&
-          (p.status === "pending" ||
-            p.status === "pending_review" ||
-            p.status === "failed"),
+          (p.status === "pending" || p.status === "pending_review" || p.status === "failed")
       );
       setPendingTransfers(pending);
     } catch (e) {
@@ -70,26 +61,21 @@ export default function BillingPage() {
     load();
   }, [load]);
 
-  const {
-    returnedPayment,
-    verificationError,
-    verificationTimedOut,
-    walletSummary,
-  } = usePaystackReturn({
-    providerReference,
-    isPaystackReturn,
-    isTopupReference,
-    onPaymentVerified: load,
-  });
+  const { returnedPayment, verificationError, verificationTimedOut, walletSummary } =
+    usePaystackReturn({
+      providerReference,
+      isPaystackReturn,
+      isTopupReference,
+      onPaymentVerified: load,
+    });
 
   // Load open cohorts for Academy section
   useEffect(() => {
     const fetchCohorts = async () => {
       try {
-        const cohorts = await apiGet<Cohort[]>(
-          "/api/v1/academy/cohorts/enrollable",
-          { auth: true },
-        );
+        const cohorts = await apiGet<Cohort[]>("/api/v1/academy/cohorts/enrollable", {
+          auth: true,
+        });
         setOpenCohorts(cohorts);
       } catch {
         setOpenCohorts([]);
@@ -102,10 +88,9 @@ export default function BillingPage() {
   useEffect(() => {
     const fetchEnrollments = async () => {
       try {
-        const enrollments = await apiGet<Enrollment[]>(
-          "/api/v1/academy/my-enrollments",
-          { auth: true },
-        );
+        const enrollments = await apiGet<Enrollment[]>("/api/v1/academy/my-enrollments", {
+          auth: true,
+        });
         // Fetch installments for paid enrollments that have them
         const enriched = await Promise.all(
           enrollments.map(async (e) => {
@@ -115,17 +100,16 @@ export default function BillingPage() {
               e.total_installments > 1
             ) {
               try {
-                const detail = await apiGet<Enrollment>(
-                  `/api/v1/academy/my-enrollments/${e.id}`,
-                  { auth: true },
-                );
+                const detail = await apiGet<Enrollment>(`/api/v1/academy/my-enrollments/${e.id}`, {
+                  auth: true,
+                });
                 return { ...e, installments: detail.installments };
               } catch {
                 return e;
               }
             }
             return e;
-          }),
+          })
         );
         setMyEnrollments(enriched);
       } catch {
@@ -136,18 +120,13 @@ export default function BillingPage() {
   }, []);
 
   // Computed membership status
-  const now = Date.now();
   const communityActive = useMemo(() => {
-    const until = member?.membership?.community_paid_until;
-    if (!until) return false;
-    return new Date(until).getTime() > now;
-  }, [member, now]);
+    return isTierPaid(member, "community");
+  }, [member]);
 
   const clubActive = useMemo(() => {
-    const until = member?.membership?.club_paid_until;
-    if (!until) return false;
-    return new Date(until).getTime() > now;
-  }, [member, now]);
+    return isTierPaid(member, "club");
+  }, [member]);
 
   // Loading state
   if (loading) {
@@ -202,9 +181,7 @@ export default function BillingPage() {
     <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <header className="space-y-1">
-        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
-          Membership & Billing
-        </h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Membership & Billing</h1>
         <p className="text-sm md:text-base text-slate-600">
           Manage your memberships and upgrade when you're ready.
         </p>

@@ -13,13 +13,13 @@
  * decision into a `NextResponse`. The matrix is pinned by
  * `__tests__/middlewareAccess.test.ts`.
  *
- * IMPORTANT: this is a behaviour-preserving extraction. The branch
- * order and every redirect target/param match the pre-refactor
- * middleware exactly. Change behaviour only with a matching test
- * change and a clear reason — this is the access boundary.
+ * IMPORTANT: this is the member route-access boundary. It now trusts the
+ * backend-normalized membership summary (`paid_tier` / `tier_statuses`) first
+ * and keeps the old raw-field checks only as compatibility fallback. Change
+ * behaviour only with a matching test and a clear reason.
  */
 
-import type { MembershipTier } from "@/lib/tiers";
+import type { DisplayMembershipTier, MembershipTier, MembershipTierStatusValue } from "@/lib/tiers";
 
 /**
  * The slice of `GET /api/v1/members/me` the access decision actually
@@ -39,6 +39,17 @@ export interface MiddlewareMember {
     community_paid_until?: string | null;
     club_paid_until?: string | null;
     academy_paid_until?: string | null;
+    paid_tier?: string | null;
+    paid_tiers?: string[] | null;
+    payment_pending?: boolean | null;
+    tier_statuses?: Partial<
+      Record<
+        MembershipTier,
+        {
+          status?: string | null;
+        }
+      >
+    > | null;
   } | null;
 }
 
@@ -69,11 +80,173 @@ const TIER_ROUTES: Record<string, MembershipTier[]> = {
   "/academy": ["academy"],
 };
 
+const MEMBERSHIP_TIERS: MembershipTier[] = ["community", "club", "academy"];
+const STATUS_VALUES: MembershipTierStatusValue[] = [
+  "active",
+  "payment_pending",
+  "requested",
+  "approved_unpaid",
+  "expired",
+  "inactive",
+];
+
 /** Parse an ISO date-ish value to epoch ms, or null if unusable. */
 export function parseDateMs(value: unknown): number | null {
   if (!value) return null;
   const ms = Date.parse(String(value));
   return Number.isFinite(ms) ? ms : null;
+}
+
+function normalizeTier(value: unknown): MembershipTier | null {
+  const tier = String(value || "").toLowerCase();
+  return MEMBERSHIP_TIERS.includes(tier as MembershipTier) ? (tier as MembershipTier) : null;
+}
+
+function normalizeDisplayTier(value: unknown): DisplayMembershipTier | null {
+  const tier = String(value || "").toLowerCase();
+  if (tier === "prospect") return "prospect";
+  return normalizeTier(tier);
+}
+
+function normalizeStatus(value: unknown): MembershipTierStatusValue | null {
+  const status = String(value || "").toLowerCase();
+  return STATUS_VALUES.includes(status as MembershipTierStatusValue)
+    ? (status as MembershipTierStatusValue)
+    : null;
+}
+
+function getTierStatus(
+  membership: MiddlewareMember["membership"],
+  tier: MembershipTier
+): MembershipTierStatusValue | null {
+  return normalizeStatus(membership?.tier_statuses?.[tier]?.status);
+}
+
+function hasBackendStatus(membership: MiddlewareMember["membership"]): boolean {
+  return Boolean(membership?.paid_tier || membership?.tier_statuses);
+}
+
+function getDeclaredTiers(membership: MiddlewareMember["membership"]): MembershipTier[] {
+  const tiers = new Set<MembershipTier>();
+  for (const rawTier of membership?.active_tiers ?? []) {
+    const tier = normalizeTier(rawTier);
+    if (tier) tiers.add(tier);
+  }
+  const primary = normalizeTier(membership?.primary_tier);
+  if (primary) tiers.add(primary);
+  return Array.from(tiers);
+}
+
+function getRequestedTiers(membership: MiddlewareMember["membership"]): MembershipTier[] {
+  if (membership?.tier_statuses) {
+    return MEMBERSHIP_TIERS.filter((tier) => {
+      const status = getTierStatus(membership, tier);
+      return status === "requested" || status === "payment_pending";
+    });
+  }
+
+  return (membership?.requested_tiers ?? [])
+    .map((tier) => normalizeTier(tier))
+    .filter((tier): tier is MembershipTier => Boolean(tier));
+}
+
+function legacyTierIsActive(
+  membership: MiddlewareMember["membership"],
+  tier: MembershipTier,
+  now: number
+): boolean {
+  const communityUntilMs = parseDateMs(membership?.community_paid_until);
+  const clubUntilMs = parseDateMs(membership?.club_paid_until);
+  const academyUntilMs = parseDateMs(membership?.academy_paid_until);
+  const declaredTiers = getDeclaredTiers(membership);
+
+  const communityPaid = communityUntilMs !== null && communityUntilMs > now;
+  const clubPaid = clubUntilMs !== null && clubUntilMs > now;
+  const academyPaid = academyUntilMs !== null && academyUntilMs > now;
+  const legacyAcademyActive =
+    declaredTiers.includes("academy") && (academyUntilMs === null || academyUntilMs > now);
+
+  if (tier === "academy") return academyPaid || legacyAcademyActive;
+  if (tier === "club") return clubPaid || academyPaid || legacyAcademyActive;
+  return communityPaid || clubPaid || academyPaid;
+}
+
+function tierIsActive(
+  membership: MiddlewareMember["membership"],
+  tier: MembershipTier,
+  now: number
+): boolean {
+  const status = getTierStatus(membership, tier);
+  if (status) return status === "active";
+  return legacyTierIsActive(membership, tier, now);
+}
+
+function getPaidTier(
+  membership: MiddlewareMember["membership"],
+  now: number
+): DisplayMembershipTier {
+  const backendPaidTier = normalizeDisplayTier(membership?.paid_tier);
+  if (backendPaidTier) return backendPaidTier;
+
+  if (tierIsActive(membership, "academy", now)) return "academy";
+  if (tierIsActive(membership, "club", now)) return "club";
+  if (tierIsActive(membership, "community", now)) return "community";
+  return "prospect";
+}
+
+function hasPaidEntitlement(membership: MiddlewareMember["membership"], now: number): boolean {
+  if (hasBackendStatus(membership)) {
+    return getPaidTier(membership, now) !== "prospect";
+  }
+
+  return (
+    (parseDateMs(membership?.community_paid_until) ?? 0) > now ||
+    (parseDateMs(membership?.club_paid_until) ?? 0) > now ||
+    (parseDateMs(membership?.academy_paid_until) ?? 0) > now
+  );
+}
+
+function routeGateRedirectForRequiredTier(
+  membership: MiddlewareMember["membership"],
+  requiredTier: MembershipTier
+): AccessDecision {
+  const status = getTierStatus(membership, requiredTier);
+  if (status === "requested") {
+    return {
+      kind: "redirect",
+      path: "/account/profile",
+      search: { upgrade: "pending" },
+    };
+  }
+  if (status === "payment_pending" || status === "approved_unpaid" || status === "expired") {
+    return {
+      kind: "redirect",
+      path: "/account/billing",
+      search: { required: requiredTier },
+    };
+  }
+
+  if (getRequestedTiers(membership).includes(requiredTier)) {
+    return {
+      kind: "redirect",
+      path: "/account/profile",
+      search: { upgrade: "pending" },
+    };
+  }
+
+  if (getDeclaredTiers(membership).includes(requiredTier)) {
+    return {
+      kind: "redirect",
+      path: "/account/billing",
+      search: { required: requiredTier },
+    };
+  }
+
+  return {
+    kind: "redirect",
+    path: "/register",
+    search: { upgrade: "true" },
+  };
 }
 
 /**
@@ -109,23 +282,14 @@ export function evaluateMemberAccess(input: AccessInput): AccessDecision {
   }
 
   const membership = member.membership;
-
-  const communityPaidUntilMs = parseDateMs(membership?.community_paid_until);
-  const academyUntilMs = parseDateMs(membership?.academy_paid_until);
-  const clubUntilMs = parseDateMs(membership?.club_paid_until);
-
-  const communityActive =
-    communityPaidUntilMs !== null && communityPaidUntilMs > now;
-  const clubPaid = clubUntilMs !== null && clubUntilMs > now;
-  const academyPaid = academyUntilMs !== null && academyUntilMs > now;
+  const paidTier = getPaidTier(membership, now);
 
   // 3. Community activation paywall. /account (and /account/profile) is
   // always reachable so members can pay; everything else is blocked
   // until *some* tier is paid. Active Club/Academy supersedes Community.
-  const paywallAllowed =
-    pathname.startsWith("/account") || pathname.startsWith("/account/profile");
+  const paywallAllowed = pathname.startsWith("/account") || pathname.startsWith("/account/profile");
 
-  if (!communityActive && !clubPaid && !academyPaid && !paywallAllowed) {
+  if (!hasPaidEntitlement(membership, now) && !paywallAllowed) {
     return {
       kind: "redirect",
       path: "/account/billing",
@@ -134,35 +298,13 @@ export function evaluateMemberAccess(input: AccessInput): AccessDecision {
   }
 
   // 4. Tier-based route gate.
-  const protectedRoute = Object.keys(TIER_ROUTES).find((route) =>
-    pathname.startsWith(route),
-  );
+  const protectedRoute = Object.keys(TIER_ROUTES).find((route) => pathname.startsWith(route));
 
   if (protectedRoute) {
-    const approvedTiers: string[] =
-      membership?.active_tiers && membership.active_tiers.length > 0
-        ? membership.active_tiers.map((t) => String(t).toLowerCase())
-        : membership?.primary_tier
-          ? [String(membership.primary_tier).toLowerCase()]
-          : ["community"];
-
-    const academyApproved = approvedTiers.includes("academy");
-    const clubApproved = approvedTiers.includes("club");
-
-    const academyActive =
-      academyApproved && (academyUntilMs === null || academyUntilMs > now);
-    const clubActive =
-      clubApproved && clubUntilMs !== null && clubUntilMs > now;
-
-    const effectiveTier: MembershipTier = academyActive
-      ? "academy"
-      : clubActive
-        ? "club"
-        : "community";
     const allowedTiers = TIER_ROUTES[protectedRoute];
+    const effectiveTier = paidTier === "prospect" ? "community" : paidTier;
 
     if (!allowedTiers.includes(effectiveTier)) {
-      const requestedTiers: string[] = membership?.requested_tiers || [];
       // The cheapest tier that grants access — the LOWEST-privilege
       // entry in allowedTiers, not the highest. Only /club
       // (["club","academy"] → "club") and /academy (["academy"] →
@@ -175,49 +317,9 @@ export function evaluateMemberAccess(input: AccessInput): AccessDecision {
       // approved-but-unpaid → billing branch dead. Fixed deliberately
       // here so an approved-but-lapsed member is sent to billing to
       // reactivate, not back through the upgrade-request flow.)
-      const requiredTier: MembershipTier = allowedTiers.includes("club")
-        ? "club"
-        : "academy";
+      const requiredTier: MembershipTier = allowedTiers.includes("club") ? "club" : "academy";
 
-      if (requestedTiers.includes(requiredTier)) {
-        return {
-          kind: "redirect",
-          path: "/account/profile",
-          search: { upgrade: "pending" },
-        };
-      }
-
-      // Approved for the required tier but not currently active
-      // (lapsed payment) → send to billing to reactivate rather than
-      // the re-registration / upgrade-request flow.
-      if (
-        requiredTier === "club" &&
-        approvedTiers.includes("club") &&
-        !clubActive
-      ) {
-        return {
-          kind: "redirect",
-          path: "/account/billing",
-          search: { required: "club" },
-        };
-      }
-      if (
-        requiredTier === "academy" &&
-        approvedTiers.includes("academy") &&
-        !academyActive
-      ) {
-        return {
-          kind: "redirect",
-          path: "/account/billing",
-          search: { required: "academy" },
-        };
-      }
-
-      return {
-        kind: "redirect",
-        path: "/register",
-        search: { upgrade: "true" },
-      };
+      return routeGateRedirectForRequiredTier(membership, requiredTier);
     }
   }
 

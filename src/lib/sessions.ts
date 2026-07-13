@@ -1,4 +1,5 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from "./api";
+import type { SessionAccessDecision } from "./sessionAccess";
 
 // --- Enums ---
 
@@ -100,6 +101,10 @@ export interface Session {
 
   // Ride share data (populated from transport service by caller)
   rideShareAreas?: RideShareArea[];
+
+  // Personalized access decision, present when the backend can evaluate the
+  // authenticated member for this session.
+  access?: SessionAccessDecision | null;
 }
 
 // Legacy interfaces for ride share support
@@ -174,14 +179,19 @@ export interface SessionUpdate {
 // --- API Functions ---
 export const SessionsApi = {
   // List sessions with optional filters
-  listSessions: (params?: { types?: string; cohort_id?: string; include_drafts?: boolean }) => {
+  listSessions: (params?: {
+    types?: string;
+    cohort_id?: string;
+    include_drafts?: boolean;
+    auth?: boolean;
+  }) => {
     const query = new URLSearchParams();
     if (params?.types) query.set("types", params.types);
     if (params?.cohort_id) query.set("cohort_id", params.cohort_id);
     if (params?.include_drafts) query.set("include_drafts", "true");
     const queryStr = query.toString() ? `?${query.toString()}` : "";
     return apiGet<Session[]>(`/api/v1/sessions${queryStr}`, {
-      auth: Boolean(params?.include_drafts),
+      auth: Boolean(params?.include_drafts || params?.auth),
     });
   },
 
@@ -195,7 +205,10 @@ export const SessionsApi = {
   },
 
   // Get single session
-  getSession: (id: string) => apiGet<Session>(`/api/v1/sessions/${id}`),
+  getSession: (id: string, options?: { auth?: boolean }) =>
+    apiGet<Session>(`/api/v1/sessions/${id}`, {
+      auth: options?.auth,
+    }),
 
   // Create session
   createSession: (data: SessionCreate) =>
@@ -288,8 +301,8 @@ export const getSessions = async (): Promise<Session[]> => {
 /**
  * Get a session by ID
  */
-export const getSession = async (id: string): Promise<Session> => {
-  return SessionsApi.getSession(id);
+export const getSession = async (id: string, options?: { auth?: boolean }): Promise<Session> => {
+  return SessionsApi.getSession(id, options);
 };
 
 // Ride share options interface for session sign-in
@@ -341,11 +354,7 @@ export function isPoolFeeRefunded(notes?: string | null): boolean {
 export const excuseBooking = async (
   bookingId: string
 ): Promise<{ id: string; notes?: string | null }> => {
-  return apiPost(
-    `/api/v1/sessions/bookings/${bookingId}/excuse`,
-    {},
-    { auth: true }
-  );
+  return apiPost(`/api/v1/sessions/bookings/${bookingId}/excuse`, {}, { auth: true });
 };
 
 /** Member toggles "I'll be late" flag on a booking. */

@@ -1,16 +1,20 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  getMemberTiers,
-  getMemberPrimaryTier,
-  getRequestedTiers,
-  hasTier,
-  hasRequestedTier,
-  isTierPaid,
-  isTierActive,
   getEffectiveTier,
-  getTierDisplayName,
-  sortTiersByPriority,
+  getMemberPrimaryTier,
   getMembershipLabel,
+  getMemberTiers,
+  getPaidMembershipTier,
+  getPaidMembershipTiers,
+  getRequestedTiers,
+  getTierDisplayName,
+  getTierStatus,
+  hasRequestedTier,
+  hasTier,
+  hasTierContext,
+  isTierActive,
+  isTierPaid,
+  sortTiersByPriority,
 } from "../tiers";
 
 describe("Tier Utilities", () => {
@@ -180,6 +184,52 @@ describe("Tier Utilities", () => {
     });
   });
 
+  describe("getPaidMembershipTier", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2025-06-15"));
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("returns prospect when no entitlement is paid", () => {
+      const member = {
+        membership: {
+          active_tiers: ["club"],
+          club_paid_until: "2025-01-01",
+        },
+      };
+      expect(getPaidMembershipTier(member)).toBe("prospect");
+    });
+
+    it("returns highest paid tier", () => {
+      const member = {
+        membership: {
+          active_tiers: ["academy", "club", "community"],
+          academy_paid_until: "2025-12-31",
+          club_paid_until: "2025-12-31",
+          community_paid_until: "2025-12-31",
+        },
+      };
+      expect(getPaidMembershipTier(member)).toBe("academy");
+    });
+
+    it("prefers backend paid_tier over local date inference", () => {
+      const member = {
+        membership: {
+          paid_tier: "club",
+          paid_tiers: ["club", "community"],
+          community_paid_until: null,
+          club_paid_until: null,
+        },
+      };
+      expect(getPaidMembershipTier(member)).toBe("club");
+      expect(getPaidMembershipTiers(member)).toEqual(["club", "community"]);
+    });
+  });
+
   describe("getTierDisplayName", () => {
     it("capitalizes tier name", () => {
       expect(getTierDisplayName("community")).toBe("Community");
@@ -226,6 +276,75 @@ describe("Tier Utilities", () => {
         },
       };
       expect(getMembershipLabel(member)).toBe("Club Member");
+    });
+
+    it("returns prospect when declared tier is unpaid", () => {
+      const member = {
+        membership: {
+          active_tiers: ["club"],
+          club_paid_until: "2025-01-01",
+        },
+      };
+      expect(getMembershipLabel(member)).toBe("Prospect");
+    });
+
+    it("prefers backend display_label", () => {
+      const member = {
+        membership: {
+          display_label: "Club (Payment Pending)",
+          paid_tier: "prospect",
+        },
+      };
+      expect(getMembershipLabel(member)).toBe("Club (Payment Pending)");
+    });
+  });
+
+  describe("backend tier status contract", () => {
+    it("uses tier_statuses for active checks and context", () => {
+      const member = {
+        membership: {
+          tier_statuses: {
+            community: {
+              tier: "community" as const,
+              status: "active" as const,
+              label: "Active",
+              inherited: true,
+              inherited_from: "club" as const,
+            },
+            club: {
+              tier: "club" as const,
+              status: "approved_unpaid" as const,
+              label: "Approved, payment needed",
+            },
+          },
+        },
+      };
+
+      expect(isTierPaid(member, "community")).toBe(true);
+      expect(isTierPaid(member, "club")).toBe(false);
+      expect(hasTierContext(member, "club")).toBe(true);
+      expect(getTierStatus(member, "community")?.inherited_from).toBe("club");
+    });
+
+    it("treats requested and payment-pending statuses as requested tiers", () => {
+      const member = {
+        membership: {
+          tier_statuses: {
+            club: {
+              tier: "club" as const,
+              status: "payment_pending" as const,
+              label: "Payment pending",
+            },
+            academy: {
+              tier: "academy" as const,
+              status: "requested" as const,
+              label: "Requested",
+            },
+          },
+        },
+      };
+
+      expect(getRequestedTiers(member)).toEqual(["club", "academy"]);
     });
   });
 });

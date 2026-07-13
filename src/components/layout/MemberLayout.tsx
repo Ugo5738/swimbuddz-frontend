@@ -5,6 +5,14 @@ import { apiGet } from "@/lib/api";
 import { supabase } from "@/lib/auth";
 import { listPodsILead } from "@/lib/pods";
 import {
+  getMemberTiers,
+  getMembershipLabel,
+  getPaidMembershipTier,
+  getRequestedTiers,
+  hasTierContext,
+  isTierPaid,
+} from "@/lib/tiers";
+import {
   Activity,
   BookOpen,
   Briefcase,
@@ -309,25 +317,11 @@ export function MemberLayout({ children }: MemberLayoutProps) {
     return !hasMoreSpecificMatch;
   };
 
-  const rawTiers =
-    member?.membership?.active_tiers?.map((t) => t.toLowerCase()) ||
-    (member?.membership?.primary_tier
-      ? [member.membership.primary_tier.toLowerCase()]
-      : ["community"]);
-
-  const now = Date.now();
-  const clubActive = Boolean(
-    member?.membership?.club_paid_until &&
-    Date.parse(String(member.membership.club_paid_until)) > now
-  );
-  const academyActive = Boolean(
-    member?.membership?.academy_paid_until &&
-    Date.parse(String(member.membership.academy_paid_until)) > now
-  );
-  const communityActive = Boolean(
-    member?.membership?.community_paid_until &&
-    Date.parse(String(member.membership.community_paid_until)) > now
-  );
+  const rawTiers = getMemberTiers(member);
+  const clubActive = isTierPaid(member, "club");
+  const academyActive = isTierPaid(member, "academy");
+  const communityActive = isTierPaid(member, "community");
+  const paidTier = getPaidMembershipTier(member);
 
   const tierSet = new Set(rawTiers);
   if (clubActive) {
@@ -356,38 +350,27 @@ export function MemberLayout({ children }: MemberLayoutProps) {
 
   const memberTiers = Array.from(tierSet);
 
-  const requestedTiers = (member?.membership?.requested_tiers || []).map((t) =>
-    String(t).toLowerCase()
-  );
+  const requestedTiers = getRequestedTiers(member);
   const filteredRequests = requestedTiers.filter(
     (tier) =>
       !(
-        memberTiers.includes(tier) ||
-        (tier === "club" && clubActive) ||
-        (tier === "academy" && academyActive)
+        (tier === "community" && communityActive) ||
+        (tier === "club" && (paidTier === "club" || paidTier === "academy")) ||
+        (tier === "academy" && (paidTier === "academy" || hasPaidEnrollment))
       )
   );
   const wantsAcademy = filteredRequests.includes("academy");
   const wantsClub = filteredRequests.includes("club") || wantsAcademy;
-  const clubEntitled = clubActive || memberTiers.includes("club");
-  const academyEntitled = academyActive || memberTiers.includes("academy");
+  const clubEntitled =
+    hasTierContext(member, "club") || hasTierContext(member, "academy") || hasPaidEnrollment;
+  const academyEntitled = hasTierContext(member, "academy") || hasPaidEnrollment;
 
   // Check if user has a paid academy enrollment (more reliable than academy_paid_until)
   const hasPaidAcademyEnrollment = academyEnrollments.some(
     (e) => e.payment_status === "paid" || e.status === "enrolled"
   );
 
-  // Determine membership label - prioritize active status over pending
-  const membershipLabel =
-    hasPaidAcademyEnrollment || academyActive || academyEntitled
-      ? "Academy Member"
-      : clubActive || clubEntitled
-        ? "Club Member"
-        : wantsAcademy
-          ? "Academy (Pending)"
-          : wantsClub
-            ? "Club (Pending)"
-            : "Community Member";
+  const membershipLabel = hasPaidAcademyEnrollment ? "Academy Member" : getMembershipLabel(member);
 
   // Check profile_photo_media_id (source of truth) for validation, URL is just for display
   const needsProfileBasics =
@@ -400,7 +383,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
     !member?.profile?.swim_level;
 
   const needsClubReadiness =
-    (wantsClub || memberTiers.includes("club") || memberTiers.includes("academy")) &&
+    (wantsClub || clubEntitled) &&
     (!member?.emergency_contact?.name ||
       !member?.emergency_contact?.contact_relationship ||
       !member?.emergency_contact?.phone ||
@@ -417,7 +400,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
       Object.prototype.hasOwnProperty.call(assessment, k)
     );
   const needsAcademyReadiness =
-    (wantsAcademy || memberTiers.includes("academy")) &&
+    (wantsAcademy || academyEntitled) &&
     (!hasAssessment ||
       !member?.membership?.academy_goals ||
       !member?.membership?.academy_preferred_coach_gender ||

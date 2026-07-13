@@ -7,21 +7,13 @@
  * "paid until" comparisons are deterministic.
  */
 import { describe, expect, it } from "vitest";
-import {
-  evaluateMemberAccess,
-  parseDateMs,
-  type MiddlewareMember,
-} from "../middlewareAccess";
+import { evaluateMemberAccess, parseDateMs, type MiddlewareMember } from "../middlewareAccess";
 
 const NOW = Date.UTC(2026, 4, 17); // fixed clock
 const FUTURE = new Date(NOW + 86_400_000).toISOString(); // +1 day
 const PAST = new Date(NOW - 86_400_000).toISOString(); // -1 day
 
-function decide(
-  pathname: string,
-  member: MiddlewareMember,
-  isJwtAdmin = false,
-) {
+function decide(pathname: string, member: MiddlewareMember, isJwtAdmin = false) {
   return evaluateMemberAccess({ pathname, isJwtAdmin, member, now: NOW });
 }
 
@@ -34,9 +26,7 @@ describe("parseDateMs", () => {
   });
 
   it("parses an ISO string to epoch ms", () => {
-    expect(parseDateMs("2026-05-17T00:00:00.000Z")).toBe(
-      Date.UTC(2026, 4, 17),
-    );
+    expect(parseDateMs("2026-05-17T00:00:00.000Z")).toBe(Date.UTC(2026, 4, 17));
   });
 });
 
@@ -73,7 +63,7 @@ describe("evaluateMemberAccess — approval gate", () => {
       decide("/sessions", {
         approval_status: "pending",
         membership: { community_paid_until: null },
-      }),
+      })
     ).toEqual({ kind: "redirect", path: "/register/pending" });
   });
 });
@@ -110,8 +100,45 @@ describe("evaluateMemberAccess — community paywall", () => {
           club_paid_until: FUTURE,
           active_tiers: ["club"],
         },
-      }),
+      })
     ).toEqual({ kind: "allow" });
+  });
+
+  it("backend active Club status satisfies paywall and club route even without raw dates", () => {
+    const member: MiddlewareMember = {
+      approval_status: "approved",
+      membership: {
+        paid_tier: "club",
+        community_paid_until: null,
+        club_paid_until: null,
+        tier_statuses: {
+          community: { status: "active" },
+          club: { status: "active" },
+        },
+      },
+    };
+
+    expect(decide("/attendance", member)).toEqual({ kind: "allow" });
+    expect(decide("/club/training", member)).toEqual({ kind: "allow" });
+  });
+
+  it("backend prospect status overrides stale raw paid dates at the paywall", () => {
+    expect(
+      decide("/attendance", {
+        approval_status: "approved",
+        membership: {
+          paid_tier: "prospect",
+          community_paid_until: FUTURE,
+          tier_statuses: {
+            community: { status: "approved_unpaid" },
+          },
+        },
+      })
+    ).toEqual({
+      kind: "redirect",
+      path: "/account/billing",
+      search: { required: "community" },
+    });
   });
 
   it("active Academy satisfies the Community paywall", () => {
@@ -123,7 +150,7 @@ describe("evaluateMemberAccess — community paywall", () => {
           academy_paid_until: FUTURE,
           active_tiers: ["academy"],
         },
-      }),
+      })
     ).toEqual({ kind: "allow" });
   });
 });
@@ -150,11 +177,71 @@ describe("evaluateMemberAccess — tier-route gate", () => {
           active_tiers: ["community"],
           requested_tiers: ["academy"],
         },
-      }),
+      })
     ).toEqual({
       kind: "redirect",
       path: "/account/profile",
       search: { upgrade: "pending" },
+    });
+  });
+
+  it("backend requested status drives upgrade-pending route without raw requested_tiers", () => {
+    expect(
+      decide("/academy/cohorts", {
+        approval_status: "approved",
+        membership: {
+          paid_tier: "community",
+          community_paid_until: FUTURE,
+          tier_statuses: {
+            community: { status: "active" },
+            academy: { status: "requested" },
+          },
+        },
+      })
+    ).toEqual({
+      kind: "redirect",
+      path: "/account/profile",
+      search: { upgrade: "pending" },
+    });
+  });
+
+  it("backend payment_pending status sends protected tier routes to billing", () => {
+    expect(
+      decide("/club/training", {
+        approval_status: "approved",
+        membership: {
+          paid_tier: "community",
+          community_paid_until: FUTURE,
+          tier_statuses: {
+            community: { status: "active" },
+            club: { status: "payment_pending" },
+          },
+        },
+      })
+    ).toEqual({
+      kind: "redirect",
+      path: "/account/billing",
+      search: { required: "club" },
+    });
+  });
+
+  it("backend approved_unpaid status sends protected tier routes to billing", () => {
+    expect(
+      decide("/academy/cohorts", {
+        approval_status: "approved",
+        membership: {
+          paid_tier: "community",
+          community_paid_until: FUTURE,
+          tier_statuses: {
+            community: { status: "active" },
+            academy: { status: "approved_unpaid" },
+          },
+        },
+      })
+    ).toEqual({
+      kind: "redirect",
+      path: "/account/billing",
+      search: { required: "academy" },
     });
   });
 
@@ -171,7 +258,7 @@ describe("evaluateMemberAccess — tier-route gate", () => {
           club_paid_until: PAST, // approved but inactive
           active_tiers: ["community", "club"],
         },
-      }),
+      })
     ).toEqual({
       kind: "redirect",
       path: "/account/billing",
@@ -189,7 +276,7 @@ describe("evaluateMemberAccess — tier-route gate", () => {
           academy_paid_until: PAST, // approved but inactive
           active_tiers: ["academy"],
         },
-      }),
+      })
     ).toEqual({
       kind: "redirect",
       path: "/account/billing",
@@ -205,7 +292,7 @@ describe("evaluateMemberAccess — tier-route gate", () => {
           community_paid_until: FUTURE,
           active_tiers: ["community"],
         },
-      }),
+      })
     ).toEqual({
       kind: "redirect",
       path: "/register",
@@ -222,7 +309,7 @@ describe("evaluateMemberAccess — tier-route gate", () => {
           academy_paid_until: FUTURE,
           active_tiers: ["academy"],
         },
-      }),
+      })
     ).toEqual({ kind: "allow" });
   });
 
@@ -236,7 +323,7 @@ describe("evaluateMemberAccess — tier-route gate", () => {
           academy_paid_until: null,
           active_tiers: ["academy"],
         },
-      }),
+      })
     ).toEqual({ kind: "allow" });
   });
 
@@ -249,7 +336,7 @@ describe("evaluateMemberAccess — tier-route gate", () => {
           active_tiers: [],
           primary_tier: "community",
         },
-      }),
+      })
     ).toEqual({
       kind: "redirect",
       path: "/register",
@@ -262,7 +349,7 @@ describe("evaluateMemberAccess — tier-route gate", () => {
       decide("/account/settings", {
         approval_status: "approved",
         membership: { community_paid_until: FUTURE },
-      }),
+      })
     ).toEqual({ kind: "allow" });
   });
 });

@@ -1,6 +1,12 @@
 // Helpers + label maps extracted from page.tsx during the file-size sweep.
 
 import { discoverySourceOptions } from "@/lib/options";
+import {
+  getPaidMembershipTier,
+  getPaidMembershipTiers,
+  getRequestedTiers,
+  isTierPaid,
+} from "@/lib/tiers";
 
 import type { MemberResponse, Profile } from "./types";
 
@@ -54,16 +60,7 @@ export function formatToken(value: string | null | undefined) {
 }
 
 export function mapMemberResponseToProfile(data: MemberResponse): Profile {
-  const now = Date.now();
-  const communityPaid = data.membership?.community_paid_until
-    ? Date.parse(String(data.membership.community_paid_until)) > now
-    : false;
-  const clubPaid = data.membership?.club_paid_until
-    ? Date.parse(String(data.membership.club_paid_until)) > now
-    : false;
-  const academyPaid = data.membership?.academy_paid_until
-    ? Date.parse(String(data.membership.academy_paid_until)) > now
-    : false;
+  const paidTiers = getPaidMembershipTiers(data);
 
   // Extract nested data with safe defaults
   const profile = data.profile || {};
@@ -118,18 +115,13 @@ export function mapMemberResponseToProfile(data: MemberResponse): Profile {
     paymentReadiness: preferences.payment_readiness || "",
     currencyPreference: preferences.currency_preference || "NGN",
     consentPhoto: preferences.consent_photo || "",
-    membershipTier: membership.primary_tier || "community",
-    membershipTiers:
-      membership.active_tiers && membership.active_tiers.length > 0
-        ? membership.active_tiers.map((t) => t.toLowerCase())
-        : membership.primary_tier
-          ? [membership.primary_tier.toLowerCase()]
-          : [],
-    requestedMembershipTiers: membership.requested_tiers || [],
+    membershipTier: getPaidMembershipTier(data),
+    membershipTiers: paidTiers,
+    requestedMembershipTiers: getRequestedTiers(data),
     academyFocusAreas: membership.academy_focus_areas || [],
     academyFocus: membership.academy_goals || "",
     paymentNotes: "",
-    communityActive: communityPaid || clubPaid || academyPaid,
+    communityActive: isTierPaid(data, "community"),
     occupation: profile.occupation || "",
     areaInLagos: profile.area_in_lagos || "",
     communityPaidUntil: data.membership?.community_paid_until || null,
