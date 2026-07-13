@@ -23,6 +23,7 @@ import {
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AiDraftPanel } from "./_components/AiDraftPanel";
 import { ContentCadencePanel } from "./_components/ContentCadencePanel";
 import type { ContentPost, ContentStatusFilter } from "./types";
 
@@ -61,8 +62,7 @@ export default function AdminContentPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [editorContent, setEditorContent] = useState<PartialBlock[]>([]);
   const [createdBy, setCreatedBy] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] =
-    useState<ContentStatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<ContentStatusFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [tierFilter, setTierFilter] = useState("all");
   const [formData, setFormData] = useState({
@@ -112,7 +112,10 @@ export default function AdminContentPage() {
   };
 
   const categoryOptions = useMemo(
-    () => ["all", ...Array.from(new Set(posts.map((post) => post.category))).sort()],
+    () => [
+      "all",
+      ...Array.from(new Set(posts.map((post) => post.category))).sort(),
+    ],
     [posts],
   );
 
@@ -123,7 +126,8 @@ export default function AdminContentPage() {
           statusFilter === "all" || post.status === statusFilter;
         const matchesCategory =
           categoryFilter === "all" || post.category === categoryFilter;
-        const matchesTier = tierFilter === "all" || post.tier_access === tierFilter;
+        const matchesTier =
+          tierFilter === "all" || post.tier_access === tierFilter;
         return matchesStatus && matchesCategory && matchesTier;
       }),
     [categoryFilter, posts, statusFilter, tierFilter],
@@ -300,10 +304,13 @@ export default function AdminContentPage() {
     });
     // Parse existing content
     const blocks = parseBlockContent(post.body);
-    if (blocks) {
-      setEditorContent(blocks);
-    }
+    setEditorContent(blocks || []);
     setShowCreateModal(true);
+  };
+
+  const handleAiDraftCreated = async (post: ContentPost) => {
+    handleEditPost(post);
+    await fetchPosts();
   };
 
   const resetForm = () => {
@@ -353,6 +360,10 @@ export default function AdminContentPage() {
       {!showCreateModal && (
         <>
           <ContentCadencePanel posts={posts} />
+          <AiDraftPanel
+            createdBy={createdBy}
+            onDraftCreated={handleAiDraftCreated}
+          />
 
           <Card className="p-4">
             <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr_1fr]">
