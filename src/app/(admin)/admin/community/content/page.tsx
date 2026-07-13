@@ -22,7 +22,9 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ContentCadencePanel } from "./_components/ContentCadencePanel";
+import type { ContentPost, ContentStatusFilter } from "./types";
 
 // Dynamic import to avoid SSR issues with BlockNote
 const BlockEditor = dynamic(
@@ -46,22 +48,6 @@ const BlockViewer = dynamic(
   { ssr: false },
 );
 
-interface ContentPost {
-  id: string;
-  title: string;
-  summary: string;
-  body: string;
-  category: string;
-  featured_image_url: string | null;
-  featured_image_media_id: string | null;
-  status: string;
-  tier_access: string;
-  published_at: string | null;
-  scheduled_for: string | null;
-  email_on_publish: boolean;
-  created_at: string;
-}
-
 interface AdminMemberRef {
   id: string;
 }
@@ -75,6 +61,10 @@ export default function AdminContentPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [editorContent, setEditorContent] = useState<PartialBlock[]>([]);
   const [createdBy, setCreatedBy] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] =
+    useState<ContentStatusFilter>("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [tierFilter, setTierFilter] = useState("all");
   const [formData, setFormData] = useState({
     title: "",
     summary: "",
@@ -97,6 +87,47 @@ export default function AdminContentPage() {
     formData.scheduled_for
       ? new Date(formData.scheduled_for).toISOString()
       : null;
+
+  const schedulePreset = (weekday: number, hour: number) => {
+    const date = new Date();
+    date.setSeconds(0, 0);
+    date.setHours(hour, 0, 0, 0);
+    const daysAhead = (weekday - date.getDay() + 7) % 7 || 7;
+    date.setDate(date.getDate() + daysAhead);
+    return format(date, "yyyy-MM-dd'T'HH:mm");
+  };
+
+  const applySchedulePreset = (value: string) => {
+    const presets: Record<string, [number, number]> = {
+      wednesday_7: [3, 7],
+      friday_7: [5, 7],
+      sunday_7: [0, 7],
+    };
+    const preset = presets[value];
+    if (!preset) return;
+    setFormData((current) => ({
+      ...current,
+      scheduled_for: schedulePreset(preset[0], preset[1]),
+    }));
+  };
+
+  const categoryOptions = useMemo(
+    () => ["all", ...Array.from(new Set(posts.map((post) => post.category))).sort()],
+    [posts],
+  );
+
+  const filteredPosts = useMemo(
+    () =>
+      posts.filter((post) => {
+        const matchesStatus =
+          statusFilter === "all" || post.status === statusFilter;
+        const matchesCategory =
+          categoryFilter === "all" || post.category === categoryFilter;
+        const matchesTier = tierFilter === "all" || post.tier_access === tierFilter;
+        return matchesStatus && matchesCategory && matchesTier;
+      }),
+    [categoryFilter, posts, statusFilter, tierFilter],
+  );
 
   useEffect(() => {
     fetchPosts();
@@ -319,6 +350,65 @@ export default function AdminContentPage() {
         )}
       </div>
 
+      {!showCreateModal && (
+        <>
+          <ContentCadencePanel posts={posts} />
+
+          <Card className="p-4">
+            <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr_1fr]">
+              <div>
+                <p className="mb-2 text-sm font-medium text-slate-700">
+                  Status
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {(["all", "draft", "scheduled", "published"] as const).map(
+                    (status) => (
+                      <Button
+                        key={status}
+                        type="button"
+                        size="sm"
+                        variant={
+                          statusFilter === status ? "primary" : "secondary"
+                        }
+                        onClick={() => setStatusFilter(status)}
+                        className="capitalize"
+                      >
+                        {status}
+                      </Button>
+                    ),
+                  )}
+                </div>
+              </div>
+
+              <Select
+                label="Category"
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+              >
+                {categoryOptions.map((category) => (
+                  <option key={category} value={category}>
+                    {category === "all"
+                      ? "All categories"
+                      : category.replace(/_/g, " ")}
+                  </option>
+                ))}
+              </Select>
+
+              <Select
+                label="Tier"
+                value={tierFilter}
+                onChange={(e) => setTierFilter(e.target.value)}
+              >
+                <option value="all">All tiers</option>
+                <option value="community">Community</option>
+                <option value="club">Club</option>
+                <option value="academy">Academy</option>
+              </Select>
+            </div>
+          </Card>
+        </>
+      )}
+
       {/* Create/Edit Post Modal */}
       {showCreateModal && (
         <div className={editorModalClasses}>
@@ -473,7 +563,18 @@ export default function AdminContentPage() {
                 </Select>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-3">
+                <Select
+                  label="Cadence preset"
+                  value=""
+                  onChange={(e) => applySchedulePreset(e.target.value)}
+                >
+                  <option value="">Custom schedule</option>
+                  <option value="wednesday_7">Next Wednesday, 7 AM</option>
+                  <option value="friday_7">Next Friday, 7 AM</option>
+                  <option value="sunday_7">Next Sunday, 7 AM</option>
+                </Select>
+
                 <Input
                   label="Schedule publish time"
                   type="datetime-local"
@@ -538,9 +639,19 @@ export default function AdminContentPage() {
             Create your first post to get started!
           </p>
         </Card>
-      ) : posts.length > 0 && !showCreateModal ? (
+      ) : filteredPosts.length === 0 && !showCreateModal ? (
+        <Card className="p-12 text-center">
+          <BookOpen className="mx-auto h-12 w-12 text-slate-400" />
+          <h3 className="mt-4 text-lg font-semibold text-slate-900">
+            No posts match these filters
+          </h3>
+          <p className="mt-2 text-sm text-slate-600">
+            Adjust the status, category, or tier filters to widen the view.
+          </p>
+        </Card>
+      ) : filteredPosts.length > 0 && !showCreateModal ? (
         <div className="space-y-4">
-          {posts.map((post) => (
+          {filteredPosts.map((post) => (
             <Card key={post.id} className="p-6">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 space-y-2">
@@ -591,6 +702,16 @@ export default function AdminContentPage() {
                       <div>
                         <span className="font-medium">Email on publish:</span>{" "}
                         Yes
+                      </div>
+                    )}
+                    {(post.email_sent_count > 0 ||
+                      post.email_failed_count > 0) && (
+                      <div>
+                        <span className="font-medium">Email result:</span>{" "}
+                        {post.email_sent_count} sent
+                        {post.email_failed_count
+                          ? `, ${post.email_failed_count} failed`
+                          : ""}
                       </div>
                     )}
                   </div>
