@@ -6,6 +6,7 @@ type PaymentMethodPickerProps = {
   canPayWithBubbles: boolean;
   walletBalance: number | null;
   bubblesNeeded: number;
+  disabledReason?: string;
   onSelectMethod: (useBubbles: boolean) => void;
 };
 
@@ -14,11 +15,13 @@ export function PaymentMethodPicker({
   canPayWithBubbles,
   walletBalance,
   bubblesNeeded,
+  disabledReason,
   onSelectMethod,
 }: PaymentMethodPickerProps) {
   const shortfall = walletBalance !== null ? bubblesNeeded - walletBalance : bubblesNeeded;
-  const showShortfall = walletBalance !== null && !canPayWithBubbles && bubblesNeeded > 0;
-  const showSetupWallet = walletBalance === null;
+  const showShortfall =
+    !disabledReason && walletBalance !== null && !canPayWithBubbles && bubblesNeeded > 0;
+  const showSetupWallet = !disabledReason && walletBalance === null;
 
   return (
     <div className="space-y-2">
@@ -90,6 +93,10 @@ export function PaymentMethodPicker({
                 Top up
               </Link>
             </span>
+          )}
+
+          {disabledReason && (
+            <span className="text-[11px] text-slate-400 leading-tight">{disabledReason}</span>
           )}
 
           {/* No wallet hint */}

@@ -3,6 +3,7 @@ import { getCurrentAccessToken } from "./auth";
 import {
   getPaidMembershipTier,
   getRequestedTiers,
+  getTierStatus,
   hasTierContext,
   type MembershipTier,
   type MembershipTierStatus,
@@ -186,7 +187,6 @@ export async function getPostAuthRedirectPath(): Promise<string> {
 
     const paidTier = getPaidMembershipTier(member);
     const communityActive = paidTier !== "prospect";
-    const clubActive = paidTier === "club" || paidTier === "academy";
     const academyActive = paidTier === "academy";
     const requestedTiers = getRequestedTiers(member);
     const wantsAcademy = requestedTiers.includes("academy");
@@ -257,7 +257,17 @@ export async function getPostAuthRedirectPath(): Promise<string> {
     }
 
     if (academyActive) return "/account/academy";
-    if (clubContext && !clubActive) return "/account/billing?required=club";
+
+    const academyStatus = getTierStatus(member, "academy")?.status;
+    const clubStatus = getTierStatus(member, "club")?.status;
+    if (academyStatus === "requested") return "/account/profile?upgrade=pending";
+    if (["approved_unpaid", "payment_pending", "expired"].includes(academyStatus || "")) {
+      return "/account/billing?required=academy";
+    }
+    if (clubStatus === "requested") return "/account/profile?upgrade=pending";
+    if (["approved_unpaid", "payment_pending", "expired"].includes(clubStatus || "")) {
+      return "/account/billing?required=club";
+    }
 
     return "/account";
   } catch {

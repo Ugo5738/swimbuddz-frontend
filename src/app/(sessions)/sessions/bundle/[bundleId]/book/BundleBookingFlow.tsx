@@ -1,6 +1,5 @@
 "use client";
 
-import { BubblesSlider } from "@/components/checkout/BubblesSlider";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -46,6 +45,7 @@ interface RideConfig {
 type PaymentIntentResponse = {
   reference: string;
   amount: number;
+  status: string;
   checkout_url: string | null;
 };
 
@@ -82,8 +82,6 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
   } | null>(null);
   const [validatingDiscount, setValidatingDiscount] = useState(false);
 
-  const [walletBalance, setWalletBalance] = useState<number | null>(null);
-  const [bubblesToApply, setBubblesToApply] = useState<number>(0);
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
@@ -158,16 +156,6 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
         if (!cancelled) setLoading(false);
       }
 
-      try {
-        const wallet = await apiGet<{ balance: number; status: string }>("/api/v1/wallet/me", {
-          auth: true,
-        });
-        if (!cancelled && wallet?.status === "active") {
-          setWalletBalance(wallet.balance);
-        }
-      } catch {
-        // Ignore
-      }
     }
     load();
     return () => {
@@ -186,11 +174,8 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
   const discountAmount = validatedDiscount?.amount ?? 0;
   const total = Math.max(0, subtotal - discountAmount);
   const bubblesNeeded = Math.ceil(total / 100);
-
-  const sliderMax = Math.min(walletBalance ?? 0, bubblesNeeded);
-  const effectiveBubbles = Math.min(bubblesToApply, sliderMax);
-  const bubblesValueNgn = effectiveBubbles * 100;
-  const paystackAmount = Math.max(0, total - bubblesValueNgn);
+  const effectiveBubbles = 0;
+  const paystackAmount = total;
 
   const lineItems = sessions.flatMap((s) => {
     const items: { id: string; label: string; amount: number }[] = [
@@ -269,7 +254,7 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
   };
 
   const handlePayment = async () => {
-    if (total <= 0 || sessions.length === 0) return;
+    if (sessions.length === 0) return;
     setProcessing(true);
 
     const sessionRideConfigs: Record<
@@ -296,7 +281,6 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
           session_ids: sessions.map((s) => s.id),
           direct_amount: subtotal,
           discount_code: validatedDiscount?.code || undefined,
-          bubbles_to_apply: effectiveBubbles > 0 ? effectiveBubbles : undefined,
           session_ride_configs:
             Object.keys(sessionRideConfigs).length > 0 ? sessionRideConfigs : undefined,
         },
@@ -305,6 +289,9 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
 
       if (intent.checkout_url) {
         window.location.href = intent.checkout_url;
+      } else if (intent.status === "paid") {
+        toast.success("Sessions booked.");
+        window.location.href = "/sessions?view=booked";
       } else {
         toast.error("Unable to initialize payment. Please try again.");
       }
@@ -339,7 +326,7 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
     );
   }
 
-  const payDisabled = processing || total <= 0;
+  const payDisabled = processing;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6">
@@ -401,9 +388,7 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
             <Card className="p-5 space-y-4">
               <div>
                 <h2 className="text-base font-semibold text-slate-900">Payment</h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  {paystackAmount > 0 ? "Card payment via Paystack" : "Fully covered by Bubbles"}
-                </p>
+                <p className="text-xs text-slate-500 mt-0.5">Card payment via Paystack</p>
               </div>
               <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4">
                 <div className="flex-shrink-0 rounded-lg p-2 bg-slate-100">
@@ -423,25 +408,11 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-900">
-                    {paystackAmount > 0
-                      ? `${formatCurrency(paystackAmount)} via Paystack`
-                      : "No card payment needed"}
+                    {formatCurrency(paystackAmount)} via Paystack
                   </p>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {paystackAmount > 0
-                      ? "Card, bank transfer, or USSD"
-                      : "Bubbles cover the full amount"}
-                  </p>
+                  <p className="text-xs text-slate-500 mt-0.5">Card, bank transfer, or USSD</p>
                 </div>
               </div>
-              {walletBalance !== null && walletBalance > 0 && (
-                <BubblesSlider
-                  amountDueNgn={total}
-                  walletBalance={walletBalance}
-                  bubblesToApply={effectiveBubbles}
-                  onChange={setBubblesToApply}
-                />
-              )}
             </Card>
           )}
 

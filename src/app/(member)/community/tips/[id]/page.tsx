@@ -3,8 +3,7 @@
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Textarea } from "@/components/ui/Textarea";
-import { apiGet } from "@/lib/api";
-import { apiEndpoints } from "@/lib/config";
+import { apiGet, apiPost } from "@/lib/api";
 import { format } from "date-fns";
 import { ArrowLeft, Calendar, MessageCircle, User } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -62,26 +61,21 @@ export default function ContentDetailPage() {
   const [newComment, setNewComment] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [memberId, setMemberId] = useState<string | null>(null);
 
   useEffect(() => {
     if (postId) {
       fetchPost();
       fetchComments();
     }
-    // Get current member ID for commenting
-    apiGet<{ id: string }>("/api/v1/members/me", { auth: true })
-      .then((data) => setMemberId(data.id))
-      .catch(() => {});
   }, [postId]);
 
   const fetchPost = async () => {
     try {
-      const response = await fetch(`${apiEndpoints.content}/${postId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setPost(data);
-      }
+      const data = await apiGet<ContentPost>(
+        `/api/v1/content/${postId}`,
+        { auth: true },
+      );
+      setPost(data);
     } catch (error) {
       console.error("Failed to fetch post:", error);
     } finally {
@@ -91,36 +85,28 @@ export default function ContentDetailPage() {
 
   const fetchComments = async () => {
     try {
-      const response = await fetch(
-        `${apiEndpoints.content}/${postId}/comments`,
+      const data = await apiGet<Comment[]>(
+        `/api/v1/content/${postId}/comments`,
+        { auth: true },
       );
-      if (response.ok) {
-        const data = await response.json();
-        setComments(data);
-      }
+      setComments(data);
     } catch (error) {
       console.error("Failed to fetch comments:", error);
     }
   };
 
   const handleAddComment = async () => {
-    if (!newComment.trim() || !memberId) return;
+    if (!newComment.trim()) return;
 
     setSubmitting(true);
     try {
-      const response = await fetch(
-        `${apiEndpoints.content}/${postId}/comments?member_id=${memberId}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content: newComment }),
-        },
+      await apiPost<Comment>(
+        `/api/v1/content/${postId}/comments`,
+        { content: newComment },
+        { auth: true },
       );
-
-      if (response.ok) {
-        setNewComment("");
-        await fetchComments();
-      }
+      setNewComment("");
+      await fetchComments();
     } catch (error) {
       console.error("Failed to add comment:", error);
     } finally {
@@ -254,7 +240,7 @@ export default function ContentDetailPage() {
             <div className="flex justify-end">
               <Button
                 onClick={handleAddComment}
-                disabled={!newComment.trim() || submitting || !memberId}
+                disabled={!newComment.trim() || submitting}
               >
                 {submitting ? "Posting..." : "Post Comment"}
               </Button>

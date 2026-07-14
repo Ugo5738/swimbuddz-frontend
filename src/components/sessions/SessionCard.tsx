@@ -143,7 +143,8 @@ export function SessionCard({
     now >= sessionStart - SIGN_IN_WINDOW_BEFORE_MS && now <= sessionEnd + SIGN_IN_WINDOW_AFTER_MS;
   const lowerStatus = attendanceStatus?.toLowerCase() ?? "";
   const alreadySignedIn = lowerStatus === "present" || lowerStatus === "late";
-  const canSelfSignIn = isBooked && inSignInWindow && !alreadySignedIn;
+  const canSelfSignIn =
+    isBooked && access?.sign_in_eligible === true && inSignInWindow && !alreadySignedIn;
 
   const [signingIn, setSigningIn] = useState(false);
   const [signedInLocal, setSignedInLocal] = useState(false);

@@ -7,8 +7,7 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { Input } from "@/components/ui/Input";
 import { MediaInput } from "@/components/ui/MediaInput";
 import { Select } from "@/components/ui/Select";
-import { apiGet } from "@/lib/api";
-import { apiEndpoints } from "@/lib/config";
+import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
 import { PartialBlock } from "@blocknote/core";
 import { format } from "date-fns";
 import {
@@ -18,6 +17,7 @@ import {
   Maximize2,
   Minimize2,
   Plus,
+  RotateCcw,
   Trash2,
 } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -49,10 +49,6 @@ const BlockViewer = dynamic(
   { ssr: false },
 );
 
-interface AdminMemberRef {
-  id: string;
-}
-
 export default function AdminContentPage() {
   const [posts, setPosts] = useState<ContentPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +57,6 @@ export default function AdminContentPage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [editorContent, setEditorContent] = useState<PartialBlock[]>([]);
-  const [createdBy, setCreatedBy] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<ContentStatusFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [tierFilter, setTierFilter] = useState("all");
@@ -137,30 +132,13 @@ export default function AdminContentPage() {
     fetchPosts();
   }, []);
 
-  useEffect(() => {
-    const fetchAdminMember = async () => {
-      try {
-        const member = await apiGet<AdminMemberRef>("/api/v1/members/me", {
-          auth: true,
-        });
-        setCreatedBy(member.id);
-      } catch (error) {
-        console.error("Failed to resolve admin member id:", error);
-      }
-    };
-
-    fetchAdminMember();
-  }, []);
-
   const fetchPosts = async () => {
     try {
-      const response = await fetch(
-        `${apiEndpoints.content}/?published_only=false`,
+      const data = await apiGet<ContentPost[]>(
+        "/api/v1/content/?published_only=false",
+        { auth: true },
       );
-      if (response.ok) {
-        const data = await response.json();
-        setPosts(data);
-      }
+      setPosts(data);
     } catch (error) {
       console.error("Failed to fetch posts:", error);
     } finally {
@@ -176,12 +154,6 @@ export default function AdminContentPage() {
     e.preventDefault();
 
     try {
-      if (!createdBy) {
-        console.error("Missing admin member id. Unable to create post.");
-        alert("Unable to create post. Please refresh and try again.");
-        return;
-      }
-
       const payload = {
         ...formData,
         body: serializeBlocks(editorContent),
@@ -191,20 +163,14 @@ export default function AdminContentPage() {
         email_on_publish: formData.email_on_publish,
       };
 
-      const response = await fetch(
-        `${apiEndpoints.content}/?created_by=${createdBy}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        },
+      await apiPost<ContentPost>(
+        "/api/v1/content/",
+        payload,
+        { auth: true },
       );
-
-      if (response.ok) {
-        setShowCreateModal(false);
-        resetForm();
-        await fetchPosts();
-      }
+      setShowCreateModal(false);
+      resetForm();
+      await fetchPosts();
     } catch (error) {
       console.error("Failed to create post:", error);
     }
@@ -228,24 +194,14 @@ export default function AdminContentPage() {
         email_on_publish: formData.email_on_publish,
       };
 
-      const response = await fetch(
-        `${apiEndpoints.content}/${editingPost.id}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        },
+      await apiPatch<ContentPost>(
+        `/api/v1/content/${editingPost.id}`,
+        payload,
+        { auth: true },
       );
-
-      if (response.ok) {
-        setShowCreateModal(false);
-        resetForm();
-        await fetchPosts();
-      } else {
-        const error = await response.json();
-        console.error("Failed to update post:", error);
-        alert("Failed to update post. Please try again.");
-      }
+      setShowCreateModal(false);
+      resetForm();
+      await fetchPosts();
     } catch (error) {
       console.error("Failed to update post:", error);
     }
@@ -261,14 +217,12 @@ export default function AdminContentPage() {
 
   const handlePublishPost = async (postId: string) => {
     try {
-      const response = await fetch(
-        `${apiEndpoints.content}/${postId}/publish`,
-        { method: "POST" },
+      await apiPost<ContentPost>(
+        `/api/v1/content/${postId}/publish`,
+        undefined,
+        { auth: true },
       );
-
-      if (response.ok) {
-        await fetchPosts();
-      }
+      await fetchPosts();
     } catch (error) {
       console.error("Failed to publish post:", error);
     }
@@ -278,15 +232,23 @@ export default function AdminContentPage() {
     if (!confirm("Are you sure you want to delete this post?")) return;
 
     try {
-      const response = await fetch(`${apiEndpoints.content}/${postId}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        await fetchPosts();
-      }
+      await apiDelete<void>(`/api/v1/content/${postId}`, { auth: true });
+      await fetchPosts();
     } catch (error) {
       console.error("Failed to delete post:", error);
+    }
+  };
+
+  const handleRetryFailedEmails = async (postId: string) => {
+    try {
+      await apiPost<ContentPost>(
+        `/api/v1/content/${postId}/email/retry-failed`,
+        undefined,
+        { auth: true },
+      );
+      await fetchPosts();
+    } catch (error) {
+      console.error("Failed to retry article emails:", error);
     }
   };
 
@@ -360,10 +322,7 @@ export default function AdminContentPage() {
       {!showCreateModal && (
         <>
           <ContentCadencePanel posts={posts} />
-          <AiDraftPanel
-            createdBy={createdBy}
-            onDraftCreated={handleAiDraftCreated}
-          />
+          <AiDraftPanel onDraftCreated={handleAiDraftCreated} />
 
           <Card className="p-4">
             <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr_1fr]">
@@ -716,12 +675,36 @@ export default function AdminContentPage() {
                       </div>
                     )}
                     {(post.email_sent_count > 0 ||
-                      post.email_failed_count > 0) && (
+                      post.email_failed_count > 0 ||
+                      post.email_in_progress_count > 0 ||
+                      post.email_unknown_count > 0) && (
                       <div>
                         <span className="font-medium">Email result:</span>{" "}
                         {post.email_sent_count} sent
                         {post.email_failed_count
                           ? `, ${post.email_failed_count} failed`
+                          : ""}
+                        {post.email_in_progress_count
+                          ? `, ${post.email_in_progress_count} sending`
+                          : ""}
+                        {post.email_unknown_count
+                          ? `, ${post.email_unknown_count} need review`
+                          : ""}
+                      </div>
+                    )}
+                    {post.status === "published" && post.email_on_publish && (
+                      <div>
+                        <span className="font-medium">Email dispatch:</span>{" "}
+                        {post.email_dispatch_completed_at
+                          ? `Complete ${format(
+                              new Date(post.email_dispatch_completed_at),
+                              "MMM d, h:mm a",
+                            )}`
+                          : post.email_recipient_snapshot_at
+                            ? "Retrying known failures"
+                            : "Waiting for recipient snapshot"}
+                        {post.email_dispatch_last_error
+                          ? ` · ${post.email_dispatch_last_error}`
                           : ""}
                       </div>
                     )}
@@ -738,6 +721,15 @@ export default function AdminContentPage() {
                   {post.status !== "published" && (
                     <Button onClick={() => handlePublishPost(post.id)}>
                       Publish
+                    </Button>
+                  )}
+                  {post.email_failed_count > 0 && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => handleRetryFailedEmails(post.id)}
+                      title="Retry failed article emails"
+                    >
+                      <RotateCcw className="h-4 w-4" />
                     </Button>
                   )}
                   <Button

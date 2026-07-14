@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet } from "@/lib/api";
-import { getMemberTiers, getRequestedTiers, hasTierContext, isTierPaid } from "@/lib/tiers";
+import { getRequestedTiers, hasTierContext, isTierPaid } from "@/lib/tiers";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -55,10 +55,6 @@ export default function DashboardOnboardingPage() {
   }, []);
 
   // ── Member-derived context ───────────────────────────────────────
-  const approvedTiers = useMemo(() => {
-    return getMemberTiers(member);
-  }, [member]);
-
   const communityActive = useMemo(() => {
     return isTierPaid(member, "community");
   }, [member]);
@@ -69,12 +65,9 @@ export default function DashboardOnboardingPage() {
 
   const clubContext =
     wantsClub ||
-    approvedTiers.includes("club") ||
-    approvedTiers.includes("academy") ||
     hasTierContext(member, "club") ||
     hasTierContext(member, "academy");
-  const academyContext =
-    wantsAcademy || approvedTiers.includes("academy") || hasTierContext(member, "academy");
+  const academyContext = wantsAcademy || hasTierContext(member, "academy");
 
   const needsCoreProfile = useMemo(() => {
     if (!member) return false;

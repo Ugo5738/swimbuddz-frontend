@@ -61,11 +61,9 @@ const categoryLabels: Record<string, string> = {
 };
 
 export default function CommunityTipsPage() {
-  // Migrated to the canonical useApi hook (review findings F5–F7).
-  // Public content — no auth header (matches the prior raw fetch).
   const { data, loading } = useApi<ContentPost[]>(
     "/api/v1/content/?published_only=true",
-    { auth: false },
+    { auth: true },
   );
   const posts = data ?? [];
   const [searchQuery, setSearchQuery] = useState("");

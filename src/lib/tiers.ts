@@ -52,6 +52,7 @@ interface MemberWithMembership {
     paid_tier?: string | null;
     paid_tiers?: string[] | null;
     display_label?: string | null;
+    display_detail?: string | null;
     payment_pending?: boolean | null;
     tier_statuses?: Partial<Record<MembershipTier, MembershipTierStatus>> | null;
   } | null;
@@ -73,57 +74,15 @@ function normalizeDisplayTier(value: string | null | undefined): DisplayMembersh
 }
 
 /**
- * Get the member's active (approved) tiers as a lowercase array.
- * Returns ["community"] if no tiers found.
- */
-export function getMemberTiers(member: MemberWithMembership | null | undefined): string[] {
-  if (!member?.membership) return ["community"];
-
-  const tiers = member.membership.active_tiers;
-  if (tiers && tiers.length > 0) {
-    return tiers.map((t) => String(t).toLowerCase());
-  }
-
-  // Fall back to primary_tier if no active_tiers
-  const primary = member.membership.primary_tier;
-  if (primary) {
-    return [String(primary).toLowerCase()];
-  }
-
-  return ["community"];
-}
-
-/**
- * Get the member's primary (highest priority) tier.
- */
-export function getMemberPrimaryTier(member: MemberWithMembership | null | undefined): string {
-  if (!member?.membership) return "community";
-
-  // Use explicit primary_tier if set
-  const primary = member.membership.primary_tier;
-  if (primary) {
-    return String(primary).toLowerCase();
-  }
-
-  // Otherwise, find highest priority from active_tiers
-  const tiers = getMemberTiers(member);
-  return sortTiersByPriority(tiers)[0] || "community";
-}
-
-/**
  * Get tiers the member has requested but not yet been approved for.
  */
 export function getRequestedTiers(member: MemberWithMembership | null | undefined): string[] {
   const statuses = member?.membership?.tier_statuses;
-  if (statuses) {
-    return MEMBERSHIP_TIERS.filter((tier) => {
-      const status = statuses[tier]?.status;
-      return status === "requested" || status === "payment_pending";
-    });
-  }
-
-  if (!member?.membership?.requested_tiers) return [];
-  return member.membership.requested_tiers.map((t) => String(t).toLowerCase());
+  if (!statuses) return [];
+  return MEMBERSHIP_TIERS.filter((tier) => {
+    const status = statuses[tier]?.status;
+    return status === "requested" || status === "payment_pending";
+  });
 }
 
 export function getTierStatus(
@@ -131,16 +90,6 @@ export function getTierStatus(
   tier: MembershipTier
 ): MembershipTierStatus | null {
   return member?.membership?.tier_statuses?.[tier] ?? null;
-}
-
-/**
- * Check if member is approved for a specific tier.
- */
-export function hasTier(
-  member: MemberWithMembership | null | undefined,
-  tier: MembershipTier
-): boolean {
-  return getMemberTiers(member).includes(tier);
 }
 
 /**
@@ -162,28 +111,7 @@ export function isTierPaid(
   tier: MembershipTier
 ): boolean {
   const status = getTierStatus(member, tier);
-  if (status) return status.status === "active";
-
-  if (!member?.membership) return false;
-
-  const now = new Date();
-
-  switch (tier) {
-    case "community": {
-      const until = member.membership.community_paid_until;
-      return until ? new Date(until) > now : false;
-    }
-    case "club": {
-      const until = member.membership.club_paid_until;
-      return until ? new Date(until) > now : false;
-    }
-    case "academy": {
-      const until = member.membership.academy_paid_until;
-      return until ? new Date(until) > now : false;
-    }
-    default:
-      return false;
-  }
+  return status?.status === "active";
 }
 
 /**
@@ -194,21 +122,19 @@ export function isTierActive(
   tier: MembershipTier
 ): boolean {
   const status = getTierStatus(member, tier);
-  if (status) return status.status === "active";
-
-  return hasTier(member, tier) && isTierPaid(member, tier);
+  return status?.status === "active";
 }
 
 export function hasTierContext(
   member: MemberWithMembership | null | undefined,
   tier: MembershipTier
 ): boolean {
-  const status = getTierStatus(member, tier)?.status;
-  if (status) {
-    return ["active", "payment_pending", "requested", "approved_unpaid"].includes(status);
-  }
-
-  return hasTier(member, tier) || hasRequestedTier(member, tier);
+  const tierStatus = getTierStatus(member, tier);
+  const status = tierStatus?.status;
+  return Boolean(
+    (status && ["active", "payment_pending", "requested", "approved_unpaid"].includes(status)) ||
+      (status === "expired" && tierStatus?.declared_active)
+  );
 }
 
 /**
@@ -224,9 +150,9 @@ export function getPaidMembershipTier(
   const backendTier = normalizeDisplayTier(member?.membership?.paid_tier);
   if (backendTier) return backendTier;
 
-  if (isTierPaid(member, "academy")) return "academy";
-  if (isTierPaid(member, "club")) return "club";
-  if (isTierPaid(member, "community")) return "community";
+  if (getTierStatus(member, "academy")?.status === "active") return "academy";
+  if (getTierStatus(member, "club")?.status === "active") return "club";
+  if (getTierStatus(member, "community")?.status === "active") return "community";
   return "prospect";
 }
 
@@ -246,19 +172,6 @@ export function getPaidMembershipTiers(
   if (paidTier === "club") return ["club", "community"];
   if (paidTier === "community") return ["community"];
   return [];
-}
-
-/**
- * Get the member's effective tier (highest approved + paid tier).
- */
-export function getEffectiveTier(member: MemberWithMembership | null | undefined): MembershipTier {
-  if (isTierActive(member, "academy")) return "academy";
-  if (isTierActive(member, "club")) return "club";
-  if (isTierActive(member, "community")) return "community";
-
-  // If nothing is paid, still return their approved tier
-  const primary = getMemberPrimaryTier(member);
-  return (primary as MembershipTier) || "community";
 }
 
 /**
@@ -285,17 +198,13 @@ export function sortTiersByPriority(tiers: string[]): string[] {
 export function getMembershipLabel(member: MemberWithMembership | null | undefined): string {
   const backendLabel = member?.membership?.display_label;
   if (backendLabel && backendLabel.trim()) return backendLabel;
+  return "Prospect";
+}
 
-  const requested = getRequestedTiers(member);
-  const paidTier = getPaidMembershipTier(member);
-
-  if (requested.includes("academy") && paidTier !== "academy") {
-    return "Academy (Pending)";
-  }
-  if (requested.includes("club") && !["club", "academy"].includes(paidTier)) {
-    return "Club (Pending)";
-  }
-
-  if (paidTier === "prospect") return "Prospect";
-  return `${getTierDisplayName(paidTier)} Member`;
+/** Get backend-owned secondary membership lifecycle text, when present. */
+export function getMembershipDetail(
+  member: MemberWithMembership | null | undefined
+): string | null {
+  const backendDetail = member?.membership?.display_detail;
+  return backendDetail && backendDetail.trim() ? backendDetail : null;
 }

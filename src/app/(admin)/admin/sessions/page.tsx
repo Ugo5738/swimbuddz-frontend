@@ -30,6 +30,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { IBtn, StatCard, StatusBadge, TypeBadge } from "./components";
+import { SessionCadencePanel } from "./SessionCadencePanel";
 import type {
   FilterTab,
   RideArea,
@@ -422,6 +423,8 @@ export default function AdminSessionsPage() {
           icon={<XCircle className="h-5 w-5 text-red-400" />}
         />
       </div>
+
+      <SessionCadencePanel sessions={sessions} />
 
       {/* Search + tabs */}
       <div className="space-y-3">

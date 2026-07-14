@@ -3,7 +3,7 @@
 import { Alert } from "@/components/ui/Alert";
 import { Card } from "@/components/ui/Card";
 import { RewardNotificationPreferences } from "@/components/wallet/RewardNotificationPreferences";
-import { apiEndpoints } from "@/lib/config";
+import { apiGet, apiPatch } from "@/lib/api";
 import {
   Bell,
   BookOpen,
@@ -30,6 +30,7 @@ interface NotificationPreferences {
   email_payment_receipts: boolean;
   email_coach_messages: boolean;
   email_marketing: boolean;
+  email_content_updates: boolean;
   email_birthday: boolean;
   push_announcements: boolean;
   push_session_reminders: boolean;
@@ -118,13 +119,10 @@ export default function NotificationSettingsPage() {
 
   const fetchPreferences = async () => {
     try {
-      const response = await fetch(`${apiEndpoints.baseUrl}/api/v1/preferences/me`);
-      if (response.ok) {
-        const data = await response.json();
-        setPreferences(data);
-      } else {
-        setError("Failed to load notification preferences");
-      }
+      const data = await apiGet<NotificationPreferences>("/api/v1/preferences/me", {
+        auth: true,
+      });
+      setPreferences(data);
     } catch (err) {
       console.error("Failed to fetch preferences:", err);
       setError("Failed to load notification preferences");
@@ -144,22 +142,14 @@ export default function NotificationSettingsPage() {
     setPreferences({ ...preferences, [key]: value });
 
     try {
-      const response = await fetch(`${apiEndpoints.baseUrl}/api/v1/preferences/me`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [key]: value }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setPreferences(data);
-        setSuccess("Preferences updated");
-        setTimeout(() => setSuccess(null), 2000);
-      } else {
-        // Revert on error
-        setPreferences({ ...preferences, [key]: !value });
-        setError("Failed to update preferences");
-      }
+      const data = await apiPatch<NotificationPreferences>(
+        "/api/v1/preferences/me",
+        { [key]: value },
+        { auth: true }
+      );
+      setPreferences(data);
+      setSuccess("Preferences updated");
+      setTimeout(() => setSuccess(null), 2000);
     } catch (err) {
       // Revert on error
       setPreferences({ ...preferences, [key]: !value });
@@ -257,6 +247,14 @@ export default function NotificationSettingsPage() {
             description="Swimming tips, promotions, and community news"
             enabled={preferences.email_marketing}
             onChange={(v) => updatePreference("email_marketing", v)}
+            saving={saving}
+          />
+          <PreferenceRow
+            icon={<BookOpen className="h-4 w-4" />}
+            title="New Articles"
+            description="Receive an email when a new article for your membership is published"
+            enabled={preferences.email_content_updates}
+            onChange={(v) => updatePreference("email_content_updates", v)}
             saving={saving}
           />
           <PreferenceRow

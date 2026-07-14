@@ -1,16 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  getEffectiveTier,
-  getMemberPrimaryTier,
+  getMembershipDetail,
   getMembershipLabel,
-  getMemberTiers,
   getPaidMembershipTier,
   getPaidMembershipTiers,
   getRequestedTiers,
   getTierDisplayName,
   getTierStatus,
   hasRequestedTier,
-  hasTier,
   hasTierContext,
   isTierActive,
   isTierPaid,
@@ -18,70 +15,37 @@ import {
 } from "../tiers";
 
 describe("Tier Utilities", () => {
-  describe("getMemberTiers", () => {
-    it('returns ["community"] for null member', () => {
-      expect(getMemberTiers(null)).toEqual(["community"]);
-    });
-
-    it('returns ["community"] for member without membership', () => {
-      expect(getMemberTiers({})).toEqual(["community"]);
-    });
-
-    it("returns tiers from active_tiers", () => {
-      const member = {
-        membership: { active_tiers: ["Club", "Community"] },
-      };
-      expect(getMemberTiers(member)).toEqual(["club", "community"]);
-    });
-
-    it("falls back to primary_tier when no active_tiers", () => {
-      const member = { membership: { primary_tier: "club" } };
-      expect(getMemberTiers(member)).toEqual(["club"]);
-    });
-  });
-
-  describe("getMemberPrimaryTier", () => {
-    it('returns "community" for null member', () => {
-      expect(getMemberPrimaryTier(null)).toBe("community");
-    });
-
-    it("returns primary_tier", () => {
-      const member = { membership: { primary_tier: "Academy" } };
-      expect(getMemberPrimaryTier(member)).toBe("academy");
-    });
-
-    it("returns highest priority tier from active_tiers", () => {
-      const member = { membership: { active_tiers: ["community", "club"] } };
-      expect(getMemberPrimaryTier(member)).toBe("club");
-    });
-  });
-
   describe("getRequestedTiers", () => {
     it("returns empty array for null member", () => {
       expect(getRequestedTiers(null)).toEqual([]);
     });
 
-    it("returns requested_tiers", () => {
-      const member = { membership: { requested_tiers: ["Club", "Academy"] } };
+    it("returns normalized requested tier statuses", () => {
+      const member = {
+        membership: {
+          tier_statuses: {
+            club: { tier: "club" as const, status: "requested" as const, label: "Requested" },
+            academy: {
+              tier: "academy" as const,
+              status: "payment_pending" as const,
+              label: "Payment pending",
+            },
+          },
+        },
+      };
       expect(getRequestedTiers(member)).toEqual(["club", "academy"]);
-    });
-  });
-
-  describe("hasTier", () => {
-    it("returns true when member has tier", () => {
-      const member = { membership: { active_tiers: ["club", "community"] } };
-      expect(hasTier(member, "club")).toBe(true);
-    });
-
-    it("returns false when member lacks tier", () => {
-      const member = { membership: { active_tiers: ["community"] } };
-      expect(hasTier(member, "academy")).toBe(false);
     });
   });
 
   describe("hasRequestedTier", () => {
     it("returns true when tier is requested", () => {
-      const member = { membership: { requested_tiers: ["club"] } };
+      const member = {
+        membership: {
+          tier_statuses: {
+            club: { tier: "club" as const, status: "requested" as const, label: "Requested" },
+          },
+        },
+      };
       expect(hasRequestedTier(member, "club")).toBe(true);
     });
 
@@ -106,7 +70,17 @@ describe("Tier Utilities", () => {
     });
 
     it("returns true when payment is not expired", () => {
-      const member = { membership: { community_paid_until: "2025-12-31" } };
+      const member = {
+        membership: {
+          tier_statuses: {
+            community: {
+              tier: "community" as const,
+              status: "active" as const,
+              label: "Active",
+            },
+          },
+        },
+      };
       expect(isTierPaid(member, "community")).toBe(true);
     });
 
@@ -136,6 +110,9 @@ describe("Tier Utilities", () => {
         membership: {
           active_tiers: ["club"],
           club_paid_until: "2025-12-31",
+          tier_statuses: {
+            club: { tier: "club" as const, status: "active" as const, label: "Active" },
+          },
         },
       };
       expect(isTierActive(member, "club")).toBe(true);
@@ -149,38 +126,6 @@ describe("Tier Utilities", () => {
         },
       };
       expect(isTierActive(member, "club")).toBe(false);
-    });
-  });
-
-  describe("getEffectiveTier", () => {
-    beforeEach(() => {
-      vi.useFakeTimers();
-      vi.setSystemTime(new Date("2025-06-15"));
-    });
-
-    afterEach(() => {
-      vi.useRealTimers();
-    });
-
-    it("returns highest paid tier", () => {
-      const member = {
-        membership: {
-          active_tiers: ["club", "community"],
-          club_paid_until: "2025-12-31",
-          community_paid_until: "2025-12-31",
-        },
-      };
-      expect(getEffectiveTier(member)).toBe("club");
-    });
-
-    it("returns approved tier if nothing is paid", () => {
-      const member = {
-        membership: {
-          active_tiers: ["club"],
-          club_paid_until: null,
-        },
-      };
-      expect(getEffectiveTier(member)).toBe("club");
     });
   });
 
@@ -207,6 +152,8 @@ describe("Tier Utilities", () => {
     it("returns highest paid tier", () => {
       const member = {
         membership: {
+          paid_tier: "academy",
+          paid_tiers: ["academy", "club", "community"],
           active_tiers: ["academy", "club", "community"],
           academy_paid_until: "2025-12-31",
           club_paid_until: "2025-12-31",
@@ -260,9 +207,19 @@ describe("Tier Utilities", () => {
     it("returns pending label for requested tier", () => {
       const member = {
         membership: {
+          display_label: "Club (Pending)",
+          paid_tier: "community",
           active_tiers: ["community"],
           requested_tiers: ["club"],
           community_paid_until: "2025-12-31",
+          tier_statuses: {
+            community: {
+              tier: "community" as const,
+              status: "active" as const,
+              label: "Active",
+            },
+            club: { tier: "club" as const, status: "requested" as const, label: "Requested" },
+          },
         },
       };
       expect(getMembershipLabel(member)).toBe("Club (Pending)");
@@ -271,6 +228,8 @@ describe("Tier Utilities", () => {
     it("returns member label for active tier", () => {
       const member = {
         membership: {
+          display_label: "Club Member",
+          paid_tier: "club",
           active_tiers: ["club"],
           club_paid_until: "2025-12-31",
         },
@@ -296,6 +255,20 @@ describe("Tier Utilities", () => {
         },
       };
       expect(getMembershipLabel(member)).toBe("Club (Payment Pending)");
+    });
+  });
+
+  describe("getMembershipDetail", () => {
+    it("returns only backend-provided lifecycle detail", () => {
+      expect(
+        getMembershipDetail({
+          membership: {
+            display_label: "Community Member",
+            display_detail: "Club: Payment pending",
+          },
+        })
+      ).toBe("Club: Payment pending");
+      expect(getMembershipDetail({ membership: { requested_tiers: ["club"] } })).toBeNull();
     });
   });
 
@@ -345,6 +318,24 @@ describe("Tier Utilities", () => {
       };
 
       expect(getRequestedTiers(member)).toEqual(["club", "academy"]);
+    });
+
+    it("keeps an expired declared tier as profile context without making it active", () => {
+      const member = {
+        membership: {
+          tier_statuses: {
+            academy: {
+              tier: "academy" as const,
+              status: "expired" as const,
+              label: "Expired",
+              declared_active: true,
+            },
+          },
+        },
+      };
+
+      expect(hasTierContext(member, "academy")).toBe(true);
+      expect(isTierActive(member, "academy")).toBe(false);
     });
   });
 });

@@ -72,6 +72,7 @@ export default function MemberDashboardPage() {
   const [resumePaymentIntent, setResumePaymentIntent] = useState<CachedPaymentIntent | null>(null);
   const [allRecords, setAllRecords] = useState<AttendanceRecord[]>([]);
   const [upcomingBookings, setUpcomingBookings] = useState<AttendanceRecord[]>([]);
+  const [bookedSessionSignInEligible, setBookedSessionSignInEligible] = useState(false);
   const [nextAvailableSession, setNextAvailableSession] = useState<{
     session_id: string;
     session_title: string;
@@ -152,26 +153,9 @@ export default function MemberDashboardPage() {
     setResumePaymentIntent(cached || null);
   }, [member]);
 
-  // Fetch next available session (tier-aware) when no booked sessions exist
+  // Fetch the next session the backend says this member can book.
   useEffect(() => {
     if (!member || upcomingBookings.length > 0) return;
-
-    const paidTier = getPaidMembershipTier(member);
-
-    // Map tier to session type priority
-    const tierSessionTypes: string[] =
-      paidTier === "academy"
-        ? ["cohort_class", "club", "community"]
-        : paidTier === "club"
-          ? ["club", "community"]
-          : paidTier === "community"
-            ? ["community"]
-            : [];
-
-    if (tierSessionTypes.length === 0) {
-      setNextAvailableSession(null);
-      return;
-    }
 
     SessionsApi.listSessions({ auth: true })
       .then((sessions: Session[]) => {
@@ -184,21 +168,6 @@ export default function MemberDashboardPage() {
           )
           .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
 
-        // Find first session matching tier priority
-        for (const type of tierSessionTypes) {
-          const match = futurePublished.find((s) => s.session_type === type);
-          if (match) {
-            setNextAvailableSession({
-              session_id: match.id,
-              session_title: match.title,
-              session_starts_at: match.starts_at,
-              session_ends_at: match.ends_at,
-              session_location: match.location || undefined,
-            });
-            return;
-          }
-        }
-        // Fallback to any session
         if (futurePublished.length > 0) {
           const s = futurePublished[0];
           setNextAvailableSession({
@@ -212,6 +181,28 @@ export default function MemberDashboardPage() {
       })
       .catch(() => {});
   }, [member, upcomingBookings]);
+
+  useEffect(() => {
+    const booking = upcomingBookings[0];
+    if (!booking) {
+      setBookedSessionSignInEligible(false);
+      return;
+    }
+
+    let cancelled = false;
+    SessionsApi.getSession(String(booking.session_id), { auth: true })
+      .then((session) => {
+        if (!cancelled) {
+          setBookedSessionSignInEligible(session.access?.sign_in_eligible === true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setBookedSessionSignInEligible(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [upcomingBookings]);
 
   if (loading) {
     return <DashboardSkeleton />;
@@ -505,6 +496,9 @@ export default function MemberDashboardPage() {
           // Only meaningful when the next session came from an existing
           // attendance record (upcomingBookings path). Otherwise undefined.
           upcomingBookings.length > 0 ? upcomingBookings[0]?.status : null
+        }
+        signInEligible={
+          upcomingBookings.length > 0 ? bookedSessionSignInEligible : false
         }
       />
 

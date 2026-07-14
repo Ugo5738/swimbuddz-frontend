@@ -64,6 +64,18 @@ export function ContentCadencePanel({ posts }: Props) {
         (total, post) => total + (post.email_failed_count || 0),
         0,
       ),
+      emailInProgress: posts.reduce(
+        (total, post) => total + (post.email_in_progress_count || 0),
+        0,
+      ),
+      emailUnknown: posts.reduce(
+        (total, post) => total + (post.email_unknown_count || 0),
+        0,
+      ),
+      emailAttempts: posts.reduce(
+        (total, post) => total + (post.email_attempt_count || 0),
+        0,
+      ),
       nextScheduledLabel: nextScheduled
         ? format(nextScheduled, "MMM d, h:mm a")
         : "None",
@@ -95,7 +107,10 @@ export function ContentCadencePanel({ posts }: Props) {
     {
       label: "Email",
       value: stats.emailSent,
-      detail: stats.emailFailed ? `${stats.emailFailed} failed` : "No failures",
+      detail:
+        stats.emailFailed || stats.emailInProgress || stats.emailUnknown
+          ? `${stats.emailFailed} failed, ${stats.emailInProgress} sending, ${stats.emailUnknown} review`
+          : `${stats.emailAttempts} attempts, no failures`,
       icon: MailCheck,
     },
   ];

@@ -5,12 +5,13 @@ import { apiGet } from "@/lib/api";
 import { supabase } from "@/lib/auth";
 import { listPodsILead } from "@/lib/pods";
 import {
-  getMemberTiers,
+  getMembershipDetail,
   getMembershipLabel,
   getPaidMembershipTier,
+  getPaidMembershipTiers,
   getRequestedTiers,
   hasTierContext,
-  isTierPaid,
+  type MembershipTierStatus,
 } from "@/lib/tiers";
 import {
   Activity,
@@ -93,19 +94,15 @@ type MemberInfo = {
     community_paid_until?: string | null;
     club_paid_until?: string | null;
     academy_paid_until?: string | null;
+    paid_tier?: string | null;
+    paid_tiers?: string[] | null;
+    display_label?: string | null;
+    display_detail?: string | null;
+    tier_statuses?: Partial<Record<"community" | "club" | "academy", MembershipTierStatus>> | null;
     academy_skill_assessment?: Record<string, boolean> | null;
     academy_goals?: string | null;
     academy_preferred_coach_gender?: string | null;
     academy_lesson_preference?: string | null;
-  };
-};
-
-type AcademyEnrollment = {
-  id: string;
-  status: string;
-  payment_status: string;
-  cohort?: {
-    name: string;
   };
 };
 
@@ -189,7 +186,6 @@ export function MemberLayout({ children }: MemberLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [member, setMember] = useState<MemberInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [academyEnrollments, setAcademyEnrollments] = useState<AcademyEnrollment[]>([]);
   const [isCoach, setIsCoach] = useState(false);
   // True when this user is the lead or assistant lead of at least one pod.
   // Drives the conditional "Pod Lead Tools" sidebar section. Default false
@@ -213,11 +209,6 @@ export function MemberLayout({ children }: MemberLayoutProps) {
     setLoading(true);
     Promise.all([
       refreshMember(),
-      apiGet<AcademyEnrollment[]>("/api/v1/academy/my-enrollments", {
-        auth: true,
-      })
-        .then(setAcademyEnrollments)
-        .catch(() => setAcademyEnrollments([])),
       // Check if user has coach role
       supabase.auth
         .getUser()
@@ -317,38 +308,12 @@ export function MemberLayout({ children }: MemberLayoutProps) {
     return !hasMoreSpecificMatch;
   };
 
-  const rawTiers = getMemberTiers(member);
-  const clubActive = isTierPaid(member, "club");
-  const academyActive = isTierPaid(member, "academy");
-  const communityActive = isTierPaid(member, "community");
+  const paidTiers = getPaidMembershipTiers(member);
+  const clubActive = paidTiers.includes("club");
+  const academyActive = paidTiers.includes("academy");
+  const communityActive = paidTiers.includes("community");
   const paidTier = getPaidMembershipTier(member);
-
-  const tierSet = new Set(rawTiers);
-  if (clubActive) {
-    tierSet.add("club");
-    tierSet.add("community");
-  }
-  if (academyActive) {
-    tierSet.add("academy");
-    tierSet.add("club");
-    tierSet.add("community");
-  }
-  if (communityActive) {
-    tierSet.add("community");
-  }
-
-  // Also add academy tier if user has paid academy enrollment
-  // (This handles cases where academy_paid_until isn't set but enrollment exists)
-  const hasPaidEnrollment = academyEnrollments.some(
-    (e) => e.payment_status === "paid" || e.status === "enrolled"
-  );
-  if (hasPaidEnrollment) {
-    tierSet.add("academy");
-    tierSet.add("club");
-    tierSet.add("community");
-  }
-
-  const memberTiers = Array.from(tierSet);
+  const memberTiers = paidTiers;
 
   const requestedTiers = getRequestedTiers(member);
   const filteredRequests = requestedTiers.filter(
@@ -356,21 +321,15 @@ export function MemberLayout({ children }: MemberLayoutProps) {
       !(
         (tier === "community" && communityActive) ||
         (tier === "club" && (paidTier === "club" || paidTier === "academy")) ||
-        (tier === "academy" && (paidTier === "academy" || hasPaidEnrollment))
+        (tier === "academy" && paidTier === "academy")
       )
   );
   const wantsAcademy = filteredRequests.includes("academy");
   const wantsClub = filteredRequests.includes("club") || wantsAcademy;
-  const clubEntitled =
-    hasTierContext(member, "club") || hasTierContext(member, "academy") || hasPaidEnrollment;
-  const academyEntitled = hasTierContext(member, "academy") || hasPaidEnrollment;
-
-  // Check if user has a paid academy enrollment (more reliable than academy_paid_until)
-  const hasPaidAcademyEnrollment = academyEnrollments.some(
-    (e) => e.payment_status === "paid" || e.status === "enrolled"
-  );
-
-  const membershipLabel = hasPaidAcademyEnrollment ? "Academy Member" : getMembershipLabel(member);
+  const clubEntitled = hasTierContext(member, "club") || hasTierContext(member, "academy");
+  const academyEntitled = hasTierContext(member, "academy");
+  const membershipLabel = getMembershipLabel(member);
+  const membershipDetail = getMembershipDetail(member);
 
   // Check profile_photo_media_id (source of truth) for validation, URL is just for display
   const needsProfileBasics =
@@ -421,7 +380,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
       if (section.title === "Learn") {
         const items = section.items.filter((item) => {
           if (item.href === "/account/academy") {
-            return hasPaidAcademyEnrollment;
+            return academyActive;
           }
           return true;
         });
@@ -509,7 +468,10 @@ export function MemberLayout({ children }: MemberLayoutProps) {
               )}
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-white truncate">{memberName}</p>
-                <p className="text-xs text-cyan-100 capitalize">{membershipLabel}</p>
+                <p className="text-xs text-cyan-100">{membershipLabel}</p>
+                {membershipDetail && (
+                  <p className="truncate text-xs text-cyan-200/80">{membershipDetail}</p>
+                )}
               </div>
             </div>
           </div>

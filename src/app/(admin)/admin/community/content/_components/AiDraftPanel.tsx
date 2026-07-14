@@ -5,13 +5,12 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import { apiEndpoints } from "@/lib/config";
+import { apiPost } from "@/lib/api";
 import { Wand2 } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import type { ContentPost } from "../types";
 
 interface AiDraftPanelProps {
-  createdBy: string | null;
   onDraftCreated: (post: ContentPost) => Promise<void> | void;
 }
 
@@ -22,7 +21,7 @@ const defaultDraftForm = {
   tier_access: "community",
 };
 
-export function AiDraftPanel({ createdBy, onDraftCreated }: AiDraftPanelProps) {
+export function AiDraftPanel({ onDraftCreated }: AiDraftPanelProps) {
   const [formData, setFormData] = useState(defaultDraftForm);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,35 +33,19 @@ export function AiDraftPanel({ createdBy, onDraftCreated }: AiDraftPanelProps) {
 
   const handleGenerateDraft = async (event: FormEvent) => {
     event.preventDefault();
-    if (!createdBy) {
-      setError("Admin member profile is still loading.");
-      return;
-    }
-
     setIsGenerating(true);
     setError(null);
     try {
-      const response = await fetch(
-        `${apiEndpoints.content}/ai-drafts?created_by=${createdBy}`,
+      const post = await apiPost<ContentPost>(
+        "/api/v1/content/ai-drafts",
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: formData.title.trim(),
-            brief: formData.brief.trim() || null,
-            category: formData.category,
-            tier_access: formData.tier_access,
-          }),
+          title: formData.title.trim(),
+          brief: formData.brief.trim() || null,
+          category: formData.category,
+          tier_access: formData.tier_access,
         },
+        { auth: true },
       );
-
-      if (!response.ok) {
-        const detail = await response.json().catch(() => null);
-        setError(detail?.detail || "AI draft generation failed.");
-        return;
-      }
-
-      const post = (await response.json()) as ContentPost;
       setFormData(defaultDraftForm);
       await onDraftCreated(post);
     } catch (generationError) {
@@ -131,9 +114,7 @@ export function AiDraftPanel({ createdBy, onDraftCreated }: AiDraftPanelProps) {
           {error ? <p className="text-sm text-rose-600">{error}</p> : <span />}
           <Button
             type="submit"
-            disabled={
-              isGenerating || !createdBy || formData.title.trim().length < 4
-            }
+            disabled={isGenerating || formData.title.trim().length < 4}
             className="w-fit gap-2"
           >
             <Wand2 className="h-4 w-4" aria-hidden="true" />

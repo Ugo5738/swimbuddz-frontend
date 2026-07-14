@@ -28,6 +28,8 @@ type NextSessionCardProps = {
   isBooked?: boolean;
   /** Existing attendance status if any (e.g. "present", "absent"). */
   attendanceStatus?: string | null;
+  /** Backend-owned attendance eligibility for the confirmed booking. */
+  signInEligible?: boolean;
 };
 
 function formatSessionDate(dateStr: string): string {
@@ -58,7 +60,12 @@ function getCountdown(dateStr: string): string {
   return `in ${diffDays} days`;
 }
 
-export function NextSessionCard({ session, isBooked, attendanceStatus }: NextSessionCardProps) {
+export function NextSessionCard({
+  session,
+  isBooked,
+  attendanceStatus,
+  signInEligible,
+}: NextSessionCardProps) {
   const [signingIn, setSigningIn] = useState(false);
   const [signedInLocal, setSignedInLocal] = useState(false);
 
@@ -98,6 +105,7 @@ export function NextSessionCard({ session, isBooked, attendanceStatus }: NextSes
   const alreadySignedIn = lowerStatus === "present" || lowerStatus === "late";
   const canSelfSignIn =
     Boolean(isBooked) &&
+    signInEligible === true &&
     Boolean(session.session_id) &&
     inSignInWindow &&
     !alreadySignedIn &&

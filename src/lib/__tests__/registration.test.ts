@@ -173,6 +173,14 @@ describe("getPostAuthRedirectPath", () => {
         community_paid_until: "2025-12-31",
         club_paid_until: null,
         academy_paid_until: null,
+        paid_tier: "community",
+        paid_tiers: ["community"],
+        display_label: "Community Member",
+        tier_statuses: {
+          community: { status: "active" },
+          club: { status: "inactive" },
+          academy: { status: "inactive" },
+        },
       },
       coach_profile: null,
       ...overrides,
@@ -290,6 +298,13 @@ describe("getPostAuthRedirectPath", () => {
           community_paid_until: null,
           club_paid_until: null,
           academy_paid_until: null,
+          paid_tier: "prospect",
+          paid_tiers: [],
+          tier_statuses: {
+            community: { status: "approved_unpaid" },
+            club: { status: "inactive" },
+            academy: { status: "inactive" },
+          },
         },
       })
     );
@@ -316,7 +331,7 @@ describe("getPostAuthRedirectPath", () => {
     expect(path).toBe("/account/billing?required=community");
   });
 
-  it("redirects to billing for club when club requested but not paid", async () => {
+  it("keeps a requested Club upgrade in the pending approval flow", async () => {
     mockedApiGet.mockResolvedValue(
       buildMember({
         membership: {
@@ -326,12 +341,19 @@ describe("getPostAuthRedirectPath", () => {
           community_paid_until: "2025-12-31",
           club_paid_until: null,
           academy_paid_until: null,
+          paid_tier: "community",
+          paid_tiers: ["community"],
+          tier_statuses: {
+            community: { status: "active" },
+            club: { status: "requested" },
+            academy: { status: "inactive" },
+          },
         },
       })
     );
 
     const path = await getPostAuthRedirectPath();
-    expect(path).toBe("/account/billing?required=club");
+    expect(path).toBe("/account/profile?upgrade=pending");
   });
 
   it("uses backend active Community status when raw paid date is missing", async () => {
@@ -381,6 +403,64 @@ describe("getPostAuthRedirectPath", () => {
     expect(path).toBe("/account/billing?required=club");
   });
 
+  it("routes an approved unpaid Academy upgrade to Academy billing", async () => {
+    mockedApiGet.mockResolvedValue(
+      buildMember({
+        membership: {
+          primary_tier: "academy",
+          active_tiers: ["community", "academy"],
+          requested_tiers: [],
+          community_paid_until: "2025-12-31",
+          club_paid_until: null,
+          academy_paid_until: null,
+          paid_tier: "community",
+          paid_tiers: ["community"],
+          tier_statuses: {
+            community: { status: "active" },
+            club: { status: "inactive" },
+            academy: { status: "approved_unpaid", declared_active: true },
+          },
+          academy_skill_assessment: { canFloat: true },
+          academy_goals: "Learn freestyle",
+          academy_preferred_coach_gender: "any",
+          academy_lesson_preference: "group",
+        },
+      })
+    );
+
+    const path = await getPostAuthRedirectPath();
+    expect(path).toBe("/account/billing?required=academy");
+  });
+
+  it("keeps an expired declared Academy tier distinct from active access", async () => {
+    mockedApiGet.mockResolvedValue(
+      buildMember({
+        membership: {
+          primary_tier: "academy",
+          active_tiers: ["community", "academy"],
+          requested_tiers: [],
+          community_paid_until: "2025-12-31",
+          club_paid_until: null,
+          academy_paid_until: "2025-01-01",
+          paid_tier: "community",
+          paid_tiers: ["community"],
+          tier_statuses: {
+            community: { status: "active" },
+            club: { status: "inactive" },
+            academy: { status: "expired", declared_active: true },
+          },
+          academy_skill_assessment: { canFloat: true },
+          academy_goals: "Learn freestyle",
+          academy_preferred_coach_gender: "any",
+          academy_lesson_preference: "group",
+        },
+      })
+    );
+
+    const path = await getPostAuthRedirectPath();
+    expect(path).toBe("/account/billing?required=academy");
+  });
+
   // --- Success paths ---
 
   it("redirects to /account for fully onboarded community member", async () => {
@@ -400,6 +480,13 @@ describe("getPostAuthRedirectPath", () => {
           community_paid_until: "2025-12-31",
           club_paid_until: null,
           academy_paid_until: "2025-12-31",
+          paid_tier: "academy",
+          paid_tiers: ["academy", "club", "community"],
+          tier_statuses: {
+            community: { status: "active" },
+            club: { status: "active" },
+            academy: { status: "active" },
+          },
           academy_skill_assessment: { canFloat: true },
           academy_goals: "Learn freestyle",
           academy_preferred_coach_gender: "any",
@@ -497,6 +584,13 @@ describe("getPostAuthRedirectPath", () => {
           community_paid_until: "2025-12-31",
           club_paid_until: null,
           academy_paid_until: null,
+          paid_tier: "community",
+          paid_tiers: ["community"],
+          tier_statuses: {
+            community: { status: "active" },
+            club: { status: "inactive" },
+            academy: { status: "requested" },
+          },
           academy_skill_assessment: null,
           academy_goals: null,
           academy_preferred_coach_gender: null,

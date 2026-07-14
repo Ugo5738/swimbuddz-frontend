@@ -13,10 +13,9 @@
  * decision into a `NextResponse`. The matrix is pinned by
  * `__tests__/middlewareAccess.test.ts`.
  *
- * IMPORTANT: this is the member route-access boundary. It now trusts the
- * backend-normalized membership summary (`paid_tier` / `tier_statuses`) first
- * and keeps the old raw-field checks only as compatibility fallback. Change
- * behaviour only with a matching test and a clear reason.
+ * IMPORTANT: this is the member route-access boundary. It trusts the
+ * backend-normalized membership summary (`paid_tier` / `tier_statuses`). A
+ * missing or malformed summary fails closed.
  */
 
 import type { DisplayMembershipTier, MembershipTier, MembershipTierStatusValue } from "@/lib/tiers";
@@ -33,6 +32,8 @@ export interface MiddlewareMember {
   is_admin?: boolean | null;
   approval_status?: string | null;
   membership?: {
+    // Present in the response for operational surfaces; route access does not
+    // infer entitlement from these raw lifecycle and billing fields.
     primary_tier?: string | null;
     active_tiers?: string[] | null;
     requested_tiers?: string[] | null;
@@ -58,8 +59,6 @@ export interface AccessInput {
   /** Already-resolved from the signed JWT's app_metadata.roles. */
   isJwtAdmin: boolean;
   member: MiddlewareMember;
-  /** Injected for deterministic tests (defaults to Date.now()). */
-  now?: number;
 }
 
 export type AccessDecision =
@@ -67,6 +66,38 @@ export type AccessDecision =
   | { kind: "redirect"; path: string; search?: Record<string, string> };
 
 const ALLOW: AccessDecision = { kind: "allow" };
+
+const MEMBER_ROUTE_PREFIXES = [
+  "/sessions",
+  "/account",
+  "/attendance",
+  "/community",
+  "/club",
+  "/academy",
+  "/upgrade",
+];
+
+const PUBLIC_MEMBER_ROUTES = new Set([
+  "/community",
+  "/community/leaderboard",
+  "/club",
+  "/academy",
+  "/academy/programs",
+]);
+
+const PUBLIC_MEMBER_ROUTE_PREFIXES = ["/academy/programs"];
+
+function pathMatchesPrefix(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
+export function requiresMemberAccess(pathname: string): boolean {
+  if (PUBLIC_MEMBER_ROUTES.has(pathname)) return false;
+  if (PUBLIC_MEMBER_ROUTE_PREFIXES.some((prefix) => pathMatchesPrefix(pathname, prefix))) {
+    return false;
+  }
+  return MEMBER_ROUTE_PREFIXES.some((prefix) => pathMatchesPrefix(pathname, prefix));
+}
 
 // Tier access requirements per protected route prefix. Mirrors the
 // original middleware's TIER_ROUTES exactly.
@@ -78,6 +109,9 @@ const TIER_ROUTES: Record<string, MembershipTier[]> = {
   // enforced by the sessions API/UI, not this blanket rule.
   "/sessions": ["community", "club", "academy"],
   "/academy": ["academy"],
+  "/account/pods": ["club", "academy"],
+  "/account/pod-lead": ["club", "academy"],
+  "/account/reports": ["club", "academy"],
 };
 
 const MEMBERSHIP_TIERS: MembershipTier[] = ["community", "club", "academy"];
@@ -89,13 +123,6 @@ const STATUS_VALUES: MembershipTierStatusValue[] = [
   "expired",
   "inactive",
 ];
-
-/** Parse an ISO date-ish value to epoch ms, or null if unusable. */
-export function parseDateMs(value: unknown): number | null {
-  if (!value) return null;
-  const ms = Date.parse(String(value));
-  return Number.isFinite(ms) ? ms : null;
-}
 
 function normalizeTier(value: unknown): MembershipTier | null {
   const tier = String(value || "").toLowerCase();
@@ -122,88 +149,32 @@ function getTierStatus(
   return normalizeStatus(membership?.tier_statuses?.[tier]?.status);
 }
 
-function hasBackendStatus(membership: MiddlewareMember["membership"]): boolean {
-  return Boolean(membership?.paid_tier || membership?.tier_statuses);
-}
-
-function getDeclaredTiers(membership: MiddlewareMember["membership"]): MembershipTier[] {
-  const tiers = new Set<MembershipTier>();
-  for (const rawTier of membership?.active_tiers ?? []) {
-    const tier = normalizeTier(rawTier);
-    if (tier) tiers.add(tier);
-  }
-  const primary = normalizeTier(membership?.primary_tier);
-  if (primary) tiers.add(primary);
-  return Array.from(tiers);
-}
-
 function getRequestedTiers(membership: MiddlewareMember["membership"]): MembershipTier[] {
-  if (membership?.tier_statuses) {
-    return MEMBERSHIP_TIERS.filter((tier) => {
-      const status = getTierStatus(membership, tier);
-      return status === "requested" || status === "payment_pending";
-    });
-  }
-
-  return (membership?.requested_tiers ?? [])
-    .map((tier) => normalizeTier(tier))
-    .filter((tier): tier is MembershipTier => Boolean(tier));
-}
-
-function legacyTierIsActive(
-  membership: MiddlewareMember["membership"],
-  tier: MembershipTier,
-  now: number
-): boolean {
-  const communityUntilMs = parseDateMs(membership?.community_paid_until);
-  const clubUntilMs = parseDateMs(membership?.club_paid_until);
-  const academyUntilMs = parseDateMs(membership?.academy_paid_until);
-  const declaredTiers = getDeclaredTiers(membership);
-
-  const communityPaid = communityUntilMs !== null && communityUntilMs > now;
-  const clubPaid = clubUntilMs !== null && clubUntilMs > now;
-  const academyPaid = academyUntilMs !== null && academyUntilMs > now;
-  const legacyAcademyActive =
-    declaredTiers.includes("academy") && (academyUntilMs === null || academyUntilMs > now);
-
-  if (tier === "academy") return academyPaid || legacyAcademyActive;
-  if (tier === "club") return clubPaid || academyPaid || legacyAcademyActive;
-  return communityPaid || clubPaid || academyPaid;
+  return MEMBERSHIP_TIERS.filter((tier) => {
+    const status = getTierStatus(membership, tier);
+    return status === "requested" || status === "payment_pending";
+  });
 }
 
 function tierIsActive(
   membership: MiddlewareMember["membership"],
-  tier: MembershipTier,
-  now: number
+  tier: MembershipTier
 ): boolean {
-  const status = getTierStatus(membership, tier);
-  if (status) return status === "active";
-  return legacyTierIsActive(membership, tier, now);
+  return getTierStatus(membership, tier) === "active";
 }
 
-function getPaidTier(
-  membership: MiddlewareMember["membership"],
-  now: number
-): DisplayMembershipTier {
+function getPaidTier(membership: MiddlewareMember["membership"]): DisplayMembershipTier {
   const backendPaidTier = normalizeDisplayTier(membership?.paid_tier);
   if (backendPaidTier) return backendPaidTier;
 
-  if (tierIsActive(membership, "academy", now)) return "academy";
-  if (tierIsActive(membership, "club", now)) return "club";
-  if (tierIsActive(membership, "community", now)) return "community";
+  if (tierIsActive(membership, "academy")) return "academy";
+  if (tierIsActive(membership, "club")) return "club";
+  if (tierIsActive(membership, "community")) return "community";
   return "prospect";
 }
 
-function hasPaidEntitlement(membership: MiddlewareMember["membership"], now: number): boolean {
-  if (hasBackendStatus(membership)) {
-    return getPaidTier(membership, now) !== "prospect";
-  }
-
-  return (
-    (parseDateMs(membership?.community_paid_until) ?? 0) > now ||
-    (parseDateMs(membership?.club_paid_until) ?? 0) > now ||
-    (parseDateMs(membership?.academy_paid_until) ?? 0) > now
-  );
+function hasPaidEntitlement(membership: MiddlewareMember["membership"]): boolean {
+  return getPaidTier(membership) !== "prospect";
 }
 
 function routeGateRedirectForRequiredTier(
@@ -234,14 +205,6 @@ function routeGateRedirectForRequiredTier(
     };
   }
 
-  if (getDeclaredTiers(membership).includes(requiredTier)) {
-    return {
-      kind: "redirect",
-      path: "/account/billing",
-      search: { required: requiredTier },
-    };
-  }
-
   return {
     kind: "redirect",
     path: "/register",
@@ -262,7 +225,6 @@ function routeGateRedirectForRequiredTier(
  */
 export function evaluateMemberAccess(input: AccessInput): AccessDecision {
   const { pathname, member } = input;
-  const now = input.now ?? Date.now();
 
   // 1. Legacy admin signal (JWT admin is handled by the caller before
   // we ever get here; this preserves the old member.role fallback).
@@ -282,14 +244,14 @@ export function evaluateMemberAccess(input: AccessInput): AccessDecision {
   }
 
   const membership = member.membership;
-  const paidTier = getPaidTier(membership, now);
+  const paidTier = getPaidTier(membership);
 
   // 3. Community activation paywall. /account (and /account/profile) is
   // always reachable so members can pay; everything else is blocked
   // until *some* tier is paid. Active Club/Academy supersedes Community.
-  const paywallAllowed = pathname.startsWith("/account") || pathname.startsWith("/account/profile");
+  const paywallAllowed = pathMatchesPrefix(pathname, "/account");
 
-  if (!hasPaidEntitlement(membership, now) && !paywallAllowed) {
+  if (!hasPaidEntitlement(membership) && !paywallAllowed) {
     return {
       kind: "redirect",
       path: "/account/billing",
@@ -298,7 +260,9 @@ export function evaluateMemberAccess(input: AccessInput): AccessDecision {
   }
 
   // 4. Tier-based route gate.
-  const protectedRoute = Object.keys(TIER_ROUTES).find((route) => pathname.startsWith(route));
+  const protectedRoute = Object.keys(TIER_ROUTES).find((route) =>
+    pathMatchesPrefix(pathname, route)
+  );
 
   if (protectedRoute) {
     const allowedTiers = TIER_ROUTES[protectedRoute];

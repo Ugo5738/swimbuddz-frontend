@@ -4,22 +4,13 @@ import { NextResponse } from "next/server";
 import { API_BASE_URL } from "@/lib/config";
 import {
   evaluateMemberAccess,
+  requiresMemberAccess,
   type AccessDecision,
   type MiddlewareMember,
 } from "@/lib/middlewareAccess";
 
-// Routes that require an approved membership
-const MEMBER_ROUTES = ["/sessions", "/account", "/attendance"];
-
 // Routes that require admin access
 const ADMIN_ROUTES = ["/admin"];
-
-const PUBLIC_LANDING_ROUTES = new Set([
-  "/community",
-  "/club",
-  "/academy",
-  "/sessions",
-]);
 
 function redirectToLogin(request: NextRequest, errorCode: string) {
   const loginUrl = new URL("/login", request.url);
@@ -68,17 +59,10 @@ export async function middleware(request: NextRequest) {
   );
 
   // Check if this is a member-only route
-  const isMemberRoute = MEMBER_ROUTES.some((route) =>
-    pathname.startsWith(route),
-  );
+  const isMemberRoute = requiresMemberAccess(pathname);
 
   // Check if this is an admin route
   const isAdminRoute = ADMIN_ROUTES.some((route) => pathname.startsWith(route));
-
-  // Allow public marketing landing pages even though they share paths with member routes.
-  if (PUBLIC_LANDING_ROUTES.has(pathname)) {
-    return response;
-  }
 
   // For member routes, check approval status
   if (isMemberRoute || isAdminRoute) {
@@ -174,6 +158,7 @@ export const config = {
     "/sessions/:path*",
     "/account/:path*",
     "/attendance/:path*",
+    "/upgrade/:path*",
     "/admin/:path*",
   ],
 };

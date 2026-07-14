@@ -627,8 +627,8 @@ export interface paths {
          *     the caller is the system, not the member self-upgrading.
          *
          *     The new ``club_paid_until`` becomes ``max(current, anchor) + months`` where
-         *     ``anchor = payload.from_date or now``. Idempotent: if club_paid_until is
-         *     already at or past the computed target, no change is made.
+         *     ``anchor = payload.from_date or now``. Callers that may retry must provide
+         *     an idempotency key.
          */
         post: operations["admin_extend_club_membership_by_auth_admin_members_by_auth__auth_id__club_extend_post"];
         delete?: never;
@@ -668,12 +668,10 @@ export interface paths {
         put?: never;
         /**
          * Admin Expire Academy Membership By Auth
-         * @description Set academy_paid_until to NOW, effectively expiring academy access.
+         * @description Expire Academy access immediately.
          *
-         *     Used by academy_service after a member's withdrawal when they have no
-         *     remaining ENROLLED cohorts. Subsequent reads via /members/me or the
-         *     internal membership endpoint will strip "academy" from active_tiers
-         *     via normalize_member_tiers since the date is no longer in the future.
+         *     Kept for operational compatibility. Academy's normal lifecycle uses the
+         *     exact ``/academy/project`` endpoint so another active cohort is preserved.
          */
         post: operations["admin_expire_academy_membership_by_auth_admin_members_by_auth__auth_id__academy_expire_post"];
         delete?: never;
@@ -693,14 +691,37 @@ export interface paths {
         put?: never;
         /**
          * Admin Activate Academy Membership By Auth
-         * @description Set (or extend) the academy tier for a member until cohort_end_date.
+         * @description Apply a paid Academy entitlement once and preserve later cohorts.
          *
-         *     A member may be enrolled in multiple simultaneous cohorts ending at different
-         *     dates. This endpoint always keeps academy_paid_until at the *latest* cohort
-         *     end date seen, so access is never prematurely revoked.
-         *     Called by payments_service after a successful academy cohort payment.
+         *     The idempotency key protects both the Academy end date and the Community
+         *     and Club periods bundled with the first Academy payment. Retrying the same
+         *     payment therefore cannot keep moving those lower-tier expiries forward.
          */
         post: operations["admin_activate_academy_membership_by_auth_admin_members_by_auth__auth_id__academy_activate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/members/by-auth/{auth_id}/academy/project": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin Project Academy Membership By Auth
+         * @description Replace Academy access with academy_service's authoritative projection.
+         *
+         *     This mutation is naturally idempotent and intentionally does not alter the
+         *     separately earned Community or Club periods. It may shorten Academy access
+         *     after a withdrawal, unlike the paid activation endpoint.
+         */
+        post: operations["admin_project_academy_membership_by_auth_admin_members_by_auth__auth_id__academy_project_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3750,6 +3771,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/sessions/{session_id}/access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Member Session Access
+         * @description Return the backend-owned access decision used by payment services.
+         */
+        get: operations["get_member_session_access_internal_sessions__session_id__access_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/sessions/cohorts/{cohort_id}/next-session": {
         parameters: {
             query?: never;
@@ -3890,6 +3931,70 @@ export interface paths {
         get: operations["get_session_coach_ids_internal_sessions__session_id__coaches_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/sessions/bookings/bundle/reserve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reserve Bundle Bookings
+         * @description Reserve capacity and snapshot server-owned prices for a bundle payment.
+         */
+        post: operations["reserve_bundle_bookings_internal_sessions_bookings_bundle_reserve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/sessions/bookings/bundle/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Bundle Bookings
+         * @description Confirm a paid bundle atomically and idempotently.
+         *
+         *     Expired holds may still be confirmed after a delayed provider callback, but
+         *     only while every session remains upcoming and has capacity. Either every
+         *     booking commits or none of them does.
+         */
+        post: operations["confirm_bundle_bookings_internal_sessions_bookings_bundle_confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/sessions/bookings/bundle/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Release Bundle Bookings
+         * @description Release only pending reservations owned by an abandoned bundle intent.
+         */
+        post: operations["release_bundle_bookings_internal_sessions_bookings_bundle_release_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4048,7 +4153,7 @@ export interface paths {
         put?: never;
         /**
          * Public Sign In To Session
-         * @description Public sign in to a session (no auth required). Idempotent upsert.
+         * @description Record attendance for another member as service, admin, or coach.
          */
         post: operations["public_sign_in_to_session_attendance_sessions__session_id__attendance_public_post"];
         delete?: never;
@@ -7574,6 +7679,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/content/ai-drafts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Ai Content Draft
+         * @description Generate and save an unpublished content post draft for admin review.
+         */
+        post: operations["create_ai_content_draft_content_ai_drafts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/content/{post_id}": {
         parameters: {
             query?: never;
@@ -7638,6 +7763,26 @@ export interface paths {
          *     Sets is_published to False while preserving published_at for history.
          */
         post: operations["unpublish_content_post_content__post_id__unpublish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/content/{post_id}/email/retry-failed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry Failed Content Post Emails
+         * @description Retry only deliveries the provider explicitly reported as failed.
+         */
+        post: operations["retry_failed_content_post_emails_content__post_id__email_retry_failed_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10371,6 +10516,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/transport/ride-quotes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Quote Bundle Rides
+         * @description Validate bundle ride selections and calculate their authoritative total.
+         */
+        post: operations["quote_bundle_rides_internal_transport_ride_quotes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/transport/member-summary/{member_auth_id}": {
         parameters: {
             query?: never;
@@ -10481,6 +10646,40 @@ export interface paths {
          *     Returns coaches ranked by suitability with rationale.
          */
         post: operations["suggest_coach_endpoint_ai_score_suggest_coach_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/content/drafts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Content Draft */
+        post: operations["create_content_draft_ai_content_drafts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/content/images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Content Image */
+        post: operations["create_content_image_ai_content_images_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -15927,6 +16126,10 @@ export interface components {
              * @description ISO datetime of the cohort end date (timezone-aware)
              */
             cohort_end_date: string;
+            /** Idempotency Key */
+            idempotency_key?: string | null;
+            /** Source Reference */
+            source_reference?: string | null;
         };
         /**
          * ActivateClubRequest
@@ -15938,6 +16141,10 @@ export interface components {
              * @default 1
              */
             months: number;
+            /** Idempotency Key */
+            idempotency_key?: string | null;
+            /** Source Reference */
+            source_reference?: string | null;
             /**
              * Skip Community Check
              * @description Skip community active check (for bundle activations where community was just activated)
@@ -15955,6 +16162,10 @@ export interface components {
              * @default 1
              */
             years: number;
+            /** Idempotency Key */
+            idempotency_key?: string | null;
+            /** Source Reference */
+            source_reference?: string | null;
         };
         /**
          * AdminApproveCoach
@@ -17393,43 +17604,7 @@ export interface components {
          *     Recurring weekly blocks + blackout dates in the coach's local timezone.
          *     sessions_service slices this into bookable make-up slots.
          */
-        "CoachAvailabilityCalendar-Input": {
-            /**
-             * Version
-             * @default 1
-             */
-            version: number;
-            /**
-             * Timezone
-             * @description IANA timezone name
-             * @default Africa/Lagos
-             */
-            timezone: string;
-            /** Recurring */
-            recurring?: components["schemas"]["RecurringBlockInput"][];
-            /** Blackouts */
-            blackouts?: components["schemas"]["BlackoutDateInput"][];
-            /**
-             * Slot Minutes
-             * @description Default lesson/make-up length in minutes
-             * @default 60
-             */
-            slot_minutes: number;
-            /**
-             * Buffer Minutes
-             * @description Gap between consecutive slots in minutes
-             * @default 0
-             */
-            buffer_minutes: number;
-        };
-        /**
-         * CoachAvailabilityCalendar
-         * @description Canonical shape of CoachProfile.availability_calendar (JSONB).
-         *
-         *     Recurring weekly blocks + blackout dates in the coach's local timezone.
-         *     sessions_service slices this into bookable make-up slots.
-         */
-        "CoachAvailabilityCalendar-Output": {
+        CoachAvailabilityCalendar: {
             /**
              * Version
              * @default 1
@@ -17480,7 +17655,7 @@ export interface components {
          * @description GET response: a coach's current availability + spacing override.
          */
         CoachAvailabilityResponse: {
-            availability?: components["schemas"]["CoachAvailabilityCalendar-Output"] | null;
+            availability?: components["schemas"]["CoachAvailabilityCalendar"] | null;
             /** Min Hours Between Sessions */
             min_hours_between_sessions?: number | null;
         };
@@ -17489,7 +17664,7 @@ export interface components {
          * @description PUT body: a coach sets their own availability + spacing override.
          */
         CoachAvailabilityUpdate: {
-            availability: components["schemas"]["CoachAvailabilityCalendar-Input"];
+            availability: components["schemas"]["CoachAvailabilityCalendar"];
             /**
              * Min Hours Between Sessions
              * @description Per-coach spacing override in hours; null → 48h policy default
@@ -18057,6 +18232,10 @@ export interface components {
              * @description Audit note describing why the extension was granted.
              */
             reason?: string | null;
+            /** Idempotency Key */
+            idempotency_key?: string | null;
+            /** Source Reference */
+            source_reference?: string | null;
         };
         /**
          * ExtendCommunityRequest
@@ -18068,6 +18247,10 @@ export interface components {
              * @default 1
              */
             months: number;
+            /** Idempotency Key */
+            idempotency_key?: string | null;
+            /** Source Reference */
+            source_reference?: string | null;
         };
         /** GuardianLinkCreate */
         GuardianLinkCreate: {
@@ -18838,6 +19021,42 @@ export interface components {
             email: string;
         };
         /**
+         * MemberTierStatusResponse
+         * @description Normalized status for one membership tier.
+         */
+        MemberTierStatusResponse: {
+            /** Tier */
+            tier: string;
+            /** Status */
+            status: string;
+            /** Label */
+            label: string;
+            /** Paid Until */
+            paid_until?: string | null;
+            /**
+             * Requested
+             * @default false
+             */
+            requested: boolean;
+            /**
+             * Declared Active
+             * @default false
+             */
+            declared_active: boolean;
+            /**
+             * Direct Paid
+             * @default false
+             */
+            direct_paid: boolean;
+            /**
+             * Inherited
+             * @default false
+             */
+            inherited: boolean;
+            /** Inherited From */
+            inherited_from?: string | null;
+        };
+        /**
          * MemberUpdate
          * @description Input for updating a member.
          */
@@ -18865,6 +19084,10 @@ export interface components {
         MembershipPatchRequest: {
             /** Pending Payment Reference */
             pending_payment_reference?: string | null;
+            /** Pending Payment Tier */
+            pending_payment_tier?: ("community" | "club" | "academy") | null;
+            /** Expected Pending Payment Reference */
+            expected_pending_payment_reference?: string | null;
         };
         /**
          * PendingMemberResponse
@@ -19344,6 +19567,23 @@ export interface components {
          */
         ProgramCategoryEnum: "learn_to_swim" | "special_populations" | "institutional" | "competitive_elite" | "certifications" | "specialized_disciplines" | "adjacent_services";
         /**
+         * ProjectAcademyRequest
+         * @description Replace the Academy tier projection with Academy's current truth.
+         *
+         *     Unlike activation, projection does not grant the bundled Community or Club
+         *     periods. It is used by academy_service after withdrawals, cohort changes,
+         *     and during reconciliation to repair derived member state.
+         */
+        ProjectAcademyRequest: {
+            /**
+             * Paid Until
+             * @description Latest end date across active Academy enrollments, or null when the member has no active Academy enrollment.
+             */
+            paid_until?: string | null;
+            /** Source Reference */
+            source_reference?: string | null;
+        };
+        /**
          * RecurringBlockInput
          * @description A weekly availability window, sliced into bookable slots downstream.
          */
@@ -19602,6 +19842,33 @@ export interface components {
             academy_paid_until?: string | null;
             /** Pending Payment Reference */
             pending_payment_reference?: string | null;
+            /** Pending Tier Payments */
+            pending_tier_payments?: {
+                [key: string]: string;
+            };
+            /**
+             * Paid Tier
+             * @default prospect
+             */
+            paid_tier: string;
+            /** Paid Tiers */
+            paid_tiers?: string[];
+            /**
+             * Display Label
+             * @default Prospect
+             */
+            display_label: string;
+            /** Display Detail */
+            display_detail?: string | null;
+            /**
+             * Payment Pending
+             * @default false
+             */
+            payment_pending: boolean;
+            /** Tier Statuses */
+            tier_statuses?: {
+                [key: string]: components["schemas"]["MemberTierStatusResponse"];
+            };
             /** Club Badges Earned */
             club_badges_earned?: string[] | null;
             /** Club Challenges Completed */
@@ -19752,6 +20019,8 @@ export interface components {
          * @description Transition a PENDING booking to CONFIRMED after payment cleared.
          */
         BookingConfirmRequest: {
+            /** Member Auth Id */
+            member_auth_id?: string | null;
             /** Payment Intent Id */
             payment_intent_id?: string | null;
             /** Wallet Transaction Id */
@@ -19858,6 +20127,92 @@ export interface components {
             skipped: number;
             /** Bookings */
             bookings: components["schemas"]["SessionBookingResponse"][];
+        };
+        /**
+         * BundleBookingConfirmRequest
+         * @description Atomically confirm every reservation owned by one bundle payment.
+         */
+        BundleBookingConfirmRequest: {
+            /** Member Auth Id */
+            member_auth_id: string;
+            /**
+             * Payment Intent Id
+             * Format: uuid
+             */
+            payment_intent_id: string;
+            /** Booking Ids */
+            booking_ids: string[];
+            /** Wallet Transaction Id */
+            wallet_transaction_id?: string | null;
+        };
+        /** BundleBookingConfirmResponse */
+        BundleBookingConfirmResponse: {
+            /** Confirmed */
+            confirmed: number;
+            /** Bookings */
+            bookings: components["schemas"]["SessionBookingResponse"][];
+        };
+        /** BundleBookingLineResponse */
+        BundleBookingLineResponse: {
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /**
+             * Booking Id
+             * Format: uuid
+             */
+            booking_id: string;
+            /** Amount Kobo */
+            amount_kobo: number;
+        };
+        /** BundleBookingReleaseRequest */
+        BundleBookingReleaseRequest: {
+            /** Member Auth Id */
+            member_auth_id: string;
+            /**
+             * Payment Intent Id
+             * Format: uuid
+             */
+            payment_intent_id: string;
+        };
+        /** BundleBookingReleaseResponse */
+        BundleBookingReleaseResponse: {
+            /** Released */
+            released: number;
+        };
+        /**
+         * BundleBookingReserveRequest
+         * @description Reserve one member seat in each session before bundle checkout.
+         */
+        BundleBookingReserveRequest: {
+            /** Member Auth Id */
+            member_auth_id: string;
+            /**
+             * Payment Intent Id
+             * Format: uuid
+             */
+            payment_intent_id: string;
+            /** Session Ids */
+            session_ids: string[];
+        };
+        /** BundleBookingReserveResponse */
+        BundleBookingReserveResponse: {
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /**
+             * Payment Intent Id
+             * Format: uuid
+             */
+            payment_intent_id: string;
+            /** Pool Total Kobo */
+            pool_total_kobo: number;
+            /** Lines */
+            lines: components["schemas"]["BundleBookingLineResponse"][];
         };
         /** BundleCartResponse */
         BundleCartResponse: {
@@ -20182,6 +20537,39 @@ export interface components {
          */
         MakeupStatus: "requested" | "held" | "confirmed" | "completed" | "forfeited" | "expired" | "cancelled";
         /**
+         * MemberSessionAccessResponse
+         * @description Authoritative access decision for one member/session pair.
+         */
+        MemberSessionAccessResponse: {
+            /** Required Tier */
+            required_tier: string;
+            /** Visible */
+            visible: boolean;
+            /** Bookable */
+            bookable: boolean;
+            /** Digest Eligible */
+            digest_eligible: boolean;
+            /** Prompt Eligible */
+            prompt_eligible: boolean;
+            /** Sign In Allowed */
+            sign_in_allowed: boolean;
+            /** Sign In Eligible */
+            sign_in_eligible: boolean;
+            /** Reason */
+            reason?: string | null;
+            /** Message */
+            message?: string | null;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Confirmed Booking */
+            confirmed_booking: boolean;
+            /** Confirmed Booking Id */
+            confirmed_booking_id?: string | null;
+        };
+        /**
          * MemberSessionCommitment
          * @description A confirmed member commitment joined to its scheduled session.
          */
@@ -20237,6 +20625,27 @@ export interface components {
              * @default true
              */
             running_late: boolean;
+        };
+        /** SessionAccessResponse */
+        SessionAccessResponse: {
+            /** Required Tier */
+            required_tier: string;
+            /** Visible */
+            visible: boolean;
+            /** Bookable */
+            bookable: boolean;
+            /** Digest Eligible */
+            digest_eligible: boolean;
+            /** Prompt Eligible */
+            prompt_eligible: boolean;
+            /** Sign In Allowed */
+            sign_in_allowed: boolean;
+            /** Sign In Eligible */
+            sign_in_eligible: boolean;
+            /** Reason */
+            reason?: string | null;
+            /** Message */
+            message?: string | null;
         };
         /** SessionBasic */
         SessionBasic: {
@@ -20610,6 +21019,7 @@ export interface components {
              * @default false
              */
             is_recurring_instance: boolean;
+            access?: components["schemas"]["SessionAccessResponse"] | null;
         };
         /**
          * SessionStatus
@@ -25173,6 +25583,27 @@ export interface components {
             content: string;
         };
         /**
+         * ContentAIDraftCreate
+         * @description Schema for generating a content post draft with AI.
+         */
+        ContentAIDraftCreate: {
+            /** Title */
+            title: string;
+            /** Brief */
+            brief?: string | null;
+            /**
+             * Category
+             * @default swimming_tips
+             */
+            category: string;
+            /**
+             * Tier Access
+             * @default community
+             * @enum {string}
+             */
+            tier_access: "community" | "club" | "academy";
+        };
+        /**
          * ContentCommentResponse
          * @description Content comment response schema.
          */
@@ -25222,16 +25653,26 @@ export interface components {
             category: string;
             /** Featured Image Media Id */
             featured_image_media_id?: string | null;
+            /** Featured Image Prompt */
+            featured_image_prompt?: string | null;
             /**
              * Tier Access
              * @default community
+             * @enum {string}
              */
-            tier_access: string;
+            tier_access: "community" | "club" | "academy";
+            /**
+             * Email On Publish
+             * @default false
+             */
+            email_on_publish: boolean;
             /**
              * Is Published
              * @default false
              */
             is_published: boolean;
+            /** Scheduled For */
+            scheduled_for?: string | null;
         };
         /**
          * ContentPostResponse
@@ -25248,11 +25689,19 @@ export interface components {
             category: string;
             /** Featured Image Media Id */
             featured_image_media_id?: string | null;
+            /** Featured Image Prompt */
+            featured_image_prompt?: string | null;
             /**
              * Tier Access
              * @default community
+             * @enum {string}
              */
-            tier_access: string;
+            tier_access: "community" | "club" | "academy";
+            /**
+             * Email On Publish
+             * @default false
+             */
+            email_on_publish: boolean;
             /**
              * Id
              * Format: uuid
@@ -25286,6 +25735,47 @@ export interface components {
             comment_count: number | null;
             /** Featured Image Url */
             featured_image_url?: string | null;
+            /** Ai Request Id */
+            ai_request_id?: string | null;
+            /** Ai Context Version */
+            ai_context_version?: string | null;
+            /** Ai Model Used */
+            ai_model_used?: string | null;
+            /**
+             * Email Sent Count
+             * @default 0
+             */
+            email_sent_count: number;
+            /**
+             * Email Failed Count
+             * @default 0
+             */
+            email_failed_count: number;
+            /**
+             * Email In Progress Count
+             * @default 0
+             */
+            email_in_progress_count: number;
+            /**
+             * Email Unknown Count
+             * @default 0
+             */
+            email_unknown_count: number;
+            /**
+             * Email Attempt Count
+             * @default 0
+             */
+            email_attempt_count: number;
+            /** Last Email Sent At */
+            last_email_sent_at?: string | null;
+            /** Email Recipient Snapshot At */
+            email_recipient_snapshot_at?: string | null;
+            /** Email Dispatch Last Attempt At */
+            email_dispatch_last_attempt_at?: string | null;
+            /** Email Dispatch Completed At */
+            email_dispatch_completed_at?: string | null;
+            /** Email Dispatch Last Error */
+            email_dispatch_last_error?: string | null;
             /**
              * Status
              * @description Return 'published', 'scheduled', or 'draft' based on post state.
@@ -25307,12 +25797,16 @@ export interface components {
             category?: string | null;
             /** Featured Image Media Id */
             featured_image_media_id?: string | null;
+            /** Featured Image Prompt */
+            featured_image_prompt?: string | null;
             /** Tier Access */
-            tier_access?: string | null;
+            tier_access?: ("community" | "club" | "academy") | null;
             /** Is Published */
             is_published?: boolean | null;
             /** Scheduled For */
             scheduled_for?: string | null;
+            /** Email On Publish */
+            email_on_publish?: boolean | null;
         };
         /**
          * EmailRequest
@@ -25488,6 +25982,11 @@ export interface components {
              */
             email_marketing: boolean;
             /**
+             * Email Content Updates
+             * @default true
+             */
+            email_content_updates: boolean;
+            /**
              * Email Birthday
              * @default true
              */
@@ -25582,6 +26081,8 @@ export interface components {
             email_coach_messages?: boolean | null;
             /** Email Marketing */
             email_marketing?: boolean | null;
+            /** Email Content Updates */
+            email_content_updates?: boolean | null;
             /** Email Birthday */
             email_birthday?: boolean | null;
             /** Push Announcements */
@@ -27987,6 +28488,70 @@ export interface components {
                 [key: string]: components["schemas"]["SlimRideConfig"][];
             };
         };
+        /** BundleRideQuoteLine */
+        BundleRideQuoteLine: {
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /**
+             * Ride Config Id
+             * Format: uuid
+             */
+            ride_config_id: string;
+            /**
+             * Pickup Location Id
+             * Format: uuid
+             */
+            pickup_location_id: string;
+            /** Num Seats */
+            num_seats: number;
+            /** Unit Amount Kobo */
+            unit_amount_kobo: number;
+            /** Amount Kobo */
+            amount_kobo: number;
+        };
+        /** BundleRideQuoteRequest */
+        BundleRideQuoteRequest: {
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Selections */
+            selections: components["schemas"]["BundleRideQuoteSelection"][];
+        };
+        /** BundleRideQuoteResponse */
+        BundleRideQuoteResponse: {
+            /** Total Kobo */
+            total_kobo: number;
+            /** Lines */
+            lines: components["schemas"]["BundleRideQuoteLine"][];
+        };
+        /** BundleRideQuoteSelection */
+        BundleRideQuoteSelection: {
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /**
+             * Ride Config Id
+             * Format: uuid
+             */
+            ride_config_id: string;
+            /**
+             * Pickup Location Id
+             * Format: uuid
+             */
+            pickup_location_id: string;
+            /**
+             * Num Seats
+             * @default 1
+             */
+            num_seats: number;
+        };
         /** InternalSessionRideConfigAttachResponse */
         InternalSessionRideConfigAttachResponse: {
             /** Created */
@@ -28884,6 +29449,72 @@ export interface components {
             overall_rationale: string;
             /** Confidence */
             confidence: number;
+            /** Ai Request Id */
+            ai_request_id: string;
+            /** Model Used */
+            model_used: string;
+        };
+        /** ContentDraftRequest */
+        ContentDraftRequest: {
+            /** Title */
+            title: string;
+            /** Brief */
+            brief?: string | null;
+            /**
+             * Category
+             * @default swimming_tips
+             */
+            category: string;
+            /**
+             * Tier Access
+             * @default community
+             * @enum {string}
+             */
+            tier_access: "community" | "club" | "academy";
+        };
+        /** ContentDraftResponse */
+        ContentDraftResponse: {
+            /** Summary */
+            summary: string;
+            /** Sections */
+            sections: components["schemas"]["ContentDraftSection"][];
+            /**
+             * Closing
+             * @default
+             */
+            closing: string;
+            /** Featured Image Prompt */
+            featured_image_prompt: string;
+            /** Ai Request Id */
+            ai_request_id: string;
+            /** Model Used */
+            model_used: string;
+            /** Context Version */
+            context_version: string;
+        };
+        /** ContentDraftSection */
+        ContentDraftSection: {
+            /**
+             * Heading
+             * @default
+             */
+            heading: string;
+            /** Paragraphs */
+            paragraphs?: string[];
+            /** Bullets */
+            bullets?: string[];
+        };
+        /** ContentImageRequest */
+        ContentImageRequest: {
+            /** Prompt */
+            prompt: string;
+            /** Title */
+            title: string;
+        };
+        /** ContentImageResponse */
+        ContentImageResponse: {
+            /** Image Url */
+            image_url: string;
             /** Ai Request Id */
             ai_request_id: string;
             /** Model Used */
@@ -37542,6 +38173,41 @@ export interface operations {
             };
         };
     };
+    admin_project_academy_membership_by_auth_admin_members_by_auth__auth_id__academy_project_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                auth_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectAcademyRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     admin_patch_membership_by_auth_admin_members_by_auth__auth_id__membership_patch: {
         parameters: {
             query?: never;
@@ -42123,6 +42789,39 @@ export interface operations {
             };
         };
     };
+    get_member_session_access_internal_sessions__session_id__access_get: {
+        parameters: {
+            query: {
+                member_auth_id: string;
+            };
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberSessionAccessResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_next_session_for_cohort_internal_sessions_cohorts__cohort_id__next_session_get: {
         parameters: {
             query?: never;
@@ -42339,6 +43038,105 @@ export interface operations {
                 };
                 content: {
                     "application/json": string[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reserve_bundle_bookings_internal_sessions_bookings_bundle_reserve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BundleBookingReserveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BundleBookingReserveResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_bundle_bookings_internal_sessions_bookings_bundle_confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BundleBookingConfirmRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BundleBookingConfirmResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    release_bundle_bookings_internal_sessions_bookings_bundle_release_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BundleBookingReleaseRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BundleBookingReleaseResponse"];
                 };
             };
             /** @description Validation Error */
@@ -48442,10 +49240,7 @@ export interface operations {
     };
     create_content_post_content__post: {
         parameters: {
-            query: {
-                /** @description Admin member ID creating the post */
-                created_by: string;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -48453,6 +49248,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ContentPostCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentPostResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_ai_content_draft_content_ai_drafts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContentAIDraftCreate"];
             };
         };
         responses: {
@@ -48633,6 +49461,37 @@ export interface operations {
             };
         };
     };
+    retry_failed_content_post_emails_content__post_id__email_retry_failed_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentPostResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_content_comments_content__post_id__comments_get: {
         parameters: {
             query?: never;
@@ -48666,10 +49525,7 @@ export interface operations {
     };
     create_content_comment_content__post_id__comments_post: {
         parameters: {
-            query: {
-                /** @description Member ID */
-                member_id: string;
-            };
+            query?: never;
             header?: never;
             path: {
                 post_id: string;
@@ -53052,6 +53908,8 @@ export interface operations {
             query?: {
                 /** @description Member ID override for service-to-service calls */
                 member_id?: string | null;
+                /** @description Explicit service-role override for a verified day-of walk-in */
+                allow_without_booking?: boolean;
             };
             header?: never;
             path: {
@@ -53132,6 +53990,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    quote_bundle_rides_internal_transport_ride_quotes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BundleRideQuoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BundleRideQuoteResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -53300,6 +54191,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CoachSuggestionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_content_draft_ai_content_drafts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContentDraftRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentDraftResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_content_image_ai_content_images_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContentImageRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentImageResponse"];
                 };
             };
             /** @description Validation Error */

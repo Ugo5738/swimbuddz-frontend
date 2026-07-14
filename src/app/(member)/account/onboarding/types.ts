@@ -36,6 +36,26 @@ export type MemberMembership = {
   community_paid_until?: string | null;
   club_paid_until?: string | null;
   academy_paid_until?: string | null;
+  paid_tier?: string | null;
+  paid_tiers?: string[] | null;
+  display_label?: string | null;
+  tier_statuses?: Partial<
+    Record<
+      "community" | "club" | "academy",
+      {
+        tier: "community" | "club" | "academy";
+        status:
+          | "active"
+          | "payment_pending"
+          | "requested"
+          | "approved_unpaid"
+          | "expired"
+          | "inactive";
+        label: string;
+        declared_active?: boolean;
+      }
+    >
+  > | null;
   club_notes?: string | null;
   academy_skill_assessment?: Record<string, boolean> | null;
   academy_goals?: string | null;

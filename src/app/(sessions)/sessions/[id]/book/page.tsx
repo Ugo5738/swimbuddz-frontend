@@ -1,6 +1,5 @@
 "use client";
 
-import { BubblesSlider } from "@/components/checkout/BubblesSlider";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -60,6 +59,7 @@ interface RideConfig {
 type PaymentIntentResponse = {
   reference: string;
   amount: number;
+  status: string;
   checkout_url: string | null;
   original_amount?: number;
   discount_applied?: number;
@@ -144,7 +144,6 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
   // Wallet / bubbles
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [payWithBubbles, setPayWithBubbles] = useState(false);
-  const [bubblesToApply, setBubblesToApply] = useState<number>(0);
 
   // Payment
   const [processing, setProcessing] = useState(false);
@@ -163,16 +162,20 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
   const discountAmount = validatedDiscount?.amount ?? 0;
   const total = Math.max(0, subtotal - discountAmount);
   const bubblesNeeded = Math.ceil(total / 100);
-  const canPayWithBubbles = total > 0 && walletBalance !== null && walletBalance >= bubblesNeeded;
+  const canPayWithBubbles =
+    total > 0 &&
+    validatedDiscount === null &&
+    walletBalance !== null &&
+    walletBalance >= bubblesNeeded;
   const hasRideShareAreas = session?.rideShareAreas && session.rideShareAreas.length > 0;
 
-  // Partial Bubbles: cap slider at min(walletBalance, bubblesNeeded)
-  const sliderMax = Math.min(walletBalance ?? 0, bubblesNeeded);
-  const effectiveBubbles = Math.min(bubblesToApply, sliderMax);
-  const bubblesValueNgn = effectiveBubbles * 100;
-  const paystackAmount = Math.max(0, total - bubblesValueNgn);
-  // Covers full amount with Bubbles → use direct-debit flow (existing sign-in endpoint)
-  const coversFullWithBubbles = effectiveBubbles > 0 && paystackAmount === 0;
+  const effectiveBubbles = payWithBubbles && canPayWithBubbles ? bubblesNeeded : 0;
+  const paystackAmount = effectiveBubbles > 0 ? 0 : total;
+  const coversFullWithBubbles = effectiveBubbles > 0;
+
+  useEffect(() => {
+    if (payWithBubbles && !canPayWithBubbles) setPayWithBubbles(false);
+  }, [canPayWithBubbles, payWithBubbles]);
 
   // --- Effects ---
 
@@ -422,10 +425,10 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
     }));
 
     // Free session OR full Bubbles coverage → direct sign-in path (no Paystack)
-    if (total <= 0 || coversFullWithBubbles || payWithBubbles) {
+    if (subtotal <= 0 || coversFullWithBubbles) {
       setProcessing(true);
       try {
-        const fullBubbles = (payWithBubbles || coversFullWithBubbles) && total > 0;
+        const fullBubbles = coversFullWithBubbles && total > 0;
         if (!isRideOnlyFlow) {
           // A1 Phase 3.3 — book the session (creates SessionBooking).
           // pay_with_bubbles=true (or free session) → endpoint debits
@@ -514,7 +517,6 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
           pickup_location_id: selectedPickupLocationId || undefined,
           num_seats: numSeats,
           discount_code: validatedDiscount?.code || undefined,
-          bubbles_to_apply: effectiveBubbles > 0 ? effectiveBubbles : undefined,
           ...(bookingId ? { payment_metadata: { booking_id: bookingId } } : {}),
         },
         { auth: true }
@@ -522,6 +524,8 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
 
       if (intent.checkout_url) {
         window.location.href = intent.checkout_url;
+      } else if (intent.status === "paid") {
+        setPaymentSuccess(true);
       } else {
         toast.error("Unable to initialize payment. Please try again.");
       }
@@ -539,8 +543,7 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
 
   if (paymentSuccess && session) {
     // Compute bubbles actually used: slider value when set, else fall back to toggle logic.
-    const bubblesUsed =
-      effectiveBubbles > 0 ? effectiveBubbles : payWithBubbles && total > 0 ? bubblesNeeded : 0;
+    const bubblesUsed = effectiveBubbles;
     const paystackAmountDisplay = Math.max(0, total - bubblesUsed * 100);
     return (
       <BookingSuccess
@@ -717,26 +720,14 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
                 </div>
               </div>
 
-              {/* Bubbles slider */}
-              {walletBalance !== null && walletBalance > 0 ? (
-                <BubblesSlider
-                  amountDueNgn={total}
-                  walletBalance={walletBalance}
-                  bubblesToApply={effectiveBubbles}
-                  onChange={(v) => {
-                    setBubblesToApply(v);
-                    setPayWithBubbles(v > 0 && v * 100 >= total);
-                  }}
-                />
-              ) : walletBalance === null ? (
-                <PaymentMethodPicker
-                  payWithBubbles={payWithBubbles}
-                  canPayWithBubbles={canPayWithBubbles}
-                  walletBalance={walletBalance}
-                  bubblesNeeded={bubblesNeeded}
-                  onSelectMethod={setPayWithBubbles}
-                />
-              ) : null}
+              <PaymentMethodPicker
+                payWithBubbles={payWithBubbles}
+                canPayWithBubbles={canPayWithBubbles}
+                walletBalance={walletBalance}
+                bubblesNeeded={bubblesNeeded}
+                disabledReason={validatedDiscount ? "Unavailable while a discount is applied" : undefined}
+                onSelectMethod={setPayWithBubbles}
+              />
             </Card>
           )}
 
