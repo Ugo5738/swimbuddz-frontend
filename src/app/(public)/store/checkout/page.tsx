@@ -27,6 +27,7 @@ interface StoreCredit {
 
 interface WalletData {
   balance: number;
+  available_balance?: number;
   status: string;
 }
 
@@ -87,7 +88,7 @@ export default function StoreCheckoutPage() {
       }
       setStoreCredit(creditData);
       if (walletData?.status === "active") {
-        setWalletBalance(walletData.balance);
+        setWalletBalance(walletData.available_balance ?? walletData.balance);
       }
     } catch (e) {
       console.error("Failed to load checkout data:", e);
@@ -208,7 +209,7 @@ export default function StoreCheckoutPage() {
 
   // Partial Bubbles calculations
   const maxBubbles = walletBalance ?? 0;
-  const maxBubblesNeeded = Math.ceil(afterCredit / 100); // ₦100 = 1 Bubble
+  const maxBubblesNeeded = Math.floor(afterCredit / 100); // ₦100 = exactly 1 Bubble
   const effectiveBubbles = Math.min(bubblesToApply, maxBubbles, maxBubblesNeeded);
   const bubblesValueNgn = effectiveBubbles * 100;
   const paystackAmount = Math.max(0, afterCredit - bubblesValueNgn);

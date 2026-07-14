@@ -1,6 +1,7 @@
 "use client";
 
 import { Alert } from "@/components/ui/Alert";
+import { BubblesSlider } from "@/components/checkout/BubblesSlider";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
@@ -13,7 +14,10 @@ import { toast } from "sonner";
 import { BookingSessionHeader } from "../../../[id]/book/_components/BookingSessionHeader";
 import { MobileStickyBar } from "../../../[id]/book/_components/MobileStickyBar";
 import { OrderSummary } from "../../../[id]/book/_components/OrderSummary";
-import { RideShareSection } from "../../../[id]/book/_components/RideShareSection";
+import {
+  RideShareSection,
+  type RidePassenger,
+} from "../../../[id]/book/_components/RideShareSection";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("en-NG", {
@@ -64,6 +68,7 @@ type RideSelection = {
   rideAreaId: string | null;
   pickupLocationId: string | null;
   numSeats: number;
+  passengers: RidePassenger[];
 };
 
 export function BundleBookingFlow({ ids }: { ids: string[] }) {
@@ -83,6 +88,20 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
   const [validatingDiscount, setValidatingDiscount] = useState(false);
 
   const [processing, setProcessing] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [bubblesToApply, setBubblesToApply] = useState(0);
+
+  useEffect(() => {
+    apiGet<{ balance: number; available_balance?: number; status: string }>("/api/v1/wallet/me", {
+      auth: true,
+    })
+      .then((wallet) => {
+        if (wallet.status === "active") {
+          setWalletBalance(wallet.available_balance ?? wallet.balance);
+        }
+      })
+      .catch(() => setWalletBalance(null));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -155,7 +174,6 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
       } finally {
         if (!cancelled) setLoading(false);
       }
-
     }
     load();
     return () => {
@@ -173,9 +191,13 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
   const subtotal = poolFeesTotal + rideShareTotal;
   const discountAmount = validatedDiscount?.amount ?? 0;
   const total = Math.max(0, subtotal - discountAmount);
-  const bubblesNeeded = Math.ceil(total / 100);
-  const effectiveBubbles = 0;
-  const paystackAmount = total;
+  const bubblesNeeded = Math.floor(total / 100);
+  const effectiveBubbles = Math.min(bubblesToApply, walletBalance ?? 0, Math.floor(total / 100));
+  const paystackAmount = Math.max(0, total - effectiveBubbles * 100);
+
+  useEffect(() => {
+    if (bubblesToApply !== effectiveBubbles) setBubblesToApply(effectiveBubbles);
+  }, [bubblesToApply, effectiveBubbles]);
 
   const lineItems = sessions.flatMap((s) => {
     const items: { id: string; label: string; amount: number }[] = [
@@ -207,6 +229,7 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
         rideAreaId: null,
         pickupLocationId: null,
         numSeats: 1,
+        passengers: [{ passenger_type: "member", full_name: "" }],
       };
       next.set(sessionId, { ...current, ...patch });
       return next;
@@ -259,7 +282,12 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
 
     const sessionRideConfigs: Record<
       string,
-      { ride_config_id: string; pickup_location_id: string; num_seats: number }
+      {
+        ride_config_id: string;
+        pickup_location_id: string;
+        num_seats: number;
+        passengers: RidePassenger[];
+      }
     > = {};
     for (const [sessionId, sel] of rideSelections.entries()) {
       if (sel.rideAreaId && sel.pickupLocationId) {
@@ -267,6 +295,7 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
           ride_config_id: sel.rideAreaId,
           pickup_location_id: sel.pickupLocationId,
           num_seats: sel.numSeats,
+          passengers: sel.passengers,
         };
       }
     }
@@ -281,6 +310,7 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
           session_ids: sessions.map((s) => s.id),
           direct_amount: subtotal,
           discount_code: validatedDiscount?.code || undefined,
+          bubbles_to_apply: effectiveBubbles || undefined,
           session_ride_configs:
             Object.keys(sessionRideConfigs).length > 0 ? sessionRideConfigs : undefined,
         },
@@ -356,6 +386,7 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
               rideAreaId: null,
               pickupLocationId: null,
               numSeats: 1,
+              passengers: [{ passenger_type: "member", full_name: "" }],
             };
             return (
               <div key={s.id} className="space-y-3">
@@ -366,6 +397,7 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
                     selectedRideAreaId={sel.rideAreaId}
                     selectedPickupLocationId={sel.pickupLocationId}
                     numSeats={sel.numSeats}
+                    passengers={sel.passengers}
                     isRideOnlyFlow={false}
                     formatCurrency={formatCurrency}
                     onSelectRideArea={(areaId) =>
@@ -378,6 +410,7 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
                       updateRide(s.id, { pickupLocationId: locationId })
                     }
                     onChangeSeats={(seats) => updateRide(s.id, { numSeats: seats })}
+                    onChangePassengers={(passengers) => updateRide(s.id, { passengers })}
                   />
                 )}
               </div>
@@ -388,7 +421,9 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
             <Card className="p-5 space-y-4">
               <div>
                 <h2 className="text-base font-semibold text-slate-900">Payment</h2>
-                <p className="text-xs text-slate-500 mt-0.5">Card payment via Paystack</p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {paystackAmount > 0 ? "Card payment via Paystack" : "Fully covered by Bubbles"}
+                </p>
               </div>
               <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4">
                 <div className="flex-shrink-0 rounded-lg p-2 bg-slate-100">
@@ -408,11 +443,25 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-900">
-                    {formatCurrency(paystackAmount)} via Paystack
+                    {paystackAmount > 0
+                      ? `${formatCurrency(paystackAmount)} via Paystack`
+                      : "No card payment needed"}
                   </p>
-                  <p className="text-xs text-slate-500 mt-0.5">Card, bank transfer, or USSD</p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {paystackAmount > 0
+                      ? "Card, bank transfer, or USSD"
+                      : "Bubbles cover the full amount"}
+                  </p>
                 </div>
               </div>
+              {walletBalance !== null && walletBalance > 0 && (
+                <BubblesSlider
+                  amountDueNgn={total}
+                  walletBalance={walletBalance}
+                  bubblesToApply={effectiveBubbles}
+                  onChange={setBubblesToApply}
+                />
+              )}
             </Card>
           )}
 
@@ -430,7 +479,7 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
               validatingDiscount={validatingDiscount}
               subtotal={subtotal}
               total={total}
-              payWithBubbles={false}
+              payWithBubbles={effectiveBubbles > 0}
               bubblesNeeded={bubblesNeeded}
               effectiveBubbles={effectiveBubbles}
               paystackAmount={paystackAmount}
@@ -461,7 +510,7 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
               validatingDiscount={validatingDiscount}
               subtotal={subtotal}
               total={total}
-              payWithBubbles={false}
+              payWithBubbles={effectiveBubbles > 0}
               bubblesNeeded={bubblesNeeded}
               effectiveBubbles={effectiveBubbles}
               paystackAmount={paystackAmount}
@@ -480,7 +529,7 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
 
       <MobileStickyBar
         total={total}
-        payWithBubbles={false}
+        payWithBubbles={effectiveBubbles > 0}
         bubblesNeeded={bubblesNeeded}
         effectiveBubbles={effectiveBubbles}
         paystackAmount={paystackAmount}

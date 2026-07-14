@@ -5,7 +5,8 @@
  *
  * 1 Bubble = ₦100 exchange rate.
  * User selects how many Bubbles to apply; remaining balance is charged via
- * Paystack. If slider is at max, payment can be covered entirely by Bubbles.
+ * Paystack. Exact multiples of NGN 100 can be covered entirely by Bubbles;
+ * other totals retain their exact provider remainder.
  */
 
 type BubblesSliderProps = {
@@ -28,12 +29,12 @@ export function BubblesSlider({
   onChange,
 }: BubblesSliderProps) {
   const maxBubbles = Math.max(0, walletBalance);
-  const maxBubblesNeeded = Math.ceil(amountDueNgn / BUBBLE_TO_NGN);
+  const maxBubblesNeeded = Math.floor(amountDueNgn / BUBBLE_TO_NGN);
   const sliderMax = Math.min(maxBubbles, maxBubblesNeeded);
   const effectiveBubbles = Math.min(bubblesToApply, sliderMax);
   const bubblesValueNgn = effectiveBubbles * BUBBLE_TO_NGN;
 
-  if (maxBubbles <= 0) return null;
+  if (maxBubbles <= 0 || sliderMax <= 0) return null;
 
   return (
     <div className="rounded-xl border-2 border-cyan-200 bg-cyan-50/50 p-4 space-y-3">
@@ -42,9 +43,7 @@ export function BubblesSlider({
           <span className="text-xl leading-none">🫧</span>
           <p className="font-semibold text-slate-900">Apply Bubbles</p>
         </div>
-        <span className="text-xs text-slate-500">
-          Balance: {maxBubbles.toLocaleString()} 🫧
-        </span>
+        <span className="text-xs text-slate-500">Balance: {maxBubbles.toLocaleString()} 🫧</span>
       </div>
 
       <div className="space-y-2">
@@ -67,8 +66,7 @@ export function BubblesSlider({
       {/* Quick-apply buttons */}
       <div className="flex gap-2">
         {[0, 25, 50, 100].map((pct) => {
-          const amount =
-            pct === 0 ? 0 : Math.ceil((sliderMax * pct) / 100);
+          const amount = pct === 0 ? 0 : Math.ceil((sliderMax * pct) / 100);
           return (
             <button
               key={pct}

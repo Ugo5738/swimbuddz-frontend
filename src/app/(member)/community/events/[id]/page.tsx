@@ -38,7 +38,7 @@ interface RSVP {
   created_at: string;
 }
 
-type WalletData = { balance: number };
+type WalletData = { balance: number; available_balance?: number };
 
 const eventTypeLabels: Record<string, string> = {
   social: "Social Event",
@@ -70,7 +70,7 @@ export default function EventDetailPage() {
       fetchRsvps();
     }
     apiGet<WalletData>("/api/v1/wallet/me", { auth: true })
-      .then((data) => setWalletBalance(data.balance))
+      .then((data) => setWalletBalance(data.available_balance ?? data.balance))
       .catch(() => {});
     MembersApi.getMe()
       .then((m) => setMeId(m.id as string))
@@ -126,7 +126,7 @@ export default function EventDetailPage() {
       setUserRsvp(status);
       await fetchRsvps();
       if (status === "going" && payWithBubbles && paid) {
-        const bubblesUsed = Math.ceil(cost / 100);
+        const bubblesUsed = cost / 100;
         toast.success(`RSVP confirmed! ${bubblesUsed} 🫧 Bubbles used.`);
       }
     } catch (error) {
@@ -144,8 +144,10 @@ export default function EventDetailPage() {
 
   const effectiveCost = event?.total_cost_naira ?? event?.cost_naira ?? null;
   const hasCost = !!(effectiveCost && effectiveCost > 0);
-  const bubblesNeeded = hasCost ? Math.ceil(effectiveCost! / 100) : 0;
-  const canPayWithBubbles = hasCost && walletBalance !== null && walletBalance >= bubblesNeeded;
+  const isExactBubbleAmount = hasCost && effectiveCost! % 100 === 0;
+  const bubblesNeeded = isExactBubbleAmount ? effectiveCost! / 100 : 0;
+  const canPayWithBubbles =
+    isExactBubbleAmount && walletBalance !== null && walletBalance >= bubblesNeeded;
   const isOpenSwim = event?.event_type === "open_swim";
   const requiresWaiver = hasCost && isOpenSwim;
   const isOwner = !!meId && !!event && meId === event.created_by;
@@ -250,7 +252,9 @@ export default function EventDetailPage() {
                   <div className="font-medium">Entry Fee</div>
                   <div className="text-slate-600">
                     ₦{effectiveCost!.toLocaleString()}{" "}
-                    <span className="text-xs text-slate-400">· {bubblesNeeded} 🫧</span>
+                    {isExactBubbleAmount && (
+                      <span className="text-xs text-slate-400">· {bubblesNeeded} 🫧</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -355,8 +359,14 @@ export default function EventDetailPage() {
                   </div>
 
                   <p className="mt-3 text-xl font-bold text-slate-900">
-                    {bubblesNeeded}{" "}
-                    <span className="text-sm font-normal text-slate-500">Bubbles</span>
+                    {isExactBubbleAmount ? (
+                      <>
+                        {bubblesNeeded}{" "}
+                        <span className="text-sm font-normal text-slate-500">Bubbles</span>
+                      </>
+                    ) : (
+                      <span className="text-sm font-medium text-slate-500">Card only</span>
+                    )}
                   </p>
 
                   {walletBalance !== null ? (
@@ -364,12 +374,18 @@ export default function EventDetailPage() {
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-slate-500">Your balance</span>
                         <span
-                          className={`font-semibold ${canPayWithBubbles ? "text-emerald-600" : "text-red-500"}`}
+                          className={`font-semibold ${
+                            canPayWithBubbles
+                              ? "text-emerald-600"
+                              : isExactBubbleAmount
+                                ? "text-red-500"
+                                : "text-slate-500"
+                          }`}
                         >
                           {walletBalance} 🫧 {canPayWithBubbles ? "✓" : ""}
                         </span>
                       </div>
-                      {!canPayWithBubbles && (
+                      {!canPayWithBubbles && isExactBubbleAmount && (
                         <Link
                           href="/account/wallet/topup"
                           className="mt-2 flex items-center justify-center gap-1 w-full text-xs font-semibold text-white bg-cyan-500 hover:bg-cyan-600 rounded-lg py-1.5 transition-colors"
@@ -406,8 +422,7 @@ export default function EventDetailPage() {
                 className="mt-0.5"
               />
               <span className="text-sm text-slate-700">
-                I understand this is a peer-organized swim and I join at my own
-                risk. I accept the{" "}
+                I understand this is a peer-organized swim and I join at my own risk. I accept the{" "}
                 <span className="font-medium">liability waiver</span>.
               </span>
             </label>
@@ -432,9 +447,7 @@ export default function EventDetailPage() {
                 <div>Going</div>
                 {hasCost && (
                   <div className="text-xs font-normal opacity-75 mt-0.5">
-                    {payWithBubbles
-                      ? `${bubblesNeeded} 🫧`
-                      : `₦${effectiveCost!.toLocaleString()}`}
+                    {payWithBubbles ? `${bubblesNeeded} 🫧` : `₦${effectiveCost!.toLocaleString()}`}
                   </div>
                 )}
               </div>

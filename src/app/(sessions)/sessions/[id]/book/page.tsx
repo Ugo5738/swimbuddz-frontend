@@ -2,6 +2,7 @@
 
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
+import { BubblesSlider } from "@/components/checkout/BubblesSlider";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet, apiPost } from "@/lib/api";
@@ -21,8 +22,7 @@ import { MobileStickyBar } from "./_components/MobileStickyBar";
 
 import { GuestsForm, guestIsValid, type GuestInfo } from "./_components/GuestsForm";
 import { OrderSummary } from "./_components/OrderSummary";
-import { PaymentMethodPicker } from "./_components/PaymentMethodPicker";
-import { RideShareSection } from "./_components/RideShareSection";
+import { RideShareSection, type RidePassenger } from "./_components/RideShareSection";
 import { TierGate } from "./_components/TierGate";
 
 // ---------------------------------------------------------------------------
@@ -127,6 +127,9 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
   const [existingRideBooking, setExistingRideBooking] = useState<any>(null);
   const [isRideOnlyFlow, setIsRideOnlyFlow] = useState(false);
   const [numSeats, setNumSeats] = useState(1);
+  const [ridePassengers, setRidePassengers] = useState<RidePassenger[]>([
+    { passenger_type: "member", full_name: "" },
+  ]);
 
   // Guests (bring-a-friend). party_size = 1 (member) + guests.length.
   const [guests, setGuests] = useState<GuestInfo[]>([]);
@@ -143,7 +146,7 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
 
   // Wallet / bubbles
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
-  const [payWithBubbles, setPayWithBubbles] = useState(false);
+  const [bubblesToApply, setBubblesToApply] = useState(0);
 
   // Payment
   const [processing, setProcessing] = useState(false);
@@ -161,21 +164,15 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
   const subtotal = poolFee + rideShareCost;
   const discountAmount = validatedDiscount?.amount ?? 0;
   const total = Math.max(0, subtotal - discountAmount);
-  const bubblesNeeded = Math.ceil(total / 100);
-  const canPayWithBubbles =
-    total > 0 &&
-    validatedDiscount === null &&
-    walletBalance !== null &&
-    walletBalance >= bubblesNeeded;
+  const bubblesNeeded = Math.floor(total / 100);
   const hasRideShareAreas = session?.rideShareAreas && session.rideShareAreas.length > 0;
 
-  const effectiveBubbles = payWithBubbles && canPayWithBubbles ? bubblesNeeded : 0;
-  const paystackAmount = effectiveBubbles > 0 ? 0 : total;
-  const coversFullWithBubbles = effectiveBubbles > 0;
-
+  const effectiveBubbles = Math.min(bubblesToApply, walletBalance ?? 0, Math.floor(total / 100));
+  const paystackAmount = Math.max(0, total - effectiveBubbles * 100);
+  const payWithBubbles = effectiveBubbles > 0;
   useEffect(() => {
-    if (payWithBubbles && !canPayWithBubbles) setPayWithBubbles(false);
-  }, [canPayWithBubbles, payWithBubbles]);
+    if (bubblesToApply !== effectiveBubbles) setBubblesToApply(effectiveBubbles);
+  }, [bubblesToApply, effectiveBubbles]);
 
   // --- Effects ---
 
@@ -250,9 +247,12 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
         try {
           const [profile, wallet] = await Promise.allSettled([
             apiGet<MemberProfile>("/api/v1/members/me", { auth: true }),
-            apiGet<{ balance: number; status: string }>("/api/v1/wallet/me", {
-              auth: true,
-            }),
+            apiGet<{ balance: number; available_balance?: number; status: string }>(
+              "/api/v1/wallet/me",
+              {
+                auth: true,
+              }
+            ),
           ]);
           if (profile.status === "fulfilled") {
             setMember(profile.value);
@@ -260,7 +260,7 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
             setError("Please sign in to book this session.");
           }
           if (wallet.status === "fulfilled" && wallet.value.status === "active") {
-            setWalletBalance(wallet.value.balance);
+            setWalletBalance(wallet.value.available_balance ?? wallet.value.balance);
           }
         } catch {
           setError("Please sign in to book this session.");
@@ -424,11 +424,10 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
       waiver_accepted: g.waiverAccepted,
     }));
 
-    // Free session OR full Bubbles coverage → direct sign-in path (no Paystack)
-    if (subtotal <= 0 || coversFullWithBubbles) {
+    // A genuinely free session needs no payment intent.
+    if (subtotal <= 0) {
       setProcessing(true);
       try {
-        const fullBubbles = coversFullWithBubbles && total > 0;
         if (!isRideOnlyFlow) {
           // A1 Phase 3.3 — book the session (creates SessionBooking).
           // pay_with_bubbles=true (or free session) → endpoint debits
@@ -441,7 +440,7 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
             {
               session_id: params.id,
               fee_amount_kobo: Math.round((session?.pool_fee ?? 0) * partySize * 100),
-              pay_with_bubbles: fullBubbles || total <= 0,
+              pay_with_bubbles: false,
               guests: guestsPayload,
             },
             { auth: true }
@@ -455,8 +454,9 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
             {
               session_ride_config_id: selectedRideAreaId,
               pickup_location_id: selectedPickupLocationId,
-              pay_with_bubbles: fullBubbles,
+              pay_with_bubbles: false,
               num_seats: numSeats,
+              passengers: ridePassengers,
             },
             { auth: true }
           );
@@ -468,6 +468,7 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
               pickup_location_id: selectedPickupLocationId,
               pay_with_bubbles: true,
               num_seats: numSeats,
+              passengers: ridePassengers,
             },
             { auth: true }
           );
@@ -516,6 +517,8 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
           ride_config_id: selectedRideAreaId || undefined,
           pickup_location_id: selectedPickupLocationId || undefined,
           num_seats: numSeats,
+          passengers: selectedRideAreaId && selectedPickupLocationId ? ridePassengers : undefined,
+          bubbles_to_apply: effectiveBubbles || undefined,
           discount_code: validatedDiscount?.code || undefined,
           ...(bookingId ? { payment_metadata: { booking_id: bookingId } } : {}),
         },
@@ -671,11 +674,13 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
               selectedRideAreaId={selectedRideAreaId}
               selectedPickupLocationId={selectedPickupLocationId}
               numSeats={numSeats}
+              passengers={ridePassengers}
               isRideOnlyFlow={isRideOnlyFlow}
               formatCurrency={formatCurrency}
               onSelectRideArea={handleRideAreaChange}
               onSelectPickupLocation={setSelectedPickupLocationId}
               onChangeSeats={setNumSeats}
+              onChangePassengers={setRidePassengers}
             />
           )}
 
@@ -720,14 +725,14 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
                 </div>
               </div>
 
-              <PaymentMethodPicker
-                payWithBubbles={payWithBubbles}
-                canPayWithBubbles={canPayWithBubbles}
-                walletBalance={walletBalance}
-                bubblesNeeded={bubblesNeeded}
-                disabledReason={validatedDiscount ? "Unavailable while a discount is applied" : undefined}
-                onSelectMethod={setPayWithBubbles}
-              />
+              {walletBalance !== null && walletBalance > 0 && (
+                <BubblesSlider
+                  amountDueNgn={total}
+                  walletBalance={walletBalance}
+                  bubblesToApply={effectiveBubbles}
+                  onChange={setBubblesToApply}
+                />
+              )}
             </Card>
           )}
 

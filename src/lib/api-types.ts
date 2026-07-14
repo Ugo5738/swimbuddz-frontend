@@ -9948,6 +9948,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/wallet/holds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Internal Create Hold */
+        post: operations["internal_create_hold_internal_wallet_holds_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/wallet/holds/{hold_id}/capture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Internal Capture Hold */
+        post: operations["internal_capture_hold_internal_wallet_holds__hold_id__capture_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/wallet/holds/{hold_id}/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Internal Release Hold */
+        post: operations["internal_release_hold_internal_wallet_holds__hold_id__release_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/wallet/confirm-topup": {
         parameters: {
             query?: never;
@@ -24212,6 +24263,8 @@ export interface components {
              * @default 1
              */
             num_seats: number;
+            /** Passengers */
+            passengers?: components["schemas"]["RidePassengerManifestEntry"][] | null;
             /** Session Ids */
             session_ids?: string[] | null;
             /** Session Ride Configs */
@@ -25128,6 +25181,16 @@ export interface components {
             /** Items */
             items: components["schemas"]["RefundOwedItem"][];
         };
+        /** RidePassengerManifestEntry */
+        RidePassengerManifestEntry: {
+            /**
+             * Passenger Type
+             * @enum {string}
+             */
+            passenger_type: "member" | "session_guest" | "observer";
+            /** Full Name */
+            full_name?: string | null;
+        };
         /**
          * SessionAttendanceStatus
          * @enum {string}
@@ -25153,6 +25216,8 @@ export interface components {
              * @default 1
              */
             num_seats: number;
+            /** Passengers */
+            passengers?: components["schemas"]["RidePassengerManifestEntry"][] | null;
         };
         /**
          * SubmitProofRequest
@@ -27172,6 +27237,13 @@ export interface components {
             member_auth_id: string;
             /** Balance */
             balance: number;
+            /** Available Balance */
+            available_balance?: number | null;
+            /**
+             * Held Balance
+             * @default 0
+             */
+            held_balance: number;
             /** Lifetime Bubbles Purchased */
             lifetime_bubbles_purchased: number;
             /** Lifetime Bubbles Spent */
@@ -27297,6 +27369,13 @@ export interface components {
             sufficient: boolean;
             /** Current Balance */
             current_balance: number;
+            /** Ledger Balance */
+            ledger_balance?: number | null;
+            /**
+             * Held Balance
+             * @default 0
+             */
+            held_balance: number;
             /** Required Amount */
             required_amount: number;
             wallet_status: components["schemas"]["WalletStatus"];
@@ -27312,6 +27391,10 @@ export interface components {
             member_auth_id: string;
             /** Balance */
             balance: number;
+            /** Available Balance */
+            available_balance: number;
+            /** Held Balance */
+            held_balance: number;
             status: components["schemas"]["WalletStatus"];
         };
         /**
@@ -28424,6 +28507,84 @@ export interface components {
                 [key: string]: number;
             };
         };
+        /** WalletHoldCreateRequest */
+        WalletHoldCreateRequest: {
+            /** Member Auth Id */
+            member_auth_id: string;
+            /** Amount */
+            amount: number;
+            /** Idempotency Key */
+            idempotency_key: string;
+            /** Description */
+            description: string;
+            /** Service Source */
+            service_source: string;
+            /** Reference Type */
+            reference_type?: string | null;
+            /** Reference Id */
+            reference_id?: string | null;
+            /**
+             * Expires In Seconds
+             * @default 1800
+             */
+            expires_in_seconds: number;
+        };
+        /** WalletHoldResponse */
+        WalletHoldResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Wallet Id
+             * Format: uuid
+             */
+            wallet_id: string;
+            /** Member Auth Id */
+            member_auth_id: string;
+            /** Idempotency Key */
+            idempotency_key: string;
+            /** Amount */
+            amount: number;
+            status: components["schemas"]["WalletHoldStatus"];
+            /** Description */
+            description: string;
+            /** Service Source */
+            service_source: string;
+            /** Reference Type */
+            reference_type?: string | null;
+            /** Reference Id */
+            reference_id?: string | null;
+            /** Wallet Transaction Id */
+            wallet_transaction_id?: string | null;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Captured At */
+            captured_at?: string | null;
+            /** Released At */
+            released_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Available Balance */
+            available_balance: number;
+        };
+        /**
+         * WalletHoldStatus
+         * @enum {string}
+         */
+        WalletHoldStatus: "held" | "captured" | "released" | "expired";
         /** WalletResponse */
         WalletResponse: {
             /**
@@ -28440,6 +28601,13 @@ export interface components {
             member_auth_id: string;
             /** Balance */
             balance: number;
+            /** Available Balance */
+            available_balance?: number | null;
+            /**
+             * Held Balance
+             * @default 0
+             */
+            held_balance: number;
             /** Lifetime Bubbles Purchased */
             lifetime_bubbles_purchased: number;
             /** Lifetime Bubbles Spent */
@@ -28717,10 +28885,12 @@ export interface components {
             pay_with_bubbles: boolean;
             /**
              * Num Seats
-             * @description Number of seats to book (1+)
+             * @description Number of seats to book (1-20)
              * @default 1
              */
             num_seats: number;
+            /** Passengers */
+            passengers?: components["schemas"]["RidePassengerInput"][] | null;
         };
         /** RideBookingResponse */
         RideBookingResponse: {
@@ -28757,6 +28927,8 @@ export interface components {
             assigned_ride_number: number;
             /** Num Seats */
             num_seats: number;
+            /** Passengers */
+            passengers: components["schemas"]["RidePassengerResponse"][];
             /** Cost */
             cost: number;
             /**
@@ -28770,6 +28942,30 @@ export interface components {
              */
             updated_at: string;
         };
+        /** RidePassengerInput */
+        RidePassengerInput: {
+            passenger_type: components["schemas"]["RidePassengerType"];
+            /** Full Name */
+            full_name?: string | null;
+        };
+        /** RidePassengerResponse */
+        RidePassengerResponse: {
+            passenger_type: components["schemas"]["RidePassengerType"];
+            /** Full Name */
+            full_name?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Position */
+            position: number;
+        };
+        /**
+         * RidePassengerType
+         * @enum {string}
+         */
+        RidePassengerType: "member" | "session_guest" | "observer";
         /** RouteInfoCreate */
         RouteInfoCreate: {
             /** Origin Area Id */
@@ -32677,6 +32873,8 @@ export interface components {
             bubbles_applied?: number | null;
             /** Wallet Transaction Id */
             wallet_transaction_id?: string | null;
+            /** Wallet Hold Id */
+            wallet_hold_id?: string | null;
             /** Paid At */
             paid_at: string | null;
             /** Fulfilled At */
@@ -52966,6 +53164,101 @@ export interface operations {
             };
         };
     };
+    internal_create_hold_internal_wallet_holds_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WalletHoldCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletHoldResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    internal_capture_hold_internal_wallet_holds__hold_id__capture_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hold_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletHoldResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    internal_release_hold_internal_wallet_holds__hold_id__release_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hold_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletHoldResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     internal_confirm_topup_internal_wallet_confirm_topup_post: {
         parameters: {
             query?: never;
@@ -59444,7 +59737,9 @@ export interface operations {
     };
     mark_order_paid_admin_store_orders__order_id__mark_paid_post: {
         parameters: {
-            query?: never;
+            query?: {
+                wallet_transaction_id?: string | null;
+            };
             header?: never;
             path: {
                 order_id: string;

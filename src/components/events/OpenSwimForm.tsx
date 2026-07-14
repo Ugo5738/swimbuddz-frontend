@@ -22,7 +22,7 @@ function toLocalInput(iso: string | null | undefined): string {
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
-    d.getHours(),
+    d.getHours()
   )}:${pad(d.getMinutes())}`;
 }
 
@@ -43,12 +43,10 @@ export function OpenSwimForm({ mode, eventId, initial }: Props) {
   const [startTime, setStartTime] = useState(toLocalInput(initial?.start_time));
   const [endTime, setEndTime] = useState(toLocalInput(initial?.end_time));
   const [maxCapacity, setMaxCapacity] = useState<string>(
-    initial?.max_capacity != null ? String(initial.max_capacity) : "",
+    initial?.max_capacity != null ? String(initial.max_capacity) : ""
   );
   const [surcharge, setSurcharge] = useState<string>(
-    initial?.organizer_surcharge_naira != null
-      ? String(initial.organizer_surcharge_naira)
-      : "",
+    initial?.organizer_surcharge_naira != null ? String(initial.organizer_surcharge_naira) : ""
   );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,17 +62,13 @@ export function OpenSwimForm({ mode, eventId, initial }: Props) {
       .catch(() => {});
   }, [poolEditable]);
 
-  const selectedPool = useMemo(
-    () => pools.find((p) => p.id === poolId) || null,
-    [pools, poolId],
-  );
+  const selectedPool = useMemo(() => pools.find((p) => p.id === poolId) || null, [pools, poolId]);
   const hasPool = mode === "edit" ? !!initial?.pool_id : !!poolId;
   const poolFee = selectedPool
     ? Number(selectedPool.price_per_swimmer_ngn ?? 0)
-    : initial?.pool_fee_naira ?? 0;
+    : (initial?.pool_fee_naira ?? 0);
   const surchargeNum = surcharge ? Number(surcharge) : 0;
-  const totalPerSwimmer =
-    (isNaN(poolFee) ? 0 : poolFee) + (isNaN(surchargeNum) ? 0 : surchargeNum);
+  const totalPerSwimmer = (isNaN(poolFee) ? 0 : poolFee) + (isNaN(surchargeNum) ? 0 : surchargeNum);
 
   const onPoolChange = (val: string) => {
     setPoolId(val);
@@ -89,8 +83,7 @@ export function OpenSwimForm({ mode, eventId, initial }: Props) {
 
     if (!title.trim()) return setError("Give your meet a title.");
     if (!startTime) return setError("Pick a start time.");
-    if (!poolId && !location.trim())
-      return setError("Add a location, or pick a pool.");
+    if (!poolId && !location.trim()) return setError("Add a location, or pick a pool.");
 
     setSubmitting(true);
     try {
@@ -128,10 +121,7 @@ export function OpenSwimForm({ mode, eventId, initial }: Props) {
         router.push(`/community/events/${eventId}`);
       }
     } catch (err) {
-      const msg =
-        err instanceof Error
-          ? err.message
-          : "Something went wrong. Please try again.";
+      const msg = err instanceof Error ? err.message : "Something went wrong. Please try again.";
       setError(msg);
       toast.error(msg);
     } finally {
@@ -187,8 +177,8 @@ export function OpenSwimForm({ mode, eventId, initial }: Props) {
         <div>
           <h3 className="text-sm font-semibold text-slate-800">Where</h3>
           <p className="mt-0.5 text-xs text-slate-500">
-            Pick a partner pool to collect the per-swimmer fee automatically, or
-            leave it free and meet anywhere.
+            Pick a partner pool to collect the per-swimmer fee automatically, or leave it free and
+            meet anywhere.
           </p>
         </div>
 
@@ -223,11 +213,7 @@ export function OpenSwimForm({ mode, eventId, initial }: Props) {
           value={location}
           onChange={(e) => setLocation(e.target.value)}
           disabled={poolEditable && !!poolId}
-          hint={
-            poolEditable && !!poolId
-              ? "Auto-filled from the selected pool."
-              : undefined
-          }
+          hint={poolEditable && !!poolId ? "Auto-filled from the selected pool." : undefined}
         />
 
         {hasPool && (
@@ -245,9 +231,11 @@ export function OpenSwimForm({ mode, eventId, initial }: Props) {
               <span className="text-slate-600">Each swimmer pays</span>
               <span className="font-semibold text-slate-900">
                 ₦{totalPerSwimmer.toLocaleString()}
-                <span className="ml-1 text-xs font-normal text-slate-400">
-                  · {Math.ceil(totalPerSwimmer / 100)} 🫧
-                </span>
+                {totalPerSwimmer % 100 === 0 && (
+                  <span className="ml-1 text-xs font-normal text-slate-400">
+                    · {totalPerSwimmer / 100} 🫧
+                  </span>
+                )}
               </span>
             </div>
           </div>
@@ -255,9 +243,8 @@ export function OpenSwimForm({ mode, eventId, initial }: Props) {
       </Card>
 
       <div className="rounded-lg bg-cyan-50 p-4 text-xs text-cyan-900">
-        Open-swim meets are for adults (18+). Swimmers accept a quick liability
-        waiver when they join a paid meet. Be a good host — show up and keep it
-        safe.
+        Open-swim meets are for adults (18+). Swimmers accept a quick liability waiver when they
+        join a paid meet. Be a good host — show up and keep it safe.
       </div>
 
       {error && (
@@ -268,11 +255,7 @@ export function OpenSwimForm({ mode, eventId, initial }: Props) {
 
       <div className="flex gap-3">
         <Button type="submit" disabled={submitting}>
-          {submitting
-            ? "Saving…"
-            : mode === "create"
-              ? "Publish meet"
-              : "Save changes"}
+          {submitting ? "Saving…" : mode === "create" ? "Publish meet" : "Save changes"}
         </Button>
         <Button
           type="button"

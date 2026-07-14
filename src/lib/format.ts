@@ -6,10 +6,11 @@ export const KOBO_PER_BUBBLE = KOBO_PER_NAIRA * NAIRA_PER_BUBBLE; // 10_000
 
 /**
  * Convert a kobo amount (database unit) to Bubbles.
- * Rounds up so the wallet always has enough.
+ * Returns the whole Bubbles that can be applied without exceeding the amount.
+ * Any kobo remainder must be paid separately; this helper never rounds value.
  */
 export function koboBubbles(kobo: number): number {
-  return Math.ceil(kobo / KOBO_PER_BUBBLE);
+  return Math.floor(kobo / KOBO_PER_BUBBLE);
 }
 
 /**
@@ -38,7 +39,7 @@ export function formatNaira(
   options: {
     showDecimal?: boolean;
     showSymbol?: boolean;
-  } = {},
+  } = {}
 ): string {
   const { showDecimal = true, showSymbol = true } = options;
 
@@ -61,7 +62,7 @@ export function formatDate(
     includeTime?: boolean;
     includeYear?: boolean;
     format?: "short" | "long";
-  } = {},
+  } = {}
 ): string {
   const { includeTime = false, includeYear = true, format = "short" } = options;
   const d = typeof date === "string" ? new Date(date) : date;

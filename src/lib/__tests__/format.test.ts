@@ -5,12 +5,15 @@
  * unit testing covering edge cases, locales, and option permutations.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  formatDate,
-  formatNaira,
-  formatRelativeTime,
-  formatTime,
-} from "../format";
+import { formatDate, formatNaira, formatRelativeTime, formatTime, koboBubbles } from "../format";
+
+describe("koboBubbles", () => {
+  it("never rounds a partial Bubble up", () => {
+    expect(koboBubbles(10_000)).toBe(1);
+    expect(koboBubbles(15_000)).toBe(1);
+    expect(koboBubbles(9_999)).toBe(0);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // formatNaira

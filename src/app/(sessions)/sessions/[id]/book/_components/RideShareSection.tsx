@@ -8,11 +8,32 @@ type RideShareSectionProps = {
   selectedRideAreaId: string | null;
   selectedPickupLocationId: string | null;
   numSeats: number;
+  passengers: RidePassenger[];
   isRideOnlyFlow: boolean;
   formatCurrency: (amount: number) => string;
   onSelectRideArea: (areaId: string | null) => void;
   onSelectPickupLocation: (locationId: string | null) => void;
   onChangeSeats: (seats: number) => void;
+  onChangePassengers: (passengers: RidePassenger[]) => void;
+};
+
+export type RidePassenger = {
+  passenger_type: "member" | "session_guest" | "observer";
+  full_name?: string;
+};
+
+export const resizeRidePassengers = (
+  passengers: RidePassenger[],
+  seats: number
+): RidePassenger[] => {
+  const next = passengers.slice(0, seats);
+  while (next.length < seats) {
+    next.push({
+      passenger_type: next.length === 0 ? "member" : "observer",
+      full_name: "",
+    });
+  }
+  return next;
 };
 
 export function RideShareSection({
@@ -20,16 +41,22 @@ export function RideShareSection({
   selectedRideAreaId,
   selectedPickupLocationId,
   numSeats,
+  passengers,
   isRideOnlyFlow,
   formatCurrency,
   onSelectRideArea,
   onSelectPickupLocation,
   onChangeSeats,
+  onChangePassengers,
 }: RideShareSectionProps) {
   const [isExpanded, setIsExpanded] = useState(isRideOnlyFlow || !!selectedRideAreaId);
 
   const selectedArea = rideShareAreas.find((a) => a.id === selectedRideAreaId);
   const perSeatRideCost = selectedArea && selectedPickupLocationId ? selectedArea.cost : 0;
+  const changeSeatCount = (seats: number) => {
+    onChangeSeats(seats);
+    onChangePassengers(resizeRidePassengers(passengers, seats));
+  };
 
   // Collapsed state
   if (!isExpanded) {
@@ -113,7 +140,7 @@ export function RideShareSection({
                   onSelectPickupLocation(null);
                 }
               }
-              onChangeSeats(1);
+              changeSeatCount(1);
             }}
           >
             <div className="flex justify-between items-start">
@@ -153,7 +180,7 @@ export function RideShareSection({
                   onClick={() => {
                     if (!isDisabled) {
                       onSelectPickupLocation(loc.id);
-                      onChangeSeats(1);
+                      changeSeatCount(1);
                     }
                   }}
                 >
@@ -215,7 +242,7 @@ export function RideShareSection({
             <button
               type="button"
               className="w-10 h-10 rounded-lg border-2 border-slate-200 flex items-center justify-center text-lg font-bold disabled:opacity-30"
-              onClick={() => onChangeSeats(Math.max(1, numSeats - 1))}
+              onClick={() => changeSeatCount(Math.max(1, numSeats - 1))}
               disabled={numSeats <= 1}
             >
               −
@@ -224,7 +251,7 @@ export function RideShareSection({
             <button
               type="button"
               className="w-10 h-10 rounded-lg border-2 border-slate-200 flex items-center justify-center text-lg font-bold disabled:opacity-30"
-              onClick={() => onChangeSeats(numSeats + 1)}
+              onClick={() => changeSeatCount(numSeats + 1)}
               disabled={numSeats >= (selectedArea?.capacity ?? 4)}
             >
               +
@@ -232,6 +259,51 @@ export function RideShareSection({
             <span className="text-sm text-slate-500">
               {formatCurrency(perSeatRideCost)} per seat
             </span>
+          </div>
+
+          <div className="space-y-3 pt-2 border-t border-slate-200">
+            <p className="text-sm font-medium text-slate-900">Passenger Manifest</p>
+            {resizeRidePassengers(passengers, numSeats).map((passenger, index) => {
+              const anotherMemberSelected = passengers.some(
+                (item, passengerIndex) =>
+                  passengerIndex !== index && item.passenger_type === "member"
+              );
+              return (
+                <div key={index} className="grid gap-2 sm:grid-cols-[150px_1fr]">
+                  <select
+                    value={passenger.passenger_type}
+                    onChange={(event) => {
+                      const next = resizeRidePassengers(passengers, numSeats);
+                      next[index] = {
+                        ...next[index],
+                        passenger_type: event.target.value as RidePassenger["passenger_type"],
+                      };
+                      onChangePassengers(next);
+                    }}
+                    className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700"
+                    aria-label={`Passenger ${index + 1} type`}
+                  >
+                    <option value="member" disabled={anotherMemberSelected}>
+                      Member
+                    </option>
+                    <option value="session_guest">Swimming guest</option>
+                    <option value="observer">Observer</option>
+                  </select>
+                  <input
+                    type="text"
+                    value={passenger.full_name ?? ""}
+                    onChange={(event) => {
+                      const next = resizeRidePassengers(passengers, numSeats);
+                      next[index] = { ...next[index], full_name: event.target.value };
+                      onChangePassengers(next);
+                    }}
+                    maxLength={160}
+                    placeholder={`Passenger ${index + 1} name (optional)`}
+                    className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 placeholder:text-slate-400"
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
