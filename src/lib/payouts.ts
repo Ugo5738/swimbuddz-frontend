@@ -219,6 +219,15 @@ export async function adminApprovePayout(payoutId: string, admin_notes?: string)
   );
 }
 
+/** Admin: Recalculate a pending recurring payout from current attendance. */
+export async function adminRecalculatePayout(payoutId: string): Promise<Payout> {
+  return apiPut<Payout>(
+    `/api/v1/payments/admin/payouts/${payoutId}/recalculate`,
+    {},
+    { auth: true }
+  );
+}
+
 /** Admin: Initiate Paystack transfer for a payout. */
 export async function adminInitiateTransfer(payoutId: string): Promise<Payout> {
   return apiPost<Payout>(

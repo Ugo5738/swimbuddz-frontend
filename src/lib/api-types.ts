@@ -7109,6 +7109,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/payments/admin/payouts/{payout_id}/recalculate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Recalculate Payout
+         * @description Refresh a pending recurring payout from the latest attendance.
+         *
+         *     Manual/legacy payouts cannot be recalculated because they have no recurring
+         *     config and block to compute from. Approved or processed payouts are locked.
+         */
+        put: operations["recalculate_payout_payments_admin_payouts__payout_id__recalculate_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/payments/admin/payouts/{payout_id}": {
         parameters: {
             query?: never;
@@ -48411,6 +48434,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PayoutSummary"];
+                };
+            };
+        };
+    };
+    recalculate_payout_payments_admin_payouts__payout_id__recalculate_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payout_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayoutResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

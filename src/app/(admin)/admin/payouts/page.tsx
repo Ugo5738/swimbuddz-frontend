@@ -13,6 +13,7 @@ import {
   adminGetPayoutSummary,
   adminInitiateTransfer,
   adminListPayouts,
+  adminRecalculatePayout,
   type Payout,
   type PayoutStatus,
   type PayoutSummary,
@@ -24,6 +25,7 @@ import {
   Clock,
   DollarSign,
   Loader2,
+  RefreshCw,
   Send,
   XCircle,
 } from "lucide-react";
@@ -52,6 +54,7 @@ export default function AdminPayoutsPage() {
   const [statusFilter, setStatusFilter] = useState<PayoutStatus | "">("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [recalculatingId, setRecalculatingId] = useState<string | null>(null);
   const pageSize = 20;
 
   const loadData = async () => {
@@ -95,6 +98,20 @@ export default function AdminPayoutsPage() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to approve payout";
       toast.error(msg);
+    }
+  };
+
+  const handleRecalculate = async (payout: Payout) => {
+    setRecalculatingId(payout.id);
+    try {
+      const updated = await adminRecalculatePayout(payout.id);
+      toast.success(`Payout recalculated to ${formatNaira(updated.total_amount / 100)}`);
+      await loadData();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to recalculate payout";
+      toast.error(msg);
+    } finally {
+      setRecalculatingId(null);
     }
   };
 
@@ -273,6 +290,8 @@ export default function AdminPayoutsPage() {
                     key={payout.id}
                     payout={payout}
                     onApprove={() => handleApprove(payout)}
+                    onRecalculate={() => handleRecalculate(payout)}
+                    recalculating={recalculatingId === payout.id}
                     onInitiateTransfer={() => handleInitiateTransfer(payout)}
                     onMarkManualPaid={() => handleMarkManualPaid(payout)}
                     onMarkFailed={() => handleMarkFailed(payout)}
@@ -315,12 +334,16 @@ export default function AdminPayoutsPage() {
 function PayoutRow({
   payout,
   onApprove,
+  onRecalculate,
+  recalculating,
   onInitiateTransfer,
   onMarkManualPaid,
   onMarkFailed,
 }: {
   payout: Payout;
   onApprove: () => void;
+  onRecalculate: () => void;
+  recalculating: boolean;
   onInitiateTransfer: () => void;
   onMarkManualPaid: () => void;
   onMarkFailed: () => void;
@@ -383,6 +406,15 @@ function PayoutRow({
         <div className="flex justify-end gap-1">
           {payout.status === "pending" && (
             <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onRecalculate}
+                disabled={recalculating}
+              >
+                <RefreshCw className={`h-3 w-3 mr-1 ${recalculating ? "animate-spin" : ""}`} />
+                Recalculate
+              </Button>
               <Button size="sm" variant="secondary" onClick={onApprove}>
                 <CheckCircle className="h-3 w-3 mr-1" />
                 Approve
