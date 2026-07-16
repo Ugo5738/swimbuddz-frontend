@@ -17655,7 +17655,43 @@ export interface components {
          *     Recurring weekly blocks + blackout dates in the coach's local timezone.
          *     sessions_service slices this into bookable make-up slots.
          */
-        CoachAvailabilityCalendar: {
+        "CoachAvailabilityCalendar-Input": {
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
+            /**
+             * Timezone
+             * @description IANA timezone name
+             * @default Africa/Lagos
+             */
+            timezone: string;
+            /** Recurring */
+            recurring?: components["schemas"]["RecurringBlockInput"][];
+            /** Blackouts */
+            blackouts?: components["schemas"]["BlackoutDateInput"][];
+            /**
+             * Slot Minutes
+             * @description Default lesson/make-up length in minutes
+             * @default 60
+             */
+            slot_minutes: number;
+            /**
+             * Buffer Minutes
+             * @description Gap between consecutive slots in minutes
+             * @default 0
+             */
+            buffer_minutes: number;
+        };
+        /**
+         * CoachAvailabilityCalendar
+         * @description Canonical shape of CoachProfile.availability_calendar (JSONB).
+         *
+         *     Recurring weekly blocks + blackout dates in the coach's local timezone.
+         *     sessions_service slices this into bookable make-up slots.
+         */
+        "CoachAvailabilityCalendar-Output": {
             /**
              * Version
              * @default 1
@@ -17706,7 +17742,7 @@ export interface components {
          * @description GET response: a coach's current availability + spacing override.
          */
         CoachAvailabilityResponse: {
-            availability?: components["schemas"]["CoachAvailabilityCalendar"] | null;
+            availability?: components["schemas"]["CoachAvailabilityCalendar-Output"] | null;
             /** Min Hours Between Sessions */
             min_hours_between_sessions?: number | null;
         };
@@ -17715,7 +17751,7 @@ export interface components {
          * @description PUT body: a coach sets their own availability + spacing override.
          */
         CoachAvailabilityUpdate: {
-            availability: components["schemas"]["CoachAvailabilityCalendar"];
+            availability: components["schemas"]["CoachAvailabilityCalendar-Input"];
             /**
              * Min Hours Between Sessions
              * @description Per-coach spacing override in hours; null → 48h policy default
