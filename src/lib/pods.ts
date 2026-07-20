@@ -195,6 +195,18 @@ export async function adminListReviewQueue(): Promise<PodSummary[]> {
   return unwrap<PodSummary[]>(res, "Failed to load review queue");
 }
 
+export async function adminListPods(options?: {
+  clubId?: string;
+  status?: PodStatus;
+}): Promise<PodSummary[]> {
+  const params = new URLSearchParams();
+  if (options?.clubId) params.set("club_id", options.clubId);
+  if (options?.status) params.set("status", options.status);
+  const suffix = params.size > 0 ? `?${params.toString()}` : "";
+  const res = await authedFetch(`${ADMIN_BASE}${suffix}`);
+  return unwrap<PodSummary[]>(res, "Failed to load pods");
+}
+
 // ---------------------------------------------------------------------------
 // Member endpoints (auth required, no admin)
 // ---------------------------------------------------------------------------

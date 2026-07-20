@@ -25,6 +25,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AiDraftPanel } from "./_components/AiDraftPanel";
 import { ContentCadencePanel } from "./_components/ContentCadencePanel";
+import { DigestSettingsPanel } from "./_components/DigestSettingsPanel";
 import type { ContentPost, ContentStatusFilter } from "./types";
 
 // Dynamic import to avoid SSR issues with BlockNote
@@ -322,6 +323,7 @@ export default function AdminContentPage() {
       {!showCreateModal && (
         <>
           <ContentCadencePanel posts={posts} />
+          <DigestSettingsPanel />
           <AiDraftPanel onDraftCreated={handleAiDraftCreated} />
 
           <Card className="p-4">

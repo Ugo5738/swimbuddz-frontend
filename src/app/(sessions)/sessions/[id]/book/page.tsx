@@ -106,6 +106,10 @@ interface MemberProfile {
 
 export default function SessionBookPage({ params }: { params: { id: string } }) {
   const searchParams = useSearchParams();
+  const bookingAttribution = {
+    booking_source: searchParams.get("source") || undefined,
+    campaign_key: searchParams.get("campaign") || undefined,
+  };
 
   // Core data
   const [session, setSession] = useState<Session | null>(null);
@@ -430,11 +434,9 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
       try {
         if (!isRideOnlyFlow) {
           // A1 Phase 3.3 — book the session (creates SessionBooking).
-          // pay_with_bubbles=true (or free session) → endpoint debits
-          // wallet and flips to CONFIRMED atomically (preserves the
-          // one-click UX the old sign-in flow gave us). Day-of
-          // attendance still happens via the existing sign-in endpoint,
-          // which now links AttendanceRecord.booking_id back here.
+          // Free bookings are confirmed immediately. Confirmation creates
+          // the default PRESENT attendance row; coaches/admins record any
+          // day-of exception such as absence or lateness.
           await apiPost(
             `/api/v1/sessions/${params.id}/book`,
             {
@@ -442,6 +444,7 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
               fee_amount_kobo: Math.round((session?.pool_fee ?? 0) * partySize * 100),
               pay_with_bubbles: false,
               guests: guestsPayload,
+              ...bookingAttribution,
             },
             { auth: true }
           );
@@ -500,6 +503,7 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
             fee_amount_kobo: Math.round((session?.pool_fee ?? 0) * partySize * 100),
             pay_with_bubbles: false,
             guests: guestsPayload,
+            ...bookingAttribution,
           },
           { auth: true }
         );

@@ -18,13 +18,12 @@ import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { Select } from "@/components/ui/Select";
 import { listClubs, type Club } from "@/lib/clubs";
 import {
+  adminListPods,
   formatDay,
   formatTime,
   podDisplayName,
   type PodSummary,
 } from "@/lib/pods";
-import { supabase } from "@/lib/auth";
-import { API_BASE_URL } from "@/lib/config";
 import {
   AlertTriangle,
   Calendar,
@@ -37,40 +36,6 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 type StatusFilter = "active" | "inactive" | "all";
-
-/**
- * Admin pod listing — there's no /api/v1/admin/members/pods GET endpoint
- * (the only admin GET is review-queue + per-pod). For an admin "all pods"
- * view, we read the same internal list endpoint sessions_service uses.
- * This needs a service-role JWT, which the admin doesn't have, so we
- * proxy through the public /members/pods/public endpoint and then layer
- * any private/inactive ones from the review-queue. Simple and avoids
- * adding a new admin GET endpoint right now.
- */
-async function fetchAllPodsForAdmin(): Promise<PodSummary[]> {
-  const { data: sessionData } = await supabase.auth.getSession();
-  const token = sessionData.session?.access_token;
-  const headers: Record<string, string> = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  const [publicRes, reviewRes] = await Promise.all([
-    fetch(`${API_BASE_URL}/api/v1/members/pods/public`, { headers }),
-    fetch(`${API_BASE_URL}/api/v1/admin/members/pods/review-queue`, {
-      headers,
-    }),
-  ]);
-
-  const publicPods = publicRes.ok ? ((await publicRes.json()) as PodSummary[]) : [];
-  const reviewPods = reviewRes.ok ? ((await reviewRes.json()) as PodSummary[]) : [];
-
-  // Merge by id, preferring fresher copies
-  const map = new Map<string, PodSummary>();
-  for (const p of publicPods) map.set(p.id, p);
-  for (const p of reviewPods) map.set(p.id, p);
-  return Array.from(map.values()).sort((a, b) =>
-    a.created_at < b.created_at ? 1 : -1,
-  );
-}
 
 export default function AdminPodsListPage() {
   const [pods, setPods] = useState<PodSummary[]>([]);
@@ -87,7 +52,7 @@ export default function AdminPodsListPage() {
     setError(null);
     try {
       const [podList, clubList] = await Promise.all([
-        fetchAllPodsForAdmin(),
+        adminListPods(),
         listClubs(false),
       ]);
       setPods(podList);

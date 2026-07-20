@@ -2076,7 +2076,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Admin List Pods
+         * @description List every pod an admin can manage, including private pods.
+         */
+        get: operations["admin_list_pods_admin_members_pods_get"];
         put?: never;
         /** Admin Create Pod */
         post: operations["admin_create_pod_admin_members_pods_post"];
@@ -3660,6 +3664,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/sessions/bookings/campaign-stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Campaign Booking Stats
+         * @description Count booking outcomes attributed to a digest or other campaign.
+         */
+        get: operations["get_campaign_booking_stats_internal_sessions_bookings_campaign_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/sessions/range-stats": {
         parameters: {
             query?: never;
@@ -4203,13 +4227,12 @@ export interface paths {
          * Coach Mark Session Attendance
          * @description Bulk attendance mark by the cohort's coach (or admin override).
          *
-         *     Default-present model: students NOT included in `entries` are treated
-         *     as PRESENT — no row is written, the cohort payout calculator infers
-         *     presence from the absence of an exception. The coach typically only
-         *     submits entries for EXCUSED, ABSENT, or LATE statuses.
+         *     Confirmed bookings already carry a PRESENT row. The coach typically only
+         *     submits exceptions such as EXCUSED, ABSENT, or LATE; explicit PRESENT can
+         *     restore an accidentally changed row.
          *
          *     Behavior per entry:
-         *       - status == PRESENT: deletes any existing exception row (revert to default)
+         *       - status == PRESENT: upserts the row to PRESENT
          *       - status in {EXCUSED, ABSENT, LATE, CANCELLED}: upserts the row by
          *         (session_id, member_id), overwriting prior status
          *
@@ -8062,6 +8085,74 @@ export interface paths {
          *     Requires service role authentication (internal service-to-service calls).
          */
         post: operations["send_templated_email_email_template_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/digest/admin/configs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Digest Configs */
+        get: operations["list_digest_configs_digest_admin_configs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/digest/admin/configs/{audience}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Digest Config */
+        patch: operations["update_digest_config_digest_admin_configs__audience__patch"];
+        trace?: never;
+    };
+    "/api/v1/digest/admin/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Digest Stats */
+        get: operations["get_digest_stats_digest_admin_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/digest/click/{token}/{kind}/{resource_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Track Digest Click */
+        get: operations["track_digest_click_digest_click__token___kind___resource_id__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -20135,6 +20226,10 @@ export interface components {
             payment_intent_id?: string | null;
             /** Wallet Transaction Id */
             wallet_transaction_id?: string | null;
+            /** Booking Source */
+            booking_source?: string | null;
+            /** Campaign Key */
+            campaign_key?: string | null;
         };
         /**
          * BookingGuestCreate
@@ -20344,6 +20439,36 @@ export interface components {
             created_at: string;
             /** Expires At */
             expires_at: string | null;
+        };
+        /** CampaignBookingStats */
+        CampaignBookingStats: {
+            /** Campaign Key */
+            campaign_key: string;
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
+            /**
+             * Pending
+             * @default 0
+             */
+            pending: number;
+            /**
+             * Confirmed
+             * @default 0
+             */
+            confirmed: number;
+            /**
+             * Cancelled
+             * @default 0
+             */
+            cancelled: number;
+            /**
+             * Expired
+             * @default 0
+             */
+            expired: number;
         };
         /** CreateBundleCartRequest */
         CreateBundleCartRequest: {
@@ -20763,6 +20888,10 @@ export interface components {
             id: string;
             /** Title */
             title: string;
+            /** Description */
+            description?: string | null;
+            /** Notes */
+            notes?: string | null;
             /** Session Type */
             session_type: string;
             /** Status */
@@ -20787,6 +20916,17 @@ export interface components {
             capacity: number;
             /** Pool Fee */
             pool_fee?: number | null;
+            /** Ride Share Fee */
+            ride_share_fee?: number | null;
+            /**
+             * Occupied Slots
+             * @default 0
+             */
+            occupied_slots: number;
+            /** Confirmed Booking Member Ids */
+            confirmed_booking_member_ids?: string[];
+            /** Coach Member Ids */
+            coach_member_ids?: string[];
             /** Week Number */
             week_number?: number | null;
             /** Lesson Title */
@@ -20809,10 +20949,10 @@ export interface components {
          *     transition status → CONFIRMED. A 5-min sweep otherwise marks the
          *     booking EXPIRED.
          *
-         *     Free-session / full-Bubbles fast path: pass ``pay_with_bubbles=True``
-         *     AND ``fee_amount_kobo`` (zero is OK for free sessions). The endpoint
-         *     debits the member's wallet and confirms in one transaction, returning
-         *     a CONFIRMED booking. Mirrors the existing one-click sign-in UX.
+         *     Free sessions are confirmed automatically from the server price. For a
+         *     paid session's full-Bubbles fast path, pass ``pay_with_bubbles=True``;
+         *     the endpoint debits the member's wallet and confirms in one transaction,
+         *     returning a CONFIRMED booking.
          */
         SessionBookingCreate: {
             /**
@@ -20839,6 +20979,10 @@ export interface components {
              * @default 0
              */
             block_guests: number;
+            /** Booking Source */
+            booking_source?: string | null;
+            /** Campaign Key */
+            campaign_key?: string | null;
         };
         /** SessionBookingResponse */
         SessionBookingResponse: {
@@ -21527,14 +21671,12 @@ export interface components {
          * CoachAttendanceMarkRequest
          * @description Bulk attendance mark by coach for a single session.
          *
-         *     Default-present model: students NOT included in `entries` are treated
-         *     as implicitly PRESENT (no row written). The coach typically only
-         *     submits entries for exceptions: EXCUSED, ABSENT, or LATE.
+         *     Confirmed bookings are created with an explicit PRESENT row. The coach
+         *     normally submits only exceptions such as EXCUSED, ABSENT, or LATE.
          *
          *     Server upserts by (session_id, member_id) so resubmitting the same
-         *     entry overwrites the previous status (last-write-wins). To "unmark"
-         *     a previously-recorded exception (return a student to default-present),
-         *     submit them with status=PRESENT — the row is deleted.
+         *     entry overwrites the previous status (last-write-wins). To reverse an
+         *     exception, submit status=PRESENT.
          */
         CoachAttendanceMarkRequest: {
             /** Entries */
@@ -26167,7 +26309,7 @@ export interface components {
             weekly_digest: boolean;
             /**
              * Weekly Session Digest
-             * @default false
+             * @default true
              */
             weekly_session_digest: boolean;
             /**
@@ -26403,6 +26545,99 @@ export interface components {
             sort_order?: number | null;
             /** Consent Note */
             consent_note?: string | null;
+        };
+        /** WeeklyDigestConfigResponse */
+        WeeklyDigestConfigResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Audience
+             * @enum {string}
+             */
+            audience: "community" | "club" | "academy";
+            /** Featured Image Media Id */
+            featured_image_media_id?: string | null;
+            /** Featured Image Url */
+            featured_image_url?: string | null;
+            /** Image Alt */
+            image_alt: string;
+            /** Section Intro */
+            section_intro?: string | null;
+            /** Default Gear Notes */
+            default_gear_notes?: string | null;
+            /** Is Enabled */
+            is_enabled: boolean;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** WeeklyDigestConfigUpdate */
+        WeeklyDigestConfigUpdate: {
+            /** Featured Image Media Id */
+            featured_image_media_id?: string | null;
+            /** Image Alt */
+            image_alt?: string | null;
+            /** Section Intro */
+            section_intro?: string | null;
+            /** Default Gear Notes */
+            default_gear_notes?: string | null;
+            /** Is Enabled */
+            is_enabled?: boolean | null;
+        };
+        /** WeeklyDigestStatsResponse */
+        WeeklyDigestStatsResponse: {
+            /** Campaign Key */
+            campaign_key?: string | null;
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
+            /**
+             * Sent
+             * @default 0
+             */
+            sent: number;
+            /**
+             * Failed
+             * @default 0
+             */
+            failed: number;
+            /**
+             * Pending
+             * @default 0
+             */
+            pending: number;
+            /**
+             * Uncertain
+             * @default 0
+             */
+            uncertain: number;
+            /**
+             * Recipients Clicked
+             * @default 0
+             */
+            recipients_clicked: number;
+            /**
+             * Total Clicks
+             * @default 0
+             */
+            total_clicks: number;
+            /**
+             * Bookings Started
+             * @default 0
+             */
+            bookings_started: number;
+            /**
+             * Bookings Confirmed
+             * @default 0
+             */
+            bookings_confirmed: number;
         };
         /**
          * CohortFillSnapshotResponse
@@ -40566,6 +40801,38 @@ export interface operations {
             };
         };
     };
+    admin_list_pods_admin_members_pods_get: {
+        parameters: {
+            query?: {
+                club_id?: string | null;
+                status?: components["schemas"]["PodStatus"] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     admin_create_pod_admin_members_pods_post: {
         parameters: {
             query?: never;
@@ -42872,6 +43139,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionBasic"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_campaign_booking_stats_internal_sessions_bookings_campaign_stats_get: {
+        parameters: {
+            query: {
+                campaign_key: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignBookingStats"];
                 };
             };
             /** @description Validation Error */
@@ -50193,6 +50491,125 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EmailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_digest_configs_digest_admin_configs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklyDigestConfigResponse"][];
+                };
+            };
+        };
+    };
+    update_digest_config_digest_admin_configs__audience__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                audience: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WeeklyDigestConfigUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklyDigestConfigResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_digest_stats_digest_admin_stats_get: {
+        parameters: {
+            query?: {
+                campaign_key?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklyDigestStatsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    track_digest_click_digest_click__token___kind___resource_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+                kind: string;
+                resource_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

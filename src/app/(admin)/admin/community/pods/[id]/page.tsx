@@ -125,9 +125,8 @@ export default function AdminPodDetailPage() {
     if (!transferring || allPods.length > 0 || !pod) return;
     void (async () => {
       try {
-        const { listPublicPods } = await import("@/lib/pods");
-        // Other pods in the same club only — that's the realistic transfer scope.
-        const list = await listPublicPods(pod.club_id);
+        const { adminListPods } = await import("@/lib/pods");
+        const list = await adminListPods({ clubId: pod.club_id, status: "active" });
         setAllPods(list.filter((p) => p.id !== pod.id));
       } catch (e) {
         console.warn("Failed to load transfer targets", e);
@@ -187,7 +186,7 @@ export default function AdminPodDetailPage() {
   const handleDissolve = async () => {
     if (
       !confirm(
-        `Dissolve "${podDisplayName(pod)}"? All members will be soft-removed and the chat channel will be archived. This is reversible only by re-creating the pod.`,
+        `Dissolve "${podDisplayName(pod)}"? All members will be soft-removed. Review and archive the chat channel separately. This is reversible only by re-creating the pod.`,
       )
     )
       return;
@@ -406,7 +405,8 @@ export default function AdminPodDetailPage() {
                       size="sm"
                       onClick={() => setTransferring(a)}
                     >
-                      <ArrowRightLeft className="h-4 w-4" />
+                      <ArrowRightLeft className="mr-1 h-4 w-4" />
+                      Move
                     </Button>
                     <Button
                       variant="outline"
@@ -414,7 +414,8 @@ export default function AdminPodDetailPage() {
                       onClick={() => void handleRemoveMember(a)}
                       className="text-red-600 hover:bg-red-50"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="mr-1 h-4 w-4" />
+                      Remove
                     </Button>
                   </div>
                 )}
