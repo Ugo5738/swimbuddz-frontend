@@ -75,6 +75,7 @@ export default function AdminPodDetailPage() {
 
   const [pod, setPod] = useState<PodDetail | null>(null);
   const [club, setClub] = useState<Club | null>(null);
+  const [clubs, setClubs] = useState<Club[]>([]);
   const [members, setMembers] = useState<MemberListItem[]>([]);
   const [allPods, setAllPods] = useState<PodSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,6 +107,7 @@ export default function AdminPodDetailPage() {
         listClubs(false),
         MembersApi.listMembers(0, 500),
       ]);
+      setClubs(clubs);
       setClub(clubs.find((c) => c.id === detail.club_id) ?? null);
       setMembers(memberList);
     } catch (e) {
@@ -126,7 +128,7 @@ export default function AdminPodDetailPage() {
     void (async () => {
       try {
         const { adminListPods } = await import("@/lib/pods");
-        const list = await adminListPods({ clubId: pod.club_id, status: "active" });
+        const list = await adminListPods({ status: "active" });
         setAllPods(list.filter((p) => p.id !== pod.id));
       } catch (e) {
         console.warn("Failed to load transfer targets", e);
@@ -449,9 +451,11 @@ export default function AdminPodDetailPage() {
           )}
           sourcePodId={pod.id}
           targets={allPods}
+          clubs={clubs}
           onClose={() => setTransferring(null)}
           onTransferred={async () => {
             setTransferring(null);
+            setAllPods([]);
             await load();
           }}
         />
@@ -737,6 +741,7 @@ interface TransferModalProps {
   memberLabel: string;
   sourcePodId: string;
   targets: PodSummary[];
+  clubs: Club[];
   onClose: () => void;
   onTransferred: () => Promise<void> | void;
 }
@@ -746,6 +751,7 @@ function TransferModal({
   memberLabel,
   sourcePodId,
   targets,
+  clubs,
   onClose,
   onTransferred,
 }: TransferModalProps) {
@@ -770,8 +776,8 @@ function TransferModal({
     <Modal isOpen onClose={onClose} title={`Transfer ${memberLabel}`}>
       <div className="space-y-3">
         <p className="text-sm text-gray-600">
-          Move {memberLabel} from this pod to another active pod in the same
-          club. Capacity is checked on the target before the move commits.
+          Move {memberLabel} to another active pod. Capacity is checked on the
+          target before the move commits.
         </p>
         {error && (
           <div className="rounded-md bg-red-50 p-2 text-sm text-red-700">{error}</div>
@@ -784,9 +790,12 @@ function TransferModal({
           <option value="">Select a target pod…</option>
           {targets.map((p) => {
             const full = p.active_member_count >= p.max_size;
+            const clubName = clubs.find((club) => club.id === p.club_id)?.name;
             return (
               <option key={p.id} value={p.id} disabled={full}>
-                {podDisplayName(p)} ({p.active_member_count}/{p.max_size})
+                {podDisplayName(p)}
+                {clubName ? ` · ${clubName}` : ""} ({p.active_member_count}/
+                {p.max_size})
                 {full ? " — full" : ""}
               </option>
             );
