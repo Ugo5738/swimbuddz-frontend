@@ -3,17 +3,23 @@
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
+import {
+  OfflineSessionPaymentModal,
+  type OfflineSessionPaymentInput,
+} from "@/components/admin/OfflineSessionPaymentModal";
 import { apiGet, apiPost } from "@/lib/api";
 import type { components } from "@/lib/api-types";
 import { isPoolFeeRefunded, isRunningLate, isSelfExcused } from "@/lib/sessions";
 import { format } from "date-fns";
 import type { jsPDF as JsPDFType } from "jspdf";
+import { ReceiptText } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 type SessionBookingResponse = components["schemas"]["SessionBookingResponse"];
 type EnrollmentResponse = components["schemas"]["EnrollmentResponse"];
 type CoachMarkEntry = components["schemas"]["CoachAttendanceMarkEntry"];
 type MemberBasicResponse = components["schemas"]["MemberBasicResponse"];
+type PaymentResponse = components["schemas"]["PaymentResponse"];
 
 function statusBadgeClass(status: string): string {
   const s = status.toLowerCase();
@@ -178,6 +184,13 @@ export default function AdminAttendancePage() {
         }
       | { kind: "error"; message: string };
   } | null>(null);
+  const [offlinePaymentModal, setOfflinePaymentModal] = useState<{
+    bookingId: string;
+    memberName: string;
+    amountNaira: number;
+  } | null>(null);
+  const [recordingOfflinePayment, setRecordingOfflinePayment] = useState(false);
+  const [offlinePaymentError, setOfflinePaymentError] = useState<string | null>(null);
 
   const handleGeneratePayLink = async (bookingId: string, memberName: string) => {
     setPayLinkModal({ bookingId, memberName, state: { kind: "loading" } });
@@ -189,11 +202,7 @@ export default function AdminAttendancePage() {
         amount: number;
         booking_id: string;
         session_id: string;
-      }>(
-        `/api/v1/payments/admin/bookings/${bookingId}/payment-link`,
-        {},
-        { auth: true }
-      );
+      }>(`/api/v1/payments/admin/bookings/${bookingId}/payment-link`, {}, { auth: true });
       setPayLinkModal({
         bookingId,
         memberName,
@@ -212,6 +221,34 @@ export default function AdminAttendancePage() {
         memberName,
         state: { kind: "error", message: msg },
       });
+    }
+  };
+
+  const handleRecordOfflinePayment = async (input: OfflineSessionPaymentInput) => {
+    if (!offlinePaymentModal || !selectedSessionId) return;
+    setRecordingOfflinePayment(true);
+    setOfflinePaymentError(null);
+    try {
+      const payment = await apiPost<PaymentResponse>(
+        `/api/v1/payments/admin/bookings/${offlinePaymentModal.bookingId}/offline-payment`,
+        input,
+        { auth: true }
+      );
+      const refreshed = await apiGet<SessionBookingResponse[]>(
+        `/api/v1/sessions/${selectedSessionId}/bookings`,
+        { auth: true }
+      );
+      setBookings(refreshed);
+      setOfflinePaymentModal(null);
+      setMarkSuccess(
+        payment.entitlement_applied_at
+          ? `Recorded ${payment.reference} for ${offlinePaymentModal.memberName}.`
+          : `Recorded ${payment.reference}; booking linkage is queued for retry.`
+      );
+    } catch (err) {
+      setOfflinePaymentError(err instanceof Error ? err.message : "Failed to record payment");
+    } finally {
+      setRecordingOfflinePayment(false);
     }
   };
 
@@ -607,22 +644,18 @@ export default function AdminAttendancePage() {
       await apiPost(
         `/api/v1/attendance/sessions/${selectedSessionId}/coach-mark`,
         {
-          entries: [
-            { member_id: memberId, status: "present", notes: "Walk-in" },
-          ],
+          entries: [{ member_id: memberId, status: "present", notes: "Walk-in" }],
         },
         { auth: true }
       );
       // 3) Refresh both bookings and attendance so the row updates.
       const [refreshedAttendance, refreshedBookings] = await Promise.all([
-        apiGet<Attendance[]>(
-          `/api/v1/attendance/sessions/${selectedSessionId}/attendance`,
-          { auth: true }
-        ),
-        apiGet<SessionBookingResponse[]>(
-          `/api/v1/sessions/${selectedSessionId}/bookings`,
-          { auth: true }
-        ).catch(() => bookings),
+        apiGet<Attendance[]>(`/api/v1/attendance/sessions/${selectedSessionId}/attendance`, {
+          auth: true,
+        }),
+        apiGet<SessionBookingResponse[]>(`/api/v1/sessions/${selectedSessionId}/bookings`, {
+          auth: true,
+        }).catch(() => bookings),
       ]);
       setAttendanceList(refreshedAttendance);
       setBookings(refreshedBookings);
@@ -641,11 +674,7 @@ export default function AdminAttendancePage() {
   // to fund a make-up. Routes through the accounted session_booking refund path
   // (NOT the "Adjust Bubbles" tool), so the ledger reverses the pool-fee
   // revenue and restores the liability.
-  const handleRefundPoolFee = async (
-    bookingId: string,
-    memberName: string,
-    feeNaira: number
-  ) => {
+  const handleRefundPoolFee = async (bookingId: string, memberName: string, feeNaira: number) => {
     const reason = window.prompt(
       `Refund the ₦${feeNaira.toLocaleString("en-NG")} pool fee to ${memberName}'s ` +
         `Bubbles (for a make-up)? Enter a reason — e.g. "Rained out".`
@@ -670,9 +699,7 @@ export default function AdminAttendancePage() {
         { auth: true }
       ).catch(() => bookings);
       setBookings(refreshed);
-      setMarkSuccess(
-        `Refunded ₦${feeNaira.toLocaleString("en-NG")} to ${memberName} as Bubbles.`
-      );
+      setMarkSuccess(`Refunded ₦${feeNaira.toLocaleString("en-NG")} to ${memberName} as Bubbles.`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
       console.error("Failed to refund pool fee", err);
@@ -1021,6 +1048,10 @@ export default function AdminAttendancePage() {
             onDraftStatus={handleDraftStatus}
             onMarkWalkIn={handleMarkWalkIn}
             onGeneratePayLink={handleGeneratePayLink}
+            onRecordOfflinePayment={(bookingId, memberName, amountNaira) => {
+              setOfflinePaymentError(null);
+              setOfflinePaymentModal({ bookingId, memberName, amountNaira });
+            }}
             onRefundPoolFee={handleRefundPoolFee}
             onBulkMarkPresent={handleBulkMarkPresent}
             onSaveRoster={handleSaveRoster}
@@ -1033,8 +1064,20 @@ export default function AdminAttendancePage() {
         {loadingAttendance && <LoadingPage text="Loading attendance..." />}
       </div>
 
-      {payLinkModal && (
-        <PayLinkModal modal={payLinkModal} onClose={() => setPayLinkModal(null)} />
+      {payLinkModal && <PayLinkModal modal={payLinkModal} onClose={() => setPayLinkModal(null)} />}
+      {offlinePaymentModal && (
+        <OfflineSessionPaymentModal
+          memberName={offlinePaymentModal.memberName}
+          amountNaira={offlinePaymentModal.amountNaira}
+          submitting={recordingOfflinePayment}
+          error={offlinePaymentError}
+          onClose={() => {
+            if (recordingOfflinePayment) return;
+            setOfflinePaymentModal(null);
+            setOfflinePaymentError(null);
+          }}
+          onSubmit={handleRecordOfflinePayment}
+        />
       )}
     </div>
   );
@@ -1080,9 +1123,7 @@ function PayLinkModal({
             <h3 className="text-base font-semibold text-slate-900">
               Pay link for {modal.memberName}
             </h3>
-            <p className="text-xs text-slate-500">
-              Booking {modal.bookingId.slice(0, 8)}…
-            </p>
+            <p className="text-xs text-slate-500">Booking {modal.bookingId.slice(0, 8)}…</p>
           </div>
           <button
             type="button"
@@ -1095,9 +1136,7 @@ function PayLinkModal({
         </div>
 
         {modal.state.kind === "loading" && (
-          <div className="py-6 text-center text-sm text-slate-500">
-            Generating link…
-          </div>
+          <div className="py-6 text-center text-sm text-slate-500">Generating link…</div>
         )}
 
         {modal.state.kind === "error" && (
@@ -1113,15 +1152,12 @@ function PayLinkModal({
                 ✓ Link ready — ₦{modal.state.amount.toLocaleString("en-NG")}
               </div>
               <div className="mt-0.5 text-xs text-emerald-700">
-                Reference: {modal.state.reference} · Payer:{" "}
-                {modal.state.payer_email}
+                Reference: {modal.state.reference} · Payer: {modal.state.payer_email}
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-medium text-slate-600">
-                Paystack URL
-              </label>
+              <label className="text-xs font-medium text-slate-600">Paystack URL</label>
               <div className="mt-1 flex gap-2">
                 <input
                   type="text"
@@ -1133,7 +1169,11 @@ function PayLinkModal({
                 <Button
                   size="sm"
                   variant="secondary"
-                  onClick={() => copyToClipboard(modal.state.kind === "ready" ? modal.state.authorization_url : "")}
+                  onClick={() =>
+                    copyToClipboard(
+                      modal.state.kind === "ready" ? modal.state.authorization_url : ""
+                    )
+                  }
                 >
                   {copied ? "Copied!" : "Copy"}
                 </Button>
@@ -1162,8 +1202,8 @@ function PayLinkModal({
             </div>
 
             <p className="text-xs text-slate-500">
-              The link stays valid until paid. Once the member pays, the
-              row's "Owes ₦X" badge flips to "Paid" on the next refresh.
+              The link stays valid until paid. Once the member pays, the row's "Owes ₦X" badge flips
+              to "Paid" on the next refresh.
             </p>
           </div>
         )}
@@ -1175,22 +1215,20 @@ function PayLinkModal({
 // Helper type so the modal component knows the exact shape of its
 // `modal` prop without us having to re-declare the union inline.
 function usePayLinkModalState() {
-  return null as
-    | null
-    | {
-        bookingId: string;
-        memberName: string;
-        state:
-          | { kind: "loading" }
-          | {
-              kind: "ready";
-              reference: string;
-              authorization_url: string;
-              payer_email: string;
-              amount: number;
-            }
-          | { kind: "error"; message: string };
-      };
+  return null as null | {
+    bookingId: string;
+    memberName: string;
+    state:
+      | { kind: "loading" }
+      | {
+          kind: "ready";
+          reference: string;
+          authorization_url: string;
+          payer_email: string;
+          amount: number;
+        }
+      | { kind: "error"; message: string };
+  };
 }
 
 // =========================================================================
@@ -1209,6 +1247,7 @@ function UnifiedRoster({
   onDraftStatus,
   onMarkWalkIn,
   onGeneratePayLink,
+  onRecordOfflinePayment,
   onRefundPoolFee,
   onBulkMarkPresent,
   onSaveRoster,
@@ -1225,6 +1264,7 @@ function UnifiedRoster({
   onDraftStatus: (memberId: string, status: DraftStatus) => void;
   onMarkWalkIn: (memberId: string) => void;
   onGeneratePayLink: (bookingId: string, memberName: string) => void;
+  onRecordOfflinePayment: (bookingId: string, memberName: string, amountNaira: number) => void;
   onRefundPoolFee: (bookingId: string, memberName: string, feeNaira: number) => void;
   onBulkMarkPresent: () => void;
   onSaveRoster: () => void;
@@ -1300,6 +1340,7 @@ function UnifiedRoster({
                 onDraftStatus={onDraftStatus}
                 onMarkWalkIn={onMarkWalkIn}
                 onGeneratePayLink={onGeneratePayLink}
+                onRecordOfflinePayment={onRecordOfflinePayment}
                 onRefundPoolFee={onRefundPoolFee}
                 disabled={submitting}
               />
@@ -1334,6 +1375,7 @@ function RosterTableRow({
   onDraftStatus,
   onMarkWalkIn,
   onGeneratePayLink,
+  onRecordOfflinePayment,
   onRefundPoolFee,
   disabled,
 }: {
@@ -1343,6 +1385,7 @@ function RosterTableRow({
   onDraftStatus: (memberId: string, status: DraftStatus) => void;
   onMarkWalkIn: (memberId: string) => void;
   onGeneratePayLink: (bookingId: string, memberName: string) => void;
+  onRecordOfflinePayment: (bookingId: string, memberName: string, amountNaira: number) => void;
   onRefundPoolFee: (bookingId: string, memberName: string, feeNaira: number) => void;
   disabled: boolean;
 }) {
@@ -1420,16 +1463,16 @@ function RosterTableRow({
     };
   })();
 
-  // The "Mark walk-in" inline button shows for cohort rows that have no
-  // booking and no attendance row yet. Click creates an admin-channel
-  // booking + marks present in one action.
-  const canMarkWalkIn =
-    row.source === "cohort" && !row.booking && !row.attendance;
+  // Add a booking for an unbooked cohort attendee or a legacy walk-in whose
+  // attendance predates the booking/payment workflow. Once the booking exists,
+  // its fee can be settled online or recorded as paid off-platform.
+  const canCreateWalkInBooking =
+    !row.booking && (row.source === "cohort" || row.source === "walkin");
 
   // Disable the Set dropdown when there's no booking AND no attendance —
   // the workflow is "use Mark walk-in to bring them onto the roster
   // properly". Walk-in rows (have attendance) stay editable.
-  const setDisabled = disabled || canMarkWalkIn;
+  const setDisabled = disabled || (!row.booking && !row.attendance);
 
   const cohortBadge =
     row.source === "cohort" ? (
@@ -1447,9 +1490,7 @@ function RosterTableRow({
 
   const statusLabel = (() => {
     if (row.effectiveStatus === "awaiting") return "Awaiting";
-    return (
-      row.effectiveStatus.charAt(0).toUpperCase() + row.effectiveStatus.slice(1)
-    );
+    return row.effectiveStatus.charAt(0).toUpperCase() + row.effectiveStatus.slice(1);
   })();
 
   return (
@@ -1487,7 +1528,7 @@ function RosterTableRow({
               Running late
             </span>
           )}
-          {canMarkWalkIn && (
+          {canCreateWalkInBooking && (
             <button
               type="button"
               disabled={disabled}
@@ -1495,11 +1536,11 @@ function RosterTableRow({
               className="mt-1 inline-flex w-fit rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 print:hidden"
               title={
                 sessionPoolFeeNaira !== null && sessionPoolFeeNaira > 0
-                  ? `Create a paid booking (₦${sessionPoolFeeNaira.toLocaleString("en-NG")}) + mark present`
+                  ? `Create a fee-bearing booking for ₦${sessionPoolFeeNaira.toLocaleString("en-NG")}`
                   : "Create a booking + mark present"
               }
             >
-              + Mark walk-in
+              {row.attendance ? "+ Create booking" : "+ Mark walk-in"}
               {sessionPoolFeeNaira !== null && sessionPoolFeeNaira > 0 ? (
                 <span className="ml-1 opacity-70">
                   (₦{sessionPoolFeeNaira.toLocaleString("en-NG")})
@@ -1508,15 +1549,33 @@ function RosterTableRow({
             </button>
           )}
           {bookingIsOutstanding && row.booking && (
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={() => onGeneratePayLink(row.booking!.id, row.name)}
-              className="mt-1 inline-flex w-fit rounded-md border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[11px] font-medium text-cyan-700 hover:bg-cyan-100 disabled:opacity-50 print:hidden"
-              title={`Generate a Paystack pay link for ${row.name} to settle the ₦${(row.booking.fee_amount_kobo / 100).toLocaleString("en-NG")} fee — copy/share via WhatsApp`}
-            >
-              💳 Generate pay link
-            </button>
+            <div className="mt-1 flex flex-wrap gap-1 print:hidden">
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => onGeneratePayLink(row.booking!.id, row.name)}
+                className="inline-flex w-fit rounded-md border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[11px] font-medium text-cyan-700 hover:bg-cyan-100 disabled:opacity-50"
+                title={`Generate a Paystack pay link for ${row.name} to settle the ₦${(row.booking.fee_amount_kobo / 100).toLocaleString("en-NG")} fee`}
+              >
+                Generate pay link
+              </button>
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() =>
+                  onRecordOfflinePayment(
+                    row.booking!.id,
+                    row.name,
+                    row.booking!.fee_amount_kobo / 100
+                  )
+                }
+                className="inline-flex w-fit items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
+                title={`Record the verified outside payment for ${row.name}`}
+              >
+                <ReceiptText className="h-3 w-3" aria-hidden="true" />
+                Record paid
+              </button>
+            </div>
           )}
           {canRefundPoolFee && row.booking && (
             <button
@@ -1557,7 +1616,7 @@ function RosterTableRow({
           onChange={(e) => onDraftStatus(row.member_id, e.target.value as DraftStatus)}
           className="rounded-md border border-slate-200 px-2 py-1 text-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 disabled:bg-slate-50 disabled:text-slate-400"
           title={
-            canMarkWalkIn
+            canCreateWalkInBooking && !row.attendance
               ? "Use Mark walk-in first — a booking is required before recording attendance."
               : undefined
           }

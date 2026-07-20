@@ -6558,6 +6558,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/payments/admin/bookings/{booking_id}/offline-payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin Record Booking Offline Payment
+         * @description Record a full session fee collected outside SwimBuddz checkout.
+         *
+         *     The booking's pricing snapshot is authoritative. The endpoint deliberately
+         *     does not accept a client total or partial payment because the booking model
+         *     currently represents one fully settled fee. The resulting Payment follows
+         *     the normal entitlement and ledger path and backfills payment_intent_id on
+         *     an already-confirmed walk-in booking.
+         */
+        post: operations["admin_record_booking_offline_payment_payments_admin_bookings__booking_id__offline_payment_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/payments/admin/bookings/{booking_id}/payment-link": {
         parameters: {
             query?: never;
@@ -24157,6 +24183,24 @@ export interface components {
             refund_note: string;
         };
         /**
+         * AdminBookingOfflinePaymentRequest
+         * @description Auditable receipt details for a session fee collected off-platform.
+         */
+        AdminBookingOfflinePaymentRequest: {
+            /**
+             * Payment Method
+             * @default bank_transfer
+             * @enum {string}
+             */
+            payment_method: "bank_transfer" | "cash" | "pos" | "other";
+            /** Received At */
+            received_at?: string | null;
+            /** External Reference */
+            external_reference?: string | null;
+            /** Note */
+            note?: string | null;
+        };
+        /**
          * AdminBookingPayLinkRequest
          * @description Optional overrides when generating an admin pay-link for a booking.
          */
@@ -24825,6 +24869,8 @@ export interface components {
             provider?: string | null;
             /** Provider Reference */
             provider_reference?: string | null;
+            /** Session Booking Id */
+            session_booking_id?: string | null;
             /** Payment Method */
             payment_method?: string | null;
             /** Proof Of Payment Media Id */
@@ -24928,6 +24974,8 @@ export interface components {
             provider?: string | null;
             /** Provider Reference */
             provider_reference?: string | null;
+            /** Session Booking Id */
+            session_booking_id?: string | null;
             /** Payment Method */
             payment_method?: string | null;
             /** Proof Of Payment Media Id */
@@ -47844,6 +47892,41 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_record_booking_offline_payment_payments_admin_bookings__booking_id__offline_payment_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminBookingOfflinePaymentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };

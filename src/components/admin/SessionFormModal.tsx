@@ -52,13 +52,9 @@ export function SessionFormModal({
   onCreate: (
     data: SessionPayload,
     rideConfigs: SessionRideConfig[],
-    publishAfter?: boolean,
+    publishAfter?: boolean
   ) => void;
-  onUpdate: (
-    id: string,
-    data: SessionPayload,
-    rideConfigs: SessionRideConfig[],
-  ) => void;
+  onUpdate: (id: string, data: SessionPayload, rideConfigs: SessionRideConfig[]) => void;
 }) {
   const now = new Date();
   const defaultStart = initialDate || now;
@@ -92,13 +88,14 @@ export function SessionFormModal({
     cohort_id: session?.cohort_id ?? null,
     event_id: session?.event_id ?? null,
   });
+  const [clubScope, setClubScope] = useState<"general" | "pod">(
+    session?.pod_id ? "pod" : "general"
+  );
 
   // Lazy-load active pods only when session_type is "club" — avoids the
   // round-trip for academy/community/event sessions where pod_id doesn't
   // apply.
-  const [pods, setPods] = useState<
-    Array<{ id: string; label: string; club_id: string }>
-  >([]);
+  const [pods, setPods] = useState<Array<{ id: string; label: string; club_id: string }>>([]);
   useEffect(() => {
     if (form.session_type !== "club") return;
     if (pods.length > 0) return;
@@ -111,7 +108,7 @@ export function SessionFormModal({
             id: p.id,
             label: podDisplayName(p),
             club_id: p.club_id,
-          })),
+          }))
         );
       } catch (e) {
         console.warn("Failed to load pods for session form", e);
@@ -121,9 +118,7 @@ export function SessionFormModal({
 
   // Lazy-load cohorts only when the type is "cohort_class" — required by
   // the discriminator. Mirrors the pods pattern.
-  const [cohorts, setCohorts] = useState<Array<{ id: string; label: string }>>(
-    [],
-  );
+  const [cohorts, setCohorts] = useState<Array<{ id: string; label: string }>>([]);
   useEffect(() => {
     if (form.session_type !== "cohort_class") return;
     if (cohorts.length > 0) return;
@@ -134,11 +129,9 @@ export function SessionFormModal({
         setCohorts(
           list
             .filter(
-              (c) =>
-                c.status !== CohortStatus.COMPLETED &&
-                c.status !== CohortStatus.CANCELLED,
+              (c) => c.status !== CohortStatus.COMPLETED && c.status !== CohortStatus.CANCELLED
             )
-            .map((c) => ({ id: c.id, label: c.name })),
+            .map((c) => ({ id: c.id, label: c.name }))
         );
       } catch (e) {
         console.warn("Failed to load cohorts for session form", e);
@@ -148,18 +141,15 @@ export function SessionFormModal({
 
   // Lazy-load events only when the type is "event" — required by the
   // discriminator.
-  const [events, setEvents] = useState<Array<{ id: string; label: string }>>(
-    [],
-  );
+  const [events, setEvents] = useState<Array<{ id: string; label: string }>>([]);
   useEffect(() => {
     if (form.session_type !== "event") return;
     if (events.length > 0) return;
     void (async () => {
       try {
-        const list = await apiGet<Array<{ id: string; title: string }>>(
-          "/api/v1/events/",
-          { auth: true },
-        );
+        const list = await apiGet<Array<{ id: string; title: string }>>("/api/v1/events/", {
+          auth: true,
+        });
         setEvents(list.map((ev) => ({ id: ev.id, label: ev.title })));
       } catch (e) {
         console.warn("Failed to load events for session form", e);
@@ -192,7 +182,7 @@ export function SessionFormModal({
   const updateRideConfig = <K extends keyof RideConfigDraft>(
     i: number,
     field: K,
-    value: RideConfigDraft[K],
+    value: RideConfigDraft[K]
   ) => {
     setRideConfigs((prev) => prev.map((c, idx) => (idx === i ? { ...c, [field]: value } : c)));
   };
@@ -208,6 +198,10 @@ export function SessionFormModal({
     }
     if (form.session_type === "event" && !form.event_id) {
       alert("Pick the event this session belongs to.");
+      return;
+    }
+    if (form.session_type === "club" && clubScope === "pod" && !form.pod_id) {
+      alert("Pick the pod this Club session is for.");
       return;
     }
 
@@ -231,7 +225,7 @@ export function SessionFormModal({
       description: form.description || undefined,
       // Pod link is only meaningful for Club sessions; clear it on type
       // switch so we don't ship a stale pod_id for an academy/event row.
-      pod_id: form.session_type === "club" ? form.pod_id ?? null : null,
+      pod_id: form.session_type === "club" && clubScope === "pod" ? (form.pod_id ?? null) : null,
     };
 
     const validRides: SessionRideConfig[] = rideConfigs
@@ -292,9 +286,7 @@ export function SessionFormModal({
           <Select
             label="Cohort"
             value={form.cohort_id ?? ""}
-            onChange={(e) =>
-              setForm({ ...form, cohort_id: e.target.value || null })
-            }
+            onChange={(e) => setForm({ ...form, cohort_id: e.target.value || null })}
             required
             hint="Which academy cohort is this class for?"
           >
@@ -311,9 +303,7 @@ export function SessionFormModal({
           <Select
             label="Event"
             value={form.event_id ?? ""}
-            onChange={(e) =>
-              setForm({ ...form, event_id: e.target.value || null })
-            }
+            onChange={(e) => setForm({ ...form, event_id: e.target.value || null })}
             required
             hint="Which community event is this session part of?"
           >
@@ -329,21 +319,59 @@ export function SessionFormModal({
             Club session open to any club member. Set = scheduled for that
             specific pod's roster (Saturday for Dolphins, etc). */}
         {form.session_type === "club" && (
-          <Select
-            label="Pod (optional)"
-            value={form.pod_id ?? ""}
-            onChange={(e) =>
-              setForm({ ...form, pod_id: e.target.value || null })
-            }
-            hint="Leave blank for a general Club session. Pick a pod to scope this to that crew's Saturday."
-          >
-            <option value="">— General Club session —</option>
-            {pods.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label}
-              </option>
-            ))}
-          </Select>
+          <fieldset className="space-y-3">
+            <legend className="text-sm font-medium text-slate-700">Club scope</legend>
+            <div
+              className="grid grid-cols-2 rounded-md border border-slate-200 p-1"
+              role="radiogroup"
+              aria-label="Club session scope"
+            >
+              <button
+                type="button"
+                role="radio"
+                aria-checked={clubScope === "general"}
+                onClick={() => {
+                  setClubScope("general");
+                  setForm({ ...form, pod_id: null });
+                }}
+                className={`min-h-10 rounded px-3 py-2 text-sm font-medium transition ${
+                  clubScope === "general"
+                    ? "bg-cyan-700 text-white"
+                    : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                General Club
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={clubScope === "pod"}
+                onClick={() => setClubScope("pod")}
+                className={`min-h-10 rounded px-3 py-2 text-sm font-medium transition ${
+                  clubScope === "pod"
+                    ? "bg-cyan-700 text-white"
+                    : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                Pod-specific
+              </button>
+            </div>
+            {clubScope === "pod" && (
+              <Select
+                label="Pod"
+                value={form.pod_id ?? ""}
+                onChange={(e) => setForm({ ...form, pod_id: e.target.value || null })}
+                required
+              >
+                <option value="">Select a pod</option>
+                {pods.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.label}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </fieldset>
         )}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input

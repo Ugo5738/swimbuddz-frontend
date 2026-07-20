@@ -26,6 +26,7 @@ import {
 import {
   Calendar,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   Clock,
   CreditCard,
@@ -40,7 +41,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 // ============================================================================
 // TYPES — matches the backend's nested MemberResponse structure
@@ -260,6 +261,51 @@ function Field({
   );
 }
 
+function CollapsiblePanel({
+  title,
+  icon,
+  children,
+  className,
+  defaultOpen = true,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+  defaultOpen?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const contentId = useId();
+
+  return (
+    <Card className={className}>
+      <button
+        type="button"
+        className="flex w-full items-center justify-between gap-3 text-left"
+        aria-expanded={isOpen}
+        aria-controls={contentId}
+        onClick={() => setIsOpen((current) => !current)}
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          {icon}
+          <span className="text-lg font-semibold text-slate-900">{title}</span>
+        </span>
+        <ChevronDown
+          className={`h-5 w-5 shrink-0 text-slate-400 transition-transform ${
+            isOpen ? "rotate-180" : ""
+          }`}
+          aria-hidden="true"
+        />
+      </button>
+      {isOpen && (
+        <div id={contentId} className="mt-4">
+          {children}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 // ============================================================================
 // SECTION: PROFILE HEADER
 // ============================================================================
@@ -415,11 +461,11 @@ function EmergencySection({ emergency }: { emergency: MemberEmergencyData | null
   }
 
   return (
-    <Card className="border-l-4 border-l-rose-400">
-      <div className="mb-4 flex items-center gap-2">
-        <Shield className="h-5 w-5 text-rose-500" />
-        <h2 className="text-lg font-semibold text-slate-900">Emergency & Safety</h2>
-      </div>
+    <CollapsiblePanel
+      title="Emergency & Safety"
+      icon={<Shield className="h-5 w-5 text-rose-500" />}
+      className="border-l-4 border-l-rose-400"
+    >
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Field label="Contact name" value={emergency.name} />
         <Field label="Relationship" value={formatToken(emergency.contact_relationship)} />
@@ -428,7 +474,7 @@ function EmergencySection({ emergency }: { emergency: MemberEmergencyData | null
         <Field label="Medical info" value={emergency.medical_info || "None disclosed"} />
         <Field label="Safety notes" value={emergency.safety_notes || "None"} />
       </div>
-    </Card>
+    </CollapsiblePanel>
   );
 }
 
@@ -438,11 +484,7 @@ function EmergencySection({ emergency }: { emergency: MemberEmergencyData | null
 
 function SwimProfileSection({ profile }: { profile: MemberProfileData | null | undefined }) {
   return (
-    <Card>
-      <div className="mb-4 flex items-center gap-2">
-        <Waves className="h-5 w-5 text-cyan-500" />
-        <h2 className="text-lg font-semibold text-slate-900">Swim Profile</h2>
-      </div>
+    <CollapsiblePanel title="Swim Profile" icon={<Waves className="h-5 w-5 text-cyan-500" />}>
       <div className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field
@@ -490,7 +532,7 @@ function SwimProfileSection({ profile }: { profile: MemberProfileData | null | u
           />
         </div>
       </div>
-    </Card>
+    </CollapsiblePanel>
   );
 }
 
@@ -524,12 +566,7 @@ function MembershipSection({
   const activeTiers = membership?.active_tiers ?? [];
 
   return (
-    <Card>
-      <div className="mb-4 flex items-center gap-2">
-        <CreditCard className="h-5 w-5 text-blue-500" />
-        <h2 className="text-lg font-semibold text-slate-900">Membership</h2>
-      </div>
-
+    <CollapsiblePanel title="Membership" icon={<CreditCard className="h-5 w-5 text-blue-500" />}>
       <div className="space-y-2">
         {tiers.map((tier) => {
           const active = activeTiers.includes(tier.key);
@@ -612,7 +649,7 @@ function MembershipSection({
           <Field label="Academy goals" value={membership.academy_goals} />
         </div>
       )}
-    </Card>
+    </CollapsiblePanel>
   );
 }
 
@@ -626,12 +663,10 @@ function AvailabilitySection({
   availability: MemberAvailabilityData | null | undefined;
 }) {
   return (
-    <Card>
-      <div className="mb-4 flex items-center gap-2">
-        <Calendar className="h-5 w-5 text-purple-500" />
-        <h2 className="text-lg font-semibold text-slate-900">Availability & Logistics</h2>
-      </div>
-
+    <CollapsiblePanel
+      title="Availability & Logistics"
+      icon={<Calendar className="h-5 w-5 text-purple-500" />}
+    >
       <div className="space-y-4">
         <div>
           <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-slate-400">
@@ -695,7 +730,7 @@ function AvailabilitySection({
           />
         </div>
       </div>
-    </Card>
+    </CollapsiblePanel>
   );
 }
 
@@ -713,12 +748,10 @@ function CommunitySection({
   const hasSocials = profile?.social_instagram || profile?.social_linkedin || profile?.social_other;
 
   return (
-    <Card>
-      <div className="mb-4 flex items-center gap-2">
-        <Users className="h-5 w-5 text-emerald-500" />
-        <h2 className="text-lg font-semibold text-slate-900">Community & Preferences</h2>
-      </div>
-
+    <CollapsiblePanel
+      title="Community & Preferences"
+      icon={<Users className="h-5 w-5 text-emerald-500" />}
+    >
       <div className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field
@@ -797,7 +830,7 @@ function CommunitySection({
           </div>
         )}
       </div>
-    </Card>
+    </CollapsiblePanel>
   );
 }
 
