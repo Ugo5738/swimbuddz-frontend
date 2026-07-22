@@ -188,6 +188,9 @@ function TemplateFormInline({
     capacity: template?.capacity || 20,
     auto_generate: template?.auto_generate || false,
   });
+  const [clubScope, setClubScope] = useState<"general" | "pod">(
+    template?.pod_id ? "pod" : "general"
+  );
 
   const [rideConfigs, setRideConfigs] = useState<RideShareConfigEntry[]>(
     template?.ride_share_config && Array.isArray(template.ride_share_config)
@@ -222,9 +225,13 @@ function TemplateFormInline({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (form.session_type === "club" && clubScope === "pod" && !form.pod_id) {
+      alert("Pick the pod this Club template is for.");
+      return;
+    }
     const data: TemplateFormPayload = {
       ...form,
-      pod_id: form.session_type === "club" ? (form.pod_id ?? null) : null,
+      pod_id: form.session_type === "club" && clubScope === "pod" ? (form.pod_id ?? null) : null,
       ride_share_config: rideConfigs
         .filter((c) => c.ride_area_id)
         .map((c) => ({
@@ -271,19 +278,57 @@ function TemplateFormInline({
         <option value="event">Event</option>
       </Select>
       {form.session_type === "club" && (
-        <Select
-          label="Pod (optional)"
-          value={form.pod_id ?? ""}
-          onChange={(e) => setForm({ ...form, pod_id: e.target.value || null })}
-          hint="Leave blank for a general Club template. Pick a pod to scope generated sessions to that crew."
-        >
-          <option value="">— General Club template —</option>
-          {pods.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.label}
-            </option>
-          ))}
-        </Select>
+        <fieldset className="space-y-3">
+          <legend className="text-sm font-medium text-slate-700">Club scope</legend>
+          <div
+            className="grid grid-cols-2 rounded-md border border-slate-200 p-1"
+            role="radiogroup"
+            aria-label="Club template scope"
+          >
+            <button
+              type="button"
+              role="radio"
+              aria-checked={clubScope === "general"}
+              onClick={() => {
+                setClubScope("general");
+                setForm({ ...form, pod_id: null });
+              }}
+              className={`min-h-10 rounded px-3 py-2 text-sm font-medium transition ${
+                clubScope === "general"
+                  ? "bg-cyan-700 text-white"
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              General Club
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={clubScope === "pod"}
+              onClick={() => setClubScope("pod")}
+              className={`min-h-10 rounded px-3 py-2 text-sm font-medium transition ${
+                clubScope === "pod" ? "bg-cyan-700 text-white" : "text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              Pod-specific
+            </button>
+          </div>
+          {clubScope === "pod" && (
+            <Select
+              label="Pod"
+              value={form.pod_id ?? ""}
+              onChange={(e) => setForm({ ...form, pod_id: e.target.value || null })}
+              required
+            >
+              <option value="">Select a pod</option>
+              {pods.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
+            </Select>
+          )}
+        </fieldset>
       )}
       <Select
         label="Day of Week"

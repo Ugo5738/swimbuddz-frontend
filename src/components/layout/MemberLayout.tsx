@@ -31,6 +31,8 @@ import {
   Menu,
   MessageCircle,
   Package,
+  PanelLeftClose,
+  PanelLeftOpen,
   ShoppingBag,
   Trophy,
   User,
@@ -59,6 +61,8 @@ type NavSection = {
   items: NavItem[];
   showFor?: ("community" | "club" | "academy")[];
 };
+
+const MEMBER_SIDEBAR_COLLAPSED_KEY = "swimbuddz-member-sidebar-collapsed";
 
 type MemberInfo = {
   id?: string;
@@ -184,6 +188,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [member, setMember] = useState<MemberInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [isCoach, setIsCoach] = useState(false);
@@ -193,6 +198,18 @@ export function MemberLayout({ children }: MemberLayoutProps) {
   // a navigation entry that promptly disappears would feel worse than a
   // half-second delay before it appears.
   const [leadsAnyPod, setLeadsAnyPod] = useState(false);
+
+  useEffect(() => {
+    setSidebarCollapsed(localStorage.getItem(MEMBER_SIDEBAR_COLLAPSED_KEY) === "true");
+  }, []);
+
+  const toggleSidebarCollapsed = () => {
+    setSidebarCollapsed((current) => {
+      const next = !current;
+      localStorage.setItem(MEMBER_SIDEBAR_COLLAPSED_KEY, String(next));
+      return next;
+    });
+  };
 
   const refreshMember = useCallback(async () => {
     try {
@@ -380,7 +397,8 @@ export function MemberLayout({ children }: MemberLayoutProps) {
       if (section.title === "Learn") {
         const items = section.items.filter((item) => {
           if (item.href === "/account/academy") {
-            return academyActive;
+            // Keep prior Academy progress/history discoverable after expiry.
+            return academyEntitled;
           }
           return true;
         });
@@ -396,7 +414,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
     // (The page itself also redirects them to the dashboard, but
     // hiding the entry up-front keeps the sidebar clean for everyone
     // who isn't a Pod Lead.)
-    .filter((section) => section.title !== "Pod Lead Tools" || leadsAnyPod)
+    .filter((section) => section.title !== "Pod Lead Tools" || (leadsAnyPod && clubActive))
     .filter((section) => section.items.length > 0);
 
   const memberName = member?.first_name
@@ -419,14 +437,22 @@ export function MemberLayout({ children }: MemberLayoutProps) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 md:w-64 lg:w-72 transform bg-gradient-to-b from-cyan-700 via-cyan-600 to-blue-600 text-white transition-transform duration-300 ease-in-out md:translate-x-0 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed inset-y-0 left-0 z-50 w-72 transform bg-gradient-to-b from-cyan-700 via-cyan-600 to-blue-600 text-white transition-[width,transform] duration-300 ease-in-out md:translate-x-0 ${
+          sidebarCollapsed ? "md:w-20" : "md:w-64 lg:w-72"
+        } ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="flex h-full flex-col">
           {/* Header with Logo */}
-          <div className="flex items-center justify-between border-b border-white/10 p-6">
-            <Link href="/account" className="flex items-center gap-3">
+          <div
+            className={`relative flex items-center justify-between border-b border-white/10 p-6 ${
+              sidebarCollapsed ? "md:px-3" : ""
+            }`}
+          >
+            <Link
+              href="/account"
+              className={`flex items-center gap-3 ${sidebarCollapsed ? "md:w-full md:justify-center" : ""}`}
+              aria-label="SwimBuddz member dashboard"
+            >
               <Image
                 src="/logo.png"
                 alt="SwimBuddz Logo"
@@ -435,11 +461,26 @@ export function MemberLayout({ children }: MemberLayoutProps) {
                 className="h-10 w-auto"
                 priority
               />
-              <div className="flex flex-col">
+              <div className={`flex flex-col ${sidebarCollapsed ? "md:hidden" : ""}`}>
                 <span className="text-xl font-bold text-white">SwimBuddz</span>
                 <span className="text-xs font-medium text-cyan-100">Member Portal</span>
               </div>
             </Link>
+            <button
+              type="button"
+              onClick={toggleSidebarCollapsed}
+              className="absolute -right-4 top-1/2 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white text-cyan-700 shadow-md transition hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-500 md:flex"
+              aria-label={
+                sidebarCollapsed ? "Expand member navigation" : "Collapse member navigation"
+              }
+              title={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
+            >
+              {sidebarCollapsed ? (
+                <PanelLeftOpen className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <PanelLeftClose className="h-4 w-4" aria-hidden="true" />
+              )}
+            </button>
             <button
               onClick={() => setSidebarOpen(false)}
               className="md:hidden text-white/70 hover:text-white transition min-w-[44px] min-h-[44px] flex items-center justify-center -m-2"
@@ -449,10 +490,15 @@ export function MemberLayout({ children }: MemberLayoutProps) {
           </div>
 
           {/* User Profile Card */}
-          <div className="p-4">
-            <div className="flex items-center gap-3 rounded-xl bg-white/10 backdrop-blur-sm p-3">
+          <div className={`p-4 ${sidebarCollapsed ? "md:p-2" : ""}`}>
+            <div
+              className={`flex items-center gap-3 rounded-xl bg-white/10 p-3 backdrop-blur-sm ${
+                sidebarCollapsed ? "md:justify-center md:p-2" : ""
+              }`}
+              title={sidebarCollapsed ? `${memberName} - ${membershipLabel}` : undefined}
+            >
               {member?.profile_photo_url ? (
-                <div className="relative h-12 w-12 overflow-hidden rounded-full ring-2 ring-white/30">
+                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full ring-2 ring-white/30">
                   <Image
                     src={member.profile_photo_url}
                     alt={memberName}
@@ -466,7 +512,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
                   {initials}
                 </div>
               )}
-              <div className="min-w-0 flex-1">
+              <div className={`min-w-0 flex-1 ${sidebarCollapsed ? "md:hidden" : ""}`}>
                 <p className="text-sm font-semibold text-white truncate">{memberName}</p>
                 <p className="text-xs text-cyan-100">{membershipLabel}</p>
                 {membershipDetail && (
@@ -477,13 +523,29 @@ export function MemberLayout({ children }: MemberLayoutProps) {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto px-4 pb-4 space-y-6">
+          <nav
+            className={`flex-1 space-y-6 overflow-y-auto px-4 pb-4 ${
+              sidebarCollapsed ? "md:px-2" : ""
+            }`}
+          >
             {visibleSections.map((section) => (
               <div key={section.title || "_dashboard"}>
                 {section.title && (
-                  <h3 className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-cyan-200/70">
-                    {section.title}
-                  </h3>
+                  <>
+                    <h3
+                      className={`mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-cyan-200/70 ${
+                        sidebarCollapsed ? "md:hidden" : ""
+                      }`}
+                    >
+                      {section.title}
+                    </h3>
+                    {sidebarCollapsed && (
+                      <div
+                        className="mx-2 mb-3 hidden h-px bg-white/20 md:block"
+                        title={section.title}
+                      />
+                    )}
+                  </>
                 )}
                 <ul className="space-y-1">
                   {section.items.map((item) => {
@@ -494,20 +556,34 @@ export function MemberLayout({ children }: MemberLayoutProps) {
                         <Link
                           href={item.href}
                           onClick={() => setSidebarOpen(false)}
+                          aria-label={item.label}
+                          title={sidebarCollapsed ? item.label : undefined}
                           className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                            sidebarCollapsed ? "md:justify-center md:px-2" : ""
+                          } ${
                             active
                               ? "bg-white text-cyan-700 shadow-lg"
                               : "text-white/90 hover:bg-white/10 hover:text-white"
                           }`}
                         >
                           <Icon className="h-5 w-5 shrink-0" />
-                          <span className="flex-1">{item.label}</span>
+                          <span className={`flex-1 ${sidebarCollapsed ? "md:hidden" : ""}`}>
+                            {item.label}
+                          </span>
                           {item.badge && (
-                            <span className="rounded-full bg-amber-400 px-2 py-0.5 text-xs font-bold text-amber-900">
+                            <span
+                              className={`rounded-full bg-amber-400 px-2 py-0.5 text-xs font-bold text-amber-900 ${
+                                sidebarCollapsed ? "md:hidden" : ""
+                              }`}
+                            >
                               {item.badge}
                             </span>
                           )}
-                          {active && <ChevronRight className="h-4 w-4" />}
+                          {active && (
+                            <ChevronRight
+                              className={`h-4 w-4 ${sidebarCollapsed ? "md:hidden" : ""}`}
+                            />
+                          )}
                         </Link>
                       </li>
                     );
@@ -518,49 +594,77 @@ export function MemberLayout({ children }: MemberLayoutProps) {
           </nav>
 
           {/* Footer Actions */}
-          <div className="border-t border-white/10 p-4 space-y-1">
+          <div
+            className={`space-y-1 border-t border-white/10 p-4 ${
+              sidebarCollapsed ? "md:px-2" : ""
+            }`}
+          >
             {isCoach && (
               <Link
                 href="/coach/dashboard"
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 transition-all hover:bg-white/10 hover:text-white bg-emerald-600/30"
+                aria-label="Coach Portal"
+                title={sidebarCollapsed ? "Coach Portal" : undefined}
+                className={`flex items-center gap-3 rounded-xl bg-emerald-600/30 px-3 py-2.5 text-sm font-medium text-white/80 transition-all hover:bg-white/10 hover:text-white ${
+                  sidebarCollapsed ? "md:justify-center md:px-2" : ""
+                }`}
               >
                 <Briefcase className="h-5 w-5 shrink-0" />
-                <span>Coach Portal</span>
+                <span className={sidebarCollapsed ? "md:hidden" : ""}>Coach Portal</span>
               </Link>
             )}
             <Link
               href="/account/profile"
               onClick={() => setSidebarOpen(false)}
+              aria-label="My Profile"
+              title={sidebarCollapsed ? "My Profile" : undefined}
               className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                sidebarCollapsed ? "md:justify-center md:px-2" : ""
+              } ${
                 isActive("/account/profile")
                   ? "bg-white text-cyan-700 shadow-lg"
                   : "text-white/80 hover:bg-white/10 hover:text-white"
               }`}
             >
               <User className="h-5 w-5 shrink-0" />
-              <span>My Profile</span>
-              {isActive("/account/profile") && <ChevronRight className="ml-auto h-4 w-4" />}
+              <span className={sidebarCollapsed ? "md:hidden" : ""}>My Profile</span>
+              {isActive("/account/profile") && (
+                <ChevronRight
+                  className={`ml-auto h-4 w-4 ${sidebarCollapsed ? "md:hidden" : ""}`}
+                />
+              )}
             </Link>
             <Link
               href="/"
-              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 transition-all hover:bg-white/10 hover:text-white"
+              aria-label="Back to Website"
+              title={sidebarCollapsed ? "Back to Website" : undefined}
+              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 transition-all hover:bg-white/10 hover:text-white ${
+                sidebarCollapsed ? "md:justify-center md:px-2" : ""
+              }`}
             >
               <Home className="h-5 w-5 shrink-0" />
-              <span>Back to Website</span>
+              <span className={sidebarCollapsed ? "md:hidden" : ""}>Back to Website</span>
             </Link>
             <button
               onClick={handleLogout}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 transition-all hover:bg-white/10 hover:text-white"
+              aria-label="Logout"
+              title={sidebarCollapsed ? "Logout" : undefined}
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 transition-all hover:bg-white/10 hover:text-white ${
+                sidebarCollapsed ? "md:justify-center md:px-2" : ""
+              }`}
             >
               <LogOut className="h-5 w-5 shrink-0" />
-              <span>Logout</span>
+              <span className={sidebarCollapsed ? "md:hidden" : ""}>Logout</span>
             </button>
           </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 md:ml-64 lg:ml-72">
+      <div
+        className={`flex-1 transition-[margin] duration-300 ${
+          sidebarCollapsed ? "md:ml-20" : "md:ml-64 lg:ml-72"
+        }`}
+      >
         {/* Mobile Header */}
         <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur-sm md:hidden">
           <div className="flex items-center justify-between px-4 py-3">
