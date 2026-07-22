@@ -32,7 +32,7 @@ vi.mock("next/image", () => ({
     const { fill, priority, ...imageProps } = props;
     void fill;
     void priority;
-    return <img alt={alt} {...imageProps} />;
+    return <span role="img" aria-label={alt} />;
   },
 }));
 
