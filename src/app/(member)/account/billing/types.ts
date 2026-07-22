@@ -1,15 +1,25 @@
 // Types extracted from page.tsx during the file-size sweep.
 
+import type { MembershipTierStatus } from "@/lib/tiers";
+
 export type Member = {
   id?: string | null;
   email?: string | null;
   membership?: {
     community_paid_until?: string | null;
     club_paid_until?: string | null;
+    academy_paid_until?: string | null;
+    post_academy_club_until?: string | null;
     active_tiers?: string[] | null;
     requested_tiers?: string[] | null;
     primary_tier?: string | null;
+    declared_tiers?: string[] | null;
+    effective_paid_tiers?: string[] | null;
+    highest_paid_tier?: string | null;
+    paid_tier?: string | null;
+    paid_tiers?: string[] | null;
     pending_payment_reference?: string | null;
+    tier_statuses?: Partial<Record<"community" | "club" | "academy", MembershipTierStatus>> | null;
   } | null;
 };
 

@@ -36,6 +36,9 @@ interface LeaderboardResponse {
   year: number;
   quarter: number;
   entries: LeaderboardEntry[];
+  minimum_attendance: number;
+  current_user_attendance: number;
+  current_user_eligible: boolean;
 }
 
 interface CommunityHighlights {
@@ -174,6 +177,20 @@ export default function LeaderboardPage() {
         <p className="text-sm text-slate-500">{label}</p>
       </div>
 
+      {data && !data.current_user_eligible && (
+        <Card className="border-cyan-200 bg-cyan-50 p-4">
+          <p className="text-sm font-medium text-cyan-900">
+            Complete {Math.max(0, data.minimum_attendance - data.current_user_attendance)} more
+            verified session
+            {data.minimum_attendance - data.current_user_attendance === 1 ? "" : "s"} this quarter
+            to qualify for the leaderboard.
+          </p>
+          <p className="mt-1 text-xs text-cyan-700">
+            Your personal report and community milestones remain available in the meantime.
+          </p>
+        </Card>
+      )}
+
       {/* Community Highlights */}
       {highlights && (
         <Card className="p-5 space-y-4">
@@ -183,7 +200,9 @@ export default function LeaderboardPage() {
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-lg bg-cyan-50 p-3 text-center">
               <Waves className="mx-auto h-5 w-5 text-cyan-600 mb-1" />
-              <p className="text-lg font-bold text-cyan-700">{highlights.total_pool_hours.toFixed(0)}h</p>
+              <p className="text-lg font-bold text-cyan-700">
+                {highlights.total_pool_hours.toFixed(0)}h
+              </p>
               <p className="text-xs text-slate-500">Pool Hours</p>
             </div>
             <div className="rounded-lg bg-blue-50 p-3 text-center">
@@ -199,7 +218,9 @@ export default function LeaderboardPage() {
           </div>
 
           {/* Quick facts */}
-          {(highlights.most_active_location || highlights.busiest_session_title || highlights.most_popular_day) && (
+          {(highlights.most_active_location ||
+            highlights.busiest_session_title ||
+            highlights.most_popular_day) && (
             <div className="flex flex-wrap gap-2 text-xs">
               {highlights.most_active_location && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-blue-700">

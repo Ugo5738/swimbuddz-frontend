@@ -20,6 +20,14 @@ function decide(pathname: string, member: MiddlewareMember, isJwtAdmin = false) 
   return evaluateMemberAccess({ pathname, isJwtAdmin, member });
 }
 
+function accessRedirect(required: string, status: string, returnTo: string) {
+  return {
+    kind: "redirect" as const,
+    path: "/account/access",
+    search: { required, status, returnTo },
+  };
+}
+
 describe("requiresMemberAccess", () => {
   it.each([
     "/community",
@@ -28,9 +36,8 @@ describe("requiresMemberAccess", () => {
     "/academy",
     "/academy/programs",
     "/academy/programs/adult-learn-to-swim",
-  ])(
-    "keeps the public route %s public",
-    (pathname) => expect(requiresMemberAccess(pathname)).toBe(false)
+  ])("keeps the public route %s public", (pathname) =>
+    expect(requiresMemberAccess(pathname)).toBe(false)
   );
 
   it.each([
@@ -49,7 +56,7 @@ describe("requiresMemberAccess", () => {
     expect(requiresMemberAccess("/community-centre")).toBe(false);
   });
 
-  it("keeps Academy enrollment and make-up account flows reachable", () => {
+  it("keeps only account recovery surfaces reachable without a paid tier", () => {
     const unpaid: MiddlewareMember = {
       approval_status: "approved",
       membership: {
@@ -60,9 +67,12 @@ describe("requiresMemberAccess", () => {
       },
     };
 
-    expect(decide("/account/academy", unpaid)).toEqual({ kind: "allow" });
-    expect(decide("/account/academy/browse", unpaid)).toEqual({ kind: "allow" });
-    expect(decide("/account/makeups", unpaid)).toEqual({ kind: "allow" });
+    expect(decide("/account/academy", unpaid)).toEqual(
+      accessRedirect("community", "inactive", "/account/academy")
+    );
+    expect(decide("/account/billing", unpaid)).toEqual({ kind: "allow" });
+    expect(decide("/account/profile", unpaid)).toEqual({ kind: "allow" });
+    expect(decide("/account/onboarding", unpaid)).toEqual({ kind: "allow" });
   });
 });
 
@@ -115,11 +125,9 @@ describe("evaluateMemberAccess — community paywall", () => {
   };
 
   it("blocks a non-account route when nothing is paid", () => {
-    expect(decide("/attendance", unpaid)).toEqual({
-      kind: "redirect",
-      path: "/account/billing",
-      search: { required: "community" },
-    });
+    expect(decide("/attendance", unpaid)).toEqual(
+      accessRedirect("community", "inactive", "/attendance")
+    );
   });
 
   it("always lets the member reach /account to pay", () => {
@@ -175,11 +183,7 @@ describe("evaluateMemberAccess — community paywall", () => {
           },
         },
       })
-    ).toEqual({
-      kind: "redirect",
-      path: "/account/billing",
-      search: { required: "community" },
-    });
+    ).toEqual(accessRedirect("community", "approved_unpaid", "/attendance"));
   });
 
   it("active Academy satisfies the Community paywall", () => {
@@ -232,11 +236,7 @@ describe("evaluateMemberAccess — tier-route gate", () => {
           requested_tiers: ["academy"],
         },
       })
-    ).toEqual({
-      kind: "redirect",
-      path: "/account/profile",
-      search: { upgrade: "pending" },
-    });
+    ).toEqual(accessRedirect("academy", "requested", "/academy/cohorts"));
   });
 
   it("backend requested status drives upgrade-pending route without raw requested_tiers", () => {
@@ -252,11 +252,7 @@ describe("evaluateMemberAccess — tier-route gate", () => {
           },
         },
       })
-    ).toEqual({
-      kind: "redirect",
-      path: "/account/profile",
-      search: { upgrade: "pending" },
-    });
+    ).toEqual(accessRedirect("academy", "requested", "/academy/cohorts"));
   });
 
   it("backend payment_pending status sends protected tier routes to billing", () => {
@@ -272,11 +268,7 @@ describe("evaluateMemberAccess — tier-route gate", () => {
           },
         },
       })
-    ).toEqual({
-      kind: "redirect",
-      path: "/account/billing",
-      search: { required: "club" },
-    });
+    ).toEqual(accessRedirect("club", "payment_pending", "/club/training"));
   });
 
   it("backend approved_unpaid status sends protected tier routes to billing", () => {
@@ -292,11 +284,7 @@ describe("evaluateMemberAccess — tier-route gate", () => {
           },
         },
       })
-    ).toEqual({
-      kind: "redirect",
-      path: "/account/billing",
-      search: { required: "academy" },
-    });
+    ).toEqual(accessRedirect("academy", "approved_unpaid", "/academy/cohorts"));
   });
 
   it("club-approved but unpaid hitting /club → billing(required=club)", () => {
@@ -318,11 +306,7 @@ describe("evaluateMemberAccess — tier-route gate", () => {
           active_tiers: ["community", "club"],
         },
       })
-    ).toEqual({
-      kind: "redirect",
-      path: "/account/billing",
-      search: { required: "club" },
-    });
+    ).toEqual(accessRedirect("club", "expired", "/club/training"));
   });
 
   it("academy-approved but lapsed hitting /academy → billing(required=academy)", () => {
@@ -341,11 +325,7 @@ describe("evaluateMemberAccess — tier-route gate", () => {
           active_tiers: ["academy"],
         },
       })
-    ).toEqual({
-      kind: "redirect",
-      path: "/account/billing",
-      search: { required: "academy" },
-    });
+    ).toEqual(accessRedirect("academy", "expired", "/academy/cohorts"));
   });
 
   it("community member hitting /academy with no request → register?upgrade=true", () => {
@@ -362,11 +342,7 @@ describe("evaluateMemberAccess — tier-route gate", () => {
           active_tiers: ["community"],
         },
       })
-    ).toEqual({
-      kind: "redirect",
-      path: "/register",
-      search: { upgrade: "true" },
-    });
+    ).toEqual(accessRedirect("academy", "inactive", "/academy"));
   });
 
   it("active Academy member reaches /academy", () => {
@@ -403,11 +379,7 @@ describe("evaluateMemberAccess — tier-route gate", () => {
           active_tiers: ["academy"],
         },
       })
-    ).toEqual({
-      kind: "redirect",
-      path: "/account/billing",
-      search: { required: "academy" },
-    });
+    ).toEqual(accessRedirect("academy", "approved_unpaid", "/academy"));
   });
 
   it("fails closed when the normalized membership summary is missing", () => {
@@ -420,18 +392,30 @@ describe("evaluateMemberAccess — tier-route gate", () => {
           primary_tier: "community",
         },
       })
-    ).toEqual({
-      kind: "redirect",
-      path: "/account/billing",
-      search: { required: "community" },
-    });
+    ).toEqual(accessRedirect("community", "inactive", "/academy"));
   });
 
-  it("non-tier member route (/account) with paid community is allowed", () => {
+  it("non-tier account route with normalized paid community is allowed", () => {
     expect(
       decide("/account/settings", {
         approval_status: "approved",
-        membership: { community_paid_until: FUTURE },
+        membership: {
+          paid_tier: "community",
+          tier_statuses: { community: { status: "active" } },
+          community_paid_until: FUTURE,
+        },
+      })
+    ).toEqual({ kind: "allow" });
+  });
+
+  it("active Community can open personal quarterly reports", () => {
+    expect(
+      decide("/account/reports/q2-2026", {
+        approval_status: "approved",
+        membership: {
+          paid_tier: "community",
+          tier_statuses: { community: { status: "active" } },
+        },
       })
     ).toEqual({ kind: "allow" });
   });

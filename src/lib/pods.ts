@@ -217,7 +217,7 @@ export async function getMyPod(): Promise<PodSummary | null> {
   return unwrap<PodSummary | null>(res, "Failed to load your pod");
 }
 
-/** Pods I'm the lead OR assistant lead of. Empty list when I lead none.
+/** Active pods I'm the lead OR assistant lead of. Empty list when I lead none.
  *
  * Powers two member-facing surfaces:
  *   * The conditional "Pod Lead Review" sidebar entry — only shown when

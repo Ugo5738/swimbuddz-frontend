@@ -36,6 +36,9 @@ export interface MiddlewareMember {
     // infer entitlement from these raw lifecycle and billing fields.
     primary_tier?: string | null;
     active_tiers?: string[] | null;
+    declared_tiers?: string[] | null;
+    effective_paid_tiers?: string[] | null;
+    highest_paid_tier?: string | null;
     requested_tiers?: string[] | null;
     community_paid_until?: string | null;
     club_paid_until?: string | null;
@@ -56,6 +59,8 @@ export interface MiddlewareMember {
 
 export interface AccessInput {
   pathname: string;
+  /** Path + query string to return to after the member restores access. */
+  requestedPath?: string;
   /** Already-resolved from the signed JWT's app_metadata.roles. */
   isJwtAdmin: boolean;
   member: MiddlewareMember;
@@ -111,7 +116,9 @@ const TIER_ROUTES: Record<string, MembershipTier[]> = {
   "/academy": ["academy"],
   "/account/pods": ["club", "academy"],
   "/account/pod-lead": ["club", "academy"],
-  "/account/reports": ["club", "academy"],
+  // Personal quarterly reports measure all active members, including low or
+  // zero participation. Pod-specific reporting has its own stricter checks.
+  "/account/reports": ["community", "club", "academy"],
 };
 
 const MEMBERSHIP_TIERS: MembershipTier[] = ["community", "club", "academy"];
@@ -156,15 +163,14 @@ function getRequestedTiers(membership: MiddlewareMember["membership"]): Membersh
   });
 }
 
-function tierIsActive(
-  membership: MiddlewareMember["membership"],
-  tier: MembershipTier
-): boolean {
+function tierIsActive(membership: MiddlewareMember["membership"], tier: MembershipTier): boolean {
   return getTierStatus(membership, tier) === "active";
 }
 
 function getPaidTier(membership: MiddlewareMember["membership"]): DisplayMembershipTier {
-  const backendPaidTier = normalizeDisplayTier(membership?.paid_tier);
+  const backendPaidTier = normalizeDisplayTier(
+    membership?.highest_paid_tier || membership?.paid_tier
+  );
   if (backendPaidTier) return backendPaidTier;
 
   if (tierIsActive(membership, "academy")) return "academy";
@@ -179,36 +185,19 @@ function hasPaidEntitlement(membership: MiddlewareMember["membership"]): boolean
 
 function routeGateRedirectForRequiredTier(
   membership: MiddlewareMember["membership"],
-  requiredTier: MembershipTier
+  requiredTier: MembershipTier,
+  returnTo: string
 ): AccessDecision {
   const status = getTierStatus(membership, requiredTier);
-  if (status === "requested") {
-    return {
-      kind: "redirect",
-      path: "/account/profile",
-      search: { upgrade: "pending" },
-    };
-  }
-  if (status === "payment_pending" || status === "approved_unpaid" || status === "expired") {
-    return {
-      kind: "redirect",
-      path: "/account/billing",
-      search: { required: requiredTier },
-    };
-  }
-
-  if (getRequestedTiers(membership).includes(requiredTier)) {
-    return {
-      kind: "redirect",
-      path: "/account/profile",
-      search: { upgrade: "pending" },
-    };
-  }
-
   return {
     kind: "redirect",
-    path: "/register",
-    search: { upgrade: "true" },
+    path: "/account/access",
+    search: {
+      required: requiredTier,
+      status:
+        status ?? (getRequestedTiers(membership).includes(requiredTier) ? "requested" : "inactive"),
+      returnTo,
+    },
   };
 }
 
@@ -216,15 +205,16 @@ function routeGateRedirectForRequiredTier(
  * Decide whether a member may proceed to `pathname`, or where to
  * redirect them. Pure — same inputs always yield the same decision.
  *
- * Branch order (unchanged from the original middleware):
+ * Branch order:
  *   1. legacy top-level admin (`role==="admin"` / `is_admin`) → allow
  *   2. approval pending/rejected → /register/pending
- *   3. community activation paywall → /account/billing?required=community
- *   4. tier-route gate → upgrade-pending / billing(club) / register-upgrade
+ *   3. community activation paywall → contextual access explanation
+ *   4. tier-route gate → contextual access explanation
  *   5. otherwise → allow
  */
 export function evaluateMemberAccess(input: AccessInput): AccessDecision {
   const { pathname, member } = input;
+  const returnTo = input.requestedPath || pathname;
 
   // 1. Legacy admin signal (JWT admin is handled by the caller before
   // we ever get here; this preserves the old member.role fallback).
@@ -246,16 +236,27 @@ export function evaluateMemberAccess(input: AccessInput): AccessDecision {
   const membership = member.membership;
   const paidTier = getPaidTier(membership);
 
-  // 3. Community activation paywall. /account (and /account/profile) is
-  // always reachable so members can pay; everything else is blocked
-  // until *some* tier is paid. Active Club/Academy supersedes Community.
-  const paywallAllowed = pathMatchesPrefix(pathname, "/account");
+  // 3. Community activation paywall. Account recovery/payment surfaces are
+  // always reachable; feature/history routes require an effective paid tier.
+  const paywallAllowedPrefixes = [
+    "/account/profile",
+    "/account/billing",
+    "/account/onboarding",
+    "/account/access",
+  ];
+  const paywallAllowed =
+    pathname === "/account" ||
+    paywallAllowedPrefixes.some((prefix) => pathMatchesPrefix(pathname, prefix));
 
   if (!hasPaidEntitlement(membership) && !paywallAllowed) {
     return {
       kind: "redirect",
-      path: "/account/billing",
-      search: { required: "community" },
+      path: "/account/access",
+      search: {
+        required: "community",
+        status: getTierStatus(membership, "community") ?? "inactive",
+        returnTo,
+      },
     };
   }
 
@@ -283,7 +284,7 @@ export function evaluateMemberAccess(input: AccessInput): AccessDecision {
       // reactivate, not back through the upgrade-request flow.)
       const requiredTier: MembershipTier = allowedTiers.includes("club") ? "club" : "academy";
 
-      return routeGateRedirectForRequiredTier(membership, requiredTier);
+      return routeGateRedirectForRequiredTier(membership, requiredTier, returnTo);
     }
   }
 

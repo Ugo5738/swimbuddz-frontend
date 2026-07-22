@@ -58,11 +58,12 @@ export default function PodLeadReviewPage() {
     listPodsILead()
       .then((data) => {
         if (cancelled) return;
-        if (data.length === 0) {
+        const activeLeadPods = data.filter((pod) => pod.status === "active");
+        if (activeLeadPods.length === 0) {
           router.replace("/account");
           return;
         }
-        setPods(data);
+        setPods(activeLeadPods);
       })
       .catch(() => {
         if (!cancelled) setPods([]);

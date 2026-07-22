@@ -12,6 +12,9 @@ type Props = {
 };
 
 export function CommunityCard({ member, communityActive, communityFee }: Props) {
+  const communityIsHighestTier =
+    (member?.membership?.highest_paid_tier || member?.membership?.paid_tier) === "community";
+
   return (
     <Card className="p-4 md:p-6 space-y-3 md:space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-4">
@@ -46,12 +49,26 @@ export function CommunityCard({ member, communityActive, communityFee }: Props) 
       </dl>
 
       {communityActive ? (
-        <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3 md:p-4 text-xs md:text-sm text-emerald-800">
-          <p className="font-medium">Your Community membership is active!</p>
-          <p className="mt-0.5 md:mt-1 text-emerald-600">
-            You have full access to member features.
-          </p>
-        </div>
+        <>
+          <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3 md:p-4 text-xs md:text-sm text-emerald-800">
+            <p className="font-medium">Your Community membership is active!</p>
+            <p className="mt-0.5 md:mt-1 text-emerald-600">
+              You have full access to member features.
+            </p>
+          </div>
+          {communityIsHighestTier && (
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Link href="/checkout?purpose=community" className="block">
+                <Button variant="outline" className="w-full sm:w-auto">
+                  Renew Community early
+                </Button>
+              </Link>
+              <p className="text-xs text-slate-500">
+                Your new year starts after your current paid period ends.
+              </p>
+            </div>
+          )}
+        </>
       ) : (
         <Link href="/checkout?purpose=community" className="block">
           <Button className="w-full sm:w-auto">

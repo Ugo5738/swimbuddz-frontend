@@ -13,6 +13,20 @@ type Props = {
 
 export function ClubCard({ member, clubActive, communityActive }: Props) {
   if (clubActive) {
+    const clubAccess = member?.membership?.tier_statuses?.club;
+    const highestPaidTier = member?.membership?.highest_paid_tier || member?.membership?.paid_tier;
+    const clubAccessUntil =
+      clubAccess?.effective_until ||
+      member?.membership?.club_paid_until ||
+      member?.membership?.post_academy_club_until;
+    const canRenewClub = highestPaidTier === "club";
+    const accessDescription =
+      clubAccess?.access_source === "post_academy"
+        ? "Your complimentary post-Academy Club period is active."
+        : clubAccess?.access_source === "academy"
+          ? "Club access is included while your Academy entitlement is active."
+          : "Your Club membership is active!";
+
     return (
       <Card className="p-4 md:p-6 space-y-3 md:space-y-4">
         <div>
@@ -30,17 +44,31 @@ export function ClubCard({ member, clubActive, communityActive }: Props) {
           <div className="flex justify-between md:grid md:grid-cols-3 md:gap-2">
             <dt className="text-slate-600">Valid until</dt>
             <dd className="md:col-span-2 font-medium text-slate-900">
-              {formatDate(member?.membership?.club_paid_until)}
+              {formatDate(clubAccessUntil)}
             </dd>
           </div>
         </dl>
 
         <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3 md:p-4 text-xs md:text-sm text-emerald-800">
-          <p className="font-medium">Your Club membership is active!</p>
+          <p className="font-medium">{accessDescription}</p>
           <p className="mt-0.5 md:mt-1 text-emerald-600">
             You can book sessions and access all Club features.
           </p>
         </div>
+        {canRenewClub && (
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Link href="/upgrade/club/plan" className="block">
+              <Button variant="outline" className="w-full sm:w-auto">
+                {clubAccess?.access_source === "post_academy"
+                  ? "Continue with Club"
+                  : "Renew Club early"}
+              </Button>
+            </Link>
+            <p className="text-xs text-slate-500">
+              Your selected period starts after your current Club access ends.
+            </p>
+          </div>
+        )}
       </Card>
     );
   }

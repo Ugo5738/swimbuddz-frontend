@@ -68,6 +68,11 @@ export type MemberQuarterlyReport = {
   // Card
   card_image_path: string | null;
 
+  // Backend-owned participation policy
+  activity_state: "active" | "low_activity" | "no_activity";
+  leaderboard_eligible: boolean;
+  share_card_eligible: boolean;
+
   // Timestamps
   computed_at: string;
 };
@@ -93,6 +98,9 @@ export type LeaderboardResponse = {
   year: number;
   quarter: number;
   entries: LeaderboardEntry[];
+  minimum_attendance: number;
+  current_user_attendance: number;
+  current_user_eligible: boolean;
 };
 
 // ── API Functions ──

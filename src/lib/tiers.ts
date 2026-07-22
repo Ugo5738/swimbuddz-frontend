@@ -29,7 +29,11 @@ export type MembershipTierStatus = {
   declared_active?: boolean;
   direct_paid?: boolean;
   inherited?: boolean;
-  inherited_from?: MembershipTier | null;
+  inherited_from?: MembershipTier | "post_academy" | null;
+  effective_until?: string | null;
+  expiring_soon?: boolean;
+  days_remaining?: number | null;
+  access_source?: "direct" | MembershipTier | "post_academy" | null;
 };
 
 // Tier priority for sorting (higher = more privileged)
@@ -44,10 +48,14 @@ interface MemberWithMembership {
   membership?: {
     primary_tier?: string | null;
     active_tiers?: string[] | null;
+    declared_tiers?: string[] | null;
+    effective_paid_tiers?: string[] | null;
+    highest_paid_tier?: string | null;
     requested_tiers?: string[] | null;
     community_paid_until?: string | null;
     club_paid_until?: string | null;
     academy_paid_until?: string | null;
+    post_academy_club_until?: string | null;
     pending_payment_reference?: string | null;
     paid_tier?: string | null;
     paid_tiers?: string[] | null;
@@ -133,7 +141,7 @@ export function hasTierContext(
   const status = tierStatus?.status;
   return Boolean(
     (status && ["active", "payment_pending", "requested", "approved_unpaid"].includes(status)) ||
-      (status === "expired" && tierStatus?.declared_active)
+    status === "expired"
   );
 }
 
@@ -147,7 +155,9 @@ export function hasTierContext(
 export function getPaidMembershipTier(
   member: MemberWithMembership | null | undefined
 ): DisplayMembershipTier {
-  const backendTier = normalizeDisplayTier(member?.membership?.paid_tier);
+  const backendTier = normalizeDisplayTier(
+    member?.membership?.highest_paid_tier || member?.membership?.paid_tier
+  );
   if (backendTier) return backendTier;
 
   if (getTierStatus(member, "academy")?.status === "active") return "academy";
@@ -159,7 +169,7 @@ export function getPaidMembershipTier(
 export function getPaidMembershipTiers(
   member: MemberWithMembership | null | undefined
 ): MembershipTier[] {
-  const backendTiers = member?.membership?.paid_tiers
+  const backendTiers = (member?.membership?.effective_paid_tiers || member?.membership?.paid_tiers)
     ?.map((tier) => normalizeTier(tier))
     .filter((tier): tier is MembershipTier => Boolean(tier));
 

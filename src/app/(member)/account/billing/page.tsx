@@ -4,7 +4,7 @@ import { LoadingCard } from "@/components/ui/LoadingCard";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { apiGet } from "@/lib/api";
 import { isTierPaid } from "@/lib/tiers";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AcademySection } from "./_billing/AcademySection";
@@ -15,9 +15,17 @@ import { PaystackReturnAlerts } from "./_billing/PaystackReturnAlerts";
 import { PendingTransfersCard } from "./_billing/PendingTransfersCard";
 import { usePaystackReturn } from "./_billing/usePaystackReturn";
 import type { Cohort, Enrollment, Member, PaymentRecord, PricingConfig } from "./types";
+import { formatDate } from "./utils";
 
 export default function BillingPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
+  const returnToParam = searchParams.get("returnTo");
+  const requiredParam = searchParams.get("required")?.toLowerCase();
+  const requiredTier =
+    requiredParam === "community" || requiredParam === "club" || requiredParam === "academy"
+      ? requiredParam
+      : null;
   const providerReference = searchParams.get("reference") || searchParams.get("trxref");
   const isMembershipPaymentReference = providerReference?.startsWith("PAY-") ?? false;
   const isTopupReference = providerReference?.startsWith("TOP-") ?? false;
@@ -68,6 +76,26 @@ export default function BillingPage() {
       isTopupReference,
       onPaymentVerified: load,
     });
+
+  // Keep the blocked destination across the external Paystack round-trip.
+  useEffect(() => {
+    if (returnToParam?.startsWith("/") && !returnToParam.startsWith("//")) {
+      sessionStorage.setItem("swimbuddz:membership-return-to", returnToParam);
+    } else if (!providerReference) {
+      // A normal visit to Billing starts a fresh payment journey; do not let
+      // an abandoned, older access flow redirect a later unrelated payment.
+      sessionStorage.removeItem("swimbuddz:membership-return-to");
+    }
+  }, [providerReference, returnToParam]);
+
+  useEffect(() => {
+    if (returnedPayment?.status !== "paid" || !returnedPayment.entitlement_applied_at) return;
+    const stored = sessionStorage.getItem("swimbuddz:membership-return-to");
+    if (!stored?.startsWith("/") || stored.startsWith("//")) return;
+    sessionStorage.removeItem("swimbuddz:membership-return-to");
+    const timeout = window.setTimeout(() => router.replace(stored), 1200);
+    return () => window.clearTimeout(timeout);
+  }, [returnedPayment, router]);
 
   // Load open cohorts for Academy section
   useEffect(() => {
@@ -176,6 +204,12 @@ export default function BillingPage() {
   }
 
   const communityFee = pricing?.community_annual ?? 20000;
+  const requiredStatus = requiredTier ? member?.membership?.tier_statuses?.[requiredTier] : null;
+  const requiredExpiry = requiredStatus?.paid_until || requiredStatus?.effective_until;
+  const activeFallback = member?.membership?.highest_paid_tier || member?.membership?.paid_tier;
+  const tierLabel = requiredTier
+    ? requiredTier.charAt(0).toUpperCase() + requiredTier.slice(1)
+    : null;
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -199,6 +233,26 @@ export default function BillingPage() {
         isMembershipPayment={isMembershipPayment}
       />
 
+      {requiredTier && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+          <p className="font-semibold">Complete {tierLabel} access</p>
+          <p className="mt-1 text-amber-800">
+            {returnToParam
+              ? `You came here from ${returnToParam}. `
+              : "A feature you opened requires this membership. "}
+            {requiredStatus?.status === "expired" && requiredExpiry
+              ? `Your previous ${tierLabel} access ended on ${formatDate(requiredExpiry)}. `
+              : ""}
+            {activeFallback && activeFallback !== "prospect" && activeFallback !== requiredTier
+              ? `Your ${activeFallback.charAt(0).toUpperCase() + activeFallback.slice(1)} access remains active. `
+              : ""}
+            {returnToParam
+              ? "After successful payment, we’ll return you to the original page."
+              : "Choose the relevant payment option below to restore access."}
+          </p>
+        </div>
+      )}
+
       <OutstandingSessionFeesCard />
 
       <PendingTransfersCard pendingTransfers={pendingTransfers} onReload={load} />
@@ -215,6 +269,7 @@ export default function BillingPage() {
         myEnrollments={myEnrollments}
         openCohorts={openCohorts}
         communityActive={communityActive}
+        member={member}
       />
     </div>
   );

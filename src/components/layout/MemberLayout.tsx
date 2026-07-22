@@ -238,7 +238,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
       // Best-effort; failures collapse to "not a pod lead" so the sidebar
       // never crashes for unauthenticated callers.
       listPodsILead()
-        .then((pods) => setLeadsAnyPod(pods.length > 0))
+        .then((pods) => setLeadsAnyPod(pods.some((pod) => pod.status === "active")))
         .catch(() => setLeadsAnyPod(false)),
     ]).finally(() => setLoading(false));
   }, [refreshMember]);
@@ -410,10 +410,8 @@ export function MemberLayout({ children }: MemberLayoutProps) {
       if (!section.showFor) return true;
       return section.showFor.some((tier) => memberTiers.includes(tier));
     })
-    // Pod Lead Tools is hidden for members who don't lead any pod.
-    // (The page itself also redirects them to the dashboard, but
-    // hiding the entry up-front keeps the sidebar clean for everyone
-    // who isn't a Pod Lead.)
+    // Pod Lead Tools requires both an operational lead assignment and
+    // effective Club access. The backend repeats the same authorization.
     .filter((section) => section.title !== "Pod Lead Tools" || (leadsAnyPod && clubActive))
     .filter((section) => section.items.length > 0);
 

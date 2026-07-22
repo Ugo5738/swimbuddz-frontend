@@ -15,6 +15,7 @@ import {
   type MemberQuarterlyReport,
 } from "@/lib/reports";
 import {
+  ArrowRight,
   Award,
   Calendar,
   ChevronDown,
@@ -84,6 +85,8 @@ export default function QuarterlyReportPage() {
   }
 
   const label = quarterLabel(parsed.year, parsed.quarter);
+  const activityState = report.activity_state;
+  const leaderboardEligible = report.leaderboard_eligible;
 
   return (
     <div className="space-y-6">
@@ -97,7 +100,13 @@ export default function QuarterlyReportPage() {
       </div>
 
       {/* Hero header */}
-      <div className="rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 p-6 text-white">
+      <div
+        className={`rounded-2xl p-6 text-white ${
+          activityState === "no_activity"
+            ? "bg-gradient-to-r from-slate-600 to-slate-700"
+            : "bg-gradient-to-r from-cyan-500 to-blue-600"
+        }`}
+      >
         <div className="flex items-start justify-between">
           <div>
             <p className="text-sm font-medium text-cyan-100">Your Swim Report</p>
@@ -131,8 +140,41 @@ export default function QuarterlyReportPage() {
         </div>
       </div>
 
+      {activityState !== "active" && (
+        <Card
+          className={`p-5 ${
+            activityState === "no_activity"
+              ? "border-slate-200 bg-slate-50"
+              : "border-cyan-200 bg-cyan-50"
+          }`}
+        >
+          <h2 className="font-semibold text-slate-900">
+            {activityState === "no_activity" ? "Your quarter at a glance" : "A quieter quarter"}
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            {activityState === "no_activity"
+              ? "You had no recorded SwimBuddz activity this quarter. Your membership remained active, but no verified sessions, events, volunteer contributions, or milestones were recorded."
+              : `You recorded ${report.total_sessions_attended} session${report.total_sessions_attended === 1 ? "" : "s"} this quarter. This report stays factual so you can use it to build a steadier rhythm next quarter.`}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-3 text-sm font-medium">
+            <Link href="/sessions" className="inline-flex items-center gap-1 text-cyan-700">
+              View upcoming sessions <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link href="/account/pods" className="inline-flex items-center gap-1 text-cyan-700">
+              Explore Club pods <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              href="/account/academy/browse"
+              className="inline-flex items-center gap-1 text-cyan-700"
+            >
+              Browse Academy <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </Card>
+      )}
+
       {/* Percentile nudge */}
-      {report.attendance_percentile >= 0.5 && (
+      {leaderboardEligible && report.attendance_percentile >= 0.5 && (
         <Card className="p-4 bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200">
           <p className="text-center text-sm font-semibold text-amber-800">
             You&apos;re in the{" "}
@@ -297,7 +339,11 @@ export default function QuarterlyReportPage() {
               </div>
               <div>
                 <p className="font-semibold text-slate-900">Community Leaderboard</p>
-                <p className="text-xs text-slate-500">See how you rank among other swimmers</p>
+                <p className="text-xs text-slate-500">
+                  {leaderboardEligible
+                    ? "See how you rank among other swimmers"
+                    : `Complete ${3 - report.total_sessions_attended} more verified session${3 - report.total_sessions_attended === 1 ? "" : "s"} to qualify`}
+                </p>
               </div>
             </div>
             <TrendingUp className="h-5 w-5 text-slate-400" />
@@ -306,7 +352,9 @@ export default function QuarterlyReportPage() {
       </Link>
 
       {/* Shareable card */}
-      <ShareableCardPreview year={parsed.year} quarter={parsed.quarter} />
+      {report.share_card_eligible && (
+        <ShareableCardPreview year={parsed.year} quarter={parsed.quarter} />
+      )}
     </div>
   );
 }

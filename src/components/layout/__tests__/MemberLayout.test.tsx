@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemberLayout } from "../MemberLayout";
 
 const apiGet = vi.fn();
+const listPodsILead = vi.fn();
 
 vi.mock("@/lib/api", () => ({
   apiGet: (...args: unknown[]) => apiGet(...args),
@@ -19,7 +20,7 @@ vi.mock("@/lib/auth", () => ({
 }));
 
 vi.mock("@/lib/pods", () => ({
-  listPodsILead: vi.fn(async () => []),
+  listPodsILead: (...args: unknown[]) => listPodsILead(...args),
 }));
 
 vi.mock("@/components/notifications/NotificationBell", () => ({
@@ -39,6 +40,7 @@ describe("MemberLayout desktop navigation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    listPodsILead.mockResolvedValue([]);
     apiGet.mockResolvedValue({
       id: "member-1",
       first_name: "Amara",
@@ -85,5 +87,30 @@ describe("MemberLayout desktop navigation", () => {
       expect(screen.getByRole("button", { name: "Expand member navigation" })).toBeInTheDocument()
     );
     expect(screen.getByRole("complementary")).toHaveClass("md:w-20");
+  });
+
+  it("does not show Pod Lead Tools for a historical inactive pod", async () => {
+    listPodsILead.mockResolvedValue([{ id: "pod-1", status: "inactive" }]);
+
+    render(
+      <MemberLayout>
+        <div>Page content</div>
+      </MemberLayout>
+    );
+
+    await waitFor(() => expect(listPodsILead).toHaveBeenCalled());
+    expect(screen.queryByText("Submission Review")).not.toBeInTheDocument();
+  });
+
+  it("shows Pod Lead Tools for an active pod lead with effective Club access", async () => {
+    listPodsILead.mockResolvedValue([{ id: "pod-1", status: "active" }]);
+
+    render(
+      <MemberLayout>
+        <div>Page content</div>
+      </MemberLayout>
+    );
+
+    await waitFor(() => expect(screen.getByText("Submission Review")).toBeInTheDocument());
   });
 });

@@ -7,16 +7,17 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import type { Cohort, Enrollment } from "../types";
+import type { Cohort, Enrollment, Member } from "../types";
 import { formatCurrency, formatDate } from "../utils";
 
 type Props = {
   myEnrollments: Enrollment[];
   openCohorts: Cohort[];
   communityActive: boolean;
+  member: Member | null;
 };
 
-export function AcademySection({ myEnrollments, openCohorts, communityActive }: Props) {
+export function AcademySection({ myEnrollments, openCohorts, communityActive, member }: Props) {
   const [payingEnrollmentId, setPayingEnrollmentId] = useState<string | null>(null);
   // How many of the next consecutive unpaid installments the member has
   // selected to pay, keyed by enrollment id. Defaults to 1 (the next one).
@@ -30,10 +31,7 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive }: 
   // summed amount as amount_override_kobo; the backend's
   // apply_member_payment_across_installments rolls it forward, marking each
   // installment PAID in turn.
-  const handlePayInstallment = async (
-    enrollmentId: string,
-    amountOverrideKobo?: number,
-  ) => {
+  const handlePayInstallment = async (enrollmentId: string, amountOverrideKobo?: number) => {
     setPayingEnrollmentId(enrollmentId);
     try {
       const intent = await apiPost<{ checkout_url: string | null }>(
@@ -45,7 +43,7 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive }: 
           payment_method: "paystack",
           ...(amountOverrideKobo ? { amount_override_kobo: amountOverrideKobo } : {}),
         },
-        { auth: true },
+        { auth: true }
       );
       if (intent.checkout_url) {
         window.location.href = intent.checkout_url;
@@ -61,16 +59,21 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive }: 
   };
 
   const { paidEnrollments, pendingEnrollments, availableCohorts } = useMemo(() => {
-    const paid = myEnrollments.filter(
-      (e) => e.payment_status === "paid" || e.status === "enrolled",
-    );
+    const paid = myEnrollments.filter((e) => e.status === "enrolled");
     const pending = myEnrollments.filter(
-      (e) => e.payment_status === "pending" && e.status === "pending_approval",
+      (e) => e.payment_status === "pending" && e.status === "pending_approval"
     );
     const enrolledCohortIds = new Set(myEnrollments.map((e) => e.cohort_id));
     const available = openCohorts.filter((c) => !enrolledCohortIds.has(c.id));
     return { paidEnrollments: paid, pendingEnrollments: pending, availableCohorts: available };
   }, [myEnrollments, openCohorts]);
+
+  const academyAccess = member?.membership?.tier_statuses?.academy;
+  const academyAccessActive = academyAccess?.status === "active";
+  const academyAccessDate =
+    academyAccess?.effective_until ||
+    academyAccess?.paid_until ||
+    member?.membership?.academy_paid_until;
 
   return (
     <>
@@ -79,7 +82,9 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive }: 
         <Card className="p-4 md:p-6 space-y-3 md:space-y-4">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-base md:text-lg font-semibold text-slate-900">Academy</h2>
+              <h2 className="text-base md:text-lg font-semibold text-slate-900">
+                Academy enrollment
+              </h2>
               <p className="text-xs md:text-sm text-slate-600 mt-0.5 md:mt-1">
                 {paidEnrollments.length} active enrollment
                 {paidEnrollments.length > 1 ? "s" : ""}
@@ -99,15 +104,47 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive }: 
                   d="M5 13l4 4L19 7"
                 />
               </svg>
-              <span className="font-medium">Active</span>
+              <span className="font-medium">Enrollment active</span>
             </div>
           </div>
 
-          <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3 md:p-4 text-xs md:text-sm text-emerald-800">
-            <p className="font-medium">You're enrolled in the Academy!</p>
-            <p className="mt-0.5 md:mt-1 text-emerald-600">
-              Track your progress and milestones on the My Academy page.
-            </p>
+          <div
+            className={`rounded-lg border p-3 text-xs md:p-4 md:text-sm ${
+              academyAccessActive
+                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                : "border-amber-200 bg-amber-50 text-amber-900"
+            }`}
+          >
+            <div className="grid gap-2 sm:grid-cols-3">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide opacity-70">Enrollment</p>
+                <p className="mt-0.5 font-semibold">Active</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide opacity-70">
+                  Academy access
+                </p>
+                <p className="mt-0.5 font-semibold">
+                  {academyAccessActive
+                    ? `Active${academyAccessDate ? ` until ${formatDate(academyAccessDate)}` : ""}`
+                    : `${academyAccess?.label || "Expired"}${academyAccessDate ? ` on ${formatDate(academyAccessDate)}` : ""}`}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide opacity-70">Payment</p>
+                <p className="mt-0.5 font-semibold">
+                  {paidEnrollments.every((enrollment) => enrollment.payment_status === "paid")
+                    ? "Fully paid"
+                    : "Installments in progress"}
+                </p>
+              </div>
+            </div>
+            {!academyAccessActive && (
+              <p className="mt-3 border-t border-amber-200 pt-3 text-amber-800">
+                Your enrollment record remains active, but Academy features are locked until your
+                access entitlement is restored.
+              </p>
+            )}
           </div>
 
           {/* Installment schedule for installment-paying enrollments */}
@@ -120,21 +157,17 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive }: 
                 .filter((e) => e.installments && e.installments.length > 0)
                 .map((e) => {
                   const sorted = [...e.installments!].sort(
-                    (a, b) => a.installment_number - b.installment_number,
+                    (a, b) => a.installment_number - b.installment_number
                   );
                   // Unpaid installments are payable only in order (the backend
                   // rolls a payment forward from the earliest unpaid one), so
                   // a member's selection is always a prefix of this list.
-                  const unpaid = sorted.filter(
-                    (i) => i.status !== "paid" && i.status !== "waived",
-                  );
+                  const unpaid = sorted.filter((i) => i.status !== "paid" && i.status !== "waived");
                   const selectedCount = Math.min(
                     Math.max(selectedCounts[e.id] ?? 1, 1),
-                    Math.max(unpaid.length, 1),
+                    Math.max(unpaid.length, 1)
                   );
-                  const selectedIds = new Set(
-                    unpaid.slice(0, selectedCount).map((i) => i.id),
-                  );
+                  const selectedIds = new Set(unpaid.slice(0, selectedCount).map((i) => i.id));
                   const selectedTotalKobo = unpaid
                     .slice(0, selectedCount)
                     .reduce((sum, i) => sum + i.amount, 0);
@@ -188,8 +221,7 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive }: 
                                 <span>{isPaid ? "✓" : isMissed ? "✗" : "·"}</span>
                               )}
                               <span className="truncate">
-                                Installment {inst.installment_number} —{" "}
-                                {formatDate(inst.due_at)}
+                                Installment {inst.installment_number} — {formatDate(inst.due_at)}
                               </span>
                             </span>
                             <span className="font-medium tabular-nums flex-shrink-0">
@@ -213,7 +245,7 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive }: 
                             onClick={() =>
                               handlePayInstallment(
                                 e.id,
-                                selectedCount > 1 ? selectedTotalKobo : undefined,
+                                selectedCount > 1 ? selectedTotalKobo : undefined
                               )
                             }
                             disabled={isPaying}

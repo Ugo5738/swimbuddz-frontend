@@ -608,6 +608,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/members/by-auth/{auth_id}/club/post-academy-bridge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin Grant Post Academy Club Bridge By Auth
+         * @description Grant the explicit complimentary Club period after graduation.
+         */
+        post: operations["admin_grant_post_academy_club_bridge_by_auth_admin_members_by_auth__auth_id__club_post_academy_bridge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/members/by-auth/{auth_id}/club/extend": {
         parameters: {
             query?: never;
@@ -621,10 +641,9 @@ export interface paths {
          * Admin Extend Club Membership By Auth
          * @description Extend club membership by N months without eligibility checks.
          *
-         *     Intended for service-to-service grants such as the free 1-month
-         *     post-academy club access bridge (see PRICING_STRATEGY.md). Skips the
-         *     readiness/requested-tier gates that ``/club/activate`` enforces because
-         *     the caller is the system, not the member self-upgrading.
+         *     Intended for direct service/admin Club grants. Post-Academy access uses
+         *     the separate ``/club/post-academy-bridge`` endpoint so it remains
+         *     distinguishable from purchased Club time.
          *
          *     The new ``club_paid_until`` becomes ``max(current, anchor) + months`` where
          *     ``anchor = payload.from_date or now``. Callers that may retry must provide
@@ -694,8 +713,9 @@ export interface paths {
          * @description Apply a paid Academy entitlement once and preserve later cohorts.
          *
          *     The idempotency key protects both the Academy end date and the Community
-         *     and Club periods bundled with the first Academy payment. Retrying the same
-         *     payment therefore cannot keep moving those lower-tier expiries forward.
+         *     period granted by the first Academy payment. Club is inherited while
+         *     Academy is active; its explicit one-month bridge is granted separately on
+         *     graduation. Retrying the same payment cannot keep moving entitlements.
          */
         post: operations["admin_activate_academy_membership_by_auth_admin_members_by_auth__auth_id__academy_activate_post"];
         delete?: never;
@@ -2258,8 +2278,8 @@ export interface paths {
          *       * The Pod-Lead-side challenge review queue, which uses the list
          *         for context (e.g. "you're reviewing as Pod Lead of {pod.name}").
          *
-         *     Returns ALL pods the member leads regardless of status, so a recently
-         *     dissolved pod still shows up briefly before fading from the UI.
+         *     Only active pods are operational, and active Club access (direct,
+         *     inherited from Academy, or the post-Academy bridge) is required.
          */
         get: operations["list_pods_i_lead_members_pods_i_lead_get"];
         put?: never;
@@ -18439,9 +18459,9 @@ export interface components {
          * ExtendClubRequest
          * @description Request to extend club membership without eligibility checks.
          *
-         *     Intended for service-to-service grants (e.g. the free 1-month post-academy
-         *     club access from PRICING_STRATEGY.md). The optional ``from_date`` anchors
-         *     the new period — useful when granting at cohort.end_date rather than now.
+         *     Intended for direct service/admin Club grants. The optional ``from_date``
+         *     anchors the new period. Post-Academy access uses the dedicated bridge
+         *     request so complimentary time stays distinguishable from direct Club time.
          */
         ExtendClubRequest: {
             /**
@@ -18451,7 +18471,7 @@ export interface components {
             months: number;
             /**
              * From Date
-             * @description Anchor the new period at this date (defaults to NOW or current expiry, whichever is later). Pass the cohort end_date for post-academy free month grants.
+             * @description Anchor the new period at this date (defaults to NOW or current expiry, whichever is later).
              */
             from_date?: string | null;
             /**
@@ -18474,6 +18494,28 @@ export interface components {
              * @default 1
              */
             months: number;
+            /** Idempotency Key */
+            idempotency_key?: string | null;
+            /** Source Reference */
+            source_reference?: string | null;
+        };
+        /**
+         * GrantPostAcademyClubBridgeRequest
+         * @description Grant the complimentary Club period earned at Academy graduation.
+         */
+        GrantPostAcademyClubBridgeRequest: {
+            /**
+             * Months
+             * @default 1
+             */
+            months: number;
+            /**
+             * From Date
+             * @description Graduation/cohort end date that anchors the bridge.
+             */
+            from_date?: string | null;
+            /** Reason */
+            reason?: string | null;
             /** Idempotency Key */
             idempotency_key?: string | null;
             /** Source Reference */
@@ -18714,12 +18756,20 @@ export interface components {
             primary_tier?: string | null;
             /** Active Tiers */
             active_tiers?: string[] | null;
+            /** Declared Tiers */
+            declared_tiers?: string[] | null;
+            /** Effective Paid Tiers */
+            effective_paid_tiers?: string[] | null;
+            /** Highest Paid Tier */
+            highest_paid_tier?: string | null;
             /** Community Paid Until */
             community_paid_until?: string | null;
             /** Club Paid Until */
             club_paid_until?: string | null;
             /** Academy Paid Until */
             academy_paid_until?: string | null;
+            /** Post Academy Club Until */
+            post_academy_club_until?: string | null;
             /** Profile Photo Url */
             profile_photo_url?: string | null;
             /** Date Of Birth */
@@ -18934,6 +18984,8 @@ export interface components {
             club_paid_until?: string | null;
             /** Academy Paid Until */
             academy_paid_until?: string | null;
+            /** Post Academy Club Until */
+            post_academy_club_until?: string | null;
             /** Emergency Contact Name */
             emergency_contact_name?: string | null;
             /** Emergency Contact Phone */
@@ -19282,6 +19334,17 @@ export interface components {
             inherited: boolean;
             /** Inherited From */
             inherited_from?: string | null;
+            /** Effective Until */
+            effective_until?: string | null;
+            /**
+             * Expiring Soon
+             * @default false
+             */
+            expiring_soon: boolean;
+            /** Days Remaining */
+            days_remaining?: number | null;
+            /** Access Source */
+            access_source?: string | null;
         };
         /**
          * MemberUpdate
@@ -19797,9 +19860,10 @@ export interface components {
          * ProjectAcademyRequest
          * @description Replace the Academy tier projection with Academy's current truth.
          *
-         *     Unlike activation, projection does not grant the bundled Community or Club
-         *     periods. It is used by academy_service after withdrawals, cohort changes,
-         *     and during reconciliation to repair derived member state.
+         *     Unlike activation, projection does not extend Community or grant the
+         *     post-graduation Club bridge. It is used by academy_service after
+         *     withdrawals, cohort changes, and during reconciliation to repair derived
+         *     member state.
          */
         ProjectAcademyRequest: {
             /**
@@ -20030,12 +20094,23 @@ export interface components {
             primary_tier: string;
             /** Active Tiers */
             active_tiers?: string[] | null;
+            /** Declared Tiers */
+            declared_tiers?: string[];
+            /** Effective Paid Tiers */
+            effective_paid_tiers?: string[];
+            /**
+             * Highest Paid Tier
+             * @default prospect
+             */
+            highest_paid_tier: string;
             /** Community Paid Until */
             community_paid_until?: string | null;
             /** Club Paid Until */
             club_paid_until?: string | null;
             /** Academy Paid Until */
             academy_paid_until?: string | null;
+            /** Post Academy Club Until */
+            post_academy_club_until?: string | null;
         };
         /**
          * MemberMembershipResponse
@@ -20059,6 +20134,8 @@ export interface components {
             primary_tier: string;
             /** Active Tiers */
             active_tiers?: string[] | null;
+            /** Declared Tiers */
+            declared_tiers?: string[];
             /** Requested Tiers */
             requested_tiers?: string[] | null;
             /** Community Paid Until */
@@ -20067,12 +20144,23 @@ export interface components {
             club_paid_until?: string | null;
             /** Academy Paid Until */
             academy_paid_until?: string | null;
+            /** Post Academy Club Until */
+            post_academy_club_until?: string | null;
+            /** Club Billing Cycle Months */
+            club_billing_cycle_months?: number | null;
             /** Pending Payment Reference */
             pending_payment_reference?: string | null;
             /** Pending Tier Payments */
             pending_tier_payments?: {
                 [key: string]: string;
             };
+            /** Effective Paid Tiers */
+            effective_paid_tiers?: string[];
+            /**
+             * Highest Paid Tier
+             * @default prospect
+             */
+            highest_paid_tier: string;
             /**
              * Paid Tier
              * @default prospect
@@ -27079,6 +27167,21 @@ export interface components {
             quarter: number;
             /** Entries */
             entries: components["schemas"]["LeaderboardEntry"][];
+            /**
+             * Minimum Attendance
+             * @default 3
+             */
+            minimum_attendance: number;
+            /**
+             * Current User Attendance
+             * @default 0
+             */
+            current_user_attendance: number;
+            /**
+             * Current User Eligible
+             * @default false
+             */
+            current_user_eligible: boolean;
         };
         /**
          * MemberQuarterlyReportResponse
@@ -27182,6 +27285,15 @@ export interface components {
              * Format: date-time
              */
             computed_at: string;
+            /**
+             * Activity State
+             * @enum {string}
+             */
+            readonly activity_state: "active" | "low_activity" | "no_activity";
+            /** Leaderboard Eligible */
+            readonly leaderboard_eligible: boolean;
+            /** Share Card Eligible */
+            readonly share_card_eligible: boolean;
         };
         /**
          * MonthCalendarEntry
@@ -38554,6 +38666,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ExtendCommunityRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_grant_post_academy_club_bridge_by_auth_admin_members_by_auth__auth_id__club_post_academy_bridge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                auth_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrantPostAcademyClubBridgeRequest"];
             };
         };
         responses: {

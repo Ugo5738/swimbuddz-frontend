@@ -1,6 +1,3 @@
-import { createServerClient } from "@supabase/ssr";
-import type { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
 import { API_BASE_URL } from "@/lib/config";
 import {
   evaluateMemberAccess,
@@ -8,6 +5,9 @@ import {
   type AccessDecision,
   type MiddlewareMember,
 } from "@/lib/middlewareAccess";
+import { createServerClient } from "@supabase/ssr";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 // Routes that require admin access
 const ADMIN_ROUTES = ["/admin"];
@@ -24,7 +24,7 @@ function redirectToLogin(request: NextRequest, errorCode: string) {
 function applyDecision(
   decision: AccessDecision,
   request: NextRequest,
-  response: NextResponse,
+  response: NextResponse
 ): NextResponse {
   if (decision.kind === "allow") {
     return response;
@@ -55,7 +55,7 @@ export async function middleware(request: NextRequest) {
           });
         },
       },
-    },
+    }
   );
 
   // Check if this is a member-only route
@@ -121,6 +121,7 @@ export async function middleware(request: NextRequest) {
         // middleware only does I/O and translation.
         const decision = evaluateMemberAccess({
           pathname,
+          requestedPath: `${pathname}${request.nextUrl.search}`,
           isJwtAdmin,
           member,
         });
@@ -131,10 +132,7 @@ export async function middleware(request: NextRequest) {
         return response;
       } else {
         // API error or non-200 status - fail closed for security
-        console.error(
-          "Middleware: Failed to fetch member profile",
-          memberResponse.status,
-        );
+        console.error("Middleware: Failed to fetch member profile", memberResponse.status);
         // If we can't verify the user, redirect to login or error
         // But if it's a 500, maybe we should let them see a generic error?
         // For now, redirecting to login is safer than letting them in.
