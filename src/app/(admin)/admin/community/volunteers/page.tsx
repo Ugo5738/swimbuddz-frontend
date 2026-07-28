@@ -154,7 +154,7 @@ export default function AdminVolunteersPage() {
       if (oppsData.status === "fulfilled") setOpportunities(oppsData.value);
 
       const failures = [dashData, rolesData, profilesData, oppsData].filter(
-        (result): result is PromiseRejectedResult => result.status === "rejected",
+        (result): result is PromiseRejectedResult => result.status === "rejected"
       );
 
       if (failures.length > 0) {
@@ -164,8 +164,8 @@ export default function AdminVolunteersPage() {
             ? getErrorMessage(firstFailure.reason, "Failed to load volunteer data.")
             : `${failures.length} volunteer requests failed. ${getErrorMessage(
                 firstFailure.reason,
-                "Please try again.",
-              )}`,
+                "Please try again."
+              )}`
         );
       }
     } finally {
@@ -316,20 +316,22 @@ export default function AdminVolunteersPage() {
     if (mode === "session" && attachSessions.length === 0) {
       setAttachLoading(true);
       try {
-        const sessions = await SessionsApi.listSessions({ include_drafts: true });
         const todayIso = new Date().toISOString();
         // Limit to the next 90 days — same window as the design doc.
         const cutoffMs = Date.now() + 90 * 24 * 60 * 60 * 1000;
+        const sessions = await SessionsApi.listAllSessions({
+          include_drafts: true,
+          from: todayIso,
+          to: new Date(cutoffMs).toISOString(),
+        });
         setAttachSessions(
-          sessions
-            .filter((s) => s.starts_at >= todayIso && new Date(s.starts_at).getTime() <= cutoffMs)
-            .map((s) => ({
-              id: s.id,
-              title: s.title,
-              starts_at: s.starts_at,
-              ends_at: s.ends_at,
-              location_name: (s as { location_name?: string | null }).location_name,
-            })),
+          sessions.map((s) => ({
+            id: s.id,
+            title: s.title,
+            starts_at: s.starts_at,
+            ends_at: s.ends_at,
+            location_name: (s as { location_name?: string | null }).location_name,
+          }))
         );
       } finally {
         setAttachLoading(false);
@@ -408,7 +410,14 @@ export default function AdminVolunteersPage() {
     setSuggestCandidates([]);
     setSuggestLoading(true);
     try {
-      const sessions = await SessionsApi.listSessions({ include_drafts: true });
+      const dayStart = new Date(`${opp.date}T00:00:00+01:00`);
+      const dayEnd = new Date(dayStart);
+      dayEnd.setDate(dayEnd.getDate() + 1);
+      const sessions = await SessionsApi.listAllSessions({
+        include_drafts: true,
+        from: dayStart.toISOString(),
+        to: dayEnd.toISOString(),
+      });
       const oppLoc = (opp.location_name ?? "").trim().toLowerCase();
       const candidates = sessions
         .filter((s) => {
@@ -540,7 +549,7 @@ export default function AdminVolunteersPage() {
   if (loading) return <LoadingPage text="Loading volunteer management..." />;
 
   const pendingApprovals = opportunities.filter(
-    (o) => o.status === "open" && o.opportunity_type === "approval_required",
+    (o) => o.status === "open" && o.opportunity_type === "approval_required"
   ).length;
 
   return (
@@ -576,9 +585,7 @@ export default function AdminVolunteersPage() {
         rolesCount={roles.length}
       />
 
-      {tab === "dashboard" && dashboard && (
-        <DashboardTab dashboard={dashboard} setTab={setTab} />
-      )}
+      {tab === "dashboard" && dashboard && <DashboardTab dashboard={dashboard} setTab={setTab} />}
 
       {tab === "opportunities" && (
         <>

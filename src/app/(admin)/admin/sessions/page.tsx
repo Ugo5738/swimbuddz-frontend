@@ -8,6 +8,7 @@ import { TemplatesDrawer, type TemplateFormPayload } from "@/components/admin/Te
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { SessionsApi } from "@/lib/sessions";
 import type { DateSelectArg, EventClickArg, EventInput } from "@fullcalendar/core";
 import {
   Calendar,
@@ -78,12 +79,12 @@ export default function AdminSessionsPage() {
   const fetchData = useCallback(async () => {
     try {
       setIsLoading(true);
-      const [sessRes, tmplRes, areasRes] = await Promise.all([
-        apiFetch("/api/v1/sessions/?include_drafts=true"),
+      const [sessionRows, tmplRes, areasRes] = await Promise.all([
+        SessionsApi.listAllSessions({ include_drafts: true }),
         apiFetch("/api/v1/sessions/templates").catch(() => null),
         apiFetch("/api/v1/transport/areas").catch(() => null),
       ]);
-      setSessions(await sessRes.json());
+      setSessions(sessionRows as Session[]);
       if (tmplRes) setTemplates(await tmplRes.json());
       if (areasRes) setRideAreas(await areasRes.json());
       setError(null);

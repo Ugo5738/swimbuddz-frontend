@@ -5,21 +5,17 @@ import { type SessionWithRides } from "@/components/sessions/SessionCard";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { LoadingCard } from "@/components/ui/LoadingCard";
-import { AcademyApi, type Cohort, type Enrollment } from "@/lib/academy";
-import { apiGet, apiPost } from "@/lib/api";
-import type { SessionAccessTier } from "@/lib/sessionAccess";
-import { type CohortInfo } from "@/lib/sessions";
-import { getMembershipLabel, getPaidMembershipTier } from "@/lib/tiers";
-import { useQuery } from "@tanstack/react-query";
+import { apiPost } from "@/lib/api";
 import { ArrowRight, Calendar, CheckSquare, Waves, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { ActiveFilterChips, DateGroupedSessions, FilterBar, NextSessionPanel } from "./components";
-import { SESSION_TYPES_QUERY, TABS } from "./constants";
-import type { AttendanceRecord, DateFilter, MemberProfile, MyBooking, ViewTab } from "./types";
+import { TABS } from "./constants";
+import type { DateFilter, MyBooking, ViewTab } from "./types";
+import { useSessionsHubData } from "./useSessionsHubData";
 import { filterByDate, filterByType, isActiveBooking, isConfirmedBooking } from "./utils";
 
 // ── Inner component (needs searchParams) ────────────────────────────────
@@ -39,19 +35,24 @@ function SessionsHub() {
           ? "all"
           : "upcoming";
 
-  // ── State ──────────────────────────────────────────────────────────────
-  const [sessions, setSessions] = useState<SessionWithRides[]>([]);
-  const [pastSessions, setPastSessions] = useState<SessionWithRides[]>([]);
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
-  const [myBookings, setMyBookings] = useState<MyBooking[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [membership, setMembership] = useState<SessionAccessTier>("prospect");
-  const [membershipLabel, setMembershipLabel] = useState("Prospect");
-
-  // Cohort identity
-  const [cohortMap, setCohortMap] = useState<Map<string, CohortInfo>>(new Map());
-  const [enrolledCohortIds, setEnrolledCohortIds] = useState<Set<string>>(new Set());
+  const {
+    sessions,
+    pastSessions,
+    attendance,
+    myBookings,
+    cohortMap,
+    enrolledCohortIds,
+    membership,
+    membershipLabel,
+    upcomingLoading,
+    bookingsLoading,
+    attendanceLoading,
+    pastLoading,
+    upcomingError,
+    pastError,
+  } = useSessionsHubData({
+    loadPast: activeTab === "past" || activeTab === "all",
+  });
 
   // Filters
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
@@ -104,156 +105,23 @@ function SessionsHub() {
     setMyCohortsOnly(false);
   }, []);
 
-  // ── Data loading (cached via React Query) ──────────────────────────────
-  // Cache key: staleTime of 2min means within-session navigations read from cache.
-  const sessionsHubQuery = useQuery({
-    queryKey: ["sessions-hub"],
-    queryFn: async () => {
-      let resolvedTier: SessionAccessTier = "prospect";
-      let resolvedMembershipLabel = "Prospect";
-      let attendanceData: AttendanceRecord[] = [];
-      let bookingsData: MyBooking[] = [];
-
-      try {
-        const profile = await apiGet<MemberProfile>("/api/v1/members/me", {
-          auth: true,
-        });
-        resolvedTier = getPaidMembershipTier(profile);
-        resolvedMembershipLabel = getMembershipLabel(profile);
-
-        // Attendance = day-of presence (only exists after sign-in).
-        // Bookings = CONFIRMED (paid) reservations (intent-only, no
-        // attendance row until sign-in). The Booked tab needs both:
-        // attendance covers legacy/older flows, bookings covers the
-        // SessionBooking flow where a confirmed booking has no
-        // attendance record yet. Scope to status_filter=confirmed so an
-        // in-flight / abandoned PENDING booking never shows as "Booked".
-        [attendanceData, bookingsData] = await Promise.all([
-          apiGet<AttendanceRecord[]>("/api/v1/attendance/me", {
-            auth: true,
-          }).catch(() => []),
-          apiGet<MyBooking[]>("/api/v1/sessions/bookings/me?status_filter=confirmed", {
-            auth: true,
-          }).catch(() => []),
-        ]);
-      } catch {
-        // Not authenticated or profile fetch failed — default prospect access
-      }
-
-      // Fetch cohort identity data for academy sessions
-      const cohortMapResult = new Map<string, CohortInfo>();
-      const enrolledCohorts = new Set<string>();
-      try {
-        const [enrollments, openCohorts] = await Promise.all([
-          AcademyApi.getMyEnrollments().catch(() => [] as Enrollment[]),
-          AcademyApi.getOpenCohorts().catch(() => [] as Cohort[]),
-        ]);
-
-        for (const enrollment of enrollments) {
-          if (enrollment.cohort_id && enrollment.cohort) {
-            enrolledCohorts.add(enrollment.cohort_id);
-            cohortMapResult.set(enrollment.cohort_id, {
-              cohortName: enrollment.cohort.name,
-              programName: enrollment.cohort.program?.name ?? "",
-              isEnrolled: true,
-            });
-          }
-        }
-        for (const cohort of openCohorts) {
-          if (!cohortMapResult.has(cohort.id)) {
-            cohortMapResult.set(cohort.id, {
-              cohortName: cohort.name,
-              programName: cohort.program?.name ?? "",
-              isEnrolled: false,
-            });
-          }
-        }
-      } catch {
-        // Non-critical — sessions still render without cohort labels
-      }
-
-      // Fetch upcoming sessions
-      const upcomingData = await apiGet<SessionWithRides[]>(
-        `/api/v1/sessions?types=${encodeURIComponent(SESSION_TYPES_QUERY)}`,
-        { auth: true }
-      );
-
-      // Batch-fetch ride configs in a single HTTP call (Tier 1 optimization)
-      let rideConfigsBySession: Record<string, SessionWithRides["ride_configs"]> = {};
-      if (upcomingData.length > 0) {
-        try {
-          const resp = await apiPost<{
-            configs: Record<string, SessionWithRides["ride_configs"]>;
-          }>("/api/v1/transport/sessions/ride-configs/batch", {
-            session_ids: upcomingData.map((s) => s.id),
-          });
-          rideConfigsBySession = resp.configs || {};
-        } catch {
-          // Non-fatal
-        }
-      }
-      const withRides = upcomingData.map((session) => ({
-        ...session,
-        ride_configs: rideConfigsBySession[session.id] ?? [],
-      }));
-
-      // Fetch past sessions (last 60 days)
-      const sixtyDaysAgo = new Date();
-      sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-      let past: SessionWithRides[] = [];
-      try {
-        past = await apiGet<SessionWithRides[]>(
-          `/api/v1/sessions?types=${encodeURIComponent(SESSION_TYPES_QUERY)}&before=${sixtyDaysAgo.toISOString()}&status=completed`,
-          { auth: true }
-        );
-      } catch {
-        past = [];
-      }
-
-      return {
-        membership: resolvedTier,
-        membershipLabel: resolvedMembershipLabel,
-        attendance: attendanceData,
-        myBookings: bookingsData,
-        cohortMap: cohortMapResult,
-        enrolledCohortIds: enrolledCohorts,
-        sessions: withRides,
-        pastSessions: past,
-      };
-    },
-  });
-
-  // Sync query result into local state so the rest of the page (filters,
-  // derived memos) keeps working unchanged.
+  const cohortDefaultApplied = useRef(false);
   useEffect(() => {
-    if (!sessionsHubQuery.data) return;
-    const d = sessionsHubQuery.data;
-    setMembership(d.membership);
-    setMembershipLabel(d.membershipLabel);
-    setAttendance(d.attendance);
-    setMyBookings(d.myBookings);
-    setCohortMap(d.cohortMap);
-    setEnrolledCohortIds(d.enrolledCohortIds);
-    setSessions(d.sessions);
-    setPastSessions(d.pastSessions);
-    // Default to "my cohorts" filter for academy members (original behavior).
-    if (d.enrolledCohortIds.size > 0) {
+    if (!cohortDefaultApplied.current && enrolledCohortIds.size > 0) {
+      cohortDefaultApplied.current = true;
       setMyCohortsOnly(true);
     }
-  }, [sessionsHubQuery.data]);
+  }, [enrolledCohortIds]);
 
-  useEffect(() => {
-    setLoading(sessionsHubQuery.isLoading);
-  }, [sessionsHubQuery.isLoading]);
-
-  useEffect(() => {
-    if (sessionsHubQuery.isError) {
-      console.error(sessionsHubQuery.error);
-      setError("Unable to load sessions. Please try again later.");
-    } else {
-      setError(null);
-    }
-  }, [sessionsHubQuery.isError, sessionsHubQuery.error]);
+  const loading =
+    activeTab === "booked"
+      ? upcomingLoading || bookingsLoading || attendanceLoading
+      : activeTab === "past"
+        ? pastLoading
+        : upcomingLoading;
+  const error = (activeTab === "past" ? pastError : upcomingError)
+    ? "Unable to load sessions. Please try again later."
+    : null;
 
   // ── Derived data ───────────────────────────────────────────────────────
   const bookedSessionIds = useMemo(() => {
@@ -361,7 +229,7 @@ function SessionsHub() {
       result = pastSessions;
     } else {
       // "all" tab — everything, past + future
-      result = sessions;
+      result = [...pastSessions, ...sessions];
     }
 
     result = filterByDate(result, dateFilter);
@@ -628,6 +496,9 @@ function SessionsHub() {
           </Alert>
         ) : (
           renderContent()
+        )}
+        {!loading && !error && activeTab === "all" && pastLoading && (
+          <p className="mt-3 text-center text-sm text-slate-500">Loading recent sessions…</p>
         )}
       </section>
 

@@ -177,22 +177,52 @@ export interface SessionUpdate {
 }
 
 // --- API Functions ---
+export type ListSessionsParams = {
+  types?: string;
+  cohort_id?: string;
+  status?: SessionStatus;
+  from?: string;
+  to?: string;
+  limit?: number;
+  offset?: number;
+  include_drafts?: boolean;
+  auth?: boolean;
+};
+
+function buildSessionListPath(params?: ListSessionsParams): string {
+  const query = new URLSearchParams();
+  if (params?.types) query.set("types", params.types);
+  if (params?.cohort_id) query.set("cohort_id", params.cohort_id);
+  if (params?.status) query.set("status", params.status);
+  if (params?.from) query.set("from", params.from);
+  if (params?.to) query.set("to", params.to);
+  if (params?.limit != null) query.set("limit", String(params.limit));
+  if (params?.offset != null) query.set("offset", String(params.offset));
+  if (params?.include_drafts) query.set("include_drafts", "true");
+  const queryStr = query.toString() ? `?${query.toString()}` : "";
+  return `/api/v1/sessions${queryStr}`;
+}
+
 export const SessionsApi = {
   // List sessions with optional filters
-  listSessions: (params?: {
-    types?: string;
-    cohort_id?: string;
-    include_drafts?: boolean;
-    auth?: boolean;
-  }) => {
-    const query = new URLSearchParams();
-    if (params?.types) query.set("types", params.types);
-    if (params?.cohort_id) query.set("cohort_id", params.cohort_id);
-    if (params?.include_drafts) query.set("include_drafts", "true");
-    const queryStr = query.toString() ? `?${query.toString()}` : "";
-    return apiGet<Session[]>(`/api/v1/sessions${queryStr}`, {
+  listSessions: (params?: ListSessionsParams) =>
+    apiGet<Session[]>(buildSessionListPath(params), {
       auth: Boolean(params?.include_drafts || params?.auth),
-    });
+    }),
+
+  // Administrative calendars intentionally need the full result set. Walk
+  // the bounded endpoint contract instead of relying on an unbounded list.
+  listAllSessions: async (params?: Omit<ListSessionsParams, "limit" | "offset">) => {
+    const pageSize = 100;
+    const sessions: Session[] = [];
+    for (let offset = 0; ; offset += pageSize) {
+      const page = await apiGet<Session[]>(
+        buildSessionListPath({ ...params, limit: pageSize, offset }),
+        { auth: Boolean(params?.include_drafts || params?.auth) }
+      );
+      sessions.push(...page);
+      if (page.length < pageSize) return sessions;
+    }
   },
 
   // Get sessions for a specific cohort
@@ -292,7 +322,7 @@ export function getSessionTypeColor(type: string): string {
 // --- Session API exports ---
 
 /**
- * List all sessions
+ * List the default upcoming session page.
  */
 export const getSessions = async (): Promise<Session[]> => {
   return SessionsApi.listSessions();

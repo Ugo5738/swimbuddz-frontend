@@ -1,15 +1,15 @@
 "use client";
 
-import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
-import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import {
   OfflineSessionPaymentModal,
   type OfflineSessionPaymentInput,
 } from "@/components/admin/OfflineSessionPaymentModal";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
+import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { apiGet, apiPost } from "@/lib/api";
 import type { components } from "@/lib/api-types";
-import { isPoolFeeRefunded, isRunningLate, isSelfExcused } from "@/lib/sessions";
+import { isPoolFeeRefunded, isRunningLate, isSelfExcused, SessionsApi } from "@/lib/sessions";
 import { format } from "date-fns";
 import type { jsPDF as JsPDFType } from "jspdf";
 import { ReceiptText } from "lucide-react";
@@ -268,7 +268,12 @@ export default function AdminAttendancePage() {
     async function fetchSessions() {
       try {
         const [data, cohorts] = await Promise.all([
-          apiGet<Session[]>("/api/v1/sessions/", { auth: true }),
+          SessionsApi.listAllSessions({
+            auth: true,
+            // Reconciliation needs historical sessions as well as the default
+            // upcoming feed. Each network response remains bounded.
+            from: new Date(0).toISOString(),
+          }).then((rows) => rows as unknown as Session[]),
           apiGet<Cohort[]>("/api/v1/academy/cohorts", { auth: true }).catch((err) => {
             console.warn("Failed to fetch cohorts for dropdown labels", err);
             return [] as Cohort[];
