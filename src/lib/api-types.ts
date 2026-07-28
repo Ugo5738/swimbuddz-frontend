@@ -2359,6 +2359,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/members/pods/rosters/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get Pod Rosters Batch Internal
+         * @description Return active member rosters for many pods in one database query.
+         */
+        post: operations["get_pod_rosters_batch_internal_internal_members_pods_rosters_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/members/pods/{pod_id}": {
         parameters: {
             query?: never;
@@ -3499,11 +3519,12 @@ export interface paths {
         };
         /**
          * List Sessions
-         * @description List all upcoming sessions. Optional `types` filter is a comma-separated list
-         *     of SessionType values (e.g., "club,community"). Optional `cohort_id` filter
-         *     returns only sessions for that cohort.
+         * @description List a bounded, chronologically sorted session window.
          *
-         *     Draft sessions are only visible to admins with include_drafts=true.
+         *     With no explicit date/status/admin-draft filters, this endpoint returns
+         *     upcoming scheduled/in-progress sessions. An explicit date window without a
+         *     status returns every published status in that window. `from` is inclusive
+         *     and `to` is exclusive. `after`/`before` remain supported for older clients.
          */
         get: operations["list_sessions_sessions__get"];
         put?: never;
@@ -3767,6 +3788,26 @@ export interface paths {
         get: operations["list_member_session_commitments_internal_sessions_member__member_auth_id__session_commitments_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/sessions/summaries/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get Session Summaries Batch
+         * @description Return display summaries for many session IDs in one database query.
+         */
+        post: operations["get_session_summaries_batch_internal_sessions_summaries_batch_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4347,7 +4388,7 @@ export interface paths {
         };
         /**
          * Get My Attendance History
-         * @description Get attendance history for the current member, enriched with session details.
+         * @description Get a bounded attendance-history page for the current member.
          */
         get: operations["get_my_attendance_history_attendance_me_get"];
         put?: never;
@@ -5932,6 +5973,26 @@ export interface paths {
         get: operations["check_cohort_enrollment_internal_internal_academy_cohorts__cohort_id__check_enrollment__member_id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/academy/cohorts/check-enrollments/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check Cohort Enrollments Batch Internal
+         * @description Resolve one member's access to many cohorts in one database query.
+         */
+        post: operations["check_cohort_enrollments_batch_internal_internal_academy_cohorts_check_enrollments_batch_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -16317,6 +16378,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Calendar
+         * @description Return only calendar items visible to the current visitor or member.
+         */
+        get: operations["get_calendar_api_v1_calendar_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -19717,6 +19798,18 @@ export interface components {
             joined_at: string;
             assigned_by: components["schemas"]["PodAssignmentSource"];
         };
+        /** PodRosterBatchRequest */
+        PodRosterBatchRequest: {
+            /** Pod Ids */
+            pod_ids?: string[];
+        };
+        /** PodRosterBatchResponse */
+        PodRosterBatchResponse: {
+            /** Active Member Ids By Pod */
+            active_member_ids_by_pod: {
+                [key: string]: string[];
+            };
+        };
         /**
          * PodStatus
          * @description Lifecycle marker. Active pods accept members and surface in the
@@ -21270,6 +21363,21 @@ export interface components {
                 [key: string]: unknown;
             }[] | null;
         };
+        /** SessionListSummary */
+        SessionListSummary: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Session Type */
+            session_type: string;
+            /** Starts At */
+            starts_at: string;
+            /** Location Name */
+            location_name?: string | null;
+            /** Location */
+            location?: string | null;
+        };
         /**
          * SessionLocation
          * @enum {string}
@@ -21394,6 +21502,11 @@ export interface components {
          * @enum {string}
          */
         SessionStatus: "draft" | "scheduled" | "in_progress" | "completed" | "cancelled";
+        /** SessionSummaryBatchRequest */
+        SessionSummaryBatchRequest: {
+            /** Session Ids */
+            session_ids?: string[];
+        };
         /** SessionTemplateCreate */
         SessionTemplateCreate: {
             /** Title */
@@ -22555,6 +22668,38 @@ export interface components {
             program_id: string;
             /** Coach Assignments */
             coach_assignments?: components["schemas"]["CoachAssignmentInput"][] | null;
+        };
+        /** CohortEnrollmentAccess */
+        CohortEnrollmentAccess: {
+            /**
+             * Enrolled
+             * @default false
+             */
+            enrolled: boolean;
+            /** Status */
+            status?: string | null;
+            /**
+             * Access Suspended
+             * @default false
+             */
+            access_suspended: boolean;
+        };
+        /** CohortEnrollmentBatchRequest */
+        CohortEnrollmentBatchRequest: {
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Cohort Ids */
+            cohort_ids?: string[];
+        };
+        /** CohortEnrollmentBatchResponse */
+        CohortEnrollmentBatchResponse: {
+            /** Enrollments */
+            enrollments: {
+                [key: string]: components["schemas"]["CohortEnrollmentAccess"];
+            };
         };
         /**
          * CohortExtensionRequestCreate
@@ -31089,6 +31234,10 @@ export interface components {
             total_hours: number;
             /** Preferred Roles */
             preferred_roles?: string[] | null;
+            /** Featured From */
+            featured_from?: string | null;
+            /** Featured Until */
+            featured_until?: string | null;
         };
         /** SpotlightMilestone */
         SpotlightMilestone: {
@@ -37772,6 +37921,82 @@ export interface components {
             /** Credit Minor */
             credit_minor: number;
         };
+        /**
+         * CalendarItemResponse
+         * @description One visible item from a domain-owned session or event.
+         */
+        CalendarItemResponse: {
+            /** Id */
+            id: string;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "session" | "event";
+            /**
+             * Audience
+             * @enum {string}
+             */
+            audience: "community" | "club" | "academy";
+            /** Kind */
+            kind: string;
+            /** Title */
+            title: string;
+            /** Description */
+            description?: string | null;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /** Ends At */
+            ends_at?: string | null;
+            /**
+             * Timezone
+             * @default Africa/Lagos
+             */
+            timezone: string;
+            /** Location Name */
+            location_name?: string | null;
+            /** Pool Id */
+            pool_id?: string | null;
+            /**
+             * Status
+             * @default scheduled
+             */
+            status: string;
+            /** Href */
+            href: string;
+            /**
+             * Bookable
+             * @default false
+             */
+            bookable: boolean;
+        };
+        /**
+         * CalendarResponse
+         * @description Calendar items plus range and partial-service status.
+         */
+        CalendarResponse: {
+            /** Items */
+            items?: components["schemas"]["CalendarItemResponse"][];
+            /**
+             * Range Start
+             * Format: date-time
+             */
+            range_start: string;
+            /**
+             * Range End
+             * Format: date-time
+             */
+            range_end: string;
+            /** Available Audiences */
+            available_audiences?: ("community" | "club" | "academy")[];
+            /** Errors */
+            errors?: {
+                [key: string]: string;
+            };
+        };
     };
     responses: never;
     parameters: never;
@@ -41430,6 +41655,39 @@ export interface operations {
             };
         };
     };
+    get_pod_rosters_batch_internal_internal_members_pods_rosters_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PodRosterBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodRosterBatchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_pod_internal_internal_members_pods__pod_id__get: {
         parameters: {
             query?: never;
@@ -43009,6 +43267,20 @@ export interface operations {
             query?: {
                 types?: string | null;
                 cohort_id?: string | null;
+                /** @description Exact session status to return. */
+                status?: components["schemas"]["SessionStatus"] | null;
+                /** @description Inclusive session start boundary (ISO-8601). */
+                from?: string | null;
+                /** @description Exclusive session start boundary (ISO-8601). */
+                to?: string | null;
+                /** @description Deprecated alias for `from`. */
+                after?: string | null;
+                /** @description Deprecated alias for `to`. */
+                before?: string | null;
+                /** @description Maximum rows returned (max 100). */
+                limit?: number;
+                /** @description Rows to skip for backward-compatible pagination. */
+                offset?: number;
                 /** @description Include draft sessions (admin only) */
                 include_drafts?: boolean;
             };
@@ -43463,6 +43735,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberSessionCommitment"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_session_summaries_batch_internal_sessions_summaries_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SessionSummaryBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionListSummary"][];
                 };
             };
             /** @description Validation Error */
@@ -44301,7 +44606,12 @@ export interface operations {
     };
     get_my_attendance_history_attendance_me_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Include batched session display details. */
+                include_session?: boolean;
+                limit?: number;
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -44315,6 +44625,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AttendanceResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -46861,6 +47180,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_cohort_enrollments_batch_internal_internal_academy_cohorts_check_enrollments_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CohortEnrollmentBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CohortEnrollmentBatchResponse"];
                 };
             };
             /** @description Validation Error */
@@ -65802,6 +66154,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InvoiceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_calendar_api_v1_calendar_get: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarResponse"];
                 };
             };
             /** @description Validation Error */
