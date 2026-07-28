@@ -54,10 +54,7 @@ export function DigestSettingsPanel() {
     setError(null);
     try {
       const [configData, statsData] = await Promise.all([
-        apiGet<DigestConfig[]>(
-          "/api/v1/communications/digest/admin/configs",
-          { auth: true },
-        ),
+        apiGet<DigestConfig[]>("/api/v1/communications/digest/admin/configs", { auth: true }),
         apiGet<DigestStats>("/api/v1/communications/digest/admin/stats", {
           auth: true,
         }),
@@ -77,9 +74,7 @@ export function DigestSettingsPanel() {
 
   const updateLocal = (audience: Audience, patch: Partial<DigestConfig>) => {
     setConfigs((current) =>
-      current.map((config) =>
-        config.audience === audience ? { ...config, ...patch } : config,
-      ),
+      current.map((config) => (config.audience === audience ? { ...config, ...patch } : config))
     );
   };
 
@@ -96,7 +91,7 @@ export function DigestSettingsPanel() {
           default_gear_notes: config.default_gear_notes,
           is_enabled: config.is_enabled,
         },
-        { auth: true },
+        { auth: true }
       );
       updateLocal(config.audience, updated);
     } catch (caught) {
@@ -120,10 +115,10 @@ export function DigestSettingsPanel() {
         <div>
           <div className="flex items-center gap-2">
             <ImageIcon className="h-5 w-5 text-cyan-700" />
-            <h2 className="text-lg font-semibold text-slate-900">Weekly digest</h2>
+            <h2 className="text-lg font-semibold text-slate-900">Session email presentation</h2>
           </div>
           <p className="mt-1 text-sm text-slate-600">
-            Section images, preparation notes, and latest delivery reporting.
+            Shared images and preparation notes for digests, booking prompts, and 24-hour reminders.
           </p>
         </div>
         {stats?.campaign_key && (
@@ -154,11 +149,9 @@ export function DigestSettingsPanel() {
           <section key={config.audience} className="grid gap-5 py-5 lg:grid-cols-[280px_1fr]">
             <div>
               <div className="mb-3 flex items-center justify-between gap-3">
-                <h3 className="font-semibold text-slate-900">
-                  {AUDIENCE_LABELS[config.audience]}
-                </h3>
+                <h3 className="font-semibold text-slate-900">{AUDIENCE_LABELS[config.audience]}</h3>
                 <Checkbox
-                  label="Include"
+                  label="In digest"
                   checked={config.is_enabled}
                   onChange={(event) =>
                     updateLocal(config.audience, { is_enabled: event.target.checked })
@@ -166,7 +159,7 @@ export function DigestSettingsPanel() {
                 />
               </div>
               <MediaInput
-                label={`${AUDIENCE_LABELS[config.audience]} section image`}
+                label={`${AUDIENCE_LABELS[config.audience]} email image`}
                 purpose="content_image"
                 mode="both"
                 value={config.featured_image_media_id}
