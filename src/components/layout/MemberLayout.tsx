@@ -121,6 +121,7 @@ const navSections: NavSection[] = [
   {
     title: "Swim",
     items: [
+      { href: "/account/calendar", label: "Calendar", icon: CalendarDays },
       { href: "/sessions", label: "Sessions", icon: Calendar },
       {
         href: "/account/attendance/history",

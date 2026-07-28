@@ -21,7 +21,7 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 
 ## Public Routes
 
-**25 pages** - Accessible to all visitors
+**26 pages** - Accessible to all visitors
 
 ### Landing & Info Pages
 
@@ -32,6 +32,7 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 | `/academy`              | `src/app/(public)/academy/page.tsx`              | Academy landing - Program information and benefits  |
 | `/club`                 | `src/app/(public)/club/page.tsx`                 | Club landing - Training information                 |
 | `/community`            | `src/app/(public)/community/page.tsx`            | Community landing - Social swimming information     |
+| `/calendar`             | `src/app/(public)/calendar/page.tsx`             | Public Community activity calendar                  |
 | `/guidelines-and-rules` | `src/app/(public)/guidelines-and-rules/page.tsx` | Community rules and safety guidelines               |
 | `/membership`           | `src/app/(public)/membership/page.tsx`           | Membership information and tiers                    |
 | `/privacy`              | `src/app/(public)/privacy/page.tsx`              | Privacy policy                                      |
@@ -128,6 +129,7 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 | Route                         | File                                                   | Purpose                         |
 | ----------------------------- | ------------------------------------------------------ | ------------------------------- |
 | `/account/sessions`           | `src/app/(member)/account/sessions/page.tsx`           | Member's upcoming sessions      |
+| `/account/calendar`           | `src/app/(member)/account/calendar/page.tsx`           | Access-aware tier calendar      |
 | `/sessions/[id]/sign-in`      | `src/app/(member)/sessions/[id]/sign-in/page.tsx`      | Three-step session sign-in flow |
 | `/account/attendance/history` | `src/app/(member)/account/attendance/history/page.tsx` | Attendance history and stats    |
 

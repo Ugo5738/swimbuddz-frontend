@@ -2,11 +2,7 @@
 
 import { Card } from "@/components/ui/Card";
 import { API_BASE_URL } from "@/lib/config";
-import {
-  SessionsApi,
-  SessionStatus,
-  type Session,
-} from "@/lib/sessions";
+import { SessionsApi, SessionStatus, type Session } from "@/lib/sessions";
 import {
   RECOGNITION_LABELS,
   VolunteersApi,
@@ -33,27 +29,24 @@ const communityFeatures = [
     title: "Events Calendar",
     description:
       "Social swims, casual meetups, beach hangouts, socials, watch parties and community-led activities.",
-    link: "/community/events",
+    link: "/calendar",
     icon: "📅",
   },
   {
     title: "Member Directory",
-    description:
-      "Connect with other swimmers who opted in to be visible in the community.",
+    description: "Connect with other swimmers who opted in to be visible in the community.",
     link: "/community/directory",
     icon: "👥",
   },
   {
     title: "Volunteer Hub",
-    description:
-      "Help build SwimBuddz by volunteering in media, logistics, or coaching support.",
+    description: "Help build SwimBuddz by volunteering in media, logistics, or coaching support.",
     link: "/volunteer",
     icon: "🤝",
   },
   {
     title: "Tips & Articles",
-    description:
-      "Educational content on swimming techniques, safety, breathing, and more.",
+    description: "Educational content on swimming techniques, safety, breathing, and more.",
     link: "/community/tips",
     icon: "📚",
   },
@@ -106,9 +99,7 @@ export default function CommunityPage() {
   // Data states
   const [spotlight, setSpotlight] = useState<SpotlightData | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [leaderboardPeriod, setLeaderboardPeriod] = useState<
-    "all_time" | "this_month"
-  >("all_time");
+  const [leaderboardPeriod, setLeaderboardPeriod] = useState<"all_time" | "this_month">("all_time");
   const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
   const [memberStats, setMemberStats] = useState<MemberStats | null>(null);
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([]);
@@ -130,13 +121,9 @@ export default function CommunityPage() {
         // 3: Upcoming sessions (community type)
         SessionsApi.listSessions({ types: "community,event" }),
         // 4: Member stats
-        fetch(`${API_BASE_URL}/api/v1/members/stats`).then((r) =>
-          r.ok ? r.json() : null,
-        ),
+        fetch(`${API_BASE_URL}/api/v1/members/stats`).then((r) => (r.ok ? r.json() : null)),
         // 5: Community photos
-        fetch(`${API_BASE_URL}/api/v1/media/assets`).then((r) =>
-          r.ok ? r.json() : [],
-        ),
+        fetch(`${API_BASE_URL}/api/v1/media/assets`).then((r) => (r.ok ? r.json() : [])),
       ]);
 
       // Spotlight
@@ -162,16 +149,8 @@ export default function CommunityPage() {
       if (results[3].status === "fulfilled" && results[3].value) {
         const now = new Date();
         const upcoming = (results[3].value as Session[])
-          .filter(
-            (s) =>
-              s.status === SessionStatus.SCHEDULED &&
-              new Date(s.starts_at) > now,
-          )
-          .sort(
-            (a, b) =>
-              new Date(a.starts_at).getTime() -
-              new Date(b.starts_at).getTime(),
-          )
+          .filter((s) => s.status === SessionStatus.SCHEDULED && new Date(s.starts_at) > now)
+          .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
           .slice(0, 3);
         setUpcomingSessions(upcoming);
       }
@@ -185,10 +164,7 @@ export default function CommunityPage() {
       if (results[5].status === "fulfilled" && results[5].value) {
         const assets = results[5].value as any[];
         const photos = assets
-          .filter(
-            (a) =>
-              a.key.startsWith("community_photo_") && a.media_item?.file_url,
-          )
+          .filter((a) => a.key.startsWith("community_photo_") && a.media_item?.file_url)
           .sort((a, b) => {
             const orderA = parseInt(a.key.split("_").pop() || "0");
             const orderB = parseInt(b.key.split("_").pop() || "0");
@@ -225,9 +201,7 @@ export default function CommunityPage() {
       await Promise.allSettled(
         Array.from(memberIds).map(async (id) => {
           try {
-            const res = await fetch(
-              `${API_BASE_URL}/api/v1/members/public/${id}`,
-            );
+            const res = await fetch(`${API_BASE_URL}/api/v1/members/public/${id}`);
             if (res.ok) {
               const data = await res.json();
               if (data.profile_photo_url) {
@@ -237,7 +211,7 @@ export default function CommunityPage() {
           } catch {
             /* ignore per-member failures */
           }
-        }),
+        })
       );
       if (Object.keys(map).length > 0) {
         setPhotoMap(map);
@@ -262,9 +236,7 @@ export default function CommunityPage() {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-cyan-200 border-t-cyan-600" />
-        <p className="text-lg font-medium text-slate-600">
-          Loading community...
-        </p>
+        <p className="text-lg font-medium text-slate-600">Loading community...</p>
       </div>
     );
   }
@@ -281,8 +253,8 @@ export default function CommunityPage() {
             The SwimBuddz Community
           </h1>
           <p className="text-lg text-slate-600 max-w-3xl mt-3">
-            A welcoming space for swimmers of all levels to connect, share, and
-            grow together. See what&apos;s happening in the community right now.
+            A welcoming space for swimmers of all levels to connect, share, and grow together. See
+            what&apos;s happening in the community right now.
           </p>
         </div>
 
@@ -308,8 +280,7 @@ export default function CommunityPage() {
             <div className="flex-shrink-0 inline-flex items-center gap-2 rounded-full bg-emerald-50 border border-emerald-200 px-4 py-2">
               <span className="text-lg">⏱️</span>
               <span className="text-sm font-semibold text-emerald-700">
-                {Math.floor(spotlight.total_hours_all_time)}+ Hours
-                Volunteered
+                {Math.floor(spotlight.total_hours_all_time)}+ Hours Volunteered
               </span>
             </div>
           )}
@@ -330,9 +301,7 @@ export default function CommunityPage() {
         (spotlight && spotlight.milestones_this_month.length > 0)) && (
         <section className="space-y-6">
           <div>
-            <h2 className="text-2xl font-semibold text-slate-900">
-              What&apos;s Happening
-            </h2>
+            <h2 className="text-2xl font-semibold text-slate-900">What&apos;s Happening</h2>
             <p className="text-sm text-slate-600 mt-1">
               Upcoming sessions and recent community activity.
             </p>
@@ -389,9 +358,7 @@ export default function CommunityPage() {
                     className="flex items-center gap-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3"
                   >
                     <span className="text-xl flex-shrink-0">🏅</span>
-                    <span className="text-sm text-amber-800">
-                      {m.description} this month
-                    </span>
+                    <span className="text-sm text-amber-800">{m.description} this month</span>
                   </div>
                 ))}
               </div>
@@ -407,9 +374,7 @@ export default function CommunityPage() {
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-600">
               Volunteer Spotlight
             </p>
-            <h2 className="text-2xl font-semibold text-slate-900 mt-1">
-              Volunteer of the Month
-            </h2>
+            <h2 className="text-2xl font-semibold text-slate-900 mt-1">Volunteer of the Month</h2>
           </div>
 
           <Card className="overflow-hidden bg-gradient-to-br from-amber-50 to-white border-amber-200">
@@ -424,9 +389,7 @@ export default function CommunityPage() {
                         photoMap[spotlight.featured_volunteer.member_id] ||
                         spotlight.featured_volunteer.profile_photo_url!
                       }
-                      alt={getDisplayName(
-                        spotlight.featured_volunteer.member_name,
-                      )}
+                      alt={getDisplayName(spotlight.featured_volunteer.member_name)}
                       fill
                       sizes="96px"
                       className="object-cover"
@@ -454,16 +417,11 @@ export default function CommunityPage() {
                   {getDisplayName(spotlight.featured_volunteer.member_name)}
                 </h3>
                 {(() => {
-                  const roleId =
-                    spotlight.featured_volunteer.preferred_roles?.[0];
+                  const roleId = spotlight.featured_volunteer.preferred_roles?.[0];
                   if (!roleId) return null;
                   const label = roleMap[roleId];
                   if (!label) return null;
-                  return (
-                    <p className="text-sm text-amber-700 font-medium">
-                      {label}
-                    </p>
-                  );
+                  return <p className="text-sm text-amber-700 font-medium">{label}</p>;
                 })()}
                 <p className="text-sm text-slate-500">
                   {spotlight.featured_volunteer.total_hours} hours contributed
@@ -485,9 +443,7 @@ export default function CommunityPage() {
         <section className="space-y-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
-              <h2 className="text-2xl font-semibold text-slate-900">
-                Top Contributors
-              </h2>
+              <h2 className="text-2xl font-semibold text-slate-900">Top Contributors</h2>
               <p className="text-sm text-slate-600 mt-1">
                 Volunteers who have given the most time.
               </p>
@@ -586,18 +542,15 @@ export default function CommunityPage() {
                               : "bg-orange-100 text-orange-700"
                         }`}
                       >
-                        {RECOGNITION_LABELS[
-                          volunteer.recognition_tier as RecognitionTier
-                        ] || volunteer.recognition_tier}
+                        {RECOGNITION_LABELS[volunteer.recognition_tier as RecognitionTier] ||
+                          volunteer.recognition_tier}
                       </span>
                     )}
                   </div>
 
                   {/* Hours */}
                   <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-bold text-cyan-600">
-                      {volunteer.total_hours}
-                    </p>
+                    <p className="text-sm font-bold text-cyan-600">{volunteer.total_hours}</p>
                     <p className="text-xs text-slate-400">hours</p>
                   </div>
                 </div>
@@ -619,9 +572,7 @@ export default function CommunityPage() {
       {galleryPhotos.length > 0 && (
         <section className="space-y-6">
           <div>
-            <h2 className="text-2xl font-semibold text-slate-900">
-              Community Moments
-            </h2>
+            <h2 className="text-2xl font-semibold text-slate-900">Community Moments</h2>
             <p className="text-sm text-slate-600 mt-1">
               Snapshots from our sessions, meetups, and events.
             </p>
@@ -667,9 +618,7 @@ export default function CommunityPage() {
       {/* ─── 6. EXPLORE COMMUNITY FEATURES ──────────────────────────── */}
       <section className="space-y-6">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">
-            Explore Community Features
-          </h2>
+          <h2 className="text-2xl font-semibold text-slate-900">Explore Community Features</h2>
           <p className="text-sm text-slate-600 mt-1">
             Jump into the different areas of the SwimBuddz community.
           </p>
@@ -679,16 +628,12 @@ export default function CommunityPage() {
             <Link key={feature.title} href={feature.link} className="group">
               <Card className="h-full p-5 transition-all hover:shadow-md hover:-translate-y-0.5 hover:border-cyan-200">
                 <div className="flex items-start gap-3">
-                  <span className="text-2xl flex-shrink-0 mt-0.5">
-                    {feature.icon}
-                  </span>
+                  <span className="text-2xl flex-shrink-0 mt-0.5">{feature.icon}</span>
                   <div className="space-y-1">
                     <h3 className="font-semibold text-slate-900 group-hover:text-cyan-700 transition-colors">
                       {feature.title}
                     </h3>
-                    <p className="text-sm text-slate-600 leading-relaxed">
-                      {feature.description}
-                    </p>
+                    <p className="text-sm text-slate-600 leading-relaxed">{feature.description}</p>
                   </div>
                 </div>
               </Card>
@@ -701,8 +646,8 @@ export default function CommunityPage() {
       <section className="rounded-3xl bg-gradient-to-br from-cyan-600 to-cyan-700 px-8 py-12 text-center text-white">
         <h2 className="text-3xl font-bold mb-4">Who is this for?</h2>
         <p className="text-lg mb-6 text-cyan-50 max-w-2xl mx-auto">
-          Anyone who wants to join the movement, make friends, and participate
-          casually — no commitments or training expectations.
+          Anyone who wants to join the movement, make friends, and participate casually — no
+          commitments or training expectations.
         </p>
         <Link
           href="/register"
@@ -719,8 +664,7 @@ export default function CommunityPage() {
           <Card className="space-y-2">
             <h3 className="text-lg font-semibold text-cyan-700">Club Tier</h3>
             <p className="text-sm text-slate-600">
-              Join structured training sessions, track your attendance, and
-              build consistency.
+              Join structured training sessions, track your attendance, and build consistency.
             </p>
             <Link
               href="/club"
@@ -730,12 +674,9 @@ export default function CommunityPage() {
             </Link>
           </Card>
           <Card className="space-y-2">
-            <h3 className="text-lg font-semibold text-cyan-700">
-              Academy Tier
-            </h3>
+            <h3 className="text-lg font-semibold text-cyan-700">Academy Tier</h3>
             <p className="text-sm text-slate-600">
-              Enroll in structured learning programs with clear milestones and
-              coach feedback.
+              Enroll in structured learning programs with clear milestones and coach feedback.
             </p>
             <Link
               href="/academy"

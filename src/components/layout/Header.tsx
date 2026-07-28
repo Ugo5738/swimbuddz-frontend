@@ -84,7 +84,7 @@ const navGroups = [
       },
     ],
   },
-  { href: "/sessions-and-events", label: "Sessions", type: "link" as const },
+  { href: "/calendar", label: "Calendar", type: "link" as const },
   // Note: /challenges is reachable via the homepage carousel + the
   // member-portal sidebar. Keeping it out of the top nav prevents the
   // nav from creeping past 7 items and reserves top-level slots for
@@ -142,10 +142,10 @@ export function Header() {
   const isAdmin = Array.isArray(roles) && roles.includes("admin");
   const dashboardUrl = isAdmin ? "/admin/dashboard" : "/account";
 
-  // Logged-in members go directly to the full session catalog; guests see the public teaser
+  // Logged-in members get their access-aware calendar; guests see public activities.
   const effectiveNavGroups = navGroups.map((item) =>
-    item.type === "link" && item.href === "/sessions-and-events" && session
-      ? { ...item, href: "/sessions" }
+    item.type === "link" && item.href === "/calendar" && session
+      ? { ...item, href: "/account/calendar" }
       : item
   );
 
