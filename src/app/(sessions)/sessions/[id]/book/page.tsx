@@ -1,11 +1,12 @@
 "use client";
 
+import { BubblesSlider } from "@/components/checkout/BubblesSlider";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
-import { BubblesSlider } from "@/components/checkout/BubblesSlider";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet, apiPost } from "@/lib/api";
+import { getCurrentAccessToken } from "@/lib/auth";
 import { getSession, type RideShareArea, type Session } from "@/lib/sessions";
 import { getPaidMembershipTier } from "@/lib/tiers";
 import Link from "next/link";
@@ -65,6 +66,8 @@ type PaymentIntentResponse = {
   discount_applied?: number;
   discount_code?: string;
 };
+
+const SIGN_IN_REQUIRED = "Please sign in to book this session.";
 
 interface PaymentResponse {
   status: string;
@@ -211,6 +214,17 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
   useEffect(() => {
     async function loadData() {
       try {
+        // Middleware normally redirects signed-out visitors before this client
+        // page renders. Keep a client-side guard as well: tracked email links
+        // and stale browser sessions can still reach the page during hydration,
+        // and an anonymous session response has no booking-access object. That
+        // must be presented as a sign-in requirement, not a verification error.
+        const accessToken = await getCurrentAccessToken();
+        if (!accessToken) {
+          setError(SIGN_IN_REQUIRED);
+          return;
+        }
+
         const sessionData = await getSession(params.id, { auth: true });
 
         // Load ride configs
@@ -261,13 +275,13 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
           if (profile.status === "fulfilled") {
             setMember(profile.value);
           } else {
-            setError("Please sign in to book this session.");
+            setError(SIGN_IN_REQUIRED);
           }
           if (wallet.status === "fulfilled" && wallet.value.status === "active") {
             setWalletBalance(wallet.value.available_balance ?? wallet.value.balance);
           }
         } catch {
-          setError("Please sign in to book this session.");
+          setError(SIGN_IN_REQUIRED);
         }
       } catch (err) {
         console.error("Failed to fetch session:", err);
@@ -582,15 +596,31 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
 
   if (error || !session) {
     if (error === "Session not found.") return notFound();
+    const isSignInRequired = error === SIGN_IN_REQUIRED;
+    const returnPath = `/sessions/${params.id}/book${
+      searchParams.toString() ? `?${searchParams.toString()}` : ""
+    }`;
     return (
       <div className="max-w-xl mx-auto px-4 py-8">
         <Card className="p-6 space-y-6 text-center">
-          <Alert variant="error" title="Unable to load">
+          <Alert
+            variant={isSignInRequired ? "info" : "error"}
+            title={isSignInRequired ? "Sign in to book" : "Unable to load"}
+          >
             {error || "Session not found."}
           </Alert>
-          <Link href="/sessions">
-            <Button>Back to Sessions</Button>
-          </Link>
+          <div className="flex flex-col gap-3">
+            {isSignInRequired && (
+              <Link href={`/login?redirect=${encodeURIComponent(returnPath)}`}>
+                <Button className="w-full">Sign in and continue</Button>
+              </Link>
+            )}
+            <Link href="/sessions">
+              <Button variant={isSignInRequired ? "secondary" : "primary"} className="w-full">
+                Back to Sessions
+              </Button>
+            </Link>
+          </div>
         </Card>
       </div>
     );
