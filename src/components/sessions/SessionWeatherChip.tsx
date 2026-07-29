@@ -2,22 +2,13 @@
 
 import { apiGet } from "@/lib/api";
 import {
-  daysUntilSession,
-  FORECAST_HORIZON_DAYS,
-  summarizeSession,
-  toDateParam,
-  type WeatherForecast,
+  presentWeatherSummary,
   type WeatherKind,
+  weatherWindowSummaryPath,
+  type WeatherWindowSummaryResponse,
 } from "@/lib/weather";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Cloud,
-  CloudLightning,
-  CloudRain,
-  CloudSun,
-  type LucideIcon,
-  Sun,
-} from "lucide-react";
+import { Cloud, CloudLightning, CloudRain, CloudSun, type LucideIcon, Sun } from "lucide-react";
 
 const KIND_STYLE: Record<WeatherKind, { Icon: LucideIcon; tone: string }> = {
   clear: { Icon: Sun, tone: "bg-sky-50 text-sky-800" },
@@ -35,29 +26,22 @@ type Props = {
 };
 
 /**
- * Weather block for a session card. Fetches the cached pool forecast (deduped
- * across cards by react-query) and summarizes the session's **own hours** —
+ * Weather block for a session card. Fetches the canonical summary of the
+ * session's own hours from the cached pool forecast (deduped by react-query) —
  * condition, peak rain chance, rainfall (mm), high temp, and a one-line read.
  * Renders nothing for past/far-future sessions or when no forecast is
  * available — weather is an enhancement here, never a blocker.
  */
-export function SessionWeatherChip({
-  poolId,
-  startsAt,
-  endsAt,
-  isPast = false,
-}: Props) {
-  const within = daysUntilSession(startsAt);
-  const enabled =
-    Boolean(poolId) && !isPast && within >= 0 && within <= FORECAST_HORIZON_DAYS;
-  const date = toDateParam(startsAt);
+export function SessionWeatherChip({ poolId, startsAt, endsAt, isPast = false }: Props) {
+  const enabled = Boolean(poolId) && !isPast;
 
   const { data, isLoading } = useQuery({
-    queryKey: ["weather", "pool", poolId, date],
+    queryKey: ["weather", "pool", poolId, "window-summary", startsAt, endsAt],
     queryFn: () =>
-      apiGet<WeatherForecast>(`/api/v1/weather/pools/${poolId}?date=${date}`, {
-        auth: true,
-      }),
+      apiGet<WeatherWindowSummaryResponse | null>(
+        weatherWindowSummaryPath(String(poolId), startsAt, endsAt),
+        { auth: true }
+      ),
     enabled,
     staleTime: 30 * 60 * 1000, // 30 min — the server caches anyway
     retry: 1,
@@ -74,7 +58,7 @@ export function SessionWeatherChip({
     );
   }
 
-  const summary = summarizeSession(data, startsAt, endsAt);
+  const summary = presentWeatherSummary(data);
   if (!summary) return null;
 
   const { Icon, tone } = KIND_STYLE[summary.kind];
@@ -85,18 +69,13 @@ export function SessionWeatherChip({
         <Icon className="h-4 w-4 shrink-0" />
         <span>{summary.conditionText}</span>
         {summary.tempHigh !== null && (
-          <span className="font-normal opacity-80">
-            · {Math.round(summary.tempHigh)}°
-          </span>
+          <span className="font-normal opacity-80">· {Math.round(summary.tempHigh)}°</span>
         )}
       </div>
       <div className="mt-0.5 text-xs opacity-90">
-        {summary.maxProb}% chance of rain · ~{summary.totalPrecip}mm during your
-        session
+        {summary.maxProb}% chance of rain · ~{summary.totalPrecip}mm during your session
       </div>
-      <p className="mt-1 text-xs leading-snug opacity-80">
-        {summary.explanation}
-      </p>
+      <p className="mt-1 text-xs leading-snug opacity-80">{summary.explanation}</p>
     </div>
   );
 }
