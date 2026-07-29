@@ -686,10 +686,11 @@ export interface CohortExtensionRequest {
   reason: string;
   current_end_date: string;
   proposed_end_date: string;
+  coach_payout_billable: boolean;
+  coach_payout_synced_at?: string | null;
   status: "pending" | "approved" | "rejected";
   reviewed_by_id?: string | null;
   admin_notes?: string | null;
   reviewed_at?: string | null;
   created_at: string;
 }
-

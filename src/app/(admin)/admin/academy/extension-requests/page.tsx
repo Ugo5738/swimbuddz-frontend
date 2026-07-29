@@ -14,16 +14,13 @@
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { Modal } from "@/components/ui/Modal";
 import { Textarea } from "@/components/ui/Textarea";
 import { useApi } from "@/hooks/useApi";
-import {
-  type Cohort,
-  type CohortExtensionRequest,
-  ExtensionRequestApi,
-} from "@/lib/academy";
+import { type Cohort, type CohortExtensionRequest, ExtensionRequestApi } from "@/lib/academy";
 import { formatDate } from "@/lib/format";
 import { CalendarClock, Check, Clock, X } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -40,9 +37,7 @@ export default function AdminExtensionRequestsPage() {
     loading,
     error,
     refetch,
-  } = useApi<CohortExtensionRequest[]>(
-    "/api/v1/academy/extension-requests/pending",
-  );
+  } = useApi<CohortExtensionRequest[]>("/api/v1/academy/extension-requests/pending");
   // Resolve cohort_id → name (queue response carries only ids).
   const { data: cohorts } = useApi<Cohort[]>("/api/v1/academy/cohorts");
 
@@ -54,14 +49,13 @@ export default function AdminExtensionRequestsPage() {
 
   const [action, setAction] = useState<PendingAction | null>(null);
   const [notes, setNotes] = useState("");
+  const [coachPayoutBillable, setCoachPayoutBillable] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const openAction = (
-    request: CohortExtensionRequest,
-    kind: "approve" | "reject",
-  ) => {
+  const openAction = (request: CohortExtensionRequest, kind: "approve" | "reject") => {
     setAction({ request, kind });
     setNotes("");
+    setCoachPayoutBillable(false);
   };
 
   const submitAction = async () => {
@@ -69,8 +63,12 @@ export default function AdminExtensionRequestsPage() {
     setSubmitting(true);
     try {
       if (action.kind === "approve") {
-        await ExtensionRequestApi.approve(action.request.id, notes);
-        toast.success("Extension approved — cohort end date updated.");
+        await ExtensionRequestApi.approve(action.request.id, notes, coachPayoutBillable);
+        toast.success(
+          coachPayoutBillable
+            ? "Extension approved and added to the coach payout schedule."
+            : "Extension approved without additional coach billing."
+        );
       } else {
         await ExtensionRequestApi.reject(action.request.id, notes);
         toast.success("Extension request rejected.");
@@ -78,9 +76,7 @@ export default function AdminExtensionRequestsPage() {
       setAction(null);
       refetch();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Action failed. Please try again.",
-      );
+      toast.error(err instanceof Error ? err.message : "Action failed. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -96,8 +92,8 @@ export default function AdminExtensionRequestsPage() {
           Cohort Extension Requests
         </h1>
         <p className="text-sm text-slate-600">
-          Coaches request extra weeks for a cohort. Approving updates the
-          cohort end date and extends enrolled members&apos; academy access.
+          Coaches request extra weeks for a cohort. Approving updates the cohort end date and
+          extends enrolled members&apos; academy access.
         </p>
       </header>
 
@@ -112,9 +108,7 @@ export default function AdminExtensionRequestsPage() {
       ) : pending.length === 0 ? (
         <Card className="p-12 text-center">
           <Clock className="mx-auto h-12 w-12 text-slate-300" />
-          <h3 className="mt-4 text-lg font-semibold text-slate-900">
-            No pending requests
-          </h3>
+          <h3 className="mt-4 text-lg font-semibold text-slate-900">No pending requests</h3>
           <p className="mt-2 text-sm text-slate-600">
             New coach extension requests will appear here for review.
           </p>
@@ -132,9 +126,7 @@ export default function AdminExtensionRequestsPage() {
                     <h3 className="font-semibold text-slate-900">
                       {cohortNameById.get(req.cohort_id) ?? "Cohort"}
                     </h3>
-                    <p className="text-xs text-slate-500">
-                      Requested {formatDate(req.created_at)}
-                    </p>
+                    <p className="text-xs text-slate-500">Requested {formatDate(req.created_at)}</p>
                   </div>
                   <Badge className="bg-amber-100 text-amber-700">
                     +{req.weeks_requested} week
@@ -147,9 +139,7 @@ export default function AdminExtensionRequestsPage() {
                     <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
                       Current end date
                     </p>
-                    <p className="text-sm text-slate-900">
-                      {formatDate(req.current_end_date)}
-                    </p>
+                    <p className="text-sm text-slate-900">{formatDate(req.current_end_date)}</p>
                   </div>
                   <div className="rounded-lg bg-cyan-50 p-3">
                     <p className="text-xs font-medium uppercase tracking-wide text-cyan-600">
@@ -165,16 +155,11 @@ export default function AdminExtensionRequestsPage() {
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
                     Reason
                   </p>
-                  <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">
-                    {req.reason}
-                  </p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{req.reason}</p>
                 </div>
 
                 <div className="flex justify-end gap-2 border-t border-slate-100 pt-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => openAction(req, "reject")}
-                  >
+                  <Button variant="outline" onClick={() => openAction(req, "reject")}>
                     <X className="mr-1 h-4 w-4" />
                     Reject
                   </Button>
@@ -193,9 +178,7 @@ export default function AdminExtensionRequestsPage() {
         isOpen={action !== null}
         onClose={() => (submitting ? undefined : setAction(null))}
         title={
-          action?.kind === "approve"
-            ? "Approve extension request"
-            : "Reject extension request"
+          action?.kind === "approve" ? "Approve extension request" : "Reject extension request"
         }
       >
         <div className="space-y-4">
@@ -211,12 +194,22 @@ export default function AdminExtensionRequestsPage() {
             rows={3}
             maxLength={500}
           />
+          {action?.kind === "approve" && (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <Checkbox
+                label="Include extension classes in coach payout"
+                checked={coachPayoutBillable}
+                onChange={(event) => setCoachPayoutBillable(event.target.checked)}
+                disabled={submitting}
+              />
+              <p className="mt-1 pl-6 text-xs text-slate-500">
+                Off by default. When enabled, the coach receives an additional payout block
+                calculated from Present/Late attendance during the extension.
+              </p>
+            </div>
+          )}
           <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setAction(null)}
-              disabled={submitting}
-            >
+            <Button variant="outline" onClick={() => setAction(null)} disabled={submitting}>
               Cancel
             </Button>
             <Button onClick={submitAction} disabled={submitting}>

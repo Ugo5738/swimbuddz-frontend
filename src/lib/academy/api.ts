@@ -4,20 +4,14 @@
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "../api";
 
 import type {
-  AICoachSuggestion,
   AICoachSuggestionResponse,
-  AIDimensionSuggestion,
   AIScoringRequest,
   AIScoringResponse,
-  CoachAssignmentInput,
-  CoachAssignmentRole,
   Cohort,
   CohortComplexityScoreCreate,
   CohortComplexityScoreResponse,
   CohortCreate,
   CohortExtensionRequest,
-  CohortRideConfigEntry,
-  CohortTimelineSessionImpact,
   CohortTimelineShiftLog,
   CohortTimelineShiftPreview,
   CohortTimelineShiftRequest,
@@ -27,16 +21,11 @@ import type {
   CurriculumLessonCreate,
   CurriculumWeek,
   CurriculumWeekCreate,
-  DimensionLabels,
-  DimensionScore,
   EligibleCoach,
   Enrollment,
-  EnrollmentInstallment,
   EnrollmentPauseResult,
-  MemberBasicInfo,
   Milestone,
   MilestoneClaimRequest,
-  NextSessionInfo,
   OnboardingInfo,
   Program,
   ProgramCurriculum,
@@ -62,7 +51,6 @@ import {
   ProgressStatus,
   RequiredEvidence,
 } from "./types";
-
 
 // Private helper type — only used by the dimension-labels lookup below.
 type DimensionLabelsApiResponse = {
@@ -189,17 +177,9 @@ export const AcademyApi = {
       { auth: true }
     ),
   adminPauseEnrollment: (id: string) =>
-    apiPost<EnrollmentPauseResult>(
-      `/api/v1/academy/enrollments/${id}/pause`,
-      {},
-      { auth: true }
-    ),
+    apiPost<EnrollmentPauseResult>(`/api/v1/academy/enrollments/${id}/pause`, {}, { auth: true }),
   adminResumeEnrollment: (id: string) =>
-    apiPost<EnrollmentPauseResult>(
-      `/api/v1/academy/enrollments/${id}/resume`,
-      {},
-      { auth: true }
-    ),
+    apiPost<EnrollmentPauseResult>(`/api/v1/academy/enrollments/${id}/resume`, {}, { auth: true }),
 
   // Progress
   updateProgress: (enrollmentId: string, milestoneId: string, data: Partial<StudentProgress>) =>
@@ -410,25 +390,25 @@ export const AcademyApi = {
 export const ExtensionRequestApi = {
   /** All pending extension requests across cohorts (admin only). */
   listPending: () =>
-    apiGet<CohortExtensionRequest[]>(
-      "/api/v1/academy/extension-requests/pending",
-      { auth: true },
-    ),
+    apiGet<CohortExtensionRequest[]>("/api/v1/academy/extension-requests/pending", { auth: true }),
 
   /** Approve a request — backend also extends the cohort end date and
    * propagates the new date to enrolled members' academy access. */
-  approve: (requestId: string, adminNotes?: string) =>
+  approve: (requestId: string, adminNotes?: string, coachPayoutBillable = false) =>
     apiPost<CohortExtensionRequest>(
       `/api/v1/academy/extension-requests/${requestId}/approve`,
-      { admin_notes: adminNotes?.trim() ? adminNotes.trim() : null },
-      { auth: true },
+      {
+        admin_notes: adminNotes?.trim() ? adminNotes.trim() : null,
+        coach_payout_billable: coachPayoutBillable,
+      },
+      { auth: true }
     ),
 
   reject: (requestId: string, adminNotes?: string) =>
     apiPost<CohortExtensionRequest>(
       `/api/v1/academy/extension-requests/${requestId}/reject`,
       { admin_notes: adminNotes?.trim() ? adminNotes.trim() : null },
-      { auth: true },
+      { auth: true }
     ),
 };
 
