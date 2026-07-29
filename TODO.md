@@ -690,6 +690,27 @@ Do not skip ahead or introduce new features that are not described here or in th
 
 ---
 
+## PHASE 8 – Session Media Vault
+
+- [x] Date/session-specific private vault creation
+- [x] Volunteer-derived contributor and curator access
+- [x] Expiring guest upload capability links
+- [x] Multi-gigabyte, resumable direct-to-S3 multipart upload
+- [x] Original-quality preservation and no automatic transcoding
+- [x] Consent attestation, opt-out notice, shot checklist and handoff notes
+- [x] Sample-fingerprint possible-duplicate hints
+- [x] Opt-in image/video review derivatives
+- [x] Bulk review, consent states, rating-ready metadata and publish gate
+- [x] Full-original downloads and asynchronous ZIP exports
+- [x] Download authorization and bandwidth ledger/dashboard
+- [x] Takedown workflow and expiring access
+- [x] Admin upload-window, quota, retention and safeguarding settings
+- [x] Optional signed private CloudFront download delivery
+- [ ] Reconcile transfer ledger with S3/CloudFront access logs for
+  billing-grade completed download bytes
+
+---
+
 ## Code-Review Follow-ups (frontend)
 
 Deferred frontend items from the comprehensive code review are tracked

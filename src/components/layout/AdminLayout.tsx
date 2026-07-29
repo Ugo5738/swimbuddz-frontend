@@ -20,6 +20,7 @@ import {
   FileText,
   GraduationCap,
   HandHeart,
+  HardDrive,
   Hourglass,
   Image,
   LayoutDashboard,
@@ -150,9 +151,7 @@ const navSections: NavSection[] = [
   },
   {
     title: "Sales",
-    items: [
-      { href: "/admin/corporate", label: "Corporate Wellness", icon: Briefcase },
-    ],
+    items: [{ href: "/admin/corporate", label: "Corporate Wellness", icon: Briefcase }],
   },
   {
     title: "Finance",
@@ -183,6 +182,7 @@ const navSections: NavSection[] = [
     items: [
       { href: "/admin/store", label: "Store", icon: ShoppingBag },
       { href: "/admin/pools", label: "Pool Registry", icon: Waves },
+      { href: "/admin/pools/pricing", label: "Pool Costing", icon: Banknote },
       { href: "/admin/reports", label: "Quarterly Reports", icon: BarChart3 },
       { href: "/admin/flywheel", label: "Flywheel", icon: TrendingUp },
       {
@@ -198,6 +198,7 @@ const navSections: NavSection[] = [
       { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
       { href: "/admin/testimonials", label: "Testimonials", icon: MessageSquareQuote },
       { href: "/admin/homepage-media", label: "Homepage Media", icon: Image },
+      { href: "/admin/media-vault", label: "Media Vault", icon: HardDrive },
       { href: "/admin/gallery", label: "Gallery", icon: Image },
     ],
   },

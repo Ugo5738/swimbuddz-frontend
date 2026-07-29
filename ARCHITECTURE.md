@@ -144,10 +144,7 @@ Example:
 
 ```ts
 // src/lib/api.ts
-export async function apiGet<T>(
-  path: string,
-  options?: { auth?: boolean },
-): Promise<T> {
+export async function apiGet<T>(path: string, options?: { auth?: boolean }): Promise<T> {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL!;
   const headers: HeadersInit = { "Content-Type": "application/json" };
 
@@ -210,3 +207,24 @@ Future UI may include “AI helpers” (coach chat, ask-about-plan). These will 
 - Using heavy, global state libraries (MobX, Redux) in the first implementation.
 
 The frontend should remain a thin, predictable UI layer over the backend API.
+
+---
+
+## 8. Session Media Vault
+
+The private Media Vault is separate from the public gallery.
+
+- `src/lib/media-vault.ts` owns its typed API surface.
+- `src/components/media-vault/VaultUploader.tsx` implements direct-to-S3,
+  resumable multipart uploads. Application API calls still use `src/lib/api.ts`;
+  the only browser-to-storage transport is the signed S3 `XMLHttpRequest`, which
+  is required for upload progress and `ETag` collection.
+- Original files never pass through Next.js or the backend API process.
+- A browser fingerprint samples the beginning and end of a file to provide an
+  possible-duplicate hint without reading a multi-gigabyte file into memory.
+- Upload state is persisted in `localStorage` by vault and fingerprint so a
+  reselected phone file can resume its already-uploaded S3 parts.
+- Admin review previews are optional derivatives. The reviewer grid does not
+  silently load every full-quality original.
+- The admin experience is split into review, access/link management, and
+  export/bandwidth operations components.

@@ -443,3 +443,48 @@ The components and pages you build should follow these flows closely.
 If UI complexity is added, keep the underlying flow and endpoints the same.
 
 For complete route reference, see [ROUTES_AND_PAGES.md](./ROUTES_AND_PAGES.md).
+
+---
+
+## 14. Session Media Capture → Social Handoff
+
+### Admin setup
+
+1. Admin opens `/admin/media-vault` and chooses a scheduled session.
+2. The vault inherits its title, date, time and venue, opens four hours before
+   the session, and closes 24 hours afterward.
+3. The backend mirrors `media` volunteers as uploaders and `gallery_support`
+   volunteers as curators. Admin can sync, add, expire or revoke access.
+4. If the photographer has no account, admin creates a revocable guest link.
+   The secret URL is shown once.
+
+### Contributor upload
+
+1. Contributor opens the assignment or guest link on their phone.
+2. They select any number of full-quality image/video files, complete the shot
+   checklist, read the opt-out notice, attest consent and optionally leave
+   handoff notes.
+3. Files go directly to private S3 in resumable chunks with live per-file
+   progress. Network failures keep resumable browser state; the contributor
+   reselects the same local files and taps Resume.
+4. The backend accepts each item only after S3 verifies its exact byte length.
+   Curators are notified when the batch is complete.
+
+### Curator review and publication
+
+1. Curator/admin opens the vault Review tab. Full originals are not loaded into
+   the grid automatically.
+2. They select items and explicitly request lightweight previews as needed.
+3. They shortlist, approve/reject and separately mark consent clear/restricted.
+   Fingerprint matches are shown as possible duplicates.
+4. One selected original downloads directly; multiple originals create a
+   background ZIP that expires after 24 hours. Each authorization and known
+   byte count is written to the transfer ledger.
+5. Publish succeeds only for approved/shortlisted and consent-cleared items.
+   Publishing copies the original bytes into a gallery album; the private
+   source remains the system of record.
+6. Access & Links manages people/capabilities. Exports & Bandwidth shows ZIP
+   status, upload bytes, authorized downloads and client-confirmed downloads.
+
+The product does not automatically transcode originals and does not use AI in
+this flow.

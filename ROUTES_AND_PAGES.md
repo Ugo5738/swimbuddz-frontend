@@ -424,3 +424,19 @@ When adding a new route:
 ---
 
 _Last updated: February 2026_
+
+### Session Media Vault
+
+| Route | File | Protection and purpose |
+| --- | --- | --- |
+| `/media-vault/upload/[token]` | `src/app/(public)/media-vault/upload/[token]/page.tsx` | Public capability-link uploader; the backend validates expiry, revocation and byte quota |
+| `/account/media-vault` | `src/app/(member)/account/media-vault/page.tsx` | Authenticated member's active media/gallery-support assignments |
+| `/account/media-vault/[id]` | `src/app/(member)/account/media-vault/[id]/page.tsx` | Contributor uploader for one assigned session vault |
+| `/admin/media-vault` | `src/app/(admin)/admin/media-vault/page.tsx` | Create and monitor date/session-specific private vaults |
+| `/admin/media-vault/[id]` | `src/app/(admin)/admin/media-vault/[id]/page.tsx` | Curate, approve/publish, manage access/links, exports and bandwidth |
+
+The public capability route is intentionally outside the authenticated member
+layout. Possession of the high-entropy, hashed, expiring token is the
+authorization boundary; it grants upload only and never browse/download access.
+
+_Last updated: July 2026_
