@@ -1,5 +1,6 @@
 "use client";
 
+import { ArticleFeaturedImage } from "@/components/content/ArticleFeaturedImage";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Textarea } from "@/components/ui/Textarea";
@@ -7,7 +8,6 @@ import { apiGet, apiPost } from "@/lib/api";
 import { format } from "date-fns";
 import { ArrowLeft, Calendar, MessageCircle, User } from "lucide-react";
 import dynamic from "next/dynamic";
-import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -27,7 +27,7 @@ const BlockViewer = dynamic(
         <div className="h-4 bg-slate-200 rounded w-4/5"></div>
       </div>
     ),
-  },
+  }
 );
 
 interface ContentPost {
@@ -71,10 +71,7 @@ export default function ContentDetailPage() {
 
   const fetchPost = async () => {
     try {
-      const data = await apiGet<ContentPost>(
-        `/api/v1/content/${postId}`,
-        { auth: true },
-      );
+      const data = await apiGet<ContentPost>(`/api/v1/content/${postId}`, { auth: true });
       setPost(data);
     } catch (error) {
       console.error("Failed to fetch post:", error);
@@ -85,10 +82,7 @@ export default function ContentDetailPage() {
 
   const fetchComments = async () => {
     try {
-      const data = await apiGet<Comment[]>(
-        `/api/v1/content/${postId}/comments`,
-        { auth: true },
-      );
+      const data = await apiGet<Comment[]>(`/api/v1/content/${postId}/comments`, { auth: true });
       setComments(data);
     } catch (error) {
       console.error("Failed to fetch comments:", error);
@@ -103,7 +97,7 @@ export default function ContentDetailPage() {
       await apiPost<Comment>(
         `/api/v1/content/${postId}/comments`,
         { content: newComment },
-        { auth: true },
+        { auth: true }
       );
       setNewComment("");
       await fetchComments();
@@ -138,12 +132,9 @@ export default function ContentDetailPage() {
       <div className="mx-auto max-w-4xl space-y-6 py-12 text-center">
         <h2 className="text-2xl font-bold text-slate-900">Article not found</h2>
         <p className="text-slate-600">
-          The article you&apos;re looking for doesn&apos;t exist or has been
-          removed.
+          The article you&apos;re looking for doesn&apos;t exist or has been removed.
         </p>
-        <Button onClick={() => router.push("/community/tips")}>
-          Back to Tips
-        </Button>
+        <Button onClick={() => router.push("/community/tips")}>Back to Tips</Button>
       </div>
     );
   }
@@ -165,15 +156,7 @@ export default function ContentDetailPage() {
         <Card className="overflow-hidden">
           {/* Featured Image */}
           {post.featured_image_url && (
-            <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
-              <Image
-                src={post.featured_image_url}
-                alt={post.title}
-                fill
-                sizes="(max-width: 768px) 100vw, 800px"
-                className="object-cover"
-              />
-            </div>
+            <ArticleFeaturedImage src={post.featured_image_url} alt={post.title} variant="detail" />
           )}
 
           <div className="p-8">
@@ -185,17 +168,13 @@ export default function ContentDetailPage() {
             </div>
 
             {/* Title */}
-            <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              {post.title}
-            </h1>
+            <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">{post.title}</h1>
 
             {/* Meta */}
             <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500 mb-8 pb-6 border-b border-slate-200">
               <div className="flex items-center gap-1.5">
                 <Calendar className="h-4 w-4" />
-                <span>
-                  {format(new Date(post.published_at), "MMMM d, yyyy")}
-                </span>
+                <span>{format(new Date(post.published_at), "MMMM d, yyyy")}</span>
               </div>
               <span className="text-slate-300">•</span>
               <div className="flex items-center gap-1.5">
@@ -206,9 +185,7 @@ export default function ContentDetailPage() {
 
             {/* Summary */}
             {post.summary && (
-              <p className="text-lg text-slate-600 mb-8 leading-relaxed">
-                {post.summary}
-              </p>
+              <p className="text-lg text-slate-600 mb-8 leading-relaxed">{post.summary}</p>
             )}
 
             {/* Content (Notion-style blocks or markdown fallback) */}
@@ -224,9 +201,7 @@ export default function ContentDetailPage() {
         <div className="space-y-6">
           <div className="flex items-center gap-2">
             <MessageCircle className="h-5 w-5 text-slate-600" />
-            <h3 className="text-lg font-semibold text-slate-900">
-              Comments ({comments.length})
-            </h3>
+            <h3 className="text-lg font-semibold text-slate-900">Comments ({comments.length})</h3>
           </div>
 
           {/* Add Comment */}
@@ -238,10 +213,7 @@ export default function ContentDetailPage() {
               rows={3}
             />
             <div className="flex justify-end">
-              <Button
-                onClick={handleAddComment}
-                disabled={!newComment.trim() || submitting}
-              >
+              <Button onClick={handleAddComment} disabled={!newComment.trim() || submitting}>
                 {submitting ? "Posting..." : "Post Comment"}
               </Button>
             </div>
@@ -268,16 +240,11 @@ export default function ContentDetailPage() {
                         {comment.member_name || "Member"}
                       </p>
                       <p className="text-xs text-slate-500">
-                        {format(
-                          new Date(comment.created_at),
-                          "MMM d, yyyy 'at' h:mm a",
-                        )}
+                        {format(new Date(comment.created_at), "MMM d, yyyy 'at' h:mm a")}
                       </p>
                     </div>
                   </div>
-                  <p className="text-sm text-slate-700 ml-10">
-                    {comment.content}
-                  </p>
+                  <p className="text-sm text-slate-700 ml-10">{comment.content}</p>
                 </div>
               ))
             )}

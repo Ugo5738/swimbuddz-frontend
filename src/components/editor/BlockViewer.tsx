@@ -54,10 +54,7 @@ interface BlockContentViewerProps {
 /**
  * Internal component that uses BlockNote to render blocks in read-only mode.
  */
-function BlockContentViewer({
-  blocks,
-  className = "",
-}: BlockContentViewerProps) {
+function BlockContentViewer({ blocks, className = "" }: BlockContentViewerProps) {
   const editor = useCreateBlockNote({
     initialContent: blocks,
   });
@@ -140,8 +137,7 @@ function BlockContentViewer({
           border: 1px solid #e2e8f0;
           border-radius: 0.5rem;
           padding: 1rem;
-          font-family:
-            ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
           font-size: 0.875rem;
           overflow-x: auto;
         }
@@ -164,6 +160,31 @@ function BlockContentViewer({
           max-width: 100%;
           border-radius: 0.5rem;
           margin: 1rem 0;
+        }
+
+        /* Keep portrait videos fully visible without making them page-height. */
+        .block-viewer-wrapper [data-content-type="video"] > .bn-file-block-content-wrapper {
+          width: 100% !important;
+          align-items: center;
+        }
+
+        .block-viewer-wrapper [data-content-type="video"] .bn-visual-media-wrapper {
+          width: 100% !important;
+          justify-content: center;
+          overflow: hidden;
+          border-radius: 0.5rem;
+          background: #0f172a;
+        }
+
+        .block-viewer-wrapper [data-content-type="video"] video.bn-visual-media {
+          display: block;
+          width: auto !important;
+          height: auto;
+          max-width: 100%;
+          max-height: min(75vh, 48rem);
+          margin: 0 auto;
+          object-fit: contain;
+          background: #0f172a;
         }
 
         /* Tables */

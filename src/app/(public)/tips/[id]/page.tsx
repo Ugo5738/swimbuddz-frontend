@@ -1,18 +1,12 @@
 "use client";
 
+import { ArticleFeaturedImage } from "@/components/content/ArticleFeaturedImage";
 import { BlockViewer } from "@/components/editor/BlockViewer";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { useApi } from "@/hooks/useApi";
 import { format } from "date-fns";
-import {
-  ArrowLeft,
-  BookOpen,
-  Calendar,
-  ChevronRight,
-  Lock,
-} from "lucide-react";
-import Image from "next/image";
+import { ArrowLeft, BookOpen, Calendar, ChevronRight, Lock } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMemo } from "react";
@@ -81,10 +75,8 @@ export default function TipDetailPage() {
   // Related posts: fetch only after we have a valid post + category. Passing
   // `null` to useApi short-circuits the request.
   const { data: relatedData } = useApi<ContentPost[]>(
-    post
-      ? `/api/v1/content/?published_only=true&category=${post.category}`
-      : null,
-    { auth: false },
+    post ? `/api/v1/content/?published_only=true&category=${post.category}` : null,
+    { auth: false }
   );
 
   const relatedPosts = useMemo(
@@ -92,7 +84,7 @@ export default function TipDetailPage() {
       (relatedData ?? [])
         .filter((p) => p.id !== postId && p.tier_access === "community")
         .slice(0, 3),
-    [relatedData, postId],
+    [relatedData, postId]
   );
 
   if (loading) {
@@ -114,12 +106,10 @@ export default function TipDetailPage() {
           {error.includes("members") ? (
             <>
               <Lock className="mx-auto h-12 w-12 text-slate-400" />
-              <h3 className="mt-4 text-lg font-semibold text-slate-900">
-                Members Only Content
-              </h3>
+              <h3 className="mt-4 text-lg font-semibold text-slate-900">Members Only Content</h3>
               <p className="mt-2 text-slate-600 max-w-md mx-auto">
-                This article is exclusively available to SwimBuddz members. Join
-                us to access all our premium content!
+                This article is exclusively available to SwimBuddz members. Join us to access all
+                our premium content!
               </p>
               <Link
                 href="/register"
@@ -131,9 +121,7 @@ export default function TipDetailPage() {
           ) : (
             <>
               <BookOpen className="mx-auto h-12 w-12 text-slate-400" />
-              <h3 className="mt-4 text-lg font-semibold text-slate-900">
-                {error}
-              </h3>
+              <h3 className="mt-4 text-lg font-semibold text-slate-900">{error}</h3>
               <Link
                 href="/tips"
                 className="mt-6 inline-flex items-center justify-center px-6 py-3 rounded-full bg-cyan-600 text-white font-semibold hover:bg-cyan-500 transition-colors"
@@ -189,18 +177,13 @@ export default function TipDetailPage() {
 
         {/* Featured Image */}
         {post.featured_image_url && (
-          <div className="mb-8 rounded-2xl overflow-hidden">
-            <Image
-              src={post.featured_image_url}
-              alt={post.title}
-              width={0}
-              height={0}
-              sizes="(max-width: 768px) 100vw, 800px"
-              className="w-full max-h-96 object-cover"
-              style={{ width: "100%", height: "auto" }}
-              priority
-            />
-          </div>
+          <ArticleFeaturedImage
+            src={post.featured_image_url}
+            alt={post.title}
+            variant="detail"
+            className="mb-8 rounded-2xl"
+            priority
+          />
         )}
 
         {/* Content */}
@@ -220,15 +203,12 @@ export default function TipDetailPage() {
               <Link key={relatedPost.id} href={`/tips/${relatedPost.id}`}>
                 <Card className="group h-full hover:shadow-lg transition-all duration-300">
                   {relatedPost.featured_image_url ? (
-                    <div className="relative aspect-video overflow-hidden bg-slate-100 rounded-t-xl">
-                      <Image
-                        src={relatedPost.featured_image_url}
-                        alt={relatedPost.title}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 33vw"
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
+                    <ArticleFeaturedImage
+                      src={relatedPost.featured_image_url}
+                      alt={relatedPost.title}
+                      variant="card"
+                      className="rounded-t-xl"
+                    />
                   ) : (
                     <div className="aspect-video bg-gradient-to-br from-cyan-100 to-cyan-200 flex items-center justify-center rounded-t-xl">
                       <BookOpen className="h-8 w-8 text-cyan-400" />
@@ -252,12 +232,10 @@ export default function TipDetailPage() {
 
       {/* CTA */}
       <Card className="p-8 bg-gradient-to-br from-cyan-50 to-white border-cyan-100 text-center">
-        <h3 className="text-xl font-semibold text-slate-900">
-          Want more personalized guidance?
-        </h3>
+        <h3 className="text-xl font-semibold text-slate-900">Want more personalized guidance?</h3>
         <p className="mt-2 text-slate-600 max-w-xl mx-auto">
-          Join SwimBuddz to get access to coaches, structured programs, and a
-          supportive community to help you achieve your swimming goals.
+          Join SwimBuddz to get access to coaches, structured programs, and a supportive community
+          to help you achieve your swimming goals.
         </p>
         <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
           <Link

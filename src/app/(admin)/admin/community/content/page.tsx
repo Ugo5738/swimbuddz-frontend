@@ -1,5 +1,6 @@
 "use client";
 
+import { ArticleFeaturedImage } from "@/components/content/ArticleFeaturedImage";
 import { parseBlockContent, serializeBlocks } from "@/components/editor";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -10,18 +11,8 @@ import { Select } from "@/components/ui/Select";
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
 import { PartialBlock } from "@blocknote/core";
 import { format } from "date-fns";
-import {
-  BookOpen,
-  Eye,
-  EyeOff,
-  Maximize2,
-  Minimize2,
-  Plus,
-  RotateCcw,
-  Trash2,
-} from "lucide-react";
+import { BookOpen, Eye, EyeOff, Maximize2, Minimize2, Plus, RotateCcw, Trash2 } from "lucide-react";
 import dynamic from "next/dynamic";
-import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AiDraftPanel } from "./_components/AiDraftPanel";
 import { ContentCadencePanel } from "./_components/ContentCadencePanel";
@@ -36,10 +27,8 @@ const BlockEditor = dynamic(
     })),
   {
     ssr: false,
-    loading: () => (
-      <div className="h-96 bg-slate-100 rounded-lg animate-pulse" />
-    ),
-  },
+    loading: () => <div className="h-96 bg-slate-100 rounded-lg animate-pulse" />,
+  }
 );
 
 const BlockViewer = dynamic(
@@ -47,7 +36,7 @@ const BlockViewer = dynamic(
     import("@/components/editor/BlockViewer").then((mod) => ({
       default: mod.BlockViewer,
     })),
-  { ssr: false },
+  { ssr: false }
 );
 
 export default function AdminContentPage() {
@@ -80,9 +69,7 @@ export default function AdminContentPage() {
   };
 
   const scheduledForPayload = () =>
-    formData.scheduled_for
-      ? new Date(formData.scheduled_for).toISOString()
-      : null;
+    formData.scheduled_for ? new Date(formData.scheduled_for).toISOString() : null;
 
   const schedulePreset = (weekday: number, hour: number) => {
     const date = new Date();
@@ -108,25 +95,19 @@ export default function AdminContentPage() {
   };
 
   const categoryOptions = useMemo(
-    () => [
-      "all",
-      ...Array.from(new Set(posts.map((post) => post.category))).sort(),
-    ],
-    [posts],
+    () => ["all", ...Array.from(new Set(posts.map((post) => post.category))).sort()],
+    [posts]
   );
 
   const filteredPosts = useMemo(
     () =>
       posts.filter((post) => {
-        const matchesStatus =
-          statusFilter === "all" || post.status === statusFilter;
-        const matchesCategory =
-          categoryFilter === "all" || post.category === categoryFilter;
-        const matchesTier =
-          tierFilter === "all" || post.tier_access === tierFilter;
+        const matchesStatus = statusFilter === "all" || post.status === statusFilter;
+        const matchesCategory = categoryFilter === "all" || post.category === categoryFilter;
+        const matchesTier = tierFilter === "all" || post.tier_access === tierFilter;
         return matchesStatus && matchesCategory && matchesTier;
       }),
-    [categoryFilter, posts, statusFilter, tierFilter],
+    [categoryFilter, posts, statusFilter, tierFilter]
   );
 
   useEffect(() => {
@@ -135,10 +116,9 @@ export default function AdminContentPage() {
 
   const fetchPosts = async () => {
     try {
-      const data = await apiGet<ContentPost[]>(
-        "/api/v1/content/?published_only=false",
-        { auth: true },
-      );
+      const data = await apiGet<ContentPost[]>("/api/v1/content/?published_only=false", {
+        auth: true,
+      });
       setPosts(data);
     } catch (error) {
       console.error("Failed to fetch posts:", error);
@@ -164,11 +144,7 @@ export default function AdminContentPage() {
         email_on_publish: formData.email_on_publish,
       };
 
-      await apiPost<ContentPost>(
-        "/api/v1/content/",
-        payload,
-        { auth: true },
-      );
+      await apiPost<ContentPost>("/api/v1/content/", payload, { auth: true });
       setShowCreateModal(false);
       resetForm();
       await fetchPosts();
@@ -195,11 +171,7 @@ export default function AdminContentPage() {
         email_on_publish: formData.email_on_publish,
       };
 
-      await apiPatch<ContentPost>(
-        `/api/v1/content/${editingPost.id}`,
-        payload,
-        { auth: true },
-      );
+      await apiPatch<ContentPost>(`/api/v1/content/${editingPost.id}`, payload, { auth: true });
       setShowCreateModal(false);
       resetForm();
       await fetchPosts();
@@ -218,11 +190,7 @@ export default function AdminContentPage() {
 
   const handlePublishPost = async (postId: string) => {
     try {
-      await apiPost<ContentPost>(
-        `/api/v1/content/${postId}/publish`,
-        undefined,
-        { auth: true },
-      );
+      await apiPost<ContentPost>(`/api/v1/content/${postId}/publish`, undefined, { auth: true });
       await fetchPosts();
     } catch (error) {
       console.error("Failed to publish post:", error);
@@ -242,11 +210,9 @@ export default function AdminContentPage() {
 
   const handleRetryFailedEmails = async (postId: string) => {
     try {
-      await apiPost<ContentPost>(
-        `/api/v1/content/${postId}/email/retry-failed`,
-        undefined,
-        { auth: true },
-      );
+      await apiPost<ContentPost>(`/api/v1/content/${postId}/email/retry-failed`, undefined, {
+        auth: true,
+      });
       await fetchPosts();
     } catch (error) {
       console.error("Failed to retry article emails:", error);
@@ -293,18 +259,14 @@ export default function AdminContentPage() {
     setShowPreview(false);
   };
 
-  const editorModalClasses = isFullscreen
-    ? "fixed inset-0 z-50 bg-white overflow-auto"
-    : "";
+  const editorModalClasses = isFullscreen ? "fixed inset-0 z-50 bg-white overflow-auto" : "";
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 py-8">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
-            Content Management
-          </h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Content Management</h1>
           <p className="mt-2 text-slate-600">
             Create and manage swimming tips & articles with Notion-style editing
           </p>
@@ -329,26 +291,20 @@ export default function AdminContentPage() {
           <Card className="p-4">
             <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr_1fr]">
               <div>
-                <p className="mb-2 text-sm font-medium text-slate-700">
-                  Status
-                </p>
+                <p className="mb-2 text-sm font-medium text-slate-700">Status</p>
                 <div className="flex flex-wrap gap-2">
-                  {(["all", "draft", "scheduled", "published"] as const).map(
-                    (status) => (
-                      <Button
-                        key={status}
-                        type="button"
-                        size="sm"
-                        variant={
-                          statusFilter === status ? "primary" : "secondary"
-                        }
-                        onClick={() => setStatusFilter(status)}
-                        className="capitalize"
-                      >
-                        {status}
-                      </Button>
-                    ),
-                  )}
+                  {(["all", "draft", "scheduled", "published"] as const).map((status) => (
+                    <Button
+                      key={status}
+                      type="button"
+                      size="sm"
+                      variant={statusFilter === status ? "primary" : "secondary"}
+                      onClick={() => setStatusFilter(status)}
+                      className="capitalize"
+                    >
+                      {status}
+                    </Button>
+                  ))}
                 </div>
               </div>
 
@@ -359,9 +315,7 @@ export default function AdminContentPage() {
               >
                 {categoryOptions.map((category) => (
                   <option key={category} value={category}>
-                    {category === "all"
-                      ? "All categories"
-                      : category.replace(/_/g, " ")}
+                    {category === "all" ? "All categories" : category.replace(/_/g, " ")}
                   </option>
                 ))}
               </Select>
@@ -384,9 +338,7 @@ export default function AdminContentPage() {
       {/* Create/Edit Post Modal */}
       {showCreateModal && (
         <div className={editorModalClasses}>
-          <Card
-            className={`p-6 ${isFullscreen ? "min-h-screen rounded-none" : ""}`}
-          >
+          <Card className={`p-6 ${isFullscreen ? "min-h-screen rounded-none" : ""}`}>
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Header with title and controls */}
               <div className="flex items-center justify-between">
@@ -424,9 +376,7 @@ export default function AdminContentPage() {
               <Input
                 label="Title"
                 value={formData.title}
-                onChange={(e) =>
-                  setFormData({ ...formData, title: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 required
                 placeholder="e.g., 5 Tips for Better Breathing Technique"
               />
@@ -434,9 +384,7 @@ export default function AdminContentPage() {
               <Input
                 label="Summary (shown in article list)"
                 value={formData.summary}
-                onChange={(e) =>
-                  setFormData({ ...formData, summary: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
                 required
                 placeholder="Brief summary to entice readers..."
               />
@@ -458,25 +406,18 @@ export default function AdminContentPage() {
               {/* Block Editor / Preview */}
               {showPreview ? (
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-slate-700">
-                    Preview
-                  </label>
+                  <label className="block text-sm font-medium text-slate-700">Preview</label>
                   <div className="border border-slate-200 rounded-lg p-6 bg-white min-h-[400px]">
                     <h1 className="text-3xl font-bold text-slate-900 mb-4">
                       {formData.title || "Untitled"}
                     </h1>
                     {formData.featured_image_url && (
-                      <div className="mb-6 -mx-6 -mt-2">
-                        <Image
-                          src={formData.featured_image_url}
-                          alt="Featured"
-                          width={0}
-                          height={0}
-                          sizes="(max-width: 768px) 100vw, 800px"
-                          className="w-full max-h-96 object-contain bg-slate-100"
-                          style={{ width: "100%", height: "auto" }}
-                        />
-                      </div>
+                      <ArticleFeaturedImage
+                        src={formData.featured_image_url}
+                        alt={formData.title || "Article featured image"}
+                        variant="detail"
+                        className="mb-6 -mx-6 -mt-2"
+                      />
                     )}
                     <BlockViewer content={serializeBlocks(editorContent)} />
                   </div>
@@ -490,9 +431,7 @@ export default function AdminContentPage() {
                     </span>
                   </label>
                   <BlockEditor
-                    initialContent={
-                      editorContent.length > 0 ? editorContent : undefined
-                    }
+                    initialContent={editorContent.length > 0 ? editorContent : undefined}
                     onChange={handleEditorChange}
                     placeholder="Start writing your article... Type '/' for block options"
                   />
@@ -503,9 +442,7 @@ export default function AdminContentPage() {
                 <Select
                   label="Category"
                   value={formData.category}
-                  onChange={(e) =>
-                    setFormData({ ...formData, category: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   required
                 >
                   <option value="getting_started">Getting Started</option>
@@ -514,9 +451,7 @@ export default function AdminContentPage() {
                   <option value="breathing">Breathing Techniques</option>
                   <option value="technique">Technique</option>
                   <option value="health_recovery">Health &amp; Recovery</option>
-                  <option value="community_culture">
-                    Community &amp; Culture
-                  </option>
+                  <option value="community_culture">Community &amp; Culture</option>
                   <option value="news">News</option>
                   <option value="education">Education</option>
                 </Select>
@@ -524,9 +459,7 @@ export default function AdminContentPage() {
                 <Select
                   label="Tier Access"
                   value={formData.tier_access}
-                  onChange={(e) =>
-                    setFormData({ ...formData, tier_access: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, tier_access: e.target.value })}
                   required
                 >
                   <option value="community">Community (All Members)</option>
@@ -604,12 +537,8 @@ export default function AdminContentPage() {
       ) : posts.length === 0 && !showCreateModal ? (
         <Card className="p-12 text-center">
           <BookOpen className="mx-auto h-12 w-12 text-slate-400" />
-          <h3 className="mt-4 text-lg font-semibold text-slate-900">
-            No posts created yet
-          </h3>
-          <p className="mt-2 text-sm text-slate-600">
-            Create your first post to get started!
-          </p>
+          <h3 className="mt-4 text-lg font-semibold text-slate-900">No posts created yet</h3>
+          <p className="mt-2 text-sm text-slate-600">Create your first post to get started!</p>
         </Card>
       ) : filteredPosts.length === 0 && !showCreateModal ? (
         <Card className="p-12 text-center">
@@ -628,9 +557,7 @@ export default function AdminContentPage() {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center gap-3">
-                    <h3 className="text-lg font-semibold text-slate-900">
-                      {post.title}
-                    </h3>
+                    <h3 className="text-lg font-semibold text-slate-900">{post.title}</h3>
                     <span
                       className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
                         post.status === "published"
@@ -648,12 +575,10 @@ export default function AdminContentPage() {
 
                   <div className="flex flex-wrap gap-4 text-sm text-slate-600">
                     <div>
-                      <span className="font-medium">Category:</span>{" "}
-                      {post.category}
+                      <span className="font-medium">Category:</span> {post.category}
                     </div>
                     <div>
-                      <span className="font-medium">Access:</span>{" "}
-                      {post.tier_access}
+                      <span className="font-medium">Access:</span> {post.tier_access}
                     </div>
                     {post.published_at && (
                       <div>
@@ -664,16 +589,12 @@ export default function AdminContentPage() {
                     {post.scheduled_for && post.status !== "published" && (
                       <div>
                         <span className="font-medium">Scheduled:</span>{" "}
-                        {format(
-                          new Date(post.scheduled_for),
-                          "MMM d, yyyy h:mm a",
-                        )}
+                        {format(new Date(post.scheduled_for), "MMM d, yyyy h:mm a")}
                       </div>
                     )}
                     {post.email_on_publish && (
                       <div>
-                        <span className="font-medium">Email on publish:</span>{" "}
-                        Yes
+                        <span className="font-medium">Email on publish:</span> Yes
                       </div>
                     )}
                     {(post.email_sent_count > 0 ||
@@ -681,11 +602,9 @@ export default function AdminContentPage() {
                       post.email_in_progress_count > 0 ||
                       post.email_unknown_count > 0) && (
                       <div>
-                        <span className="font-medium">Email result:</span>{" "}
-                        {post.email_sent_count} sent
-                        {post.email_failed_count
-                          ? `, ${post.email_failed_count} failed`
-                          : ""}
+                        <span className="font-medium">Email result:</span> {post.email_sent_count}{" "}
+                        sent
+                        {post.email_failed_count ? `, ${post.email_failed_count} failed` : ""}
                         {post.email_in_progress_count
                           ? `, ${post.email_in_progress_count} sending`
                           : ""}
@@ -700,7 +619,7 @@ export default function AdminContentPage() {
                         {post.email_dispatch_completed_at
                           ? `Complete ${format(
                               new Date(post.email_dispatch_completed_at),
-                              "MMM d, h:mm a",
+                              "MMM d, h:mm a"
                             )}`
                           : post.email_recipient_snapshot_at
                             ? "Retrying known failures"
@@ -714,16 +633,11 @@ export default function AdminContentPage() {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button
-                    variant="secondary"
-                    onClick={() => handleEditPost(post)}
-                  >
+                  <Button variant="secondary" onClick={() => handleEditPost(post)}>
                     Edit
                   </Button>
                   {post.status !== "published" && (
-                    <Button onClick={() => handlePublishPost(post.id)}>
-                      Publish
-                    </Button>
+                    <Button onClick={() => handlePublishPost(post.id)}>Publish</Button>
                   )}
                   {post.email_failed_count > 0 && (
                     <Button

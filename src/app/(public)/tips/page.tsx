@@ -1,11 +1,11 @@
 "use client";
 
+import { ArticleFeaturedImage } from "@/components/content/ArticleFeaturedImage";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { useApi } from "@/hooks/useApi";
 import { format } from "date-fns";
 import { BookOpen, ChevronRight } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -45,15 +45,14 @@ const categoryColors: Record<string, string> = {
 export default function TipsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  const { data, loading } = useApi<ContentPost[]>(
-    "/api/v1/content/?published_only=true",
-    { auth: false },
-  );
+  const { data, loading } = useApi<ContentPost[]>("/api/v1/content/?published_only=true", {
+    auth: false,
+  });
 
   // Only show community-accessible posts to public visitors
   const posts = useMemo(
     () => (data ?? []).filter((post) => post.tier_access === "community"),
-    [data],
+    [data]
   );
 
   const filteredPosts = selectedCategory
@@ -71,17 +70,13 @@ export default function TipsPage() {
             <BookOpen className="h-8 w-8 text-white" />
           </div>
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
-              Learn
-            </p>
-            <h1 className="text-4xl font-bold text-slate-900">
-              Swimming Tips & Guides
-            </h1>
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">Learn</p>
+            <h1 className="text-4xl font-bold text-slate-900">Swimming Tips & Guides</h1>
           </div>
         </div>
         <p className="text-lg text-slate-600 max-w-3xl">
-          Whether you&apos;re just starting out or looking to improve your
-          technique, these guides will help you on your swimming journey.
+          Whether you&apos;re just starting out or looking to improve your technique, these guides
+          will help you on your swimming journey.
         </p>
       </header>
 
@@ -120,12 +115,8 @@ export default function TipsPage() {
       ) : filteredPosts.length === 0 ? (
         <Card className="p-12 text-center">
           <BookOpen className="mx-auto h-12 w-12 text-slate-400" />
-          <h3 className="mt-4 text-lg font-semibold text-slate-900">
-            No articles available yet
-          </h3>
-          <p className="mt-2 text-slate-600">
-            Check back soon for swimming tips and guides!
-          </p>
+          <h3 className="mt-4 text-lg font-semibold text-slate-900">No articles available yet</h3>
+          <p className="mt-2 text-slate-600">Check back soon for swimming tips and guides!</p>
         </Card>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -134,15 +125,11 @@ export default function TipsPage() {
               <Card className="group h-full overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
                 {/* Featured Image */}
                 {post.featured_image_url ? (
-                  <div className="relative aspect-video overflow-hidden bg-slate-100">
-                    <Image
-                      src={post.featured_image_url}
-                      alt={post.title}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
+                  <ArticleFeaturedImage
+                    src={post.featured_image_url}
+                    alt={post.title}
+                    variant="card"
+                  />
                 ) : (
                   <div className="aspect-video bg-gradient-to-br from-cyan-100 to-cyan-200 flex items-center justify-center">
                     <BookOpen className="h-12 w-12 text-cyan-400" />
@@ -170,9 +157,7 @@ export default function TipsPage() {
                     {post.title}
                   </h2>
 
-                  <p className="text-sm text-slate-600 line-clamp-3">
-                    {post.summary}
-                  </p>
+                  <p className="text-sm text-slate-600 line-clamp-3">{post.summary}</p>
 
                   <div className="flex items-center gap-1 text-sm font-semibold text-cyan-600 pt-2">
                     Read article
@@ -191,8 +176,8 @@ export default function TipsPage() {
           Ready to start your swimming journey?
         </h3>
         <p className="mt-2 text-slate-600 max-w-xl mx-auto">
-          Join SwimBuddz to access more exclusive content, connect with coaches,
-          and be part of our swimming community.
+          Join SwimBuddz to access more exclusive content, connect with coaches, and be part of our
+          swimming community.
         </p>
         <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
           <Link

@@ -1,17 +1,10 @@
 "use client";
 
+import { ArticleFeaturedImage } from "@/components/content/ArticleFeaturedImage";
 import { Card } from "@/components/ui/Card";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { useApi } from "@/hooks/useApi";
-import {
-  BookOpen,
-  Calendar,
-  ChevronRight,
-  MessageCircle,
-  Search,
-  Tag,
-} from "lucide-react";
-import Image from "next/image";
+import { BookOpen, Calendar, ChevronRight, MessageCircle, Search, Tag } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -61,10 +54,9 @@ const categoryLabels: Record<string, string> = {
 };
 
 export default function CommunityTipsPage() {
-  const { data, loading } = useApi<ContentPost[]>(
-    "/api/v1/content/?published_only=true",
-    { auth: true },
-  );
+  const { data, loading } = useApi<ContentPost[]>("/api/v1/content/?published_only=true", {
+    auth: true,
+  });
   const posts = data ?? [];
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState<string>("all");
@@ -75,11 +67,9 @@ export default function CommunityTipsPage() {
     const matchesSearch =
       searchQuery === "" ||
       post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (post.summary &&
-        post.summary.toLowerCase().includes(searchQuery.toLowerCase()));
+      (post.summary && post.summary.toLowerCase().includes(searchQuery.toLowerCase()));
 
-    const matchesCategory =
-      filterCategory === "all" || post.category === filterCategory;
+    const matchesCategory = filterCategory === "all" || post.category === filterCategory;
 
     return matchesSearch && matchesCategory;
   });
@@ -89,9 +79,7 @@ export default function CommunityTipsPage() {
   };
 
   const formatCategoryName = (category: string) => {
-    return (
-      categoryLabels[category.toLowerCase()] || category.replace(/_/g, " ")
-    );
+    return categoryLabels[category.toLowerCase()] || category.replace(/_/g, " ");
   };
 
   if (loading) {
@@ -102,12 +90,9 @@ export default function CommunityTipsPage() {
     <div className="space-y-6">
       {/* Header */}
       <header className="space-y-3">
-        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
-          Tips & Articles
-        </h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Tips & Articles</h1>
         <p className="text-sm md:text-base text-slate-600">
-          Expert advice, techniques, and insights to help you become a better
-          swimmer.
+          Expert advice, techniques, and insights to help you become a better swimmer.
         </p>
       </header>
 
@@ -137,9 +122,7 @@ export default function CommunityTipsPage() {
                   : "bg-slate-100 text-slate-700 hover:bg-slate-200"
               }`}
             >
-              {category === "all"
-                ? "All Categories"
-                : formatCategoryName(category)}
+              {category === "all" ? "All Categories" : formatCategoryName(category)}
             </button>
           ))}
         </div>
@@ -149,9 +132,7 @@ export default function CommunityTipsPage() {
       {filteredPosts.length === 0 ? (
         <Card className="p-12 text-center">
           <BookOpen className="mx-auto h-12 w-12 text-slate-400" />
-          <h3 className="mt-4 text-lg font-semibold text-slate-900">
-            No articles found
-          </h3>
+          <h3 className="mt-4 text-lg font-semibold text-slate-900">No articles found</h3>
           <p className="mt-2 text-sm text-slate-600">
             {posts.length === 0
               ? "Check back soon for new content!"
@@ -173,15 +154,11 @@ export default function CommunityTipsPage() {
                   <Card className="h-full transition-all hover:shadow-lg cursor-pointer group overflow-hidden">
                     {/* Featured Image */}
                     {post.featured_image_url && (
-                      <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
-                        <Image
-                          src={post.featured_image_url}
-                          alt={post.title}
-                          fill
-                          sizes="(max-width: 768px) 100vw, 33vw"
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      </div>
+                      <ArticleFeaturedImage
+                        src={post.featured_image_url}
+                        alt={post.title}
+                        variant="card"
+                      />
                     )}
 
                     <div className="p-4 space-y-3">
@@ -208,15 +185,12 @@ export default function CommunityTipsPage() {
 
                       {/* Summary */}
                       {post.summary && (
-                        <p className="text-sm text-slate-600 line-clamp-3">
-                          {post.summary}
-                        </p>
+                        <p className="text-sm text-slate-600 line-clamp-3">{post.summary}</p>
                       )}
 
                       {/* Footer */}
                       <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                        {post.comment_count !== undefined &&
-                        post.comment_count > 0 ? (
+                        {post.comment_count !== undefined && post.comment_count > 0 ? (
                           <span className="text-xs text-slate-500 flex items-center gap-1">
                             <MessageCircle className="h-3 w-3" />
                             {post.comment_count} comment
