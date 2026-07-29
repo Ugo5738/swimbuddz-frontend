@@ -12,11 +12,15 @@ import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { apiGet } from "@/lib/api";
+import { PoolPricingApi } from "@/lib/poolPricing";
+import { Calculator, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import type {
   RideArea,
   Session,
+  SessionCostLine,
   SessionPayload,
   SessionRideConfig,
   SessionType,
@@ -76,6 +80,12 @@ export function SessionFormModal({
       : formatDateTimeLocal(defaultEnd),
     pool_fee: session?.pool_fee ?? 2000,
     capacity: session?.capacity ?? 20,
+    pricing_mode: session?.pricing_mode ?? ("manual" as "manual" | "cost_plus"),
+    pricing_expected_attendees: session?.pricing_expected_attendees ?? session?.capacity ?? 20,
+    cost_lines: session?.cost_lines ?? ([] as SessionCostLine[]),
+    margin_type:
+      session?.margin_type ?? ("fixed_per_attendee" as "fixed_per_attendee" | "percentage"),
+    margin_value: session?.margin_value ?? 0,
     description: session?.description || "",
     publish_status: "draft" as "draft" | "published",
     // Optional Pod link for Club sessions. NULL = "general Club session,
@@ -159,6 +169,82 @@ export function SessionFormModal({
 
   const [rideConfigs, setRideConfigs] = useState<RideConfigDraft[]>([]);
   const [showRide, setShowRide] = useState(false);
+  const [quoteStaff, setQuoteStaff] = useState(1);
+  const [quoteLanes, setQuoteLanes] = useState(1);
+  const [quoting, setQuoting] = useState(false);
+
+  const estimatedTotalCost = form.cost_lines.reduce(
+    (total, line) => total + line.unit_cost_naira * line.quantity,
+    0
+  );
+  const estimatedCostPerAttendee =
+    estimatedTotalCost / Math.max(form.pricing_expected_attendees, 1);
+  const marginPerAttendee =
+    form.margin_type === "percentage"
+      ? estimatedCostPerAttendee * (form.margin_value / 100)
+      : form.margin_value;
+  const costPlusBookingPrice = estimatedCostPerAttendee + marginPerAttendee;
+
+  const activityScope =
+    form.session_type === "club"
+      ? "club"
+      : form.session_type === "cohort_class"
+        ? "academy"
+        : "community";
+
+  const loadCostQuote = async () => {
+    if (!form.pool_id) {
+      toast.error("Select a pool before loading its cost rates");
+      return;
+    }
+    setQuoting(true);
+    try {
+      const quote = await PoolPricingApi.quote({
+        pool_id: form.pool_id,
+        activity_scope: activityScope,
+        starts_at: new Date(form.starts_at).toISOString(),
+        ends_at: new Date(form.ends_at).toISOString(),
+        timezone: session?.timezone ?? "Africa/Lagos",
+        expected_attendees: Math.max(form.pricing_expected_attendees, 1),
+        expected_staff: Math.max(quoteStaff, 0),
+        lanes: Math.max(quoteLanes, 1),
+      });
+      setForm((current) => ({
+        ...current,
+        pricing_mode: "cost_plus",
+        cost_lines: quote.lines,
+      }));
+      if (quote.warnings.length) {
+        toast.warning(quote.warnings.join(" "));
+      } else {
+        toast.success("Current cost rates loaded");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Cost quote failed");
+    } finally {
+      setQuoting(false);
+    }
+  };
+
+  const updateCostLine = <K extends keyof SessionCostLine>(
+    index: number,
+    field: K,
+    value: SessionCostLine[K]
+  ) => {
+    setForm((current) => ({
+      ...current,
+      cost_lines: current.cost_lines.map((line, lineIndex) =>
+        lineIndex === index
+          ? {
+              ...line,
+              [field]: value,
+              source_rate_id:
+                field === "unit_cost_naira" || field === "quantity" ? null : line.source_rate_id,
+            }
+          : line
+      ),
+    }));
+  };
 
   const addRideConfig = () => {
     setShowRide(true);
@@ -222,6 +308,11 @@ export function SessionFormModal({
       ends_at: new Date(form.ends_at).toISOString(),
       pool_fee: form.pool_fee,
       capacity: form.capacity,
+      pricing_mode: form.pricing_mode,
+      pricing_expected_attendees: form.pricing_expected_attendees,
+      cost_lines: form.cost_lines,
+      margin_type: form.margin_type,
+      margin_value: form.margin_value,
       description: form.description || undefined,
       // Pod link is only meaningful for Club sessions; clear it on type
       // switch so we don't ship a stale pod_id for an academy/event row.
@@ -391,10 +482,17 @@ export function SessionFormModal({
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
-            label="Pool Fee (₦)"
+            label="Booking price per attendee (₦)"
             type="number"
-            value={form.pool_fee}
+            min={0}
+            step="0.01"
+            value={
+              form.pricing_mode === "cost_plus"
+                ? Number(costPlusBookingPrice.toFixed(2))
+                : form.pool_fee
+            }
             onChange={(e) => setForm({ ...form, pool_fee: parseInt(e.target.value) || 0 })}
+            disabled={form.pricing_mode === "cost_plus"}
             required
           />
           <Input
@@ -405,6 +503,187 @@ export function SessionFormModal({
             required
           />
         </div>
+        <fieldset className="space-y-4 border-y border-slate-200 py-4">
+          <div>
+            <legend className="text-sm font-semibold text-slate-900">
+              Session costing and margin
+            </legend>
+            <p className="mt-1 text-xs text-slate-500">
+              Rates are suggestions. This session keeps an editable snapshot, so later catalogue
+              changes do not rewrite its price.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Select
+              label="Pricing mode"
+              value={form.pricing_mode}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  pricing_mode: e.target.value as "manual" | "cost_plus",
+                })
+              }
+            >
+              <option value="manual">Manual booking price</option>
+              <option value="cost_plus">Cost plus margin</option>
+            </Select>
+            <Input
+              label="Expected attendees"
+              type="number"
+              min={1}
+              value={form.pricing_expected_attendees}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  pricing_expected_attendees: Math.max(parseInt(e.target.value) || 1, 1),
+                })
+              }
+            />
+            <div className="flex items-end">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => void loadCostQuote()}
+                disabled={quoting || !form.pool_id}
+                className="w-full"
+              >
+                <Calculator className="mr-2 h-4 w-4" />
+                {quoting ? "Loading..." : `Load ${activityScope} rates`}
+              </Button>
+            </div>
+            <Input
+              label="Expected staff"
+              type="number"
+              min={0}
+              value={quoteStaff}
+              onChange={(e) => setQuoteStaff(Math.max(parseInt(e.target.value) || 0, 0))}
+            />
+            <Input
+              label="Lanes"
+              type="number"
+              min={1}
+              value={quoteLanes}
+              onChange={(e) => setQuoteLanes(Math.max(parseInt(e.target.value) || 1, 1))}
+            />
+          </div>
+
+          <div className="space-y-3">
+            {form.cost_lines.map((line, index) => (
+              <div
+                key={`${line.category}-${index}`}
+                className="grid gap-3 border-t border-slate-100 pt-3 sm:grid-cols-[1fr_1fr_7rem_7rem_2.5rem]"
+              >
+                <Input
+                  label={index === 0 ? "Cost" : undefined}
+                  value={line.description}
+                  onChange={(e) => updateCostLine(index, "description", e.target.value)}
+                />
+                <Select
+                  label={index === 0 ? "Basis" : undefined}
+                  value={line.charge_basis}
+                  onChange={(e) =>
+                    updateCostLine(
+                      index,
+                      "charge_basis",
+                      e.target.value as SessionCostLine["charge_basis"]
+                    )
+                  }
+                >
+                  <option value="per_attendee">Per attendee</option>
+                  <option value="per_staff">Per staff</option>
+                  <option value="per_hour">Per hour</option>
+                  <option value="per_lane">Per lane</option>
+                  <option value="flat_session">Flat session</option>
+                </Select>
+                <Input
+                  label={index === 0 ? "Unit (₦)" : undefined}
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={line.unit_cost_naira}
+                  onChange={(e) =>
+                    updateCostLine(index, "unit_cost_naira", Number(e.target.value) || 0)
+                  }
+                />
+                <Input
+                  label={index === 0 ? "Qty" : undefined}
+                  type="number"
+                  min={0}
+                  step="0.25"
+                  value={line.quantity}
+                  onChange={(e) => updateCostLine(index, "quantity", Number(e.target.value) || 0)}
+                />
+                <div className="flex items-end">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setForm({
+                        ...form,
+                        cost_lines: form.cost_lines.filter((_, lineIndex) => lineIndex !== index),
+                      })
+                    }
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-md text-red-600 hover:bg-red-50"
+                    title="Remove cost"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() =>
+                setForm({
+                  ...form,
+                  cost_lines: [
+                    ...form.cost_lines,
+                    {
+                      category: "other",
+                      description: "Other cost",
+                      charge_basis: "flat_session",
+                      unit_cost_naira: 0,
+                      quantity: 1,
+                    },
+                  ],
+                })
+              }
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add cost
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Select
+              label="Margin method"
+              value={form.margin_type}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  margin_type: e.target.value as "fixed_per_attendee" | "percentage",
+                })
+              }
+            >
+              <option value="fixed_per_attendee">Fixed per attendee</option>
+              <option value="percentage">Percentage of cost</option>
+            </Select>
+            <Input
+              label={form.margin_type === "percentage" ? "Margin (%)" : "Margin per attendee (₦)"}
+              type="number"
+              min={0}
+              step="0.01"
+              value={form.margin_value}
+              onChange={(e) => setForm({ ...form, margin_value: Number(e.target.value) || 0 })}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 text-sm sm:grid-cols-4">
+            <Metric label="Total cost" value={estimatedTotalCost} />
+            <Metric label="Cost / attendee" value={estimatedCostPerAttendee} />
+            <Metric label="Margin / attendee" value={marginPerAttendee} />
+            <Metric label="Booking price" value={costPlusBookingPrice} />
+          </div>
+        </fieldset>
         <Textarea
           label="Description (optional)"
           value={form.description}
@@ -495,5 +774,19 @@ export function SessionFormModal({
         </div>
       </form>
     </Modal>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: number }) {
+  return (
+    <div>
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className="font-semibold text-slate-900">
+        ₦
+        {Number.isFinite(value)
+          ? value.toLocaleString(undefined, { maximumFractionDigits: 2 })
+          : "0"}
+      </p>
+    </div>
   );
 }

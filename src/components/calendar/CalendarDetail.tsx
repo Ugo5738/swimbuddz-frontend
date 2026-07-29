@@ -2,6 +2,7 @@ import type { CalendarItem } from "@/lib/calendar";
 import {
   CALENDAR_AUDIENCE_COLORS,
   CALENDAR_AUDIENCE_LABELS,
+  CALENDAR_VISIBILITY_LABELS,
   formatCalendarDateTime,
 } from "@/lib/calendar";
 import { CalendarClock, ExternalLink, MapPin, X } from "lucide-react";
@@ -28,7 +29,8 @@ export function CalendarDetail({ item, authenticated, onClose }: CalendarDetailP
             <div>
               <p className="text-xs font-semibold uppercase text-slate-500">
                 {CALENDAR_AUDIENCE_LABELS[item.audience]} ·{" "}
-                {item.source === "event" ? "Event" : "Swim session"}
+                {item.source === "event" ? "Event" : "Swim session"} ·{" "}
+                {CALENDAR_VISIBILITY_LABELS[item.visibility]}
               </p>
               <h2 className="mt-1 text-lg font-semibold text-slate-950">{item.title}</h2>
             </div>
@@ -67,7 +69,9 @@ export function CalendarDetail({ item, authenticated, onClose }: CalendarDetailP
             >
               {authenticated
                 ? item.source === "event"
-                  ? "View event"
+                  ? item.viewer_can_attend
+                    ? "View event"
+                    : "View eligibility"
                   : item.bookable
                     ? "Book session"
                     : "View session"

@@ -1,7 +1,12 @@
 "use client";
 
 import type { CalendarItem } from "@/lib/calendar";
-import { CALENDAR_AUDIENCE_COLORS, CALENDAR_AUDIENCE_LABELS } from "@/lib/calendar";
+import {
+  CALENDAR_ACTIVITY_LABELS,
+  CALENDAR_AUDIENCE_COLORS,
+  CALENDAR_AUDIENCE_LABELS,
+  CALENDAR_VISIBILITY_LABELS,
+} from "@/lib/calendar";
 import { format } from "date-fns";
 import { Clock3, MapPin } from "lucide-react";
 import { useMemo } from "react";
@@ -27,7 +32,8 @@ export function AgendaList({ items, selectedId, onSelect }: AgendaListProps) {
       <div className="border-y border-slate-200 py-14 text-center">
         <p className="font-medium text-slate-700">No activities in this view</p>
         <p className="mt-1 text-sm text-slate-500">
-          Choose another calendar or move to a different month.
+          Published Sessions and Events appear here. Try another filter if activities have already
+          been scheduled.
         </p>
       </div>
     );
@@ -62,6 +68,12 @@ export function AgendaList({ items, selectedId, onSelect }: AgendaListProps) {
                         <span className="font-semibold text-slate-900">{item.title}</span>
                         <span className="text-xs font-medium text-slate-500">
                           {CALENDAR_AUDIENCE_LABELS[item.audience]}
+                        </span>
+                        <span className="text-xs text-slate-400">
+                          {CALENDAR_ACTIVITY_LABELS[item.kind] ?? item.kind.replaceAll("_", " ")}
+                        </span>
+                        <span className="text-xs text-slate-400">
+                          {CALENDAR_VISIBILITY_LABELS[item.visibility]}
                         </span>
                       </span>
                       <span className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600">

@@ -10,6 +10,16 @@ export type SessionType = "club" | "academy" | "community" | "cohort_class" | "e
 export type ViewMode = "calendar" | "list";
 export type FilterTab = "all" | SessionStatusType;
 
+export interface SessionCostLine {
+  category: string;
+  description: string;
+  charge_basis: "per_attendee" | "per_staff" | "per_hour" | "per_lane" | "flat_session";
+  unit_cost_naira: number;
+  quantity: number;
+  source_rate_type?: string | null;
+  source_rate_id?: string | null;
+}
+
 export interface Session {
   id: string;
   title: string;
@@ -24,6 +34,14 @@ export interface Session {
   pool_fee: number;
   ride_share_fee?: number;
   capacity: number;
+  pricing_mode?: "manual" | "cost_plus";
+  pricing_expected_attendees?: number | null;
+  cost_lines?: SessionCostLine[];
+  estimated_total_cost?: number;
+  estimated_cost_per_attendee?: number;
+  margin_type?: "fixed_per_attendee" | "percentage";
+  margin_value?: number;
+  margin_amount_per_attendee?: number;
   description?: string;
   notes?: string;
   template_id?: string;
@@ -70,6 +88,11 @@ export interface SessionPayload {
   ends_at: string;
   pool_fee: number;
   capacity: number;
+  pricing_mode: "manual" | "cost_plus";
+  pricing_expected_attendees: number;
+  cost_lines: SessionCostLine[];
+  margin_type: "fixed_per_attendee" | "percentage";
+  margin_value: number;
   description?: string;
   pod_id: string | null;
 }

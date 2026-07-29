@@ -46,6 +46,7 @@ interface Pool {
   id: string;
   name: string;
   slug: string;
+  operating_area_id: string | null;
   location_area: string | null;
   latitude: number | null;
   longitude: number | null;
@@ -84,19 +85,8 @@ interface Pool {
   has_aed: boolean | null;
   has_cctv: boolean | null;
   booking_lead_time_hours: number | null;
-  preferred_contact_channel:
-    | "whatsapp"
-    | "phone"
-    | "email"
-    | "in_person"
-    | null;
-  source:
-    | "member_submission"
-    | "team_scouting"
-    | "referral"
-    | "direct_outreach"
-    | "other"
-    | null;
+  preferred_contact_channel: "whatsapp" | "phone" | "email" | "in_person" | null;
+  source: "member_submission" | "team_scouting" | "referral" | "direct_outreach" | "other" | null;
   last_verified_at: string | null;
   partnership_status: string;
   pool_type: string | null;
@@ -112,6 +102,7 @@ function poolToFormValues(pool: Pool): PoolFormValues {
   return {
     name: pool.name,
     slug: pool.slug,
+    operating_area_id: pool.operating_area_id ?? null,
     location_area: pool.location_area ?? "",
     latitude: pool.latitude,
     longitude: pool.longitude,
@@ -165,6 +156,7 @@ function formValuesToPayload(values: PoolFormValues): Record<string, unknown> {
   return {
     name: values.name,
     // slug is immutable in edit mode; omit it from the patch
+    operating_area_id: values.operating_area_id ?? null,
     location_area: values.location_area || null,
     latitude: values.latitude ?? null,
     longitude: values.longitude ?? null,

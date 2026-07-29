@@ -77,6 +77,22 @@ export interface Session {
   capacity: number;
   pool_fee: number;
   ride_share_fee: number;
+  pricing_mode?: "manual" | "cost_plus";
+  pricing_expected_attendees?: number | null;
+  cost_lines?: Array<{
+    category: string;
+    description: string;
+    charge_basis: "per_attendee" | "per_staff" | "per_hour" | "per_lane" | "flat_session";
+    unit_cost_naira: number;
+    quantity: number;
+    source_rate_type?: string | null;
+    source_rate_id?: string | null;
+  }>;
+  estimated_total_cost?: number;
+  estimated_cost_per_attendee?: number;
+  margin_type?: "fixed_per_attendee" | "percentage";
+  margin_value?: number;
+  margin_amount_per_attendee?: number;
 
   // Guest booking — does this session accept non-member guests, and the cap.
   allows_guests?: boolean;
@@ -153,6 +169,11 @@ export interface SessionCreate {
   capacity?: number;
   pool_fee?: number;
   ride_share_fee?: number;
+  pricing_mode?: "manual" | "cost_plus";
+  pricing_expected_attendees?: number;
+  cost_lines?: Session["cost_lines"];
+  margin_type?: "fixed_per_attendee" | "percentage";
+  margin_value?: number;
   cohort_id?: string;
   event_id?: string;
   week_number?: number;
@@ -172,6 +193,11 @@ export interface SessionUpdate {
   ends_at?: string;
   capacity?: number;
   pool_fee?: number;
+  pricing_mode?: "manual" | "cost_plus";
+  pricing_expected_attendees?: number;
+  cost_lines?: Session["cost_lines"];
+  margin_type?: "fixed_per_attendee" | "percentage";
+  margin_value?: number;
   week_number?: number;
   lesson_title?: string;
 }

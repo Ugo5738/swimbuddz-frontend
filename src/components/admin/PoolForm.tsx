@@ -2,7 +2,8 @@
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { useState } from "react";
+import { PoolPricingApi, type OperatingArea } from "@/lib/poolPricing";
+import { useEffect, useState } from "react";
 
 // ─── Types ──────────────────────────────────────────────────────────────
 
@@ -10,6 +11,7 @@ export type PoolFormValues = {
   // Identity
   name: string;
   slug?: string;
+  operating_area_id?: string | null;
   location_area?: string;
   latitude?: number | null;
   longitude?: number | null;
@@ -67,13 +69,7 @@ export type PoolFormValues = {
   preferred_contact_channel?: "whatsapp" | "phone" | "email" | "in_person" | "";
 
   // Discovery
-  source?:
-    | "member_submission"
-    | "team_scouting"
-    | "referral"
-    | "direct_outreach"
-    | "other"
-    | "";
+  source?: "member_submission" | "team_scouting" | "referral" | "direct_outreach" | "other" | "";
 
   // Data quality
   last_verified_at?: string | null;
@@ -118,6 +114,7 @@ const POOL_SOURCES = [
 const EMPTY: PoolFormValues = {
   name: "",
   slug: "",
+  operating_area_id: null,
   location_area: "",
   latitude: null,
   longitude: null,
@@ -203,6 +200,15 @@ export function PoolForm({
 }: PoolFormProps) {
   const [values, setValues] = useState<PoolFormValues>({ ...EMPTY, ...initialValues });
   const [submitting, setSubmitting] = useState(false);
+  const [operatingAreas, setOperatingAreas] = useState<OperatingArea[]>([]);
+
+  useEffect(() => {
+    void PoolPricingApi.listAreas()
+      .then(setOperatingAreas)
+      .catch(() => {
+        setOperatingAreas([]);
+      });
+  }, []);
 
   const set = <K extends keyof PoolFormValues>(key: K, v: PoolFormValues[K]) => {
     setValues((prev) => ({ ...prev, [key]: v }));
@@ -259,6 +265,23 @@ export function PoolForm({
               placeholder="e.g. Yaba, Lagos"
               className={inputCls}
             />
+          </Field>
+          <Field
+            label="Operating area"
+            hint="Controls location defaults for refreshments and other operating costs"
+          >
+            <select
+              value={values.operating_area_id ?? ""}
+              onChange={(e) => set("operating_area_id", e.target.value || null)}
+              className={inputCls}
+            >
+              <option value="">Not assigned</option>
+              {operatingAreas.map((area) => (
+                <option key={area.id} value={area.id}>
+                  {area.name}
+                </option>
+              ))}
+            </select>
           </Field>
           <Field label="Pool type">
             <select
@@ -371,7 +394,9 @@ export function PoolForm({
           <Field label="Indoor / outdoor">
             <select
               value={values.indoor_outdoor ?? ""}
-              onChange={(e) => set("indoor_outdoor", e.target.value as PoolFormValues["indoor_outdoor"])}
+              onChange={(e) =>
+                set("indoor_outdoor", e.target.value as PoolFormValues["indoor_outdoor"])
+              }
               className={inputCls}
             >
               <option value="">Select…</option>
@@ -408,10 +433,7 @@ export function PoolForm({
             ] as const
           ).map(([key, label]) => (
             <Field key={key} label={label}>
-              <RatingInput
-                value={values[key] ?? null}
-                onChange={(v) => set(key, v)}
-              />
+              <RatingInput value={values[key] ?? null} onChange={(v) => set(key, v)} />
             </Field>
           ))}
         </Grid>
@@ -422,10 +444,7 @@ export function PoolForm({
         title="Partnership rating"
         subtitle="Your overall judgment — not just the average. This captures factors the component scores may not (owner rapport, area security, strategic fit)."
       >
-        <PartnershipRatingBlock
-          values={values}
-          onChange={(v) => set("overall_score", v)}
-        />
+        <PartnershipRatingBlock values={values} onChange={(v) => set("overall_score", v)} />
       </Section>
 
       {/* Availability */}
@@ -532,7 +551,7 @@ export function PoolForm({
               onChange={(e) =>
                 set(
                   "preferred_contact_channel",
-                  e.target.value as PoolFormValues["preferred_contact_channel"],
+                  e.target.value as PoolFormValues["preferred_contact_channel"]
                 )
               }
               className={inputCls}
@@ -581,9 +600,7 @@ export function PoolForm({
           <Field label="Source" hint="How did this pool enter our system?">
             <select
               value={values.source ?? ""}
-              onChange={(e) =>
-                set("source", e.target.value as PoolFormValues["source"])
-              }
+              onChange={(e) => set("source", e.target.value as PoolFormValues["source"])}
               className={inputCls}
             >
               <option value="">Unknown</option>
@@ -604,7 +621,7 @@ export function PoolForm({
               onChange={(e) =>
                 set(
                   "last_verified_at",
-                  e.target.value ? new Date(e.target.value).toISOString() : null,
+                  e.target.value ? new Date(e.target.value).toISOString() : null
                 )
               }
               className={inputCls}
@@ -684,9 +701,7 @@ function Section({
   return (
     <Card className="p-4">
       <div className="mb-3">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-          {title}
-        </h3>
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{title}</h3>
         {subtitle && <p className="text-xs text-slate-400">{subtitle}</p>}
       </div>
       {children}
@@ -694,19 +709,9 @@ function Section({
   );
 }
 
-function Grid({
-  children,
-  cols = 3,
-}: {
-  children: React.ReactNode;
-  cols?: 2 | 3;
-}) {
+function Grid({ children, cols = 3 }: { children: React.ReactNode; cols?: 2 | 3 }) {
   return (
-    <div
-      className={`grid grid-cols-1 sm:grid-cols-2 ${
-        cols === 3 ? "lg:grid-cols-3" : ""
-      } gap-3`}
-    >
+    <div className={`grid grid-cols-1 sm:grid-cols-2 ${cols === 3 ? "lg:grid-cols-3" : ""} gap-3`}>
       {children}
     </div>
   );
@@ -817,7 +822,7 @@ const WEIGHT_OVERRIDES: Record<string, Partial<Record<ScoreKey, number>>> = {
 };
 
 function computeComposite(
-  values: PoolFormValues,
+  values: PoolFormValues
 ): { score: number; usedComponents: number } | null {
   const weights: Record<ScoreKey, number> = {
     water_quality: 1,
@@ -855,9 +860,7 @@ function PartnershipRatingBlock({
   const compositeRounded = composite ? Math.round(composite.score * 10) / 10 : null;
   const overall = values.overall_score ?? null;
   const variance =
-    compositeRounded !== null && overall !== null
-      ? Math.abs(overall - compositeRounded)
-      : null;
+    compositeRounded !== null && overall !== null ? Math.abs(overall - compositeRounded) : null;
   // Flag significant gaps so admins can be intentional about overrides.
   const varianceFlag = variance !== null && variance >= 1.5;
 
@@ -910,11 +913,10 @@ function PartnershipRatingBlock({
 
       {varianceFlag && compositeRounded !== null && overall !== null && (
         <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          <strong>Note:</strong> your rating ({overall}) differs from the component
-          average ({compositeRounded.toFixed(1)}) by{" "}
-          {variance!.toFixed(1)} {variance === 1 ? "point" : "points"}. Consider
-          mentioning the reason in the Notes section below — it helps future admins
-          understand your judgment.
+          <strong>Note:</strong> your rating ({overall}) differs from the component average (
+          {compositeRounded.toFixed(1)}) by {variance!.toFixed(1)}{" "}
+          {variance === 1 ? "point" : "points"}. Consider mentioning the reason in the Notes section
+          below — it helps future admins understand your judgment.
         </div>
       )}
     </div>

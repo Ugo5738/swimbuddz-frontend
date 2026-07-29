@@ -8,7 +8,7 @@ import { supabase } from "@/lib/auth";
 import { API_BASE_URL, buildAppUrl } from "@/lib/config";
 import { getLocationDisplayName } from "@/lib/sessions";
 import { Ban, Link as LinkIcon, Pencil, Send, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type SessionStatusType = "draft" | "scheduled" | "in_progress" | "completed" | "cancelled";
 
@@ -24,6 +24,18 @@ interface Session {
   ends_at: string;
   pool_fee: number;
   capacity: number;
+  pricing_mode?: "manual" | "cost_plus";
+  pricing_expected_attendees?: number | null;
+  estimated_total_cost?: number;
+  estimated_cost_per_attendee?: number;
+  margin_type?: "fixed_per_attendee" | "percentage";
+  margin_value?: number;
+  margin_amount_per_attendee?: number;
+  cost_lines?: Array<{
+    description: string;
+    unit_cost_naira: number;
+    quantity: number;
+  }>;
   description?: string;
   template_id?: string;
   is_recurring_instance?: boolean;
@@ -77,11 +89,7 @@ function SessionDetailsModal({
 
   const status = session.status || "scheduled";
 
-  useEffect(() => {
-    fetchRideConfigs();
-  }, [session.id]);
-
-  const fetchRideConfigs = async () => {
+  const fetchRideConfigs = useCallback(async () => {
     try {
       const {
         data: { session: authSession },
@@ -104,7 +112,11 @@ function SessionDetailsModal({
     } finally {
       setLoading(false);
     }
-  };
+  }, [session.id]);
+
+  useEffect(() => {
+    void fetchRideConfigs();
+  }, [fetchRideConfigs]);
 
   const handlePublish = async () => {
     if (!onPublish) return;
@@ -215,6 +227,45 @@ function SessionDetailsModal({
             <p className="text-slate-900">{session.description}</p>
           </div>
         )}
+        <div className="border-t border-slate-200 pt-4">
+          <p className="mb-2 text-sm font-medium text-slate-700">Booking price and cost snapshot</p>
+          <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+            <PriceMetric label="Booking price" value={session.pool_fee} />
+            <PriceMetric label="Estimated total cost" value={session.estimated_total_cost ?? 0} />
+            <PriceMetric label="Cost / attendee" value={session.estimated_cost_per_attendee ?? 0} />
+            <PriceMetric
+              label="Margin / attendee"
+              value={session.margin_amount_per_attendee ?? 0}
+            />
+          </div>
+          <p className="mt-2 text-xs text-slate-500">
+            {session.pricing_mode === "cost_plus"
+              ? `Cost plus ${
+                  session.margin_type === "percentage"
+                    ? `${session.margin_value ?? 0}%`
+                    : `₦${(session.margin_value ?? 0).toLocaleString()} per attendee`
+                }`
+              : "Manual booking price"}
+            {session.pricing_expected_attendees
+              ? ` · planned for ${session.pricing_expected_attendees} attendees`
+              : ""}
+          </p>
+          {session.cost_lines?.length ? (
+            <div className="mt-3 divide-y divide-slate-100 border-y border-slate-100">
+              {session.cost_lines.map((line, index) => (
+                <div
+                  key={`${line.description}-${index}`}
+                  className="flex justify-between py-2 text-sm"
+                >
+                  <span className="text-slate-600">{line.description}</span>
+                  <span className="font-medium text-slate-900">
+                    ₦{(line.unit_cost_naira * line.quantity).toLocaleString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
 
         {/* Ride Share Information */}
         <div className="border-t pt-4">
@@ -389,5 +440,16 @@ function SessionDetailsModal({
         )}
       </div>
     </Modal>
+  );
+}
+
+function PriceMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="bg-slate-50 p-3">
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className="mt-1 font-semibold text-slate-900">
+        ₦{value.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+      </p>
+    </div>
   );
 }
