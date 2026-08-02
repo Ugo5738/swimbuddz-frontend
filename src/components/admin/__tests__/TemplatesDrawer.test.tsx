@@ -11,6 +11,28 @@ vi.mock("@/components/admin/SessionTemplateVolunteerSlotsSection", () => ({
   SessionTemplateVolunteerSlotsSection: () => null,
 }));
 
+vi.mock("@/components/admin/VolunteerNeedsDraftSection", () => ({
+  VolunteerNeedsDraftSection: ({ onChange }: { onChange: (needs: unknown[]) => void }) => (
+    <button
+      type="button"
+      onClick={() =>
+        onChange([
+          {
+            role_id: "role-safety",
+            role_title: "Safety",
+            slots_needed: 2,
+            opportunity_type: "approval_required",
+            min_tier: "tier_2",
+            title_override: "Safety lead",
+          },
+        ])
+      }
+    >
+      Add test template need
+    </button>
+  ),
+}));
+
 vi.mock("@/lib/pods", () => ({
   listPublicPods: vi.fn(async () => [
     {
@@ -78,5 +100,16 @@ describe("TemplatesDrawer Club scope", () => {
       session_type: "club",
       pod_id: "pod-orca",
     });
+  });
+
+  it("submits volunteer needs with a new template", async () => {
+    const onCreate = renderCreateDrawer();
+    fireEvent.click(screen.getByRole("button", { name: "Add test template need" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create Template" }));
+
+    await waitFor(() => expect(onCreate).toHaveBeenCalledTimes(1));
+    expect(onCreate.mock.calls[0][1]).toEqual([
+      expect.objectContaining({ role_id: "role-safety", slots_needed: 2 }),
+    ]);
   });
 });

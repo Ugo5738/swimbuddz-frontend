@@ -19,6 +19,7 @@ export type OppForm = {
   opportunity_type: "open_claim" | "approval_required";
   min_tier: "tier_1" | "tier_2" | "tier_3";
   qr_checkin_enabled: boolean;
+  status: "draft" | "open";
   attach_mode: "standalone" | "session" | "event";
   session_id: string;
   event_id: string;
@@ -113,6 +114,7 @@ export function CreateOpportunityModal({
               label="Session"
               value={oppForm.session_id}
               onChange={(e) => onAttachSelect(e.target.value)}
+              required
             >
               <option value="">
                 {attachLoading ? "Loading sessions…" : "— Select session —"}
@@ -136,6 +138,7 @@ export function CreateOpportunityModal({
               label="Event"
               value={oppForm.event_id}
               onChange={(e) => onAttachSelect(e.target.value)}
+              required
             >
               <option value="">
                 {attachLoading ? "Loading events…" : "— Select event —"}
@@ -245,6 +248,17 @@ export function CreateOpportunityModal({
               <option value="tier_2">Tier 2 — Core</option>
               <option value="tier_3">Tier 3 — Lead</option>
             </Select>
+            <Select
+              label="Visibility"
+              value={oppForm.status}
+              onChange={(e) =>
+                setOppForm({ ...oppForm, status: e.target.value as "draft" | "open" })
+              }
+              hint="Visible now makes this appear on the linked session or event immediately."
+            >
+              <option value="open">Visible now</option>
+              <option value="draft">Save as draft</option>
+            </Select>
           </div>
           <label className="flex items-center gap-3 mt-3 cursor-pointer">
             <input
@@ -268,7 +282,9 @@ export function CreateOpportunityModal({
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit">Create as Draft</Button>
+          <Button type="submit">
+            {oppForm.status === "open" ? "Create & make visible" : "Save draft"}
+          </Button>
         </div>
       </form>
     </Modal>

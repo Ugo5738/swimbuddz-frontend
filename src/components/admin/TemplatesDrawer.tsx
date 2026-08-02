@@ -8,6 +8,10 @@
 
 import { PoolPicker } from "@/components/admin/PoolPicker";
 import { SessionTemplateVolunteerSlotsSection } from "@/components/admin/SessionTemplateVolunteerSlotsSection";
+import {
+  VolunteerNeedsDraftSection,
+  type VolunteerNeedDraft,
+} from "@/components/admin/VolunteerNeedsDraftSection";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -57,7 +61,7 @@ export function TemplatesDrawer({
   templateForm: "create" | "edit" | null;
   editingTemplate: Template | null;
   onClose: () => void;
-  onCreateTemplate: (data: TemplateFormPayload) => void;
+  onCreateTemplate: (data: TemplateFormPayload, volunteerNeeds: VolunteerNeedDraft[]) => void;
   onUpdateTemplate: (id: string, data: TemplateFormPayload) => void;
   onDeleteTemplate: (id: string) => void;
   onGenerate: (t: Template) => void;
@@ -170,7 +174,7 @@ function TemplateFormInline({
   template: Template | null;
   rideAreas: RideArea[];
   onCancel: () => void;
-  onCreate: (data: TemplateFormPayload) => void;
+  onCreate: (data: TemplateFormPayload, volunteerNeeds: VolunteerNeedDraft[]) => void;
   onUpdate: (id: string, data: TemplateFormPayload) => void;
 }) {
   const [form, setForm] = useState({
@@ -191,6 +195,7 @@ function TemplateFormInline({
   const [clubScope, setClubScope] = useState<"general" | "pod">(
     template?.pod_id ? "pod" : "general"
   );
+  const [volunteerNeeds, setVolunteerNeeds] = useState<VolunteerNeedDraft[]>([]);
 
   const [rideConfigs, setRideConfigs] = useState<RideShareConfigEntry[]>(
     template?.ride_share_config && Array.isArray(template.ride_share_config)
@@ -246,7 +251,7 @@ function TemplateFormInline({
     if (mode === "edit" && template) {
       onUpdate(template.id, data);
     } else {
-      onCreate(data);
+      onCreate(data, volunteerNeeds);
     }
   };
 
@@ -450,8 +455,15 @@ function TemplateFormInline({
         ))}
       </div>
 
-      {/* Volunteer needs editor — only on edit (slots are scoped to a
-          saved template id). */}
+      {mode === "create" && (
+        <VolunteerNeedsDraftSection
+          needs={volunteerNeeds}
+          onChange={setVolunteerNeeds}
+          description="Add the roles every generated session should open. They will be saved with the template, so you do not need to create the template and reopen it first."
+        />
+      )}
+
+      {/* Saved-template editor updates persisted recurring needs immediately. */}
       {mode === "edit" && template && (
         <SessionTemplateVolunteerSlotsSection sessionTemplateId={template.id} />
       )}

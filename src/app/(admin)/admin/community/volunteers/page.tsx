@@ -72,6 +72,7 @@ export default function AdminVolunteersPage() {
     opportunity_type: "open_claim" as "open_claim" | "approval_required",
     min_tier: "tier_1" as "tier_1" | "tier_2" | "tier_3",
     qr_checkin_enabled: false,
+    status: "open" as "draft" | "open",
     // "Attach to" picker — when set, date/time/location are inherited
     // from the chosen session/event and the corresponding fields lock.
     attach_mode: "standalone" as "standalone" | "session" | "event",
@@ -276,7 +277,7 @@ export default function AdminVolunteersPage() {
         opportunity_type: oppForm.opportunity_type,
         min_tier: oppForm.min_tier,
         qr_checkin_enabled: oppForm.qr_checkin_enabled,
-        status: "draft",
+        status: oppForm.status,
         // Cross-service refs — set only when the admin explicitly
         // attaches this opportunity to a session / event. Volunteer
         // service stores them as plain UUIDs.
@@ -298,6 +299,7 @@ export default function AdminVolunteersPage() {
         opportunity_type: "open_claim",
         min_tier: "tier_1",
         qr_checkin_enabled: false,
+        status: "open",
         attach_mode: "standalone",
         session_id: "",
         event_id: "",

@@ -6,6 +6,10 @@
 "use client";
 
 import { PoolPicker } from "@/components/admin/PoolPicker";
+import {
+  VolunteerNeedsDraftSection,
+  type VolunteerNeedDraft,
+} from "@/components/admin/VolunteerNeedsDraftSection";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
@@ -56,9 +60,15 @@ export function SessionFormModal({
   onCreate: (
     data: SessionPayload,
     rideConfigs: SessionRideConfig[],
+    volunteerNeeds: VolunteerNeedDraft[],
     publishAfter?: boolean
   ) => void;
-  onUpdate: (id: string, data: SessionPayload, rideConfigs: SessionRideConfig[]) => void;
+  onUpdate: (
+    id: string,
+    data: SessionPayload,
+    rideConfigs: SessionRideConfig[],
+    volunteerNeeds: VolunteerNeedDraft[]
+  ) => void;
 }) {
   const now = new Date();
   const defaultStart = initialDate || now;
@@ -101,6 +111,7 @@ export function SessionFormModal({
   const [clubScope, setClubScope] = useState<"general" | "pod">(
     session?.pod_id ? "pod" : "general"
   );
+  const [volunteerNeeds, setVolunteerNeeds] = useState<VolunteerNeedDraft[]>([]);
 
   // Lazy-load active pods only when session_type is "club" — avoids the
   // round-trip for academy/community/event sessions where pod_id doesn't
@@ -331,9 +342,9 @@ export function SessionFormModal({
       }));
 
     if (mode === "edit" && session) {
-      onUpdate(session.id, sessionData, validRides);
+      onUpdate(session.id, sessionData, validRides, volunteerNeeds);
     } else {
-      onCreate(sessionData, validRides, form.publish_status === "published");
+      onCreate(sessionData, validRides, volunteerNeeds, form.publish_status === "published");
     }
   };
 
@@ -503,30 +514,43 @@ export function SessionFormModal({
             required
           />
         </div>
-        <fieldset className="space-y-4 border-y border-slate-200 py-4">
+        <fieldset className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
           <div>
             <legend className="text-sm font-semibold text-slate-900">
-              Session costing and margin
+              How should the booking price be set?
             </legend>
             <p className="mt-1 text-xs text-slate-500">
-              Rates are suggestions. This session keeps an editable snapshot, so later catalogue
-              changes do not rewrite its price.
+              Use a manual price for the usual quick setup. Use cost plus margin when you want the
+              system to calculate a sustainable price from pool, staffing, lane, and other costs.
             </p>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Select
-              label="Pricing mode"
-              value={form.pricing_mode}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  pricing_mode: e.target.value as "manual" | "cost_plus",
-                })
-              }
-            >
-              <option value="manual">Manual booking price</option>
-              <option value="cost_plus">Cost plus margin</option>
-            </Select>
+          <Select
+            label="Pricing method"
+            value={form.pricing_mode}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                pricing_mode: e.target.value as "manual" | "cost_plus",
+              })
+            }
+          >
+            <option value="manual">Set one booking price manually</option>
+            <option value="cost_plus">Calculate from costs + margin</option>
+          </Select>
+
+          {form.pricing_mode === "manual" ? (
+            <div className="rounded-lg border border-cyan-100 bg-white p-3 text-sm text-slate-600">
+              Enter the amount each member pays in <strong>Booking price per attendee</strong>
+              above. Capacity controls how many places can be booked; no cost breakdown is needed.
+            </div>
+          ) : (
+            <>
+              <div className="rounded-lg border border-cyan-100 bg-white p-3 text-xs leading-5 text-slate-600">
+                <strong>1.</strong> Enter expected attendance, staff, and lanes. <strong>2.</strong>{" "}
+                Load the pool rates or add costs yourself. <strong>3.</strong> Choose the margin. The
+                calculated booking price is shown above and in the summary below.
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Input
               label="Expected attendees"
               type="number"
@@ -565,7 +589,7 @@ export function SessionFormModal({
               value={quoteLanes}
               onChange={(e) => setQuoteLanes(Math.max(parseInt(e.target.value) || 1, 1))}
             />
-          </div>
+              </div>
 
           <div className="space-y-3">
             {form.cost_lines.map((line, index) => (
@@ -683,6 +707,8 @@ export function SessionFormModal({
             <Metric label="Margin / attendee" value={marginPerAttendee} />
             <Metric label="Booking price" value={costPlusBookingPrice} />
           </div>
+            </>
+          )}
         </fieldset>
         <Textarea
           label="Description (optional)"
@@ -702,6 +728,16 @@ export function SessionFormModal({
             <option value="published">Published (visible to members immediately)</option>
           </Select>
         )}
+
+        <VolunteerNeedsDraftSection
+          needs={volunteerNeeds}
+          onChange={setVolunteerNeeds}
+          description={
+            mode === "create"
+              ? "Choose any volunteer roles needed for this session. They will be attached and opened to eligible members as soon as the session is saved."
+              : "Add more roles to this session. Existing opportunities remain unchanged and can be managed from Community → Volunteers."
+          }
+        />
 
         {/* Ride Share section */}
         <div className="border-t border-slate-200 pt-4">

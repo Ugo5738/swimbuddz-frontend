@@ -9,6 +9,28 @@ vi.mock("@/components/admin/PoolPicker", () => ({
   PoolPicker: () => <div data-testid="pool-picker" />,
 }));
 
+vi.mock("@/components/admin/VolunteerNeedsDraftSection", () => ({
+  VolunteerNeedsDraftSection: ({ onChange }: { onChange: (needs: unknown[]) => void }) => (
+    <button
+      type="button"
+      onClick={() =>
+        onChange([
+          {
+            role_id: "role-checkin",
+            role_title: "Check-in",
+            slots_needed: 1,
+            opportunity_type: "open_claim",
+            min_tier: "tier_1",
+            title_override: "",
+          },
+        ])
+      }
+    >
+      Add test volunteer need
+    </button>
+  ),
+}));
+
 vi.mock("@/lib/pods", () => ({
   listPublicPods: vi.fn(async () => [
     {
@@ -71,5 +93,16 @@ describe("SessionFormModal Club scope", () => {
       session_type: "club",
       pod_id: "pod-orca",
     });
+  });
+
+  it("submits volunteer opportunities during regular session creation", async () => {
+    const onCreate = renderModal();
+    fireEvent.click(screen.getByRole("button", { name: "Add test volunteer need" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create Session" }));
+
+    await waitFor(() => expect(onCreate).toHaveBeenCalledTimes(1));
+    expect(onCreate.mock.calls[0][2]).toEqual([
+      expect.objectContaining({ role_id: "role-checkin", role_title: "Check-in" }),
+    ]);
   });
 });

@@ -98,6 +98,25 @@
 }
 
 @layer utilities {
+  @keyframes testimonial-marquee-scroll {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  .testimonial-marquee-track {
+    animation: testimonial-marquee-scroll 42s linear infinite;
+    will-change: transform;
+  }
+
+  .testimonial-marquee:hover .testimonial-marquee-track,
+  .testimonial-marquee:focus-within .testimonial-marquee-track {
+    animation-play-state: paused;
+  }
+
   /* Hide scrollbar while maintaining scroll functionality */
   .scrollbar-hide {
     -ms-overflow-style: none; /* IE and Edge */
@@ -105,5 +124,15 @@
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none; /* Chrome, Safari, Opera */
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .testimonial-marquee {
+    overflow-x: auto;
+  }
+
+  .testimonial-marquee-track {
+    animation: none;
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { ChallengesCarousel } from "@/components/home/ChallengesCarousel";
+import { TestimonialsMarquee } from "@/components/home/TestimonialsMarquee";
 import { Card } from "@/components/ui/Card";
 import { fetchTestimonials, getTestimonials, type Testimonial } from "@/lib/testimonials";
 import {
@@ -532,63 +533,10 @@ export default function HomePage() {
           </p>
           <h2 className="text-3xl font-bold text-slate-900 md:text-4xl">What Our Swimmers Say</h2>
         </div>
-        <div
-          className={`grid gap-6 items-start ${
-            videoTestimonials.length > 0 ? "md:grid-cols-2 lg:grid-cols-3" : "md:grid-cols-3"
-          }`}
-        >
-          {/* Video testimonials first */}
-          {videoTestimonials.map((vt) => (
-            <Card key={vt.id} className="relative overflow-hidden">
-              <div className="relative aspect-video bg-slate-900 flex items-center justify-center">
-                <video
-                  src={vt.file_url}
-                  controls
-                  preload="metadata"
-                  playsInline
-                  className="w-full h-full object-contain"
-                />
-              </div>
-              <div className="p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                  {vt.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase()}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-cyan-700">{vt.name}</p>
-                  {vt.role && <p className="text-xs text-slate-500">{vt.role}</p>}
-                </div>
-              </div>
-            </Card>
-          ))}
-
-          {/* Text testimonials */}
-          {testimonials.map((testimonial, idx) => (
-            <Card key={idx} className="relative overflow-hidden text-center md:text-left">
-              <div className="absolute top-0 left-0 text-6xl text-cyan-100 font-serif leading-none">
-                &quot;
-              </div>
-              <div className="relative flex flex-col p-6 pt-8">
-                <p className="text-slate-700 italic text-lg">&quot;{testimonial.quote}&quot;</p>
-                <div className="flex items-center gap-3 justify-center md:justify-start mt-4">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                    {testimonial.initials}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-cyan-700">{testimonial.name}</p>
-                    <p className="text-xs text-slate-500">
-                      {testimonial.role} since {testimonial.since}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+        <TestimonialsMarquee
+          testimonials={testimonials}
+          videoTestimonials={videoTestimonials}
+        />
       </section>
 
       {/* ─── 8. PRICING TIERS ────────────────────────────────────────── */}

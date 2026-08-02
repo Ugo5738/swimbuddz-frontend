@@ -17,6 +17,7 @@
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
+import { apiPost } from "@/lib/api";
 import {
   TIER_LABELS,
   VolunteersApi,
@@ -42,6 +43,14 @@ const EMPTY_DRAFT: DraftSlot = {
   min_tier: "tier_1",
   title_override: "",
 };
+
+async function syncFutureSessions(sessionTemplateId: string) {
+  return apiPost<{ sessions_checked: number; created_count: number; warnings: string[] }>(
+    `/api/v1/sessions/templates/${sessionTemplateId}/sync-volunteer-opportunities`,
+    undefined,
+    { auth: true }
+  );
+}
 
 export function SessionTemplateVolunteerSlotsSection({
   sessionTemplateId,
@@ -98,6 +107,21 @@ export function SessionTemplateVolunteerSlotsSection({
       });
       setSlots([...slots, created]);
       setDraft(EMPTY_DRAFT);
+      try {
+        const synced = await syncFutureSessions(sessionTemplateId);
+        if (synced.created_count > 0) {
+          toast.success(
+            `Volunteer need added and opened on ${synced.created_count} existing session${
+              synced.created_count === 1 ? "" : "s"
+            }.`
+          );
+        } else {
+          toast.success("Volunteer need added for future generated sessions.");
+        }
+      } catch (syncError) {
+        console.warn("Volunteer need saved, but existing-session sync failed", syncError);
+        toast.warning("Volunteer need saved, but existing sessions could not be updated.");
+      }
     } catch (e) {
       toast.error("Could not add volunteer need.");
       console.error(e);
@@ -128,6 +152,11 @@ export function SessionTemplateVolunteerSlotsSection({
         { is_active }
       );
       setSlots(slots.map((s) => (s.id === slot.id ? updated : s)));
+      if (is_active) {
+        await syncFutureSessions(sessionTemplateId).catch((syncError) => {
+          console.warn("Existing-session volunteer sync failed", syncError);
+        });
+      }
     } catch (e) {
       toast.error("Could not update volunteer need.");
       console.error(e);

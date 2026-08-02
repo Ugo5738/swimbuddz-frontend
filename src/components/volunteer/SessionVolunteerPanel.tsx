@@ -79,11 +79,9 @@ export function SessionVolunteerPanel(props: Props) {
   // Accordion: at most one opportunity expanded at a time. Click a
   // collapsed row to expand it; clicking the same row again collapses.
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  // The whole panel is collapsed by default — volunteering is a
-  // secondary "while you're here" prompt and shouldn't compete with the
-  // booking CTA. The open-slot count on the header preserves
-  // discoverability when collapsed.
-  const [panelOpen, setPanelOpen] = useState(false);
+  // Keep available roles open by default. Admins attach these deliberately,
+  // and a collapsed card was easy for members to miss on the booking page.
+  const [panelOpen, setPanelOpen] = useState(true);
 
   useEffect(() => {
     let cancelled = false;

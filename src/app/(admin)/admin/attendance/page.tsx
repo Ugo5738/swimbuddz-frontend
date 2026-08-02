@@ -12,7 +12,7 @@ import type { components } from "@/lib/api-types";
 import { isPoolFeeRefunded, isRunningLate, isSelfExcused, SessionsApi } from "@/lib/sessions";
 import { format } from "date-fns";
 import type { jsPDF as JsPDFType } from "jspdf";
-import { ReceiptText } from "lucide-react";
+import { ReceiptText, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 type SessionBookingResponse = components["schemas"]["SessionBookingResponse"];
@@ -40,6 +40,7 @@ type Session = {
   week_number: number | null;
   cohort_id: string | null;
   session_type: string | null;
+  pod_id: string | null;
   // Per-session pool fee in NAIRA (the member endpoint converts kobo→naira
   // before responding). The backend walk-in endpoint defaults to the session's
   // own stored fee, so we don't need to pass this through — but we display it
@@ -110,7 +111,30 @@ type RideConfig = {
   }>;
 };
 
-type RosterSource = "cohort" | "booking" | "walkin";
+type ClubRosterMember = {
+  member_id: string;
+  name: string;
+  email: string;
+};
+
+type ClubMemberListItem = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  is_active: boolean;
+  approval_status: string;
+  active_tiers?: string[] | null;
+  club_paid_until?: string | null;
+  academy_paid_until?: string | null;
+  post_academy_club_until?: string | null;
+};
+
+type PodDetailResponse = {
+  members?: Array<{ member_id: string }>;
+};
+
+type RosterSource = "cohort" | "club" | "booking" | "walkin";
 
 // Unified roster row: every member who matters for this session, regardless
 // of source. Replaces the old 3-tab split (Expected/Attendance/Mark
@@ -144,12 +168,63 @@ function hasSessionStarted(startsAt: string | null | undefined): boolean {
   return d.getTime() <= Date.now();
 }
 
+function isFuture(value: string | null | undefined) {
+  return Boolean(value && new Date(value).getTime() > Date.now());
+}
+
+async function loadClubRoster(session: Session): Promise<ClubRosterMember[]> {
+  if (session.session_type?.toLowerCase() !== "club") return [];
+
+  if (session.pod_id) {
+    const pod = await apiGet<PodDetailResponse>(`/api/v1/admin/members/pods/${session.pod_id}`, {
+      auth: true,
+    });
+    const memberIds = (pod.members ?? []).map((member) => member.member_id);
+    if (memberIds.length === 0) return [];
+    const basic = await apiPost<Record<string, MemberBasicResponse>>(
+      "/api/v1/members/bulk-basic",
+      memberIds,
+      { auth: true }
+    );
+    return memberIds.map((memberId) => {
+      const member = basic[memberId];
+      return {
+        member_id: memberId,
+        name: member
+          ? `${member.first_name ?? ""} ${member.last_name ?? ""}`.trim() || "(unknown)"
+          : "(unknown)",
+        email: member?.email ?? "",
+      };
+    });
+  }
+
+  const members = await apiGet<ClubMemberListItem[]>("/api/v1/members/?skip=0&limit=500", {
+    auth: true,
+  });
+  return members
+    .filter(
+      (member) =>
+        member.is_active &&
+        member.approval_status === "approved" &&
+        (member.active_tiers?.some((tier) => tier === "club" || tier === "academy") ||
+          isFuture(member.club_paid_until) ||
+          isFuture(member.academy_paid_until) ||
+          isFuture(member.post_academy_club_until))
+    )
+    .map((member) => ({
+      member_id: member.id,
+      name: `${member.first_name} ${member.last_name}`.trim(),
+      email: member.email,
+    }));
+}
+
 export default function AdminAttendancePage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [cohortNames, setCohortNames] = useState<Map<string, string>>(() => new Map());
   const [attendanceList, setAttendanceList] = useState<Attendance[]>([]);
   const [bookings, setBookings] = useState<SessionBookingResponse[]>([]);
   const [enrollments, setEnrollments] = useState<EnrollmentResponse[]>([]);
+  const [clubRosterMembers, setClubRosterMembers] = useState<ClubRosterMember[]>([]);
   const [memberLookup, setMemberLookup] = useState<Map<string, { name: string; email: string }>>(
     () => new Map()
   );
@@ -165,6 +240,11 @@ export default function AdminAttendancePage() {
   const [error, setError] = useState<string | null>(null);
 
   const [selectedSessionId, setSelectedSessionId] = useState("");
+  const [sessionQuery, setSessionQuery] = useState("");
+  const [sessionTypeFilter, setSessionTypeFilter] = useState("all");
+  const [rosterQuery, setRosterQuery] = useState("");
+  const [rosterStatusFilter, setRosterStatusFilter] = useState("all");
+  const [rosterBookingFilter, setRosterBookingFilter] = useState("all");
 
   // Admin-issued Paystack pay-link for an outstanding-fee booking. Modal
   // surface: { booking_id (which row), result | "loading" }. Closed = null.
@@ -252,17 +332,42 @@ export default function AdminAttendancePage() {
     }
   };
 
+  const sessionOptions = useMemo(() => {
+    const normalizedQuery = sessionQuery.trim().toLowerCase();
+    return sessions.filter((session) => {
+      if (
+        sessionTypeFilter !== "all" &&
+        (session.session_type ?? "other").toLowerCase() !== sessionTypeFilter
+      ) {
+        return false;
+      }
+      if (!normalizedQuery) return true;
+      return describeSession(session, cohortNames).toLowerCase().includes(normalizedQuery);
+    });
+  }, [cohortNames, sessionQuery, sessionTypeFilter, sessions]);
+
   const selectedSession = useMemo(
     () => sessions.find((s) => s.id === selectedSessionId) ?? null,
     [sessions, selectedSessionId]
   );
   const isCohortSession = Boolean(selectedSession?.cohort_id);
+  const isClubSession = selectedSession?.session_type?.toLowerCase() === "club";
   const sessionStarted = hasSessionStarted(selectedSession?.starts_at);
 
   // Reset draft edits whenever the selected session changes.
   useEffect(() => {
     setDrafts(new Map());
+    setRosterQuery("");
+    setRosterStatusFilter("all");
+    setRosterBookingFilter("all");
   }, [selectedSessionId]);
+
+  useEffect(() => {
+    if (sessionOptions.length === 0) return;
+    if (!sessionOptions.some((session) => session.id === selectedSessionId)) {
+      setSelectedSessionId(sessionOptions[0].id);
+    }
+  }, [selectedSessionId, sessionOptions]);
 
   useEffect(() => {
     async function fetchSessions() {
@@ -279,10 +384,14 @@ export default function AdminAttendancePage() {
             return [] as Cohort[];
           }),
         ]);
-        setSessions(data);
+        const newestFirst = [...data].sort(
+          (first, second) =>
+            new Date(second.starts_at).getTime() - new Date(first.starts_at).getTime()
+        );
+        setSessions(newestFirst);
         setCohortNames(new Map(cohorts.map((c) => [c.id, c.name])));
-        if (data.length > 0) {
-          setSelectedSessionId(data[0].id);
+        if (newestFirst.length > 0) {
+          setSelectedSessionId(newestFirst[0].id);
         }
       } catch (err) {
         console.error("Failed to fetch sessions", err);
@@ -304,8 +413,14 @@ export default function AdminAttendancePage() {
       setError(null); // Clear previous errors
       setMarkSuccess(null);
       try {
-        const [attendanceData, rideBookingsData, rideConfigs, sessionBookings, cohortEnrollments] =
-          await Promise.all([
+        const [
+          attendanceData,
+          rideBookingsData,
+          rideConfigs,
+          sessionBookings,
+          cohortEnrollments,
+          clubMembers,
+        ] = await Promise.all([
             apiGet<Attendance[]>(`/api/v1/attendance/sessions/${selectedSessionId}/attendance`, {
               auth: true,
             }),
@@ -335,6 +450,12 @@ export default function AdminAttendancePage() {
                   return [] as EnrollmentResponse[];
                 })
               : Promise.resolve([] as EnrollmentResponse[]),
+            session
+              ? loadClubRoster(session).catch((err) => {
+                  console.warn("Failed to fetch Club roster", err);
+                  return [] as ClubRosterMember[];
+                })
+              : Promise.resolve([] as ClubRosterMember[]),
           ]);
         const bookingsData = rideBookingsData;
 
@@ -392,6 +513,7 @@ export default function AdminAttendancePage() {
         setAttendanceList(mergedAttendance);
         setBookings(sessionBookings);
         setEnrollments(cohortEnrollments);
+        setClubRosterMembers(clubMembers);
 
         // Build a member_id -> {name, email} lookup, merging known sources.
         // Only seed entries when we actually have a name — otherwise leave the
@@ -411,6 +533,11 @@ export default function AdminAttendancePage() {
               name: e.member_name,
               email: e.member_email || "",
             });
+          }
+        }
+        for (const member of clubMembers) {
+          if (!lookup.has(member.member_id)) {
+            lookup.set(member.member_id, { name: member.name, email: member.email });
           }
         }
 
@@ -524,19 +651,43 @@ export default function AdminAttendancePage() {
       // No explicit attendance row — derive from source + booking presence.
       //   - cohort member with a booking → "awaiting" pre-session, "absent" post
       //     (they paid but haven't been marked present yet)
-      //   - cohort member with NO booking → "absent" (they didn't pay the pool
+      //   - cohort / Club roster member with NO booking → "absent" (they didn't pay the pool
       //     fee, so the default is "not coming". Coach can flip via Mark walk-in
       //     which also creates the booking.)
       //   - non-cohort booking (drop-in pay-per-session) → same as cohort-booking
       //   - walk-in row without booking (legacy data) → "absent"
       if (source === "booking") return sessionStarted ? "absent" : "awaiting";
-      if (source === "cohort") return "absent";
+      if (source === "cohort" || source === "club") return "absent";
       return "absent";
     };
 
     // Index bookings by member so cohort rows can show booking status too.
     const bookingByMember = new Map<string, SessionBookingResponse>();
     for (const b of confirmedBookings) bookingByMember.set(b.member_id, b);
+
+    if (isClubSession) {
+      for (const member of clubRosterMembers) {
+        const attendance = attendanceByMember.get(member.member_id);
+        const booking = bookingByMember.get(member.member_id);
+        const effective = attendance
+          ? computeEffective("club", attendance)
+          : booking
+            ? sessionStarted
+              ? "absent"
+              : "awaiting"
+            : "absent";
+        byMember.set(member.member_id, {
+          member_id: member.member_id,
+          name: member.name,
+          email: member.email,
+          source: "club",
+          attendance,
+          booking,
+          ride_info: attendance?.ride_info,
+          effectiveStatus: effective,
+        });
+      }
+    }
 
     if (isCohortSession) {
       for (const e of cohortRoster) {
@@ -602,6 +753,8 @@ export default function AdminAttendancePage() {
     });
   }, [
     isCohortSession,
+    isClubSession,
+    clubRosterMembers,
     cohortRoster,
     confirmedBookings,
     walkIns,
@@ -620,6 +773,24 @@ export default function AdminAttendancePage() {
     }
     return n;
   }, [roster, drafts]);
+
+  const filteredRoster = useMemo(() => {
+    const normalizedQuery = rosterQuery.trim().toLowerCase();
+    return roster.filter((row) => {
+      if (
+        normalizedQuery &&
+        !`${row.name} ${row.email}`.toLowerCase().includes(normalizedQuery)
+      ) {
+        return false;
+      }
+      if (rosterStatusFilter !== "all" && row.effectiveStatus !== rosterStatusFilter) {
+        return false;
+      }
+      if (rosterBookingFilter === "booked" && !row.booking) return false;
+      if (rosterBookingFilter === "not_booked" && row.booking) return false;
+      return true;
+    });
+  }, [roster, rosterBookingFilter, rosterQuery, rosterStatusFilter]);
 
   const handleDraftStatus = (memberId: string, status: DraftStatus) => {
     setMarkSuccess(null);
@@ -963,13 +1134,18 @@ export default function AdminAttendancePage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 p-8">
-      <div className="flex items-center justify-between print:hidden">
+    <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="flex flex-col gap-4 print:hidden lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Attendance Report</h1>
-          <p className="text-slate-600">View and manage session attendance.</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-700">
+            Session operations
+          </p>
+          <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">Attendance</h1>
+          <p className="mt-1 text-sm text-slate-600">
+            Reconcile the full expected roster, bookings, arrivals, and payment status.
+          </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-2">
           <Button variant="secondary" onClick={handlePrint}>
             Print List
           </Button>
@@ -993,14 +1169,49 @@ export default function AdminAttendancePage() {
       )}
 
       <div className="space-y-4 print:space-y-2">
-        <div className="print:hidden">
-          <label className="mb-1 block text-sm font-medium text-slate-700">Select Session</label>
+        <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm print:hidden">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">Choose a session</h2>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Sessions are ordered newest first. Search or narrow by session type.
+            </p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_12rem]">
+            <label className="relative block">
+              <span className="sr-only">Search sessions</span>
+              <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
+              <input
+                type="search"
+                value={sessionQuery}
+                onChange={(event) => setSessionQuery(event.target.value)}
+                placeholder="Search date, title, cohort, or pool"
+                className="h-10 w-full rounded-md border border-slate-200 pl-9 pr-3 text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+              />
+            </label>
+            <select
+              aria-label="Filter sessions by type"
+              value={sessionTypeFilter}
+              onChange={(event) => setSessionTypeFilter(event.target.value)}
+              className="h-10 rounded-md border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-cyan-500"
+            >
+              <option value="all">All session types</option>
+              <option value="club">Club</option>
+              <option value="cohort_class">Academy / cohort</option>
+              <option value="community">Community</option>
+              <option value="event">Event</option>
+            </select>
+          </div>
+          <label className="block text-sm font-medium text-slate-700" htmlFor="attendance-session">
+            Session
+          </label>
           <select
-            className="w-full max-w-md rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+            id="attendance-session"
+            className="w-full rounded-md border border-slate-200 px-3 py-2.5 text-sm text-slate-900 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
             value={selectedSessionId}
             onChange={(e) => setSelectedSessionId(e.target.value)}
           >
-            {sessions.map((s) => (
+            {sessionOptions.length === 0 && <option value="">No matching sessions</option>}
+            {sessionOptions.map((s) => (
               <option key={s.id} value={s.id}>
                 {describeSession(s, cohortNames)}
               </option>
@@ -1021,8 +1232,16 @@ export default function AdminAttendancePage() {
               tone={unmatchedBookings.length === 0 ? "ok" : sessionStarted ? "warn" : "neutral"}
             />
             <ReconciliationStat
-              label={isCohortSession ? "Cohort enrolled" : "Walk-ins"}
-              value={isCohortSession ? cohortRoster.length : walkIns.length}
+              label={
+                isCohortSession ? "Cohort enrolled" : isClubSession ? "Club roster" : "Walk-ins"
+              }
+              value={
+                isCohortSession
+                  ? cohortRoster.length
+                  : isClubSession
+                    ? clubRosterMembers.length
+                    : walkIns.length
+              }
             />
           </div>
         ) : null}
@@ -1043,27 +1262,72 @@ export default function AdminAttendancePage() {
         </div>
 
         {!loadingAttendance && selectedSessionId ? (
-          <UnifiedRoster
-            roster={roster}
-            drafts={drafts}
-            isCohortSession={isCohortSession}
-            sessionStarted={sessionStarted}
-            sessionPoolFeeNaira={selectedSession?.pool_fee ?? null}
-            unmatchedBookingCount={unmatchedBookings.length}
-            onDraftStatus={handleDraftStatus}
-            onMarkWalkIn={handleMarkWalkIn}
-            onGeneratePayLink={handleGeneratePayLink}
-            onRecordOfflinePayment={(bookingId, memberName, amountNaira) => {
-              setOfflinePaymentError(null);
-              setOfflinePaymentModal({ bookingId, memberName, amountNaira });
-            }}
-            onRefundPoolFee={handleRefundPoolFee}
-            onBulkMarkPresent={handleBulkMarkPresent}
-            onSaveRoster={handleSaveRoster}
-            submitting={submittingMark}
-            successMessage={markSuccess}
-            pendingChangeCount={pendingChangeCount}
-          />
+          <div className="space-y-3">
+            <div className="grid gap-3 rounded-xl border border-slate-200 bg-white p-3 print:hidden sm:grid-cols-[minmax(0,1fr)_11rem_11rem]">
+              <label className="relative block">
+                <span className="sr-only">Search roster</span>
+                <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <input
+                  type="search"
+                  value={rosterQuery}
+                  onChange={(event) => setRosterQuery(event.target.value)}
+                  placeholder="Search member name or email"
+                  className="h-10 w-full rounded-md border border-slate-200 pl-9 pr-3 text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                />
+              </label>
+              <select
+                aria-label="Filter roster by attendance status"
+                value={rosterStatusFilter}
+                onChange={(event) => setRosterStatusFilter(event.target.value)}
+                className="h-10 rounded-md border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-cyan-500"
+              >
+                <option value="all">All statuses</option>
+                <option value="awaiting">Awaiting</option>
+                <option value="present">Present</option>
+                <option value="late">Late</option>
+                <option value="absent">Absent</option>
+                <option value="excused">Excused</option>
+              </select>
+              <select
+                aria-label="Filter roster by booking status"
+                value={rosterBookingFilter}
+                onChange={(event) => setRosterBookingFilter(event.target.value)}
+                className="h-10 rounded-md border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-cyan-500"
+              >
+                <option value="all">All bookings</option>
+                <option value="booked">Booked / paid</option>
+                <option value="not_booked">Not booked</option>
+              </select>
+            </div>
+            {filteredRoster.length === 0 && roster.length > 0 ? (
+              <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-10 text-center text-sm text-slate-500">
+                No roster members match these filters.
+              </div>
+            ) : (
+              <UnifiedRoster
+                roster={filteredRoster}
+                drafts={drafts}
+                isCohortSession={isCohortSession}
+                isClubSession={isClubSession}
+                sessionStarted={sessionStarted}
+                sessionPoolFeeNaira={selectedSession?.pool_fee ?? null}
+                unmatchedBookingCount={unmatchedBookings.length}
+                onDraftStatus={handleDraftStatus}
+                onMarkWalkIn={handleMarkWalkIn}
+                onGeneratePayLink={handleGeneratePayLink}
+                onRecordOfflinePayment={(bookingId, memberName, amountNaira) => {
+                  setOfflinePaymentError(null);
+                  setOfflinePaymentModal({ bookingId, memberName, amountNaira });
+                }}
+                onRefundPoolFee={handleRefundPoolFee}
+                onBulkMarkPresent={handleBulkMarkPresent}
+                onSaveRoster={handleSaveRoster}
+                submitting={submittingMark}
+                successMessage={markSuccess}
+                pendingChangeCount={pendingChangeCount}
+              />
+            )}
+          </div>
         ) : null}
 
         {loadingAttendance && <LoadingPage text="Loading attendance..." />}
@@ -1246,6 +1510,7 @@ function UnifiedRoster({
   roster,
   drafts,
   isCohortSession,
+  isClubSession,
   sessionStarted,
   sessionPoolFeeNaira,
   unmatchedBookingCount,
@@ -1263,6 +1528,7 @@ function UnifiedRoster({
   roster: RosterRow[];
   drafts: Map<string, DraftStatus>;
   isCohortSession: boolean;
+  isClubSession: boolean;
   sessionStarted: boolean;
   sessionPoolFeeNaira: number | null;
   unmatchedBookingCount: number;
@@ -1282,6 +1548,8 @@ function UnifiedRoster({
       <div className="rounded-lg border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500">
         {isCohortSession
           ? "No members are enrolled in this cohort yet."
+          : isClubSession
+            ? "No active Club members were found for this session's roster."
           : sessionStarted
             ? "No bookings or walk-ins recorded for this session."
             : "No bookings yet — paid attendees will appear here."}
@@ -1316,7 +1584,7 @@ function UnifiedRoster({
                 Name
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
-                Cohort?
+                Group
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
                 Booking
@@ -1434,7 +1702,7 @@ function RosterTableRow({
   // Booking column display. Four states:
   //   - confirmed booking, paid → green "Paid ₦X · CHANNEL"
   //   - confirmed booking, unpaid (walk-in) → amber "Owes ₦X · CHANNEL"
-  //   - no booking, cohort source → red "Not booked"
+  //   - no booking, cohort / Club source → red "Not booked"
   //   - walk-in row (legacy attendance without booking) → violet
   //     "Walk-in (unpaid)"
   const bookingCell = (() => {
@@ -1468,21 +1736,26 @@ function RosterTableRow({
     };
   })();
 
-  // Add a booking for an unbooked cohort attendee or a legacy walk-in whose
+  // Add a booking for an unbooked cohort / Club attendee or a legacy walk-in whose
   // attendance predates the booking/payment workflow. Once the booking exists,
   // its fee can be settled online or recorded as paid off-platform.
   const canCreateWalkInBooking =
-    !row.booking && (row.source === "cohort" || row.source === "walkin");
+    !row.booking &&
+    (row.source === "cohort" || row.source === "club" || row.source === "walkin");
 
   // Disable the Set dropdown when there's no booking AND no attendance —
   // the workflow is "use Mark walk-in to bring them onto the roster
   // properly". Walk-in rows (have attendance) stay editable.
   const setDisabled = disabled || (!row.booking && !row.attendance);
 
-  const cohortBadge =
+  const groupBadge =
     row.source === "cohort" ? (
       <span className="inline-flex rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800">
         Cohort
+      </span>
+    ) : row.source === "club" ? (
+      <span className="inline-flex rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-medium text-cyan-800">
+        Club
       </span>
     ) : (
       <span className="text-xs text-slate-400">—</span>
@@ -1504,7 +1777,7 @@ function RosterTableRow({
         <div className="text-sm font-medium text-slate-900">{row.name}</div>
         {row.email && <div className="text-xs text-slate-500">{row.email}</div>}
       </td>
-      <td className="px-4 py-3">{cohortBadge}</td>
+      <td className="px-4 py-3">{groupBadge}</td>
       <td className="px-4 py-3">
         <div className="flex flex-col gap-1">
           <span

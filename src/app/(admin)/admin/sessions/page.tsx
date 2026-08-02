@@ -5,10 +5,12 @@ import { SessionCalendar } from "@/components/admin/SessionCalendar";
 import { SessionDetailsModal } from "@/components/admin/SessionDetailsModal";
 import { SessionFormModal } from "@/components/admin/SessionFormModal";
 import { TemplatesDrawer, type TemplateFormPayload } from "@/components/admin/TemplatesDrawer";
+import type { VolunteerNeedDraft } from "@/components/admin/VolunteerNeedsDraftSection";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { SessionsApi } from "@/lib/sessions";
+import { VolunteersApi } from "@/lib/volunteers";
 import type { DateSelectArg, EventClickArg, EventInput } from "@fullcalendar/core";
 import {
   Calendar,
@@ -43,6 +45,52 @@ import type {
   ViewMode,
 } from "./types";
 import { apiFetch, fmtDate, fmtTime, LEGEND_ITEMS, locationLabel, PER_PAGE } from "./utils";
+
+function lagosDateAndTime(isoValue: string) {
+  const value = new Date(isoValue);
+  const date = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Lagos",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(value);
+  const time = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Africa/Lagos",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(value);
+  return { date, time };
+}
+
+async function createSessionVolunteerOpportunities(
+  sessionId: string,
+  sessionData: SessionPayload,
+  volunteerNeeds: VolunteerNeedDraft[]
+) {
+  if (volunteerNeeds.length === 0) return;
+  const start = lagosDateAndTime(sessionData.starts_at);
+  const end = lagosDateAndTime(sessionData.ends_at);
+  await VolunteersApi.admin.bulkCreateOpportunities(
+    volunteerNeeds.map((need) => ({
+      title: need.title_override || need.role_title || "Session volunteer",
+      description: `Volunteer support for ${sessionData.title}.`,
+      role_id: need.role_id,
+      date: start.date,
+      start_time: start.time,
+      end_time: end.time,
+      session_id: sessionId,
+      location_name: sessionData.location_name || undefined,
+      slots_needed: need.slots_needed,
+      opportunity_type: need.opportunity_type,
+      min_tier: need.min_tier,
+      cancellation_deadline_hours: 24,
+      qr_checkin_enabled: false,
+      status: "open",
+    }))
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Main page component
@@ -176,6 +224,7 @@ export default function AdminSessionsPage() {
     async (
       sessionData: SessionPayload,
       rideConfigs: SessionRideConfig[],
+      volunteerNeeds: VolunteerNeedDraft[],
       publishAfter?: boolean
     ) => {
       // Block re-entrant calls (e.g. a fast double-click) before the
@@ -189,6 +238,14 @@ export default function AdminSessionsPage() {
           body: JSON.stringify(sessionData),
         });
         const created = await res.json();
+
+        let volunteerCreationFailed = false;
+        try {
+          await createSessionVolunteerOpportunities(created.id, sessionData, volunteerNeeds);
+        } catch (volunteerError) {
+          volunteerCreationFailed = true;
+          console.error("Session created but volunteer opportunities failed", volunteerError);
+        }
 
         if (rideConfigs.length > 0) {
           await apiFetch(`/api/v1/transport/sessions/${created.id}/ride-configs`, {
@@ -206,7 +263,23 @@ export default function AdminSessionsPage() {
           await apiFetch(`/api/v1/sessions/${created.id}/publish`, { method: "POST" });
           published = true;
         }
-        toast.success(published ? "Session created and published" : "Session created as draft");
+        const volunteerLabel =
+          volunteerNeeds.length > 0
+            ? ` with ${volunteerNeeds.length} volunteer opportunit${
+                volunteerNeeds.length === 1 ? "y" : "ies"
+              }`
+            : "";
+        if (volunteerCreationFailed) {
+          toast.warning(
+            "Session created, but its volunteer opportunities could not be added. Add them from the session editor or Volunteers page."
+          );
+        } else {
+          toast.success(
+            published
+              ? `Session created and published${volunteerLabel}`
+              : `Session created as draft${volunteerLabel}`
+          );
+        }
 
         setFormModal(null);
         await fetchData();
@@ -221,13 +294,26 @@ export default function AdminSessionsPage() {
   );
 
   const handleUpdateSession = useCallback(
-    async (id: string, sessionData: SessionPayload, rideConfigs: SessionRideConfig[]) => {
+    async (
+      id: string,
+      sessionData: SessionPayload,
+      rideConfigs: SessionRideConfig[],
+      volunteerNeeds: VolunteerNeedDraft[]
+    ) => {
       setIsSubmitting(true);
       try {
         await apiFetch(`/api/v1/sessions/${id}`, {
           method: "PATCH",
           body: JSON.stringify(sessionData),
         });
+
+        let volunteerCreationFailed = false;
+        try {
+          await createSessionVolunteerOpportunities(id, sessionData, volunteerNeeds);
+        } catch (volunteerError) {
+          volunteerCreationFailed = true;
+          console.error("Session updated but volunteer opportunities failed", volunteerError);
+        }
 
         if (rideConfigs.length > 0) {
           await apiFetch(`/api/v1/transport/sessions/${id}/ride-configs`, {
@@ -236,7 +322,13 @@ export default function AdminSessionsPage() {
           }).catch((err) => console.error("Ride config error:", err));
         }
 
-        toast.success("Session updated");
+        if (volunteerCreationFailed) {
+          toast.warning(
+            "Session updated, but the new volunteer opportunities could not be added."
+          );
+        } else {
+          toast.success("Session updated");
+        }
         setFormModal(null);
         setEditingSession(null);
         await fetchData();
@@ -310,13 +402,44 @@ export default function AdminSessionsPage() {
   );
 
   const handleCreateTemplate = useCallback(
-    async (data: TemplateFormPayload) => {
+    async (data: TemplateFormPayload, volunteerNeeds: VolunteerNeedDraft[]) => {
       try {
-        await apiFetch("/api/v1/sessions/templates", {
+        const response = await apiFetch("/api/v1/sessions/templates", {
           method: "POST",
           body: JSON.stringify(data),
         });
-        toast.success("Template created");
+        const created = (await response.json()) as Template;
+        let volunteerNeedsSaved = 0;
+        if (volunteerNeeds.length > 0) {
+          const results = await Promise.allSettled(
+            volunteerNeeds.map((need) =>
+              VolunteersApi.admin.createSessionTemplateSlot(created.id, {
+                session_template_id: created.id,
+                role_id: need.role_id,
+                slots_needed: need.slots_needed,
+                opportunity_type: need.opportunity_type,
+                min_tier: need.min_tier,
+                qr_checkin_enabled: false,
+                title_override: need.title_override || null,
+                description_override: null,
+                cancellation_deadline_hours: 24,
+                is_active: true,
+              })
+            )
+          );
+          volunteerNeedsSaved = results.filter((result) => result.status === "fulfilled").length;
+        }
+        if (volunteerNeedsSaved < volunteerNeeds.length) {
+          toast.warning(
+            `Template created, but only ${volunteerNeedsSaved} of ${volunteerNeeds.length} volunteer needs were saved. Reopen the template to add the rest.`
+          );
+        } else {
+          toast.success(
+            volunteerNeeds.length > 0
+              ? `Template created with ${volunteerNeeds.length} volunteer need${volunteerNeeds.length === 1 ? "" : "s"}`
+              : "Template created"
+          );
+        }
         setTemplateForm(null);
         await fetchData();
       } catch (err) {
