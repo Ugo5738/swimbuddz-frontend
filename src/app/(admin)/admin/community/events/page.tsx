@@ -9,7 +9,19 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
 import { format } from "date-fns";
-import { CalendarDays, Eye, EyeOff, Pencil, Plus, Send, Trash2, Users, X } from "lucide-react";
+import {
+  CalendarDays,
+  Eye,
+  EyeOff,
+  Pencil,
+  Plus,
+  Repeat2,
+  Send,
+  Trash2,
+  Users,
+  X,
+} from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -364,10 +376,19 @@ export default function AdminEventsPage() {
           </p>
         </div>
         {!showForm ? (
-          <Button onClick={() => openCreate()} className="flex w-fit items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Create event
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/admin/community/events/planning"
+              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              <Repeat2 className="h-4 w-4" />
+              Templates and import
+            </Link>
+            <Button onClick={() => openCreate()} className="flex w-fit items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Create event
+            </Button>
+          </div>
         ) : null}
       </header>
 
@@ -427,6 +448,8 @@ export default function AdminEventsPage() {
               <option value="graduation">Academy graduation</option>
               <option value="volunteer">Volunteer</option>
               <option value="wrapped">SwimBuddz Wrapped</option>
+              <option value="town_hall">Town hall</option>
+              <option value="excursion">Excursion</option>
               <option value="club_training">Club location listing</option>
             </Select>
           </div>

@@ -3,7 +3,7 @@ import { API_BASE_URL } from "./config";
 
 if (!process.env.NEXT_PUBLIC_API_BASE_URL) {
   console.warn(
-    "API base URL env var is not set (expected NEXT_PUBLIC_API_BASE_URL). Using defaults.",
+    "API base URL env var is not set (expected NEXT_PUBLIC_API_BASE_URL). Using defaults."
   );
 }
 
@@ -16,10 +16,7 @@ type RequestOptions = {
   signal?: AbortSignal;
 };
 
-async function buildHeaders(
-  auth?: boolean,
-  headers?: HeadersInit,
-): Promise<HeadersInit> {
+async function buildHeaders(auth?: boolean, headers?: HeadersInit): Promise<HeadersInit> {
   const result = new Headers(headers);
 
   if (!result.has("Content-Type")) {
@@ -34,11 +31,7 @@ async function buildHeaders(
   return result;
 }
 
-async function request<T>(
-  method: string,
-  path: string,
-  options: RequestOptions = {},
-): Promise<T> {
+async function request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
   const headers = await buildHeaders(options.auth, options.headers);
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method,
@@ -62,12 +55,8 @@ async function request<T>(
         }
         if (parsed) {
           const detail =
-            typeof parsed?.detail === "string"
-              ? parsed.detail
-              : JSON.stringify(parsed);
-          throw new Error(
-            detail || `Request failed with status ${response.status}`,
-          );
+            typeof parsed?.detail === "string" ? parsed.detail : JSON.stringify(parsed);
+          throw new Error(detail || `Request failed with status ${response.status}`);
         }
       }
       throw new Error(responseText);
@@ -94,30 +83,49 @@ export function apiGet<T>(path: string, options?: RequestOptions) {
   return request<T>("GET", path, options);
 }
 
-export function apiPost<T>(
-  path: string,
-  body?: unknown,
-  options?: RequestOptions,
-) {
+export function apiPost<T>(path: string, body?: unknown, options?: RequestOptions) {
   return request<T>("POST", path, { ...options, body });
 }
 
-export function apiPut<T>(
-  path: string,
-  body?: unknown,
-  options?: RequestOptions,
-) {
+export function apiPut<T>(path: string, body?: unknown, options?: RequestOptions) {
   return request<T>("PUT", path, { ...options, body });
 }
 
-export function apiPatch<T>(
-  path: string,
-  body?: unknown,
-  options?: RequestOptions,
-) {
+export function apiPatch<T>(path: string, body?: unknown, options?: RequestOptions) {
   return request<T>("PATCH", path, { ...options, body });
 }
 
 export function apiDelete<T>(path: string, options?: RequestOptions) {
   return request<T>("DELETE", path, options);
+}
+
+export async function apiUpload<T>(
+  path: string,
+  formData: FormData,
+  options: Pick<RequestOptions, "auth" | "signal"> = {}
+): Promise<T> {
+  const headers = new Headers();
+  if (options.auth) {
+    const token = await getCurrentAccessToken();
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+  }
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    headers,
+    body: formData,
+    cache: "no-store",
+    signal: options.signal,
+  });
+  const responseText = await response.text();
+  if (!response.ok) {
+    let detail = responseText;
+    try {
+      const parsed = JSON.parse(responseText);
+      detail = typeof parsed.detail === "string" ? parsed.detail : JSON.stringify(parsed);
+    } catch {
+      // Use the response text when the server did not return JSON.
+    }
+    throw new Error(detail || `Request failed with status ${response.status}`);
+  }
+  return responseText ? (JSON.parse(responseText) as T) : (null as T);
 }
