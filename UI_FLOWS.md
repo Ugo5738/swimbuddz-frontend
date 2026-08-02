@@ -84,6 +84,7 @@ The implementation of pages should follow these flows closely.
          - I need a ride → passenger.
          - I have a car and can take X people → driver + seat count.
          - I’m going by myself.
+     - For Club sessions, require acknowledgement of the linked Club Standards before booking.
 
      - Submit:
        - Calls `POST /api/v1/sessions/{id}/sign-in`.

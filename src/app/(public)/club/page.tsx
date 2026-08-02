@@ -150,6 +150,12 @@ export default function ClubPage() {
             Apply to be a Pod Lead
           </Link>
         </div>
+        <p className="text-sm text-slate-600">
+          Already a member?{" "}
+          <Link href="/club/standards" className="font-semibold text-cyan-700 hover:text-cyan-600">
+            Read the Club Standards →
+          </Link>
+        </p>
       </section>
 
       {/* ─── 4-STEP JOURNEY ──────────────────────────────────────────── */}

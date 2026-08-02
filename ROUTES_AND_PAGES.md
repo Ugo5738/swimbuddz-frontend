@@ -2,7 +2,7 @@
 
 Complete reference for all routes in the SwimBuddz Next.js application.
 
-**Total Pages:** 122
+**Total Pages:** 123
 
 ---
 
@@ -10,7 +10,7 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 
 | Group                               | Pages | Description                                     |
 | ----------------------------------- | ----- | ----------------------------------------------- |
-| [Public Routes](#public-routes)     | 25    | Accessible without authentication               |
+| [Public Routes](#public-routes)     | 26    | Accessible without authentication               |
 | [Auth Routes](#auth-routes)         | 7     | Authentication flows (login, register, confirm) |
 | [Member Routes](#member-routes)     | 29    | Authenticated member dashboards and features    |
 | [Coach Routes](#coach-routes)       | 5     | Coach application, onboarding, and wallet       |
@@ -21,7 +21,7 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 
 ## Public Routes
 
-**26 pages** - Accessible to all visitors
+**27 pages** - Accessible to all visitors
 
 ### Landing & Info Pages
 
@@ -31,6 +31,7 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 | `/about`                | `src/app/(public)/about/page.tsx`                | About page - SwimBuddz story and values             |
 | `/academy`              | `src/app/(public)/academy/page.tsx`              | Academy landing - Program information and benefits  |
 | `/club`                 | `src/app/(public)/club/page.tsx`                 | Club landing - Training information                 |
+| `/club/standards`       | `src/app/(public)/club/standards/page.tsx`       | Official Club practice, safety and conduct standards |
 | `/community`            | `src/app/(public)/community/page.tsx`            | Community landing - Social swimming information     |
 | `/calendar`             | `src/app/(public)/calendar/page.tsx`             | Public Community activity calendar                  |
 | `/guidelines-and-rules` | `src/app/(public)/guidelines-and-rules/page.tsx` | Community rules and safety guidelines               |

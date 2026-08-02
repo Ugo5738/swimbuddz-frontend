@@ -37,6 +37,11 @@ const navGroups = [
         description: "Structured training sessions & tracking",
       },
       {
+        href: "/club/standards",
+        label: "Club Standards",
+        description: "How Club sessions stay safe and purposeful",
+      },
+      {
         href: "/academy",
         label: "Academy",
         description: "Learn to swim with certified coaches",

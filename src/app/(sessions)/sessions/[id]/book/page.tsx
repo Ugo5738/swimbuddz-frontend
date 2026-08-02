@@ -1,13 +1,14 @@
 "use client";
 
 import { BubblesSlider } from "@/components/checkout/BubblesSlider";
+import { ClubStandardsAcknowledgement } from "@/components/club/ClubStandardsAcknowledgement";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet, apiPost } from "@/lib/api";
 import { getCurrentAccessToken } from "@/lib/auth";
-import { getSession, type RideShareArea, type Session } from "@/lib/sessions";
+import { getSession, SessionType, type RideShareArea, type Session } from "@/lib/sessions";
 import { getPaidMembershipTier } from "@/lib/tiers";
 import Link from "next/link";
 import { notFound, useSearchParams } from "next/navigation";
@@ -157,6 +158,7 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
 
   // Payment
   const [processing, setProcessing] = useState(false);
+  const [clubStandardsAccepted, setClubStandardsAccepted] = useState(false);
   const paymentReference = searchParams.get("reference") || searchParams.get("trxref");
   const [verifying, setVerifying] = useState(!!paymentReference);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
@@ -177,6 +179,8 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
   const effectiveBubbles = Math.min(bubblesToApply, walletBalance ?? 0, Math.floor(total / 100));
   const paystackAmount = Math.max(0, total - effectiveBubbles * 100);
   const payWithBubbles = effectiveBubbles > 0;
+  const requiresClubStandardsAcknowledgement =
+    !isRideOnlyFlow && session?.session_type === SessionType.CLUB;
   useEffect(() => {
     if (bubblesToApply !== effectiveBubbles) setBubblesToApply(effectiveBubbles);
   }, [bubblesToApply, effectiveBubbles]);
@@ -431,6 +435,11 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
   };
 
   const handlePayment = async () => {
+    if (requiresClubStandardsAcknowledgement && !clubStandardsAccepted) {
+      toast.error("Please agree to the Club Standards before booking.");
+      return;
+    }
+
     // Map the bring-a-friend guests to the backend BookingGuestCreate shape.
     const guestsPayload = guests.map((g) => ({
       full_name: g.name.trim(),
@@ -666,7 +675,8 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
     processing ||
     (!!selectedRideAreaId && !selectedPickupLocationId) ||
     (isRideOnlyFlow && (!selectedRideAreaId || !selectedPickupLocationId)) ||
-    (!isRideOnlyFlow && guests.some((g) => !guestIsValid(g)));
+    (!isRideOnlyFlow && guests.some((g) => !guestIsValid(g))) ||
+    (requiresClubStandardsAcknowledgement && !clubStandardsAccepted);
 
   const validationMessage: string | null = null;
 
@@ -768,6 +778,13 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
                 />
               )}
             </Card>
+          )}
+
+          {requiresClubStandardsAcknowledgement && (
+            <ClubStandardsAcknowledgement
+              checked={clubStandardsAccepted}
+              onChange={setClubStandardsAccepted}
+            />
           )}
 
           {/* Volunteer opportunities attached to this session — placed

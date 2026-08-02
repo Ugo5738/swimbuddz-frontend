@@ -66,7 +66,10 @@ export function MainLayout({ children }: MainLayoutProps) {
           <p>© {year} SwimBuddz. All rights reserved.</p>
           <div className="flex flex-wrap items-center gap-4">
             <Link href="/guidelines-and-rules" className="hover:text-cyan-700">
-              Guidelines
+              Community Guidelines
+            </Link>
+            <Link href="/club/standards" className="hover:text-cyan-700">
+              Club Standards
             </Link>
             <Link href="/membership" className="hover:text-cyan-700">
               Membership
