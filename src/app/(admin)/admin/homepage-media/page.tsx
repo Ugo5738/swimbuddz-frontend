@@ -2,10 +2,12 @@
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { ImageCropDialog } from "@/components/ui/ImageCropDialog";
 import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
 import { getCurrentAccessToken } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
-import { type SiteAsset } from "@/lib/media";
+import { uploadAdjustedImage, type MediaItem, type SiteAsset } from "@/lib/media";
+import type { NormalizedCropArea, PresentationImagePurpose } from "@/lib/mediaCrop";
 import {
   AlertCircle,
   Check,
@@ -42,6 +44,16 @@ interface VideoTestimonialMeta {
   role: string;
 }
 
+interface PendingHomepageImage {
+  file: File;
+  objectUrl: string;
+  purpose: PresentationImagePurpose;
+  assetKey: string;
+  title: string;
+  isUpdate: boolean;
+  uploadingKey: string;
+}
+
 export default function AdminHomepageMediaPage() {
   const [activeTab, setActiveTab] = useState<TabType>("banners");
   const [banners, setBanners] = useState<MediaAsset[]>([]);
@@ -62,10 +74,18 @@ export default function AdminHomepageMediaPage() {
   const [error, setError] = useState<string | null>(null);
   const [savingSlots, setSavingSlots] = useState<Set<number>>(new Set());
   const [savedSlots, setSavedSlots] = useState<Set<number>>(new Set());
+  const [pendingImage, setPendingImage] = useState<PendingHomepageImage | null>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const communityInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const galleryVideoInputRef = useRef<HTMLInputElement>(null);
   const testimonialInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(
+    () => () => {
+      if (pendingImage) URL.revokeObjectURL(pendingImage.objectUrl);
+    },
+    [pendingImage]
+  );
 
   useEffect(() => {
     fetchAssets();
@@ -180,14 +200,22 @@ export default function AdminHomepageMediaPage() {
       throw new Error(`Failed to upload ${mediaType.toLowerCase()}`);
     }
 
-    const mediaItem = await uploadResponse.json();
+    const mediaItem = (await uploadResponse.json()) as MediaItem;
 
-    // Create or update the site asset
+    await saveSiteAsset(mediaItem, assetKey, title, isUpdate);
+  };
+
+  const saveSiteAsset = async (
+    mediaItem: MediaItem,
+    assetKey: string,
+    title: string,
+    isUpdate: boolean
+  ) => {
     if (isUpdate) {
       await apiPut(
         `/api/v1/media/assets/${assetKey}`,
         { media_item_id: mediaItem.id, description: title },
-        { auth: true },
+        { auth: true }
       );
     } else {
       await apiPost(
@@ -197,34 +225,69 @@ export default function AdminHomepageMediaPage() {
           media_item_id: mediaItem.id,
           description: title,
         },
-        { auth: true },
+        { auth: true }
       );
     }
   };
 
-  // Banner handlers
-  const handleBannerUpload = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
+  const closeImageAdjustment = () => {
+    if (pendingImage) URL.revokeObjectURL(pendingImage.objectUrl);
+    setPendingImage(null);
+  };
 
-    setUploading("banner");
+  const stageImageAdjustment = (
+    file: File,
+    options: Omit<PendingHomepageImage, "file" | "objectUrl">
+  ) => {
+    closeImageAdjustment();
     setError(null);
+    setPendingImage({
+      file,
+      objectUrl: URL.createObjectURL(file),
+      ...options,
+    });
+  };
 
+  const saveAdjustedImage = async (crop: NormalizedCropArea) => {
+    if (!pendingImage) return;
+
+    setUploading(pendingImage.uploadingKey);
+    setError(null);
     try {
-      const nextOrder = banners.length + 1;
-      await uploadMedia(
-        files[0],
-        `homepage_banner_${nextOrder}`,
-        `Homepage Banner ${nextOrder}`,
-        false
+      const mediaItem = await uploadAdjustedImage(
+        pendingImage.file,
+        pendingImage.purpose,
+        crop,
+        pendingImage.title
+      );
+      await saveSiteAsset(
+        mediaItem,
+        pendingImage.assetKey,
+        pendingImage.title,
+        pendingImage.isUpdate
       );
       await fetchAssets();
+      closeImageAdjustment();
     } catch (err) {
       console.error("Upload error:", err);
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploading(null);
-      if (bannerInputRef.current) bannerInputRef.current.value = "";
     }
+  };
+
+  // Banner handlers
+  const handleBannerUpload = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    const nextOrder = banners.length + 1;
+    stageImageAdjustment(files[0], {
+      purpose: "homepage_banner",
+      assetKey: `homepage_banner_${nextOrder}`,
+      title: `Homepage Banner ${nextOrder}`,
+      isUpdate: false,
+      uploadingKey: "banner",
+    });
   };
 
   const handleBannerDelete = async (banner: MediaAsset) => {
@@ -242,27 +305,17 @@ export default function AdminHomepageMediaPage() {
   };
 
   // Community photo handlers
-  const handleCommunityUpload = async (slot: number, files: FileList | null) => {
+  const handleCommunityUpload = (slot: number, files: FileList | null) => {
     if (!files || files.length === 0) return;
 
-    setUploading(`community_${slot}`);
-    setError(null);
-
-    try {
-      const existingPhoto = communityPhotos.find((p) => p.order === slot);
-      await uploadMedia(
-        files[0],
-        `community_photo_${slot}`,
-        `Community Photo ${slot}`,
-        !!existingPhoto
-      );
-      await fetchAssets();
-    } catch (err) {
-      console.error("Upload error:", err);
-      setError(err instanceof Error ? err.message : "Upload failed");
-    } finally {
-      setUploading(null);
-    }
+    const existingPhoto = communityPhotos.find((p) => p.order === slot);
+    stageImageAdjustment(files[0], {
+      purpose: "homepage_community_photo",
+      assetKey: `community_photo_${slot}`,
+      title: `Community Photo ${slot}`,
+      isUpdate: !!existingPhoto,
+      uploadingKey: `community_${slot}`,
+    });
   };
 
   const handleCommunityDelete = async (slot: number) => {
@@ -379,7 +432,7 @@ export default function AdminHomepageMediaPage() {
       await apiPut(
         `/api/v1/media/assets/homepage_video_testimonial_${slot}`,
         { description },
-        { auth: true },
+        { auth: true }
       );
       // Show "Saved" indicator briefly
       setSavedSlots((prev) => new Set(prev).add(slot));
@@ -475,7 +528,10 @@ export default function AdminHomepageMediaPage() {
               ref={bannerInputRef}
               accept="image/*"
               className="hidden"
-              onChange={(e) => handleBannerUpload(e.target.files)}
+              onChange={(e) => {
+                handleBannerUpload(e.target.files);
+                e.currentTarget.value = "";
+              }}
             />
             <Button
               onClick={() => bannerInputRef.current?.click()}
@@ -601,7 +657,10 @@ export default function AdminHomepageMediaPage() {
                       }}
                       accept="image/*"
                       className="hidden"
-                      onChange={(e) => handleCommunityUpload(slot, e.target.files)}
+                      onChange={(e) => {
+                        handleCommunityUpload(slot, e.target.files);
+                        e.currentTarget.value = "";
+                      }}
                     />
 
                     {photo?.file_url ? (
@@ -926,6 +985,18 @@ export default function AdminHomepageMediaPage() {
           </div>
         </div>
       )}
+
+      {pendingImage ? (
+        <ImageCropDialog
+          isOpen
+          imageUrl={pendingImage.objectUrl}
+          purpose={pendingImage.purpose}
+          isSaving={uploading !== null}
+          error={error}
+          onCancel={closeImageAdjustment}
+          onConfirm={saveAdjustedImage}
+        />
+      ) : null}
     </div>
   );
 }

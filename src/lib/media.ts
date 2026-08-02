@@ -1,5 +1,6 @@
 import { getCurrentAccessToken } from "./auth";
 import { API_BASE_URL } from "./config";
+import type { NormalizedCropArea, PresentationImagePurpose } from "./mediaCrop";
 
 export interface MediaItem {
   id: string;
@@ -10,9 +11,43 @@ export interface MediaItem {
   description?: string;
   alt_text?: string;
   uploaded_by: string;
+  metadata_info?: Record<string, unknown> | null;
   is_processed: boolean;
   created_at: string;
   updated_at: string;
+}
+
+/** Upload an original presentation image and return its adjusted derivative. */
+export async function uploadAdjustedImage(
+  file: File,
+  purpose: PresentationImagePurpose,
+  crop: NormalizedCropArea,
+  title?: string,
+  description?: string
+): Promise<MediaItem> {
+  const token = await getCurrentAccessToken();
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("purpose", purpose);
+  formData.append("crop_x", String(crop.x));
+  formData.append("crop_y", String(crop.y));
+  formData.append("crop_width", String(crop.width));
+  formData.append("crop_height", String(crop.height));
+  if (title) formData.append("title", title);
+  if (description) formData.append("description", description);
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/media/uploads/adjusted-image`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Image adjustment failed with status ${response.status}`);
+  }
+
+  return response.json();
 }
 
 export function isLikelyVideoUrl(url: string): boolean {
@@ -48,7 +83,7 @@ export async function uploadMedia(
   purpose: string,
   linkedId?: string,
   title?: string,
-  description?: string,
+  description?: string
 ): Promise<MediaItem> {
   const token = await getCurrentAccessToken();
 
@@ -67,9 +102,7 @@ export async function uploadMedia(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.detail || `Upload failed with status ${response.status}`,
-    );
+    throw new Error(errorData.detail || `Upload failed with status ${response.status}`);
   }
 
   return response.json();
@@ -84,7 +117,7 @@ export async function registerMediaUrl(
   mediaType: "image" | "video" | "link" = "link",
   title?: string,
   description?: string,
-  linkedId?: string,
+  linkedId?: string
 ): Promise<MediaItem> {
   const token = await getCurrentAccessToken();
 
@@ -104,10 +137,7 @@ export async function registerMediaUrl(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.detail ||
-        `Failed to register URL with status ${response.status}`,
-    );
+    throw new Error(errorData.detail || `Failed to register URL with status ${response.status}`);
   }
 
   return response.json();
@@ -119,16 +149,13 @@ export async function registerMediaUrl(
 export async function getMedia(mediaId: string): Promise<MediaItem> {
   const token = await getCurrentAccessToken();
 
-  const response = await fetch(
-    `${API_BASE_URL}/api/v1/media/media/${mediaId}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
+  const response = await fetch(`${API_BASE_URL}/api/v1/media/media/${mediaId}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-  );
+  });
 
   if (!response.ok) {
     throw new Error(`Failed to get media with status ${response.status}`);
@@ -148,9 +175,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
  * Get the file URL for a media item by ID (with caching)
  * Returns null if mediaId is null/undefined or if fetch fails
  */
-export async function getMediaUrl(
-  mediaId: string | null | undefined,
-): Promise<string | null> {
+export async function getMediaUrl(mediaId: string | null | undefined): Promise<string | null> {
   if (!mediaId) return null;
 
   // Check cache
@@ -176,9 +201,7 @@ export async function getMediaUrl(
  * Get the file URL for a media item synchronously from cache
  * Returns null if not in cache - use getMediaUrl to fetch first
  */
-export function getMediaUrlFromCache(
-  mediaId: string | null | undefined,
-): string | null {
+export function getMediaUrlFromCache(mediaId: string | null | undefined): string | null {
   if (!mediaId) return null;
   const cached = mediaUrlCache.get(mediaId);
   return cached ? cached.url : null;
@@ -187,11 +210,7 @@ export function getMediaUrlFromCache(
 /**
  * Prefetch multiple media URLs in parallel
  */
-export async function prefetchMediaUrls(
-  mediaIds: (string | null | undefined)[],
-): Promise<void> {
-  const validIds = mediaIds.filter(
-    (id): id is string => !!id && !mediaUrlCache.has(id),
-  );
+export async function prefetchMediaUrls(mediaIds: (string | null | undefined)[]): Promise<void> {
+  const validIds = mediaIds.filter((id): id is string => !!id && !mediaUrlCache.has(id));
   await Promise.all(validIds.map((id) => getMediaUrl(id)));
 }

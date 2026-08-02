@@ -1,8 +1,10 @@
 "use client";
 
-import { registerMediaUrl, uploadMedia } from "@/lib/media";
+import { ImageCropDialog } from "@/components/ui/ImageCropDialog";
+import { registerMediaUrl, uploadAdjustedImage, uploadMedia } from "@/lib/media";
+import { supportsImageAdjustment, type NormalizedCropArea } from "@/lib/mediaCrop";
 import { Check, Link, Loader2, Upload, X } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export type MediaInputMode = "upload-only" | "url-only" | "both";
 
@@ -67,7 +69,18 @@ export function MediaInput({
   const [error, setError] = useState<string | null>(null);
   const [urlInput, setUrlInput] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [pendingImage, setPendingImage] = useState<{
+    file: File;
+    objectUrl: string;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(
+    () => () => {
+      if (pendingImage) URL.revokeObjectURL(pendingImage.objectUrl);
+    },
+    [pendingImage]
+  );
 
   // Determine accept types based on purpose if not provided
   const getAcceptTypes = () => {
@@ -105,6 +118,15 @@ export function MediaInput({
     async (file: File) => {
       setError(null);
       onError?.(null);
+
+      if (file.type.startsWith("image/") && supportsImageAdjustment(purpose)) {
+        setPendingImage((current) => {
+          if (current) URL.revokeObjectURL(current.objectUrl);
+          return { file, objectUrl: URL.createObjectURL(file) };
+        });
+        return;
+      }
+
       setIsUploading(true);
       onUploadingChange?.(true);
 
@@ -129,6 +151,36 @@ export function MediaInput({
     [purpose, onChange, onError, onUploadingChange]
   );
 
+  const closeImageAdjustment = useCallback(() => {
+    setPendingImage((current) => {
+      if (current) URL.revokeObjectURL(current.objectUrl);
+      return null;
+    });
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, []);
+
+  const handleAdjustedImage = async (crop: NormalizedCropArea) => {
+    if (!pendingImage || !supportsImageAdjustment(purpose)) return;
+
+    setError(null);
+    onError?.(null);
+    setIsUploading(true);
+    onUploadingChange?.(true);
+    try {
+      const mediaItem = await uploadAdjustedImage(pendingImage.file, purpose, crop);
+      setPreviewUrl(mediaItem.file_url);
+      onChange(mediaItem.id, mediaItem.file_url);
+      closeImageAdjustment();
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Image adjustment failed";
+      setError(errorMsg);
+      onError?.(errorMsg);
+    } finally {
+      setIsUploading(false);
+      onUploadingChange?.(false);
+    }
+  };
+
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
@@ -143,6 +195,9 @@ export function MediaInput({
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) handleFileSelect(file);
+    if (!file || !(file.type.startsWith("image/") && supportsImageAdjustment(purpose))) {
+      e.target.value = "";
+    }
   };
 
   const handleUrlSubmit = async () => {
@@ -155,7 +210,11 @@ export function MediaInput({
 
     try {
       const mediaType =
-        urlInput.includes("youtube") || urlInput.includes("youtu.be") ? "video" : "link";
+        urlInput.includes("youtube") || urlInput.includes("youtu.be")
+          ? "video"
+          : supportsImageAdjustment(purpose)
+            ? "image"
+            : "link";
       const mediaItem = await registerMediaUrl(urlInput.trim(), purpose, mediaType);
 
       setPreviewUrl(urlInput);
@@ -178,11 +237,13 @@ export function MediaInput({
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+    closeImageAdjustment();
   };
 
-  const showTabs = mode === "both";
-  const showUpload = mode === "upload-only" || mode === "both";
-  const showUrl = mode === "url-only" || mode === "both";
+  const requiresAdjustedUpload = supportsImageAdjustment(purpose);
+  const showTabs = mode === "both" && !requiresAdjustedUpload;
+  const showUpload = requiresAdjustedUpload || mode === "upload-only" || mode === "both";
+  const showUrl = !requiresAdjustedUpload && (mode === "url-only" || mode === "both");
 
   return (
     <div className={`media-input ${className}`}>
@@ -317,6 +378,18 @@ export function MediaInput({
           </p>
         </div>
       )}
+
+      {pendingImage && supportsImageAdjustment(purpose) ? (
+        <ImageCropDialog
+          isOpen
+          imageUrl={pendingImage.objectUrl}
+          purpose={purpose}
+          isSaving={isUploading}
+          error={error}
+          onCancel={closeImageAdjustment}
+          onConfirm={handleAdjustedImage}
+        />
+      ) : null}
 
       {/* Error message */}
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}

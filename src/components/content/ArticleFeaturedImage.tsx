@@ -22,7 +22,7 @@ export function ArticleFeaturedImage({
   if (variant === "card") {
     return (
       <div
-        className={`relative flex aspect-video w-full items-center justify-center overflow-hidden bg-slate-900 ${className}`}
+        className={`relative aspect-video w-full overflow-hidden bg-slate-900 ${className}`}
         data-article-media-variant="card"
       >
         <Image
@@ -30,7 +30,7 @@ export function ArticleFeaturedImage({
           alt={alt}
           fill
           sizes={sizes ?? "(max-width: 768px) 100vw, 33vw"}
-          className="object-contain"
+          className="object-cover"
         />
       </div>
     );
@@ -38,17 +38,15 @@ export function ArticleFeaturedImage({
 
   return (
     <div
-      className={`flex w-full items-center justify-center overflow-hidden bg-slate-900 ${className}`}
+      className={`relative aspect-video w-full overflow-hidden bg-slate-900 ${className}`}
       data-article-media-variant="detail"
     >
       <Image
         src={src}
         alt={alt}
-        width={0}
-        height={0}
+        fill
         sizes={sizes ?? "(max-width: 768px) 100vw, 800px"}
-        className="block h-auto max-h-[min(75vh,48rem)] w-auto max-w-full object-contain"
-        style={{ width: "auto", height: "auto" }}
+        className="object-cover"
         priority={priority}
       />
     </div>

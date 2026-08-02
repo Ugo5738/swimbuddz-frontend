@@ -3,11 +3,14 @@
 import { TimezoneCombobox } from "@/components/forms/TimezoneCombobox";
 import { RegistrationEssentialsStep } from "@/components/registration/RegistrationEssentialsStep";
 import { Button } from "@/components/ui/Button";
+import { ImageCropDialog } from "@/components/ui/ImageCropDialog";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-import { uploadMedia } from "@/lib/media";
+import { uploadAdjustedImage } from "@/lib/media";
+import type { NormalizedCropArea } from "@/lib/mediaCrop";
 import { Camera, Loader2, X } from "lucide-react";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 type CoreFormState = {
@@ -33,6 +36,47 @@ type Props = {
 };
 
 export function CoreStep({ coreForm, setCoreForm, saving, setSaving }: Props) {
+  const [pendingPhoto, setPendingPhoto] = useState<{
+    file: File;
+    objectUrl: string;
+  } | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
+  useEffect(
+    () => () => {
+      if (pendingPhoto) URL.revokeObjectURL(pendingPhoto.objectUrl);
+    },
+    [pendingPhoto]
+  );
+
+  const closePhotoAdjustment = () => {
+    if (pendingPhoto) URL.revokeObjectURL(pendingPhoto.objectUrl);
+    setPendingPhoto(null);
+    setPhotoError(null);
+  };
+
+  const saveAdjustedPhoto = async (crop: NormalizedCropArea) => {
+    if (!pendingPhoto) return;
+    setSaving(true);
+    setPhotoError(null);
+    try {
+      const mediaItem = await uploadAdjustedImage(pendingPhoto.file, "profile_photo", crop);
+      setCoreForm((prev) => ({
+        ...prev,
+        profilePhotoMediaId: mediaItem.id,
+        profilePhotoUrl: mediaItem.file_url,
+      }));
+      closePhotoAdjustment();
+      toast.success("Photo uploaded!");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to upload photo";
+      setPhotoError(message);
+      toast.error(message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -82,26 +126,13 @@ export function CoreStep({ coreForm, setCoreForm, saving, setSaving }: Props) {
               accept="image/*"
               className="sr-only"
               disabled={saving}
-              onChange={async (event) => {
+              onChange={(event) => {
                 const input = event.currentTarget;
                 const file = input.files?.[0];
                 if (!file) return;
                 input.value = "";
-
-                setSaving(true);
-                try {
-                  const mediaItem = await uploadMedia(file, "profile_photo");
-                  setCoreForm((prev) => ({
-                    ...prev,
-                    profilePhotoMediaId: mediaItem.id,
-                    profilePhotoUrl: mediaItem.file_url,
-                  }));
-                  toast.success("Photo uploaded!");
-                } catch (err) {
-                  toast.error(err instanceof Error ? err.message : "Failed to upload photo");
-                } finally {
-                  setSaving(false);
-                }
+                closePhotoAdjustment();
+                setPendingPhoto({ file, objectUrl: URL.createObjectURL(file) });
               }}
             />
             {coreForm.profilePhotoUrl && !saving ? (
@@ -114,9 +145,7 @@ export function CoreStep({ coreForm, setCoreForm, saving, setSaving }: Props) {
             <p className="text-sm text-slate-700 font-medium">
               {coreForm.profilePhotoUrl ? "Tap to change photo" : "Tap the circle to upload"}
             </p>
-            <p className="text-xs text-slate-500">
-              JPG/PNG/GIF. This helps members recognize you.
-            </p>
+            <p className="text-xs text-slate-500">JPG/PNG/GIF. This helps members recognize you.</p>
             {coreForm.profilePhotoUrl ? (
               <Button
                 type="button"
@@ -153,6 +182,18 @@ export function CoreStep({ coreForm, setCoreForm, saving, setSaving }: Props) {
         }}
         onUpdate={(field, value) => setCoreForm((prev) => ({ ...prev, [field]: value }))}
       />
+
+      {pendingPhoto ? (
+        <ImageCropDialog
+          isOpen
+          imageUrl={pendingPhoto.objectUrl}
+          purpose="profile_photo"
+          isSaving={saving}
+          error={photoError}
+          onCancel={closePhotoAdjustment}
+          onConfirm={saveAdjustedPhoto}
+        />
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
         <Select
