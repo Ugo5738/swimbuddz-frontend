@@ -43,7 +43,7 @@ export function VaultOperationsPanel({ vaultId }: { vaultId: string }) {
           Download bandwidth
         </h2>
         <p className="mt-1 text-sm text-slate-500">
-          Account-wide app ledger across all vaults. AWS Billing remains the final source of truth.
+          Account-wide vault ledger reconciled against bytes delivered by S3.
         </p>
         {bandwidth.loading ? (
           <Loader2 className="mt-8 h-6 w-6 animate-spin text-cyan-600" />
@@ -56,7 +56,7 @@ export function VaultOperationsPanel({ vaultId }: { vaultId: string }) {
                 <p className="text-3xl font-bold text-slate-950">
                   {formatBytes(summary.current_month_download_bytes)}
                 </p>
-                <p className="text-sm text-slate-500">authorized this month (conservative)</p>
+                <p className="text-sm text-slate-500">effective download usage this month</p>
               </div>
               <p className="text-sm font-semibold text-emerald-700">
                 {formatBytes(summary.allowance_remaining_bytes)} vault-ledger headroom
@@ -70,18 +70,36 @@ export function VaultOperationsPanel({ vaultId }: { vaultId: string }) {
                 style={{ width: `${usedPercent}%` }}
               />
             </div>
+            <div
+              className={`mt-4 rounded-xl px-3 py-2 text-xs ${
+                summary.reconciliation_enabled
+                  ? "bg-emerald-50 text-emerald-800"
+                  : "bg-amber-50 text-amber-800"
+              }`}
+            >
+              {summary.reconciliation_enabled
+                ? summary.reconciliation_last_processed_at
+                  ? `S3 logs last reconciled ${new Date(
+                      summary.reconciliation_last_processed_at
+                    ).toLocaleString("en-NG")}`
+                  : "S3 reconciliation is enabled and awaiting its first delivered log."
+                : "S3 reconciliation is not configured; totals remain conservative estimates."}
+            </div>
             <div className="mt-6 overflow-hidden rounded-xl border border-slate-100">
               {summary.months.slice(-6).map((month) => (
                 <div
                   key={month.month}
-                  className="grid grid-cols-3 gap-2 border-b border-slate-100 px-3 py-2 text-xs last:border-0"
+                  className="grid grid-cols-4 gap-2 border-b border-slate-100 px-3 py-2 text-xs last:border-0"
                 >
                   <span className="font-medium text-slate-700">{month.month}</span>
                   <span className="text-right text-slate-500">
                     {formatBytes(month.upload_bytes)} up
                   </span>
                   <span className="text-right text-slate-500">
-                    {formatBytes(month.download_authorized_bytes)} authorized
+                    {formatBytes(month.download_reconciled_bytes)} actual
+                  </span>
+                  <span className="text-right text-slate-500">
+                    {formatBytes(month.download_pending_estimate_bytes)} pending
                   </span>
                 </div>
               ))}

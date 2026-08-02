@@ -116,10 +116,15 @@ export type BandwidthSummary = {
     upload_bytes: number;
     download_authorized_bytes: number;
     download_completed_bytes: number;
+    download_reconciled_bytes: number;
+    download_pending_estimate_bytes: number;
+    download_effective_bytes: number;
   }[];
   current_month_download_bytes: number;
   global_free_allowance_bytes: number;
   allowance_remaining_bytes: number;
+  reconciliation_enabled: boolean;
+  reconciliation_last_processed_at: string | null;
   measurement_note: string;
 };
 

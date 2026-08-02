@@ -83,7 +83,7 @@ export default function AdminMediaVaultPage() {
           "Confirm participants have not opted out of photography and flag any safeguarding concern in the upload notes.",
         shot_checklist: DEFAULT_SHOTS,
       });
-      toast.success("Private vault created and volunteer access synced");
+      toast.success("Private vault created");
       refetch();
       router.push(`/admin/media-vault/${created.id}`);
     } catch (createError) {

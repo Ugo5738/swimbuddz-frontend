@@ -4,6 +4,7 @@ import { VaultAccessPanel } from "@/components/media-vault/VaultAccessPanel";
 import { VaultOperationsPanel } from "@/components/media-vault/VaultOperationsPanel";
 import { VaultReviewGrid } from "@/components/media-vault/VaultReviewGrid";
 import { VaultSettingsPanel } from "@/components/media-vault/VaultSettingsPanel";
+import { VaultUploader } from "@/components/media-vault/VaultUploader";
 import { useApi } from "@/hooks/useApi";
 import { formatBytes, type MediaVault } from "@/lib/media-vault";
 import {
@@ -15,12 +16,13 @@ import {
   MapPin,
   Settings2,
   Shield,
+  UploadCloud,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 
-type Tab = "review" | "access" | "operations" | "settings";
+type Tab = "review" | "upload" | "access" | "operations" | "settings";
 
 export default function AdminMediaVaultDetailPage() {
   const params = useParams<{ id: string }>();
@@ -108,6 +110,12 @@ export default function AdminMediaVaultDetailPage() {
           label="Access & links"
         />
         <TabButton
+          active={tab === "upload"}
+          onClick={() => setTab("upload")}
+          icon={UploadCloud}
+          label="Upload"
+        />
+        <TabButton
           active={tab === "operations"}
           onClick={() => setTab("operations")}
           icon={Gauge}
@@ -122,6 +130,9 @@ export default function AdminMediaVaultDetailPage() {
       </div>
 
       {tab === "review" && <VaultReviewGrid vaultId={data.id} />}
+      {tab === "upload" && (
+        <VaultUploader vault={data} scope={{ kind: "member", vaultId: data.id }} />
+      )}
       {tab === "access" && <VaultAccessPanel vault={data} />}
       {tab === "operations" && <VaultOperationsPanel vaultId={data.id} />}
       {tab === "settings" && <VaultSettingsPanel vault={data} onSaved={refetch} />}

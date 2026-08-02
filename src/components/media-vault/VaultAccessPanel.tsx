@@ -73,20 +73,28 @@ export function VaultAccessPanel({ vault }: { vault: MediaVault }) {
       setMembers([]);
       return;
     }
+    let active = true;
     const timeout = setTimeout(() => {
-      const normalized = query.trim().toLowerCase();
-      setMembers(
-        allMembers
-          .filter((member) =>
-            `${member.first_name} ${member.last_name} ${member.email}`
-              .toLowerCase()
-              .includes(normalized)
-          )
-          .slice(0, 8)
-      );
+      apiGet<MemberSearch[]>(
+        `/api/v1/members/?limit=20&search=${encodeURIComponent(query.trim())}`,
+        { auth: true }
+      )
+        .then((rows) => {
+          if (!active) return;
+          setMembers(rows.slice(0, 8));
+          setAllMembers((current) => {
+            const merged = new Map(current.map((member) => [member.id, member]));
+            rows.forEach((member) => merged.set(member.id, member));
+            return [...merged.values()];
+          });
+        })
+        .catch(() => active && setMembers([]));
     }, 200);
-    return () => clearTimeout(timeout);
-  }, [query, allMembers]);
+    return () => {
+      active = false;
+      clearTimeout(timeout);
+    };
+  }, [query]);
 
   const addGrant = async () => {
     if (!selectedMember) return;
