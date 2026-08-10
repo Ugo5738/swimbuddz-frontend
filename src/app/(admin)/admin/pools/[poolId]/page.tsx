@@ -48,6 +48,7 @@ interface Pool {
   slug: string;
   operating_area_id: string | null;
   location_area: string | null;
+  address: string | null;
   latitude: number | null;
   longitude: number | null;
   contact_person: string | null;
@@ -104,6 +105,7 @@ function poolToFormValues(pool: Pool): PoolFormValues {
     slug: pool.slug,
     operating_area_id: pool.operating_area_id ?? null,
     location_area: pool.location_area ?? "",
+    address: pool.address ?? "",
     latitude: pool.latitude,
     longitude: pool.longitude,
     contact_person: pool.contact_person ?? "",
@@ -158,6 +160,7 @@ function formValuesToPayload(values: PoolFormValues): Record<string, unknown> {
     // slug is immutable in edit mode; omit it from the patch
     operating_area_id: values.operating_area_id ?? null,
     location_area: values.location_area || null,
+    address: values.address || null,
     latitude: values.latitude ?? null,
     longitude: values.longitude ?? null,
     contact_person: values.contact_person || null,

@@ -8,6 +8,7 @@ import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
+import { PoolPricingApi, type CostQuoteLine } from "@/lib/poolPricing";
 import { format } from "date-fns";
 import {
   CalendarDays,
@@ -30,6 +31,25 @@ type EventAudience = "community" | "club" | "academy";
 type EventStatus = "draft" | "published" | "cancelled";
 type LocationType = "physical" | "online" | "hybrid";
 type TierAccess = "public" | "community" | "club" | "academy" | "invite_only";
+type PricingMode = "free" | "included" | "fixed" | "cost_plus";
+type MarginType = "fixed_per_attendee" | "percentage";
+type ReminderProfile = "none" | "standard" | "online_talk" | "major_event";
+
+const REMINDER_PROFILES: Record<ReminderProfile, number[]> = {
+  none: [],
+  standard: [72, 24],
+  online_talk: [168, 24, 1],
+  major_event: [336, 168, 24],
+};
+
+function reminderProfile(hours: number[]): ReminderProfile {
+  const key = [...hours].sort((a, b) => b - a).join(",");
+  return (
+    (Object.entries(REMINDER_PROFILES).find(
+      ([, values]) => [...values].sort((a, b) => b - a).join(",") === key
+    )?.[0] as ReminderProfile | undefined) ?? "none"
+  );
+}
 
 interface EventRecord {
   id: string;
@@ -50,6 +70,15 @@ interface EventRecord {
   max_capacity: number | null;
   tier_access: TierAccess;
   cost_naira: number | null;
+  pricing_mode: PricingMode;
+  pricing_expected_attendees: number | null;
+  cost_lines: CostQuoteLine[];
+  estimated_total_cost_naira: number;
+  estimated_cost_per_attendee_naira: number;
+  margin_type: MarginType;
+  margin_value: number;
+  margin_amount_per_attendee_naira: number;
+  email_reminder_hours: number[];
   rsvp_count?: Record<string, number>;
 }
 
@@ -82,6 +111,12 @@ type EventForm = {
   max_capacity: string;
   tier_access: TierAccess;
   cost_naira: string;
+  pricing_mode: PricingMode;
+  pricing_expected_attendees: string;
+  cost_lines: CostQuoteLine[];
+  margin_type: MarginType;
+  margin_value: string;
+  email_reminder_hours: number[];
 };
 
 const EMPTY_FORM: EventForm = {
@@ -102,6 +137,12 @@ const EMPTY_FORM: EventForm = {
   max_capacity: "",
   tier_access: "public",
   cost_naira: "",
+  pricing_mode: "free",
+  pricing_expected_attendees: "",
+  cost_lines: [],
+  margin_type: "fixed_per_attendee",
+  margin_value: "0",
+  email_reminder_hours: [],
 };
 
 const PRESETS: Array<{
@@ -109,15 +150,17 @@ const PRESETS: Array<{
   values: Partial<EventForm>;
 }> = [
   {
-    label: "Water Room",
+    label: "Online Talk",
     values: {
-      title: "SwimBuddz Water Room",
+      title: "Beyond the Pool",
       event_type: "online_talk",
       audience: "community",
       visibility: "public",
       tier_access: "public",
       location_type: "online",
       location: "Online",
+      pricing_mode: "free",
+      email_reminder_hours: REMINDER_PROFILES.online_talk,
     },
   },
   {
@@ -128,6 +171,8 @@ const PRESETS: Array<{
       audience: "community",
       visibility: "public",
       tier_access: "public",
+      pricing_mode: "fixed",
+      email_reminder_hours: REMINDER_PROFILES.standard,
     },
   },
   {
@@ -138,6 +183,8 @@ const PRESETS: Array<{
       audience: "academy",
       visibility: "public",
       tier_access: "public",
+      pricing_mode: "free",
+      email_reminder_hours: REMINDER_PROFILES.standard,
     },
   },
   {
@@ -149,6 +196,8 @@ const PRESETS: Array<{
       visibility: "public",
       tier_access: "club",
       is_location_private: true,
+      pricing_mode: "included",
+      email_reminder_hours: REMINDER_PROFILES.standard,
     },
   },
   {
@@ -159,6 +208,8 @@ const PRESETS: Array<{
       audience: "community",
       visibility: "public",
       tier_access: "community",
+      pricing_mode: "fixed",
+      email_reminder_hours: REMINDER_PROFILES.major_event,
     },
   },
   {
@@ -169,6 +220,8 @@ const PRESETS: Array<{
       audience: "community",
       visibility: "public",
       tier_access: "community",
+      pricing_mode: "fixed",
+      email_reminder_hours: REMINDER_PROFILES.major_event,
     },
   },
 ];
@@ -199,6 +252,14 @@ function eventToForm(event: EventRecord): EventForm {
     max_capacity: event.max_capacity ? String(event.max_capacity) : "",
     tier_access: event.tier_access,
     cost_naira: event.cost_naira ? String(event.cost_naira) : "",
+    pricing_mode: event.pricing_mode ?? (event.cost_naira ? "fixed" : "free"),
+    pricing_expected_attendees: event.pricing_expected_attendees
+      ? String(event.pricing_expected_attendees)
+      : "",
+    cost_lines: event.cost_lines ?? [],
+    margin_type: event.margin_type ?? "fixed_per_attendee",
+    margin_value: String(event.margin_value ?? 0),
+    email_reminder_hours: event.email_reminder_hours ?? [],
   };
 }
 
@@ -213,6 +274,24 @@ export default function AdminEventsPage() {
   const [memberSearch, setMemberSearch] = useState("");
   const [inviteeIds, setInviteeIds] = useState<string[]>([]);
   const [existingInviteeIds, setExistingInviteeIds] = useState<string[]>([]);
+  const [quoteStaff, setQuoteStaff] = useState(1);
+  const [quoteLanes, setQuoteLanes] = useState(1);
+  const [quoting, setQuoting] = useState(false);
+
+  const expectedAttendees = Math.max(
+    Number(form.pricing_expected_attendees || form.max_capacity || 1),
+    1
+  );
+  const estimatedTotalCost = form.cost_lines.reduce(
+    (total, line) => total + line.unit_cost_naira * line.quantity,
+    0
+  );
+  const estimatedCostPerAttendee = estimatedTotalCost / expectedAttendees;
+  const marginPerAttendee =
+    form.margin_type === "percentage"
+      ? (estimatedCostPerAttendee * (Number(form.margin_value) || 0)) / 100
+      : Number(form.margin_value) || 0;
+  const suggestedAttendeePrice = estimatedCostPerAttendee + marginPerAttendee;
 
   const fetchEvents = useCallback(async () => {
     try {
@@ -242,6 +321,41 @@ export default function AdminEventsPage() {
       toast.error("Members could not be loaded for invitations");
     }
   }, [members.length]);
+
+  const loadCostQuote = async () => {
+    if (!form.pool_id || !form.start_time) {
+      toast.error("Choose a pool and start time before loading costs");
+      return;
+    }
+    const startsAt = new Date(form.start_time);
+    const endsAt = form.end_time
+      ? new Date(form.end_time)
+      : new Date(startsAt.getTime() + 2 * 60 * 60 * 1000);
+    setQuoting(true);
+    try {
+      const quote = await PoolPricingApi.quote({
+        pool_id: form.pool_id,
+        activity_scope: form.audience,
+        starts_at: startsAt.toISOString(),
+        ends_at: endsAt.toISOString(),
+        timezone: form.timezone,
+        expected_attendees: expectedAttendees,
+        expected_staff: Math.max(quoteStaff, 0),
+        lanes: Math.max(quoteLanes, 1),
+      });
+      setForm((current) => ({
+        ...current,
+        pricing_mode: "cost_plus",
+        pricing_expected_attendees: String(expectedAttendees),
+        cost_lines: quote.lines,
+      }));
+      if (quote.warnings.length) toast.warning(quote.warnings.join(" "));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Cost quote failed");
+    } finally {
+      setQuoting(false);
+    }
+  };
 
   const openCreate = (values?: Partial<EventForm>) => {
     setEditing(null);
@@ -316,6 +430,16 @@ export default function AdminEventsPage() {
       max_capacity: form.max_capacity ? Number(form.max_capacity) : null,
       tier_access: form.visibility === "invite_only" ? "invite_only" : form.tier_access,
       cost_naira: form.cost_naira ? Number(form.cost_naira) : null,
+      pricing_mode: form.pricing_mode,
+      pricing_expected_attendees: form.pricing_expected_attendees
+        ? Number(form.pricing_expected_attendees)
+        : form.max_capacity
+          ? Number(form.max_capacity)
+          : null,
+      cost_lines: form.cost_lines,
+      margin_type: form.margin_type,
+      margin_value: Number(form.margin_value) || 0,
+      email_reminder_hours: form.email_reminder_hours,
     };
 
     try {
@@ -439,7 +563,7 @@ export default function AdminEventsPage() {
               value={form.event_type}
               onChange={(event) => setForm({ ...form, event_type: event.target.value })}
             >
-              <option value="online_talk">Online talk / Water Room</option>
+              <option value="online_talk">Online Talk</option>
               <option value="open_swim">Open swim</option>
               <option value="social">Social</option>
               <option value="assessment">Assessment</option>
@@ -560,14 +684,19 @@ export default function AdminEventsPage() {
             <PoolPicker
               label="Pool venue"
               value={form.pool_id}
-              onChange={(poolId, poolName) =>
+              onChange={(poolId, poolName, pool) =>
                 setForm({
                   ...form,
                   pool_id: poolId,
-                  location: poolId ? (poolName ?? "") : form.location,
+                  location: poolId
+                    ? pool?.address
+                      ? `${poolName}, ${pool.address}`
+                      : (poolName ?? "")
+                    : "",
+                  location_area: poolId ? (pool?.location_area ?? "") : "",
                 })
               }
-              hint="Optional for online or non-pool events."
+              hint="Selecting a registered pool fills the venue and its most-specific area."
             />
             <div className="grid gap-4">
               <Input
@@ -581,12 +710,20 @@ export default function AdminEventsPage() {
                   })
                 }
                 placeholder="Pool, venue, or online platform"
+                readOnly={Boolean(form.pool_id)}
+                hint={form.pool_id ? "Filled from the Pool Registry" : undefined}
               />
               <Input
                 label="Location area"
                 value={form.location_area}
                 onChange={(event) => setForm({ ...form, location_area: event.target.value })}
                 placeholder="Yaba, Victoria Island, Online"
+                readOnly={Boolean(form.pool_id)}
+                hint={
+                  form.pool_id
+                    ? "Filled from the pool's operating area; parent areas are derived for costing."
+                    : "Use the most-specific useful area for a non-pool venue."
+                }
               />
             </div>
           </div>
@@ -614,15 +751,217 @@ export default function AdminEventsPage() {
               value={form.max_capacity}
               onChange={(event) => setForm({ ...form, max_capacity: event.target.value })}
             />
-            <Input
-              label="Attendee price (₦)"
-              type="number"
-              min={0}
-              value={form.cost_naira}
-              onChange={(event) => setForm({ ...form, cost_naira: event.target.value })}
-              placeholder="0 for free"
-            />
+            <Select
+              label="Email reminders"
+              value={reminderProfile(form.email_reminder_hours)}
+              onChange={(event) =>
+                setForm({
+                  ...form,
+                  email_reminder_hours: REMINDER_PROFILES[event.target.value as ReminderProfile],
+                })
+              }
+            >
+              <option value="none">None</option>
+              <option value="standard">Standard · 72h and 24h</option>
+              <option value="online_talk">Online Talk · 7d, 24h and 1h</option>
+              <option value="major_event">Major event · 14d, 7d and 24h</option>
+            </Select>
           </div>
+
+          <fieldset className="space-y-4 border-y border-slate-200 py-4">
+            <legend className="text-sm font-semibold text-slate-900">Attendee pricing</legend>
+            <Select
+              label="Pricing treatment"
+              value={form.pricing_mode}
+              onChange={(event) =>
+                setForm({ ...form, pricing_mode: event.target.value as PricingMode })
+              }
+            >
+              <option value="free">Free</option>
+              <option value="included">Included in membership or programme</option>
+              <option value="fixed">Fixed attendee price</option>
+              <option value="cost_plus">Calculate from costs + margin</option>
+            </Select>
+
+            {form.pricing_mode === "fixed" ? (
+              <Input
+                label="Attendee price (₦)"
+                type="number"
+                min={0}
+                value={form.cost_naira}
+                onChange={(event) => setForm({ ...form, cost_naira: event.target.value })}
+              />
+            ) : null}
+
+            {form.pricing_mode === "cost_plus" ? (
+              <div className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-4">
+                  <Input
+                    label="Expected attendees"
+                    type="number"
+                    min={1}
+                    value={form.pricing_expected_attendees}
+                    onChange={(event) =>
+                      setForm({ ...form, pricing_expected_attendees: event.target.value })
+                    }
+                  />
+                  <Input
+                    label="Expected staff"
+                    type="number"
+                    min={0}
+                    value={quoteStaff}
+                    onChange={(event) => setQuoteStaff(Number(event.target.value) || 0)}
+                  />
+                  <Input
+                    label="Lanes"
+                    type="number"
+                    min={1}
+                    value={quoteLanes}
+                    onChange={(event) => setQuoteLanes(Number(event.target.value) || 1)}
+                  />
+                  <div className="flex items-end">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => void loadCostQuote()}
+                      disabled={quoting}
+                    >
+                      {quoting ? "Loading..." : "Load pool costs"}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {form.cost_lines.map((line, index) => (
+                    <div
+                      key={`${line.category}-${index}`}
+                      className="grid gap-2 border-b border-slate-100 pb-3 md:grid-cols-[1.5fr_1fr_1fr_auto]"
+                    >
+                      <Input
+                        label={index === 0 ? "Cost item" : undefined}
+                        value={line.description}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            cost_lines: current.cost_lines.map((item, itemIndex) =>
+                              itemIndex === index
+                                ? { ...item, description: event.target.value }
+                                : item
+                            ),
+                          }))
+                        }
+                      />
+                      <Input
+                        label={index === 0 ? "Unit cost (₦)" : undefined}
+                        type="number"
+                        min={0}
+                        value={line.unit_cost_naira}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            cost_lines: current.cost_lines.map((item, itemIndex) =>
+                              itemIndex === index
+                                ? {
+                                    ...item,
+                                    unit_cost_naira: Number(event.target.value) || 0,
+                                    source_rate_id: null,
+                                  }
+                                : item
+                            ),
+                          }))
+                        }
+                      />
+                      <Input
+                        label={index === 0 ? "Quantity" : undefined}
+                        type="number"
+                        min={0}
+                        value={line.quantity}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            cost_lines: current.cost_lines.map((item, itemIndex) =>
+                              itemIndex === index
+                                ? { ...item, quantity: Number(event.target.value) || 0 }
+                                : item
+                            ),
+                          }))
+                        }
+                      />
+                      <button
+                        type="button"
+                        aria-label={`Remove ${line.description}`}
+                        onClick={() =>
+                          setForm((current) => ({
+                            ...current,
+                            cost_lines: current.cost_lines.filter(
+                              (_, itemIndex) => itemIndex !== index
+                            ),
+                          }))
+                        }
+                        className="mt-auto inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() =>
+                      setForm((current) => ({
+                        ...current,
+                        cost_lines: [
+                          ...current.cost_lines,
+                          {
+                            category: "other",
+                            description: "Other cost",
+                            charge_basis: "flat_session",
+                            unit_cost_naira: 0,
+                            quantity: 1,
+                            total_cost_naira: 0,
+                            source_rate_type: null,
+                            source_rate_id: null,
+                          },
+                        ],
+                      }))
+                    }
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add cost item
+                  </Button>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Select
+                    label="Margin type"
+                    value={form.margin_type}
+                    onChange={(event) =>
+                      setForm({ ...form, margin_type: event.target.value as MarginType })
+                    }
+                  >
+                    <option value="fixed_per_attendee">Fixed per attendee</option>
+                    <option value="percentage">Percentage of direct cost</option>
+                  </Select>
+                  <Input
+                    label={
+                      form.margin_type === "percentage" ? "Margin (%)" : "Margin per attendee (₦)"
+                    }
+                    type="number"
+                    min={0}
+                    value={form.margin_value}
+                    onChange={(event) => setForm({ ...form, margin_value: event.target.value })}
+                  />
+                </div>
+
+                <div className="grid gap-3 bg-slate-50 p-4 text-sm sm:grid-cols-4">
+                  <PricingMetric label="Estimated total cost" value={estimatedTotalCost} />
+                  <PricingMetric label="Direct cost / attendee" value={estimatedCostPerAttendee} />
+                  <PricingMetric label="Margin / attendee" value={marginPerAttendee} />
+                  <PricingMetric label="Suggested attendee price" value={suggestedAttendeePrice} />
+                </div>
+              </div>
+            ) : null}
+          </fieldset>
 
           {form.visibility === "invite_only" ? (
             <fieldset className="space-y-3 border-y border-slate-200 py-4">
@@ -757,6 +1096,15 @@ export default function AdminEventsPage() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function PricingMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <div>
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className="mt-1 font-semibold text-slate-900">₦{Math.round(value).toLocaleString()}</p>
     </div>
   );
 }

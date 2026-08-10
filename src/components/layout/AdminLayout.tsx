@@ -13,7 +13,6 @@ import {
   Calendar,
   CalendarClock,
   CalendarDays,
-  Car,
   ChevronDown,
   ChevronRight,
   ClipboardCheck,
@@ -74,7 +73,6 @@ const navSections: NavSection[] = [
       { href: "/admin/sessions", label: "Sessions", icon: Calendar },
       { href: "/admin/makeups", label: "Make-ups", icon: CalendarClock },
       { href: "/admin/discounts", label: "Discounts", icon: Trophy },
-      { href: "/admin/transport", label: "Transport", icon: Car },
       { href: "/admin/attendance", label: "Attendance", icon: ClipboardCheck },
       { href: "/admin/ai/queue", label: "Stroke Lab Queue", icon: Activity },
     ],
@@ -181,8 +179,7 @@ const navSections: NavSection[] = [
     title: "Operations",
     items: [
       { href: "/admin/store", label: "Store", icon: ShoppingBag },
-      { href: "/admin/pools", label: "Pool Registry", icon: Waves },
-      { href: "/admin/pools/pricing", label: "Pool Costing", icon: Banknote },
+      { href: "/admin/pools", label: "Locations & Transport", icon: Waves },
       { href: "/admin/reports", label: "Quarterly Reports", icon: BarChart3 },
       { href: "/admin/flywheel", label: "Flywheel", icon: TrendingUp },
       {

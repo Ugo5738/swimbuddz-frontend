@@ -2,13 +2,15 @@
 
 import { apiGet } from "@/lib/api";
 import { Check, ChevronDown, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
-interface PoolOption {
+export interface PoolOption {
   id: string;
   name: string;
   partnership_status: string;
   location_area: string | null;
+  operating_area_id: string | null;
+  address: string | null;
   is_active: boolean;
 }
 
@@ -19,7 +21,7 @@ interface PoolListResponse {
 
 type PoolPickerProps = {
   value: string | null | undefined;
-  onChange: (poolId: string | null, poolName?: string | null) => void;
+  onChange: (poolId: string | null, poolName?: string | null, pool?: PoolOption | null) => void;
   /**
    * Restrict to active partners only. Default is false — admin gets every
    * active pool (prospect, evaluating, active_partner) since they may need
@@ -75,8 +77,8 @@ async function fetchPools(activePartnersOnly: boolean): Promise<PoolOption[]> {
  *
  * Replaces the hardcoded SessionLocation enum everywhere a session, cohort,
  * template, event, or ride route needs a pool reference. The onChange
- * callback returns both pool_id and the resolved display name so callers
- * can populate legacy location_name without an extra lookup.
+ * callback returns the ID, display name, and canonical pool snapshot so
+ * callers can populate legacy location fields without another lookup.
  */
 export function PoolPicker({
   value,
@@ -88,6 +90,8 @@ export function PoolPicker({
   label,
   hint,
 }: PoolPickerProps) {
+  const generatedId = useId();
+  const listboxId = `${id ?? generatedId}-options`;
   const [pools, setPools] = useState<PoolOption[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -153,13 +157,13 @@ export function PoolPicker({
   const selectedPool = value && pools ? pools.find((p) => p.id === value) : null;
 
   const pickPool = (pool: PoolOption) => {
-    onChange(pool.id, pool.name);
+    onChange(pool.id, pool.name, pool);
     setQuery(pool.name);
     setOpen(false);
   };
 
   const clear = () => {
-    onChange(null, null);
+    onChange(null, null, null);
     setQuery("");
     setHighlightIndex(0);
     inputRef.current?.focus();
@@ -202,6 +206,7 @@ export function PoolPicker({
           role="combobox"
           aria-autocomplete="list"
           aria-expanded={open}
+          aria-controls={listboxId}
           value={query}
           placeholder={pools === null ? "Loading pools..." : "Search or pick a pool..."}
           disabled={pools === null}
@@ -212,7 +217,7 @@ export function PoolPicker({
             // Clear the selection as soon as the user edits the text so we
             // don't leave a stale pool_id paired with a mismatched display
             // string.
-            if (value) onChange(null, null);
+            if (value) onChange(null, null, null);
           }}
           onFocus={() => setOpen(true)}
           onKeyDown={handleKeyDown}
@@ -247,6 +252,7 @@ export function PoolPicker({
 
         {open && pools !== null && (
           <div
+            id={listboxId}
             role="listbox"
             className="absolute z-30 mt-1 w-full max-h-60 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg"
           >

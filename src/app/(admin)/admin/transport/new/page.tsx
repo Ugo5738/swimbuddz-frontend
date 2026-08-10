@@ -1,13 +1,17 @@
 "use client";
 
+import { LocationOperationsNav } from "@/components/admin/LocationOperationsNav";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import { supabase } from "@/lib/auth";
-import { API_BASE_URL } from "@/lib/config";
+import { Select } from "@/components/ui/Select";
+import { apiGet, apiPost } from "@/lib/api";
+import { formatOperatingAreaPath, PoolPricingApi, type OperatingArea } from "@/lib/poolPricing";
+import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface PickupLocationInput {
   name: string;
@@ -15,376 +19,216 @@ interface PickupLocationInput {
   address: string;
 }
 
-const STEPS = [
-  {
-    title: "Area Details",
-    description: "Name and identifier for the ride area",
-  },
-  { title: "Pickup Locations", description: "Add pickup points for this area" },
-  { title: "Review & Create", description: "Review and save the ride area" },
-];
+interface RideArea {
+  id: string;
+  operating_area_id: string | null;
+}
+
+const EMPTY_PICKUP: PickupLocationInput = { name: "", description: "", address: "" };
 
 export default function NewRideAreaPage() {
   const router = useRouter();
-  const [step, setStep] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [areas, setAreas] = useState<OperatingArea[]>([]);
+  const [configuredAreaIds, setConfiguredAreaIds] = useState<Set<string>>(new Set());
+  const [operatingAreaId, setOperatingAreaId] = useState("");
+  const [pickupLocations, setPickupLocations] = useState<PickupLocationInput[]>([]);
+  const [pickup, setPickup] = useState<PickupLocationInput>(EMPTY_PICKUP);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // Step 1: Area Details
-  const [areaName, setAreaName] = useState("");
-  const [areaSlug, setAreaSlug] = useState("");
+  useEffect(() => {
+    void Promise.all([
+      PoolPricingApi.listAreas(),
+      apiGet<RideArea[]>("/api/v1/transport/areas", { auth: true }),
+    ])
+      .then(([operatingAreas, rideAreas]) => {
+        setAreas(operatingAreas);
+        setConfiguredAreaIds(
+          new Set(
+            rideAreas
+              .map((area) => area.operating_area_id)
+              .filter((id): id is string => Boolean(id))
+          )
+        );
+      })
+      .catch((cause) => {
+        setError(cause instanceof Error ? cause.message : "Locations could not be loaded");
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
-  // Step 2: Pickup Locations
-  const [pickupLocations, setPickupLocations] = useState<PickupLocationInput[]>([]);
-  const [newLocation, setNewLocation] = useState<PickupLocationInput>({
-    name: "",
-    description: "",
-    address: "",
-  });
-  const [showLocationForm, setShowLocationForm] = useState(true);
-
-  const handleNameChange = (value: string) => {
-    setAreaName(value);
-    setAreaSlug(
-      value
-        .toLowerCase()
-        .replace(/\s+/g, "_")
-        .replace(/[^a-z0-9_]/g, "")
-    );
-  };
-
-  const addPickupLocation = () => {
-    if (!newLocation.name.trim()) {
-      setError("Location name is required");
+  const availableAreas = useMemo(
+    () => areas.filter((area) => area.is_active && !configuredAreaIds.has(area.id)),
+    [areas, configuredAreaIds]
+  );
+  const addPickup = () => {
+    if (!pickup.name.trim()) {
+      setError("Pickup location name is required");
       return;
     }
-    setPickupLocations([...pickupLocations, { ...newLocation }]);
-    setNewLocation({ name: "", description: "", address: "" });
-    setShowLocationForm(false);
+    setPickupLocations((current) => [...current, { ...pickup, name: pickup.name.trim() }]);
+    setPickup(EMPTY_PICKUP);
     setError("");
   };
 
-  const removePickupLocation = (index: number) => {
-    setPickupLocations(pickupLocations.filter((_, i) => i !== index));
-  };
-
-  const nextStep = () => {
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!operatingAreaId) {
+      setError("Select an operating area");
+      return;
+    }
+    setSaving(true);
     setError("");
-    if (step === 0) {
-      if (!areaName.trim() || !areaSlug.trim()) {
-        setError("Area name and slug are required");
-        return;
-      }
-    }
-    if (step < STEPS.length - 1) {
-      setStep(step + 1);
-    }
-  };
-
-  const prevStep = () => {
-    if (step > 0) {
-      setStep(step - 1);
-    }
-  };
-
-  const handleSubmit = async () => {
-    setLoading(true);
-    setError("");
-
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const token = session?.access_token;
-
-      // Step 1: Create the ride area
-      const areaRes = await fetch(`${API_BASE_URL}/api/v1/transport/areas`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ name: areaName, slug: areaSlug }),
-      });
-
-      if (!areaRes.ok) {
-        const errorData = await areaRes.json().catch(() => ({}));
-        throw new Error(errorData.detail || "Failed to create ride area");
-      }
-
-      const area = await areaRes.json();
-
-      // Step 2: Create pickup locations
-      for (const loc of pickupLocations) {
-        const locRes = await fetch(`${API_BASE_URL}/api/v1/transport/areas/${area.id}/locations`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            name: loc.name,
-            description: loc.description || undefined,
-            address: loc.address || undefined,
-          }),
-        });
-
-        if (!locRes.ok) {
-          console.error("Failed to create pickup location:", loc.name);
-        }
-      }
-
-      // Navigate back to transport page
+      const rideArea = await apiPost<{ id: string }>(
+        "/api/v1/transport/areas",
+        { operating_area_id: operatingAreaId },
+        { auth: true }
+      );
+      await Promise.all(
+        pickupLocations.map((location) =>
+          apiPost(
+            `/api/v1/transport/areas/${rideArea.id}/locations`,
+            {
+              name: location.name,
+              description: location.description || null,
+              address: location.address || null,
+            },
+            { auth: true }
+          )
+        )
+      );
       router.push("/admin/transport");
-    } catch (err) {
-      console.error(err);
-      setError(err instanceof Error ? err.message : "Failed to create ride area");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Ride-share area could not be created");
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
-      <div>
-        <p className="text-sm font-semibold uppercase tracking-wider text-cyan-600">
-          Admin · Transport
-        </p>
-        <h1 className="text-3xl font-bold text-slate-900">Create Ride Area</h1>
-        <p className="text-slate-600 mt-1">Set up a new ride share area with pickup locations</p>
-      </div>
+    <div className="mx-auto max-w-4xl space-y-6">
+      <LocationOperationsNav />
+      <Link
+        href="/admin/transport"
+        className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-slate-900"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to ride share
+      </Link>
 
-      {/* Step Indicator */}
-      <div className="flex flex-wrap gap-3">
-        {STEPS.map((s, index) => (
-          <div
-            key={s.title}
-            className={`flex min-w-[140px] flex-col rounded-xl border px-3 py-2 text-sm ${
-              index === step
-                ? "border-cyan-600 bg-cyan-50 text-cyan-900"
-                : index < step
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                  : "border-slate-200 bg-white text-slate-500"
-            }`}
-          >
-            <span className="text-xs font-semibold uppercase">Step {index + 1}</span>
-            <span className="font-semibold">{s.title}</span>
-            <span className="text-xs">{s.description}</span>
-          </div>
-        ))}
-      </div>
+      <header>
+        <p className="text-xs font-semibold uppercase text-cyan-700">Location operations</p>
+        <h1 className="mt-1 text-3xl font-bold text-slate-950">Enable ride share for an area</h1>
+        <p className="mt-1 text-sm text-slate-600">
+          Areas come from the same hierarchy used by pools and costing. Add only the pickup points
+          that are specific to transport.
+        </p>
+      </header>
 
       {error && <Alert variant="error">{error}</Alert>}
 
-      <Card className="p-6 space-y-6">
-        {/* Step 1: Area Details */}
-        {step === 0 && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-slate-900">Area Details</h2>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Area Name *</label>
-                <Input
-                  placeholder="e.g., Victoria Island"
-                  value={areaName}
-                  onChange={(e) => handleNameChange(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Slug (URL identifier) *
-                </label>
-                <Input
-                  placeholder="victoria_island"
-                  value={areaSlug}
-                  onChange={(e) => setAreaSlug(e.target.value.toLowerCase().replace(/\s+/g, "_"))}
-                />
-                <p className="text-xs text-slate-500 mt-1">
-                  Auto-generated from name. Use lowercase letters, numbers, and underscores.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Pickup Locations */}
-        {step === 1 && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-slate-900">Pickup Locations</h2>
-            <p className="text-sm text-slate-600">
-              Add pickup points where riders will be collected in {areaName || "this area"}.
-            </p>
-
-            {/* Added locations list */}
-            {pickupLocations.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium text-slate-700">
-                  Added Locations ({pickupLocations.length})
-                </h3>
-                <ul className="space-y-2">
-                  {pickupLocations.map((loc, index) => (
-                    <li
-                      key={index}
-                      className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"
-                    >
-                      <div>
-                        <span className="font-medium text-slate-900">{loc.name}</span>
-                        {loc.description && (
-                          <span className="text-sm text-slate-600 ml-2">— {loc.description}</span>
-                        )}
-                        {loc.address && (
-                          <p className="text-xs text-slate-500 mt-0.5">📍 {loc.address}</p>
-                        )}
-                      </div>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => removePickupLocation(index)}
-                      >
-                        Remove
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Add new location form */}
-            {showLocationForm ? (
-              <Card className="p-4 bg-slate-50 space-y-3">
-                <h3 className="text-sm font-semibold text-slate-800">
-                  {pickupLocations.length === 0 ? "Add Pickup Location" : "Add Another Location"}
-                </h3>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="sm:col-span-2">
-                    <Input
-                      placeholder="Location name (e.g., Gate 1, Shoprite)"
-                      value={newLocation.name}
-                      onChange={(e) => setNewLocation({ ...newLocation, name: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Input
-                      placeholder="Description (optional)"
-                      value={newLocation.description}
-                      onChange={(e) =>
-                        setNewLocation({
-                          ...newLocation,
-                          description: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Input
-                      placeholder="Street address (optional)"
-                      value={newLocation.address}
-                      onChange={(e) =>
-                        setNewLocation({
-                          ...newLocation,
-                          address: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={addPickupLocation}>
-                    Save Location
-                  </Button>
-                  {pickupLocations.length > 0 && (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => {
-                        setShowLocationForm(false);
-                        setNewLocation({ name: "", description: "", address: "" });
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  )}
-                </div>
-              </Card>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowLocationForm(true)}
-                className="w-full rounded-lg border-2 border-dashed border-slate-300 py-3 text-sm font-medium text-slate-500 hover:border-cyan-400 hover:text-cyan-600 transition-colors"
-              >
-                + Add Another Location
-              </button>
-            )}
-
-            {pickupLocations.length === 0 && (
-              <p className="text-sm text-amber-600 italic">
-                💡 Tip: Add at least one pickup location to make this area useful.
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Step 3: Review & Create */}
-        {step === 2 && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-slate-900">Review & Create</h2>
-            <p className="text-sm text-slate-600">Review the ride area details before creating.</p>
-
-            <div className="space-y-4">
-              <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-                <h3 className="text-sm font-semibold text-slate-800 mb-2">Area Details</h3>
-                <div className="text-sm text-slate-700 space-y-1">
-                  <p>
-                    <strong>Name:</strong> {areaName}
-                  </p>
-                  <p>
-                    <strong>Slug:</strong> {areaSlug}
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-                <h3 className="text-sm font-semibold text-slate-800 mb-2">
-                  Pickup Locations ({pickupLocations.length})
-                </h3>
-                {pickupLocations.length > 0 ? (
-                  <ul className="text-sm text-slate-700 space-y-1">
-                    {pickupLocations.map((loc, index) => (
-                      <li key={index}>
-                        <strong>{loc.name}</strong>
-                        {loc.description && ` — ${loc.description}`}
-                        {loc.address && (
-                          <span className="text-slate-500 block text-xs">📍 {loc.address}</span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-slate-500 italic">No pickup locations added.</p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Navigation Buttons */}
-        <div className="flex justify-between pt-4 border-t border-slate-200">
-          <Button
-            variant="secondary"
-            onClick={step === 0 ? () => router.push("/admin/transport") : prevStep}
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <Card className="space-y-4 p-6">
+          <Select
+            label="Operating area"
+            value={operatingAreaId}
+            onChange={(event) => setOperatingAreaId(event.target.value)}
             disabled={loading}
+            required
           >
-            {step === 0 ? "Cancel" : "Back"}
-          </Button>
-          {step < STEPS.length - 1 ? (
-            <Button onClick={nextStep}>Continue</Button>
-          ) : (
-            <Button onClick={handleSubmit} disabled={loading}>
-              {loading ? "Creating..." : "Create Ride Area"}
-            </Button>
+            <option value="">{loading ? "Loading areas…" : "Select area"}</option>
+            {availableAreas.map((area) => (
+              <option key={area.id} value={area.id}>
+                {formatOperatingAreaPath(area, areas)}
+              </option>
+            ))}
+          </Select>
+          <p className="text-xs text-slate-500">
+            Create or reorganize the geography under Areas &amp; costing. Ride share references it;
+            it does not create a second copy.
+          </p>
+        </Card>
+
+        <Card className="space-y-4 p-6">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Pickup locations</h2>
+            <p className="text-sm text-slate-600">
+              Exact places where riders can meet the vehicle.
+            </p>
+          </div>
+
+          {pickupLocations.length > 0 && (
+            <ul className="divide-y divide-slate-100 border-y border-slate-200">
+              {pickupLocations.map((location, index) => (
+                <li
+                  key={`${location.name}-${index}`}
+                  className="flex items-start justify-between gap-3 py-3"
+                >
+                  <div>
+                    <p className="font-medium text-slate-900">{location.name}</p>
+                    {location.description && (
+                      <p className="text-sm text-slate-600">{location.description}</p>
+                    )}
+                    {location.address && (
+                      <p className="text-xs text-slate-500">{location.address}</p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPickupLocations((current) =>
+                        current.filter((_, itemIndex) => itemIndex !== index)
+                      )
+                    }
+                    className="rounded p-2 text-rose-600 hover:bg-rose-50"
+                    aria-label={`Remove ${location.name}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </li>
+              ))}
+            </ul>
           )}
+
+          <div className="grid gap-3 md:grid-cols-3">
+            <Input
+              label="Pickup name"
+              value={pickup.name}
+              onChange={(event) => setPickup({ ...pickup, name: event.target.value })}
+              placeholder="e.g. Tejuosho main entrance"
+            />
+            <Input
+              label="Description"
+              value={pickup.description}
+              onChange={(event) => setPickup({ ...pickup, description: event.target.value })}
+              placeholder="Optional landmark"
+            />
+            <Input
+              label="Exact address"
+              value={pickup.address}
+              onChange={(event) => setPickup({ ...pickup, address: event.target.value })}
+              placeholder="Optional street address"
+            />
+          </div>
+          <Button type="button" variant="outline" onClick={addPickup}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add pickup
+          </Button>
+        </Card>
+
+        <div className="flex justify-end gap-3">
+          <Link href="/admin/transport">
+            <Button type="button" variant="secondary">
+              Cancel
+            </Button>
+          </Link>
+          <Button type="submit" disabled={saving || loading || availableAreas.length === 0}>
+            {saving ? "Saving…" : "Enable ride share"}
+          </Button>
         </div>
-      </Card>
+      </form>
     </div>
   );
 }

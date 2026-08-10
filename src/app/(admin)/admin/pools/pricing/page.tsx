@@ -1,5 +1,6 @@
 "use client";
 
+import { LocationOperationsNav } from "@/components/admin/LocationOperationsNav";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
@@ -7,6 +8,7 @@ import { Select } from "@/components/ui/Select";
 import { apiGet } from "@/lib/api";
 import {
   type ActivityScope,
+  type AreaType,
   type ChargeBasis,
   type OperatingArea,
   type OperatingCostRate,
@@ -25,6 +27,7 @@ const today = new Date().toISOString().slice(0, 10);
 const emptyArea = {
   name: "",
   slug: "",
+  area_type: "locality" as AreaType,
   parent_id: null as string | null,
   country_code: "NG",
   timezone: "Africa/Lagos",
@@ -177,6 +180,7 @@ export default function PoolPricingPage() {
 
   return (
     <div className="space-y-6">
+      <LocationOperationsNav />
       <header>
         <p className="text-xs font-semibold uppercase text-cyan-700">Pool operations</p>
         <h1 className="mt-1 text-2xl font-bold text-slate-950">Areas and Cost Rates</h1>
@@ -230,6 +234,18 @@ export default function PoolPricingPage() {
               required
             />
             <Select
+              label="Area type"
+              value={areaForm.area_type}
+              onChange={(event) =>
+                setAreaForm({ ...areaForm, area_type: event.target.value as AreaType })
+              }
+            >
+              <option value="country">Country</option>
+              <option value="market">Market / city</option>
+              <option value="commercial_band">Commercial band</option>
+              <option value="locality">Locality</option>
+            </Select>
+            <Select
               label="Parent area"
               value={areaForm.parent_id ?? ""}
               onChange={(event) =>
@@ -272,9 +288,10 @@ export default function PoolPricingPage() {
             />
           </form>
           <DataTable
-            headings={["Area", "Parent", "Timezone", "Status", ""]}
+            headings={["Area", "Type", "Parent", "Timezone", "Status", ""]}
             rows={areas.map((area) => [
               area.name,
+              area.area_type.replace("_", " "),
               area.parent_id ? (areaNames.get(area.parent_id) ?? "Unknown") : "Top level",
               area.timezone,
               area.is_active ? "Active" : "Inactive",
@@ -285,6 +302,7 @@ export default function PoolPricingPage() {
                   setAreaForm({
                     name: area.name,
                     slug: area.slug,
+                    area_type: area.area_type,
                     parent_id: area.parent_id,
                     country_code: area.country_code,
                     timezone: area.timezone,

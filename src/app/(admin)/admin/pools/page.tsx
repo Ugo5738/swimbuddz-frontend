@@ -1,5 +1,6 @@
 "use client";
 
+import { LocationOperationsNav } from "@/components/admin/LocationOperationsNav";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
@@ -18,6 +19,7 @@ interface Pool {
   name: string;
   slug: string;
   location_area: string | null;
+  address: string | null;
   pool_type: string | null;
   partnership_status: string;
   is_active: boolean;
@@ -147,9 +149,7 @@ function PoolScoreCell({
         )}
       </div>
       {computedNum !== null && (
-        <div className="text-[11px] text-slate-400">
-          avg {computedNum.toFixed(1)}
-        </div>
+        <div className="text-[11px] text-slate-400">avg {computedNum.toFixed(1)}</div>
       )}
     </div>
   );
@@ -293,6 +293,7 @@ export default function PoolRegistryPage() {
 
   return (
     <div className="space-y-6">
+      <LocationOperationsNav />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -431,10 +432,7 @@ export default function PoolRegistryPage() {
 
                     {/* Score — admin rating + computed composite with variance flag */}
                     <td className="px-4 py-3">
-                      <PoolScoreCell
-                        overall={pool.overall_score}
-                        computed={pool.computed_score}
-                      />
+                      <PoolScoreCell overall={pool.overall_score} computed={pool.computed_score} />
                     </td>
 
                     {/* Lanes */}

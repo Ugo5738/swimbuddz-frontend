@@ -1,17 +1,36 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from "./api";
 
 export type ActivityScope = "all" | "community" | "club" | "academy";
+export type AreaType = "country" | "market" | "commercial_band" | "locality";
 export type ChargeBasis = "per_attendee" | "per_staff" | "per_hour" | "per_lane" | "flat_session";
 
 export interface OperatingArea {
   id: string;
   name: string;
   slug: string;
+  area_type: AreaType;
   parent_id: string | null;
   country_code: string;
   timezone: string;
   currency: string;
   is_active: boolean;
+}
+
+export function formatOperatingAreaPath(area: OperatingArea, areas: OperatingArea[]): string {
+  const byId = new Map(areas.map((item) => [item.id, item]));
+  const path = [area.name];
+  const visited = new Set([area.id]);
+  let parentId = area.parent_id;
+
+  while (parentId && !visited.has(parentId)) {
+    const parent = byId.get(parentId);
+    if (!parent) break;
+    path.unshift(parent.name);
+    visited.add(parent.id);
+    parentId = parent.parent_id;
+  }
+
+  return path.join(" → ");
 }
 
 export interface EffectiveRate {
@@ -50,8 +69,8 @@ export interface CostQuoteLine {
   unit_cost_naira: number;
   quantity: number;
   total_cost_naira: number;
-  source_rate_type: "pool_rate" | "operating_cost_rate";
-  source_rate_id: string;
+  source_rate_type: "pool_rate" | "operating_cost_rate" | null;
+  source_rate_id: string | null;
 }
 
 export interface CostQuote {

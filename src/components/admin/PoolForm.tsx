@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { PoolPricingApi, type OperatingArea } from "@/lib/poolPricing";
+import { formatOperatingAreaPath, PoolPricingApi, type OperatingArea } from "@/lib/poolPricing";
 import { useEffect, useState } from "react";
 
 // ─── Types ──────────────────────────────────────────────────────────────
@@ -13,6 +13,7 @@ export type PoolFormValues = {
   slug?: string;
   operating_area_id?: string | null;
   location_area?: string;
+  address?: string;
   latitude?: number | null;
   longitude?: number | null;
 
@@ -116,6 +117,7 @@ const EMPTY: PoolFormValues = {
   slug: "",
   operating_area_id: null,
   location_area: "",
+  address: "",
   latitude: null,
   longitude: null,
   contact_person: "",
@@ -204,7 +206,14 @@ export function PoolForm({
 
   useEffect(() => {
     void PoolPricingApi.listAreas()
-      .then(setOperatingAreas)
+      .then((areas) => {
+        setOperatingAreas(areas);
+        setValues((current) => {
+          if (!current.operating_area_id) return current;
+          const selected = areas.find((area) => area.id === current.operating_area_id);
+          return selected ? { ...current, location_area: selected.name } : current;
+        });
+      })
       .catch(() => {
         setOperatingAreas([]);
       });
@@ -257,13 +266,21 @@ export function PoolForm({
               disabled={mode === "edit"}
             />
           </Field>
-          <Field label="Location area">
+          <Field
+            label="Location area"
+            hint={
+              values.operating_area_id
+                ? "Filled from the selected operating area"
+                : "Free text is only for pools not yet linked to an operating area"
+            }
+          >
             <input
               type="text"
               value={values.location_area ?? ""}
               onChange={(e) => set("location_area", e.target.value)}
-              placeholder="e.g. Yaba, Lagos"
+              placeholder="e.g. Yaba"
               className={inputCls}
+              readOnly={Boolean(values.operating_area_id)}
             />
           </Field>
           <Field
@@ -272,16 +289,34 @@ export function PoolForm({
           >
             <select
               value={values.operating_area_id ?? ""}
-              onChange={(e) => set("operating_area_id", e.target.value || null)}
+              onChange={(e) => {
+                const operatingAreaId = e.target.value || null;
+                const operatingArea = operatingAreas.find((area) => area.id === operatingAreaId);
+                setValues((prev) => ({
+                  ...prev,
+                  operating_area_id: operatingAreaId,
+                  location_area: operatingArea?.name ?? prev.location_area,
+                }));
+              }}
               className={inputCls}
             >
               <option value="">Not assigned</option>
               {operatingAreas.map((area) => (
                 <option key={area.id} value={area.id}>
-                  {area.name}
+                  {formatOperatingAreaPath(area, operatingAreas)} ·{" "}
+                  {area.area_type.replace("_", " ")}
                 </option>
               ))}
             </select>
+          </Field>
+          <Field label="Exact venue address" hint="Used by events and ride-share destinations">
+            <input
+              type="text"
+              value={values.address ?? ""}
+              onChange={(e) => set("address", e.target.value)}
+              placeholder="e.g. Rowe Park Sports Centre, Herbert Macaulay Way, Yaba"
+              className={inputCls}
+            />
           </Field>
           <Field label="Pool type">
             <select
