@@ -10572,7 +10572,7 @@ export interface paths {
         put?: never;
         /**
          * Create Ride Area
-         * @description Create a new ride area.
+         * @description Enable ride-share configuration for a canonical operating area.
          */
         post: operations["create_ride_area_transport_areas_post"];
         delete?: never;
@@ -27401,6 +27401,8 @@ export interface components {
             from_email?: string | null;
             /** From Name */
             from_name?: string | null;
+            /** Preference Category */
+            preference_category?: string | null;
         };
         /**
          * EmailResponse
@@ -30448,10 +30450,11 @@ export interface components {
         };
         /** RideAreaCreate */
         RideAreaCreate: {
-            /** Name */
-            name: string;
-            /** Slug */
-            slug: string;
+            /**
+             * Operating Area Id
+             * Format: uuid
+             */
+            operating_area_id: string;
         };
         /** RideAreaResponse */
         RideAreaResponse: {
@@ -30460,6 +30463,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Operating Area Id */
+            operating_area_id?: string | null;
             /** Name */
             name: string;
             /** Slug */
@@ -30484,6 +30489,8 @@ export interface components {
         };
         /** RideAreaUpdate */
         RideAreaUpdate: {
+            /** Operating Area Id */
+            operating_area_id?: string | null;
             /** Name */
             name?: string | null;
             /** Slug */
@@ -32994,6 +33001,12 @@ export interface components {
             name: string;
             /** Slug */
             slug: string;
+            /**
+             * Area Type
+             * @default locality
+             * @enum {string}
+             */
+            area_type: "country" | "market" | "commercial_band" | "locality";
             /** Parent Id */
             parent_id?: string | null;
             /**
@@ -33023,6 +33036,12 @@ export interface components {
             name: string;
             /** Slug */
             slug: string;
+            /**
+             * Area Type
+             * @default locality
+             * @enum {string}
+             */
+            area_type: "country" | "market" | "commercial_band" | "locality";
             /** Parent Id */
             parent_id?: string | null;
             /**
@@ -33067,6 +33086,8 @@ export interface components {
             name?: string | null;
             /** Slug */
             slug?: string | null;
+            /** Area Type */
+            area_type?: ("country" | "market" | "commercial_band" | "locality") | null;
             /** Parent Id */
             parent_id?: string | null;
             /** Country Code */
@@ -33536,6 +33557,8 @@ export interface components {
             slug: string;
             /** Location Area */
             location_area?: string | null;
+            /** Address */
+            address?: string | null;
             /** Operating Area Id */
             operating_area_id?: string | null;
             /** Latitude */
@@ -33796,6 +33819,8 @@ export interface components {
             slug: string;
             /** Location Area */
             location_area?: string | null;
+            /** Address */
+            address?: string | null;
             /** Operating Area Id */
             operating_area_id?: string | null;
             /** Latitude */
@@ -34082,6 +34107,8 @@ export interface components {
             slug?: string | null;
             /** Location Area */
             location_area?: string | null;
+            /** Address */
+            address?: string | null;
             /** Operating Area Id */
             operating_area_id?: string | null;
             /** Latitude */
@@ -36273,6 +36300,29 @@ export interface components {
             pool_id?: string | null;
             /** Cost Naira */
             cost_naira?: number | null;
+            /**
+             * Pricing Mode
+             * @default fixed
+             * @enum {string}
+             */
+            pricing_mode: "free" | "included" | "fixed" | "cost_plus";
+            /** Pricing Expected Attendees */
+            pricing_expected_attendees?: number | null;
+            /** Cost Lines */
+            cost_lines?: components["schemas"]["EventCostLine"][];
+            /**
+             * Margin Type
+             * @default fixed_per_attendee
+             * @enum {string}
+             */
+            margin_type: "fixed_per_attendee" | "percentage";
+            /**
+             * Margin Value
+             * @default 0
+             */
+            margin_value: number;
+            /** Email Reminder Hours */
+            email_reminder_hours?: number[];
             /** External Key */
             external_key: string;
             /** Source Sheet */
@@ -36302,6 +36352,23 @@ export interface components {
             invalid_count: number;
             /** Rows */
             rows: components["schemas"]["CalendarImportPreviewItem"][];
+        };
+        /** EventCostLine */
+        EventCostLine: {
+            /** Category */
+            category: string;
+            /** Description */
+            description: string;
+            /** Charge Basis */
+            charge_basis: string;
+            /** Unit Cost Naira */
+            unit_cost_naira: number;
+            /** Quantity */
+            quantity: number;
+            /** Source Rate Type */
+            source_rate_type?: string | null;
+            /** Source Rate Id */
+            source_rate_id?: string | null;
         };
         /**
          * EventCreate
@@ -36371,6 +36438,29 @@ export interface components {
             pool_id?: string | null;
             /** Cost Naira */
             cost_naira?: number | null;
+            /**
+             * Pricing Mode
+             * @default fixed
+             * @enum {string}
+             */
+            pricing_mode: "free" | "included" | "fixed" | "cost_plus";
+            /** Pricing Expected Attendees */
+            pricing_expected_attendees?: number | null;
+            /** Cost Lines */
+            cost_lines?: components["schemas"]["EventCostLine"][];
+            /**
+             * Margin Type
+             * @default fixed_per_attendee
+             * @enum {string}
+             */
+            margin_type: "fixed_per_attendee" | "percentage";
+            /**
+             * Margin Value
+             * @default 0
+             */
+            margin_value: number;
+            /** Email Reminder Hours */
+            email_reminder_hours?: number[];
         };
         /** EventGenerationResponse */
         EventGenerationResponse: {
@@ -36505,6 +36595,44 @@ export interface components {
             tier_access: "public" | "community" | "club" | "academy" | "invite_only";
             /** Cost Naira */
             cost_naira?: number | null;
+            /**
+             * Pricing Mode
+             * @default fixed
+             * @enum {string}
+             */
+            pricing_mode: "free" | "included" | "fixed" | "cost_plus";
+            /** Pricing Expected Attendees */
+            pricing_expected_attendees?: number | null;
+            /** Cost Lines */
+            cost_lines?: components["schemas"]["EventCostLine"][];
+            /**
+             * Estimated Total Cost Naira
+             * @default 0
+             */
+            estimated_total_cost_naira: number;
+            /**
+             * Estimated Cost Per Attendee Naira
+             * @default 0
+             */
+            estimated_cost_per_attendee_naira: number;
+            /**
+             * Margin Type
+             * @default fixed_per_attendee
+             * @enum {string}
+             */
+            margin_type: "fixed_per_attendee" | "percentage";
+            /**
+             * Margin Value
+             * @default 0
+             */
+            margin_value: number;
+            /**
+             * Margin Amount Per Attendee Naira
+             * @default 0
+             */
+            margin_amount_per_attendee_naira: number;
+            /** Email Reminder Hours */
+            email_reminder_hours?: number[];
             /** Pool Id */
             pool_id?: string | null;
             /** Pool Fee Naira */
@@ -36606,6 +36734,29 @@ export interface components {
             /** Cost Naira */
             cost_naira?: number | null;
             /**
+             * Pricing Mode
+             * @default fixed
+             * @enum {string}
+             */
+            pricing_mode: "free" | "included" | "fixed" | "cost_plus";
+            /** Pricing Expected Attendees */
+            pricing_expected_attendees?: number | null;
+            /** Cost Lines */
+            cost_lines?: components["schemas"]["EventCostLine"][];
+            /**
+             * Margin Type
+             * @default fixed_per_attendee
+             * @enum {string}
+             */
+            margin_type: "fixed_per_attendee" | "percentage";
+            /**
+             * Margin Value
+             * @default 0
+             */
+            margin_value: number;
+            /** Email Reminder Hours */
+            email_reminder_hours?: number[];
+            /**
              * Frequency
              * @enum {string}
              */
@@ -36699,6 +36850,29 @@ export interface components {
             /** Cost Naira */
             cost_naira?: number | null;
             /**
+             * Pricing Mode
+             * @default fixed
+             * @enum {string}
+             */
+            pricing_mode: "free" | "included" | "fixed" | "cost_plus";
+            /** Pricing Expected Attendees */
+            pricing_expected_attendees?: number | null;
+            /** Cost Lines */
+            cost_lines?: components["schemas"]["EventCostLine"][];
+            /**
+             * Margin Type
+             * @default fixed_per_attendee
+             * @enum {string}
+             */
+            margin_type: "fixed_per_attendee" | "percentage";
+            /**
+             * Margin Value
+             * @default 0
+             */
+            margin_value: number;
+            /** Email Reminder Hours */
+            email_reminder_hours?: number[];
+            /**
              * Frequency
              * @enum {string}
              */
@@ -36783,6 +36957,18 @@ export interface components {
             pool_id?: string | null;
             /** Cost Naira */
             cost_naira?: number | null;
+            /** Pricing Mode */
+            pricing_mode?: ("free" | "included" | "fixed" | "cost_plus") | null;
+            /** Pricing Expected Attendees */
+            pricing_expected_attendees?: number | null;
+            /** Cost Lines */
+            cost_lines?: components["schemas"]["EventCostLine"][] | null;
+            /** Margin Type */
+            margin_type?: ("fixed_per_attendee" | "percentage") | null;
+            /** Margin Value */
+            margin_value?: number | null;
+            /** Email Reminder Hours */
+            email_reminder_hours?: number[] | null;
             /** Frequency */
             frequency?: ("weekly" | "monthly" | "quarterly" | "annual") | null;
             /** Interval */
@@ -36841,6 +37027,18 @@ export interface components {
             pool_id?: string | null;
             /** Cost Naira */
             cost_naira?: number | null;
+            /** Pricing Mode */
+            pricing_mode?: ("free" | "included" | "fixed" | "cost_plus") | null;
+            /** Pricing Expected Attendees */
+            pricing_expected_attendees?: number | null;
+            /** Cost Lines */
+            cost_lines?: components["schemas"]["EventCostLine"][] | null;
+            /** Margin Type */
+            margin_type?: ("fixed_per_attendee" | "percentage") | null;
+            /** Margin Value */
+            margin_value?: number | null;
+            /** Email Reminder Hours */
+            email_reminder_hours?: number[] | null;
         };
         /**
          * OpenSwimCreate
@@ -37352,14 +37550,16 @@ export interface components {
             file: string;
             /** Purpose */
             purpose: string;
+            /** Recipe Json */
+            recipe_json?: string | null;
             /** Crop X */
-            crop_x: number;
+            crop_x?: number | null;
             /** Crop Y */
-            crop_y: number;
+            crop_y?: number | null;
             /** Crop Width */
-            crop_width: number;
+            crop_width?: number | null;
             /** Crop Height */
-            crop_height: number;
+            crop_height?: number | null;
             /** Title */
             title?: string | null;
             /** Description */
@@ -38230,6 +38430,11 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /**
+             * Notification Dispatched
+             * @default false
+             */
+            notification_dispatched: boolean;
         };
         /** VaultListResponse */
         VaultListResponse: {
@@ -46534,6 +46739,7 @@ export interface operations {
             query?: {
                 start_date?: string | null;
                 end_date?: string | null;
+                include_completed?: boolean;
             };
             header?: never;
             path?: never;

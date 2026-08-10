@@ -1,8 +1,12 @@
+import type { CostQuoteLine } from "./poolPricing";
+
 export type EventAudience = "community" | "club" | "academy";
 export type EventVisibility = "public" | "members_only" | "invite_only";
 export type LocationType = "physical" | "online" | "hybrid";
 export type TierAccess = "public" | "community" | "club" | "academy" | "invite_only";
 export type EventFrequency = "weekly" | "monthly" | "quarterly" | "annual";
+export type EventPricingMode = "free" | "included" | "fixed" | "cost_plus";
+export type MarginType = "fixed_per_attendee" | "percentage";
 
 export interface EventTemplate {
   id: string;
@@ -22,6 +26,12 @@ export interface EventTemplate {
   tier_access: TierAccess;
   pool_id: string | null;
   cost_naira: number | null;
+  pricing_mode: EventPricingMode;
+  pricing_expected_attendees: number | null;
+  cost_lines: CostQuoteLine[];
+  margin_type: MarginType;
+  margin_value: number;
+  email_reminder_hours: number[];
   frequency: EventFrequency;
   interval: number;
   day_of_week: number | null;
@@ -35,14 +45,7 @@ export interface EventTemplate {
 
 export type EventTemplateForm = Omit<
   EventTemplate,
-  | "id"
-  | "pool_id"
-  | "description"
-  | "location"
-  | "location_area"
-  | "cost_naira"
-  | "max_capacity"
-  | "ends_on"
+  "id" | "description" | "location" | "location_area" | "cost_naira" | "max_capacity" | "ends_on"
 > & {
   description: string;
   location: string;
@@ -50,6 +53,8 @@ export type EventTemplateForm = Omit<
   ends_on: string;
   max_capacity: string;
   cost_naira: string;
+  pricing_expected_attendees: string;
+  margin_value: string;
 };
 
 export interface EventOccurrence {
@@ -77,6 +82,12 @@ export interface CalendarImportEvent {
   tier_access: TierAccess;
   pool_id: string | null;
   cost_naira: number | null;
+  pricing_mode: EventPricingMode;
+  pricing_expected_attendees: number | null;
+  cost_lines: CostQuoteLine[];
+  margin_type: MarginType;
+  margin_value: number;
+  email_reminder_hours: number[];
   external_key: string;
   source_sheet: string;
   source_row: number;
@@ -112,6 +123,13 @@ export const EMPTY_EVENT_TEMPLATE: EventTemplateForm = {
   duration_minutes: 120,
   max_capacity: "",
   cost_naira: "",
+  pricing_mode: "free",
+  pricing_expected_attendees: "",
+  cost_lines: [],
+  margin_type: "fixed_per_attendee",
+  margin_value: "0",
+  email_reminder_hours: [],
+  pool_id: null,
   tier_access: "public",
   frequency: "monthly",
   interval: 1,
