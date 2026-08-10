@@ -41,6 +41,13 @@ const SECONDARY_LINKS: LinkCardProps[] = [
     href: "/community",
   },
   {
+    linkId: "articles",
+    emoji: "📚",
+    label: "Swimming tips & articles",
+    sublabel: "Practical guides for learning, training, and water confidence",
+    href: "/tips",
+  },
+  {
     linkId: "sessions",
     emoji: "📅",
     label: "Upcoming sessions",

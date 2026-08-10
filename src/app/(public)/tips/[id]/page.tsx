@@ -1,15 +1,17 @@
 "use client";
 
 import { ArticleFeaturedImage } from "@/components/content/ArticleFeaturedImage";
+import { ArticleReadingProgress } from "@/components/content/ArticleReadingProgress";
 import { BlockViewer } from "@/components/editor/BlockViewer";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { useApi } from "@/hooks/useApi";
+import { estimateArticleReadingTime } from "@/lib/readingTime";
 import { format } from "date-fns";
 import { ArrowLeft, BookOpen, Calendar, ChevronRight, Lock } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 
 interface ContentPost {
   id: string;
@@ -49,6 +51,7 @@ const categoryColors: Record<string, string> = {
 export default function TipDetailPage() {
   const params = useParams();
   const postId = params?.id as string;
+  const contentRef = useRef<HTMLDivElement>(null);
 
   // Primary post fetch. useApi handles abort/unmount + maps non-2xx + network
   // errors into a string. We layer the content-based access checks (status,
@@ -85,6 +88,10 @@ export default function TipDetailPage() {
         .filter((p) => p.id !== postId && p.tier_access === "community")
         .slice(0, 3),
     [relatedData, postId]
+  );
+  const readingTimeMinutes = useMemo(
+    () => estimateArticleReadingTime(post?.body),
+    [post?.body]
   );
 
   if (loading) {
@@ -150,6 +157,8 @@ export default function TipDetailPage() {
 
       {/* Article */}
       <article className="max-w-3xl mx-auto">
+        <ArticleReadingProgress contentRef={contentRef} minutes={readingTimeMinutes} />
+
         {/* Header */}
         <header className="space-y-4 mb-8">
           <div className="flex flex-wrap items-center gap-3">
@@ -187,7 +196,7 @@ export default function TipDetailPage() {
         )}
 
         {/* Content */}
-        <div className="prose prose-slate prose-lg max-w-none">
+        <div ref={contentRef} className="prose prose-slate prose-lg max-w-none">
           <BlockViewer content={post.body} />
         </div>
       </article>

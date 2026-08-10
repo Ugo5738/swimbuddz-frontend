@@ -1,15 +1,17 @@
 "use client";
 
 import { ArticleFeaturedImage } from "@/components/content/ArticleFeaturedImage";
+import { ArticleReadingProgress } from "@/components/content/ArticleReadingProgress";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Textarea } from "@/components/ui/Textarea";
 import { apiGet, apiPost } from "@/lib/api";
+import { estimateArticleReadingTime } from "@/lib/readingTime";
 import { format } from "date-fns";
 import { ArrowLeft, Calendar, MessageCircle, User } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Dynamic import to avoid SSR issues with BlockNote
 const BlockViewer = dynamic(
@@ -55,6 +57,7 @@ export default function ContentDetailPage() {
   const params = useParams();
   const router = useRouter();
   const postId = params.id as string;
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const [post, setPost] = useState<ContentPost | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -153,6 +156,11 @@ export default function ContentDetailPage() {
 
       {/* Article */}
       <article>
+        <ArticleReadingProgress
+          contentRef={contentRef}
+          minutes={estimateArticleReadingTime(post.body)}
+        />
+
         <Card className="overflow-hidden">
           {/* Featured Image */}
           {post.featured_image_url && (
@@ -189,7 +197,7 @@ export default function ContentDetailPage() {
             )}
 
             {/* Content (Notion-style blocks or markdown fallback) */}
-            <div className="article-content">
+            <div ref={contentRef} className="article-content">
               <BlockViewer content={post.body} />
             </div>
           </div>
