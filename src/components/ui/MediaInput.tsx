@@ -2,7 +2,7 @@
 
 import { ImageCropDialog } from "@/components/ui/ImageCropDialog";
 import { registerMediaUrl, uploadAdjustedImage, uploadMedia } from "@/lib/media";
-import { supportsImageAdjustment, type NormalizedCropArea } from "@/lib/mediaCrop";
+import { supportsImageAdjustment, type ImageTransformRecipe } from "@/lib/mediaCrop";
 import { Check, Link, Loader2, Upload, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -159,7 +159,7 @@ export function MediaInput({
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
 
-  const handleAdjustedImage = async (crop: NormalizedCropArea) => {
+  const handleAdjustedImage = async (recipe: ImageTransformRecipe) => {
     if (!pendingImage || !supportsImageAdjustment(purpose)) return;
 
     setError(null);
@@ -167,7 +167,7 @@ export function MediaInput({
     setIsUploading(true);
     onUploadingChange?.(true);
     try {
-      const mediaItem = await uploadAdjustedImage(pendingImage.file, purpose, crop);
+      const mediaItem = await uploadAdjustedImage(pendingImage.file, purpose, recipe);
       setPreviewUrl(mediaItem.file_url);
       onChange(mediaItem.id, mediaItem.file_url);
       closeImageAdjustment();

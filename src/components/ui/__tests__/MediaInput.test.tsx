@@ -12,11 +12,29 @@ const mediaMocks = vi.hoisted(() => ({
 vi.mock("@/lib/media", () => mediaMocks);
 
 vi.mock("@/components/ui/ImageCropDialog", () => ({
-  ImageCropDialog: ({ onConfirm }: { onConfirm: (crop: unknown) => void }) => (
-    <button type="button" onClick={() => onConfirm({ x: 0, y: 0, width: 1, height: 1 })}>
-      Confirm crop
-    </button>
-  ),
+  ImageCropDialog: ({ onConfirm }: { onConfirm: (recipe: unknown) => void }) => {
+    const recipe = {
+      version: 1,
+      crop: { x: 0, y: 0, width: 1, height: 1 },
+      rotation: 0,
+      flip_horizontal: false,
+      flip_vertical: false,
+      adjustments: {
+        brightness: 0,
+        contrast: 0,
+        saturation: 0,
+        warmth: 0,
+        highlights: 0,
+        shadows: 0,
+      },
+      filter: { name: "original", strength: 100 },
+    };
+    return (
+      <button type="button" onClick={() => onConfirm(recipe)}>
+        Confirm edit
+      </button>
+    );
+  },
 }));
 
 describe("MediaInput", () => {
@@ -28,7 +46,7 @@ describe("MediaInput", () => {
     });
   });
 
-  it("waits for crop confirmation before uploading a presentation image", async () => {
+  it("waits for edit confirmation before uploading a presentation image", async () => {
     mediaMocks.uploadAdjustedImage.mockResolvedValue({
       id: "variant-id",
       file_url: "https://cdn.example.com/variant.jpg",
@@ -41,14 +59,24 @@ describe("MediaInput", () => {
     fireEvent.change(input!, { target: { files: [file] } });
 
     expect(mediaMocks.uploadAdjustedImage).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Confirm crop" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm edit" }));
 
     await waitFor(() => {
       expect(mediaMocks.uploadAdjustedImage).toHaveBeenCalledWith(file, "content_image", {
-        x: 0,
-        y: 0,
-        width: 1,
-        height: 1,
+        version: 1,
+        crop: { x: 0, y: 0, width: 1, height: 1 },
+        rotation: 0,
+        flip_horizontal: false,
+        flip_vertical: false,
+        adjustments: {
+          brightness: 0,
+          contrast: 0,
+          saturation: 0,
+          warmth: 0,
+          highlights: 0,
+          shadows: 0,
+        },
+        filter: { name: "original", strength: 100 },
       });
       expect(onChange).toHaveBeenCalledWith("variant-id", "https://cdn.example.com/variant.jpg");
     });

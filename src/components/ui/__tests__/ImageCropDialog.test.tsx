@@ -16,7 +16,7 @@ vi.mock("react-easy-crop", () => ({
 }));
 
 describe("ImageCropDialog", () => {
-  it("normalizes the approved crop before saving", () => {
+  it("returns one normalized recipe for the approved edit", () => {
     const onConfirm = vi.fn();
     render(
       <ImageCropDialog
@@ -36,10 +36,40 @@ describe("ImageCropDialog", () => {
     fireEvent.click(save);
 
     expect(onConfirm).toHaveBeenCalledWith({
-      x: 0.1,
-      y: 0.2,
-      width: 0.7,
-      height: 0.6,
+      version: 1,
+      crop: { x: 0.1, y: 0.2, width: 0.7, height: 0.6 },
+      rotation: 0,
+      flip_horizontal: false,
+      flip_vertical: false,
+      adjustments: {
+        brightness: 0,
+        contrast: 0,
+        saturation: 0,
+        warmth: 0,
+        highlights: 0,
+        shadows: 0,
+      },
+      filter: { name: "original", strength: 100 },
     });
+  });
+
+  it("uses the same standard toolset for every image purpose", () => {
+    render(
+      <ImageCropDialog
+        isOpen
+        imageUrl="blob:test"
+        purpose="profile_photo"
+        onCancel={vi.fn()}
+        onConfirm={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "Crop" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Transform" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Adjust" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Filters" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Hold to compare with original" })
+    ).toBeInTheDocument();
   });
 });

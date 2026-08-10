@@ -7,7 +7,7 @@ import { ImageCropDialog } from "@/components/ui/ImageCropDialog";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { uploadAdjustedImage } from "@/lib/media";
-import type { NormalizedCropArea } from "@/lib/mediaCrop";
+import type { ImageTransformRecipe } from "@/lib/mediaCrop";
 import { Camera, Loader2, X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -55,12 +55,12 @@ export function CoreStep({ coreForm, setCoreForm, saving, setSaving }: Props) {
     setPhotoError(null);
   };
 
-  const saveAdjustedPhoto = async (crop: NormalizedCropArea) => {
+  const saveAdjustedPhoto = async (recipe: ImageTransformRecipe) => {
     if (!pendingPhoto) return;
     setSaving(true);
     setPhotoError(null);
     try {
-      const mediaItem = await uploadAdjustedImage(pendingPhoto.file, "profile_photo", crop);
+      const mediaItem = await uploadAdjustedImage(pendingPhoto.file, "profile_photo", recipe);
       setCoreForm((prev) => ({
         ...prev,
         profilePhotoMediaId: mediaItem.id,

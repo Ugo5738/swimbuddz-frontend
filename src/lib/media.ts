@@ -1,6 +1,6 @@
 import { getCurrentAccessToken } from "./auth";
 import { API_BASE_URL } from "./config";
-import type { NormalizedCropArea, PresentationImagePurpose } from "./mediaCrop";
+import type { ImageTransformRecipe, PresentationImagePurpose } from "./mediaCrop";
 
 export interface MediaItem {
   id: string;
@@ -21,7 +21,7 @@ export interface MediaItem {
 export async function uploadAdjustedImage(
   file: File,
   purpose: PresentationImagePurpose,
-  crop: NormalizedCropArea,
+  recipe: ImageTransformRecipe,
   title?: string,
   description?: string
 ): Promise<MediaItem> {
@@ -29,10 +29,13 @@ export async function uploadAdjustedImage(
   const formData = new FormData();
   formData.append("file", file);
   formData.append("purpose", purpose);
-  formData.append("crop_x", String(crop.x));
-  formData.append("crop_y", String(crop.y));
-  formData.append("crop_width", String(crop.width));
-  formData.append("crop_height", String(crop.height));
+  formData.append("recipe_json", JSON.stringify(recipe));
+  // Keep crop fields during rolling deployments where an older media service
+  // may briefly receive requests from the new frontend.
+  formData.append("crop_x", String(recipe.crop.x));
+  formData.append("crop_y", String(recipe.crop.y));
+  formData.append("crop_width", String(recipe.crop.width));
+  formData.append("crop_height", String(recipe.crop.height));
   if (title) formData.append("title", title);
   if (description) formData.append("description", description);
 

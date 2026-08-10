@@ -7,7 +7,7 @@ import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
 import { getCurrentAccessToken } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
 import { uploadAdjustedImage, type MediaItem, type SiteAsset } from "@/lib/media";
-import type { NormalizedCropArea, PresentationImagePurpose } from "@/lib/mediaCrop";
+import type { ImageTransformRecipe, PresentationImagePurpose } from "@/lib/mediaCrop";
 import {
   AlertCircle,
   Check,
@@ -248,7 +248,7 @@ export default function AdminHomepageMediaPage() {
     });
   };
 
-  const saveAdjustedImage = async (crop: NormalizedCropArea) => {
+  const saveAdjustedImage = async (recipe: ImageTransformRecipe) => {
     if (!pendingImage) return;
 
     setUploading(pendingImage.uploadingKey);
@@ -257,7 +257,7 @@ export default function AdminHomepageMediaPage() {
       const mediaItem = await uploadAdjustedImage(
         pendingImage.file,
         pendingImage.purpose,
-        crop,
+        recipe,
         pendingImage.title
       );
       await saveSiteAsset(
