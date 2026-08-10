@@ -3,15 +3,27 @@
 import { ArticleFeaturedImage } from "@/components/content/ArticleFeaturedImage";
 import { ArticleReadingProgress } from "@/components/content/ArticleReadingProgress";
 import { BlockViewer } from "@/components/editor/BlockViewer";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
+import { Textarea } from "@/components/ui/Textarea";
 import { useApi } from "@/hooks/useApi";
+import { apiGet, apiPost } from "@/lib/api";
+import { supabase } from "@/lib/auth";
 import { estimateArticleReadingTime } from "@/lib/readingTime";
 import { format } from "date-fns";
-import { ArrowLeft, BookOpen, Calendar, ChevronRight, Lock } from "lucide-react";
+import {
+  ArrowLeft,
+  BookOpen,
+  Calendar,
+  ChevronRight,
+  Lock,
+  MessageCircle,
+  User,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface ContentPost {
   id: string;
@@ -24,6 +36,14 @@ interface ContentPost {
   published_at: string;
   created_at: string;
   status: string;
+}
+
+interface Comment {
+  id: string;
+  member_id: string;
+  member_name?: string;
+  content: string;
+  created_at: string;
 }
 
 const categoryLabels: Record<string, string> = {
@@ -52,6 +72,12 @@ export default function TipDetailPage() {
   const params = useParams();
   const postId = params?.id as string;
   const contentRef = useRef<HTMLDivElement>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [commentError, setCommentError] = useState<string | null>(null);
 
   // Primary post fetch. useApi handles abort/unmount + maps non-2xx + network
   // errors into a string. We layer the content-based access checks (status,
@@ -89,10 +115,48 @@ export default function TipDetailPage() {
         .slice(0, 3),
     [relatedData, postId]
   );
-  const readingTimeMinutes = useMemo(
-    () => estimateArticleReadingTime(post?.body),
-    [post?.body]
-  );
+  const readingTimeMinutes = useMemo(() => estimateArticleReadingTime(post?.body), [post?.body]);
+
+  const fetchComments = useCallback(async () => {
+    if (!postId) return;
+    try {
+      const data = await apiGet<Comment[]>(`/api/v1/content/${postId}/comments`, {
+        auth: false,
+      });
+      setComments(data);
+      setCommentError(null);
+    } catch (commentsError) {
+      console.error("Failed to fetch article comments:", commentsError);
+      setCommentError("Comments could not be loaded.");
+    } finally {
+      setCommentsLoading(false);
+    }
+  }, [postId]);
+
+  useEffect(() => {
+    void fetchComments();
+    void supabase.auth.getSession().then(({ data }) => {
+      setIsLoggedIn(Boolean(data.session));
+    });
+  }, [fetchComments]);
+
+  const handleAddComment = async () => {
+    const content = newComment.trim();
+    if (!content || submitting) return;
+
+    setSubmitting(true);
+    setCommentError(null);
+    try {
+      await apiPost<Comment>(`/api/v1/content/${postId}/comments`, { content }, { auth: true });
+      setNewComment("");
+      await fetchComments();
+    } catch (submitError) {
+      console.error("Failed to add article comment:", submitError);
+      setCommentError("Your comment could not be posted. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (loading) {
     return <LoadingCard text="Loading article..." />;
@@ -200,6 +264,83 @@ export default function TipDetailPage() {
           <BlockViewer content={post.body} />
         </div>
       </article>
+
+      {/* Public conversation: everyone can read; members sign in to participate. */}
+      <Card className="max-w-3xl mx-auto p-6">
+        <div className="space-y-6">
+          <div className="flex items-center gap-2">
+            <MessageCircle className="h-5 w-5 text-slate-600" />
+            <h2 className="text-lg font-semibold text-slate-900">Comments ({comments.length})</h2>
+          </div>
+
+          {isLoggedIn ? (
+            <div className="space-y-3">
+              <Textarea
+                placeholder="Share your thoughts..."
+                value={newComment}
+                onChange={(event) => setNewComment(event.target.value)}
+                rows={3}
+              />
+              <div className="flex justify-end">
+                <Button onClick={handleAddComment} disabled={!newComment.trim() || submitting}>
+                  {submitting ? "Posting..." : "Post Comment"}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-cyan-100 bg-cyan-50 p-4 sm:flex sm:items-center sm:justify-between sm:gap-4">
+              <div>
+                <p className="font-medium text-slate-900">Join the conversation</p>
+                <p className="mt-1 text-sm text-slate-600">
+                  Anyone can read this article and its comments. Log in to add your own.
+                </p>
+              </div>
+              <Link
+                href={`/login?redirect=${encodeURIComponent(`/tips/${postId}`)}`}
+                className="mt-3 inline-flex shrink-0 items-center justify-center rounded-full bg-cyan-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-cyan-500 sm:mt-0"
+              >
+                Log in to comment
+              </Link>
+            </div>
+          )}
+
+          {commentError && <p className="text-sm text-red-600">{commentError}</p>}
+
+          <div className="space-y-4 border-t border-slate-200 pt-6">
+            {commentsLoading ? (
+              <p className="py-4 text-center text-sm text-slate-500">Loading comments...</p>
+            ) : comments.length === 0 ? (
+              <p className="py-4 text-center text-sm text-slate-500">
+                No comments yet. Be the first to share your thoughts!
+              </p>
+            ) : (
+              comments.map((comment) => (
+                <div
+                  key={comment.id}
+                  className="rounded-lg border border-slate-200 bg-slate-50 p-4"
+                >
+                  <div className="mb-2 flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-100">
+                      <User className="h-4 w-4 text-cyan-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">
+                        {comment.member_name || "SwimBuddz member"}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {format(new Date(comment.created_at), "MMM d, yyyy 'at' h:mm a")}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="ml-10 whitespace-pre-wrap text-sm text-slate-700">
+                    {comment.content}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </Card>
 
       {/* Related Articles */}
       {relatedPosts.length > 0 && (

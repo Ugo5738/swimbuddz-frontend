@@ -11,11 +11,11 @@ import { toast } from "sonner";
 // ============================================================================
 
 type RewardNotifPreferences = {
-  notify_reward_earned: boolean;
-  notify_referral_qualified: boolean;
-  notify_ambassador_milestone: boolean;
-  notify_streak_milestone: boolean;
-  preferred_channel: string;
+  notify_on_reward: boolean;
+  notify_on_referral_qualified: boolean;
+  notify_on_ambassador_milestone: boolean;
+  notify_on_streak_milestone: boolean;
+  notify_channel: string;
 };
 
 // ============================================================================
@@ -26,14 +26,19 @@ function Toggle({
   enabled,
   onChange,
   disabled,
+  label,
 }: {
   enabled: boolean;
   onChange: (enabled: boolean) => void;
   disabled?: boolean;
+  label: string;
 }) {
   return (
     <button
       type="button"
+      role="switch"
+      aria-checked={enabled}
+      aria-label={label}
       onClick={() => !disabled && onChange(!enabled)}
       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 ${
         disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
@@ -77,7 +82,7 @@ function PrefRow({
           <p className="text-sm text-slate-500">{description}</p>
         </div>
       </div>
-      <Toggle enabled={enabled} onChange={onChange} disabled={saving} />
+      <Toggle enabled={enabled} onChange={onChange} disabled={saving} label={title} />
     </div>
   );
 }
@@ -160,32 +165,32 @@ export function RewardNotificationPreferences() {
           icon={<Bell className="h-4 w-4" />}
           title="Reward Earned"
           description="Notify when you earn Bubbles from rewards"
-          enabled={prefs.notify_reward_earned}
-          onChange={(v) => updatePref("notify_reward_earned", v)}
+          enabled={prefs.notify_on_reward}
+          onChange={(v) => updatePref("notify_on_reward", v)}
           saving={saving}
         />
         <PrefRow
           icon={<Users className="h-4 w-4" />}
           title="Referral Qualified"
           description="Notify when a referral qualifies for reward"
-          enabled={prefs.notify_referral_qualified}
-          onChange={(v) => updatePref("notify_referral_qualified", v)}
+          enabled={prefs.notify_on_referral_qualified}
+          onChange={(v) => updatePref("notify_on_referral_qualified", v)}
           saving={saving}
         />
         <PrefRow
           icon={<Trophy className="h-4 w-4" />}
           title="Ambassador Milestone"
           description="Notify when you reach ambassador status"
-          enabled={prefs.notify_ambassador_milestone}
-          onChange={(v) => updatePref("notify_ambassador_milestone", v)}
+          enabled={prefs.notify_on_ambassador_milestone}
+          onChange={(v) => updatePref("notify_on_ambassador_milestone", v)}
           saving={saving}
         />
         <PrefRow
           icon={<Zap className="h-4 w-4" />}
           title="Streak Milestone"
           description="Notify on attendance streak milestones"
-          enabled={prefs.notify_streak_milestone}
-          onChange={(v) => updatePref("notify_streak_milestone", v)}
+          enabled={prefs.notify_on_streak_milestone}
+          onChange={(v) => updatePref("notify_on_streak_milestone", v)}
           saving={saving}
         />
       </div>

@@ -15,7 +15,6 @@ import {
   Mail,
   Megaphone,
   MessageSquare,
-  Smartphone,
   Users,
   Waves,
 } from "lucide-react";
@@ -23,7 +22,7 @@ import { useEffect, useState } from "react";
 
 interface NotificationPreferences {
   id: string;
-  member_id: string;
+  member_auth_id: string;
   email_announcements: boolean;
   email_session_reminders: boolean;
   email_academy_updates: boolean;
@@ -54,12 +53,16 @@ interface ToggleProps {
   enabled: boolean;
   onChange: (enabled: boolean) => void;
   disabled?: boolean;
+  label: string;
 }
 
-function Toggle({ enabled, onChange, disabled }: ToggleProps) {
+function Toggle({ enabled, onChange, disabled, label }: ToggleProps) {
   return (
     <button
       type="button"
+      role="switch"
+      aria-checked={enabled}
+      aria-label={label}
       onClick={() => !disabled && onChange(!enabled)}
       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 ${
         disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
@@ -101,7 +104,7 @@ function PreferenceRow({
           <p className="text-sm text-slate-500">{description}</p>
         </div>
       </div>
-      <Toggle enabled={enabled} onChange={onChange} disabled={saving} />
+      <Toggle enabled={enabled} onChange={onChange} disabled={saving} label={title} />
     </div>
   );
 }
@@ -227,8 +230,8 @@ export default function NotificationSettingsPage() {
           />
           <PreferenceRow
             icon={<CreditCard className="h-4 w-4" />}
-            title="Payment Receipts"
-            description="Confirmation emails for payments"
+            title="Payments & Receipts"
+            description="Payment confirmations, billing reminders, and order updates"
             enabled={preferences.email_payment_receipts}
             onChange={(v) => updatePreference("email_payment_receipts", v)}
             saving={saving}
@@ -236,7 +239,7 @@ export default function NotificationSettingsPage() {
           <PreferenceRow
             icon={<MessageSquare className="h-4 w-4" />}
             title="Coach Messages"
-            description="Direct messages from your coaches"
+            description="Messages, assignments, and updates from your coaches"
             enabled={preferences.email_coach_messages}
             onChange={(v) => updatePreference("email_coach_messages", v)}
             saving={saving}
@@ -331,52 +334,6 @@ export default function NotificationSettingsPage() {
             description="Get reminded a few hours before a session"
             enabled={preferences.reminder_3h_enabled}
             onChange={(v) => updatePreference("reminder_3h_enabled", v)}
-            saving={saving}
-          />
-        </div>
-      </Card>
-
-      {/* Push Notifications (Future) */}
-      <Card className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Smartphone className="h-5 w-5 text-cyan-600" />
-          <h2 className="text-lg font-semibold text-slate-900">Push Notifications</h2>
-          <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
-            Coming Soon
-          </span>
-        </div>
-
-        <div className="space-y-0 opacity-60">
-          <PreferenceRow
-            icon={<Megaphone className="h-4 w-4" />}
-            title="Announcements"
-            description="Get notified about important updates"
-            enabled={preferences.push_announcements}
-            onChange={(v) => updatePreference("push_announcements", v)}
-            saving={saving}
-          />
-          <PreferenceRow
-            icon={<Calendar className="h-4 w-4" />}
-            title="Session Reminders"
-            description="Reminders before your sessions"
-            enabled={preferences.push_session_reminders}
-            onChange={(v) => updatePreference("push_session_reminders", v)}
-            saving={saving}
-          />
-          <PreferenceRow
-            icon={<BookOpen className="h-4 w-4" />}
-            title="Academy Updates"
-            description="Progress and cohort updates"
-            enabled={preferences.push_academy_updates}
-            onChange={(v) => updatePreference("push_academy_updates", v)}
-            saving={saving}
-          />
-          <PreferenceRow
-            icon={<MessageSquare className="h-4 w-4" />}
-            title="Coach Messages"
-            description="Messages from your coaches"
-            enabled={preferences.push_coach_messages}
-            onChange={(v) => updatePreference("push_coach_messages", v)}
             saving={saving}
           />
         </div>

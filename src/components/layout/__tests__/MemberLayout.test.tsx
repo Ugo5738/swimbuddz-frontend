@@ -102,6 +102,17 @@ describe("MemberLayout desktop navigation", () => {
     expect(screen.queryByText("Submission Review")).not.toBeInTheDocument();
   });
 
+  it("links to notification settings from member navigation", async () => {
+    render(
+      <MemberLayout>
+        <div>Page content</div>
+      </MemberLayout>
+    );
+
+    const link = await screen.findByRole("link", { name: "Notification Settings" });
+    expect(link).toHaveAttribute("href", "/account/settings");
+  });
+
   it("shows Pod Lead Tools for an active pod lead with effective Club access", async () => {
     listPodsILead.mockResolvedValue([{ id: "pod-1", status: "active" }]);
 

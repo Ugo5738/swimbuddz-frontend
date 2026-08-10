@@ -34,6 +34,7 @@ import {
   Package,
   PanelLeftClose,
   PanelLeftOpen,
+  Settings,
   ShoppingBag,
   Trophy,
   User,
@@ -629,6 +630,27 @@ export function MemberLayout({ children }: MemberLayoutProps) {
               <User className="h-5 w-5 shrink-0" />
               <span className={sidebarCollapsed ? "md:hidden" : ""}>My Profile</span>
               {isActive("/account/profile") && (
+                <ChevronRight
+                  className={`ml-auto h-4 w-4 ${sidebarCollapsed ? "md:hidden" : ""}`}
+                />
+              )}
+            </Link>
+            <Link
+              href="/account/settings"
+              onClick={() => setSidebarOpen(false)}
+              aria-label="Notification Settings"
+              title={sidebarCollapsed ? "Notification Settings" : undefined}
+              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                sidebarCollapsed ? "md:justify-center md:px-2" : ""
+              } ${
+                isActive("/account/settings")
+                  ? "bg-white text-cyan-700 shadow-lg"
+                  : "text-white/80 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              <Settings className="h-5 w-5 shrink-0" />
+              <span className={sidebarCollapsed ? "md:hidden" : ""}>Notification Settings</span>
+              {isActive("/account/settings") && (
                 <ChevronRight
                   className={`ml-auto h-4 w-4 ${sidebarCollapsed ? "md:hidden" : ""}`}
                 />
