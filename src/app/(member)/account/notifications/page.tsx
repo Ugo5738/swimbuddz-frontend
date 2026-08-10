@@ -6,6 +6,7 @@ import { formatAnnouncementCategory } from "@/lib/communications";
 import {
   Bell,
   Calendar,
+  Camera,
   Check,
   CheckCheck,
   ChevronLeft,
@@ -65,6 +66,7 @@ const CATEGORY_ICONS: Record<string, React.ElementType> = {
   events: Users,
   community: Heart,
   admin: ShieldCheck,
+  media: Camera,
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -77,6 +79,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   events: "bg-pink-100 text-pink-700",
   community: "bg-rose-100 text-rose-700",
   admin: "bg-slate-100 text-slate-700",
+  media: "bg-cyan-100 text-cyan-700",
   rain_update: "bg-amber-100 text-amber-700",
   schedule_change: "bg-amber-100 text-amber-700",
   academy_update: "bg-purple-100 text-purple-700",
@@ -91,6 +94,7 @@ const FILTER_OPTIONS = [
   { value: "store", label: "Store" },
   { value: "payments", label: "Payments" },
   { value: "academy", label: "Academy" },
+  { value: "media", label: "Media" },
   { value: "announcements", label: "Announcements" },
 ];
 

@@ -54,6 +54,16 @@ export const GUIDES: GuideMeta[] = [
     order: 1,
   },
   {
+    slug: "session-media-coverage",
+    title: "Session Media Coverage Guide",
+    description:
+      "The practical shot list, recording standard, safety rules, and full-quality handoff process for session media volunteers.",
+    audience: "volunteers",
+    emoji: "📷",
+    file: "session-media-coverage.md",
+    order: 2,
+  },
+  {
     slug: "pool-ambassador",
     title: "Pool Ambassador Guide",
     description:
@@ -61,7 +71,7 @@ export const GUIDES: GuideMeta[] = [
     audience: "volunteers",
     emoji: "👋",
     file: "pool-ambassador.md",
-    order: 2,
+    order: 3,
   },
   {
     slug: "volunteer-group-guide",
@@ -71,6 +81,6 @@ export const GUIDES: GuideMeta[] = [
     audience: "volunteers",
     emoji: "💬",
     file: "volunteer-group-guide.md",
-    order: 3,
+    order: 4,
   },
 ];

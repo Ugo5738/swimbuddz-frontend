@@ -133,7 +133,7 @@ export default function AdminMediaVaultDetailPage() {
       {tab === "upload" && (
         <VaultUploader vault={data} scope={{ kind: "member", vaultId: data.id }} />
       )}
-      {tab === "access" && <VaultAccessPanel vault={data} />}
+      {tab === "access" && <VaultAccessPanel vault={data} onVaultUpdated={refetch} />}
       {tab === "operations" && <VaultOperationsPanel vaultId={data.id} />}
       {tab === "settings" && <VaultSettingsPanel vault={data} onSaved={refetch} />}
     </div>

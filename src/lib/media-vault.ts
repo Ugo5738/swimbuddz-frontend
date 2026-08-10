@@ -128,6 +128,51 @@ export type BandwidthSummary = {
   measurement_note: string;
 };
 
+export const MEDIA_VAULT_CONTRIBUTOR_REOPEN_DAYS = 7;
+
+export const DEFAULT_MEDIA_VAULT_CHECKLIST = [
+  "Establishing shot and preparation or arrival",
+  "Warm-up wide shot and two drill close-ups",
+  "Side-angle footage showing complete movement",
+  "Coaching sequence: instruction, attempt, correction, improved attempt",
+  "Two members completing meaningful parts of the main set",
+  "One uninterrupted complete-length swim",
+  "Cool-down or coach, peer, or pod review",
+  "Progress, reaction, or encouragement moment",
+  "Group or pod photo and a candid community moment",
+  "At least two useful horizontal clips for the website or YouTube",
+];
+
+export const MEDIA_COVERAGE_STORY = ["Prepare", "Practise", "Coach", "Progress", "Belong"];
+
+export const MEDIA_RECORDING_STANDARDS = [
+  "Clean the lens and confirm battery and free storage.",
+  "Use vertical 9:16 for most clips; capture at least two horizontal clips.",
+  "Use 1080p routinely and reserve higher resolution for deliberate hero footage.",
+  "Keep ordinary clips steady and about 8-15 seconds long.",
+  "Start two seconds before the action and continue two seconds afterwards.",
+  "Keep complete movement in frame; avoid unnecessary zooming and panning.",
+];
+
+export function accessWindowForRole(
+  vault: Pick<MediaVault, "upload_opens_at" | "upload_closes_at">,
+  role: "contributor" | "curator",
+  now = new Date()
+) {
+  const opensAt = new Date(vault.upload_opens_at);
+  const closesAt = new Date(vault.upload_closes_at);
+  const contributorMinimum = new Date(
+    now.getTime() + MEDIA_VAULT_CONTRIBUTOR_REOPEN_DAYS * 24 * 60 * 60 * 1000
+  );
+  return {
+    startsAt: new Date(Math.min(opensAt.getTime(), now.getTime())).toISOString(),
+    expiresAt:
+      role === "curator"
+        ? new Date(closesAt.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        : new Date(Math.max(closesAt.getTime(), contributorMinimum.getTime())).toISOString(),
+  };
+}
+
 export const formatBytes = (bytes: number) => {
   if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
   const units = ["B", "KB", "MB", "GB", "TB"];

@@ -1,7 +1,12 @@
 "use client";
 
 import { useApi } from "@/hooks/useApi";
-import { formatBytes, mediaVaultApi, type VaultList } from "@/lib/media-vault";
+import {
+  DEFAULT_MEDIA_VAULT_CHECKLIST,
+  formatBytes,
+  mediaVaultApi,
+  type VaultList,
+} from "@/lib/media-vault";
 import { SessionsApi, type Session } from "@/lib/sessions";
 import {
   CalendarDays,
@@ -17,15 +22,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-
-const DEFAULT_SHOTS = [
-  "Wide establishing shot",
-  "Swimmers in action",
-  "Coach or volunteer moments",
-  "Community/candid moments",
-  "One vertical social clip",
-  "Sponsor or venue details",
-];
 
 export default function AdminMediaVaultPage() {
   const router = useRouter();
@@ -77,11 +73,11 @@ export default function AdminMediaVaultPage() {
         timezone: selectedSession.timezone || "Africa/Lagos",
         location_name: selectedSession.location_name || null,
         upload_opens_at: new Date(startsAt.getTime() - 4 * 60 * 60 * 1000).toISOString(),
-        upload_closes_at: new Date(endsAt.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+        upload_closes_at: new Date(endsAt.getTime() + 72 * 60 * 60 * 1000).toISOString(),
         retention_days: 730,
         consent_notice:
           "Confirm participants have not opted out of photography and flag any safeguarding concern in the upload notes.",
-        shot_checklist: DEFAULT_SHOTS,
+        shot_checklist: DEFAULT_MEDIA_VAULT_CHECKLIST,
       });
       toast.success("Private vault created");
       refetch();

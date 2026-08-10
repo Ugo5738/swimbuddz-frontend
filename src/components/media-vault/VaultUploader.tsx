@@ -3,6 +3,8 @@
 import { apiGet, apiPost } from "@/lib/api";
 import {
   formatBytes,
+  MEDIA_COVERAGE_STORY,
+  MEDIA_RECORDING_STANDARDS,
   mediaVaultApi,
   type GuestVault,
   type MediaVault,
@@ -19,8 +21,16 @@ import {
   type SavedUpload,
   type UploadScope,
 } from "@/lib/media-vault-upload";
-import { CloudUpload, Loader2, RefreshCcw, ShieldCheck, WifiOff } from "lucide-react";
+import {
+  BookOpen,
+  CloudUpload,
+  Loader2,
+  RefreshCcw,
+  ShieldCheck,
+  WifiOff,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 
 import { VaultUploadQueue, type UploadFile } from "./VaultUploadQueue";
@@ -279,6 +289,48 @@ export function VaultUploader({ vault, scope }: Props) {
           You are offline. Your selected files remain on this device; reconnect before resuming.
         </div>
       )}
+
+      <section className="rounded-2xl border border-blue-200 bg-blue-50/70 p-5">
+        <div className="flex items-start gap-3">
+          <BookOpen className="mt-0.5 h-5 w-5 shrink-0 text-blue-700" />
+          <div className="min-w-0 flex-1">
+            <h2 className="font-semibold text-slate-950">The session story</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Capture a smaller set of steady, intentional clips that lets someone who was not
+              there understand the session.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {MEDIA_COVERAGE_STORY.map((step, index) => (
+                <span
+                  key={step}
+                  className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-blue-800 shadow-sm"
+                >
+                  {index + 1}. {step}
+                </span>
+              ))}
+            </div>
+            <details className="mt-4 text-sm text-slate-700">
+              <summary className="cursor-pointer font-semibold text-blue-800">
+                Quick recording standard
+              </summary>
+              <ul className="mt-3 grid gap-2 pl-5 sm:grid-cols-2">
+                {MEDIA_RECORDING_STANDARDS.map((standard) => (
+                  <li key={standard} className="list-disc pr-3">
+                    {standard}
+                  </li>
+                ))}
+              </ul>
+            </details>
+            <Link
+              href="/guides/session-media-coverage"
+              target="_blank"
+              className="mt-4 inline-flex text-sm font-semibold text-blue-800 underline decoration-blue-300 underline-offset-4 hover:text-blue-950"
+            >
+              Open the full shareable media coverage guide
+            </Link>
+          </div>
+        </div>
+      </section>
 
       <div
         className="rounded-2xl border-2 border-dashed border-cyan-300 bg-cyan-50/50 p-8 text-center transition hover:border-cyan-500"

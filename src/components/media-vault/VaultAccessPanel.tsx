@@ -1,7 +1,7 @@
 "use client";
 
 import { apiDelete, apiGet, apiPost } from "@/lib/api";
-import { formatBytes, type MediaVault } from "@/lib/media-vault";
+import { accessWindowForRole, formatBytes, type MediaVault } from "@/lib/media-vault";
 import { Copy, Link2, RefreshCcw, Search, Shield, Trash2, UserPlus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -14,6 +14,7 @@ type Grant = {
   expires_at: string;
   source: string;
   revoked_at: string | null;
+  notification_dispatched?: boolean;
 };
 
 type GuestLink = {
@@ -33,7 +34,13 @@ type MemberSearch = {
   email: string;
 };
 
-export function VaultAccessPanel({ vault }: { vault: MediaVault }) {
+export function VaultAccessPanel({
+  vault,
+  onVaultUpdated,
+}: {
+  vault: MediaVault;
+  onVaultUpdated?: () => void;
+}) {
   const [grants, setGrants] = useState<Grant[]>([]);
   const [links, setLinks] = useState<GuestLink[]>([]);
   const [query, setQuery] = useState("");
@@ -100,18 +107,14 @@ export function VaultAccessPanel({ vault }: { vault: MediaVault }) {
     if (!selectedMember) return;
     setWorking(true);
     try {
-      await apiPost(
+      const accessWindow = accessWindowForRole(vault, role);
+      const created = await apiPost<Grant>(
         `/api/v1/media/vaults/${vault.id}/grants`,
         {
           member_id: selectedMember.id,
           role,
-          starts_at: vault.upload_opens_at,
-          expires_at:
-            role === "curator"
-              ? new Date(
-                  new Date(vault.upload_closes_at).getTime() + 30 * 24 * 60 * 60 * 1000
-                ).toISOString()
-              : vault.upload_closes_at,
+          starts_at: accessWindow.startsAt,
+          expires_at: accessWindow.expiresAt,
           can_download_originals: role === "curator",
         },
         { auth: true }
@@ -119,7 +122,12 @@ export function VaultAccessPanel({ vault }: { vault: MediaVault }) {
       setSelectedMember(null);
       setQuery("");
       await load();
-      toast.success("Vault access granted and notification sent");
+      onVaultUpdated?.();
+      if (created.notification_dispatched) {
+        toast.success("Access granted. In-app and email notification delivery was requested.");
+      } else {
+        toast.warning("Access granted, but notification delivery could not be confirmed.");
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not add access");
     } finally {
@@ -143,17 +151,19 @@ export function VaultAccessPanel({ vault }: { vault: MediaVault }) {
   const createGuestLink = async () => {
     setWorking(true);
     try {
+      const linkWindow = accessWindowForRole(vault, "contributor");
       const link = await apiPost<GuestLink>(
         `/api/v1/media/vaults/${vault.id}/guest-links`,
         {
           label: `Media handoff · ${vault.capture_date}`,
-          expires_at: vault.upload_closes_at,
+          expires_at: linkWindow.expiresAt,
           max_total_bytes: 100 * 1024 ** 3,
         },
         { auth: true }
       );
       setNewLink(link);
       await load();
+      onVaultUpdated?.();
       toast.success("One-time upload link created");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not create link");
@@ -248,6 +258,11 @@ export function VaultAccessPanel({ vault }: { vault: MediaVault }) {
             Add
           </button>
         </div>
+        {role === "contributor" && new Date(vault.upload_closes_at).getTime() <= Date.now() && (
+          <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            Uploads are closed. Adding this uploader will safely reopen the vault for seven days.
+          </p>
+        )}
 
         <div className="mt-5 divide-y divide-slate-100">
           {grants

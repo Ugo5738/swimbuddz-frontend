@@ -5,6 +5,7 @@ import type { Announcement } from "@/lib/communications";
 import { formatAnnouncementCategory } from "@/lib/communications";
 import {
   Bell,
+  Camera,
   Calendar,
   Check,
   CreditCard,
@@ -74,6 +75,7 @@ const CATEGORY_ICONS: Record<string, React.ElementType> = {
   events: Users,
   community: Heart,
   admin: ShieldCheck,
+  media: Camera,
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -86,6 +88,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   events: "bg-pink-100 text-pink-700",
   community: "bg-rose-100 text-rose-700",
   admin: "bg-slate-100 text-slate-700",
+  media: "bg-cyan-100 text-cyan-700",
   // Announcement categories
   rain_update: "bg-amber-100 text-amber-700",
   schedule_change: "bg-amber-100 text-amber-700",
@@ -116,7 +119,7 @@ export function NotificationBell({
         apiGet<{ unread_count: number }>(
           `/api/v1/communications/announcements/unread-count?member_id=${memberId}`,
           { auth: true }
-        ),
+        ).catch(() => ({ unread_count: 0 })),
         apiGet<{ unread_count: number }>(
           `/api/v1/communications/notifications/unread-count?member_id=${memberId}`,
           { auth: true }
@@ -142,7 +145,9 @@ export function NotificationBell({
     setLoadingItems(true);
     try {
       const [announcements, notifResponse] = await Promise.all([
-        apiGet<Announcement[]>("/api/v1/communications/announcements/?limit=5", { auth: true }),
+        apiGet<Announcement[]>("/api/v1/communications/announcements/?limit=5", {
+          auth: true,
+        }).catch(() => []),
         apiGet<NotificationListResponse>(
           `/api/v1/communications/notifications/?member_id=${memberId}&limit=5`,
           { auth: true }
