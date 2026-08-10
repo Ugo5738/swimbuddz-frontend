@@ -1,5 +1,6 @@
 "use client";
 
+import { PoolPicker } from "@/components/admin/PoolPicker";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
@@ -34,6 +35,23 @@ import { toast } from "sonner";
 type PlanningTab = "templates" | "import";
 type MonthlyRule = "weekday" | "date";
 type DateRange = { from_date: string; to_date: string };
+type ReminderProfile = "none" | "standard" | "online_talk" | "major_event";
+
+const REMINDER_PROFILES: Record<ReminderProfile, number[]> = {
+  none: [],
+  standard: [72, 24],
+  online_talk: [168, 24, 1],
+  major_event: [336, 168, 24],
+};
+
+function reminderProfile(hours: number[]): ReminderProfile {
+  const key = [...hours].sort((a, b) => b - a).join(",");
+  return (
+    (Object.entries(REMINDER_PROFILES).find(
+      ([, values]) => [...values].sort((a, b) => b - a).join(",") === key
+    )?.[0] as ReminderProfile | undefined) ?? "none"
+  );
+}
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const MONTHS = [
@@ -61,6 +79,10 @@ function templateToForm(template: EventTemplate): EventTemplateForm {
     ends_on: template.ends_on ?? "",
     max_capacity: template.max_capacity ? String(template.max_capacity) : "",
     cost_naira: template.cost_naira ? String(template.cost_naira) : "",
+    pricing_expected_attendees: template.pricing_expected_attendees
+      ? String(template.pricing_expected_attendees)
+      : "",
+    margin_value: String(template.margin_value ?? 0),
   };
 }
 
@@ -158,6 +180,12 @@ export default function EventPlanningPage() {
       location: form.location || null,
       max_capacity: form.max_capacity ? Number(form.max_capacity) : null,
       cost_naira: form.cost_naira ? Number(form.cost_naira) : null,
+      pricing_expected_attendees: form.pricing_expected_attendees
+        ? Number(form.pricing_expected_attendees)
+        : form.max_capacity
+          ? Number(form.max_capacity)
+          : null,
+      margin_value: Number(form.margin_value) || 0,
       ends_on: form.ends_on || null,
       day_of_week: form.day_of_week,
       week_of_month: form.week_of_month,
@@ -396,7 +424,7 @@ export default function EventPlanningPage() {
                   value={form.event_type}
                   onChange={(event) => setForm({ ...form, event_type: event.target.value })}
                 >
-                  <option value="online_talk">Online talk / Water Room</option>
+                  <option value="online_talk">Online Talk</option>
                   <option value="assessment">Assessment</option>
                   <option value="open_swim">Open swim</option>
                   <option value="quarter_meet">Quarter meet / Buddz Cup</option>
@@ -413,7 +441,7 @@ export default function EventPlanningPage() {
                 rows={3}
               />
 
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-2">
                 <Select
                   label="Audience lane"
                   value={form.audience}
@@ -476,15 +504,42 @@ export default function EventPlanningPage() {
                   <option value="online">Online</option>
                   <option value="hybrid">Hybrid</option>
                 </Select>
+                <PoolPicker
+                  label="Pool venue"
+                  value={form.pool_id}
+                  onChange={(poolId, poolName, pool) =>
+                    setForm({
+                      ...form,
+                      pool_id: poolId,
+                      location: poolId
+                        ? pool?.address
+                          ? `${poolName}, ${pool.address}`
+                          : (poolName ?? "")
+                        : "",
+                      location_area: poolId ? (pool?.location_area ?? "") : "",
+                    })
+                  }
+                  hint="Generated drafts inherit this pool and its canonical area."
+                />
                 <Input
                   label="Venue or meeting link"
                   value={form.location}
-                  onChange={(event) => setForm({ ...form, location: event.target.value })}
+                  onChange={(event) =>
+                    setForm({ ...form, pool_id: null, location: event.target.value })
+                  }
+                  readOnly={Boolean(form.pool_id)}
+                  hint={form.pool_id ? "Filled from the Pool Registry" : undefined}
                 />
                 <Input
                   label="Location area"
                   value={form.location_area}
                   onChange={(event) => setForm({ ...form, location_area: event.target.value })}
+                  readOnly={Boolean(form.pool_id)}
+                  hint={
+                    form.pool_id
+                      ? "Filled from the pool's operating area"
+                      : "Use the most-specific area for a non-pool venue"
+                  }
                 />
               </div>
 
@@ -514,13 +569,50 @@ export default function EventPlanningPage() {
                   value={form.max_capacity}
                   onChange={(event) => setForm({ ...form, max_capacity: event.target.value })}
                 />
-                <Input
-                  label="Price (₦)"
-                  type="number"
-                  min={0}
-                  value={form.cost_naira}
-                  onChange={(event) => setForm({ ...form, cost_naira: event.target.value })}
-                />
+                <Select
+                  label="Pricing treatment"
+                  value={form.pricing_mode}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      pricing_mode: event.target.value as EventTemplateForm["pricing_mode"],
+                    })
+                  }
+                >
+                  <option value="free">Free</option>
+                  <option value="included">Included</option>
+                  <option value="fixed">Fixed price</option>
+                </Select>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                {form.pricing_mode === "fixed" ? (
+                  <Input
+                    label="Price (₦)"
+                    type="number"
+                    min={0}
+                    value={form.cost_naira}
+                    onChange={(event) => setForm({ ...form, cost_naira: event.target.value })}
+                  />
+                ) : (
+                  <div />
+                )}
+                <Select
+                  label="Email reminders"
+                  value={reminderProfile(form.email_reminder_hours)}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      email_reminder_hours:
+                        REMINDER_PROFILES[event.target.value as ReminderProfile],
+                    })
+                  }
+                >
+                  <option value="none">None</option>
+                  <option value="standard">Standard · 72h and 24h</option>
+                  <option value="online_talk">Online Talk · 7d, 24h and 1h</option>
+                  <option value="major_event">Major event · 14d, 7d and 24h</option>
+                </Select>
               </div>
 
               <fieldset className="space-y-4 border-y border-slate-200 py-4">
