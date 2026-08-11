@@ -293,7 +293,7 @@ export function ImageCropDialog({
         </div>
       </div>
 
-      <div className="relative h-[min(48vh,420px)] min-h-[260px] overflow-hidden rounded-lg bg-slate-950">
+      <div className="relative h-[min(30vh,280px)] min-h-[220px] overflow-hidden rounded-lg bg-slate-950 sm:h-[min(38vh,360px)] sm:min-h-[240px]">
         <Cropper
           image={displayedImage}
           crop={editor.crop}

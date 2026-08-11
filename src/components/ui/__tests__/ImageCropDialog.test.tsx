@@ -72,4 +72,34 @@ describe("ImageCropDialog", () => {
       screen.getByRole("button", { name: "Hold to compare with original" })
     ).toBeInTheDocument();
   });
+
+  it("records transforms and filters and can undo an edit", () => {
+    const onConfirm = vi.fn();
+    render(
+      <ImageCropDialog
+        isOpen
+        imageUrl="blob:test"
+        purpose="content_image"
+        onCancel={vi.fn()}
+        onConfirm={onConfirm}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Set crop" }));
+    fireEvent.click(screen.getByRole("button", { name: "Transform" }));
+    fireEvent.click(screen.getByRole("button", { name: "Rotate right 90 degrees" }));
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    fireEvent.click(screen.getByRole("button", { name: "Flip horizontally" }));
+    fireEvent.click(screen.getByRole("button", { name: "Filters" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pool" }));
+    fireEvent.click(screen.getByRole("button", { name: "Use image" }));
+
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        rotation: 0,
+        flip_horizontal: true,
+        filter: { name: "pool", strength: 100 },
+      })
+    );
+  });
 });
