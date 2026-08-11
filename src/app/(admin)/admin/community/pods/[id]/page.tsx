@@ -6,7 +6,7 @@
  * Single page with three sections:
  *   1. Header + lifecycle actions (extend, dissolve)
  *   2. Editable pod fields (handle, leads, sizes, schedule, visibility)
- *   3. Members table with add / remove / transfer actions
+ *   3. Pod roster with add / remove / transfer actions
  *
  * See docs/club/POD_OPERATIONS.md.
  */
@@ -356,11 +356,11 @@ export default function AdminPodDetailPage() {
         )}
       </Card>
 
-      {/* Members */}
+      {/* Pod roster */}
       <Card className="overflow-hidden">
         <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-5 py-3">
           <h2 className="font-semibold text-gray-900">
-            Members ({pod.members.length})
+            Pod roster ({pod.members.length})
           </h2>
           {!isInactive && pod.active_member_count < pod.max_size && (
             <Button size="sm" onClick={() => setAddingMember(true)}>
@@ -372,7 +372,7 @@ export default function AdminPodDetailPage() {
 
         {pod.members.length === 0 ? (
           <div className="px-5 py-10 text-center text-sm text-gray-500">
-            No members yet. Add the first one to seed the pod.
+            No roster members yet. Add the first one to seed the pod.
           </div>
         ) : (
           <ul className="divide-y divide-gray-100">
