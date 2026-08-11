@@ -45,7 +45,15 @@ export interface EventTemplate {
 
 export type EventTemplateForm = Omit<
   EventTemplate,
-  "id" | "description" | "location" | "location_area" | "cost_naira" | "max_capacity" | "ends_on"
+  | "id"
+  | "description"
+  | "location"
+  | "location_area"
+  | "cost_naira"
+  | "max_capacity"
+  | "ends_on"
+  | "pricing_expected_attendees"
+  | "margin_value"
 > & {
   description: string;
   location: string;
