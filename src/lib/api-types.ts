@@ -1246,6 +1246,179 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/clubs/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Club Plans
+         * @description Return the currently purchasable, location-specific Club packages.
+         */
+        get: operations["list_club_plans_clubs_plans_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/admin/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List All Club Plans */
+        get: operations["list_all_club_plans_clubs_admin_plans_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/{club_id}/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Club Plan */
+        post: operations["create_club_plan_clubs__club_id__plans_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Club Application */
+        post: operations["create_club_application_clubs_applications_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/applications/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List My Club Applications */
+        get: operations["list_my_club_applications_clubs_applications_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/applications/{application_id}/pre-assessment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Submit Club Pre Assessment */
+        put: operations["submit_club_pre_assessment_clubs_applications__application_id__pre_assessment_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/admin/applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Club Applications For Review */
+        get: operations["list_club_applications_for_review_clubs_admin_applications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/admin/applications/{application_id}/assessment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Complete Observed Club Assessment */
+        put: operations["complete_observed_club_assessment_clubs_admin_applications__application_id__assessment_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/internal/applications/{application_id}/payment-context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Club Application Payment Context */
+        get: operations["get_club_application_payment_context_clubs_internal_applications__application_id__payment_context_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/internal/applications/{application_id}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Activate Club Application */
+        post: operations["activate_club_application_clubs_internal_applications__application_id__activate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/clubs/{club_id}": {
         parameters: {
             query?: never;
@@ -3331,6 +3504,128 @@ export interface paths {
         get: operations["list_session_bookings_sessions__session_id__bookings_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/{session_id}/guest-pass": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Guest Pass Offer */
+        get: operations["guest_pass_offer_sessions__session_id__guest_pass_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/{session_id}/guest-passes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Guest Pass */
+        post: operations["create_guest_pass_sessions__session_id__guest_passes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/guest-passes/{guest_pass_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Guest Pass Status
+         * @description Redacted public receipt; identity and assessment data are never returned.
+         */
+        get: operations["get_guest_pass_status_guest_passes__guest_pass_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/sessions/guest-passes/{guest_pass_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Guest Pass */
+        post: operations["confirm_guest_pass_internal_sessions_guest_passes__guest_pass_id__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/guest-passes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Guest Passes */
+        get: operations["list_guest_passes_admin_guest_passes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/guest-passes/{guest_pass_id}/attendance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark Guest Pass Attended */
+        post: operations["mark_guest_pass_attended_admin_guest_passes__guest_pass_id__attendance_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/guest-passes/{guest_pass_id}/referral-reward/paid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark Guest Referral Reward Paid */
+        post: operations["mark_guest_referral_reward_paid_admin_guest_passes__guest_pass_id__referral_reward_paid_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6717,6 +7012,58 @@ export interface paths {
          *     booking's payment_intent_id (already-confirmed case).
          */
         post: operations["admin_generate_booking_pay_link_payments_admin_bookings__booking_id__payment_link_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/charges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Charge Policies */
+        get: operations["list_charge_policies_payments_charges_get"];
+        put?: never;
+        /** Create Charge Policy */
+        post: operations["create_charge_policy_payments_charges_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/charges/{policy_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Charge Policy */
+        patch: operations["update_charge_policy_payments_charges__policy_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/payments/charges/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Additional Charges */
+        post: operations["preview_additional_charges_payments_charges_preview_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10170,6 +10517,26 @@ export interface paths {
          * @description Detailed rewards analytics with category breakdown.
          */
         get: operations["get_reward_analytics_admin_wallet_rewards_analytics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/wallet/referral-code/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Resolve Referral Code For Attribution
+         * @description Resolve an active code to its owner without creating a member referral.
+         */
+        get: operations["resolve_referral_code_for_attribution_internal_wallet_referral_code_resolve_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -17349,6 +17716,18 @@ export interface components {
             /** Source Reference */
             source_reference?: string | null;
         };
+        /** ActivateClubApplicationRequest */
+        ActivateClubApplicationRequest: {
+            /** Payment Reference */
+            payment_reference: string;
+            /** Starts At */
+            starts_at?: string | null;
+            /**
+             * Months
+             * @default 3
+             */
+            months: number;
+        };
         /**
          * ActivateClubRequest
          * @description Request to activate club membership.
@@ -17369,6 +17748,12 @@ export interface components {
              * @default false
              */
             skip_community_check: boolean;
+            /**
+             * Extend Community Membership
+             * @description Preserve the legacy policy that extends Community to one year. Location-plan purchases set this false because annual Community is paid separately.
+             * @default true
+             */
+            extend_community_membership: boolean;
         };
         /**
          * ActivateCommunityRequest
@@ -18264,6 +18649,121 @@ export interface components {
             /** Proof Media */
             proof_media?: components["schemas"]["ChallengeSubmissionMediaResponse"][];
         };
+        /** ClubApplicationCreate */
+        ClubApplicationCreate: {
+            /**
+             * Plan Version Id
+             * Format: uuid
+             */
+            plan_version_id: string;
+            /**
+             * Community Experience Selected
+             * @default true
+             */
+            community_experience_selected: boolean;
+            /** Preferred Pod Id */
+            preferred_pod_id?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** ClubApplicationResponse */
+        ClubApplicationResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Member Name */
+            member_name?: string | null;
+            /** Member Email */
+            member_email?: string | null;
+            /**
+             * Club Id
+             * Format: uuid
+             */
+            club_id: string;
+            /**
+             * Plan Version Id
+             * Format: uuid
+             */
+            plan_version_id: string;
+            /** Status */
+            status: string;
+            /** Community Experience Selected */
+            community_experience_selected: boolean;
+            /** Preferred Pod Id */
+            preferred_pod_id?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Quote Id */
+            quote_id?: string | null;
+            plan?: components["schemas"]["ClubPlanResponse"] | null;
+            assessment?: components["schemas"]["ClubAssessmentResponse"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** ClubAssessmentResponse */
+        ClubAssessmentResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Application Id
+             * Format: uuid
+             */
+            application_id: string;
+            /** Self Report */
+            self_report: {
+                [key: string]: unknown;
+            };
+            /** Observed Checks */
+            observed_checks?: {
+                [key: string]: unknown;
+            } | null;
+            /** Assessor Member Id */
+            assessor_member_id?: string | null;
+            /** Outcome */
+            outcome: string;
+            /** Nonstop Distance M */
+            nonstop_distance_m?: number | null;
+            /** Deep Water Comfort */
+            deep_water_comfort?: string | null;
+            /** Primary Technique Focus */
+            primary_technique_focus?: string | null;
+            /** First Club Milestone */
+            first_club_milestone?: string | null;
+            /** Assessor Notes */
+            assessor_notes?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+            /** Result Email Sent At */
+            result_email_sent_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
         /**
          * ClubChallengeCreate
          * @description Schema for creating a club challenge.
@@ -18529,11 +19029,238 @@ export interface components {
             default_session_duration_minutes?: number | null;
             /** Default Pool Id */
             default_pool_id?: string | null;
+            /** Operating Area Id */
+            operating_area_id?: string | null;
             /**
              * Is Active
              * @default true
              */
             is_active: boolean;
+        };
+        /** ClubObservedAssessmentUpdate */
+        ClubObservedAssessmentUpdate: {
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "club_ready" | "club_ready_modified" | "academy_first";
+            /** Observed Checks */
+            observed_checks?: {
+                [key: string]: unknown;
+            };
+            /** Nonstop Distance M */
+            nonstop_distance_m?: number | null;
+            /** Deep Water Comfort */
+            deep_water_comfort?: string | null;
+            /** Primary Technique Focus */
+            primary_technique_focus?: string | null;
+            /** First Club Milestone */
+            first_club_milestone?: string | null;
+            /** Assessor Notes */
+            assessor_notes?: string | null;
+            /**
+             * Send Result Email
+             * @default true
+             */
+            send_result_email: boolean;
+        };
+        /** ClubPaymentContext */
+        ClubPaymentContext: {
+            /**
+             * Application Id
+             * Format: uuid
+             */
+            application_id: string;
+            /** Member Auth Id */
+            member_auth_id: string;
+            /**
+             * Club Id
+             * Format: uuid
+             */
+            club_id: string;
+            /** Club Name */
+            club_name: string;
+            /**
+             * Plan Version Id
+             * Format: uuid
+             */
+            plan_version_id: string;
+            /** Billing Cycle */
+            billing_cycle: string;
+            /** Currency */
+            currency: string;
+            /** Club Fee Kobo */
+            club_fee_kobo: number;
+            /** Community Experience Selected */
+            community_experience_selected: boolean;
+            /** Community Experience Fee Kobo */
+            community_experience_fee_kobo: number;
+            /** Subtotal Kobo */
+            subtotal_kobo: number;
+            /**
+             * Months
+             * @default 3
+             */
+            months: number;
+        };
+        /** ClubPlanCreate */
+        ClubPlanCreate: {
+            /** Name */
+            name: string;
+            /**
+             * Billing Cycle
+             * @default quarterly
+             * @constant
+             */
+            billing_cycle: "quarterly";
+            /**
+             * Currency
+             * @default NGN
+             */
+            currency: string;
+            /** Club Fee Kobo */
+            club_fee_kobo: number;
+            /**
+             * Community Experience Fee Kobo
+             * @default 3000000
+             */
+            community_experience_fee_kobo: number;
+            /**
+             * Community Experience Default Selected
+             * @default true
+             */
+            community_experience_default_selected: boolean;
+            /**
+             * Sessions Included
+             * @default 12
+             */
+            sessions_included: number;
+            /**
+             * Refreshments Included
+             * @default true
+             */
+            refreshments_included: boolean;
+            /** Capacity */
+            capacity?: number | null;
+            /** Premium Venue Note */
+            premium_venue_note?: string | null;
+            /**
+             * Effective From
+             * Format: date
+             */
+            effective_from: string;
+            /** Effective To */
+            effective_to?: string | null;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+        };
+        /** ClubPlanResponse */
+        ClubPlanResponse: {
+            /** Name */
+            name: string;
+            /**
+             * Billing Cycle
+             * @default quarterly
+             * @constant
+             */
+            billing_cycle: "quarterly";
+            /**
+             * Currency
+             * @default NGN
+             */
+            currency: string;
+            /** Club Fee Kobo */
+            club_fee_kobo: number;
+            /**
+             * Community Experience Fee Kobo
+             * @default 3000000
+             */
+            community_experience_fee_kobo: number;
+            /**
+             * Community Experience Default Selected
+             * @default true
+             */
+            community_experience_default_selected: boolean;
+            /**
+             * Sessions Included
+             * @default 12
+             */
+            sessions_included: number;
+            /**
+             * Refreshments Included
+             * @default true
+             */
+            refreshments_included: boolean;
+            /** Capacity */
+            capacity?: number | null;
+            /** Premium Venue Note */
+            premium_venue_note?: string | null;
+            /**
+             * Effective From
+             * Format: date
+             */
+            effective_from: string;
+            /** Effective To */
+            effective_to?: string | null;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Club Id
+             * Format: uuid
+             */
+            club_id: string;
+            /** Club Name */
+            club_name?: string | null;
+            /** Club Slug */
+            club_slug?: string | null;
+            /** Location */
+            location?: string | null;
+            /** Operating Area Id */
+            operating_area_id?: string | null;
+            /** Default Pool Id */
+            default_pool_id?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** ClubPreAssessmentUpsert */
+        ClubPreAssessmentUpsert: {
+            /** Can Swim 25M Continuously */
+            can_swim_25m_continuously: boolean;
+            /** Controlled Breathing */
+            controlled_breathing: boolean;
+            /** Comfortable In Deep Water */
+            comfortable_in_deep_water: boolean;
+            /** Can Float Or Tread 30 Seconds */
+            can_float_or_tread_30_seconds: boolean;
+            /** Can Stop And Recover */
+            can_stop_and_recover: boolean;
+            /** Last Swim Date */
+            last_swim_date?: string | null;
+            /** Current Nonstop Distance M */
+            current_nonstop_distance_m?: number | null;
+            /** Injuries Or Accommodations */
+            injuries_or_accommodations?: string | null;
+            /** Notes */
+            notes?: string | null;
         };
         /** ClubResponse */
         ClubResponse: {
@@ -18555,6 +19282,8 @@ export interface components {
             default_session_duration_minutes: number;
             /** Default Pool Id */
             default_pool_id?: string | null;
+            /** Operating Area Id */
+            operating_area_id?: string | null;
             /**
              * Id
              * Format: uuid
@@ -18595,6 +19324,8 @@ export interface components {
             default_session_duration_minutes?: number | null;
             /** Default Pool Id */
             default_pool_id?: string | null;
+            /** Operating Area Id */
+            operating_area_id?: string | null;
         };
         /**
          * CoachAgreementHistoryItem
@@ -21694,6 +22425,187 @@ export interface components {
              */
             last_seen: string;
         };
+        /** GuestPassAdminResponse */
+        GuestPassAdminResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /** Price Kobo */
+            price_kobo: number;
+            /** Additional Charges */
+            additional_charges: {
+                [key: string]: unknown;
+            }[];
+            /** Total Kobo */
+            total_kobo: number;
+            /** Payment Reference */
+            payment_reference: string;
+            /** Status */
+            status: string;
+            /** Checkout Url */
+            checkout_url?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Full Name */
+            full_name: string;
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Phone */
+            phone: string;
+            /** Referral Code */
+            referral_code?: string | null;
+            /** Referrer Auth Id */
+            referrer_auth_id?: string | null;
+            /** Referral Reward Kobo */
+            referral_reward_kobo: number;
+            /** Referral Reward Status */
+            referral_reward_status: string;
+            /** Referral Reward Reference */
+            referral_reward_reference?: string | null;
+            /** Marketing Consent */
+            marketing_consent: boolean;
+            /** Attended At */
+            attended_at?: string | null;
+            /** Actual Swim Minutes */
+            actual_swim_minutes?: number | null;
+            /** Assessment Result */
+            assessment_result?: {
+                [key: string]: unknown;
+            } | null;
+            /** Converted Member Id */
+            converted_member_id?: string | null;
+        };
+        /** GuestPassAttendanceUpdate */
+        GuestPassAttendanceUpdate: {
+            /** Actual Swim Minutes */
+            actual_swim_minutes: number;
+            /** Assessment Result */
+            assessment_result?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Send Assessment Email
+             * @default true
+             */
+            send_assessment_email: boolean;
+        };
+        /** GuestPassConfirm */
+        GuestPassConfirm: {
+            /** Payment Reference */
+            payment_reference: string;
+        };
+        /** GuestPassCreate */
+        GuestPassCreate: {
+            /** Full Name */
+            full_name: string;
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Phone */
+            phone: string;
+            /** Date Of Birth */
+            date_of_birth?: string | null;
+            /** Guardian Name */
+            guardian_name?: string | null;
+            /** Guardian Phone */
+            guardian_phone?: string | null;
+            /** Waiver Accepted */
+            waiver_accepted: boolean;
+            /**
+             * Marketing Consent
+             * @default false
+             */
+            marketing_consent: boolean;
+            /** Referral Code */
+            referral_code?: string | null;
+        };
+        /** GuestPassOffer */
+        GuestPassOffer: {
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /** Title */
+            title: string;
+            /** Location Name */
+            location_name?: string | null;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /**
+             * Currency
+             * @default NGN
+             */
+            currency: string;
+            /** Guest Fee Kobo */
+            guest_fee_kobo: number;
+            /** Community Dropin Fee Kobo */
+            community_dropin_fee_kobo?: number | null;
+            /** Allows Guests */
+            allows_guests: boolean;
+            /** Spaces Remaining */
+            spaces_remaining: number;
+        };
+        /** GuestPassPublicResponse */
+        GuestPassPublicResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /** Price Kobo */
+            price_kobo: number;
+            /** Additional Charges */
+            additional_charges: {
+                [key: string]: unknown;
+            }[];
+            /** Total Kobo */
+            total_kobo: number;
+            /** Payment Reference */
+            payment_reference: string;
+            /** Status */
+            status: string;
+            /** Checkout Url */
+            checkout_url?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** GuestReferralRewardPaid */
+        GuestReferralRewardPaid: {
+            /** Transfer Reference */
+            transfer_reference: string;
+        };
         /**
          * MakeupBlockKind
          * @description What the make-up's grace/window 'block' is anchored to.
@@ -22246,6 +23158,15 @@ export interface components {
              * @default 0
              */
             pool_fee: number;
+            /** Guest Fee */
+            guest_fee?: number | null;
+            /** Community Dropin Fee */
+            community_dropin_fee?: number | null;
+            /**
+             * Guest Referral Reward
+             * @default 1000
+             */
+            guest_referral_reward: number;
             /**
              * Ride Share Fee
              * @default 0
@@ -22413,6 +23334,15 @@ export interface components {
              * @default 0
              */
             pool_fee: number;
+            /** Guest Fee */
+            guest_fee?: number | null;
+            /** Community Dropin Fee */
+            community_dropin_fee?: number | null;
+            /**
+             * Guest Referral Reward
+             * @default 1000
+             */
+            guest_referral_reward: number;
             /**
              * Ride Share Fee
              * @default 0
@@ -22698,6 +23628,12 @@ export interface components {
             capacity?: number | null;
             /** Pool Fee */
             pool_fee?: number | null;
+            /** Guest Fee */
+            guest_fee?: number | null;
+            /** Community Dropin Fee */
+            community_dropin_fee?: number | null;
+            /** Guest Referral Reward */
+            guest_referral_reward?: number | null;
             /** Ride Share Fee */
             ride_share_fee?: number | null;
             /** Pricing Mode */
@@ -25510,6 +26446,119 @@ export interface components {
             /** Reason */
             reason?: string | null;
         };
+        /** ChargePolicyCreate */
+        ChargePolicyCreate: {
+            /** Purpose */
+            purpose: string;
+            /** Payment Method */
+            payment_method?: string | null;
+            /** Label */
+            label: string;
+            /**
+             * Rate Basis Points
+             * @default 0
+             */
+            rate_basis_points: number;
+            /**
+             * Fixed Amount Kobo
+             * @default 0
+             */
+            fixed_amount_kobo: number;
+            /** Cap Amount Kobo */
+            cap_amount_kobo?: number | null;
+            /** Waive Fixed Below Kobo */
+            waive_fixed_below_kobo?: number | null;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+        };
+        /** ChargePolicyResponse */
+        ChargePolicyResponse: {
+            /** Purpose */
+            purpose: string;
+            /** Payment Method */
+            payment_method?: string | null;
+            /** Label */
+            label: string;
+            /**
+             * Rate Basis Points
+             * @default 0
+             */
+            rate_basis_points: number;
+            /**
+             * Fixed Amount Kobo
+             * @default 0
+             */
+            fixed_amount_kobo: number;
+            /** Cap Amount Kobo */
+            cap_amount_kobo?: number | null;
+            /** Waive Fixed Below Kobo */
+            waive_fixed_below_kobo?: number | null;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Created By Auth Id */
+            created_by_auth_id?: string | null;
+        };
+        /** ChargePolicyUpdate */
+        ChargePolicyUpdate: {
+            /** Label */
+            label?: string | null;
+            /** Rate Basis Points */
+            rate_basis_points?: number | null;
+            /** Fixed Amount Kobo */
+            fixed_amount_kobo?: number | null;
+            /** Cap Amount Kobo */
+            cap_amount_kobo?: number | null;
+            /** Waive Fixed Below Kobo */
+            waive_fixed_below_kobo?: number | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
+        /** ChargePreviewRequest */
+        ChargePreviewRequest: {
+            purpose: components["schemas"]["PaymentPurpose"];
+            /**
+             * Payment Method
+             * @default paystack
+             */
+            payment_method: string;
+            /** Club Application Id */
+            club_application_id?: string | null;
+            /** Subtotal Kobo */
+            subtotal_kobo?: number | null;
+        };
+        /** ChargePreviewResponse */
+        ChargePreviewResponse: {
+            /**
+             * Currency
+             * @default NGN
+             */
+            currency: string;
+            /** Subtotal Kobo */
+            subtotal_kobo: number;
+            /** Additional Charges */
+            additional_charges: {
+                [key: string]: unknown;
+            }[];
+            /** Additional Charges Total Kobo */
+            additional_charges_total_kobo: number;
+            /** Total Kobo */
+            total_kobo: number;
+            /** Components */
+            components?: {
+                [key: string]: unknown;
+            };
+        };
         /**
          * ClubBillingCycle
          * @enum {string}
@@ -25734,6 +26783,8 @@ export interface components {
              */
             months: number;
             club_billing_cycle?: components["schemas"]["ClubBillingCycle"] | null;
+            /** Club Application Id */
+            club_application_id?: string | null;
             /** Cohort Id */
             cohort_id?: string | null;
             /** Enrollment Id */
@@ -25977,6 +27028,12 @@ export interface components {
             authorization_url?: string | null;
             /** Access Code */
             access_code?: string | null;
+            /** Amount Kobo */
+            amount_kobo?: number | null;
+            /** Additional Charges */
+            additional_charges?: {
+                [key: string]: unknown;
+            }[];
         };
         /**
          * InternalPaystackVerifyResponse
@@ -26248,12 +27305,23 @@ export interface components {
             community_extension_amount: number;
             /** Total With Extension */
             total_with_extension?: number | null;
+            /** Subtotal Amount */
+            subtotal_amount?: number | null;
+            /** Additional Charges */
+            additional_charges?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Additional Charges Total
+             * @default 0
+             */
+            additional_charges_total: number;
         };
         /**
          * PaymentPurpose
          * @enum {string}
          */
-        PaymentPurpose: "community" | "club" | "club_bundle" | "academy_cohort" | "session_fee" | "session_bundle" | "store_order" | "wallet_topup" | "ride_share" | "session_booking" | "strokelab_founding";
+        PaymentPurpose: "community" | "club" | "club_bundle" | "academy_cohort" | "session_fee" | "session_bundle" | "store_order" | "wallet_topup" | "ride_share" | "session_booking" | "guest_pass" | "strokelab_founding";
         /** PaymentResponse */
         PaymentResponse: {
             /**
@@ -29489,6 +30557,16 @@ export interface components {
             success: boolean;
             /** Message */
             message: string;
+        };
+        /**
+         * ReferralCodeResolveResponse
+         * @description Internal attribution result used before recording a referred guest.
+         */
+        ReferralCodeResolveResponse: {
+            /** Code */
+            code: string;
+            /** Referrer Auth Id */
+            referrer_auth_id: string;
         };
         /**
          * ReferralCodeResponse
@@ -43032,6 +44110,325 @@ export interface operations {
             };
         };
     };
+    list_club_plans_clubs_plans_get: {
+        parameters: {
+            query?: {
+                operating_area_id?: string | null;
+                club_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubPlanResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_all_club_plans_clubs_admin_plans_get: {
+        parameters: {
+            query?: {
+                club_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubPlanResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_club_plan_clubs__club_id__plans_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                club_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClubPlanCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubPlanResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_club_application_clubs_applications_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClubApplicationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubApplicationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_my_club_applications_clubs_applications_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubApplicationResponse"][];
+                };
+            };
+        };
+    };
+    submit_club_pre_assessment_clubs_applications__application_id__pre_assessment_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClubPreAssessmentUpsert"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubApplicationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_club_applications_for_review_clubs_admin_applications_get: {
+        parameters: {
+            query?: {
+                status?: string | null;
+                club_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubApplicationResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_observed_club_assessment_clubs_admin_applications__application_id__assessment_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClubObservedAssessmentUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubApplicationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_club_application_payment_context_clubs_internal_applications__application_id__payment_context_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubPaymentContext"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    activate_club_application_clubs_internal_applications__application_id__activate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivateClubApplicationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubApplicationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_club_clubs__club_id__get: {
         parameters: {
             query?: never;
@@ -46162,6 +47559,239 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionBookingResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    guest_pass_offer_sessions__session_id__guest_pass_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestPassOffer"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_guest_pass_sessions__session_id__guest_passes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuestPassCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestPassPublicResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_guest_pass_status_guest_passes__guest_pass_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                guest_pass_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestPassPublicResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_guest_pass_internal_sessions_guest_passes__guest_pass_id__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                guest_pass_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuestPassConfirm"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestPassPublicResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_guest_passes_admin_guest_passes_get: {
+        parameters: {
+            query?: {
+                session_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestPassAdminResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_guest_pass_attended_admin_guest_passes__guest_pass_id__attendance_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                guest_pass_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuestPassAttendanceUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestPassAdminResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_guest_referral_reward_paid_admin_guest_passes__guest_pass_id__referral_reward_paid_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                guest_pass_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuestReferralRewardPaid"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestPassAdminResponse"];
                 };
             };
             /** @description Validation Error */
@@ -51700,6 +53330,127 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminBookingPayLinkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_charge_policies_payments_charges_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChargePolicyResponse"][];
+                };
+            };
+        };
+    };
+    create_charge_policy_payments_charges_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChargePolicyCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChargePolicyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_charge_policy_payments_charges__policy_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                policy_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChargePolicyUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChargePolicyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_additional_charges_payments_charges_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChargePreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChargePreviewResponse"];
                 };
             };
             /** @description Validation Error */
@@ -57473,6 +59224,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RewardAnalyticsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_referral_code_for_attribution_internal_wallet_referral_code_resolve_get: {
+        parameters: {
+            query: {
+                code: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferralCodeResolveResponse"];
                 };
             };
             /** @description Validation Error */

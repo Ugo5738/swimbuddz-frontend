@@ -76,6 +76,9 @@ export interface Session {
   // Capacity & Fees
   capacity: number;
   pool_fee: number;
+  guest_fee?: number | null;
+  community_dropin_fee?: number | null;
+  guest_referral_reward?: number | null;
   ride_share_fee: number;
   pricing_mode?: "manual" | "cost_plus";
   pricing_expected_attendees?: number | null;
@@ -168,6 +171,9 @@ export interface SessionCreate {
   timezone?: string;
   capacity?: number;
   pool_fee?: number;
+  guest_fee?: number | null;
+  community_dropin_fee?: number | null;
+  guest_referral_reward?: number | null;
   ride_share_fee?: number;
   pricing_mode?: "manual" | "cost_plus";
   pricing_expected_attendees?: number;
@@ -193,6 +199,9 @@ export interface SessionUpdate {
   ends_at?: string;
   capacity?: number;
   pool_fee?: number;
+  guest_fee?: number | null;
+  community_dropin_fee?: number | null;
+  guest_referral_reward?: number | null;
   pricing_mode?: "manual" | "cost_plus";
   pricing_expected_attendees?: number;
   cost_lines?: Session["cost_lines"];

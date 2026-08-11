@@ -441,3 +441,23 @@ layout. Possession of the high-entropy, hashed, expiring token is the
 authorization boundary; it grants upload only and never browse/download access.
 
 _Last updated: July 2026_
+
+### Club Onboarding and Guest Passes
+
+| Route | File | Protection and purpose |
+| --- | --- | --- |
+| `/upgrade/club/readiness` | `src/app/(member)/upgrade/club/readiness/page.tsx` | Member safety pre-assessment before choosing a Club location |
+| `/upgrade/club/plan` | `src/app/(member)/upgrade/club/plan/page.tsx` | Location-specific Club plan, pod preference, and transparent optional Community Experience choice |
+| `/checkout?purpose=club&application_id=...` | `src/app/(member)/checkout/page.tsx` | Approved server-priced Club checkout with separate additional charges |
+| `/guest-pass/session/[sessionId]` | `src/app/(public)/guest-pass/session/[sessionId]/page.tsx` | Public self-paying guest booking; accepts optional `ref` attribution |
+| `/guest-pass/[guestPassId]` | `src/app/(public)/guest-pass/[guestPassId]/page.tsx` | Redacted public guest payment/status receipt |
+| `/admin/club-plans` | `src/app/(admin)/admin/club-plans/page.tsx` | Publish effective-dated prices by Club location |
+| `/admin/club-applications` | `src/app/(admin)/admin/club-applications/page.tsx` | Review readiness, record baseline/outcome, and send result email |
+| `/admin/guest-passes` | `src/app/(admin)/admin/guest-passes/page.tsx` | Track payment, attendance/swimmer-minutes, assessments, and manual referral thank-yous |
+| `/admin/payment-charges` | `src/app/(admin)/admin/payment-charges/page.tsx` | Configure purpose/method-specific additional payment charges |
+
+The quarterly Community Experience is optional but selected by default. Guest,
+Community drop-in, and regular session prices are separate fields even when two
+values currently match.
+
+_Last updated: August 2026_

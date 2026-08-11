@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet, apiPost } from "@/lib/api";
+import { ChargePreview, previewClubCheckout } from "@/lib/clubOnboarding";
 import type { components } from "@/lib/api-types";
 import { savePaymentIntentCache } from "@/lib/paymentCache";
 import { isTierPaid } from "@/lib/tiers";
@@ -58,6 +59,8 @@ function CheckoutContent() {
 
   const [member, setMember] = useState<Member | null>(null);
   const [pricing, setPricing] = useState<PricingConfig | null>(null);
+  const [clubQuote, setClubQuote] = useState<ChargePreview | null>(null);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [discountInput, setDiscountInput] = useState(state.discountCode);
@@ -85,6 +88,7 @@ function CheckoutContent() {
   // page always builds an explicit ?purpose=academy_cohort URL, so requiring
   // the URL param is safe and removes the race entirely.
   const purpose = searchParams.get("purpose");
+  const clubApplicationId = searchParams.get("application_id");
 
   // Get club plan from URL params (fallback) or context
   const urlPlan = searchParams.get("plan") as "quarterly" | "biannual" | "annual" | null;
@@ -113,6 +117,17 @@ function CheckoutContent() {
       ]);
       setMember(memberData);
       setPricing(pricingData);
+
+      if (purpose === "club" && clubApplicationId) {
+        try {
+          setClubQuote(await previewClubCheckout(clubApplicationId, paymentMethod));
+          setQuoteError(null);
+        } catch (quoteFailure) {
+          setQuoteError(
+            quoteFailure instanceof Error ? quoteFailure.message : "Could not load the approved Club price",
+          );
+        }
+      }
 
       // If we have cohort_id in URL but no selectedCohort in context, fetch it
       // This allows resuming pending payments from billing page or deep link
@@ -150,7 +165,15 @@ function CheckoutContent() {
     } finally {
       setLoading(false);
     }
-  }, [urlCohortId, state.selectedCohort, setSelectedCohort]);
+  }, [
+    urlCohortId,
+    urlEnrollmentId,
+    state.selectedCohort,
+    setSelectedCohort,
+    purpose,
+    clubApplicationId,
+    paymentMethod,
+  ]);
 
   useEffect(() => {
     loadData();
@@ -171,8 +194,18 @@ function CheckoutContent() {
   };
 
   if (purpose === "club" || purpose === "club_bundle") {
-    // Club upgrade
-    if (!communityActive) {
+    if (clubApplicationId && clubQuote) {
+      const clubFee = (clubQuote.components.club || 0) / 100;
+      const experienceFee = (clubQuote.components.community_experience || 0) / 100;
+      lineItems.push({ label: "Club practice (quarterly, selected location)", amount: clubFee });
+      if (clubQuote.components.community_experience_selected && experienceFee > 0) {
+        lineItems.push({ label: "Community Experience (optional, selected)", amount: experienceFee });
+      }
+      clubQuote.additional_charges.forEach((charge) => {
+        lineItems.push({ label: charge.label, amount: charge.amount_kobo / 100 });
+      });
+      subtotal = clubQuote.total_kobo / 100;
+    } else if (!communityActive) {
       lineItems.push({
         label: "Community membership (annual)",
         amount: communityFee,
@@ -180,7 +213,7 @@ function CheckoutContent() {
       subtotal += communityFee;
     }
 
-    if (clubBillingCycle) {
+    if (!clubApplicationId && clubBillingCycle) {
       const clubFee = clubPricing[clubBillingCycle];
       lineItems.push({
         label: `Club membership (${getClubCycleLabel(clubBillingCycle).toLowerCase()})`,
@@ -190,7 +223,7 @@ function CheckoutContent() {
     }
 
     // Community extension if applicable
-    if (state.extensionInfo?.required && state.includeCommunityExtension) {
+    if (!clubApplicationId && state.extensionInfo?.required && state.includeCommunityExtension) {
       lineItems.push({
         label: `Community extension (${state.extensionInfo.months} months)`,
         amount: state.extensionInfo.amount,
@@ -344,15 +377,21 @@ function CheckoutContent() {
       };
 
       if (purpose === "club" || purpose === "club_bundle") {
-        intentPayload = {
-          ...intentPayload,
-          purpose: communityActive ? "club" : "club_bundle",
-          club_billing_cycle: clubBillingCycle,
-          months: 1,
-          years: communityActive ? undefined : 1,
-          include_community_extension:
-            state.extensionInfo?.required && state.includeCommunityExtension,
-        };
+        intentPayload = clubApplicationId
+          ? {
+              ...intentPayload,
+              purpose: "club",
+              club_application_id: clubApplicationId,
+            }
+          : {
+              ...intentPayload,
+              purpose: communityActive ? "club" : "club_bundle",
+              club_billing_cycle: clubBillingCycle,
+              months: 1,
+              years: communityActive ? undefined : 1,
+              include_community_extension:
+                state.extensionInfo?.required && state.includeCommunityExtension,
+            };
       } else if (purpose === "academy_cohort") {
         // Use existing enrollment ID from URL if available (set by quick-enroll paths)
         let enrollmentId: string | undefined = urlEnrollmentId || undefined;
@@ -472,9 +511,9 @@ function CheckoutContent() {
     const isAcademyFlow = purpose === "academy_cohort";
     const backLabel = isAcademyFlow ? "Back to Cohort Selection" : "Back to Billing";
     const backPath = isAcademyFlow ? "/upgrade/academy/cohort" : "/account/billing";
-    const message = isAcademyFlow
+    const message = quoteError || (isAcademyFlow
       ? "We couldn't load the cohort details. Please pick a cohort again."
-      : "Missing checkout information. Please start the upgrade process again.";
+      : "Missing checkout information. Please start the upgrade process again.");
     return (
       <div className="space-y-6 text-center">
         <Alert variant="error" title="Checkout Error">
@@ -511,7 +550,7 @@ function CheckoutContent() {
           ))}
 
           {/* Discount section */}
-          <div className="pt-3 border-t border-slate-100">
+          {!clubApplicationId ? <div className="pt-3 border-t border-slate-100">
             {validatedDiscount ? (
               <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3">
                 <div className="flex items-start justify-between gap-3">
@@ -603,7 +642,7 @@ function CheckoutContent() {
                 Have a discount code?
               </button>
             )}
-          </div>
+          </div> : null}
 
           {billingMode === "installments" && installmentPreview ? (
             <div className="pt-4 border-t border-slate-200 flex justify-between items-start gap-3">

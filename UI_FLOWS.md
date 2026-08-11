@@ -489,3 +489,37 @@ For complete route reference, see [ROUTES_AND_PAGES.md](./ROUTES_AND_PAGES.md).
 
 The product does not automatically transcode originals and does not use AI in
 this flow.
+
+---
+
+## 15. Member → Club Application → Assessment → Payment
+
+1. The member completes the Club safety pre-assessment.
+2. They choose an effective plan for a specific Club location. The price shown
+   belongs to that plan/location rather than to a global Club rate.
+3. The quarterly Community Experience appears as an optional, separately priced
+   item that is selected by default and can be unticked.
+4. The member may request an available pod at the selected location, then submits
+   the application.
+5. Admin conducts the in-pool assessment, records the baseline and selects
+   Club-ready, Club-ready with modified participation, or Academy first. The
+   result can be emailed from the review screen.
+6. An approved member opens checkout. Checkout retrieves the application price
+   from the server and presents Club fee, optional Community Experience, enabled
+   online payment charges, and total as separate lines.
+7. Successful payment creates the location enrollment used for pod access.
+
+## 16. Referrer → Self-paying Guest → Follow-up
+
+1. A member/admin shares `/guest-pass/session/{sessionId}?ref={code}`. The
+   referrer does not need to book or attend.
+2. The guest enters name, email, and phone, accepts the safety waiver, separately
+   chooses marketing consent, and pays the session's guest price.
+3. The public status page shows a redacted receipt. Guest identity, safeguarding
+   data, assessment, and referral data remain admin-only.
+4. Admin records attendance and actual swim minutes, then optionally emails the
+   guest assessment result.
+5. A first paid attendance with a referral becomes eligible for one manual
+   referral thank-you. Admin records the transfer reference after paying it.
+6. Guest, Community drop-in, and Club/member prices remain independently
+   configurable per session/location.
