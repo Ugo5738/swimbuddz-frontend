@@ -1,6 +1,10 @@
 "use client";
 
 import { ArticleFeaturedImage } from "@/components/content/ArticleFeaturedImage";
+import {
+  ArticleCommentActions,
+  type CommentReaction,
+} from "@/components/content/ArticleCommentActions";
 import { ArticleReadingProgress } from "@/components/content/ArticleReadingProgress";
 import { BlockViewer } from "@/components/editor/BlockViewer";
 import { Button } from "@/components/ui/Button";
@@ -43,6 +47,8 @@ interface Comment {
   member_id: string;
   member_name?: string;
   content: string;
+  like_count: number;
+  liked_by_me: boolean;
   created_at: string;
 }
 
@@ -75,6 +81,8 @@ export default function TipDetailPage() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [commentError, setCommentError] = useState<string | null>(null);
@@ -121,7 +129,7 @@ export default function TipDetailPage() {
     if (!postId) return;
     try {
       const data = await apiGet<Comment[]>(`/api/v1/content/${postId}/comments`, {
-        auth: false,
+        auth: isLoggedIn,
       });
       setComments(data);
       setCommentError(null);
@@ -131,14 +139,23 @@ export default function TipDetailPage() {
     } finally {
       setCommentsLoading(false);
     }
-  }, [postId]);
+  }, [isLoggedIn, postId]);
 
   useEffect(() => {
-    void fetchComments();
-    void supabase.auth.getSession().then(({ data }) => {
-      setIsLoggedIn(Boolean(data.session));
-    });
-  }, [fetchComments]);
+    void supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        const session = data.session;
+        const roles = session?.user?.app_metadata?.roles;
+        setIsLoggedIn(Boolean(session));
+        setIsAdmin(Array.isArray(roles) && roles.includes("admin"));
+      })
+      .finally(() => setAuthReady(true));
+  }, []);
+
+  useEffect(() => {
+    if (authReady) void fetchComments();
+  }, [authReady, fetchComments]);
 
   const handleAddComment = async () => {
     const content = newComment.trim();
@@ -156,6 +173,24 @@ export default function TipDetailPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleReaction = (reaction: CommentReaction) => {
+    setComments((current) =>
+      current.map((comment) =>
+        comment.id === reaction.comment_id
+          ? {
+              ...comment,
+              like_count: reaction.like_count,
+              liked_by_me: reaction.liked_by_me,
+            }
+          : comment
+      )
+    );
+  };
+
+  const handleCommentDeleted = (commentId: string) => {
+    setComments((current) => current.filter((comment) => comment.id !== commentId));
   };
 
   if (loading) {
@@ -335,6 +370,17 @@ export default function TipDetailPage() {
                   <p className="ml-10 whitespace-pre-wrap text-sm text-slate-700">
                     {comment.content}
                   </p>
+                  <ArticleCommentActions
+                    postId={postId}
+                    commentId={comment.id}
+                    likeCount={comment.like_count}
+                    likedByMe={comment.liked_by_me}
+                    isLoggedIn={isLoggedIn}
+                    isAdmin={isAdmin}
+                    loginHref={`/login?redirect=${encodeURIComponent(`/tips/${postId}`)}`}
+                    onReaction={handleReaction}
+                    onDeleted={() => handleCommentDeleted(comment.id)}
+                  />
                 </div>
               ))
             )}

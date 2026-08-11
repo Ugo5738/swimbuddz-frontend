@@ -1,11 +1,16 @@
 "use client";
 
 import { ArticleFeaturedImage } from "@/components/content/ArticleFeaturedImage";
+import {
+  ArticleCommentActions,
+  type CommentReaction,
+} from "@/components/content/ArticleCommentActions";
 import { ArticleReadingProgress } from "@/components/content/ArticleReadingProgress";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Textarea } from "@/components/ui/Textarea";
 import { apiGet, apiPost } from "@/lib/api";
+import { supabase } from "@/lib/auth";
 import { estimateArticleReadingTime } from "@/lib/readingTime";
 import { format } from "date-fns";
 import { ArrowLeft, Calendar, MessageCircle, User } from "lucide-react";
@@ -50,6 +55,8 @@ interface Comment {
   member_id: string;
   member_name?: string;
   content: string;
+  like_count: number;
+  liked_by_me: boolean;
   created_at: string;
 }
 
@@ -64,6 +71,7 @@ export default function ContentDetailPage() {
   const [newComment, setNewComment] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (postId) {
@@ -71,6 +79,13 @@ export default function ContentDetailPage() {
       fetchComments();
     }
   }, [postId]);
+
+  useEffect(() => {
+    void supabase.auth.getUser().then(({ data }) => {
+      const roles = data.user?.app_metadata?.roles;
+      setIsAdmin(Array.isArray(roles) && roles.includes("admin"));
+    });
+  }, []);
 
   const fetchPost = async () => {
     try {
@@ -109,6 +124,24 @@ export default function ContentDetailPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleReaction = (reaction: CommentReaction) => {
+    setComments((current) =>
+      current.map((comment) =>
+        comment.id === reaction.comment_id
+          ? {
+              ...comment,
+              like_count: reaction.like_count,
+              liked_by_me: reaction.liked_by_me,
+            }
+          : comment
+      )
+    );
+  };
+
+  const handleCommentDeleted = (commentId: string) => {
+    setComments((current) => current.filter((comment) => comment.id !== commentId));
   };
 
   if (loading) {
@@ -253,6 +286,17 @@ export default function ContentDetailPage() {
                     </div>
                   </div>
                   <p className="text-sm text-slate-700 ml-10">{comment.content}</p>
+                  <ArticleCommentActions
+                    postId={postId}
+                    commentId={comment.id}
+                    likeCount={comment.like_count}
+                    likedByMe={comment.liked_by_me}
+                    isLoggedIn
+                    isAdmin={isAdmin}
+                    loginHref={`/login?redirect=${encodeURIComponent(`/community/tips/${postId}`)}`}
+                    onReaction={handleReaction}
+                    onDeleted={() => handleCommentDeleted(comment.id)}
+                  />
                 </div>
               ))
             )}
