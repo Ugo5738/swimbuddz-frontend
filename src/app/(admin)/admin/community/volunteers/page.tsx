@@ -136,6 +136,16 @@ export default function AdminVolunteersPage() {
 
   useEffect(() => {
     loadData();
+    const requestedTab = new URLSearchParams(window.location.search).get("tab");
+    if (
+      requestedTab === "dashboard" ||
+      requestedTab === "opportunities" ||
+      requestedTab === "volunteers" ||
+      requestedTab === "roles" ||
+      requestedTab === "templates"
+    ) {
+      setTab(requestedTab);
+    }
   }, []);
 
   const loadData = async () => {

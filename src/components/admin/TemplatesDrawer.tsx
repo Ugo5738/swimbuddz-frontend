@@ -44,6 +44,13 @@ export type TemplateFormPayload = {
   ride_share_config: RideShareConfigEntry[];
 };
 
+function addMinutesToClock(value: string, minutes: number): string {
+  const [hours, mins] = value.split(":").map(Number);
+  if (!Number.isFinite(hours) || !Number.isFinite(mins)) return "";
+  const total = (hours * 60 + mins + minutes) % (24 * 60);
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
 export function TemplatesDrawer({
   templates,
   rideAreas,
@@ -459,13 +466,19 @@ function TemplateFormInline({
         <VolunteerNeedsDraftSection
           needs={volunteerNeeds}
           onChange={setVolunteerNeeds}
+          defaultStartTime={form.start_time}
+          defaultEndTime={addMinutesToClock(form.start_time, form.duration_minutes)}
           description="Add the roles every generated session should open. They will be saved with the template, so you do not need to create the template and reopen it first."
         />
       )}
 
       {/* Saved-template editor updates persisted recurring needs immediately. */}
       {mode === "edit" && template && (
-        <SessionTemplateVolunteerSlotsSection sessionTemplateId={template.id} />
+        <SessionTemplateVolunteerSlotsSection
+          sessionTemplateId={template.id}
+          defaultStartTime={form.start_time}
+          defaultEndTime={addMinutesToClock(form.start_time, form.duration_minutes)}
+        />
       )}
 
       <div className="flex gap-3 pt-2">

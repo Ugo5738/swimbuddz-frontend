@@ -630,6 +630,8 @@ export interface SessionTemplateVolunteerSlot {
   qr_checkin_enabled: boolean;
   title_override: string | null;
   description_override: string | null;
+  start_time_override: string | null;
+  end_time_override: string | null;
   cancellation_deadline_hours: number;
   is_active: boolean;
   created_at: string;

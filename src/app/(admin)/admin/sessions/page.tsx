@@ -9,6 +9,7 @@ import type { VolunteerNeedDraft } from "@/components/admin/VolunteerNeedsDraftS
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { createSessionVolunteerOpportunities } from "@/lib/session-volunteers";
 import { SessionsApi } from "@/lib/sessions";
 import { VolunteersApi } from "@/lib/volunteers";
 import type { DateSelectArg, EventClickArg, EventInput } from "@fullcalendar/core";
@@ -45,52 +46,6 @@ import type {
   ViewMode,
 } from "./types";
 import { apiFetch, fmtDate, fmtTime, LEGEND_ITEMS, locationLabel, PER_PAGE } from "./utils";
-
-function lagosDateAndTime(isoValue: string) {
-  const value = new Date(isoValue);
-  const date = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Africa/Lagos",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(value);
-  const time = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Africa/Lagos",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  }).format(value);
-  return { date, time };
-}
-
-async function createSessionVolunteerOpportunities(
-  sessionId: string,
-  sessionData: SessionPayload,
-  volunteerNeeds: VolunteerNeedDraft[]
-) {
-  if (volunteerNeeds.length === 0) return;
-  const start = lagosDateAndTime(sessionData.starts_at);
-  const end = lagosDateAndTime(sessionData.ends_at);
-  await VolunteersApi.admin.bulkCreateOpportunities(
-    volunteerNeeds.map((need) => ({
-      title: need.title_override || need.role_title || "Session volunteer",
-      description: `Volunteer support for ${sessionData.title}.`,
-      role_id: need.role_id,
-      date: start.date,
-      start_time: start.time,
-      end_time: end.time,
-      session_id: sessionId,
-      location_name: sessionData.location_name || undefined,
-      slots_needed: need.slots_needed,
-      opportunity_type: need.opportunity_type,
-      min_tier: need.min_tier,
-      cancellation_deadline_hours: 24,
-      qr_checkin_enabled: false,
-      status: "open",
-    }))
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Main page component
@@ -323,9 +278,7 @@ export default function AdminSessionsPage() {
         }
 
         if (volunteerCreationFailed) {
-          toast.warning(
-            "Session updated, but the new volunteer opportunities could not be added."
-          );
+          toast.warning("Session updated, but the new volunteer opportunities could not be added.");
         } else {
           toast.success("Session updated");
         }
@@ -419,10 +372,12 @@ export default function AdminSessionsPage() {
                 slots_needed: need.slots_needed,
                 opportunity_type: need.opportunity_type,
                 min_tier: need.min_tier,
-                qr_checkin_enabled: false,
+                qr_checkin_enabled: need.qr_checkin_enabled,
                 title_override: need.title_override || null,
-                description_override: null,
-                cancellation_deadline_hours: 24,
+                description_override: need.description || null,
+                start_time_override: need.start_time || null,
+                end_time_override: need.end_time || null,
+                cancellation_deadline_hours: need.cancellation_deadline_hours,
                 is_active: true,
               })
             )
