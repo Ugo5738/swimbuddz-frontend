@@ -68,6 +68,7 @@ export type VaultMedia = {
   created_at: string;
   preview_url: string | null;
   thumbnail_url: string | null;
+  preview_status: "pending" | "processing" | "thumbnail_ready" | "ready" | "failed";
 };
 
 export type VaultList = { items: MediaVault[]; total: number };
@@ -132,18 +133,28 @@ export const MEDIA_VAULT_CONTRIBUTOR_REOPEN_DAYS = 7;
 
 export const DEFAULT_MEDIA_VAULT_CHECKLIST = [
   "Establishing shot and preparation or arrival",
+  "Featured member states their goal before the swim, with permission",
   "Warm-up wide shot and two drill close-ups",
   "Side-angle footage showing complete movement",
   "Coaching sequence: instruction, attempt, correction, improved attempt",
   "Two members completing meaningful parts of the main set",
   "One uninterrupted complete-length swim",
   "Cool-down or coach, peer, or pod review",
+  "Featured member reflects on progress against their goal after the swim",
   "Progress, reaction, or encouragement moment",
   "Group or pod photo and a candid community moment",
   "At least two useful horizontal clips for the website or YouTube",
 ];
 
-export const MEDIA_COVERAGE_STORY = ["Prepare", "Practise", "Coach", "Progress", "Belong"];
+export const MEDIA_COVERAGE_STORY = [
+  "Set a goal",
+  "Prepare",
+  "Practise",
+  "Coach",
+  "Reflect",
+  "Progress",
+  "Belong",
+];
 
 export const MEDIA_RECORDING_STANDARDS = [
   "Clean the lens and confirm battery and free storage.",

@@ -30,6 +30,12 @@ describe("media vault access windows", () => {
     expect(DEFAULT_MEDIA_VAULT_CHECKLIST).toContain(
       "One uninterrupted complete-length swim"
     );
-    expect(DEFAULT_MEDIA_VAULT_CHECKLIST).toHaveLength(10);
+    expect(DEFAULT_MEDIA_VAULT_CHECKLIST).toContain(
+      "Featured member states their goal before the swim, with permission"
+    );
+    expect(DEFAULT_MEDIA_VAULT_CHECKLIST).toContain(
+      "Featured member reflects on progress against their goal after the swim"
+    );
+    expect(DEFAULT_MEDIA_VAULT_CHECKLIST).toHaveLength(12);
   });
 });

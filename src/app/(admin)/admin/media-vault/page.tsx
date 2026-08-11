@@ -233,7 +233,7 @@ export default function AdminMediaVaultPage() {
             </label>
             {selectedSession && (
               <div className="mt-4 rounded-xl bg-cyan-50 p-4 text-sm text-cyan-900">
-                Uploads open 4 hours before the session and close 24 hours after. Originals retain
+                Uploads open 4 hours before the session and close 72 hours after. Originals retain
                 full quality for 2 years. You can change this inside the vault.
               </div>
             )}

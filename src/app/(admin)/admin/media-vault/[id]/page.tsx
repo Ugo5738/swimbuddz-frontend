@@ -89,10 +89,11 @@ export default function AdminMediaVaultDetailPage() {
           </div>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600">
-          Upload window closes{" "}
+          Contributor upload window closes{" "}
           <strong className="text-slate-900">
             {new Date(data.upload_closes_at).toLocaleString("en-NG")}
           </strong>
+          <span className="mt-1 block text-cyan-700">Admins can upload at any time.</span>
         </div>
       </div>
 

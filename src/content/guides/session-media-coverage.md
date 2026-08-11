@@ -6,30 +6,30 @@ Use this guide to prepare media volunteers, assign coverage, capture a consisten
 
 The footage should tell one clear story:
 
-**Prepare → Practise → Coach → Progress → Belong**
+**Set a goal → Prepare → Practise → Coach → Reflect → Progress → Belong**
 
 ## How to use this guide
 
-| When | What to do |
-|---|---|
-| Before the session | Assign one Media Lead, check member media preferences, and give every mandatory item a named owner. |
-| During the session | Capture the minimum story in short coverage windows. Volunteers do not need to film continuously. |
-| Immediately after | Check for missing categories, identify the strongest files, and confirm the upload owner. |
-| Within 24 hours | Upload the original files to the SwimBuddz Media Vault. Do not delete local copies until receipt is confirmed. |
-| After four sessions | Review what was actually useful or published and refine the standard. |
+| When                | What to do                                                                                                                                      |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Before the session  | Assign one Media Lead, check member media preferences, and give every mandatory item a named owner.                                             |
+| During the session  | Capture the minimum story in short coverage windows. Volunteers do not need to film continuously.                                               |
+| Immediately after   | Check for missing categories, identify the strongest files, and confirm the upload owner.                                                       |
+| Within 72 hours     | Upload the original files to the SwimBuddz Media Vault. Upload as soon as practical, and do not delete local copies until receipt is confirmed. |
+| After four sessions | Review what was actually useful or published and refine the standard.                                                                           |
 
 ## Practical output target
 
 These are targets, not quotas. Stop filming once the useful coverage is secure.
 
-| Output | Target |
-|---|---|
-| Vertical video | 12–18 usable clips |
-| Horizontal video | 2–4 useful clips |
-| Photographs | 6–10 strong images |
+| Output               | Target                        |
+| -------------------- | ----------------------------- |
+| Vertical video       | 12–18 usable clips            |
+| Horizontal video     | 2–4 useful clips              |
+| Photographs          | 6–10 strong images            |
 | Complete-length swim | At least 1 uninterrupted clip |
-| Coaching sequence | At least 1 complete sequence |
-| Community moment | At least 1 natural moment |
+| Coaching sequence    | At least 1 complete sequence  |
+| Community moment     | At least 1 natural moment     |
 
 ## Roles and ownership
 
@@ -53,19 +53,20 @@ Every mandatory item must have one named owner.
 
 ## Suggested coverage windows
 
-| Phase | Suggested media window | Minimum coverage |
-|---|---:|---|
-| Opening / preparation | 5 minutes | Pool or location establishing shot, arrivals or preparation, and a clear group or location photo. |
-| Warm-up and drills | 8–10 minutes | One wide group clip, two close or medium drill clips, and one side-angle clip. |
-| Transition / hydration | Optional 3–5 minutes | Natural pod interaction, setup, hydration, coach briefing, or candid moments. |
-| Main set | 10–15 minutes | Different members and drills, side and end angles, and at least one complete-length swim. |
-| Cool-down / review | 5–8 minutes | Light-paced swim, pod or coach review, and a progress or encouragement moment. |
-| Refreshments / close | 5–10 minutes | Group or pod photo, a candid community moment, and a closing only when there is something meaningful to say. |
+| Phase                  | Suggested media window | Minimum coverage                                                                                                                                                             |
+| ---------------------- | ---------------------: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Opening / preparation  |              5 minutes | Pool or location establishing shot, arrivals or preparation, a clear group or location photo, and a short goal statement from the featured member where permission is clear. |
+| Warm-up and drills     |           8–10 minutes | One wide group clip, two close or medium drill clips, and one side-angle clip.                                                                                               |
+| Transition / hydration |   Optional 3–5 minutes | Natural pod interaction, setup, hydration, coach briefing, or candid moments.                                                                                                |
+| Main set               |          10–15 minutes | Different members and drills, side and end angles, and at least one complete-length swim.                                                                                    |
+| Cool-down / review     |            5–8 minutes | Light-paced swim, pod or coach review, and a short reflection from the featured member comparing the result with their stated goal.                                          |
+| Refreshments / close   |           5–10 minutes | Group or pod photo, a candid community moment, and a closing only when there is something meaningful to say.                                                                 |
 
 ## Mandatory shot list
 
 - [ ] One wide establishing video of the pool or session environment.
 - [ ] One preparation or arrival video.
+- [ ] With permission, a short clip of the featured member stating their goal for the session.
 - [ ] One clear location or group photograph.
 - [ ] One wide video of the group warming up.
 - [ ] Two close or medium drill videos.
@@ -77,6 +78,7 @@ Every mandatory item must have one named owner.
 - [ ] A useful mix of wide, side, and end-of-lane angles.
 - [ ] One cool-down or light-paced swimming clip.
 - [ ] One coach, peer, or pod-review moment.
+- [ ] A matching post-swim reflection: what changed, what was achieved, and what comes next.
 - [ ] One natural progress, reaction, or encouragement moment.
 - [ ] One group or pod photograph and one candid community interaction.
 
@@ -112,6 +114,13 @@ The strongest coaching story is:
 
 **Explanation or demonstration → swimmer attempt → correction → second attempt**
 
+For a featured member, the strongest progress story is:
+
+**Goal before the swim → practice or coaching → result → short reflection during review**
+
+Keep both spoken clips brief and natural. The reflection is part of the normal post-swim review,
+not a separate interview, and nobody should be pressured to speak on camera.
+
 ## Consent, privacy, and safety
 
 - Confirm member media preferences before prominently featuring anyone.
@@ -128,7 +137,7 @@ The strongest coaching story is:
 
 ## Full-quality handoff
 
-Upload originals directly to the **SwimBuddz Media Vault** within 24 hours. Large iPhone HEIC, MOV, 4K, and ProRes files are uploaded in resumable parts and are not automatically compressed or transcoded.
+Upload originals directly to the **SwimBuddz Media Vault** within 72 hours. Large iPhone HEIC, MOV, 4K, and ProRes files are uploaded in resumable parts and are not automatically compressed or transcoded.
 
 - Do not use WhatsApp as the primary transfer method.
 - Use the checklist in the vault to record the coverage completed.
@@ -143,6 +152,7 @@ Upload originals directly to the **SwimBuddz Media Vault** within 24 hours. Larg
 - [ ] Assignments have named owners.
 - [ ] Lens, battery, and device storage are ready.
 - [ ] Member media preferences are known.
+- [ ] Any featured member has agreed to the goal-and-reflection coverage.
 - [ ] Vertical is the default and horizontal clips are assigned.
 
 ### Before leaving
@@ -154,7 +164,7 @@ Upload originals directly to the **SwimBuddz Media Vault** within 24 hours. Larg
 
 ### After the session
 
-- [ ] Originals are uploaded within 24 hours.
+- [ ] Originals are uploaded within 72 hours.
 - [ ] The upload receipt is confirmed.
 - [ ] Local files are retained until confirmation.
 

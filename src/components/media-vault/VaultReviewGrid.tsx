@@ -15,7 +15,6 @@ import {
   Star,
   X,
 } from "lucide-react";
-import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -31,31 +30,43 @@ export function VaultReviewGrid({ vaultId }: Props) {
   const [search, setSearch] = useState("");
   const [acting, setActing] = useState(false);
 
-  const loadItems = useCallback(async () => {
-    setLoading(true);
-    try {
-      const query = new URLSearchParams({ page_size: "200" });
-      if (reviewFilter !== "all") query.set("review_status", reviewFilter);
-      if (mediaFilter !== "all") query.set("media_type", mediaFilter);
-      if (search.trim()) query.set("search", search.trim());
-      const result = await mediaVaultApi.listItems(vaultId, `?${query.toString()}`);
-      setItems(result.items);
-      setError(null);
-      setSelected((current) => {
-        const available = new Set(result.items.map((item) => item.id));
-        return new Set([...current].filter((id) => available.has(id)));
-      });
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Could not load media");
-    } finally {
-      setLoading(false);
-    }
-  }, [vaultId, reviewFilter, mediaFilter, search]);
+  const loadItems = useCallback(
+    async (background = false) => {
+      if (!background) setLoading(true);
+      try {
+        const query = new URLSearchParams({ page_size: "200" });
+        if (reviewFilter !== "all") query.set("review_status", reviewFilter);
+        if (mediaFilter !== "all") query.set("media_type", mediaFilter);
+        if (search.trim()) query.set("search", search.trim());
+        const result = await mediaVaultApi.listItems(vaultId, `?${query.toString()}`);
+        setItems(result.items);
+        setError(null);
+        setSelected((current) => {
+          const available = new Set(result.items.map((item) => item.id));
+          return new Set([...current].filter((id) => available.has(id)));
+        });
+      } catch (loadError) {
+        setError(loadError instanceof Error ? loadError.message : "Could not load media");
+      } finally {
+        if (!background) setLoading(false);
+      }
+    },
+    [vaultId, reviewFilter, mediaFilter, search]
+  );
 
   useEffect(() => {
-    const timeout = setTimeout(loadItems, search ? 350 : 0);
+    const timeout = setTimeout(() => void loadItems(), search ? 350 : 0);
     return () => clearTimeout(timeout);
   }, [loadItems, search]);
+
+  useEffect(() => {
+    const previewsAreBuilding = items.some(
+      (item) => item.preview_status === "pending" || item.preview_status === "processing"
+    );
+    if (!previewsAreBuilding) return;
+    const interval = window.setInterval(() => void loadItems(true), 4000);
+    return () => window.clearInterval(interval);
+  }, [items, loadItems]);
 
   const chosen = useMemo(() => items.filter((item) => selected.has(item.id)), [items, selected]);
 
@@ -81,7 +92,7 @@ export function VaultReviewGrid({ vaultId }: Props) {
         [...selected].map((itemId) => mediaVaultApi.requestPreview(vaultId, itemId))
       );
       toast.success("Review previews queued. Originals remain untouched.");
-      setTimeout(loadItems, 3500);
+      await loadItems(true);
     } catch (previewError) {
       toast.error(
         previewError instanceof Error ? previewError.message : "Could not generate previews"
@@ -191,7 +202,7 @@ export function VaultReviewGrid({ vaultId }: Props) {
         </select>
         <button
           type="button"
-          onClick={loadItems}
+          onClick={() => void loadItems()}
           className="rounded-xl border border-slate-200 p-2 text-slate-600 hover:bg-slate-50"
           aria-label="Refresh media"
         >
@@ -309,22 +320,45 @@ export function VaultReviewGrid({ vaultId }: Props) {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <Image
+                    // Private S3 URLs are short-lived and should bypass the
+                    // public Next.js image optimizer.
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
                       src={item.preview_url}
                       alt={item.original_filename ?? "Vault media"}
-                      fill
-                      sizes="(max-width: 768px) 50vw, 20vw"
-                      className="object-cover"
+                      loading="lazy"
+                      className="h-full w-full object-cover"
                     />
                   )
+                ) : item.thumbnail_url ? (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={item.thumbnail_url}
+                      alt={item.original_filename ?? "Vault media thumbnail"}
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
+                    {item.media_type === "VIDEO" && (
+                      <div className="absolute bottom-2 right-2 rounded-full bg-slate-950/75 p-2 text-white">
+                        <FileVideo className="h-4 w-4" />
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="flex h-full flex-col items-center justify-center text-slate-400">
-                    {item.media_type === "VIDEO" ? (
+                    {item.preview_status === "pending" || item.preview_status === "processing" ? (
+                      <Loader2 className="h-9 w-9 animate-spin" />
+                    ) : item.media_type === "VIDEO" ? (
                       <FileVideo className="h-9 w-9" />
                     ) : (
                       <ImageIcon className="h-9 w-9" />
                     )}
-                    <span className="mt-2 text-xs">Preview on request</span>
+                    <span className="mt-2 px-3 text-center text-xs">
+                      {item.preview_status === "failed"
+                        ? "Preview unavailable · select Preview to retry"
+                        : "Preparing preview…"}
+                    </span>
                   </div>
                 )}
                 <button
