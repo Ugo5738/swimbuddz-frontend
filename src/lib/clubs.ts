@@ -35,6 +35,7 @@ export interface Club {
   default_session_duration_minutes: number;
   /** Default pool pods inherit (cross-service ref → pools_service.pools.id). */
   default_pool_id: string | null;
+  operating_area_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -50,6 +51,7 @@ export interface ClubInput {
   default_session_time?: string;
   default_session_duration_minutes?: number;
   default_pool_id?: string | null;
+  operating_area_id?: string | null;
 }
 
 async function authedFetch(url: string, init: RequestInit = {}) {

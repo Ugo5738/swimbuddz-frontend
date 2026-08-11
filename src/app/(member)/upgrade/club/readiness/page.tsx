@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet, apiPatch } from "@/lib/api";
 import { useUpgrade } from "@/lib/upgradeContext";
-import { Calendar, Check } from "lucide-react";
+import { Calendar, Check, Waves } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -32,6 +32,14 @@ export default function ClubReadinessPage() {
   const [formData, setFormData] = useState({
     availabilitySlots: state.clubReadinessData?.availableDays || [],
     clubNotes: state.clubReadinessData?.clubNotes || "",
+    canSwim25mContinuously: state.clubReadinessData?.canSwim25mContinuously,
+    controlledBreathing: state.clubReadinessData?.controlledBreathing,
+    comfortableInDeepWater: state.clubReadinessData?.comfortableInDeepWater,
+    canFloatOrTread30Seconds: state.clubReadinessData?.canFloatOrTread30Seconds,
+    canStopAndRecover: state.clubReadinessData?.canStopAndRecover,
+    currentNonstopDistanceM: state.clubReadinessData?.currentNonstopDistanceM ?? null,
+    lastSwimDate: state.clubReadinessData?.lastSwimDate || "",
+    injuriesOrAccommodations: state.clubReadinessData?.injuriesOrAccommodations || "",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -49,13 +57,21 @@ export default function ClubReadinessPage() {
       setFormData({
         availabilitySlots: member.availability?.available_days || [],
         clubNotes: member.membership?.club_notes || "",
+        canSwim25mContinuously: state.clubReadinessData?.canSwim25mContinuously,
+        controlledBreathing: state.clubReadinessData?.controlledBreathing,
+        comfortableInDeepWater: state.clubReadinessData?.comfortableInDeepWater,
+        canFloatOrTread30Seconds: state.clubReadinessData?.canFloatOrTread30Seconds,
+        canStopAndRecover: state.clubReadinessData?.canStopAndRecover,
+        currentNonstopDistanceM: state.clubReadinessData?.currentNonstopDistanceM ?? null,
+        lastSwimDate: state.clubReadinessData?.lastSwimDate || "",
+        injuriesOrAccommodations: state.clubReadinessData?.injuriesOrAccommodations || "",
       });
     } catch (e) {
       console.error("Failed to load member data:", e);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [state.clubReadinessData]);
 
   useEffect(() => {
     loadMember();
@@ -74,7 +90,16 @@ export default function ClubReadinessPage() {
     setFormData((prev) => ({ ...prev, clubNotes: value }));
   };
 
-  const isValid = formData.availabilitySlots.length > 0;
+  const readinessAnswers = [
+    formData.canSwim25mContinuously,
+    formData.controlledBreathing,
+    formData.comfortableInDeepWater,
+    formData.canFloatOrTread30Seconds,
+    formData.canStopAndRecover,
+  ];
+  const isValid =
+    formData.availabilitySlots.length > 0 &&
+    readinessAnswers.every((answer) => typeof answer === "boolean");
 
   const handleSubmit = async () => {
     if (!isValid) return;
@@ -98,6 +123,14 @@ export default function ClubReadinessPage() {
       setClubReadinessData({
         availableDays: formData.availabilitySlots,
         clubNotes: formData.clubNotes,
+        canSwim25mContinuously: formData.canSwim25mContinuously,
+        controlledBreathing: formData.controlledBreathing,
+        comfortableInDeepWater: formData.comfortableInDeepWater,
+        canFloatOrTread30Seconds: formData.canFloatOrTread30Seconds,
+        canStopAndRecover: formData.canStopAndRecover,
+        currentNonstopDistanceM: formData.currentNonstopDistanceM,
+        lastSwimDate: formData.lastSwimDate,
+        injuriesOrAccommodations: formData.injuriesOrAccommodations,
       });
       markClubReadinessComplete();
 
@@ -140,6 +173,89 @@ export default function ClubReadinessPage() {
         />
       </div>
 
+      <div className="space-y-5 rounded-2xl border border-cyan-200 bg-cyan-50/50 p-5">
+        <div className="flex gap-3">
+          <Waves className="mt-0.5 h-5 w-5 flex-none text-cyan-600" />
+          <div>
+            <h2 className="font-semibold text-slate-900">Safety pre-assessment</h2>
+            <p className="text-sm text-slate-600">
+              This helps us plan your in-pool assessment. It is not a pass or fail decision by itself.
+            </p>
+          </div>
+        </div>
+
+        {([
+          ["canSwim25mContinuously", "Can you swim 25 metres continuously without assistance?"],
+          ["controlledBreathing", "Can you breathe in a controlled way while swimming?"],
+          ["comfortableInDeepWater", "Are you calm where your feet cannot touch the bottom?"],
+          ["canFloatOrTread30Seconds", "Can you float or tread water for about 30 seconds?"],
+          ["canStopAndRecover", "Can you stop mid-swim, regain control, and reach the wall safely?"],
+        ] as const).map(([key, label]) => (
+          <fieldset key={key} className="space-y-2">
+            <legend className="text-sm font-medium text-slate-800">{label}</legend>
+            <div className="grid grid-cols-2 gap-2">
+              {[true, false].map((answer) => (
+                <button
+                  key={String(answer)}
+                  type="button"
+                  onClick={() => setFormData((current) => ({ ...current, [key]: answer }))}
+                  className={`rounded-lg border px-3 py-2 text-sm font-medium ${
+                    formData[key] === answer
+                      ? "border-cyan-500 bg-cyan-600 text-white"
+                      : "border-slate-200 bg-white text-slate-700"
+                  }`}
+                >
+                  {answer ? "Yes" : "Not yet"}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        ))}
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="space-y-1 text-sm font-medium text-slate-800">
+            Current non-stop distance (metres)
+            <input
+              type="number"
+              min={0}
+              value={formData.currentNonstopDistanceM ?? ""}
+              onChange={(event) =>
+                setFormData((current) => ({
+                  ...current,
+                  currentNonstopDistanceM: event.target.value ? Number(event.target.value) : null,
+                }))
+              }
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2"
+            />
+          </label>
+          <label className="space-y-1 text-sm font-medium text-slate-800">
+            When did you last swim?
+            <input
+              type="date"
+              value={formData.lastSwimDate}
+              onChange={(event) =>
+                setFormData((current) => ({ ...current, lastSwimDate: event.target.value }))
+              }
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2"
+            />
+          </label>
+        </div>
+        <label className="space-y-1 text-sm font-medium text-slate-800">
+          Injuries or accommodations (optional)
+          <textarea
+            value={formData.injuriesOrAccommodations}
+            onChange={(event) =>
+              setFormData((current) => ({
+                ...current,
+                injuriesOrAccommodations: event.target.value,
+              }))
+            }
+            rows={3}
+            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 font-normal"
+          />
+        </label>
+      </div>
+
       {/* Benefits */}
       <div className="bg-slate-50 rounded-2xl p-5">
         <h4 className="text-sm font-semibold text-slate-900 mb-3">
@@ -169,7 +285,7 @@ export default function ClubReadinessPage() {
         size="lg"
         className="w-full"
       >
-        {saving ? "Saving..." : "Continue to Plan Selection"}
+        {saving ? "Saving..." : "Choose a Club Location"}
       </Button>
 
       <p className="text-center text-xs text-slate-400">

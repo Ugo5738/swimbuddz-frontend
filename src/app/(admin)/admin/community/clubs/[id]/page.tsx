@@ -20,6 +20,7 @@ import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { PoolPicker } from "@/components/admin/PoolPicker";
+import { OperatingArea, PoolPricingApi } from "@/lib/poolPricing";
 import {
   getClub,
   updateClub,
@@ -103,6 +104,7 @@ export default function AdminClubDetailPage() {
 
   const [club, setClub] = useState<Club | null>(null);
   const [pods, setPods] = useState<PodSummary[]>([]);
+  const [operatingAreas, setOperatingAreas] = useState<OperatingArea[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -121,12 +123,14 @@ export default function AdminClubDetailPage() {
     if (!clubId) return;
     setError(null);
     try {
-      const [c, ps] = await Promise.all([
+      const [c, ps, areas] = await Promise.all([
         getClub(clubId),
         fetchPodsForClub(clubId),
+        PoolPricingApi.listAreas().catch(() => []),
       ]);
       setClub(c);
       setPods(ps);
+      setOperatingAreas(areas);
       setForm(toForm(c));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load club");
@@ -250,9 +254,10 @@ export default function AdminClubDetailPage() {
             setForm={setForm}
             autoSlug={autoSlug}
             setAutoSlug={setAutoSlug}
+            operatingAreas={operatingAreas}
           />
         ) : (
-          <ClubReadView club={club} />
+          <ClubReadView club={club} operatingAreas={operatingAreas} />
         )}
       </Card>
 
@@ -353,6 +358,7 @@ function toForm(c: Club): ClubInput {
     default_session_time: c.default_session_time.slice(0, 5),
     default_session_duration_minutes: c.default_session_duration_minutes,
     default_pool_id: c.default_pool_id,
+    operating_area_id: c.operating_area_id,
   };
 }
 
@@ -360,7 +366,14 @@ function toForm(c: Club): ClubInput {
 // Read-only view & edit form
 // ---------------------------------------------------------------------------
 
-function ClubReadView({ club }: { club: Club }) {
+function ClubReadView({
+  club,
+  operatingAreas,
+}: {
+  club: Club;
+  operatingAreas: OperatingArea[];
+}) {
+  const areaName = operatingAreas.find((area) => area.id === club.operating_area_id)?.name;
   return (
     <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
       <Field label="Location">
@@ -388,6 +401,9 @@ function ClubReadView({ club }: { club: Club }) {
           <span className="italic text-slate-400">Not set</span>
         )}
       </Field>
+      <Field label="Operating area">
+        {areaName ?? <span className="italic text-slate-400">Not set</span>}
+      </Field>
       <Field label="Description" wide>
         {club.description || <span className="italic text-slate-400">None</span>}
       </Field>
@@ -400,11 +416,13 @@ function ClubEditForm({
   setForm,
   autoSlug,
   setAutoSlug,
+  operatingAreas,
 }: {
   form: ClubInput;
   setForm: (f: ClubInput) => void;
   autoSlug: boolean;
   setAutoSlug: (v: boolean) => void;
+  operatingAreas: OperatingArea[];
 }) {
   return (
     <div className="space-y-3">
@@ -498,6 +516,21 @@ function ClubEditForm({
         }
         hint="Where this club's sessions are held by default. Pods inherit this."
       />
+
+      <Select
+        label="Operating area"
+        value={form.operating_area_id ?? ""}
+        onChange={(e) =>
+          setForm({ ...form, operating_area_id: e.target.value || null })
+        }
+      >
+        <option value="">Select Mainland, Island, or another configured area</option>
+        {operatingAreas.map((area) => (
+          <option key={area.id} value={area.id}>
+            {area.name}
+          </option>
+        ))}
+      </Select>
 
       <label className="flex items-center gap-2 text-sm">
         <input
