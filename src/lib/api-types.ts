@@ -8011,6 +8011,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/content/{post_id}/comments/{comment_id}/like": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Like Content Comment
+         * @description Like an article comment. Repeated requests are idempotent.
+         */
+        put: operations["like_content_comment_content__post_id__comments__comment_id__like_put"];
+        post?: never;
+        /**
+         * Unlike Content Comment
+         * @description Remove the current member's like from an article comment.
+         */
+        delete: operations["unlike_content_comment_content__post_id__comments__comment_id__like_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/content/{post_id}/comments/{comment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Content Comment
+         * @description Delete one article comment (admin only).
+         */
+        delete: operations["delete_content_comment_content__post_id__comments__comment_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/categories/": {
         parameters: {
             query?: never;
@@ -27177,6 +27221,21 @@ export interface components {
             tier_access: "community" | "club" | "academy";
         };
         /**
+         * ContentCommentReactionResponse
+         * @description Current reaction state for one content comment and member.
+         */
+        ContentCommentReactionResponse: {
+            /**
+             * Comment Id
+             * Format: uuid
+             */
+            comment_id: string;
+            /** Like Count */
+            like_count: number;
+            /** Liked By Me */
+            liked_by_me: boolean;
+        };
+        /**
          * ContentCommentResponse
          * @description Content comment response schema.
          */
@@ -27200,6 +27259,16 @@ export interface components {
             member_name?: string | null;
             /** Content */
             content: string;
+            /**
+             * Like Count
+             * @default 0
+             */
+            like_count: number;
+            /**
+             * Liked By Me
+             * @default false
+             */
+            liked_by_me: boolean;
             /**
              * Created At
              * Format: date-time
@@ -32171,6 +32240,10 @@ export interface components {
             title_override?: string | null;
             /** Description Override */
             description_override?: string | null;
+            /** Start Time Override */
+            start_time_override?: string | null;
+            /** End Time Override */
+            end_time_override?: string | null;
             /**
              * Cancellation Deadline Hours
              * @default 24
@@ -32212,6 +32285,10 @@ export interface components {
             title_override?: string | null;
             /** Description Override */
             description_override?: string | null;
+            /** Start Time Override */
+            start_time_override?: string | null;
+            /** End Time Override */
+            end_time_override?: string | null;
             /**
              * Cancellation Deadline Hours
              * @default 24
@@ -32261,6 +32338,10 @@ export interface components {
             title_override?: string | null;
             /** Description Override */
             description_override?: string | null;
+            /** Start Time Override */
+            start_time_override?: string | null;
+            /** End Time Override */
+            end_time_override?: string | null;
             /** Cancellation Deadline Hours */
             cancellation_deadline_hours?: number | null;
             /** Is Active */
@@ -38510,6 +38591,11 @@ export interface components {
             preview_url?: string | null;
             /** Thumbnail Url */
             thumbnail_url?: string | null;
+            /**
+             * Preview Status
+             * @default pending
+             */
+            preview_status: string;
         };
         /** VaultResponse */
         VaultResponse: {
@@ -53897,6 +53983,100 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ContentCommentResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    like_content_comment_content__post_id__comments__comment_id__like_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentCommentReactionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unlike_content_comment_content__post_id__comments__comment_id__like_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentCommentReactionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_content_comment_content__post_id__comments__comment_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
