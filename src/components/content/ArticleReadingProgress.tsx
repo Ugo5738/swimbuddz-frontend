@@ -1,6 +1,5 @@
 "use client";
 
-import { Clock3 } from "lucide-react";
 import type { RefObject } from "react";
 import { useEffect, useState } from "react";
 
@@ -9,10 +8,7 @@ interface ArticleReadingProgressProps {
   minutes: number;
 }
 
-export function ArticleReadingProgress({
-  contentRef,
-  minutes,
-}: ArticleReadingProgressProps) {
+export function ArticleReadingProgress({ contentRef, minutes }: ArticleReadingProgressProps) {
   const totalMinutes = Math.max(1, Math.ceil(minutes));
   const [progressPercent, setProgressPercent] = useState(0);
 
@@ -57,40 +53,33 @@ export function ArticleReadingProgress({
     };
   }, [contentRef]);
 
-  const progress = progressPercent / 100;
-  const remainingMinutes = totalMinutes * (1 - progress);
-  const label =
-    progressPercent === 100
-      ? "Finished reading"
-      : progressPercent === 0
-        ? `${totalMinutes} min read`
-        : remainingMinutes < 1
-          ? "< 1 min left"
-          : `${Math.ceil(remainingMinutes)} min left`;
+  const remainingMinutes = totalMinutes * (1 - progressPercent / 100);
+  const remainingLabel =
+    progressPercent >= 100
+      ? "Done"
+      : remainingMinutes < 1
+        ? "< 1 min left"
+        : `${Math.ceil(remainingMinutes)} min left`;
 
   return (
-    <div className="sticky top-16 z-20 mb-6 overflow-hidden rounded-xl border border-cyan-100 bg-white/95 shadow-sm backdrop-blur">
-      <div className="flex items-center justify-between gap-4 px-4 py-2.5 text-sm">
-        <div className="flex items-center gap-2 font-medium text-slate-700">
-          <Clock3 className="h-4 w-4 text-cyan-600" aria-hidden="true" />
-          <span>{label}</span>
-        </div>
-        <span className="tabular-nums text-slate-500">{progressPercent}%</span>
-      </div>
-      <div
-        className="h-1 bg-cyan-100"
-        role="progressbar"
-        aria-label="Article reading progress"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={progressPercent}
-        aria-valuetext={`${label}, ${progressPercent}% complete`}
-      >
+    <div
+      className="sticky top-16 z-20 mb-6 flex items-center gap-3 rounded-full bg-white/90 px-3 py-2 shadow-sm backdrop-blur"
+      role="progressbar"
+      aria-label="Article reading progress"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={progressPercent}
+      aria-valuetext={remainingLabel}
+    >
+      <div className="h-1 flex-1 overflow-hidden rounded-full bg-cyan-100/90">
         <div
-          className="h-full bg-cyan-600 transition-[width] duration-150 ease-out"
+          className="h-full rounded-full bg-cyan-600 transition-[width] duration-150 ease-out"
           style={{ width: `${progressPercent}%` }}
         />
       </div>
+      <span className="shrink-0 text-xs font-medium tabular-nums text-slate-500">
+        {remainingLabel}
+      </span>
     </div>
   );
 }
