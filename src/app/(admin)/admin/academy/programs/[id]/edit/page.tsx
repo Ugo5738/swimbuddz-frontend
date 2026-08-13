@@ -76,6 +76,7 @@ export default function EditProgramPage() {
     currency: "NGN",
     price_amount: 0, // naira
     billing_type: BillingType.ONE_TIME,
+    membership_policy: "open" as "open" | "active_required" | "included",
     is_published: false,
     cover_image_url: "",
     cover_image_media_id: "",
@@ -126,6 +127,7 @@ export default function EditProgramPage() {
           currency: program.currency || "NGN",
           price_amount: program.price_amount || 0,
           billing_type: program.billing_type || BillingType.ONE_TIME,
+          membership_policy: program.membership_policy || "open",
           is_published: program.is_published || false,
           cover_image_url: program.cover_image_url || "",
           cover_image_media_id: program.cover_image_media_id || "",
@@ -493,6 +495,24 @@ export default function EditProgramPage() {
                 }
               />
             </div>
+
+            <Select
+              label="Annual SwimBuddz Membership policy"
+              value={formData.membership_policy}
+              onChange={(event) =>
+                setFormData({
+                  ...formData,
+                  membership_policy: event.target.value as
+                    | "open"
+                    | "active_required"
+                    | "included",
+                })
+              }
+            >
+              <option value="open">Open — no annual membership required</option>
+              <option value="active_required">Required — add ₦20,000 when due</option>
+              <option value="included">Included in the published Academy price</option>
+            </Select>
 
             <div className="grid grid-cols-2 gap-4">
               <Input

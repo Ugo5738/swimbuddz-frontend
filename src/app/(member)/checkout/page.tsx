@@ -5,7 +5,12 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet, apiPost } from "@/lib/api";
-import { ChargePreview, previewClubCheckout } from "@/lib/clubOnboarding";
+import {
+  ChargePreview,
+  previewAcademyCheckout,
+  previewClubCheckout,
+  previewCommunityExperienceCheckout,
+} from "@/lib/clubOnboarding";
 import type { components } from "@/lib/api-types";
 import { savePaymentIntentCache } from "@/lib/paymentCache";
 import { isTierPaid } from "@/lib/tiers";
@@ -19,7 +24,7 @@ import {
 import { ArrowLeft, CreditCard, Tag } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type PaymentIntentRequest = components["schemas"]["CreatePaymentIntentRequest"];
@@ -60,6 +65,8 @@ function CheckoutContent() {
   const [member, setMember] = useState<Member | null>(null);
   const [pricing, setPricing] = useState<PricingConfig | null>(null);
   const [clubQuote, setClubQuote] = useState<ChargePreview | null>(null);
+  const [academyQuote, setAcademyQuote] = useState<ChargePreview | null>(null);
+  const [experienceQuote, setExperienceQuote] = useState<ChargePreview | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -89,6 +96,7 @@ function CheckoutContent() {
   // the URL param is safe and removes the race entirely.
   const purpose = searchParams.get("purpose");
   const clubApplicationId = searchParams.get("application_id");
+  const communityExperienceOfferingId = searchParams.get("offering_id");
 
   // Get club plan from URL params (fallback) or context
   const urlPlan = searchParams.get("plan") as "quarterly" | "biannual" | "annual" | null;
@@ -106,6 +114,65 @@ function CheckoutContent() {
     return Number.isFinite(n) && n > 0 ? Math.floor(n) : undefined;
   })();
   const { setSelectedCohort } = useUpgrade();
+  const enrollmentStarted = useRef(false);
+
+  useEffect(() => {
+    if (
+      purpose !== "academy_cohort" ||
+      urlEnrollmentId ||
+      !state.selectedCohortId ||
+      enrollmentStarted.current
+    ) {
+      return;
+    }
+    enrollmentStarted.current = true;
+    void (async () => {
+      try {
+        const enrollmentBody: {
+          cohort_id: string;
+          preferences?: { late_join: typeof state.lateJoinPreferences };
+        } = { cohort_id: state.selectedCohortId! };
+        if (state.lateJoinPreferences) {
+          enrollmentBody.preferences = { late_join: state.lateJoinPreferences };
+        }
+        let enrollmentId: string;
+        try {
+          const enrollment = await apiPost<{ id: string }>(
+            "/api/v1/academy/enrollments/me",
+            enrollmentBody,
+            { auth: true },
+          );
+          enrollmentId = enrollment.id;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "";
+          if (!message.toLowerCase().includes("already")) throw error;
+          const existing = await apiGet<
+            { id: string; cohort_id: string; payment_status: string }[]
+          >("/api/v1/academy/my-enrollments", { auth: true });
+          const enrollment = existing.find(
+            (item) =>
+              item.cohort_id === state.selectedCohortId && item.payment_status !== "paid",
+          );
+          if (!enrollment) throw new Error("No unpaid Academy enrollment is available");
+          enrollmentId = enrollment.id;
+        }
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("enrollment_id", enrollmentId);
+        router.replace(`/checkout?${params.toString()}`);
+      } catch (error) {
+        setQuoteError(
+          error instanceof Error ? error.message : "Could not prepare Academy checkout",
+        );
+      }
+    })();
+  }, [
+    purpose,
+    router,
+    searchParams,
+    state.lateJoinPreferences,
+    state.selectedCohortId,
+    urlEnrollmentId,
+  ]);
 
   // Load member data and pricing (and cohort if needed)
   const loadData = useCallback(async () => {
@@ -125,6 +192,42 @@ function CheckoutContent() {
         } catch (quoteFailure) {
           setQuoteError(
             quoteFailure instanceof Error ? quoteFailure.message : "Could not load the approved Club price",
+          );
+        }
+      }
+      if (purpose === "community_experience" && communityExperienceOfferingId) {
+        try {
+          setExperienceQuote(
+            await previewCommunityExperienceCheckout(
+              communityExperienceOfferingId,
+              paymentMethod,
+            ),
+          );
+          setQuoteError(null);
+        } catch (quoteFailure) {
+          setQuoteError(
+            quoteFailure instanceof Error
+              ? quoteFailure.message
+              : "Could not load the Community Experience price",
+          );
+        }
+      }
+      if (purpose === "academy_cohort" && urlEnrollmentId) {
+        try {
+          setAcademyQuote(
+            await previewAcademyCheckout(
+              urlEnrollmentId,
+              billingMode === "installments",
+              paymentMethod,
+              urlAmountOverrideKobo,
+            ),
+          );
+          setQuoteError(null);
+        } catch (quoteFailure) {
+          setQuoteError(
+            quoteFailure instanceof Error
+              ? quoteFailure.message
+              : "Could not load the Academy price",
           );
         }
       }
@@ -173,6 +276,9 @@ function CheckoutContent() {
     purpose,
     clubApplicationId,
     paymentMethod,
+    communityExperienceOfferingId,
+    billingMode,
+    urlAmountOverrideKobo,
   ]);
 
   useEffect(() => {
@@ -195,11 +301,35 @@ function CheckoutContent() {
 
   if (purpose === "club" || purpose === "club_bundle") {
     if (clubApplicationId && clubQuote) {
-      const clubFee = (clubQuote.components.club || 0) / 100;
       const experienceFee = (clubQuote.components.community_experience || 0) / 100;
-      lineItems.push({ label: "Club practice (quarterly, selected location)", amount: clubFee });
+      const clubItems = clubQuote.components.club_items ?? [];
+      if (clubItems.length) {
+        clubItems.forEach((item) => {
+          const adjusted = item.amount_kobo !== item.full_quarter_fee_kobo;
+          lineItems.push({
+            label: `${item.name} (${item.period_start} to ${item.period_end})${adjusted ? ` · adjusted for ${item.remaining_sessions} sessions` : ""}`,
+            amount: item.amount_kobo / 100,
+          });
+        });
+      } else {
+        lineItems.push({
+          label: "Club practice (selected location)",
+          amount: (clubQuote.components.club || 0) / 100,
+        });
+      }
+      const annualMembership =
+        (clubQuote.components.annual_swimbuddz_membership || 0) / 100;
+      if (annualMembership > 0) {
+        lineItems.push({
+          label: "SwimBuddz Membership — annual",
+          amount: annualMembership,
+        });
+      }
       if (clubQuote.components.community_experience_selected && experienceFee > 0) {
-        lineItems.push({ label: "Community Experience (optional, selected)", amount: experienceFee });
+        lineItems.push({
+          label: "Current-quarter Community Experience — optional Club bundle rate",
+          amount: experienceFee,
+        });
       }
       clubQuote.additional_charges.forEach((charge) => {
         lineItems.push({ label: charge.label, amount: charge.amount_kobo / 100 });
@@ -230,18 +360,38 @@ function CheckoutContent() {
       });
       subtotal += state.extensionInfo.amount;
     }
-  } else if (purpose === "academy_cohort") {
-    // Academy enrollment - use price_override or program.price_amount
-    // Price is stored in naira (major unit)
-    const cohortPrice =
-      state.selectedCohort?.price_override ?? state.selectedCohort?.program?.price_amount;
-    if (cohortPrice) {
-      lineItems.push({
-        label: `Academy: ${state.selectedCohort?.name}`,
-        amount: cohortPrice,
-      });
-      subtotal += cohortPrice;
+  } else if (purpose === "academy_cohort" && academyQuote) {
+    const academyAmount = (academyQuote.components.academy || 0) / 100;
+    const annualMembership =
+      (academyQuote.components.annual_swimbuddz_membership || 0) / 100;
+    const installmentNumber = academyQuote.components.installment_number;
+    lineItems.push({
+      label: `Academy: ${state.selectedCohort?.name || "cohort"}${installmentNumber ? ` · installment ${installmentNumber}` : ""}`,
+      amount: academyAmount,
+    });
+    if (annualMembership > 0) {
+      lineItems.push({ label: "SwimBuddz Membership — annual", amount: annualMembership });
+    } else if (academyQuote.components.academy_membership_policy === "included") {
+      lineItems.push({ label: "Annual SwimBuddz Membership — included", amount: 0 });
     }
+    academyQuote.additional_charges.forEach((charge) => {
+      lineItems.push({ label: charge.label, amount: charge.amount_kobo / 100 });
+    });
+    subtotal = academyQuote.total_kobo / 100;
+  } else if (purpose === "community_experience" && experienceQuote) {
+    lineItems.push({
+      label: "Quarterly Community Experience",
+      amount: (experienceQuote.components.community_experience || 0) / 100,
+    });
+    const annualMembership =
+      (experienceQuote.components.annual_swimbuddz_membership || 0) / 100;
+    if (annualMembership > 0) {
+      lineItems.push({ label: "SwimBuddz Membership — annual", amount: annualMembership });
+    }
+    experienceQuote.additional_charges.forEach((charge) => {
+      lineItems.push({ label: charge.label, amount: charge.amount_kobo / 100 });
+    });
+    subtotal = experienceQuote.total_kobo / 100;
   } else if (purpose === "community") {
     // Community only
     lineItems.push({
@@ -261,6 +411,20 @@ function CheckoutContent() {
 
   const installmentPreview = (() => {
     if (!installmentsEnabled || !cohortForInstallments) return null;
+    if (billingMode === "installments" && academyQuote) {
+      return {
+        count:
+          academyQuote.components.total_installments ??
+          cohortForInstallments.installment_count ??
+          2,
+        deposit: total,
+        subsequentAmount: null,
+        totalFee:
+          cohortForInstallments.price_override ??
+          cohortForInstallments.program?.price_amount ??
+          total,
+      };
+    }
     const totalFee = total; // after any discount
     const durationWeeks =
       cohortForInstallments.duration_weeks ?? cohortForInstallments.program?.duration_weeks ?? 8;
@@ -281,7 +445,7 @@ function CheckoutContent() {
       ? Math.floor((totalFee - depositOverride) / (count - 1))
       : evenSplit;
 
-    return { count, deposit, subsequentAmount, totalFee };
+    return { count, deposit, subsequentAmount: subsequentAmount as number | null, totalFee };
   })();
 
   // Validate discount code against backend
@@ -453,6 +617,15 @@ function CheckoutContent() {
           purpose: "community",
           years: 1,
         };
+      } else if (purpose === "community_experience") {
+        if (!communityExperienceOfferingId) {
+          throw new Error("Choose a Community Experience before paying");
+        }
+        intentPayload = {
+          ...intentPayload,
+          purpose: "community_experience",
+          community_experience_offering_id: communityExperienceOfferingId,
+        };
       }
 
       const intent = await apiPost<PaymentIntent>("/api/v1/payments/intents", intentPayload, {
@@ -497,11 +670,18 @@ function CheckoutContent() {
     if (purpose === "academy_cohort") {
       return "/upgrade/academy/details";
     }
+    if (purpose === "community_experience") {
+      return "/community/experiences";
+    }
     return "/account/billing";
   };
 
   if (loading) {
     return <LoadingCard text="Loading checkout..." />;
+  }
+
+  if (purpose === "academy_cohort" && !urlEnrollmentId && !quoteError) {
+    return <LoadingCard text="Preparing your Academy quote..." />;
   }
 
   // Validate we have required data. Route the user back to a useful place
@@ -649,7 +829,7 @@ function CheckoutContent() {
               <div className="min-w-0">
                 <span className="text-base font-semibold text-slate-900 block">Due today</span>
                 <span className="text-xs text-slate-500">
-                  Installment 1 of {installmentPreview.count} • {formatCurrency(total)} total
+                  Installment {academyQuote?.components.installment_number ?? 1} of {installmentPreview.count}
                 </span>
               </div>
               <span className="text-xl font-bold text-cyan-600 whitespace-nowrap">
@@ -683,8 +863,9 @@ function CheckoutContent() {
       {/* ── Installment details — shown when installments selected ── */}
       {installmentsEnabled && installmentPreview && billingMode === "installments" && (
         <p className="text-center text-sm text-slate-500 -mt-2">
-          Then {installmentPreview.count - 1} ×{" "}
-          {formatCurrency(installmentPreview.subsequentAmount)} every 4 weeks —{" "}
+          {installmentPreview.subsequentAmount != null
+            ? `Then ${installmentPreview.count - 1} × ${formatCurrency(installmentPreview.subsequentAmount)} every 4 weeks`
+            : "Remaining installments follow the cohort payment schedule"}{" "}—{" "}
           <button
             type="button"
             onClick={() => setBillingMode("full")}

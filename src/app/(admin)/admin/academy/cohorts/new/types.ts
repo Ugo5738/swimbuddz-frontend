@@ -39,6 +39,7 @@ export type CohortFormData = {
   location_address: string;
   notes_internal: string;
   price_override: number | null;
+  membership_policy_override: "open" | "active_required" | "included" | null;
   default_pool_fee: number | null;
   default_ride_configs: CohortRideConfigEntry[];
   installment_plan_enabled: boolean;

@@ -31,9 +31,8 @@ export type GuestPassAdmin = GuestPassReceipt & {
   phone: string;
   referral_code: string | null;
   referrer_auth_id: string | null;
-  referral_reward_kobo: number;
+  referral_reward_bubbles: number;
   referral_reward_status: string;
-  referral_reward_reference: string | null;
   marketing_consent: boolean;
   attended_at: string | null;
   actual_swim_minutes: number | null;
@@ -78,12 +77,4 @@ export function markGuestPassAttendance(
   return apiPost<GuestPassAdmin>(`/api/v1/admin/guest-passes/${id}/attendance`, input, {
     auth: true,
   });
-}
-
-export function markGuestRewardPaid(id: string, transferReference: string): Promise<GuestPassAdmin> {
-  return apiPost<GuestPassAdmin>(
-    `/api/v1/admin/guest-passes/${id}/referral-reward/paid`,
-    { transfer_reference: transferReference },
-    { auth: true },
-  );
 }

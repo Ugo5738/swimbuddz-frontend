@@ -8,7 +8,6 @@ import { useApi } from "@/hooks/useApi";
 import {
   GuestPassAdmin,
   markGuestPassAttendance,
-  markGuestRewardPaid,
 } from "@/lib/guestPasses";
 import { formatCurrency } from "@/lib/upgradeContext";
 import { Clock, Gift, Mail, UserCheck } from "lucide-react";
@@ -32,18 +31,6 @@ export default function GuestPassesAdminPage() {
     }
   };
 
-  const payReward = async (pass: GuestPassAdmin) => {
-    const reference = window.prompt("Enter the bank transfer or payment reference");
-    if (!reference) return;
-    try {
-      await markGuestRewardPaid(pass.id, reference);
-      passes.refetch();
-      toast.success("Referral thank-you marked paid");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not update reward");
-    }
-  };
-
   if (passes.loading) return <LoadingCard text="Loading guest passes..." />;
 
   return (
@@ -56,7 +43,7 @@ export default function GuestPassesAdminPage() {
       </header>
       {passes.error ? <Alert variant="error">{passes.error}</Alert> : null}
       <Alert>
-        A referral reward becomes eligible only after the guest&apos;s first paid attendance. Repeated swims do not create repeated acquisition rewards.
+        The first paid attendance automatically grants the referrer 10 Bubbles. Repeated swims do not create repeated acquisition rewards.
       </Alert>
 
       <div className="space-y-4">
@@ -86,14 +73,13 @@ export default function GuestPassesAdminPage() {
                 <p className="flex items-center gap-2 text-sm font-medium text-slate-800"><Gift className="h-4 w-4" />Referral thank-you</p>
                 {pass.referral_code ? (
                   <p className="text-sm text-slate-600" title={pass.referrer_auth_id || undefined}>
-                    Code {pass.referral_code} · {formatCurrency(pass.referral_reward_kobo / 100)} ·{" "}
+                    Code {pass.referral_code} · {pass.referral_reward_bubbles} Bubbles ·{" "}
                     {pass.referral_reward_status.replaceAll("_", " ")}
                   </p>
                 ) : (
                   <p className="text-sm text-slate-500">No referral attribution</p>
                 )}
-                {pass.referral_reward_status === "eligible" ? <Button size="sm" variant="secondary" onClick={() => void payReward(pass)}>Record manual transfer</Button> : null}
-                {pass.referral_reward_reference ? <p className="text-xs text-slate-500">Transfer: {pass.referral_reward_reference}</p> : null}
+                {pass.referral_reward_status === "pending" ? <p className="text-xs text-amber-700">Wallet delivery will retry when attendance is saved again.</p> : null}
               </div>
             </div>
           </Card>

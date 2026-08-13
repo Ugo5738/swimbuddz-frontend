@@ -20,6 +20,7 @@ const paymentPurposes = [
   ["club", "Club"],
   ["session_booking", "Session booking"],
   ["guest_pass", "Guest pass"],
+  ["community_experience", "Community Experience"],
   ["community", "Community membership"],
   ["academy_cohort", "Academy"],
 ] as const;
@@ -30,6 +31,7 @@ export default function PaymentChargesPage() {
     purpose: "guest_pass",
     payment_method: "paystack",
     label: "Online payment processing",
+    calculation_mode: "gross_up" as "additive" | "gross_up",
     rate_percent: "1.5",
     fixed_naira: "100",
     cap_naira: "2000",
@@ -45,6 +47,7 @@ export default function PaymentChargesPage() {
         purpose: form.purpose,
         payment_method: form.payment_method || null,
         label: form.label,
+        calculation_mode: form.calculation_mode,
         rate_basis_points: Math.round(Number(form.rate_percent || 0) * 100),
         fixed_amount_kobo: Math.round(Number(form.fixed_naira || 0) * 100),
         cap_amount_kobo: form.cap_naira ? Math.round(Number(form.cap_naira) * 100) : null,
@@ -98,7 +101,7 @@ export default function PaymentChargesPage() {
             <span className="font-medium text-slate-900">{policy.label}</span>
             <span className="text-slate-600">{policy.purpose} · {policy.payment_method || "all methods"}</span>
             <span className="text-slate-600">
-              {(policy.rate_basis_points / 100).toFixed(2)}% + {formatCurrency(policy.fixed_amount_kobo / 100)}
+              {policy.calculation_mode === "gross_up" ? "Gross-up" : "Additive"} · {(policy.rate_basis_points / 100).toFixed(2)}% + {formatCurrency(policy.fixed_amount_kobo / 100)}
               {policy.cap_amount_kobo != null ? ` · capped ${formatCurrency(policy.cap_amount_kobo / 100)}` : ""}
             </span>
             <Button size="sm" variant={policy.is_active ? "primary" : "secondary"} onClick={() => void toggle(policy)}>
@@ -121,6 +124,12 @@ export default function PaymentChargesPage() {
             <select value={form.payment_method} onChange={(event) => setForm((current) => ({ ...current, payment_method: event.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2 font-normal"><option value="paystack">Paystack</option><option value="manual_transfer">Manual transfer</option><option value="">All methods</option></select>
           </label>
           <label className="space-y-1 text-sm font-medium sm:col-span-2">Customer-facing label<input required value={form.label} onChange={(event) => setForm((current) => ({ ...current, label: event.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2 font-normal" /></label>
+          <label className="space-y-1 text-sm font-medium sm:col-span-2">Calculation
+            <select value={form.calculation_mode} onChange={(event) => setForm((current) => ({ ...current, calculation_mode: event.target.value as "additive" | "gross_up" }))} className="w-full rounded-lg border border-slate-200 px-3 py-2 font-normal">
+              <option value="gross_up">Gross up so SwimBuddz receives the subtotal after provider fees</option>
+              <option value="additive">Add the percentage and fixed amount directly</option>
+            </select>
+          </label>
           {([
             ["rate_percent", "Percentage (%)"],
             ["fixed_naira", "Fixed amount (₦)"],

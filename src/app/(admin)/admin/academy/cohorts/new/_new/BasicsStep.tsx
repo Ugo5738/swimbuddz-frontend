@@ -231,6 +231,25 @@ export function BasicsStep({ selectedProgram, formData, rideAreas, onChange }: P
         <p className="text-xs text-slate-500 mt-1">
           Override the program&apos;s default price for this specific cohort
         </p>
+        <label className="mt-4 block text-sm font-medium text-slate-700">
+          Annual membership policy override
+          <select
+            value={formData.membership_policy_override ?? ""}
+            onChange={(event) =>
+              onChange({
+                ...formData,
+                membership_policy_override:
+                  (event.target.value as "open" | "active_required" | "included") || null,
+              })
+            }
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"
+          >
+            <option value="">Use programme policy</option>
+            <option value="open">Open — no annual membership required</option>
+            <option value="active_required">Active membership required — add ₦20,000 if due</option>
+            <option value="included">Included in the published Academy price</option>
+          </select>
+        </label>
       </div>
 
       <InstallmentPlanField

@@ -52,7 +52,6 @@ export function AddSessionModal({
     pool_fee: 0,
     guest_fee: 0,
     community_dropin_fee: 0,
-    guest_referral_reward: 1000,
     notes: "",
   });
 
@@ -82,7 +81,6 @@ export function AddSessionModal({
         pool_fee: formData.pool_fee,
         guest_fee: formData.guest_fee || undefined,
         community_dropin_fee: formData.community_dropin_fee || undefined,
-        guest_referral_reward: formData.guest_referral_reward,
         notes: formData.notes || undefined,
       });
 
@@ -104,7 +102,6 @@ export function AddSessionModal({
         pool_fee: 0,
         guest_fee: 0,
         community_dropin_fee: 0,
-        guest_referral_reward: 1000,
         notes: "",
       });
     } catch (err) {
@@ -165,19 +162,6 @@ export function AddSessionModal({
               })
             }
             hint="Kept separate even when it currently matches the guest rate."
-          />
-          <Input
-            label="First guest referral thank-you"
-            type="number"
-            min={0}
-            value={formData.guest_referral_reward}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                guest_referral_reward: parseInt(e.target.value) || 0,
-              })
-            }
-            hint="Paid once after a referred guest's first paid attendance; separate from the guest rate."
           />
         </div>
 

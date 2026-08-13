@@ -78,12 +78,11 @@ export function ClubCard({ member, clubActive, communityActive }: Props) {
       <div>
         <h2 className="text-base md:text-lg font-semibold text-slate-900">Want to join Club?</h2>
         <p className="text-xs md:text-sm text-slate-600 mt-0.5 md:mt-1">
-          Get access to regular swimming sessions with coaches. Pay quarterly, bi-annually, or
-          annually.
+          Choose a location-priced quarter for structured practice, pods and progress tracking.
         </p>
         {!communityActive && (
           <p className="text-xs md:text-sm text-emerald-700 mt-2 font-medium">
-            Club includes Community access, so checkout will bundle both together.
+            If your annual SwimBuddz membership is due, checkout will show it as a separate line.
           </p>
         )}
       </div>

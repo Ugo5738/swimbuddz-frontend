@@ -5,7 +5,12 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { useApi } from "@/hooks/useApi";
-import { ClubPlan, createClubPlan } from "@/lib/clubOnboarding";
+import {
+  ClubPlan,
+  CommunityExperienceOffering,
+  createClubPlan,
+  createCommunityExperience,
+} from "@/lib/clubOnboarding";
 import { Club } from "@/lib/clubs";
 import { formatCurrency } from "@/lib/upgradeContext";
 import { MapPin, Plus } from "lucide-react";
@@ -13,10 +18,18 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 const today = new Date().toISOString().slice(0, 10);
+const current = new Date();
+const quarterStart = new Date(current.getFullYear(), Math.floor(current.getMonth() / 3) * 3, 1)
+  .toISOString()
+  .slice(0, 10);
+const quarterEnd = new Date(current.getFullYear(), Math.floor(current.getMonth() / 3) * 3 + 3, 0)
+  .toISOString()
+  .slice(0, 10);
 
 export default function ClubPlansAdminPage() {
   const clubs = useApi<Club[]>("/api/v1/clubs?active_only=false", { auth: false });
   const plans = useApi<ClubPlan[]>("/api/v1/clubs/admin/plans");
+  const experiences = useApi<CommunityExperienceOffering[]>("/api/v1/clubs/community-experiences");
   const [form, setForm] = useState({
     club_id: "",
     name: "Quarterly Club",
@@ -24,11 +37,23 @@ export default function ClubPlansAdminPage() {
     experience_fee_naira: "30000",
     experience_default_selected: true,
     sessions_included: "12",
+    period_start: quarterStart,
+    period_end: quarterEnd,
+    minimum_entry_sessions: "5",
+    community_experience_offering_id: "",
     refreshments_included: true,
     capacity: "",
     premium_venue_note: "",
     effective_from: today,
     effective_to: "",
+  });
+  const [experienceForm, setExperienceForm] = useState({
+    name: "Quarterly Community Experience",
+    period_start: quarterStart,
+    period_end: quarterEnd,
+    standard_member_fee_naira: "50000",
+    club_member_fee_naira: "40000",
+    club_bundle_fee_naira: "30000",
   });
   const [saving, setSaving] = useState(false);
 
@@ -44,7 +69,11 @@ export default function ClubPlansAdminPage() {
         club_fee_kobo: Math.round(Number(form.club_fee_naira) * 100),
         community_experience_fee_kobo: Math.round(Number(form.experience_fee_naira) * 100),
         community_experience_default_selected: form.experience_default_selected,
+        community_experience_offering_id: form.community_experience_offering_id || undefined,
         sessions_included: Number(form.sessions_included),
+        period_start: form.period_start,
+        period_end: form.period_end,
+        minimum_entry_sessions: Number(form.minimum_entry_sessions),
         refreshments_included: form.refreshments_included,
         capacity: form.capacity ? Number(form.capacity) : undefined,
         premium_venue_note: form.premium_venue_note || undefined,
@@ -61,7 +90,33 @@ export default function ClubPlansAdminPage() {
     }
   };
 
-  if (clubs.loading || plans.loading) return <LoadingCard text="Loading Club plans..." />;
+  const createExperience = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSaving(true);
+    try {
+      const offering = await createCommunityExperience({
+        name: experienceForm.name,
+        currency: "NGN",
+        period_start: experienceForm.period_start,
+        period_end: experienceForm.period_end,
+        standard_member_fee_kobo: Number(experienceForm.standard_member_fee_naira) * 100,
+        club_member_fee_kobo: Number(experienceForm.club_member_fee_naira) * 100,
+        club_bundle_fee_kobo: Number(experienceForm.club_bundle_fee_naira) * 100,
+        purchase_opens_at: null,
+        purchase_closes_at: null,
+        is_active: true,
+      });
+      await experiences.refetch();
+      setForm((value) => ({ ...value, community_experience_offering_id: offering.id }));
+      toast.success("Quarterly Community Experience created and selected");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not create experience");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (clubs.loading || plans.loading || experiences.loading) return <LoadingCard text="Loading Club plans..." />;
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 py-8">
@@ -72,7 +127,7 @@ export default function ClubPlansAdminPage() {
           costing inputs; this plan is the commercial price a member buys.
         </p>
       </header>
-      {clubs.error || plans.error ? <Alert variant="error">{clubs.error || plans.error}</Alert> : null}
+      {clubs.error || plans.error || experiences.error ? <Alert variant="error">{clubs.error || plans.error || experiences.error}</Alert> : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         {(plans.data ?? []).map((plan) => (
@@ -86,6 +141,7 @@ export default function ClubPlansAdminPage() {
             </div>
             <div className="mt-4 space-y-1 border-t border-slate-100 pt-3 text-sm text-slate-600">
               <p>{plan.sessions_included} sessions · {plan.refreshments_included ? "refreshments included" : "refreshments separate"}</p>
+              <p>{plan.period_start} to {plan.period_end} · entry cutoff: {plan.minimum_entry_sessions} sessions remaining</p>
               <p>Community Experience: {formatCurrency(plan.community_experience_fee_kobo / 100)} · {plan.community_experience_default_selected ? "selected by default" : "not selected by default"}</p>
               <p>Effective {plan.effective_from}{plan.effective_to ? ` to ${plan.effective_to}` : " onward"}</p>
               {plan.premium_venue_note ? <p className="text-amber-700">{plan.premium_venue_note}</p> : null}
@@ -104,6 +160,15 @@ export default function ClubPlansAdminPage() {
           <label className="space-y-1 text-sm font-medium">Quarterly Club price (₦)<input required type="number" min="0" value={form.club_fee_naira} onChange={(event) => setForm((current) => ({ ...current, club_fee_naira: event.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2 font-normal" /></label>
           <label className="space-y-1 text-sm font-medium">Community Experience (₦)<input required type="number" min="0" value={form.experience_fee_naira} onChange={(event) => setForm((current) => ({ ...current, experience_fee_naira: event.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2 font-normal" /></label>
           <label className="space-y-1 text-sm font-medium">Sessions included<input required type="number" min="1" value={form.sessions_included} onChange={(event) => setForm((current) => ({ ...current, sessions_included: event.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2 font-normal" /></label>
+          <label className="space-y-1 text-sm font-medium">Quarter starts<input required type="date" value={form.period_start} onChange={(event) => setForm((current) => ({ ...current, period_start: event.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2 font-normal" /></label>
+          <label className="space-y-1 text-sm font-medium">Quarter ends<input required type="date" value={form.period_end} onChange={(event) => setForm((current) => ({ ...current, period_end: event.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2 font-normal" /></label>
+          <label className="space-y-1 text-sm font-medium">Minimum sessions for new entry<input required type="number" min="1" value={form.minimum_entry_sessions} onChange={(event) => setForm((current) => ({ ...current, minimum_entry_sessions: event.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2 font-normal" /></label>
+          <label className="space-y-1 text-sm font-medium sm:col-span-2">Quarterly Community Experience
+            <select value={form.community_experience_offering_id} onChange={(event) => setForm((current) => ({ ...current, community_experience_offering_id: event.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2 font-normal">
+              <option value="">Legacy ₦30,000 plan line only</option>
+              {experiences.data?.map((experience) => <option key={experience.id} value={experience.id}>{experience.name} · {experience.period_start} · ₦50k/₦40k/₦30k</option>)}
+            </select>
+          </label>
           <label className="space-y-1 text-sm font-medium">Effective from<input required type="date" value={form.effective_from} onChange={(event) => setForm((current) => ({ ...current, effective_from: event.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2 font-normal" /></label>
           <label className="space-y-1 text-sm font-medium">Effective to (optional)<input type="date" value={form.effective_to} onChange={(event) => setForm((current) => ({ ...current, effective_to: event.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2 font-normal" /></label>
           <label className="space-y-1 text-sm font-medium">Capacity (optional)<input type="number" min="1" value={form.capacity} onChange={(event) => setForm((current) => ({ ...current, capacity: event.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2 font-normal" /></label>
@@ -111,6 +176,20 @@ export default function ClubPlansAdminPage() {
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.experience_default_selected} onChange={(event) => setForm((current) => ({ ...current, experience_default_selected: event.target.checked }))} />Add the optional Community Experience by default</label>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.refreshments_included} onChange={(event) => setForm((current) => ({ ...current, refreshments_included: event.target.checked }))} />Refreshments included in Club price</label>
           <Button type="submit" disabled={saving || !form.club_id} className="sm:col-span-2">{saving ? "Publishing..." : "Publish plan version"}</Button>
+        </form>
+      </Card>
+
+      <Card>
+        <h2 className="mb-2 text-lg font-semibold">Create a quarterly Community Experience</h2>
+        <p className="mb-4 text-sm text-slate-600">The standard, Club-later, and Club-bundle prices remain separate even when changed later.</p>
+        <form onSubmit={createExperience} className="grid gap-4 sm:grid-cols-2">
+          <label className="space-y-1 text-sm font-medium sm:col-span-2">Name<input required value={experienceForm.name} onChange={(event) => setExperienceForm((value) => ({ ...value, name: event.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2 font-normal" /></label>
+          <label className="space-y-1 text-sm font-medium">Period starts<input required type="date" value={experienceForm.period_start} onChange={(event) => setExperienceForm((value) => ({ ...value, period_start: event.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2 font-normal" /></label>
+          <label className="space-y-1 text-sm font-medium">Period ends<input required type="date" value={experienceForm.period_end} onChange={(event) => setExperienceForm((value) => ({ ...value, period_end: event.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2 font-normal" /></label>
+          {([[
+            "standard_member_fee_naira", "Standard member (₦50,000)",
+          ], ["club_member_fee_naira", "Club member buying later (₦40,000)"], ["club_bundle_fee_naira", "With Club checkout (₦30,000)"]] as const).map(([key, label]) => <label key={key} className="space-y-1 text-sm font-medium">{label}<input required type="number" min="0" value={experienceForm[key]} onChange={(event) => setExperienceForm((value) => ({ ...value, [key]: event.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2 font-normal" /></label>)}
+          <Button type="submit" disabled={saving} className="sm:col-span-2">Create Community Experience</Button>
         </form>
       </Card>
     </div>

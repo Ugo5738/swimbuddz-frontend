@@ -1224,6 +1224,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/clubs/community-experiences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Community Experiences */
+        get: operations["list_community_experiences_clubs_community_experiences_get"];
+        put?: never;
+        /** Create Community Experience */
+        post: operations["create_community_experience_clubs_community_experiences_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/community-experiences/{offering_id}/quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Quote Community Experience */
+        get: operations["quote_community_experience_clubs_community_experiences__offering_id__quote_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/community-experiences/internal/{offering_id}/payment-context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Internal Community Experience Payment Context */
+        get: operations["internal_community_experience_payment_context_clubs_community_experiences_internal__offering_id__payment_context_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/community-experiences/internal/{offering_id}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Activate Community Experience */
+        post: operations["activate_community_experience_clubs_community_experiences_internal__offering_id__activate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/clubs/": {
         parameters: {
             query?: never;
@@ -3615,23 +3684,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/admin/guest-passes/{guest_pass_id}/referral-reward/paid": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Mark Guest Referral Reward Paid */
-        post: operations["mark_guest_referral_reward_paid_admin_guest_passes__guest_pass_id__referral_reward_paid_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/makeups/bookable-slots": {
         parameters: {
             query?: never;
@@ -4082,6 +4134,26 @@ export interface paths {
          *     Accepts ISO 8601 date strings (with or without timezone).
          */
         get: operations["get_session_detailed_stats_internal_sessions_detailed_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/sessions/member/{member_id}/converted-guest-hours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Converted Guest Hours
+         * @description Return standalone guest swim history linked to a converted member.
+         */
+        get: operations["get_converted_guest_hours_internal_sessions_member__member_id__converted_guest_hours_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5073,6 +5145,24 @@ export interface paths {
          */
         get: operations["list_my_coach_cohorts_academy_cohorts_coach_me_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/cohorts/{cohort_id}/pricing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Cohort Pricing */
+        get: operations["get_cohort_pricing_academy_admin_cohorts__cohort_id__pricing_get"];
+        /** Update Cohort Pricing */
+        put: operations["update_cohort_pricing_academy_admin_cohorts__cohort_id__pricing_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -17727,6 +17817,16 @@ export interface components {
              * @default 3
              */
             months: number;
+            /**
+             * Community Experience Selected
+             * @default false
+             */
+            community_experience_selected: boolean;
+            /**
+             * Community Experience Fee Kobo
+             * @default 0
+             */
+            community_experience_fee_kobo: number;
         };
         /**
          * ActivateClubRequest
@@ -17754,6 +17854,20 @@ export interface components {
              * @default true
              */
             extend_community_membership: boolean;
+        };
+        /** ActivateCommunityExperienceRequest */
+        ActivateCommunityExperienceRequest: {
+            /** Member Auth Id */
+            member_auth_id: string;
+            /** Payment Reference */
+            payment_reference: string;
+            /** Amount Paid Kobo */
+            amount_paid_kobo: number;
+            /**
+             * Price Context
+             * @enum {string}
+             */
+            price_context: "standard_member" | "club_member_later" | "club_bundle";
         };
         /**
          * ActivateCommunityRequest
@@ -18656,6 +18770,8 @@ export interface components {
              * Format: uuid
              */
             plan_version_id: string;
+            /** Plan Version Ids */
+            plan_version_ids?: string[];
             /**
              * Community Experience Selected
              * @default true
@@ -18703,6 +18819,8 @@ export interface components {
             /** Quote Id */
             quote_id?: string | null;
             plan?: components["schemas"]["ClubPlanResponse"] | null;
+            /** Selected Plans */
+            selected_plans?: components["schemas"]["ClubPlanResponse"][];
             assessment?: components["schemas"]["ClubAssessmentResponse"] | null;
             /**
              * Created At
@@ -19085,12 +19203,28 @@ export interface components {
              * Format: uuid
              */
             plan_version_id: string;
+            /** Plan Version Ids */
+            plan_version_ids?: string[];
             /** Billing Cycle */
             billing_cycle: string;
             /** Currency */
             currency: string;
             /** Club Fee Kobo */
             club_fee_kobo: number;
+            /** Club Items */
+            club_items?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Annual Membership Fee Kobo
+             * @default 0
+             */
+            annual_membership_fee_kobo: number;
+            /**
+             * Annual Membership Months
+             * @default 0
+             */
+            annual_membership_months: number;
             /** Community Experience Selected */
             community_experience_selected: boolean;
             /** Community Experience Fee Kobo */
@@ -19130,11 +19264,28 @@ export interface components {
              * @default true
              */
             community_experience_default_selected: boolean;
+            /** Community Experience Offering Id */
+            community_experience_offering_id?: string | null;
             /**
              * Sessions Included
              * @default 12
              */
             sessions_included: number;
+            /**
+             * Period Start
+             * Format: date
+             */
+            period_start: string;
+            /**
+             * Period End
+             * Format: date
+             */
+            period_end: string;
+            /**
+             * Minimum Entry Sessions
+             * @default 5
+             */
+            minimum_entry_sessions: number;
             /**
              * Refreshments Included
              * @default true
@@ -19184,11 +19335,28 @@ export interface components {
              * @default true
              */
             community_experience_default_selected: boolean;
+            /** Community Experience Offering Id */
+            community_experience_offering_id?: string | null;
             /**
              * Sessions Included
              * @default 12
              */
             sessions_included: number;
+            /**
+             * Period Start
+             * Format: date
+             */
+            period_start: string;
+            /**
+             * Period End
+             * Format: date
+             */
+            period_end: string;
+            /**
+             * Minimum Entry Sessions
+             * @default 5
+             */
+            minimum_entry_sessions: number;
             /**
              * Refreshments Included
              * @default true
@@ -19230,6 +19398,23 @@ export interface components {
             operating_area_id?: string | null;
             /** Default Pool Id */
             default_pool_id?: string | null;
+            /**
+             * Remaining Sessions
+             * @default 0
+             */
+            remaining_sessions: number;
+            /**
+             * Entry Available
+             * @default true
+             */
+            entry_available: boolean;
+            /** Entry Reason */
+            entry_reason?: string | null;
+            /**
+             * Current Price Kobo
+             * @default 0
+             */
+            current_price_kobo: number;
             /**
              * Created At
              * Format: date-time
@@ -20097,6 +20282,147 @@ export interface components {
              * @default false
              */
             has_active_agreement: boolean;
+        };
+        /** CommunityExperienceOfferingCreate */
+        CommunityExperienceOfferingCreate: {
+            /** Name */
+            name: string;
+            /**
+             * Currency
+             * @default NGN
+             */
+            currency: string;
+            /**
+             * Period Start
+             * Format: date
+             */
+            period_start: string;
+            /**
+             * Period End
+             * Format: date
+             */
+            period_end: string;
+            /**
+             * Standard Member Fee Kobo
+             * @default 5000000
+             */
+            standard_member_fee_kobo: number;
+            /**
+             * Club Member Fee Kobo
+             * @default 4000000
+             */
+            club_member_fee_kobo: number;
+            /**
+             * Club Bundle Fee Kobo
+             * @default 3000000
+             */
+            club_bundle_fee_kobo: number;
+            /** Purchase Opens At */
+            purchase_opens_at?: string | null;
+            /** Purchase Closes At */
+            purchase_closes_at?: string | null;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+        };
+        /** CommunityExperienceOfferingResponse */
+        CommunityExperienceOfferingResponse: {
+            /** Name */
+            name: string;
+            /**
+             * Currency
+             * @default NGN
+             */
+            currency: string;
+            /**
+             * Period Start
+             * Format: date
+             */
+            period_start: string;
+            /**
+             * Period End
+             * Format: date
+             */
+            period_end: string;
+            /**
+             * Standard Member Fee Kobo
+             * @default 5000000
+             */
+            standard_member_fee_kobo: number;
+            /**
+             * Club Member Fee Kobo
+             * @default 4000000
+             */
+            club_member_fee_kobo: number;
+            /**
+             * Club Bundle Fee Kobo
+             * @default 3000000
+             */
+            club_bundle_fee_kobo: number;
+            /** Purchase Opens At */
+            purchase_opens_at?: string | null;
+            /** Purchase Closes At */
+            purchase_closes_at?: string | null;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** CommunityExperienceQuote */
+        CommunityExperienceQuote: {
+            /**
+             * Offering Id
+             * Format: uuid
+             */
+            offering_id: string;
+            /** Offering Name */
+            offering_name: string;
+            /** Member Auth Id */
+            member_auth_id: string;
+            /** Currency */
+            currency: string;
+            /**
+             * Price Context
+             * @enum {string}
+             */
+            price_context: "standard_member" | "club_member_later";
+            /** Amount Kobo */
+            amount_kobo: number;
+            /**
+             * Annual Membership Fee Kobo
+             * @default 0
+             */
+            annual_membership_fee_kobo: number;
+            /**
+             * Annual Membership Months
+             * @default 0
+             */
+            annual_membership_months: number;
+            /** Subtotal Kobo */
+            subtotal_kobo: number;
+            /**
+             * Already Purchased
+             * @default false
+             */
+            already_purchased: boolean;
         };
         /**
          * CreateAgreementVersionRequest
@@ -22334,6 +22660,19 @@ export interface components {
              */
             expired: number;
         };
+        /** ConvertedGuestHours */
+        ConvertedGuestHours: {
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /**
+             * Swimmer Hours
+             * @default 0
+             */
+            swimmer_hours: number;
+        };
         /** CreateBundleCartRequest */
         CreateBundleCartRequest: {
             /** Session Ids */
@@ -22469,12 +22808,10 @@ export interface components {
             referral_code?: string | null;
             /** Referrer Auth Id */
             referrer_auth_id?: string | null;
-            /** Referral Reward Kobo */
-            referral_reward_kobo: number;
+            /** Referral Reward Bubbles */
+            referral_reward_bubbles: number;
             /** Referral Reward Status */
             referral_reward_status: string;
-            /** Referral Reward Reference */
-            referral_reward_reference?: string | null;
             /** Marketing Consent */
             marketing_consent: boolean;
             /** Attended At */
@@ -22600,11 +22937,6 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
-        };
-        /** GuestReferralRewardPaid */
-        GuestReferralRewardPaid: {
-            /** Transfer Reference */
-            transfer_reference: string;
         };
         /**
          * MakeupBlockKind
@@ -23163,11 +23495,6 @@ export interface components {
             /** Community Dropin Fee */
             community_dropin_fee?: number | null;
             /**
-             * Guest Referral Reward
-             * @default 1000
-             */
-            guest_referral_reward: number;
-            /**
              * Ride Share Fee
              * @default 0
              */
@@ -23229,6 +23556,11 @@ export interface components {
              * @default 0
              */
             total_pool_hours: number;
+            /**
+             * Guest Swimmer Hours
+             * @default 0
+             */
+            guest_swimmer_hours: number;
             /** By Type */
             by_type?: {
                 [key: string]: unknown;
@@ -23338,11 +23670,6 @@ export interface components {
             guest_fee?: number | null;
             /** Community Dropin Fee */
             community_dropin_fee?: number | null;
-            /**
-             * Guest Referral Reward
-             * @default 1000
-             */
-            guest_referral_reward: number;
             /**
              * Ride Share Fee
              * @default 0
@@ -23632,8 +23959,6 @@ export interface components {
             guest_fee?: number | null;
             /** Community Dropin Fee */
             community_dropin_fee?: number | null;
-            /** Guest Referral Reward */
-            guest_referral_reward?: number | null;
             /** Ride Share Fee */
             ride_share_fee?: number | null;
             /** Pricing Mode */
@@ -24593,6 +24918,8 @@ export interface components {
             pool_id?: string | null;
             /** Price Override */
             price_override?: number | null;
+            /** Membership Policy Override */
+            membership_policy_override?: ("open" | "active_required" | "included") | null;
             /** Notes Internal */
             notes_internal?: string | null;
             /** Default Pool Fee */
@@ -24735,6 +25062,55 @@ export interface components {
              */
             coach_payout_billable: boolean;
         };
+        /** CohortPricingLine */
+        CohortPricingLine: {
+            /** Label */
+            label: string;
+            /** Amount Ngn */
+            amount_ngn: number;
+        };
+        /** CohortPricingResponse */
+        CohortPricingResponse: {
+            /**
+             * Cohort Id
+             * Format: uuid
+             */
+            cohort_id: string;
+            /** Cost Lines */
+            cost_lines: components["schemas"]["CohortPricingLine"][];
+            /** Cost Total Ngn */
+            cost_total_ngn: number;
+            /** Margin Percent */
+            margin_percent: number;
+            /** Calculated Price Ngn */
+            calculated_price_ngn: number;
+            /** Round To Ngn */
+            round_to_ngn: number;
+            /** Suggested Price Ngn */
+            suggested_price_ngn: number;
+            /** Published Price Ngn */
+            published_price_ngn: number;
+        };
+        /** CohortPricingUpdate */
+        CohortPricingUpdate: {
+            /** Cost Lines */
+            cost_lines: components["schemas"]["CohortPricingLine"][];
+            /**
+             * Margin Percent
+             * @default 0
+             */
+            margin_percent: number;
+            /**
+             * Round To Ngn
+             * @default 5000
+             */
+            round_to_ngn: number;
+            /**
+             * Apply Suggested Price
+             * @default false
+             */
+            apply_suggested_price: boolean;
+        };
         /** CohortResourceResponse */
         CohortResourceResponse: {
             /** Title */
@@ -24814,6 +25190,8 @@ export interface components {
             pool_id?: string | null;
             /** Price Override */
             price_override?: number | null;
+            /** Membership Policy Override */
+            membership_policy_override?: ("open" | "active_required" | "included") | null;
             /** Notes Internal */
             notes_internal?: string | null;
             /** Default Pool Fee */
@@ -25173,6 +25551,8 @@ export interface components {
             pool_id?: string | null;
             /** Price Override */
             price_override?: number | null;
+            /** Membership Policy Override */
+            membership_policy_override?: ("open" | "active_required" | "included") | null;
             /** Notes Internal */
             notes_internal?: string | null;
             /** Default Pool Fee */
@@ -25957,6 +26337,12 @@ export interface components {
             price_amount: number;
             /** @default one_time */
             billing_type: components["schemas"]["BillingType"];
+            /**
+             * Membership Policy
+             * @default open
+             * @enum {string}
+             */
+            membership_policy: "open" | "active_required" | "included";
             /** Curriculum Json */
             curriculum_json?: {
                 [key: string]: unknown;
@@ -26050,6 +26436,12 @@ export interface components {
             price_amount: number;
             /** @default one_time */
             billing_type: components["schemas"]["BillingType"];
+            /**
+             * Membership Policy
+             * @default open
+             * @enum {string}
+             */
+            membership_policy: "open" | "active_required" | "included";
             /** Curriculum Json */
             curriculum_json?: {
                 [key: string]: unknown;
@@ -26108,6 +26500,8 @@ export interface components {
             /** Price Amount */
             price_amount?: number | null;
             billing_type?: components["schemas"]["BillingType"] | null;
+            /** Membership Policy */
+            membership_policy?: ("open" | "active_required" | "included") | null;
             /** Curriculum Json */
             curriculum_json?: {
                 [key: string]: unknown;
@@ -26455,6 +26849,11 @@ export interface components {
             /** Label */
             label: string;
             /**
+             * Calculation Mode
+             * @default additive
+             */
+            calculation_mode: string;
+            /**
              * Rate Basis Points
              * @default 0
              */
@@ -26482,6 +26881,11 @@ export interface components {
             payment_method?: string | null;
             /** Label */
             label: string;
+            /**
+             * Calculation Mode
+             * @default additive
+             */
+            calculation_mode: string;
             /**
              * Rate Basis Points
              * @default 0
@@ -26513,6 +26917,8 @@ export interface components {
         ChargePolicyUpdate: {
             /** Label */
             label?: string | null;
+            /** Calculation Mode */
+            calculation_mode?: string | null;
             /** Rate Basis Points */
             rate_basis_points?: number | null;
             /** Fixed Amount Kobo */
@@ -26534,6 +26940,17 @@ export interface components {
             payment_method: string;
             /** Club Application Id */
             club_application_id?: string | null;
+            /** Community Experience Offering Id */
+            community_experience_offering_id?: string | null;
+            /** Enrollment Id */
+            enrollment_id?: string | null;
+            /**
+             * Use Installments
+             * @default false
+             */
+            use_installments: boolean;
+            /** Amount Override Kobo */
+            amount_override_kobo?: number | null;
             /** Subtotal Kobo */
             subtotal_kobo?: number | null;
         };
@@ -26785,6 +27202,8 @@ export interface components {
             club_billing_cycle?: components["schemas"]["ClubBillingCycle"] | null;
             /** Club Application Id */
             club_application_id?: string | null;
+            /** Community Experience Offering Id */
+            community_experience_offering_id?: string | null;
             /** Cohort Id */
             cohort_id?: string | null;
             /** Enrollment Id */
@@ -27321,7 +27740,7 @@ export interface components {
          * PaymentPurpose
          * @enum {string}
          */
-        PaymentPurpose: "community" | "club" | "club_bundle" | "academy_cohort" | "session_fee" | "session_bundle" | "store_order" | "wallet_topup" | "ride_share" | "session_booking" | "guest_pass" | "strokelab_founding";
+        PaymentPurpose: "community" | "club" | "club_bundle" | "academy_cohort" | "session_fee" | "session_bundle" | "store_order" | "wallet_topup" | "ride_share" | "session_booking" | "guest_pass" | "community_experience" | "strokelab_founding";
         /** PaymentResponse */
         PaymentResponse: {
             /**
@@ -44045,6 +44464,158 @@ export interface operations {
             };
         };
     };
+    list_community_experiences_clubs_community_experiences_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityExperienceOfferingResponse"][];
+                };
+            };
+        };
+    };
+    create_community_experience_clubs_community_experiences_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommunityExperienceOfferingCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityExperienceOfferingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    quote_community_experience_clubs_community_experiences__offering_id__quote_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                offering_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityExperienceQuote"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    internal_community_experience_payment_context_clubs_community_experiences_internal__offering_id__payment_context_get: {
+        parameters: {
+            query: {
+                member_auth_id: string;
+            };
+            header?: never;
+            path: {
+                offering_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityExperienceQuote"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    activate_community_experience_clubs_community_experiences_internal__offering_id__activate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                offering_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivateCommunityExperienceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityExperienceOfferingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_clubs_clubs__get: {
         parameters: {
             query?: {
@@ -47770,41 +48341,6 @@ export interface operations {
             };
         };
     };
-    mark_guest_referral_reward_paid_admin_guest_passes__guest_pass_id__referral_reward_paid_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                guest_pass_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GuestReferralRewardPaid"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GuestPassAdminResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     get_bookable_slots_makeups_bookable_slots_get: {
         parameters: {
             query: {
@@ -48565,6 +49101,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionDetailedStats"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_converted_guest_hours_internal_sessions_member__member_id__converted_guest_hours_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConvertedGuestHours"];
                 };
             };
             /** @description Validation Error */
@@ -50181,6 +50751,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CohortResponse"][];
+                };
+            };
+        };
+    };
+    get_cohort_pricing_academy_admin_cohorts__cohort_id__pricing_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cohort_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CohortPricingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_cohort_pricing_academy_admin_cohorts__cohort_id__pricing_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cohort_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CohortPricingUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CohortPricingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

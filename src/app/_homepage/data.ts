@@ -49,15 +49,15 @@ export const tiers = [
     name: "Club",
     description:
       "For swimmers ready to make swimming a lifestyle with structured, ongoing training.",
-    price: "From ₦42,500",
-    pricePeriod: "",
-    priceSubtext: "Includes everything in Community",
+    price: "By location",
+    pricePeriod: "/quarter",
+    priceSubtext: "Annual membership is itemised separately when due",
     benefits: [
       "Regular training exercises",
       "Track your times & performance",
       "Team culture & challenges",
       "Exclusive club events",
-      "Everything in Community",
+      "Pods, programming & progress tracking",
     ],
     cta: "Start Training",
     link: "/club",
@@ -68,7 +68,7 @@ export const tiers = [
     name: "Academy",
     description:
       "A structured program with curriculum, assessments, and certification for learners.",
-    price: "From ₦50,000",
+    price: "By programme",
     pricePeriod: "",
     priceSubtext: "Limited spots per cohort",
     benefits: [
@@ -76,7 +76,7 @@ export const tiers = [
       "Coach-assigned drills and goals",
       "Certification",
       "Cohort-based program",
-      "Everything in Community & Club",
+      "A clear all-in learner price",
     ],
     cta: "Apply for Next Cohort",
     link: "/academy",
@@ -91,10 +91,10 @@ export const comparisonFeatures = [
   { label: "Swim tips & education", community: true, club: true, academy: true },
   { label: "Community group chats", community: true, club: true, academy: true },
   { label: "SwimBuddz merchandise access", community: true, club: true, academy: true },
-  { label: "Regular training sessions", community: false, club: true, academy: true },
+  { label: "Regular training sessions", community: false, club: true, academy: false },
   { label: "Performance tracking", community: false, club: true, academy: true },
-  { label: "Team challenges", community: false, club: true, academy: true },
-  { label: "Exclusive club events", community: false, club: true, academy: true },
+  { label: "Team challenges", community: false, club: true, academy: false },
+  { label: "Exclusive club events", community: false, club: true, academy: false },
   { label: "Structured curriculum", community: false, club: false, academy: true },
   { label: "Coach-assigned drills & goals", community: false, club: false, academy: true },
   { label: "Certification", community: false, club: false, academy: true },
@@ -104,9 +104,9 @@ export const comparisonFeatures = [
 export const howItWorks = [
   {
     step: "1",
-    title: "Join the Community",
+    title: "Create Your Profile",
     description:
-      "Create your profile, choose your tier, and get plugged into announcements & groups.",
+      "Create your SwimBuddz profile, then choose the path that fits what you want to do.",
   },
   {
     step: "2",

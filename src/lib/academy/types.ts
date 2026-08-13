@@ -174,6 +174,7 @@ export interface Program {
   currency?: string;
   price_amount?: number;
   billing_type?: BillingType;
+  membership_policy?: "open" | "active_required" | "included";
   // Content. `curriculum_json` and `prep_materials` are JSONB columns
   // server-side; the shapes above mirror what the editor writes and
   // the viewer reads. `string` fallback is for older drafts that
@@ -221,6 +222,7 @@ export interface Cohort {
   coach_name?: string | null;
   // Pricing
   price_override?: number;
+  membership_policy_override?: "open" | "active_required" | "included" | null;
   // ── Session defaults (applied to every generated session) ──
   /** Default pool fee in naira. Used to populate pool_fee on each session. */
   default_pool_fee?: number | null;

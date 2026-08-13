@@ -230,6 +230,11 @@ export default function AcademyPage() {
           A structured, cohort-based program built around real technique, measurable progress, and a
           certificate at the end — not another open-ended membership.
         </p>
+        <p className="max-w-3xl rounded-xl border border-cyan-100 bg-cyan-50 p-4 text-sm text-slate-700">
+          Academy prices vary by programme and cohort. You will see one published all-in learner
+          price and a clear annual-membership policy: open, required and added if due, or included in
+          the published price.
+        </p>
 
         {/* Stats chips */}
         <div className="pt-2">

@@ -14,7 +14,15 @@ export type ClubPlan = {
   club_fee_kobo: number;
   community_experience_fee_kobo: number;
   community_experience_default_selected: boolean;
+  community_experience_offering_id: string | null;
   sessions_included: number;
+  period_start: string;
+  period_end: string;
+  minimum_entry_sessions: number;
+  remaining_sessions: number;
+  entry_available: boolean;
+  entry_reason: string | null;
+  current_price_kobo: number;
   refreshments_included: boolean;
   capacity: number | null;
   premium_venue_note: string | null;
@@ -41,6 +49,7 @@ export type ClubApplication = {
   community_experience_selected: boolean;
   preferred_pod_id: string | null;
   plan: ClubPlan | null;
+  selected_plans: ClubPlan[];
   assessment: ClubAssessment | null;
 };
 
@@ -64,13 +73,94 @@ export type ChargePreview = {
   total_kobo: number;
   components: {
     club?: number;
+    club_items?: Array<{
+      plan_version_id: string;
+      name: string;
+      period_start: string;
+      period_end: string;
+      remaining_sessions: number;
+      full_quarter_fee_kobo: number;
+      amount_kobo: number;
+    }>;
+    annual_swimbuddz_membership?: number;
+    academy?: number;
+    academy_membership_policy?: "open" | "active_required" | "included";
+    annual_membership_months?: number;
+    installment_number?: number | null;
+    total_installments?: number | null;
     community_experience?: number;
     community_experience_selected?: boolean;
   };
 };
 
+export type CommunityExperienceOffering = {
+  id: string;
+  name: string;
+  currency: string;
+  period_start: string;
+  period_end: string;
+  standard_member_fee_kobo: number;
+  club_member_fee_kobo: number;
+  club_bundle_fee_kobo: number;
+  purchase_opens_at: string | null;
+  purchase_closes_at: string | null;
+  is_active: boolean;
+};
+
+export type CommunityExperienceQuote = {
+  offering_id: string;
+  offering_name: string;
+  currency: string;
+  price_context: "standard_member" | "club_member_later";
+  amount_kobo: number;
+  annual_membership_fee_kobo: number;
+  annual_membership_months: number;
+  subtotal_kobo: number;
+  already_purchased: boolean;
+};
+
 export function listClubPlans(): Promise<ClubPlan[]> {
   return apiGet<ClubPlan[]>("/api/v1/clubs/plans");
+}
+
+export function previewAcademyCheckout(
+  enrollmentId: string,
+  useInstallments: boolean,
+  paymentMethod: "paystack" | "manual_transfer" = "paystack",
+  amountOverrideKobo?: number,
+): Promise<ChargePreview> {
+  return apiPost<ChargePreview>(
+    "/api/v1/payments/charges/preview",
+    {
+      purpose: "academy_cohort",
+      payment_method: paymentMethod,
+      enrollment_id: enrollmentId,
+      use_installments: useInstallments,
+      amount_override_kobo: amountOverrideKobo,
+    },
+    { auth: true },
+  );
+}
+
+export function listCommunityExperiences(): Promise<CommunityExperienceOffering[]> {
+  return apiGet<CommunityExperienceOffering[]>("/api/v1/clubs/community-experiences", {
+    auth: true,
+  });
+}
+
+export function createCommunityExperience(input: Omit<CommunityExperienceOffering, "id">) {
+  return apiPost<CommunityExperienceOffering>(
+    "/api/v1/clubs/community-experiences",
+    input,
+    { auth: true },
+  );
+}
+
+export function quoteCommunityExperience(id: string) {
+  return apiGet<CommunityExperienceQuote>(
+    `/api/v1/clubs/community-experiences/${id}/quote`,
+    { auth: true },
+  );
 }
 
 export function listMyClubApplications(): Promise<ClubApplication[]> {
@@ -79,6 +169,7 @@ export function listMyClubApplications(): Promise<ClubApplication[]> {
 
 export function createClubApplication(input: {
   plan_version_id: string;
+  plan_version_ids?: string[];
   community_experience_selected: boolean;
   preferred_pod_id?: string;
   notes?: string;
@@ -112,6 +203,21 @@ export function previewClubCheckout(
   );
 }
 
+export function previewCommunityExperienceCheckout(
+  offeringId: string,
+  paymentMethod: "paystack" | "manual_transfer" = "paystack",
+): Promise<ChargePreview> {
+  return apiPost<ChargePreview>(
+    "/api/v1/payments/charges/preview",
+    {
+      purpose: "community_experience",
+      payment_method: paymentMethod,
+      community_experience_offering_id: offeringId,
+    },
+    { auth: true },
+  );
+}
+
 export function listAllClubPlans(): Promise<ClubPlan[]> {
   return apiGet<ClubPlan[]>("/api/v1/clubs/admin/plans", { auth: true });
 }
@@ -125,7 +231,11 @@ export function createClubPlan(
     club_fee_kobo: number;
     community_experience_fee_kobo: number;
     community_experience_default_selected: boolean;
+    community_experience_offering_id?: string;
     sessions_included: number;
+    period_start: string;
+    period_end: string;
+    minimum_entry_sessions: number;
     refreshments_included: boolean;
     capacity?: number;
     premium_venue_note?: string;
