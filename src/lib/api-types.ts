@@ -14999,6 +14999,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/media/vaults/sync-volunteer-grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync Existing Vault Volunteer Grants
+         * @description Reconcile media/gallery claims immediately when a vault already exists.
+         */
+        post: operations["sync_existing_vault_volunteer_grants_internal_media_vaults_sync_volunteer_grants_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/media/direct-uploads": {
         parameters: {
             query?: never;
@@ -38000,6 +38020,13 @@ export interface components {
              * @default private
              */
             bucket_type: string;
+        };
+        /** InternalVaultGrantSyncRequest */
+        InternalVaultGrantSyncRequest: {
+            /** Session Id */
+            session_id?: string | null;
+            /** Event Id */
+            event_id?: string | null;
         };
         /**
          * MediaDownloadResponse
@@ -67176,6 +67203,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MediaItemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_existing_vault_volunteer_grants_internal_media_vaults_sync_volunteer_grants_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InternalVaultGrantSyncRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: number | string;
+                    };
                 };
             };
             /** @description Validation Error */
