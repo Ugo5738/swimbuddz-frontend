@@ -4,6 +4,7 @@ import type { SessionWithRides } from "@/components/sessions/SessionCard";
 import { AcademyApi, type Cohort, type Enrollment } from "@/lib/academy";
 import { apiGet, apiPost } from "@/lib/api";
 import type { SessionAccessTier } from "@/lib/sessionAccess";
+import { getMyPod, podDisplayName } from "@/lib/pods";
 import type { CohortInfo } from "@/lib/sessions";
 import { getMembershipLabel, getPaidMembershipTier } from "@/lib/tiers";
 import { useQuery } from "@tanstack/react-query";
@@ -45,6 +46,11 @@ export function useSessionsHubData({ loadPast }: { loadPast: boolean }) {
       ]);
       return { enrollments, openCohorts };
     },
+  });
+
+  const podQuery = useQuery({
+    queryKey: ["sessions-hub", "my-pod"],
+    queryFn: () => getMyPod().catch(() => null),
   });
 
   const upcomingQuery = useQuery({
@@ -143,11 +149,15 @@ export function useSessionsHubData({ loadPast }: { loadPast: boolean }) {
     myBookings: bookingsQuery.data ?? [],
     cohortMap,
     enrolledCohortIds,
+    myPodId: podQuery.data?.id ?? null,
+    myPodName: podQuery.data ? podDisplayName(podQuery.data) : null,
     membership,
     membershipLabel,
     upcomingLoading: upcomingQuery.isLoading,
     bookingsLoading: bookingsQuery.isLoading,
     attendanceLoading: attendanceQuery.isLoading,
+    personalizationLoading:
+      profileQuery.isLoading || cohortsQuery.isLoading || podQuery.isLoading,
     pastLoading: pastQuery.isLoading && loadPast,
     upcomingError: upcomingQuery.isError,
     pastError: pastQuery.isError,

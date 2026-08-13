@@ -29,8 +29,8 @@ type Props = {
  * Weather block for a session card. Fetches the canonical summary of the
  * session's own hours from the cached pool forecast (deduped by react-query) —
  * condition, peak rain chance, rainfall (mm), high temp, and a one-line read.
- * Renders nothing for past/far-future sessions or when no forecast is
- * available — weather is an enhancement here, never a blocker.
+ * The parent mounts this component only after the member chooses to view
+ * weather, so the forecast remains an optional, lazy-loaded enhancement.
  */
 export function SessionWeatherChip({ poolId, startsAt, endsAt, isPast = false }: Props) {
   const enabled = Boolean(poolId) && !isPast;
@@ -59,7 +59,13 @@ export function SessionWeatherChip({ poolId, startsAt, endsAt, isPast = false }:
   }
 
   const summary = presentWeatherSummary(data);
-  if (!summary) return null;
+  if (!summary) {
+    return (
+      <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+        A forecast is not available for this session yet.
+      </div>
+    );
+  }
 
   const { Icon, tone } = KIND_STYLE[summary.kind];
 

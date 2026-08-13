@@ -45,11 +45,39 @@ export async function createSessionVolunteerOpportunities(
   session: SessionVolunteerContext,
   volunteerNeeds: VolunteerNeedDraft[]
 ) {
-  if (volunteerNeeds.length === 0) return;
+  if (volunteerNeeds.length === 0) return { createdCount: 0, skippedCount: 0 };
   const start = lagosDateAndTime(session.starts_at);
   const end = lagosDateAndTime(session.ends_at);
+  const existing = await VolunteersApi.admin.listOpportunities({ session_id: sessionId });
+  const activeKeys = new Set(
+    existing
+      .filter((opportunity) => opportunity.status !== "cancelled")
+      .map(
+        (opportunity) =>
+          `${opportunity.role_id ?? ""}|${opportunity.date}|${opportunity.start_time?.slice(0, 5) ?? ""}|${opportunity.end_time?.slice(0, 5) ?? ""}`
+      )
+  );
+  const toCreate: VolunteerNeedDraft[] = [];
+  let skippedCount = 0;
+  for (const need of volunteerNeeds) {
+    const key = [
+      need.role_id,
+      start.date,
+      (need.start_time || start.time).slice(0, 5),
+      (need.end_time || end.time).slice(0, 5),
+    ].join("|");
+    if (activeKeys.has(key)) {
+      skippedCount += 1;
+      continue;
+    }
+    activeKeys.add(key);
+    toCreate.push(need);
+  }
+  if (toCreate.length === 0) {
+    return { createdCount: 0, skippedCount };
+  }
   await VolunteersApi.admin.bulkCreateOpportunities(
-    volunteerNeeds.map((need) => ({
+    toCreate.map((need) => ({
       title: need.title_override || need.role_title || "Session volunteer",
       description: need.description || `Volunteer support for ${session.title}.`,
       role_id: need.role_id,
@@ -66,4 +94,5 @@ export async function createSessionVolunteerOpportunities(
       status: "open",
     }))
   );
+  return { createdCount: toCreate.length, skippedCount };
 }

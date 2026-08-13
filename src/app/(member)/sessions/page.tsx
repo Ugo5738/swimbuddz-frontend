@@ -9,14 +9,20 @@ import { apiPost } from "@/lib/api";
 import { ArrowRight, Calendar, CheckSquare, Waves, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { ActiveFilterChips, DateGroupedSessions, FilterBar, NextSessionPanel } from "./components";
 import { TABS } from "./constants";
 import type { DateFilter, MyBooking, ViewTab } from "./types";
 import { useSessionsHubData } from "./useSessionsHubData";
-import { filterByDate, filterByType, isActiveBooking, isConfirmedBooking } from "./utils";
+import {
+  filterByDate,
+  filterByType,
+  isActiveBooking,
+  isConfirmedBooking,
+  isSessionRelevant,
+} from "./utils";
 
 // ── Inner component (needs searchParams) ────────────────────────────────
 
@@ -42,11 +48,14 @@ function SessionsHub() {
     myBookings,
     cohortMap,
     enrolledCohortIds,
+    myPodId,
+    myPodName,
     membership,
     membershipLabel,
     upcomingLoading,
     bookingsLoading,
     attendanceLoading,
+    personalizationLoading,
     pastLoading,
     upcomingError,
     pastError,
@@ -58,6 +67,7 @@ function SessionsHub() {
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [typeFilters, setTypeFilters] = useState<Set<string>>(new Set());
   const [myCohortsOnly, setMyCohortsOnly] = useState(false);
+  const [relevantOnly, setRelevantOnly] = useState(true);
 
   // Multi-select for bundle booking
   const [selectMode, setSelectMode] = useState(false);
@@ -85,7 +95,12 @@ function SessionsHub() {
     setSelectedIds(new Set());
   }, []);
 
-  const hasActiveFilters = dateFilter !== "all" || typeFilters.size > 0 || myCohortsOnly;
+  const supportsRelevance = activeTab === "upcoming" || activeTab === "all";
+  const hasActiveFilters =
+    dateFilter !== "all" ||
+    typeFilters.size > 0 ||
+    myCohortsOnly ||
+    (supportsRelevance && relevantOnly);
 
   const toggleTypeFilter = useCallback((type: string) => {
     setTypeFilters((prev) => {
@@ -103,22 +118,15 @@ function SessionsHub() {
     setDateFilter("all");
     setTypeFilters(new Set());
     setMyCohortsOnly(false);
+    setRelevantOnly(false);
   }, []);
-
-  const cohortDefaultApplied = useRef(false);
-  useEffect(() => {
-    if (!cohortDefaultApplied.current && enrolledCohortIds.size > 0) {
-      cohortDefaultApplied.current = true;
-      setMyCohortsOnly(true);
-    }
-  }, [enrolledCohortIds]);
 
   const loading =
     activeTab === "booked"
       ? upcomingLoading || bookingsLoading || attendanceLoading
       : activeTab === "past"
         ? pastLoading
-        : upcomingLoading;
+        : upcomingLoading || (supportsRelevance && personalizationLoading);
   const error = (activeTab === "past" ? pastError : upcomingError)
     ? "Unable to load sessions. Please try again later."
     : null;
@@ -235,6 +243,12 @@ function SessionsHub() {
     result = filterByDate(result, dateFilter);
     result = filterByType(result, typeFilters);
 
+    if (supportsRelevance && relevantOnly) {
+      result = result.filter((session) =>
+        isSessionRelevant(session, { bookedSessionIds, enrolledCohortIds, myPodId })
+      );
+    }
+
     if (myCohortsOnly && enrolledCohortIds.size > 0) {
       result = result.filter((s) => s.cohort_id && enrolledCohortIds.has(s.cohort_id));
     }
@@ -247,8 +261,12 @@ function SessionsHub() {
     pastSessions,
     dateFilter,
     typeFilters,
+    relevantOnly,
+    supportsRelevance,
+    bookedSessionIds,
     myCohortsOnly,
     enrolledCohortIds,
+    myPodId,
   ]);
 
   // ── Tab switching ──────────────────────────────────────────────────────
@@ -411,6 +429,18 @@ function SessionsHub() {
       {/* Next session panel — always visible when user has a booking */}
       {!loading && nextSession && <NextSessionPanel session={nextSession} />}
 
+      {!loading && supportsRelevance && relevantOnly && (
+        <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 px-4 py-3 text-sm text-cyan-950">
+          <p className="font-semibold">Showing sessions recommended for you</p>
+          <p className="mt-0.5 text-xs leading-5 text-cyan-800">
+            Based on your {membershipLabel} access
+            {myPodName ? `, ${myPodName} Pod` : ""}
+            {enrolledCohortIds.size > 0 ? ", and Academy cohort" : ""}. Remove the Recommended
+            filter to explore every published session.
+          </p>
+        </div>
+      )}
+
       {/* Segmented control + filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex rounded-xl bg-slate-100 p-1 flex-1 sm:flex-initial">
@@ -460,6 +490,9 @@ function SessionsHub() {
           {/* Filter button */}
           {activeTab !== "past" && (
             <FilterBar
+              relevantOnly={relevantOnly}
+              setRelevantOnly={setRelevantOnly}
+              showRelevanceFilter={supportsRelevance}
               dateFilter={dateFilter}
               setDateFilter={setDateFilter}
               typeFilters={typeFilters}
@@ -477,6 +510,8 @@ function SessionsHub() {
       {/* Active filter chips */}
       {activeTab !== "past" && hasActiveFilters && (
         <ActiveFilterChips
+          relevantOnly={supportsRelevance && relevantOnly}
+          setRelevantOnly={setRelevantOnly}
           dateFilter={dateFilter}
           setDateFilter={setDateFilter}
           typeFilters={typeFilters}

@@ -207,7 +207,7 @@ export function VolunteerNeedsDraftSection({
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Select
-          label="Role"
+          label="Role (optional)"
           value={draft.role_id}
           disabled={loadingRoles}
           onChange={(event) => {
@@ -219,7 +219,6 @@ export function VolunteerNeedsDraftSection({
               role_title: role?.title ?? "",
             });
           }}
-          required
         >
           <option value="">{loadingRoles ? "Loading roles…" : "— Pick role —"}</option>
           {roles.map((role) => (
@@ -260,14 +259,12 @@ export function VolunteerNeedsDraftSection({
           type="time"
           value={effectiveStartTime}
           onChange={(event) => setDraft({ ...draft, start_time: event.target.value })}
-          required
         />
         <Input
           label="Volunteer end time"
           type="time"
           value={effectiveEndTime}
           onChange={(event) => setDraft({ ...draft, end_time: event.target.value })}
-          required
         />
       </div>
 

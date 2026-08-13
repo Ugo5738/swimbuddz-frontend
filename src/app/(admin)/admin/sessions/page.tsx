@@ -3,13 +3,11 @@
 import { GenerateSessionsModal } from "@/components/admin/GenerateSessionsModal";
 import { SessionCalendar } from "@/components/admin/SessionCalendar";
 import { SessionDetailsModal } from "@/components/admin/SessionDetailsModal";
-import { SessionFormModal } from "@/components/admin/SessionFormModal";
 import { TemplatesDrawer, type TemplateFormPayload } from "@/components/admin/TemplatesDrawer";
 import type { VolunteerNeedDraft } from "@/components/admin/VolunteerNeedsDraftSection";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { createSessionVolunteerOpportunities } from "@/lib/session-volunteers";
 import { SessionsApi } from "@/lib/sessions";
 import { VolunteersApi } from "@/lib/volunteers";
 import type { DateSelectArg, EventClickArg, EventInput } from "@fullcalendar/core";
@@ -30,7 +28,8 @@ import {
   Trash2,
   XCircle,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { IBtn, StatCard, StatusBadge, TypeBadge } from "./components";
@@ -39,8 +38,6 @@ import type {
   FilterTab,
   RideArea,
   Session,
-  SessionPayload,
-  SessionRideConfig,
   SessionStatusType,
   Template,
   ViewMode,
@@ -52,6 +49,7 @@ import { apiFetch, fmtDate, fmtTime, LEGEND_ITEMS, locationLabel, PER_PAGE } fro
 // ---------------------------------------------------------------------------
 
 export default function AdminSessionsPage() {
+  const router = useRouter();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [rideAreas, setRideAreas] = useState<RideArea[]>([]);
@@ -63,20 +61,11 @@ export default function AdminSessionsPage() {
   const [view, setView] = useState<ViewMode>("calendar");
 
   // Modal / drawer state
-  const [formModal, setFormModal] = useState<"create" | "edit" | null>(null);
-  const [editingSession, setEditingSession] = useState<Session | null>(null);
-  const [initialDate, setInitialDate] = useState<Date | null>(null);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
   const [templateForm, setTemplateForm] = useState<"create" | "edit" | null>(null);
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
   const [generateTemplate, setGenerateTemplate] = useState<Template | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  // Re-entrancy guard for session creation. The submit button is disabled
-  // via isSubmitting, but React state updates are async, so a fast
-  // double-click can fire a second create before the disable lands. This
-  // ref blocks the second call synchronously, preventing duplicate sessions.
-  const creatingRef = useRef(false);
 
   // ---- Fetch ----
   const fetchData = useCallback(async () => {
@@ -161,10 +150,8 @@ export default function AdminSessionsPage() {
 
   // ---- Calendar handlers ----
   const handleDateSelect = useCallback((info: DateSelectArg) => {
-    setInitialDate(info.start);
-    setEditingSession(null);
-    setFormModal("create");
-  }, []);
+    router.push(`/admin/sessions/new?starts_at=${encodeURIComponent(info.start.toISOString())}`);
+  }, [router]);
 
   const handleEventClick = useCallback(
     (info: EventClickArg) => {
@@ -175,125 +162,6 @@ export default function AdminSessionsPage() {
   );
 
   // ---- API actions ----
-  const handleCreateSession = useCallback(
-    async (
-      sessionData: SessionPayload,
-      rideConfigs: SessionRideConfig[],
-      volunteerNeeds: VolunteerNeedDraft[],
-      publishAfter?: boolean
-    ) => {
-      // Block re-entrant calls (e.g. a fast double-click) before the
-      // isSubmitting-driven button disable has a chance to render.
-      if (creatingRef.current) return;
-      creatingRef.current = true;
-      setIsSubmitting(true);
-      try {
-        const res = await apiFetch("/api/v1/sessions/", {
-          method: "POST",
-          body: JSON.stringify(sessionData),
-        });
-        const created = await res.json();
-
-        let volunteerCreationFailed = false;
-        try {
-          await createSessionVolunteerOpportunities(created.id, sessionData, volunteerNeeds);
-        } catch (volunteerError) {
-          volunteerCreationFailed = true;
-          console.error("Session created but volunteer opportunities failed", volunteerError);
-        }
-
-        if (rideConfigs.length > 0) {
-          await apiFetch(`/api/v1/transport/sessions/${created.id}/ride-configs`, {
-            method: "POST",
-            body: JSON.stringify(rideConfigs),
-          }).catch((err) => console.error("Ride config error:", err));
-        }
-
-        // Cohort-class sessions are auto-scheduled (already published) at
-        // creation time by the backend, so calling /publish again returns a
-        // 400 "already scheduled". Only publish a session that came back as
-        // a DRAFT; otherwise it's already live.
-        let published = created.status !== "draft";
-        if (publishAfter && created.status === "draft") {
-          await apiFetch(`/api/v1/sessions/${created.id}/publish`, { method: "POST" });
-          published = true;
-        }
-        const volunteerLabel =
-          volunteerNeeds.length > 0
-            ? ` with ${volunteerNeeds.length} volunteer opportunit${
-                volunteerNeeds.length === 1 ? "y" : "ies"
-              }`
-            : "";
-        if (volunteerCreationFailed) {
-          toast.warning(
-            "Session created, but its volunteer opportunities could not be added. Add them from the session editor or Volunteers page."
-          );
-        } else {
-          toast.success(
-            published
-              ? `Session created and published${volunteerLabel}`
-              : `Session created as draft${volunteerLabel}`
-          );
-        }
-
-        setFormModal(null);
-        await fetchData();
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Failed to create session");
-      } finally {
-        setIsSubmitting(false);
-        creatingRef.current = false;
-      }
-    },
-    [fetchData]
-  );
-
-  const handleUpdateSession = useCallback(
-    async (
-      id: string,
-      sessionData: SessionPayload,
-      rideConfigs: SessionRideConfig[],
-      volunteerNeeds: VolunteerNeedDraft[]
-    ) => {
-      setIsSubmitting(true);
-      try {
-        await apiFetch(`/api/v1/sessions/${id}`, {
-          method: "PATCH",
-          body: JSON.stringify(sessionData),
-        });
-
-        let volunteerCreationFailed = false;
-        try {
-          await createSessionVolunteerOpportunities(id, sessionData, volunteerNeeds);
-        } catch (volunteerError) {
-          volunteerCreationFailed = true;
-          console.error("Session updated but volunteer opportunities failed", volunteerError);
-        }
-
-        if (rideConfigs.length > 0) {
-          await apiFetch(`/api/v1/transport/sessions/${id}/ride-configs`, {
-            method: "POST",
-            body: JSON.stringify(rideConfigs),
-          }).catch((err) => console.error("Ride config error:", err));
-        }
-
-        if (volunteerCreationFailed) {
-          toast.warning("Session updated, but the new volunteer opportunities could not be added.");
-        } else {
-          toast.success("Session updated");
-        }
-        setFormModal(null);
-        setEditingSession(null);
-        await fetchData();
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Failed to update session");
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-    [fetchData]
-  );
-
   const handleDeleteSession = useCallback(
     async (id: string) => {
       if (!confirm("Delete this session? This cannot be undone.")) return;
@@ -438,14 +306,11 @@ export default function AdminSessionsPage() {
 
   // ---- Interaction helpers ----
   const openCreate = () => {
-    setEditingSession(null);
-    setInitialDate(null);
-    setFormModal("create");
+    router.push("/admin/sessions/new");
   };
 
   const openEdit = (s: Session) => {
-    setEditingSession(s);
-    setFormModal("edit");
+    router.push(`/admin/sessions/${s.id}/edit`);
   };
 
   // ---- Tab config ----
@@ -776,23 +641,6 @@ export default function AdminSessionsPage() {
           }}
           onPublish={handlePublishSession}
           onCancel={handleCancelSession}
-        />
-      )}
-
-      {/* Create / Edit Session Modal */}
-      {formModal && (
-        <SessionFormModal
-          mode={formModal}
-          session={editingSession}
-          initialDate={initialDate}
-          rideAreas={rideAreas}
-          submitting={isSubmitting}
-          onClose={() => {
-            setFormModal(null);
-            setEditingSession(null);
-          }}
-          onCreate={handleCreateSession}
-          onUpdate={handleUpdateSession}
         />
       )}
 

@@ -152,6 +152,26 @@ export function filterByType(
   return sessions.filter((s) => types.has(s.session_type));
 }
 
+/**
+ * Default member discovery filter. A relevant session is one the member
+ * already booked, one assigned to their Pod/cohort, or a general session the
+ * backend says they can book. Sessions for somebody else's Pod/cohort stay
+ * out of the default view but remain discoverable by removing this filter.
+ */
+export function isSessionRelevant(
+  session: SessionWithRides,
+  context: {
+    bookedSessionIds: Set<string>;
+    enrolledCohortIds: Set<string>;
+    myPodId: string | null;
+  }
+): boolean {
+  if (context.bookedSessionIds.has(session.id)) return true;
+  if (session.pod_id) return session.pod_id === context.myPodId;
+  if (session.cohort_id) return context.enrolledCohortIds.has(session.cohort_id);
+  return session.access?.bookable !== false;
+}
+
 /** Group sessions by date and sort groups chronologically.
  *  When enrolledCohortIds is provided, enrolled-cohort sessions sort first within each date. */
 export function groupByDate(

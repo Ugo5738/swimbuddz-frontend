@@ -20,6 +20,11 @@ vi.mock("@/lib/tiers", () => ({
   getPaidMembershipTier: vi.fn(() => "community"),
 }));
 
+vi.mock("@/lib/pods", () => ({
+  getMyPod: vi.fn(async () => null),
+  podDisplayName: vi.fn((pod: { name: string }) => pod.name),
+}));
+
 import { AcademyApi } from "@/lib/academy";
 import { apiGet, apiPost } from "@/lib/api";
 

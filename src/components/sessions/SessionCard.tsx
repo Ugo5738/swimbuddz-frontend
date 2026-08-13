@@ -17,7 +17,19 @@ import {
   type CohortInfo,
 } from "@/lib/sessions";
 import type { MembershipTier } from "@/lib/tiers";
-import { Calendar, CheckCircle2, Clock, Clock3, Lock, MapPin, Users, XCircle } from "lucide-react";
+import {
+  Calendar,
+  Car,
+  CheckCircle2,
+  ChevronDown,
+  Clock,
+  Clock3,
+  CloudSun,
+  Lock,
+  MapPin,
+  Users,
+  XCircle,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -148,6 +160,8 @@ export function SessionCard({
 
   const [signingIn, setSigningIn] = useState(false);
   const [signedInLocal, setSignedInLocal] = useState(false);
+  const [showWeather, setShowWeather] = useState(false);
+  const [showRideShare, setShowRideShare] = useState(false);
   const handleSelfSignIn = async () => {
     setSigningIn(true);
     try {
@@ -361,46 +375,87 @@ export function SessionCard({
               <span>{session.location_name || session.location || "Location TBA"}</span>
             </div>
           )}
-          {session.pool_id && (
-            <SessionWeatherChip
-              poolId={session.pool_id}
-              startsAt={session.starts_at}
-              endsAt={session.ends_at}
-              isPast={effectivelyPast}
-            />
-          )}
         </div>
 
         {/* Fees (upcoming only) */}
         {!effectivelyPast && (
           <div className="mt-4 flex flex-wrap gap-4 text-sm">
             <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500">Pool fee</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Session price</p>
               <p className="font-semibold text-slate-900">{formatCurrency(session.pool_fee)}</p>
             </div>
-            {session.ride_configs && session.ride_configs.length > 0 && (
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500">Ride-share</p>
-                <p className="font-semibold text-slate-900">
-                  From {formatCurrency(Math.min(...session.ride_configs.map((c) => c.cost)))}
-                </p>
-              </div>
-            )}
           </div>
         )}
 
-        {/* Ride-share areas (upcoming + available only) */}
-        {!effectivelyPast && canBook && session.ride_configs && session.ride_configs.length > 0 && (
-          <div className="mt-3 rounded bg-emerald-50 px-3 py-2 space-y-1">
-            <p className="text-xs font-semibold text-emerald-900">Ride-share available:</p>
-            {session.ride_configs.map((config, idx) => (
-              <div key={idx} className="text-xs text-emerald-800">
-                &bull; {config.ride_area_name} – {formatCurrency(config.cost)} (
-                {config.pickup_locations?.length || 0} pickup points)
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Optional planning details. Forecast requests only start after the member opens weather. */}
+        {!effectivelyPast &&
+          (session.pool_id || (session.ride_configs && session.ride_configs.length > 0)) && (
+            <div className="mt-4 space-y-2 border-t border-slate-100 pt-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Planning details
+              </p>
+              {session.pool_id && (
+                <div>
+                  <button
+                    type="button"
+                    aria-expanded={showWeather}
+                    onClick={() => setShowWeather((visible) => !visible)}
+                    className="flex w-full items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    <span className="flex items-center gap-2">
+                      <CloudSun className="h-4 w-4 text-sky-600" /> Weather forecast
+                    </span>
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform ${showWeather ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                  {showWeather && (
+                    <SessionWeatherChip
+                      poolId={session.pool_id}
+                      startsAt={session.starts_at}
+                      endsAt={session.ends_at}
+                      isPast={effectivelyPast}
+                    />
+                  )}
+                </div>
+              )}
+              {session.ride_configs && session.ride_configs.length > 0 && (
+                <div>
+                  <button
+                    type="button"
+                    aria-expanded={showRideShare}
+                    onClick={() => setShowRideShare((visible) => !visible)}
+                    className="flex w-full items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Car className="h-4 w-4 text-emerald-600" />
+                      Ride-share from {formatCurrency(
+                        Math.min(...session.ride_configs.map((config) => config.cost))
+                      )}
+                    </span>
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform ${showRideShare ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                  {showRideShare && (
+                    <div className="mt-2 space-y-2 rounded-lg bg-emerald-50 px-3 py-2">
+                      {session.ride_configs.map((config) => (
+                        <div key={config.id} className="text-xs text-emerald-900">
+                          <p className="font-semibold">
+                            {config.ride_area_name} · {formatCurrency(config.cost)}
+                          </p>
+                          <p className="mt-0.5 text-emerald-700">
+                            {config.pickup_locations?.length || 0} pickup location
+                            {(config.pickup_locations?.length || 0) === 1 ? "" : "s"}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
         {/* Spacer */}
         <div className="flex-1" />

@@ -2,7 +2,7 @@
 
 Complete reference for all routes in the SwimBuddz Next.js application.
 
-**Total Pages:** 123
+**Total Pages:** 125
 
 ---
 
@@ -15,7 +15,7 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 | [Member Routes](#member-routes)     | 29    | Authenticated member dashboards and features    |
 | [Coach Routes](#coach-routes)       | 5     | Coach application, onboarding, and wallet       |
 | [Sessions Routes](#sessions-routes) | 1     | Public sessions list                            |
-| [Admin Routes](#admin-routes)       | 55    | Administrative tools and management             |
+| [Admin Routes](#admin-routes)       | 57    | Administrative tools and management             |
 
 ---
 
@@ -249,6 +249,8 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 | Route                             | File                                                      | Purpose                                      |
 | --------------------------------- | --------------------------------------------------------- | -------------------------------------------- |
 | `/admin/sessions`                 | `src/app/(admin)/admin/sessions/page.tsx`                 | List/manage all sessions                     |
+| `/admin/sessions/new`             | `src/app/(admin)/admin/sessions/new/page.tsx`             | Full-page session creation                   |
+| `/admin/sessions/[id]/edit`       | `src/app/(admin)/admin/sessions/[id]/edit/page.tsx`       | Edit session, volunteer roles, and rides     |
 | `/admin/sessions/[id]/attendance` | `src/app/(admin)/admin/sessions/[id]/attendance/page.tsx` | Session attendance list and pool list export |
 
 ### Attendance Management

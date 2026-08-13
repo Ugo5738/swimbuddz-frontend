@@ -101,6 +101,7 @@ export interface Session {
   // Context links
   cohort_id?: string;
   event_id?: string;
+  pod_id?: string | null;
   booking_id?: string;
 
   // Cohort-specific

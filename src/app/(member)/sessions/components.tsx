@@ -16,6 +16,9 @@ import type { DateFilter } from "./types";
 import { formatDate, formatTimeRange, groupByDate, timeUntil } from "./utils";
 
 export function FilterBar({
+  relevantOnly,
+  setRelevantOnly,
+  showRelevanceFilter,
   dateFilter,
   setDateFilter,
   typeFilters,
@@ -26,6 +29,9 @@ export function FilterBar({
   clearFilters,
   hasActiveFilters,
 }: {
+  relevantOnly: boolean;
+  setRelevantOnly: (v: boolean) => void;
+  showRelevanceFilter: boolean;
   dateFilter: DateFilter;
   setDateFilter: (f: DateFilter) => void;
   typeFilters: Set<string>;
@@ -66,7 +72,10 @@ export function FilterBar({
         Filters
         {hasActiveFilters && (
           <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-cyan-600 px-1.5 text-xs font-bold text-white">
-            {(dateFilter !== "all" ? 1 : 0) + typeFilters.size + (myCohortsOnly ? 1 : 0)}
+            {(dateFilter !== "all" ? 1 : 0) +
+              typeFilters.size +
+              (myCohortsOnly ? 1 : 0) +
+              (showRelevanceFilter && relevantOnly ? 1 : 0)}
           </span>
         )}
         <ChevronDown
@@ -76,6 +85,23 @@ export function FilterBar({
 
       {showFilters && (
         <div className="fixed inset-x-3 top-auto z-20 mt-2 sm:absolute sm:inset-x-auto sm:right-0 sm:w-80 rounded-2xl border border-slate-200 bg-white p-4 shadow-lg space-y-4">
+          {showRelevanceFilter && (
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Relevance
+              </p>
+              <button
+                onClick={() => setRelevantOnly(!relevantOnly)}
+                className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  relevantOnly
+                    ? "bg-cyan-600 text-white"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                Recommended for me
+              </button>
+            </div>
+          )}
           {/* Date filter */}
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
@@ -161,6 +187,8 @@ export function FilterBar({
 // ── Active filter chips ─────────────────────────────────────────────────
 
 export function ActiveFilterChips({
+  relevantOnly,
+  setRelevantOnly,
   dateFilter,
   setDateFilter,
   typeFilters,
@@ -168,6 +196,8 @@ export function ActiveFilterChips({
   myCohortsOnly,
   setMyCohortsOnly,
 }: {
+  relevantOnly: boolean;
+  setRelevantOnly: (v: boolean) => void;
   dateFilter: DateFilter;
   setDateFilter: (f: DateFilter) => void;
   typeFilters: Set<string>;
@@ -176,6 +206,10 @@ export function ActiveFilterChips({
   setMyCohortsOnly: (v: boolean) => void;
 }) {
   const chips: { label: string; onRemove: () => void }[] = [];
+
+  if (relevantOnly) {
+    chips.push({ label: "Recommended for me", onRemove: () => setRelevantOnly(false) });
+  }
 
   if (dateFilter !== "all") {
     const label = DATE_FILTERS.find((f) => f.key === dateFilter)?.label ?? dateFilter;

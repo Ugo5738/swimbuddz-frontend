@@ -6,6 +6,7 @@
 "use client";
 
 import { PoolPicker } from "@/components/admin/PoolPicker";
+import { SessionVolunteerOpportunitiesSection } from "@/components/admin/SessionVolunteerOpportunitiesSection";
 import {
   VolunteerNeedsDraftSection,
   type VolunteerNeedDraft,
@@ -41,19 +42,12 @@ type RideConfigDraft = {
   departure_time: string;
 };
 
-export function SessionFormModal({
-  mode,
-  session,
-  initialDate,
-  rideAreas,
-  submitting,
-  onClose,
-  onCreate,
-  onUpdate,
-}: {
+type SessionFormProps = {
   mode: "create" | "edit";
   session?: Session | null;
   initialDate?: Date | null;
+  initialRideConfigs?: SessionRideConfig[];
+  presentation?: "modal" | "page";
   rideAreas: RideArea[];
   submitting: boolean;
   onClose: () => void;
@@ -69,7 +63,20 @@ export function SessionFormModal({
     rideConfigs: SessionRideConfig[],
     volunteerNeeds: VolunteerNeedDraft[]
   ) => void;
-}) {
+};
+
+export function SessionFormModal({
+  mode,
+  session,
+  initialDate,
+  initialRideConfigs = [],
+  presentation = "modal",
+  rideAreas,
+  submitting,
+  onClose,
+  onCreate,
+  onUpdate,
+}: SessionFormProps) {
   const now = new Date();
   const defaultStart = initialDate || now;
   const defaultEnd = new Date(defaultStart.getTime() + 3 * 60 * 60 * 1000);
@@ -178,8 +185,14 @@ export function SessionFormModal({
     })();
   }, [form.session_type, events.length]);
 
-  const [rideConfigs, setRideConfigs] = useState<RideConfigDraft[]>([]);
-  const [showRide, setShowRide] = useState(false);
+  const [rideConfigs, setRideConfigs] = useState<RideConfigDraft[]>(
+    initialRideConfigs.map((config) => ({
+      ...config,
+      departure_time: config.departure_time
+        ? formatDateTimeLocal(new Date(config.departure_time))
+        : "",
+    }))
+  );
   const [quoteStaff, setQuoteStaff] = useState(1);
   const [quoteLanes, setQuoteLanes] = useState(1);
   const [quoting, setQuoting] = useState(false);
@@ -258,7 +271,6 @@ export function SessionFormModal({
   };
 
   const addRideConfig = () => {
-    setShowRide(true);
     setRideConfigs((prev) => [
       ...prev,
       {
@@ -348,9 +360,8 @@ export function SessionFormModal({
     }
   };
 
-  return (
-    <Modal isOpen onClose={onClose} title={mode === "create" ? "Create Session" : "Edit Session"}>
-      <form onSubmit={handleSubmit} className="space-y-4">
+  const formContent = (
+      <form onSubmit={handleSubmit} className="space-y-5">
         <Input
           label="Title"
           value={form.title}
@@ -735,14 +746,20 @@ export function SessionFormModal({
           </Select>
         )}
 
+        {mode === "edit" && session && (
+          <SessionVolunteerOpportunitiesSection sessionId={session.id} />
+        )}
+
         <VolunteerNeedsDraftSection
           needs={volunteerNeeds}
           onChange={setVolunteerNeeds}
           description={
             mode === "create"
-              ? "Choose any volunteer roles needed for this session. They will be attached and opened to eligible members as soon as the session is saved."
-              : "Add more roles to this session. Existing opportunities remain unchanged and can be managed from Community → Volunteers."
+              ? "Optional. Add roles only when this session needs volunteer support. They are opened to eligible members when the session is saved."
+              : "Optional. Add another role only when this session needs one. Current opportunities are shown above."
           }
+          defaultStartTime={form.starts_at.slice(11, 16)}
+          defaultEndTime={form.ends_at.slice(11, 16)}
         />
 
         {/* Ride Share section */}
@@ -815,6 +832,13 @@ export function SessionFormModal({
           </Button>
         </div>
       </form>
+  );
+
+  if (presentation === "page") return formContent;
+
+  return (
+    <Modal isOpen onClose={onClose} title={mode === "create" ? "Create Session" : "Edit Session"}>
+      {formContent}
     </Modal>
   );
 }
