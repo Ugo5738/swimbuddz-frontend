@@ -34,7 +34,6 @@ export interface Session {
   pool_fee: number;
   guest_fee?: number | null;
   community_dropin_fee?: number | null;
-  guest_referral_reward?: number | null;
   ride_share_fee?: number;
   capacity: number;
   pricing_mode?: "manual" | "cost_plus";
@@ -92,7 +91,6 @@ export interface SessionPayload {
   pool_fee: number;
   guest_fee: number | null;
   community_dropin_fee: number | null;
-  guest_referral_reward: number;
   capacity: number;
   pricing_mode: "manual" | "cost_plus";
   pricing_expected_attendees: number;

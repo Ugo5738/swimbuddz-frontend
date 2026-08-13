@@ -19,6 +19,13 @@ import { useEffect, useState } from "react";
 
 const communityFeatures = [
   {
+    title: "Quarterly Community Experiences",
+    description:
+      "Optional end-of-quarter get-togethers and shared experiences, with your eligible price calculated transparently.",
+    link: "/community/experiences",
+    icon: "🎉",
+  },
+  {
     title: "Meet Our Coaches",
     description:
       "Discover our certified swimming coaches, their expertise, and the programs they teach.",

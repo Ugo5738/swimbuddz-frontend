@@ -16,6 +16,7 @@ export type Cohort = {
   end_date?: string;
   duration_weeks?: number;
   price_override?: number; // Cohort-specific price override
+  membership_policy_override?: "open" | "active_required" | "included" | null;
   status?: string;
   // Installment billing
   installment_plan_enabled?: boolean;
@@ -27,6 +28,7 @@ export type Cohort = {
     price_amount: number;
     duration_weeks?: number;
     currency?: string;
+    membership_policy?: "open" | "active_required" | "included";
   };
 };
 

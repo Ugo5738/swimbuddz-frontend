@@ -5,6 +5,7 @@ export type ChargePolicy = {
   purpose: string;
   payment_method: string | null;
   label: string;
+  calculation_mode: "additive" | "gross_up";
   rate_basis_points: number;
   fixed_amount_kobo: number;
   cap_amount_kobo: number | null;

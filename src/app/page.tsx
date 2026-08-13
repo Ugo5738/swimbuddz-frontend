@@ -549,8 +549,8 @@ export default function HomePage() {
             Choose Your Level of Commitment
           </h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Start with Community, upgrade to Club for consistent training, or join Academy for
-            structured learning.
+            Choose Community for belonging and activities, Club for consistent practice, or
+            Academy for structured learning.
           </p>
         </div>
         <div className="grid gap-6 md:grid-cols-3">

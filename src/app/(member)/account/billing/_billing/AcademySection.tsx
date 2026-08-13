@@ -310,7 +310,8 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive, me
             </p>
             {!communityActive && myEnrollments.length === 0 && (
               <p className="text-xs md:text-sm text-emerald-700 mt-2 font-medium">
-                ✓ Academy enrollment includes Community + Club access — pay once.
+                The checkout will show whether this programme is open, requires active annual
+                membership, or includes membership in its published price.
               </p>
             )}
           </div>

@@ -2,9 +2,7 @@ import { MeetThePods } from "@/components/club/MeetThePods";
 import { SkillLaddersShowcase } from "@/components/club/SkillLaddersShowcase";
 import { Card } from "@/components/ui/Card";
 import {
-  AlertCircle,
   ArrowRight,
-  CheckCircle2,
   Compass,
   Megaphone,
   Star,
@@ -26,23 +24,23 @@ import Link from "next/link";
 const journey = [
   {
     step: 1,
-    title: "Browse the pods",
-    body: "Each pod has a handle ('Dolphins', 'Orcas') and a Pod Lead. Pick one with room and a vibe you like — or get matched during onboarding.",
+    title: "Choose a location",
+    body: "See the price for each pool, choose the current quarter, and optionally add future quarters. Mid-quarter prices adjust to the sessions remaining.",
   },
   {
     step: 2,
-    title: "Meet your Pod Lead",
-    body: "Not a coach — an experienced Club member who runs your Saturday session, holds rhythm midweek, and keeps your crew accountable.",
+    title: "Complete readiness",
+    body: "Tell us about your water safety and swimming baseline, then complete a short, consistent in-pool assessment.",
   },
   {
     step: 3,
-    title: "Show up Saturday",
-    body: "Three hours, same pool, same crew. Warm-up, main set, debrief, social. This is the anchor — everything else is bonus.",
+    title: "Review and pay",
+    body: "Your quote shows every selected quarter, annual membership if due, the optional Community Experience, and any payment charge as separate lines.",
   },
   {
     step: 4,
-    title: "Track and earn",
-    body: "Attendance streaks, time trials, skill ladders. Your progress shows up on your public profile as you go.",
+    title: "Join your pod and practise",
+    body: "Swim a structured weekly plan with your pod, review progress, and keep challenging your previous milestone.",
   },
 ];
 
@@ -376,81 +374,43 @@ export default function ClubPage() {
         </div>
       </section>
 
-      {/* ─── PRICING BRIDGE ──────────────────────────────────────────── */}
-      {/* Per PRICING_STRATEGY.md: lead with the quarterly price visually,
-          show the longer-commitment plans below it without letting them
-          compete. The doc explicitly cautions against the 3-equal-cards
-          pricing pattern for first conversations. */}
+      {/* ─── PRICING ─────────────────────────────────────────────────── */}
       <section className="space-y-6">
         <div className="space-y-2">
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">Pricing</p>
           <h2 className="text-2xl font-bold text-slate-900 md:text-3xl">What it costs</h2>
         </div>
         <Card className="space-y-6">
-          {/* Headline plan — quarterly */}
           <div className="space-y-2">
             <div className="flex flex-wrap items-baseline gap-3">
-              <span className="text-4xl font-bold text-slate-900">₦42,500</span>
-              <span className="text-sm text-slate-600">/ quarter</span>
-              <span className="rounded-full bg-cyan-100 px-2.5 py-0.5 text-xs font-semibold text-cyan-700">
-                Community access included
-              </span>
+              <span className="text-4xl font-bold text-slate-900">From ₦60,000</span>
+              <span className="text-sm text-slate-600">per quarter, location-dependent</span>
             </div>
             <p className="text-sm text-slate-600">
-              The default plan — pay every three months, no fee stacking, no Community add-on.
+              Pool and refreshment costs differ by location. If you join mid-quarter with at least
+              five sessions remaining, your Club price is adjusted by the sessions left. With four
+              or fewer sessions, use Community drop-ins until the next quarter.
             </p>
           </div>
-
-          {/* Longer-commitment plans — secondary visual weight */}
-          <div className="space-y-3 border-t border-slate-100 pt-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Want to commit longer?
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-lg border border-slate-200 p-4">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-xl font-semibold text-slate-900">₦80,000</span>
-                  <span className="text-sm text-slate-600">/ 6 months</span>
-                </div>
-                <p className="mt-1 text-xs text-emerald-700">Save ₦5,000 vs paying quarterly</p>
-              </div>
-              <div className="rounded-lg border border-slate-200 p-4">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-xl font-semibold text-slate-900">₦150,000</span>
-                  <span className="text-sm text-slate-600">/ 12 months</span>
-                </div>
-                <p className="mt-1 text-xs text-emerald-700">Save ₦20,000 vs paying quarterly</p>
-              </div>
+          <div className="grid gap-3 border-t border-slate-100 pt-5 sm:grid-cols-2">
+            <div className="rounded-lg border border-slate-200 p-4">
+              <p className="font-semibold text-slate-900">Annual SwimBuddz Membership</p>
+              <p className="text-2xl font-bold text-slate-900">₦20,000</p>
+              <p className="text-xs text-slate-600">Added only when due, in the same checkout.</p>
             </div>
-            <p className="text-xs text-slate-500">
-              There's no standalone 1-month plan — the only "free first month" of Club is the one
-              that comes bundled with Academy graduation.
-            </p>
-          </div>
-
-          {/* Academy-to-Club bridge */}
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-            <div className="flex items-start gap-3">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-              <div className="space-y-1">
-                <p className="text-sm font-semibold text-emerald-900">Coming from Academy?</p>
-                <p className="text-sm text-emerald-800">
-                  Your first month of Club is already included in your Academy fee. You graduate on
-                  a Saturday and you're on the deck with your club crew the next Saturday — no
-                  payment, no decision. The quarterly rate kicks in from month two.
-                </p>
-              </div>
+            <div className="rounded-lg border border-slate-200 p-4">
+              <p className="font-semibold text-slate-900">Community Experience</p>
+              <p className="text-2xl font-bold text-slate-900">₦30,000</p>
+              <p className="text-xs text-slate-600">
+                Optional and selected by default for the current quarter. It is ₦40,000 for an
+                active Club member buying later and ₦50,000 at the standard member rate.
+              </p>
             </div>
           </div>
-
-          {/* No-stacking reminder */}
-          <div className="flex items-start gap-3 text-sm text-slate-600">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-            <p>
-              No fee stacking — Club includes everything Community offers (₦20,000/year as a
-              standalone), so you don't pay both tiers separately.
-            </p>
-          </div>
+          <p className="text-sm text-slate-600">
+            You can add future Club quarters in the same checkout; future quarters start unselected.
+            Each quarter creates its own entitlement and receipt line.
+          </p>
         </Card>
       </section>
 

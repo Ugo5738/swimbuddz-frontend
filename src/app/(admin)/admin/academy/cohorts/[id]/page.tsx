@@ -17,6 +17,7 @@ import {
   StudentProgress,
 } from "@/lib/academy";
 import { supabase } from "@/lib/auth";
+import { apiGet, apiPut } from "@/lib/api";
 import { API_BASE_URL } from "@/lib/config";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -27,6 +28,17 @@ type MemberBasicInfo = {
   first_name?: string;
   last_name?: string;
   email?: string;
+};
+
+type CohortPricing = {
+  cohort_id: string;
+  cost_lines: { label: string; amount_ngn: number }[];
+  cost_total_ngn: number;
+  margin_percent: number;
+  calculated_price_ngn: number;
+  round_to_ngn: number;
+  suggested_price_ngn: number;
+  published_price_ngn: number;
 };
 
 export default function CohortDetailsPage() {
@@ -43,6 +55,15 @@ export default function CohortDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [sessionsRefreshNonce, setSessionsRefreshNonce] = useState(0);
+  const [pricing, setPricing] = useState<CohortPricing | null>(null);
+  const [pricingLines, setPricingLines] = useState([
+    { label: "Tuition and coaching", amount_ngn: 0 },
+    { label: "Pool access", amount_ngn: 0 },
+    { label: "Equipment and materials", amount_ngn: 0 },
+  ]);
+  const [pricingMargin, setPricingMargin] = useState(20);
+  const [pricingRoundTo, setPricingRoundTo] = useState(5000);
+  const [savingPricing, setSavingPricing] = useState(false);
 
   // Milestone Progress Modal State
   const [isMilestoneModalOpen, setIsMilestoneModalOpen] = useState(false);
@@ -60,6 +81,16 @@ export default function CohortDetailsPage() {
       // 1. Get Cohort Details
       const cohortData = await AcademyApi.getCohort(cohortId);
       setCohort(cohortData);
+      const pricingData = await apiGet<CohortPricing>(
+        `/api/v1/academy/admin/cohorts/${cohortId}/pricing`,
+        { auth: true },
+      ).catch(() => null);
+      if (pricingData) {
+        setPricing(pricingData);
+        if (pricingData.cost_lines.length) setPricingLines(pricingData.cost_lines);
+        setPricingMargin(pricingData.margin_percent);
+        setPricingRoundTo(pricingData.round_to_ngn);
+      }
 
       // 2. Get Milestones for the Program
       const milestonesData = await AcademyApi.listMilestones(cohortData.program_id);
@@ -184,6 +215,31 @@ export default function CohortDetailsPage() {
       console.error("Failed to toggle pause", err);
     } finally {
       setPausingId(null);
+    }
+  };
+
+  const savePricing = async (applySuggestedPrice: boolean) => {
+    setSavingPricing(true);
+    try {
+      const result = await apiPut<CohortPricing>(
+        `/api/v1/academy/admin/cohorts/${cohortId}/pricing`,
+        {
+          cost_lines: pricingLines,
+          margin_percent: pricingMargin,
+          round_to_ngn: pricingRoundTo,
+          apply_suggested_price: applySuggestedPrice,
+        },
+        { auth: true },
+      );
+      setPricing(result);
+      if (applySuggestedPrice) await loadData();
+      toast.success(
+        applySuggestedPrice ? "Suggested price published" : "Internal cost model saved",
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save pricing");
+    } finally {
+      setSavingPricing(false);
     }
   };
 
@@ -324,6 +380,77 @@ export default function CohortDetailsPage() {
           </div>
         </Card>
       </div>
+
+      <Card className="space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900">Internal price builder</h2>
+          <p className="text-sm text-slate-600">
+            These cost lines are admin-only. Learners see one published all-in Academy price.
+          </p>
+        </div>
+        <div className="space-y-2">
+          {pricingLines.map((line, index) => (
+            <div key={`${line.label}-${index}`} className="grid gap-2 sm:grid-cols-[1fr_180px_auto]">
+              <input
+                value={line.label}
+                onChange={(event) =>
+                  setPricingLines((current) =>
+                    current.map((item, itemIndex) =>
+                      itemIndex === index ? { ...item, label: event.target.value } : item,
+                    ),
+                  )
+                }
+                className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              />
+              <input
+                type="number"
+                min="0"
+                value={line.amount_ngn}
+                onChange={(event) =>
+                  setPricingLines((current) =>
+                    current.map((item, itemIndex) =>
+                      itemIndex === index
+                        ? { ...item, amount_ngn: Number(event.target.value) }
+                        : item,
+                    ),
+                  )
+                }
+                className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                aria-label={`${line.label} amount in naira`}
+              />
+              <button
+                type="button"
+                onClick={() => setPricingLines((current) => current.filter((_, i) => i !== index))}
+                className="rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => setPricingLines((current) => [...current, { label: "Other", amount_ngn: 0 }])}
+            className="text-sm font-medium text-cyan-700"
+          >
+            + Add cost line
+          </button>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="text-sm font-medium text-slate-700">Margin (%)<input type="number" min="0" value={pricingMargin} onChange={(event) => setPricingMargin(Number(event.target.value))} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 font-normal" /></label>
+          <label className="text-sm font-medium text-slate-700">Round upward to nearest<input type="number" min="1" value={pricingRoundTo} onChange={(event) => setPricingRoundTo(Number(event.target.value))} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 font-normal" /></label>
+        </div>
+        {pricing ? (
+          <div className="grid gap-2 rounded-xl bg-slate-50 p-4 text-sm sm:grid-cols-3">
+            <p>Required: <strong>₦{pricing.calculated_price_ngn.toLocaleString()}</strong></p>
+            <p>Suggested: <strong>₦{pricing.suggested_price_ngn.toLocaleString()}</strong></p>
+            <p>Published: <strong>₦{pricing.published_price_ngn.toLocaleString()}</strong></p>
+          </div>
+        ) : null}
+        <div className="flex flex-wrap gap-2">
+          <button type="button" disabled={savingPricing} onClick={() => void savePricing(false)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium">Save internal model</button>
+          <button type="button" disabled={savingPricing} onClick={() => void savePricing(true)} className="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-white">Save and publish suggested price</button>
+        </div>
+      </Card>
 
       {/* Sessions Section */}
       <CohortSessionsSection

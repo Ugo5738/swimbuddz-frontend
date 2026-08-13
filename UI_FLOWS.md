@@ -3,7 +3,7 @@
 This document describes the key **user flows** in the SwimBuddz frontend.
 The implementation of pages should follow these flows closely.
 
-**Last Updated:** January 2026
+**Last Updated:** August 2026
 **Total Routes:** 103 pages across Community, Club, Academy, Store, Events, and Admin domains
 
 ---
@@ -495,19 +495,25 @@ this flow.
 ## 15. Member → Club Application → Assessment → Payment
 
 1. The member completes the Club safety pre-assessment.
-2. They choose an effective plan for a specific Club location. The price shown
-   belongs to that plan/location rather than to a global Club rate.
-3. The quarterly Community Experience appears as an optional, separately priced
-   item that is selected by default and can be unticked.
+2. They choose a Club location and quarter plans. If at least five sessions
+   remain, the prorated current quarter is required; with four or fewer sessions
+   remaining, the UI directs them to Community/drop-in swims until next quarter.
+   Future quarters are optional and start unselected.
+3. The current-quarter Community Experience appears as an optional, separately
+   priced item selected by default. It is ₦30,000 with the current Club checkout,
+   ₦40,000 for an active Club member buying later, or ₦50,000 at the standard
+   member rate. Every new quarter starts a new experience purchase.
 4. The member may request an available pod at the selected location, then submits
    the application.
 5. Admin conducts the in-pool assessment, records the baseline and selects
    Club-ready, Club-ready with modified participation, or Academy first. The
    result can be emailed from the review screen.
 6. An approved member opens checkout. Checkout retrieves the application price
-   from the server and presents Club fee, optional Community Experience, enabled
-   online payment charges, and total as separate lines.
-7. Successful payment creates the location enrollment used for pod access.
+   from the server and presents each selected Club quarter, annual SwimBuddz
+   membership if due, optional Community Experience, enabled online payment
+   charges, and total as separate lines.
+7. Successful payment creates a separate location entitlement for each paid
+   quarter, so future selections do not blur into one undifferentiated period.
 
 ## 16. Referrer → Self-paying Guest → Follow-up
 
@@ -519,7 +525,34 @@ this flow.
    data, assessment, and referral data remain admin-only.
 4. Admin records attendance and actual swim minutes, then optionally emails the
    guest assessment result.
-5. A first paid attendance with a referral becomes eligible for one manual
-   referral thank-you. Admin records the transfer reference after paying it.
+5. A first paid, attended guest pass with a referrer emits one idempotent reward
+   event. The existing wallet reward engine grants the referrer 10 Bubbles; it is
+   not a cash payment and repeat visits do not repeat the acquisition reward.
 6. Guest, Community drop-in, and Club/member prices remain independently
    configurable per session/location.
+7. Guest swim minutes contribute to Community swimmer-hours. If the guest later
+   becomes a member, matched historical guest hours follow their lifetime total.
+
+## 17. Member → Community Experience
+
+1. A standard member opens `/community/experiences` and receives the current
+   quarter's server quote at ₦50,000.
+2. An active Club member buying the same experience later receives the ₦40,000
+   Club-later price.
+3. A Club applicant buying it with the current Club quarter receives the
+   ₦30,000 bundle price through Club checkout instead.
+4. Payment charges, when enabled for this payment purpose and method, are shown
+   transparently before payment. The admin may configure an additive fee or a
+   gross-up calculation, cap it, waive it, or turn it off.
+
+## 18. Learner → Academy Checkout
+
+1. The learner chooses a programme/cohort and an enrollment is created or reused.
+2. Checkout requests a server-authoritative quote. Programme/cohort policy is one
+   of: open, active annual membership required, or annual membership included in
+   the published Academy price.
+3. Admins may build the internal published price from cost lines, margin, and an
+   upward rounding increment (₦5,000 by default). Learners see the final published
+   price and applicable membership line, not the internal margin calculation.
+4. Full and installment payments use the same quote policy; membership money is
+   not incorrectly counted as an Academy installment.

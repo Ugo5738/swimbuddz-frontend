@@ -467,7 +467,7 @@ export default function DashboardOnboardingPage() {
       : activationTarget === "club"
         ? communityActive
           ? "You're almost set. Activate your Club membership to unlock Club benefits."
-          : "You're almost set. Activate Community + Club to unlock full access."
+          : "You're almost set. Choose your Club quarter; checkout will itemise annual membership separately if it is due."
         : activationTarget === "community"
           ? "You're almost set. Activate your Community membership to unlock full access."
           : "Your onboarding details are saved. Your dashboard will guide you to activation or Academy programs when you're ready.";
