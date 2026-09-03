@@ -20,14 +20,15 @@ interface TierOption {
 const tierOptions: TierOption[] = [
   {
     value: "community",
-    label: "Community",
-    tagline: "Join the SwimBuddz family",
+    label: "SwimBuddz Membership",
+    tagline: "Join the community and book member activities",
     price: "₦20,000",
     priceNote: "year",
     icon: <Users className="h-6 w-6" />,
     accentColor: "cyan",
     features: [
-      "Access to community events",
+      "One annual member identity",
+      "Access to community activities",
       "Member directory (opt-in)",
       "Volunteer opportunities",
       "Swimming tips & articles",
@@ -36,31 +37,31 @@ const tierOptions: TierOption[] = [
   },
   {
     value: "club",
-    label: "Club",
-    tagline: "Swim with us regularly",
+    label: "Join Club",
+    tagline: "Practise and improve consistently",
     price: "Location-priced",
     priceNote: "quarter",
     icon: <Star className="h-6 w-6" />,
     accentColor: "emerald",
     featured: true,
-    includes: "Club participation includes:",
+    includes: "Club practice includes:",
     features: [
-      "Regular Swimming sessions",
-      "Preferred Swimming locations",
-      "Club challenges & badges",
-      "Attendance tracking",
-      "Priority event access",
+      "Weekly structured practice",
+      "Area and pool selection",
+      "Pods and progress support",
+      "Quarterly, location-based pricing",
+      "Readiness assessment before activation",
     ],
   },
   {
     value: "academy",
-    label: "Academy",
-    tagline: "Structured learning program",
+    label: "Learn through Academy",
+    tagline: "Choose a structured learning programme",
     price: "Programme-priced",
     priceNote: "cohort",
     icon: <Sparkles className="h-6 w-6" />,
     accentColor: "purple",
-    includes: "Academy learning includes:",
+    includes: "Academy programmes can include:",
     features: [
       "Structured curriculum",
       "Personalized coaching",
@@ -89,16 +90,14 @@ export function TierSelectionStep({
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 text-white text-2xl mb-2">
           🏊
         </div>
-        <h3 className="text-2xl font-bold text-slate-900">
-          Choose your membership tier
-        </h3>
+        <h3 className="text-2xl font-bold text-slate-900">How would you like to start?</h3>
         <p className="text-slate-600 max-w-lg mx-auto">
-          Select the tier that best matches your swimming goals. You can always
-          upgrade later as you progress.
+          Create one SwimBuddz identity, then choose Membership, Club practice, or an Academy
+          programme. You can join other programmes later.
         </p>
       </div>
 
-      {/* Tier Cards */}
+      {/* Starting-path cards. API identifiers remain stable during migration. */}
       <div className="grid gap-6 lg:grid-cols-3">
         {tierOptions.map((tier) => {
           const isSelected = selectedTier === tier.value;
@@ -128,8 +127,7 @@ export function TierSelectionStep({
             },
           };
 
-          const colors =
-            colorStyles[tier.accentColor as keyof typeof colorStyles];
+          const colors = colorStyles[tier.accentColor as keyof typeof colorStyles];
 
           return (
             <div
@@ -150,7 +148,7 @@ export function TierSelectionStep({
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-semibold shadow-md">
                     <Star className="h-3 w-3 fill-current" />
-                    Most Popular
+                    Regular practice
                   </span>
                 </div>
               )}
@@ -173,25 +171,17 @@ export function TierSelectionStep({
                     {tier.icon}
                   </div>
                   <div>
-                    <h4 className="text-xl font-bold text-slate-900">
-                      {tier.label}
-                    </h4>
-                    <p className="text-sm text-slate-500 mt-1">
-                      {tier.tagline}
-                    </p>
+                    <h4 className="text-xl font-bold text-slate-900">{tier.label}</h4>
+                    <p className="text-sm text-slate-500 mt-1">{tier.tagline}</p>
                   </div>
                 </div>
 
                 {/* Price */}
                 <div className="py-4 mt-4 border-b border-slate-100">
                   <div className="flex items-baseline gap-1">
-                    <span className={`text-3xl font-bold ${colors.text}`}>
-                      {tier.price}
-                    </span>
+                    <span className={`text-3xl font-bold ${colors.text}`}>{tier.price}</span>
                     {tier.priceNote && (
-                      <span className="text-sm text-slate-500">
-                        /{tier.priceNote}
-                      </span>
+                      <span className="text-sm text-slate-500">/{tier.priceNote}</span>
                     )}
                   </div>
                 </div>
@@ -209,9 +199,7 @@ export function TierSelectionStep({
                 <ul className="space-y-3 mt-2 flex-grow">
                   {tier.features.map((feature, index) => (
                     <li key={index} className="flex items-start gap-3 text-sm">
-                      <CheckCircle
-                        className={`mt-0.5 h-4 w-4 shrink-0 ${colors.check}`}
-                      />
+                      <CheckCircle className={`mt-0.5 h-4 w-4 shrink-0 ${colors.check}`} />
                       <span className="text-slate-700">{feature}</span>
                     </li>
                   ))}
@@ -233,11 +221,7 @@ export function TierSelectionStep({
                     if (!isDisabled) onSelectTier(tier.value);
                   }}
                 >
-                  {isSelected
-                    ? "✓ Selected"
-                    : isDisabled
-                      ? "Current Tier"
-                      : "Select This Tier"}
+                  {isSelected ? "✓ Selected" : isDisabled ? "Already active" : "Choose this path"}
                 </button>
               </div>
             </div>
@@ -249,12 +233,12 @@ export function TierSelectionStep({
       {selectedTier && (
         <div className="text-center p-4 rounded-xl bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-100">
           <p className="text-sm text-cyan-900">
-            <span className="font-semibold">Great choice!</span> You selected
-            the{" "}
+            <span className="font-semibold">Starting path selected:</span>{" "}
             <span className="font-bold">
               {tierOptions.find((t) => t.value === selectedTier)?.label}
             </span>{" "}
-            tier. Click "Next" to continue with your profile.
+            . Click "Next" to create your profile. Prices and any annual Membership requirement are
+            itemised before payment.
           </p>
         </div>
       )}

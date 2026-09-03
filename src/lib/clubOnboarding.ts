@@ -1,5 +1,28 @@
 import { apiGet, apiPost, apiPut } from "./api";
 
+export type ClubOperatingArea = {
+  id: string;
+  name: string;
+  slug: string;
+  area_type: "country" | "market" | "commercial_band" | "locality";
+  parent_id: string | null;
+  country_code: string;
+  timezone: string;
+  currency: string;
+  is_active: boolean;
+};
+
+export type ClubPool = {
+  id: string;
+  name: string;
+  slug: string;
+  location_area: string | null;
+  address: string | null;
+  operating_area_id: string | null;
+  partnership_status: string;
+  is_active: boolean;
+};
+
 export type ClubPlan = {
   id: string;
   club_id: string;
@@ -7,6 +30,7 @@ export type ClubPlan = {
   club_slug: string;
   location: string | null;
   operating_area_id: string | null;
+  pool_id: string | null;
   default_pool_id: string | null;
   name: string;
   billing_cycle: "quarterly";
@@ -29,6 +53,13 @@ export type ClubPlan = {
   effective_from: string;
   effective_to: string | null;
   is_active: boolean;
+};
+
+type ClubPoolList = {
+  items: ClubPool[];
+  total: number;
+  page: number;
+  page_size: number;
 };
 
 export type ClubAssessment = {
@@ -123,11 +154,21 @@ export function listClubPlans(): Promise<ClubPlan[]> {
   return apiGet<ClubPlan[]>("/api/v1/clubs/plans");
 }
 
+export function listClubOperatingAreas(): Promise<ClubOperatingArea[]> {
+  return apiGet<ClubOperatingArea[]>("/api/v1/pools/operating-areas");
+}
+
+export function listClubPools(operatingAreaId?: string): Promise<ClubPoolList> {
+  const query = new URLSearchParams({ page_size: "100" });
+  if (operatingAreaId) query.set("operating_area_id", operatingAreaId);
+  return apiGet<ClubPoolList>(`/api/v1/pools?${query.toString()}`);
+}
+
 export function previewAcademyCheckout(
   enrollmentId: string,
   useInstallments: boolean,
   paymentMethod: "paystack" | "manual_transfer" = "paystack",
-  amountOverrideKobo?: number,
+  amountOverrideKobo?: number
 ): Promise<ChargePreview> {
   return apiPost<ChargePreview>(
     "/api/v1/payments/charges/preview",
@@ -138,7 +179,7 @@ export function previewAcademyCheckout(
       use_installments: useInstallments,
       amount_override_kobo: amountOverrideKobo,
     },
-    { auth: true },
+    { auth: true }
   );
 }
 
@@ -149,18 +190,15 @@ export function listCommunityExperiences(): Promise<CommunityExperienceOffering[
 }
 
 export function createCommunityExperience(input: Omit<CommunityExperienceOffering, "id">) {
-  return apiPost<CommunityExperienceOffering>(
-    "/api/v1/clubs/community-experiences",
-    input,
-    { auth: true },
-  );
+  return apiPost<CommunityExperienceOffering>("/api/v1/clubs/community-experiences", input, {
+    auth: true,
+  });
 }
 
 export function quoteCommunityExperience(id: string) {
-  return apiGet<CommunityExperienceQuote>(
-    `/api/v1/clubs/community-experiences/${id}/quote`,
-    { auth: true },
-  );
+  return apiGet<CommunityExperienceQuote>(`/api/v1/clubs/community-experiences/${id}/quote`, {
+    auth: true,
+  });
 }
 
 export function listMyClubApplications(): Promise<ClubApplication[]> {
@@ -179,18 +217,18 @@ export function createClubApplication(input: {
 
 export function submitClubPreAssessment(
   applicationId: string,
-  input: ClubPreAssessment,
+  input: ClubPreAssessment
 ): Promise<ClubApplication> {
   return apiPut<ClubApplication>(
     `/api/v1/clubs/applications/${applicationId}/pre-assessment`,
     input,
-    { auth: true },
+    { auth: true }
   );
 }
 
 export function previewClubCheckout(
   applicationId: string,
-  paymentMethod: "paystack" | "manual_transfer" = "paystack",
+  paymentMethod: "paystack" | "manual_transfer" = "paystack"
 ): Promise<ChargePreview> {
   return apiPost<ChargePreview>(
     "/api/v1/payments/charges/preview",
@@ -199,13 +237,13 @@ export function previewClubCheckout(
       payment_method: paymentMethod,
       club_application_id: applicationId,
     },
-    { auth: true },
+    { auth: true }
   );
 }
 
 export function previewCommunityExperienceCheckout(
   offeringId: string,
-  paymentMethod: "paystack" | "manual_transfer" = "paystack",
+  paymentMethod: "paystack" | "manual_transfer" = "paystack"
 ): Promise<ChargePreview> {
   return apiPost<ChargePreview>(
     "/api/v1/payments/charges/preview",
@@ -214,7 +252,7 @@ export function previewCommunityExperienceCheckout(
       payment_method: paymentMethod,
       community_experience_offering_id: offeringId,
     },
-    { auth: true },
+    { auth: true }
   );
 }
 
@@ -242,7 +280,7 @@ export function createClubPlan(
     effective_from: string;
     effective_to?: string;
     is_active: boolean;
-  },
+  }
 ): Promise<ClubPlan> {
   return apiPost<ClubPlan>(`/api/v1/clubs/${clubId}/plans`, input, { auth: true });
 }
@@ -263,11 +301,11 @@ export function completeObservedClubAssessment(
     first_club_milestone?: string;
     assessor_notes?: string;
     send_result_email: boolean;
-  },
+  }
 ): Promise<ClubApplication> {
   return apiPut<ClubApplication>(
     `/api/v1/clubs/admin/applications/${applicationId}/assessment`,
     input,
-    { auth: true },
+    { auth: true }
   );
 }

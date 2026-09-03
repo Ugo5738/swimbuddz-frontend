@@ -42,4 +42,22 @@ describe("PoolPicker", () => {
       })
     );
   });
+
+  it("asks the registry for pools in the selected operating area", async () => {
+    render(
+      <PoolPicker
+        value={null}
+        onChange={vi.fn()}
+        label="Pool venue"
+        operatingAreaId="mainland"
+        activePartnersOnly
+      />
+    );
+
+    await waitFor(() =>
+      expect(apiGet).toHaveBeenCalledWith(expect.stringContaining("operating_area_id=mainland"), {
+        auth: true,
+      })
+    );
+  });
 });

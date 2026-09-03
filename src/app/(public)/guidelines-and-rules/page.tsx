@@ -50,7 +50,7 @@ const sections: Section[] = [
     content: [
       {
         type: "paragraph",
-        text: "SwimBuddz welcomes swimmers at every level — first-timers, intermediates, and advanced. We don’t currently run separate groups by skill level; our groups are organised by membership tier (see “Sessions, Meetups & RSVPs” below).",
+        text: "SwimBuddz welcomes swimmers at every level — first-timers, intermediates, and advanced. Access is based on the activity you book: open member activities, assessed Club practice, or an Academy cohort.",
       },
       {
         type: "paragraph",
@@ -63,14 +63,14 @@ const sections: Section[] = [
     content: [
       {
         type: "paragraph",
-        text: "Sessions are organised by membership tier:",
+        text: "Sessions are organised by participation type:",
       },
       {
         type: "list",
         items: [
-          "Community: open meetups and community events for any active member.",
-          "Club: weekly structured Saturday sessions for active Club members.",
-          "Academy: cohort-based programs for currently enrolled cohort members.",
+          "Member activities: open swims, meetups, and events available to eligible members.",
+          "Club: weekly structured practice for swimmers with an active Club enrollment for that date and location.",
+          "Academy: structured lessons for learners enrolled in the relevant cohort.",
         ],
       },
       {
@@ -262,14 +262,11 @@ export default function GuidelinesPage() {
         <h1 className="text-4xl font-bold text-slate-900">
           🏊‍♂️ SwimBuddz Community Rules &amp; Safety Guidelines
         </h1>
-        <p className="text-base text-slate-600">
-          Last Updated: 8 May, 2026
-        </p>
+        <p className="text-base text-slate-600">Last Updated: 8 May, 2026</p>
         <p className="text-lg text-slate-600">
-          Our mission is to build a fun, supportive, and safe community that
-          helps swimmers at every level improve, stay consistent, and enjoy the
-          water. By participating in SwimBuddz activities or group discussions,
-          you agree to follow the guidelines below.
+          Our mission is to build a fun, supportive, and safe community that helps swimmers at every
+          level improve, stay consistent, and enjoy the water. By participating in SwimBuddz
+          activities or group discussions, you agree to follow the guidelines below.
         </p>
       </header>
 
@@ -279,9 +276,7 @@ export default function GuidelinesPage() {
             key={section.title}
             className="space-y-3 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
           >
-            <h2 className="text-2xl font-semibold text-slate-900">
-              {section.title}
-            </h2>
+            <h2 className="text-2xl font-semibold text-slate-900">{section.title}</h2>
             {section.content.map((block, index) => {
               if (block.type === "paragraph") {
                 return (
@@ -304,10 +299,7 @@ export default function GuidelinesPage() {
 
               if (block.type === "list") {
                 return (
-                  <ul
-                    key={index}
-                    className="list-disc space-y-1 pl-5 text-slate-700"
-                  >
+                  <ul key={index} className="list-disc space-y-1 pl-5 text-slate-700">
                     {block.items.map((item) => (
                       <li key={item}>{item}</li>
                     ))}
@@ -324,9 +316,7 @@ export default function GuidelinesPage() {
       <section className="space-y-3 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-xl font-semibold text-slate-900">Contact</h2>
         <p className="text-slate-700">SwimBuddz Team</p>
-        <p className="text-sm text-slate-600">
-          📧 Email: swimbuddz@gmail.com
-        </p>
+        <p className="text-sm text-slate-600">📧 Email: swimbuddz@gmail.com</p>
         <p className="text-sm text-slate-600">📞 Phone: +2347033588400</p>
       </section>
     </div>

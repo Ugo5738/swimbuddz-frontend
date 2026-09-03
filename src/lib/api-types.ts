@@ -712,10 +712,11 @@ export interface paths {
          * Admin Activate Academy Membership By Auth
          * @description Apply a paid Academy entitlement once and preserve later cohorts.
          *
-         *     The idempotency key protects both the Academy end date and the Community
-         *     period granted by the first Academy payment. Club is inherited while
-         *     Academy is active; its explicit one-month bridge is granted separately on
-         *     graduation. Retrying the same payment cannot keep moving entitlements.
+         *     The idempotency key protects the Academy date. Annual Membership is
+         *     extended separately by the payment flow only when the programme's policy
+         *     is ``active_required`` or ``included``; an ``open`` Academy programme must
+         *     not silently grant Membership. Club access is likewise independent, with
+         *     its explicit one-month bridge granted separately on graduation.
          */
         post: operations["admin_activate_academy_membership_by_auth_admin_members_by_auth__auth_id__academy_activate_post"];
         delete?: never;
@@ -1465,6 +1466,46 @@ export interface paths {
         get: operations["get_club_application_payment_context_clubs_internal_applications__application_id__payment_context_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/internal/applications/{application_id}/reservation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reserve Club Application Capacity
+         * @description Atomically hold every selected quarter (and preferred pod) for checkout.
+         */
+        post: operations["reserve_club_application_capacity_clubs_internal_applications__application_id__reservation_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/internal/applications/{application_id}/reservation/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Release Club Application Capacity
+         * @description Idempotently release an abandoned checkout's capacity hold.
+         */
+        post: operations["release_club_application_capacity_clubs_internal_applications__application_id__reservation_release_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2929,6 +2970,30 @@ export interface paths {
         get: operations["get_member_bank_account_internal_members__member_id__bank_account_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/members/club-access/checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check Club Access
+         * @description Resolve location- and date-aware Club access in one internal call.
+         *
+         *     Club enrollments are checked against each session's start time.  This
+         *     keeps a future-quarter purchase from authorizing sessions before that
+         *     quarter begins, while retaining explicit legacy and post-Academy bridges.
+         */
+        post: operations["check_club_access_internal_members_club_access_checks_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -12910,6 +12975,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/pools/operating-areas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Public Operating Areas
+         * @description List active areas that currently contain a bookable partner pool.
+         *
+         *     Club registration uses this as the first step of its Area -> Pool -> Plan
+         *     selector. Areas without an active partner pool are deliberately hidden so
+         *     a swimmer cannot choose a location where SwimBuddz cannot yet operate.
+         */
+        get: operations["list_public_operating_areas_pools_operating_areas_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pools/{pool_id}": {
         parameters: {
             query?: never;
@@ -18803,6 +18892,51 @@ export interface components {
             /** Proof Media */
             proof_media?: components["schemas"]["ChallengeSubmissionMediaResponse"][];
         };
+        /**
+         * ClubAccessCheck
+         * @description One session-specific Club access decision requested internally.
+         */
+        ClubAccessCheck: {
+            /** Context Key */
+            context_key: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Pool Id */
+            pool_id?: string | null;
+            /** Pod Id */
+            pod_id?: string | null;
+        };
+        /** ClubAccessCheckResult */
+        ClubAccessCheckResult: {
+            /** Context Key */
+            context_key: string;
+            /** Allowed */
+            allowed: boolean;
+            /** Source */
+            source: string;
+            /** Enrollment Id */
+            enrollment_id?: string | null;
+            /** Club Id */
+            club_id?: string | null;
+        };
+        /** ClubAccessChecksRequest */
+        ClubAccessChecksRequest: {
+            /** Checks */
+            checks?: components["schemas"]["ClubAccessCheck"][];
+        };
+        /** ClubAccessChecksResponse */
+        ClubAccessChecksResponse: {
+            /** Items */
+            items: components["schemas"]["ClubAccessCheckResult"][];
+        };
         /** ClubApplicationCreate */
         ClubApplicationCreate: {
             /**
@@ -18821,6 +18955,33 @@ export interface components {
             preferred_pod_id?: string | null;
             /** Notes */
             notes?: string | null;
+        };
+        /** ClubApplicationReservationRequest */
+        ClubApplicationReservationRequest: {
+            /** Payment Reference */
+            payment_reference: string;
+        };
+        /** ClubApplicationReservationResponse */
+        ClubApplicationReservationResponse: {
+            /**
+             * Application Id
+             * Format: uuid
+             */
+            application_id: string;
+            /** Payment Reference */
+            payment_reference: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "released" | "consumed";
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Plan Version Ids */
+            plan_version_ids?: string[];
         };
         /** ClubApplicationResponse */
         ClubApplicationResponse: {
@@ -19436,6 +19597,8 @@ export interface components {
             location?: string | null;
             /** Operating Area Id */
             operating_area_id?: string | null;
+            /** Pool Id */
+            pool_id?: string | null;
             /** Default Pool Id */
             default_pool_id?: string | null;
             /**
@@ -22262,6 +22425,8 @@ export interface components {
             academy_paid_until?: string | null;
             /** Post Academy Club Until */
             post_academy_club_until?: string | null;
+            /** Club Enrollment Until */
+            club_enrollment_until?: string | null;
             /** Club Billing Cycle Months */
             club_billing_cycle_months?: number | null;
             /** Pending Payment Reference */
@@ -22828,6 +22993,8 @@ export interface components {
             payment_reference: string;
             /** Status */
             status: string;
+            /** Reservation Expires At */
+            reservation_expires_at?: string | null;
             /** Checkout Url */
             checkout_url?: string | null;
             /**
@@ -22970,6 +23137,8 @@ export interface components {
             payment_reference: string;
             /** Status */
             status: string;
+            /** Reservation Expires At */
+            reservation_expires_at?: string | null;
             /** Checkout Url */
             checkout_url?: string | null;
             /**
@@ -45037,6 +45206,76 @@ export interface operations {
             };
         };
     };
+    reserve_club_application_capacity_clubs_internal_applications__application_id__reservation_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClubApplicationReservationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubApplicationReservationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    release_club_application_capacity_clubs_internal_applications__application_id__reservation_release_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClubApplicationReservationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubApplicationReservationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     activate_club_application_clubs_internal_applications__application_id__activate_post: {
         parameters: {
             query?: never;
@@ -47331,6 +47570,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CoachBankAccountResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_club_access_internal_members_club_access_checks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClubAccessChecksRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubAccessChecksResponse"];
                 };
             };
             /** @description Validation Error */
@@ -64118,6 +64390,7 @@ export interface operations {
             query?: {
                 pool_type?: components["schemas"]["PoolType"] | null;
                 location_area?: string | null;
+                operating_area_id?: string | null;
                 search?: string | null;
                 page?: number;
                 page_size?: number;
@@ -64144,6 +64417,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_public_operating_areas_pools_operating_areas_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperatingAreaResponse"][];
                 };
             };
         };
@@ -65298,6 +65591,7 @@ export interface operations {
                 partnership_status?: components["schemas"]["PartnershipStatus"] | null;
                 pool_type?: components["schemas"]["PoolType"] | null;
                 location_area?: string | null;
+                operating_area_id?: string | null;
                 search?: string | null;
                 is_active?: boolean | null;
                 page?: number;

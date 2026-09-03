@@ -207,6 +207,63 @@ describe("evaluateMemberAccess — community paywall", () => {
 });
 
 describe("evaluateMemberAccess — tier-route gate", () => {
+  it("keeps programme onboarding reachable before annual Membership payment", () => {
+    const member: MiddlewareMember = {
+      approval_status: "approved",
+      membership: {
+        paid_tier: "prospect",
+        tier_statuses: { community: { status: "approved_unpaid" } },
+      },
+    };
+
+    expect(decide("/upgrade/club/readiness", member)).toEqual({ kind: "allow" });
+    expect(decide("/upgrade/academy/cohort", member)).toEqual({ kind: "allow" });
+  });
+
+  it("does not treat Academy as Club or annual Membership access", () => {
+    const academyOnly: MiddlewareMember = {
+      approval_status: "approved",
+      membership: {
+        paid_tier: "academy",
+        effective_paid_tiers: ["academy"],
+        tier_statuses: {
+          community: { status: "approved_unpaid" },
+          club: { status: "inactive" },
+          academy: { status: "active" },
+        },
+      },
+    };
+
+    expect(decide("/academy/cohorts", academyOnly)).toEqual({ kind: "allow" });
+    expect(decide("/sessions/academy-session", academyOnly)).toEqual({ kind: "allow" });
+    expect(decide("/club/training", academyOnly)).toEqual(
+      accessRedirect("club", "inactive", "/club/training")
+    );
+    expect(decide("/community/directory", academyOnly)).toEqual(
+      accessRedirect("community", "approved_unpaid", "/community/directory")
+    );
+  });
+
+  it("does not treat Club as annual Membership access", () => {
+    const clubOnly: MiddlewareMember = {
+      approval_status: "approved",
+      membership: {
+        paid_tier: "club",
+        effective_paid_tiers: ["club"],
+        tier_statuses: {
+          community: { status: "approved_unpaid" },
+          club: { status: "active" },
+          academy: { status: "inactive" },
+        },
+      },
+    };
+
+    expect(decide("/club/training", clubOnly)).toEqual({ kind: "allow" });
+    expect(decide("/community/directory", clubOnly)).toEqual(
+      accessRedirect("community", "approved_unpaid", "/community/directory")
+    );
+  });
+
   it("community member can reach /sessions and /community", () => {
     const m: MiddlewareMember = {
       approval_status: "approved",

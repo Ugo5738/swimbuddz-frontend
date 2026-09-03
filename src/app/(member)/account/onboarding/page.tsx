@@ -1,6 +1,5 @@
 "use client";
 
-import { ClubReadinessStep } from "@/components/onboarding/ClubReadinessStep";
 import { CommunitySignalsStep } from "@/components/onboarding/CommunitySignalsStep";
 import {
   OTHER_GOAL_VALUE,
@@ -61,12 +60,9 @@ export default function DashboardOnboardingPage() {
 
   const requestedTiers = useMemo(() => getRequestedTiers(member), [member]);
   const wantsAcademy = requestedTiers.includes("academy");
-  const wantsClub = requestedTiers.includes("club") || wantsAcademy;
+  const wantsClub = requestedTiers.includes("club");
 
-  const clubContext =
-    wantsClub ||
-    hasTierContext(member, "club") ||
-    hasTierContext(member, "academy");
+  const clubContext = wantsClub || hasTierContext(member, "club");
   const academyContext = wantsAcademy || hasTierContext(member, "academy");
 
   const needsCoreProfile = useMemo(() => {
@@ -103,13 +99,6 @@ export default function DashboardOnboardingPage() {
     const profile = member.profile;
     return !profile?.swim_level || !profile?.deep_water_comfort || !profile?.personal_goals;
   }, [member]);
-
-  const needsClubReadiness = useMemo(() => {
-    if (!member) return false;
-    if (!clubContext) return false;
-    const availability = member.availability;
-    return !(availability?.available_days && availability.available_days.length > 0);
-  }, [member, clubContext]);
 
   const needsAcademyReadiness = useMemo(() => {
     if (!member) return false;
@@ -260,18 +249,6 @@ export default function DashboardOnboardingPage() {
     });
   };
 
-  const toggleClubReadinessMulti = (option: string) => {
-    setClubReadinessForm((prev) => {
-      const exists = prev.availabilitySlots.includes(option);
-      return {
-        ...prev,
-        availabilitySlots: exists
-          ? prev.availabilitySlots.filter((x) => x !== option)
-          : [...prev.availabilitySlots, option],
-      };
-    });
-  };
-
   const toggleStroke = (stroke: string) => {
     setSwimForm((prev) => {
       const exists = prev.strokes.includes(stroke);
@@ -304,39 +281,39 @@ export default function DashboardOnboardingPage() {
   // ── Validity flags ───────────────────────────────────────────────
   const coreFormValid = Boolean(
     coreForm.firstName &&
-    coreForm.lastName &&
-    coreForm.phone &&
-    coreForm.country &&
-    coreForm.state &&
-    coreForm.city &&
-    coreForm.gender &&
-    coreForm.dateOfBirth &&
-    (coreForm.profilePhotoMediaId || coreForm.profilePhotoUrl) &&
-    coreForm.timeZone
+      coreForm.lastName &&
+      coreForm.phone &&
+      coreForm.country &&
+      coreForm.state &&
+      coreForm.city &&
+      coreForm.gender &&
+      coreForm.dateOfBirth &&
+      (coreForm.profilePhotoMediaId || coreForm.profilePhotoUrl) &&
+      coreForm.timeZone
   );
 
   const safetyFormValid = Boolean(
     clubForm.emergencyContactName &&
-    clubForm.emergencyContactRelationship &&
-    clubForm.emergencyContactPhone &&
-    clubForm.locationPreference.length > 0 &&
-    clubForm.timeOfDayAvailability.length > 0
+      clubForm.emergencyContactRelationship &&
+      clubForm.emergencyContactPhone &&
+      clubForm.locationPreference.length > 0 &&
+      clubForm.timeOfDayAvailability.length > 0
   );
 
   const swimFormValid = Boolean(
     swimForm.swimLevel &&
-    swimForm.deepWaterComfort &&
-    swimForm.goals.length > 0 &&
-    (!swimForm.goals.includes(OTHER_GOAL_VALUE) ||
-      Boolean(swimForm.otherGoals && swimForm.otherGoals.trim()))
+      swimForm.deepWaterComfort &&
+      swimForm.goals.length > 0 &&
+      (!swimForm.goals.includes(OTHER_GOAL_VALUE) ||
+        Boolean(swimForm.otherGoals && swimForm.otherGoals.trim()))
   );
 
   const clubReadinessValid = !clubContext || clubReadinessForm.availabilitySlots.length > 0;
 
   const academyFormValid = Boolean(
     academyForm.academyGoals &&
-    academyForm.academyPreferredCoachGender &&
-    academyForm.academyLessonPreference
+      academyForm.academyPreferredCoachGender &&
+      academyForm.academyLessonPreference
   );
 
   // ── Steps + progress derivations ─────────────────────────────────
@@ -346,12 +323,11 @@ export default function DashboardOnboardingPage() {
       { key: "safety", title: "Safety & logistics", required: true },
       { key: "swim", title: "Swimming background", required: true },
     ];
-    if (clubContext) base.push({ key: "club", title: "Club readiness", required: true });
     if (academyContext) base.push({ key: "academy", title: "Academy readiness", required: true });
     base.push({ key: "signals", title: "Community signals", required: false });
     base.push({ key: "review", title: "Finish", required: true });
     return base;
-  }, [clubContext, academyContext]);
+  }, [academyContext]);
 
   const stepIndex = steps.findIndex((s) => s.key === currentStep);
   const stepCount = Math.max(steps.length, 1);
@@ -363,7 +339,6 @@ export default function DashboardOnboardingPage() {
     { complete: !needsCoreProfile },
     { complete: !needsSafetyLogistics },
     { complete: !needsSwimBackground },
-    ...(clubContext ? [{ complete: !needsClubReadiness }] : []),
     ...(academyContext ? [{ complete: !needsAcademyReadiness }] : []),
     { complete: currentStep === "review" },
   ].filter((item) => item.complete).length;
@@ -374,7 +349,6 @@ export default function DashboardOnboardingPage() {
     if (needsCoreProfile) return "core";
     if (needsSafetyLogistics) return "safety";
     if (needsSwimBackground) return "swim";
-    if (needsClubReadiness) return "club";
     if (needsAcademyReadiness) return "academy";
     return "review";
   }
@@ -384,7 +358,7 @@ export default function DashboardOnboardingPage() {
     if (step === "core") return !needsCoreProfile;
     if (step === "safety") return !needsSafetyLogistics;
     if (step === "swim") return !needsSwimBackground;
-    if (step === "club") return !needsClubReadiness;
+    if (step === "club") return true;
     if (step === "academy") return !needsAcademyReadiness;
     if (step === "signals") return false;
     if (step === "review") return firstIncompleteStep() === "review";
@@ -406,14 +380,7 @@ export default function DashboardOnboardingPage() {
       (step) => step.required && step.key !== "review" && !isStepSatisfied(step.key)
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    steps,
-    needsCoreProfile,
-    needsSafetyLogistics,
-    needsSwimBackground,
-    needsClubReadiness,
-    needsAcademyReadiness,
-  ]);
+  }, [steps, needsCoreProfile, needsSafetyLogistics, needsSwimBackground, needsAcademyReadiness]);
 
   const hasMissingRequiredSteps = missingRequiredSteps.length > 0;
   const firstMissingRequiredStep = missingRequiredSteps[0];
@@ -429,9 +396,8 @@ export default function DashboardOnboardingPage() {
   const safeNext =
     nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : null;
 
-  // Academy intent wins over Club: an academy registrant pays for a cohort
-  // (which auto-confers academy tier), so we send them to cohort selection
-  // rather than the Club plan picker.
+  // Preserve the selected participation product. Academy and Club are
+  // independent; only an explicit Club request enters the Club path.
   const activationTarget = wantsAcademy
     ? "academy"
     : wantsClub || isClubUpgradeFlow
@@ -444,7 +410,7 @@ export default function DashboardOnboardingPage() {
     activationTarget === "academy"
       ? "/upgrade/academy/cohort"
       : activationTarget === "club"
-        ? "/upgrade/club/plan"
+        ? "/upgrade/club/readiness"
         : activationTarget === "community"
           ? "/checkout?purpose=community"
           : "/account/billing";
@@ -455,21 +421,19 @@ export default function DashboardOnboardingPage() {
         ? "Continue to Your Cohort"
         : "Pick Your Cohort"
       : activationTarget === "club"
-        ? "Activate Club Membership"
+        ? "Continue Your Club Application"
         : activationTarget === "community"
-          ? "Activate Community Membership"
+          ? "Activate Annual Membership"
           : "Go to Billing";
   const reviewDescription =
     activationTarget === "academy"
       ? safeNext
         ? "You're almost set. Continue to the cohort you picked to complete enrollment."
-        : "You're almost set. Pick the cohort you'd like to join — paying for it activates your Academy membership."
+        : "You're almost set. Pick the Academy cohort you'd like to join and review its programme price."
       : activationTarget === "club"
-        ? communityActive
-          ? "You're almost set. Activate your Club membership to unlock Club benefits."
-          : "You're almost set. Choose your Club quarter; checkout will itemise annual membership separately if it is due."
+        ? "You're almost set. Complete one Club readiness form, then choose your area, pool and quarter. Your checkout will itemise annual Membership if it is due."
         : activationTarget === "community"
-          ? "You're almost set. Activate your Community membership to unlock full access."
+          ? "You're almost set. Activate your annual SwimBuddz Membership."
           : "Your onboarding details are saved. Your dashboard will guide you to activation or Academy programs when you're ready.";
 
   // ── Save + draft hooks ────────────────────────────────────────────
@@ -548,7 +512,6 @@ export default function DashboardOnboardingPage() {
   }, [
     member,
     needsAcademyReadiness,
-    needsClubReadiness,
     needsCoreProfile,
     needsSafetyLogistics,
     needsSwimBackground,
@@ -637,16 +600,6 @@ export default function DashboardOnboardingPage() {
             onUpdate={(field, value) => setSwimForm((prev) => ({ ...prev, [field]: value as any }))}
             onToggleStroke={toggleStroke}
             onToggleGoal={toggleGoal}
-          />
-        ) : null}
-
-        {currentStep === "club" ? (
-          <ClubReadinessStep
-            formData={clubReadinessForm}
-            onToggleAvailability={toggleClubReadinessMulti}
-            onUpdateNotes={(value) =>
-              setClubReadinessForm((prev) => ({ ...prev, clubNotes: value }))
-            }
           />
         ) : null}
 

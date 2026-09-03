@@ -28,10 +28,13 @@ export default function MembershipPage() {
     <div className="mx-auto max-w-3xl space-y-8 py-10">
       <header className="space-y-2">
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">Membership</p>
-        <h1 className="text-3xl font-bold text-slate-900">One member relationship, separate programmes</h1>
+        <h1 className="text-3xl font-bold text-slate-900">
+          One member relationship, separate programmes
+        </h1>
         <p className="text-slate-600">
           You register with SwimBuddz once. Club, Academy, sessions, and Community Experiences are
-          distinct things you can qualify for or purchase; you do not create a new identity each time.
+          distinct things you can qualify for or purchase; you do not create a new identity each
+          time.
         </p>
       </header>
 
@@ -61,8 +64,9 @@ export default function MembershipPage() {
             optional current-quarter Community Experience.
           </p>
           <p>
-            <strong>Academy:</strong> choose a programme and cohort, review its published all-in price
-            and membership policy, then pay in full or use installments where the cohort permits.
+            <strong>Academy:</strong> choose a programme and cohort, review its published all-in
+            price and membership policy, then pay in full or use installments where the cohort
+            permits.
           </p>
         </div>
       </section>
@@ -79,10 +83,17 @@ export default function MembershipPage() {
       <section className="rounded-xl border border-cyan-200 bg-cyan-50 p-6 text-sm text-slate-700">
         <p className="font-semibold text-slate-900">Ready to begin?</p>
         <p className="mt-1">
-          <Link href="/register" className="font-semibold text-cyan-700 hover:underline">Create an account</Link>
-          {" "}or{" "}
-          <Link href="/login" className="font-semibold text-cyan-700 hover:underline">log in</Link>
-          {" "}to continue from your dashboard.
+          <Link
+            href="/register?goal=community"
+            className="font-semibold text-cyan-700 hover:underline"
+          >
+            Create an account
+          </Link>{" "}
+          or{" "}
+          <Link href="/login" className="font-semibold text-cyan-700 hover:underline">
+            log in
+          </Link>{" "}
+          to continue from your dashboard.
         </p>
       </section>
     </div>

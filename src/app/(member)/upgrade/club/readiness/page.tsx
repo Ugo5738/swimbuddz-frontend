@@ -22,12 +22,7 @@ type Member = {
 
 export default function ClubReadinessPage() {
   const router = useRouter();
-  const {
-    state,
-    setClubReadinessData,
-    markClubReadinessComplete,
-    setTargetTier,
-  } = useUpgrade();
+  const { state, setClubReadinessData, markClubReadinessComplete, setTargetTier } = useUpgrade();
 
   const [formData, setFormData] = useState({
     availabilitySlots: state.clubReadinessData?.availableDays || [],
@@ -44,7 +39,8 @@ export default function ClubReadinessPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Set target tier on mount
+  // Keep the stable internal checkout discriminator while customer-facing
+  // language treats Club as a programme, not a membership rank.
   useEffect(() => {
     setTargetTier("club");
   }, [setTargetTier]);
@@ -106,17 +102,18 @@ export default function ClubReadinessPage() {
 
     setSaving(true);
     try {
-      // Save to backend - include 'club' in requested_tiers so entitlement can be applied after payment
+      // Save shared availability and notes. The ClubApplication plus observed
+      // assessment is the eligibility authority; legacy requested tiers are
+      // not used to approve or activate this application.
       await apiPatch(
         "/api/v1/members/me",
         {
           availability: { available_days: formData.availabilitySlots },
           membership: {
             club_notes: formData.clubNotes,
-            requested_tiers: ["club"], // Required for club entitlement activation
           },
         },
-        { auth: true },
+        { auth: true }
       );
 
       // Update context
@@ -155,12 +152,10 @@ export default function ClubReadinessPage() {
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 text-white shadow-lg shadow-cyan-500/25">
           <Calendar className="w-7 h-7" />
         </div>
-        <h1 className="text-2xl font-bold text-slate-900">
-          Set Your Availability
-        </h1>
+        <h1 className="text-2xl font-bold text-slate-900">Club readiness</h1>
         <p className="text-slate-500">
-          Tell us when you're available so we can match you with the right
-          sessions.
+          Share your availability and complete one safety pre-assessment before choosing your Club
+          pool and quarter.
         </p>
       </div>
 
@@ -179,18 +174,24 @@ export default function ClubReadinessPage() {
           <div>
             <h2 className="font-semibold text-slate-900">Safety pre-assessment</h2>
             <p className="text-sm text-slate-600">
-              This helps us plan your in-pool assessment. It is not a pass or fail decision by itself.
+              This helps us plan your in-pool assessment. It is not a pass or fail decision by
+              itself.
             </p>
           </div>
         </div>
 
-        {([
-          ["canSwim25mContinuously", "Can you swim 25 metres continuously without assistance?"],
-          ["controlledBreathing", "Can you breathe in a controlled way while swimming?"],
-          ["comfortableInDeepWater", "Are you calm where your feet cannot touch the bottom?"],
-          ["canFloatOrTread30Seconds", "Can you float or tread water for about 30 seconds?"],
-          ["canStopAndRecover", "Can you stop mid-swim, regain control, and reach the wall safely?"],
-        ] as const).map(([key, label]) => (
+        {(
+          [
+            ["canSwim25mContinuously", "Can you swim 25 metres continuously without assistance?"],
+            ["controlledBreathing", "Can you breathe in a controlled way while swimming?"],
+            ["comfortableInDeepWater", "Are you calm where your feet cannot touch the bottom?"],
+            ["canFloatOrTread30Seconds", "Can you float or tread water for about 30 seconds?"],
+            [
+              "canStopAndRecover",
+              "Can you stop mid-swim, regain control, and reach the wall safely?",
+            ],
+          ] as const
+        ).map(([key, label]) => (
           <fieldset key={key} className="space-y-2">
             <legend className="text-sm font-medium text-slate-800">{label}</legend>
             <div className="grid grid-cols-2 gap-2">
@@ -258,19 +259,14 @@ export default function ClubReadinessPage() {
 
       {/* Benefits */}
       <div className="bg-slate-50 rounded-2xl p-5">
-        <h4 className="text-sm font-semibold text-slate-900 mb-3">
-          Why we ask this
-        </h4>
+        <h4 className="text-sm font-semibold text-slate-900 mb-3">Why we ask this</h4>
         <ul className="space-y-2">
           {[
             "Match you with sessions at your preferred times",
             "Group you with swimmers on similar schedules",
             "Send relevant session notifications only",
           ].map((item) => (
-            <li
-              key={item}
-              className="flex items-center gap-2 text-sm text-slate-600"
-            >
+            <li key={item} className="flex items-center gap-2 text-sm text-slate-600">
               <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
               {item}
             </li>
@@ -279,12 +275,7 @@ export default function ClubReadinessPage() {
       </div>
 
       {/* Continue button */}
-      <Button
-        onClick={handleSubmit}
-        disabled={!isValid || saving}
-        size="lg"
-        className="w-full"
-      >
+      <Button onClick={handleSubmit} disabled={!isValid || saving} size="lg" className="w-full">
         {saving ? "Saving..." : "Choose a Club Location"}
       </Button>
 

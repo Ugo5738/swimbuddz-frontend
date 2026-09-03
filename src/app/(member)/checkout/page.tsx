@@ -140,7 +140,7 @@ function CheckoutContent() {
           const enrollment = await apiPost<{ id: string }>(
             "/api/v1/academy/enrollments/me",
             enrollmentBody,
-            { auth: true },
+            { auth: true }
           );
           enrollmentId = enrollment.id;
         } catch (error) {
@@ -150,8 +150,7 @@ function CheckoutContent() {
             { id: string; cohort_id: string; payment_status: string }[]
           >("/api/v1/academy/my-enrollments", { auth: true });
           const enrollment = existing.find(
-            (item) =>
-              item.cohort_id === state.selectedCohortId && item.payment_status !== "paid",
+            (item) => item.cohort_id === state.selectedCohortId && item.payment_status !== "paid"
           );
           if (!enrollment) throw new Error("No unpaid Academy enrollment is available");
           enrollmentId = enrollment.id;
@@ -161,7 +160,7 @@ function CheckoutContent() {
         router.replace(`/checkout?${params.toString()}`);
       } catch (error) {
         setQuoteError(
-          error instanceof Error ? error.message : "Could not prepare Academy checkout",
+          error instanceof Error ? error.message : "Could not prepare Academy checkout"
         );
       }
     })();
@@ -191,24 +190,23 @@ function CheckoutContent() {
           setQuoteError(null);
         } catch (quoteFailure) {
           setQuoteError(
-            quoteFailure instanceof Error ? quoteFailure.message : "Could not load the approved Club price",
+            quoteFailure instanceof Error
+              ? quoteFailure.message
+              : "Could not load the approved Club price"
           );
         }
       }
       if (purpose === "community_experience" && communityExperienceOfferingId) {
         try {
           setExperienceQuote(
-            await previewCommunityExperienceCheckout(
-              communityExperienceOfferingId,
-              paymentMethod,
-            ),
+            await previewCommunityExperienceCheckout(communityExperienceOfferingId, paymentMethod)
           );
           setQuoteError(null);
         } catch (quoteFailure) {
           setQuoteError(
             quoteFailure instanceof Error
               ? quoteFailure.message
-              : "Could not load the Community Experience price",
+              : "Could not load the Community Experience price"
           );
         }
       }
@@ -219,15 +217,15 @@ function CheckoutContent() {
               urlEnrollmentId,
               billingMode === "installments",
               paymentMethod,
-              urlAmountOverrideKobo,
-            ),
+              urlAmountOverrideKobo
+            )
           );
           setQuoteError(null);
         } catch (quoteFailure) {
           setQuoteError(
             quoteFailure instanceof Error
               ? quoteFailure.message
-              : "Could not load the Academy price",
+              : "Could not load the Academy price"
           );
         }
       }
@@ -317,8 +315,7 @@ function CheckoutContent() {
           amount: (clubQuote.components.club || 0) / 100,
         });
       }
-      const annualMembership =
-        (clubQuote.components.annual_swimbuddz_membership || 0) / 100;
+      const annualMembership = (clubQuote.components.annual_swimbuddz_membership || 0) / 100;
       if (annualMembership > 0) {
         lineItems.push({
           label: "SwimBuddz Membership — annual",
@@ -346,7 +343,7 @@ function CheckoutContent() {
     if (!clubApplicationId && clubBillingCycle) {
       const clubFee = clubPricing[clubBillingCycle];
       lineItems.push({
-        label: `Club membership (${getClubCycleLabel(clubBillingCycle).toLowerCase()})`,
+        label: `Club practice (${getClubCycleLabel(clubBillingCycle).toLowerCase()})`,
         amount: clubFee,
       });
       subtotal += clubFee;
@@ -362,8 +359,7 @@ function CheckoutContent() {
     }
   } else if (purpose === "academy_cohort" && academyQuote) {
     const academyAmount = (academyQuote.components.academy || 0) / 100;
-    const annualMembership =
-      (academyQuote.components.annual_swimbuddz_membership || 0) / 100;
+    const annualMembership = (academyQuote.components.annual_swimbuddz_membership || 0) / 100;
     const installmentNumber = academyQuote.components.installment_number;
     lineItems.push({
       label: `Academy: ${state.selectedCohort?.name || "cohort"}${installmentNumber ? ` · installment ${installmentNumber}` : ""}`,
@@ -383,8 +379,7 @@ function CheckoutContent() {
       label: "Quarterly Community Experience",
       amount: (experienceQuote.components.community_experience || 0) / 100,
     });
-    const annualMembership =
-      (experienceQuote.components.annual_swimbuddz_membership || 0) / 100;
+    const annualMembership = (experienceQuote.components.annual_swimbuddz_membership || 0) / 100;
     if (annualMembership > 0) {
       lineItems.push({ label: "SwimBuddz Membership — annual", amount: annualMembership });
     }
@@ -395,7 +390,7 @@ function CheckoutContent() {
   } else if (purpose === "community") {
     // Community only
     lineItems.push({
-      label: "Community membership (annual)",
+      label: "SwimBuddz Membership — annual",
       amount: communityFee,
     });
     subtotal += communityFee;
@@ -691,9 +686,11 @@ function CheckoutContent() {
     const isAcademyFlow = purpose === "academy_cohort";
     const backLabel = isAcademyFlow ? "Back to Cohort Selection" : "Back to Billing";
     const backPath = isAcademyFlow ? "/upgrade/academy/cohort" : "/account/billing";
-    const message = quoteError || (isAcademyFlow
-      ? "We couldn't load the cohort details. Please pick a cohort again."
-      : "Missing checkout information. Please start the upgrade process again.");
+    const message =
+      quoteError ||
+      (isAcademyFlow
+        ? "We couldn't load the cohort details. Please pick a cohort again."
+        : "Missing checkout information. Please start the upgrade process again.");
     return (
       <div className="space-y-6 text-center">
         <Alert variant="error" title="Checkout Error">
@@ -730,106 +727,109 @@ function CheckoutContent() {
           ))}
 
           {/* Discount section */}
-          {!clubApplicationId ? <div className="pt-3 border-t border-slate-100">
-            {validatedDiscount ? (
-              <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-2 min-w-0">
-                    <Tag className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-emerald-700">
-                        {validatedDiscount.code}
-                      </p>
-                      {validatedDiscount.appliesTo && (
-                        <p className="text-xs text-emerald-600">
-                          Applied to {validatedDiscount.appliesTo.replace("_", " ")}
+          {!clubApplicationId ? (
+            <div className="pt-3 border-t border-slate-100">
+              {validatedDiscount ? (
+                <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-2 min-w-0">
+                      <Tag className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-emerald-700">
+                          {validatedDiscount.code}
                         </p>
-                      )}
+                        {validatedDiscount.appliesTo && (
+                          <p className="text-xs text-emerald-600">
+                            Applied to {validatedDiscount.appliesTo.replace("_", " ")}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-sm font-semibold text-emerald-700">
+                        -{discountAmount > 0 ? formatCurrency(discountAmount) : "Applied"}
+                      </span>
+                      <button
+                        onClick={handleClearDiscount}
+                        className="p-1 rounded-full text-emerald-400 hover:text-emerald-600 hover:bg-emerald-100 transition-colors"
+                        aria-label="Remove discount"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-sm font-semibold text-emerald-700">
-                      -{discountAmount > 0 ? formatCurrency(discountAmount) : "Applied"}
-                    </span>
-                    <button
-                      onClick={handleClearDiscount}
-                      className="p-1 rounded-full text-emerald-400 hover:text-emerald-600 hover:bg-emerald-100 transition-colors"
-                      aria-label="Remove discount"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M6 18L18 6M6 6l12 12"
-                        />
-                      </svg>
-                    </button>
-                  </div>
                 </div>
-              </div>
-            ) : showDiscountInput ? (
-              <div className="flex items-center gap-2">
-                <Tag className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                <input
-                  type="text"
-                  value={discountInput}
-                  onChange={(e) => setDiscountInput(e.target.value.toUpperCase())}
-                  placeholder="Discount code"
-                  autoFocus
-                  className="flex-1 min-w-0 px-3 py-2 text-sm border border-slate-200 rounded-lg text-slate-700 focus:ring-2 focus:ring-cyan-400 focus:border-transparent uppercase placeholder:text-slate-400"
-                />
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleApplyDiscount}
-                  disabled={!discountInput.trim() || validatingDiscount}
-                  className="flex-shrink-0"
-                >
-                  {validatingDiscount ? "..." : "Apply"}
-                </Button>
+              ) : showDiscountInput ? (
+                <div className="flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                  <input
+                    type="text"
+                    value={discountInput}
+                    onChange={(e) => setDiscountInput(e.target.value.toUpperCase())}
+                    placeholder="Discount code"
+                    autoFocus
+                    className="flex-1 min-w-0 px-3 py-2 text-sm border border-slate-200 rounded-lg text-slate-700 focus:ring-2 focus:ring-cyan-400 focus:border-transparent uppercase placeholder:text-slate-400"
+                  />
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleApplyDiscount}
+                    disabled={!discountInput.trim() || validatingDiscount}
+                    className="flex-shrink-0"
+                  >
+                    {validatingDiscount ? "..." : "Apply"}
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDiscountInput("");
+                      setShowDiscountInput(false);
+                    }}
+                    className="flex-shrink-0 p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                    aria-label="Cancel discount entry"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
                 <button
                   type="button"
-                  onClick={() => {
-                    setDiscountInput("");
-                    setShowDiscountInput(false);
-                  }}
-                  className="flex-shrink-0 p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-                  aria-label="Cancel discount entry"
+                  onClick={() => setShowDiscountInput(true)}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-cyan-600 hover:text-cyan-700 hover:underline"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
+                  <Tag className="w-4 h-4" />
+                  Have a discount code?
                 </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowDiscountInput(true)}
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-cyan-600 hover:text-cyan-700 hover:underline"
-              >
-                <Tag className="w-4 h-4" />
-                Have a discount code?
-              </button>
-            )}
-          </div> : null}
+              )}
+            </div>
+          ) : null}
 
           {billingMode === "installments" && installmentPreview ? (
             <div className="pt-4 border-t border-slate-200 flex justify-between items-start gap-3">
               <div className="min-w-0">
                 <span className="text-base font-semibold text-slate-900 block">Due today</span>
                 <span className="text-xs text-slate-500">
-                  Installment {academyQuote?.components.installment_number ?? 1} of {installmentPreview.count}
+                  Installment {academyQuote?.components.installment_number ?? 1} of{" "}
+                  {installmentPreview.count}
                 </span>
               </div>
               <span className="text-xl font-bold text-cyan-600 whitespace-nowrap">
@@ -865,7 +865,8 @@ function CheckoutContent() {
         <p className="text-center text-sm text-slate-500 -mt-2">
           {installmentPreview.subsequentAmount != null
             ? `Then ${installmentPreview.count - 1} × ${formatCurrency(installmentPreview.subsequentAmount)} every 4 weeks`
-            : "Remaining installments follow the cohort payment schedule"}{" "}—{" "}
+            : "Remaining installments follow the cohort payment schedule"}{" "}
+          —{" "}
           <button
             type="button"
             onClick={() => setBillingMode("full")}

@@ -25,19 +25,19 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 
 ### Landing & Info Pages
 
-| Route                   | File                                             | Purpose                                             |
-| ----------------------- | ------------------------------------------------ | --------------------------------------------------- |
-| `/`                     | `src/app/page.tsx`                               | Landing page - Explain SwimBuddz and drive sign-ups |
-| `/about`                | `src/app/(public)/about/page.tsx`                | About page - SwimBuddz story and values             |
-| `/academy`              | `src/app/(public)/academy/page.tsx`              | Academy landing - Program information and benefits  |
-| `/club`                 | `src/app/(public)/club/page.tsx`                 | Club landing - Training information                 |
+| Route                   | File                                             | Purpose                                              |
+| ----------------------- | ------------------------------------------------ | ---------------------------------------------------- |
+| `/`                     | `src/app/page.tsx`                               | Landing page - Explain SwimBuddz and drive sign-ups  |
+| `/about`                | `src/app/(public)/about/page.tsx`                | About page - SwimBuddz story and values              |
+| `/academy`              | `src/app/(public)/academy/page.tsx`              | Academy landing - Program information and benefits   |
+| `/club`                 | `src/app/(public)/club/page.tsx`                 | Club landing - Training information                  |
 | `/club/standards`       | `src/app/(public)/club/standards/page.tsx`       | Official Club practice, safety and conduct standards |
-| `/community`            | `src/app/(public)/community/page.tsx`            | Community landing - Social swimming information     |
-| `/calendar`             | `src/app/(public)/calendar/page.tsx`             | Public Community activity calendar                  |
-| `/guidelines-and-rules` | `src/app/(public)/guidelines-and-rules/page.tsx` | Community rules and safety guidelines               |
-| `/membership`           | `src/app/(public)/membership/page.tsx`           | Membership information and tiers                    |
-| `/privacy`              | `src/app/(public)/privacy/page.tsx`              | Privacy policy                                      |
-| `/sessions-and-events`  | `src/app/(public)/sessions-and-events/page.tsx`  | Sessions and events information                     |
+| `/community`            | `src/app/(public)/community/page.tsx`            | Community landing - Social swimming information      |
+| `/calendar`             | `src/app/(public)/calendar/page.tsx`             | Public Community activity calendar                   |
+| `/guidelines-and-rules` | `src/app/(public)/guidelines-and-rules/page.tsx` | Community rules and safety guidelines                |
+| `/membership`           | `src/app/(public)/membership/page.tsx`           | Annual Membership and participation-product overview |
+| `/privacy`              | `src/app/(public)/privacy/page.tsx`              | Privacy policy                                       |
+| `/sessions-and-events`  | `src/app/(public)/sessions-and-events/page.tsx`  | Sessions and events information                      |
 
 ### Announcements
 
@@ -77,10 +77,10 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 
 ### Guides
 
-| Route             | File                                        | Purpose                                                                |
-| ----------------- | ------------------------------------------- | ---------------------------------------------------------------------- |
-| `/guides`         | `src/app/(public)/guides/page.tsx`          | Shareable index of public guides, grouped by audience                  |
-| `/guides/[slug]`  | `src/app/(public)/guides/[slug]/page.tsx`   | Individual guide detail page, rendered from `src/content/guides/*.md`  |
+| Route            | File                                      | Purpose                                                               |
+| ---------------- | ----------------------------------------- | --------------------------------------------------------------------- |
+| `/guides`        | `src/app/(public)/guides/page.tsx`        | Shareable index of public guides, grouped by audience                 |
+| `/guides/[slug]` | `src/app/(public)/guides/[slug]/page.tsx` | Individual guide detail page, rendered from `src/content/guides/*.md` |
 
 ---
 
@@ -130,7 +130,7 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 | Route                         | File                                                   | Purpose                         |
 | ----------------------------- | ------------------------------------------------------ | ------------------------------- |
 | `/account/sessions`           | `src/app/(member)/account/sessions/page.tsx`           | Member's upcoming sessions      |
-| `/account/calendar`           | `src/app/(member)/account/calendar/page.tsx`           | Access-aware tier calendar      |
+| `/account/calendar`           | `src/app/(member)/account/calendar/page.tsx`           | Access-aware member calendar    |
 | `/sessions/[id]/sign-in`      | `src/app/(member)/sessions/[id]/sign-in/page.tsx`      | Three-step session sign-in flow |
 | `/account/attendance/history` | `src/app/(member)/account/attendance/history/page.tsx` | Attendance history and stats    |
 
@@ -164,26 +164,26 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 
 ### Chat (Member)
 
-| Route                         | File                                                       | Purpose                                                  |
-| ----------------------------- | ---------------------------------------------------------- | -------------------------------------------------------- |
-| `/account/chat`               | `src/app/(member)/account/chat/page.tsx`                   | Channel list — last-message previews, unread badges      |
-| `/account/chat/[channel_id]`  | `src/app/(member)/account/chat/[channel_id]/page.tsx`      | Channel detail — message thread + composer + mark-read   |
+| Route                        | File                                                  | Purpose                                                |
+| ---------------------------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| `/account/chat`              | `src/app/(member)/account/chat/page.tsx`              | Channel list — last-message previews, unread badges    |
+| `/account/chat/[channel_id]` | `src/app/(member)/account/chat/[channel_id]/page.tsx` | Channel detail — message thread + composer + mark-read |
 
 ### Community Features
 
-| Route                                      | File                                                                | Purpose                                                |
-| ------------------------------------------ | ------------------------------------------------------------------- | ------------------------------------------------------ |
-| `/community/coaches`                       | `src/app/(member)/community/coaches/page.tsx`                       | Browse coaches directory                               |
-| `/community/directory`                     | `src/app/(member)/community/directory/page.tsx`                     | Member directory                                       |
-| `/community/events`                        | `src/app/(member)/community/events/page.tsx`                        | Community events list                                  |
+| Route                                      | File                                                                | Purpose                                                 |
+| ------------------------------------------ | ------------------------------------------------------------------- | ------------------------------------------------------- |
+| `/community/coaches`                       | `src/app/(member)/community/coaches/page.tsx`                       | Browse coaches directory                                |
+| `/community/directory`                     | `src/app/(member)/community/directory/page.tsx`                     | Member directory                                        |
+| `/community/events`                        | `src/app/(member)/community/events/page.tsx`                        | Community events list                                   |
 | `/community/experiences`                   | `src/app/(member)/community/experiences/page.tsx`                   | Quote and buy the current optional Community Experience |
-| `/community/events/[id]`                   | `src/app/(member)/community/events/[id]/page.tsx`                   | Event detail and RSVP                                  |
-| `/community/tips`                          | `src/app/(member)/community/tips/page.tsx`                          | Swimming tips library                                  |
-| `/community/tips/[id]`                     | `src/app/(member)/community/tips/[id]/page.tsx`                     | Single tip detail                                      |
-| `/community/volunteers`                    | `src/app/(member)/community/volunteers/page.tsx`                    | Volunteer hub — profile, opportunities, roles, rewards |
-| `/community/volunteers/opportunities`      | `src/app/(member)/community/volunteers/opportunities/page.tsx`      | Browse all open volunteer opportunities                |
-| `/community/volunteers/opportunities/[id]` | `src/app/(member)/community/volunteers/opportunities/[id]/page.tsx` | Opportunity detail — claim/cancel slot                 |
-| `/community/volunteers/leaderboard`        | `src/app/(member)/community/volunteers/leaderboard/page.tsx`        | Volunteer leaderboard (all-time and monthly)           |
+| `/community/events/[id]`                   | `src/app/(member)/community/events/[id]/page.tsx`                   | Event detail and RSVP                                   |
+| `/community/tips`                          | `src/app/(member)/community/tips/page.tsx`                          | Swimming tips library                                   |
+| `/community/tips/[id]`                     | `src/app/(member)/community/tips/[id]/page.tsx`                     | Single tip detail                                       |
+| `/community/volunteers`                    | `src/app/(member)/community/volunteers/page.tsx`                    | Volunteer hub — profile, opportunities, roles, rewards  |
+| `/community/volunteers/opportunities`      | `src/app/(member)/community/volunteers/opportunities/page.tsx`      | Browse all open volunteer opportunities                 |
+| `/community/volunteers/opportunities/[id]` | `src/app/(member)/community/volunteers/opportunities/[id]/page.tsx` | Opportunity detail — claim/cancel slot                  |
+| `/community/volunteers/leaderboard`        | `src/app/(member)/community/volunteers/leaderboard/page.tsx`        | Volunteer leaderboard (all-time and monthly)            |
 
 ### Upgrade Flows
 
@@ -298,18 +298,18 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 
 ### Academy Management (Admin)
 
-| Route                                     | File                                                              | Purpose                      |
-| ----------------------------------------- | ----------------------------------------------------------------- | ---------------------------- |
-| `/admin/academy`                          | `src/app/(admin)/admin/academy/page.tsx`                          | Academy overview dashboard   |
-| `/admin/academy/page`                     | `src/app/(admin)/admin/academy/page/page.tsx`                     | Academy landing page editor  |
-| `/admin/academy/programs/new`             | `src/app/(admin)/admin/academy/programs/new/page.tsx`             | Create new program           |
-| `/admin/academy/programs/[id]`            | `src/app/(admin)/admin/academy/programs/[id]/page.tsx`            | Program management           |
-| `/admin/academy/programs/[id]/edit`       | `src/app/(admin)/admin/academy/programs/[id]/edit/page.tsx`       | Edit program details         |
-| `/admin/academy/programs/[id]/curriculum` | `src/app/(admin)/admin/academy/programs/[id]/curriculum/page.tsx` | Curriculum builder/editor    |
-| `/admin/academy/cohorts/new`              | `src/app/(admin)/admin/academy/cohorts/new/page.tsx`              | Create new cohort            |
-| `/admin/academy/cohorts/[id]`             | `src/app/(admin)/admin/academy/cohorts/[id]/page.tsx`             | Cohort management            |
-| `/admin/academy/enrollments`              | `src/app/(admin)/admin/academy/enrollments/page.tsx`              | All enrollments list         |
-| `/admin/academy/enrollments/[id]`         | `src/app/(admin)/admin/academy/enrollments/[id]/page.tsx`         | Single enrollment management |
+| Route                                     | File                                                              | Purpose                         |
+| ----------------------------------------- | ----------------------------------------------------------------- | ------------------------------- |
+| `/admin/academy`                          | `src/app/(admin)/admin/academy/page.tsx`                          | Academy overview dashboard      |
+| `/admin/academy/page`                     | `src/app/(admin)/admin/academy/page/page.tsx`                     | Academy landing page editor     |
+| `/admin/academy/programs/new`             | `src/app/(admin)/admin/academy/programs/new/page.tsx`             | Create new program              |
+| `/admin/academy/programs/[id]`            | `src/app/(admin)/admin/academy/programs/[id]/page.tsx`            | Program management              |
+| `/admin/academy/programs/[id]/edit`       | `src/app/(admin)/admin/academy/programs/[id]/edit/page.tsx`       | Edit program details            |
+| `/admin/academy/programs/[id]/curriculum` | `src/app/(admin)/admin/academy/programs/[id]/curriculum/page.tsx` | Curriculum builder/editor       |
+| `/admin/academy/cohorts/new`              | `src/app/(admin)/admin/academy/cohorts/new/page.tsx`              | Create new cohort               |
+| `/admin/academy/cohorts/[id]`             | `src/app/(admin)/admin/academy/cohorts/[id]/page.tsx`             | Cohort management               |
+| `/admin/academy/enrollments`              | `src/app/(admin)/admin/academy/enrollments/page.tsx`              | All enrollments list            |
+| `/admin/academy/enrollments/[id]`         | `src/app/(admin)/admin/academy/enrollments/[id]/page.tsx`         | Single enrollment management    |
 | `/admin/academy/extension-requests`       | `src/app/(admin)/admin/academy/extension-requests/page.tsx`       | Cohort extension approval queue |
 
 ### Gallery Management
@@ -431,13 +431,13 @@ _Last updated: February 2026_
 
 ### Session Media Vault
 
-| Route | File | Protection and purpose |
-| --- | --- | --- |
+| Route                         | File                                                   | Protection and purpose                                                                   |
+| ----------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
 | `/media-vault/upload/[token]` | `src/app/(public)/media-vault/upload/[token]/page.tsx` | Public capability-link uploader; the backend validates expiry, revocation and byte quota |
-| `/account/media-vault` | `src/app/(member)/account/media-vault/page.tsx` | Authenticated member's active media/gallery-support assignments |
-| `/account/media-vault/[id]` | `src/app/(member)/account/media-vault/[id]/page.tsx` | Contributor uploader for one assigned session vault |
-| `/admin/media-vault` | `src/app/(admin)/admin/media-vault/page.tsx` | Create and monitor date/session-specific private vaults |
-| `/admin/media-vault/[id]` | `src/app/(admin)/admin/media-vault/[id]/page.tsx` | Curate, approve/publish, manage access/links, exports and bandwidth |
+| `/account/media-vault`        | `src/app/(member)/account/media-vault/page.tsx`        | Authenticated member's active media/gallery-support assignments                          |
+| `/account/media-vault/[id]`   | `src/app/(member)/account/media-vault/[id]/page.tsx`   | Contributor uploader for one assigned session vault                                      |
+| `/admin/media-vault`          | `src/app/(admin)/admin/media-vault/page.tsx`           | Create and monitor date/session-specific private vaults                                  |
+| `/admin/media-vault/[id]`     | `src/app/(admin)/admin/media-vault/[id]/page.tsx`      | Curate, approve/publish, manage access/links, exports and bandwidth                      |
 
 The public capability route is intentionally outside the authenticated member
 layout. Possession of the high-entropy, hashed, expiring token is the
@@ -447,17 +447,17 @@ _Last updated: July 2026_
 
 ### Club Onboarding and Guest Passes
 
-| Route | File | Protection and purpose |
-| --- | --- | --- |
-| `/upgrade/club/readiness` | `src/app/(member)/upgrade/club/readiness/page.tsx` | Member safety pre-assessment before choosing a Club location |
-| `/upgrade/club/plan` | `src/app/(member)/upgrade/club/plan/page.tsx` | Location-specific current/future quarter selection, proration, pod preference, and optional Community Experience |
-| `/checkout?purpose=club&application_id=...` | `src/app/(member)/checkout/page.tsx` | Approved server-priced Club checkout with separate additional charges |
-| `/guest-pass/session/[sessionId]` | `src/app/(public)/guest-pass/session/[sessionId]/page.tsx` | Public self-paying guest booking; accepts optional `ref` attribution |
-| `/guest-pass/[guestPassId]` | `src/app/(public)/guest-pass/[guestPassId]/page.tsx` | Redacted public guest payment/status receipt |
-| `/admin/club-plans` | `src/app/(admin)/admin/club-plans/page.tsx` | Publish effective-dated prices by Club location |
-| `/admin/club-applications` | `src/app/(admin)/admin/club-applications/page.tsx` | Review readiness, record baseline/outcome, and send result email |
-| `/admin/guest-passes` | `src/app/(admin)/admin/guest-passes/page.tsx` | Track payment, attendance/swimmer-minutes, assessments, and automatic 10-Bubble referral status |
-| `/admin/payment-charges` | `src/app/(admin)/admin/payment-charges/page.tsx` | Configure purpose/method-specific additive or gross-up payment charges |
+| Route                                       | File                                                       | Protection and purpose                                                                                             |
+| ------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `/upgrade/club/readiness`                   | `src/app/(member)/upgrade/club/readiness/page.tsx`         | Member safety pre-assessment before choosing a Club location                                                       |
+| `/upgrade/club/plan`                        | `src/app/(member)/upgrade/club/plan/page.tsx`              | Area → pool/location → consecutive quarter selection, proration, pod preference, and optional Community Experience |
+| `/checkout?purpose=club&application_id=...` | `src/app/(member)/checkout/page.tsx`                       | Approved server-priced Club checkout with separate additional charges                                              |
+| `/guest-pass/session/[sessionId]`           | `src/app/(public)/guest-pass/session/[sessionId]/page.tsx` | Public self-paying guest booking; accepts optional `ref` attribution                                               |
+| `/guest-pass/[guestPassId]`                 | `src/app/(public)/guest-pass/[guestPassId]/page.tsx`       | Redacted public guest payment/status receipt                                                                       |
+| `/admin/club-plans`                         | `src/app/(admin)/admin/club-plans/page.tsx`                | Publish effective-dated prices by Club location                                                                    |
+| `/admin/club-applications`                  | `src/app/(admin)/admin/club-applications/page.tsx`         | Review readiness, record baseline/outcome, and send result email                                                   |
+| `/admin/guest-passes`                       | `src/app/(admin)/admin/guest-passes/page.tsx`              | Track payment, attendance/swimmer-minutes, assessments, and automatic 10-Bubble referral status                    |
+| `/admin/payment-charges`                    | `src/app/(admin)/admin/payment-charges/page.tsx`           | Configure purpose/method-specific additive or gross-up payment charges                                             |
 
 The current-quarter Community Experience is optional but selected by default in
 Club checkout. It is ₦50,000 for a standard member, ₦40,000 for an active Club
@@ -470,6 +470,6 @@ prorated by remaining sessions and cannot be entered as a new Club member once
 four or fewer sessions remain; those swimmers use Community/drop-in booking
 until the next quarter. When current-quarter entry is available it is required,
 while future quarters are optional. Annual SwimBuddz membership is shown as a
-separate line only when due.
+separate line only when due. Checkout holds plan/pod capacity for 30 minutes.
 
-_Last updated: August 2026_
+_Last updated: September 2026_

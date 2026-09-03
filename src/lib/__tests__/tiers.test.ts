@@ -175,6 +175,25 @@ describe("Tier Utilities", () => {
       expect(getPaidMembershipTier(member)).toBe("club");
       expect(getPaidMembershipTiers(member)).toEqual(["club", "community"]);
     });
+
+    it("does not manufacture inherited products from an Academy status", () => {
+      const member = {
+        membership: {
+          paid_tier: "academy",
+          tier_statuses: {
+            community: {
+              tier: "community" as const,
+              status: "inactive" as const,
+              label: "Inactive",
+            },
+            club: { tier: "club" as const, status: "inactive" as const, label: "Inactive" },
+            academy: { tier: "academy" as const, status: "active" as const, label: "Active" },
+          },
+        },
+      };
+
+      expect(getPaidMembershipTiers(member)).toEqual(["academy"]);
+    });
   });
 
   describe("getTierDisplayName", () => {

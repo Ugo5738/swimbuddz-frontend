@@ -1,15 +1,7 @@
 import { MeetThePods } from "@/components/club/MeetThePods";
 import { SkillLaddersShowcase } from "@/components/club/SkillLaddersShowcase";
 import { Card } from "@/components/ui/Card";
-import {
-  ArrowRight,
-  Compass,
-  Megaphone,
-  Star,
-  Trophy,
-  Users,
-  XCircle,
-} from "lucide-react";
+import { ArrowRight, Compass, Megaphone, Star, Trophy, Users, XCircle } from "lucide-react";
 import Link from "next/link";
 
 // ---------------------------------------------------------------------------
@@ -124,7 +116,9 @@ export default function ClubPage() {
     <div className="space-y-16 md:space-y-20">
       {/* ─── HERO ─────────────────────────────────────────────────────── */}
       <section className="space-y-6">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">Club Tier</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
+          Club Practice
+        </p>
         <h1 className="text-4xl font-bold text-slate-900 md:text-5xl">
           Find your crew. Show up every Saturday.{" "}
           <span className="text-cyan-600">Get visibly better.</span>
@@ -211,7 +205,7 @@ export default function ClubPage() {
       </section>
 
       {/* ─── SKILL LADDERS (live) ────────────────────────────────────── */}
-      {/* Auto-renders any seeded skill ladders for the Club tier
+      {/* Auto-renders any seeded skill ladders for the Club programme
           (challenges with series_slug set, audience='club'). Component
           itself returns null when no ladders exist — keeps the page
           clean before the first ladder is published. */}
@@ -226,7 +220,7 @@ export default function ClubPage() {
           <h2 className="text-2xl font-bold text-slate-900 md:text-3xl">Club perks</h2>
           <p className="max-w-3xl text-slate-600">
             Beyond your weekly pod session and skill ladder, Club unlocks events, awards,
-            recognition, and access to partner activities you can't get at Community tier.
+            recognition, and access to partner activities that are part of regular Club practice.
           </p>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
@@ -426,7 +420,7 @@ export default function ClubPage() {
             href="/register?goal=club"
             className="inline-flex w-fit items-center gap-1.5 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-50"
           >
-            Join Club Tier
+            Start a Club application
             <ArrowRight className="h-4 w-4" />
           </Link>
         </Card>

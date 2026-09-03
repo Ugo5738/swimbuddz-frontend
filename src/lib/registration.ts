@@ -1,7 +1,6 @@
 import { apiGet, apiPost } from "./api";
 import { getCurrentAccessToken } from "./auth";
 import {
-  getPaidMembershipTier,
   getRequestedTiers,
   getTierStatus,
   hasTierContext,
@@ -185,43 +184,41 @@ export async function getPostAuthRedirectPath(): Promise<string> {
     const emergency = member.emergency_contact;
     const availability = member.availability;
 
-    const paidTier = getPaidMembershipTier(member);
-    const communityActive = paidTier !== "prospect";
-    const academyActive = paidTier === "academy";
+    const communityActive = getTierStatus(member, "community")?.status === "active";
+    const academyActive = getTierStatus(member, "academy")?.status === "active";
     const requestedTiers = getRequestedTiers(member);
     const wantsAcademy = requestedTiers.includes("academy");
-    const wantsClub = requestedTiers.includes("club") || wantsAcademy;
+    const wantsClub = requestedTiers.includes("club");
 
-    const clubContext =
-      wantsClub || hasTierContext(member, "club") || hasTierContext(member, "academy");
+    const clubContext = wantsClub || hasTierContext(member, "club");
     const academyContext = wantsAcademy || hasTierContext(member, "academy");
 
     // Use profile_photo_media_id (source of truth) not profile_photo_url
     const hasCoreOnboarding = Boolean(
       member.profile_photo_media_id &&
-      profile?.gender &&
-      profile?.date_of_birth &&
-      profile?.phone &&
-      profile?.country &&
-      profile?.city &&
-      profile?.time_zone
+        profile?.gender &&
+        profile?.date_of_birth &&
+        profile?.phone &&
+        profile?.country &&
+        profile?.city &&
+        profile?.time_zone
     );
 
     const hasSafetyLogistics = Boolean(
       emergency?.name &&
-      emergency?.contact_relationship &&
-      emergency?.phone &&
-      availability?.preferred_locations &&
-      availability.preferred_locations.length > 0 &&
-      availability?.preferred_times &&
-      availability.preferred_times.length > 0
+        emergency?.contact_relationship &&
+        emergency?.phone &&
+        availability?.preferred_locations &&
+        availability.preferred_locations.length > 0 &&
+        availability?.preferred_times &&
+        availability.preferred_times.length > 0
     );
 
     const hasSwimBackground = Boolean(
       profile?.swim_level &&
-      profile?.deep_water_comfort &&
-      profile?.personal_goals &&
-      String(profile.personal_goals).trim()
+        profile?.deep_water_comfort &&
+        profile?.personal_goals &&
+        String(profile.personal_goals).trim()
     );
 
     const hasClubReadiness =
@@ -237,9 +234,9 @@ export async function getPostAuthRedirectPath(): Promise<string> {
 
     const hasAcademyReadiness = Boolean(
       hasAssessment &&
-      membership?.academy_goals &&
-      membership?.academy_preferred_coach_gender &&
-      membership?.academy_lesson_preference
+        membership?.academy_goals &&
+        membership?.academy_preferred_coach_gender &&
+        membership?.academy_lesson_preference
     );
 
     const onboardingComplete =
@@ -252,21 +249,21 @@ export async function getPostAuthRedirectPath(): Promise<string> {
       return "/account/onboarding";
     }
 
-    if (!communityActive) {
-      return "/account/billing?required=community";
-    }
-
     if (academyActive) return "/account/academy";
 
     const academyStatus = getTierStatus(member, "academy")?.status;
     const clubStatus = getTierStatus(member, "club")?.status;
-    if (academyStatus === "requested") return "/account/profile?upgrade=pending";
+    if (academyStatus === "requested") return "/upgrade/academy/cohort";
     if (["approved_unpaid", "payment_pending", "expired"].includes(academyStatus || "")) {
       return "/account/billing?required=academy";
     }
-    if (clubStatus === "requested") return "/account/profile?upgrade=pending";
+    if (clubStatus === "requested") return "/upgrade/club/readiness";
     if (["approved_unpaid", "payment_pending", "expired"].includes(clubStatus || "")) {
       return "/account/billing?required=club";
+    }
+
+    if (!communityActive) {
+      return "/account/billing?required=community";
     }
 
     return "/account";

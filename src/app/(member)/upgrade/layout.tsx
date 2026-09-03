@@ -26,17 +26,13 @@ function StepIndicator() {
   if (isClubFlow) {
     relevantSteps = STEPS.filter((s) => s.tier === "club" || s.tier === "all");
   } else if (isAcademyFlow) {
-    relevantSteps = STEPS.filter(
-      (s) => s.tier === "academy" || s.tier === "all",
-    );
+    relevantSteps = STEPS.filter((s) => s.tier === "academy" || s.tier === "all");
   } else if (isCheckout) {
     // On checkout, show minimal progress
     return null;
   }
 
-  const currentIndex = relevantSteps.findIndex((s) =>
-    pathname.startsWith(s.path),
-  );
+  const currentIndex = relevantSteps.findIndex((s) => pathname.startsWith(s.path));
 
   return (
     <div className="flex gap-2">
@@ -63,14 +59,10 @@ function StepIndicator() {
   );
 }
 
-export default function UpgradeLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function UpgradeLayout({ children }: { children: React.ReactNode }) {
   return (
     <UpgradeProvider>
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="mx-auto max-w-4xl space-y-6">
         {/* Back link - above progress */}
         <div className="flex justify-start">
           <Link

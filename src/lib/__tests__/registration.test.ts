@@ -331,7 +331,7 @@ describe("getPostAuthRedirectPath", () => {
     expect(path).toBe("/account/billing?required=community");
   });
 
-  it("keeps a requested Club upgrade in the pending approval flow", async () => {
+  it("continues a requested Club programme through readiness", async () => {
     mockedApiGet.mockResolvedValue(
       buildMember({
         membership: {
@@ -353,7 +353,7 @@ describe("getPostAuthRedirectPath", () => {
     );
 
     const path = await getPostAuthRedirectPath();
-    expect(path).toBe("/account/profile?upgrade=pending");
+    expect(path).toBe("/upgrade/club/readiness");
   });
 
   it("uses backend active Community status when raw paid date is missing", async () => {
