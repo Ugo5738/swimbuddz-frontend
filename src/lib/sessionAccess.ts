@@ -12,7 +12,21 @@ export type SessionAccessDecision = {
   sign_in_eligible: boolean;
   reason?: string | null;
   message?: string | null;
+  access_source?: string | null;
+  fee_amount_kobo?: number | null;
+  price_label?: string | null;
 };
+
+export function getSessionPriceDisplay(
+  access: SessionAccessDecision | null | undefined,
+  fallbackNaira: number
+): { label: string; amountNaira: number } {
+  return {
+    label: access?.price_label || "Session price",
+    amountNaira:
+      access?.fee_amount_kobo == null ? fallbackNaira : access.fee_amount_kobo / 100,
+  };
+}
 
 export function tierDisplayLabel(tier: SessionAccessTier): string {
   if (tier === "prospect") return "Prospect";

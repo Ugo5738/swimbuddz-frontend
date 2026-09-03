@@ -231,6 +231,27 @@ export function BasicsStep({ selectedProgram, formData, rideAreas, onChange }: P
         <p className="text-xs text-slate-500 mt-1">
           Override the program&apos;s default price for this specific cohort
         </p>
+        <Input
+          label="Post-graduation Club bridge (months)"
+          type="number"
+          min={0}
+          max={12}
+          value={formData.post_graduation_club_bridge_months}
+          onChange={(event) =>
+            onChange({
+              ...formData,
+              post_graduation_club_bridge_months: Math.max(
+                0,
+                Math.min(12, Number(event.target.value) || 0)
+              ),
+            })
+          }
+          className="mt-4"
+        />
+        <p className="mt-1 text-xs text-slate-500">
+          Grants Club eligibility after graduation; it is not prepaid Club or a free session.
+          Enter 0 to disable the bridge for this cohort.
+        </p>
         <label className="mt-4 block text-sm font-medium text-slate-700">
           Annual membership policy override
           <select

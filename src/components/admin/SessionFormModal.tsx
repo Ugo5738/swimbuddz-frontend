@@ -98,6 +98,7 @@ export function SessionFormModal({
     pool_fee: session?.pool_fee ?? 2000,
     guest_fee: session?.guest_fee ?? 0,
     community_dropin_fee: session?.community_dropin_fee ?? 0,
+    allows_community_dropins: session?.allows_community_dropins ?? false,
     capacity: session?.capacity ?? 20,
     pricing_mode: session?.pricing_mode ?? ("manual" as "manual" | "cost_plus"),
     pricing_expected_attendees: session?.pricing_expected_attendees ?? session?.capacity ?? 20,
@@ -333,7 +334,12 @@ export function SessionFormModal({
       ends_at: new Date(form.ends_at).toISOString(),
       pool_fee: form.pool_fee,
       guest_fee: form.guest_fee || null,
-      community_dropin_fee: form.community_dropin_fee || null,
+      community_dropin_fee:
+        form.session_type === "club" && form.allows_community_dropins
+          ? form.community_dropin_fee
+          : null,
+      allows_community_dropins:
+        form.session_type === "club" && form.allows_community_dropins,
       capacity: form.capacity,
       pricing_mode: form.pricing_mode,
       pricing_expected_attendees: form.pricing_expected_attendees,
@@ -549,6 +555,23 @@ export function SessionFormModal({
             hint="Independent from the guest rate, even when both currently match."
           />
         </div>
+        {form.session_type === "club" ? (
+          <label className="flex items-start gap-3 rounded-xl border border-cyan-100 bg-cyan-50 p-4 text-sm text-cyan-950">
+            <input
+              type="checkbox"
+              checked={form.allows_community_dropins}
+              onChange={(event) =>
+                setForm({ ...form, allows_community_dropins: event.target.checked })
+              }
+              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-cyan-700"
+            />
+            <span>
+              <span className="block font-semibold">Allow Community drop-ins</span>
+              Active annual SwimBuddz Membership is required. When enabled, the backend charges
+              the Community drop-in rate above and applies normal capacity limits.
+            </span>
+          </label>
+        ) : null}
         <fieldset className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
           <div>
             <legend className="text-sm font-semibold text-slate-900">

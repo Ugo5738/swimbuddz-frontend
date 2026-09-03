@@ -82,7 +82,13 @@ export type ClubApplication = {
   plan: ClubPlan | null;
   selected_plans: ClubPlan[];
   assessment: ClubAssessment | null;
+  approved_payment_modes: ClubPaymentMode[];
+  transition_session_rate_kobo: number | null;
+  transition_expires_at: string | null;
+  selected_payment_mode: ClubPaymentMode | null;
 };
+
+export type ClubPaymentMode = "quarterly_prepaid" | "transition_per_session";
 
 export type ClubPreAssessment = {
   can_swim_25m_continuously: boolean;
@@ -121,6 +127,10 @@ export type ChargePreview = {
     total_installments?: number | null;
     community_experience?: number;
     community_experience_selected?: boolean;
+    club_payment_mode?: ClubPaymentMode;
+    approved_payment_modes?: ClubPaymentMode[];
+    transition_session_rate_kobo?: number | null;
+    transition_expires_at?: string | null;
   };
 };
 
@@ -228,7 +238,8 @@ export function submitClubPreAssessment(
 
 export function previewClubCheckout(
   applicationId: string,
-  paymentMethod: "paystack" | "manual_transfer" = "paystack"
+  paymentMethod: "paystack" | "manual_transfer" = "paystack",
+  paymentMode?: ClubPaymentMode
 ): Promise<ChargePreview> {
   return apiPost<ChargePreview>(
     "/api/v1/payments/charges/preview",
@@ -236,6 +247,7 @@ export function previewClubCheckout(
       purpose: "club",
       payment_method: paymentMethod,
       club_application_id: applicationId,
+      ...(paymentMode ? { club_payment_mode: paymentMode } : {}),
     },
     { auth: true }
   );
@@ -301,6 +313,9 @@ export function completeObservedClubAssessment(
     first_club_milestone?: string;
     assessor_notes?: string;
     send_result_email: boolean;
+    approved_payment_modes: ClubPaymentMode[];
+    transition_session_rate_kobo?: number;
+    transition_expires_at?: string;
   }
 ): Promise<ClubApplication> {
   return apiPut<ClubApplication>(

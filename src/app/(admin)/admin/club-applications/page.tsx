@@ -4,6 +4,10 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
+import {
+  ClubPaymentArrangementFields,
+  type ClubPaymentArrangementValue,
+} from "@/components/club/ClubPaymentArrangementFields";
 import { useApi } from "@/hooks/useApi";
 import {
   ClubApplication,
@@ -35,6 +39,11 @@ export default function ClubApplicationsPage() {
     first_club_milestone: "",
     assessor_notes: "",
     send_result_email: true,
+    paymentArrangement: {
+      approvedModes: ["quarterly_prepaid"],
+      transitionRateNaira: "5000",
+      transitionExpiresAt: "2026-12-31",
+    } as ClubPaymentArrangementValue,
   });
   const [saving, setSaving] = useState(false);
   const selected = applications.data?.find((application) => application.id === selectedId) ?? null;
@@ -42,6 +51,23 @@ export default function ClubApplicationsPage() {
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!selected) return;
+    if (form.outcome !== "academy_first" && form.paymentArrangement.approvedModes.length === 0) {
+      toast.error("Approve at least one payment arrangement.");
+      return;
+    }
+    const transitionEnabled =
+      form.outcome !== "academy_first" &&
+      form.paymentArrangement.approvedModes.includes("transition_per_session");
+    const transitionRateNaira = Number(form.paymentArrangement.transitionRateNaira);
+    if (
+      transitionEnabled &&
+      (!Number.isFinite(transitionRateNaira) ||
+        transitionRateNaira < 0 ||
+        !form.paymentArrangement.transitionExpiresAt)
+    ) {
+      toast.error("Enter a valid transition session rate and expiry date.");
+      return;
+    }
     setSaving(true);
     try {
       await completeObservedClubAssessment(selected.id, {
@@ -53,6 +79,14 @@ export default function ClubApplicationsPage() {
         first_club_milestone: form.first_club_milestone || undefined,
         assessor_notes: form.assessor_notes || undefined,
         send_result_email: form.send_result_email,
+        approved_payment_modes:
+          form.outcome === "academy_first" ? [] : form.paymentArrangement.approvedModes,
+        transition_session_rate_kobo: transitionEnabled
+          ? Math.round(transitionRateNaira * 100)
+          : undefined,
+        transition_expires_at: transitionEnabled
+          ? form.paymentArrangement.transitionExpiresAt
+          : undefined,
       });
       applications.refetch();
       setSelectedId(null);
@@ -114,6 +148,18 @@ export default function ClubApplicationsPage() {
               {([[
                 "primary_technique_focus", "Primary technique focus"
               ], ["first_club_milestone", "First Club milestone"], ["assessor_notes", "Assessor notes"]] as const).map(([key, label]) => <label key={key} className="block space-y-1 text-sm font-medium">{label}<textarea rows={2} value={form[key]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2 font-normal" /></label>)}
+              {form.outcome !== "academy_first" ? (
+                <ClubPaymentArrangementFields
+                  value={form.paymentArrangement}
+                  onChange={(paymentArrangement) =>
+                    setForm((current) => ({ ...current, paymentArrangement }))
+                  }
+                />
+              ) : (
+                <Alert variant="info">
+                  Academy-first outcomes do not receive a Club payment arrangement.
+                </Alert>
+              )}
               <label className="flex items-start gap-3 rounded-lg bg-cyan-50 p-3 text-sm text-cyan-900"><input type="checkbox" checked={form.send_result_email} onChange={(event) => setForm((current) => ({ ...current, send_result_email: event.target.checked }))} className="mt-1" /><span><span className="flex items-center gap-1 font-semibold"><Mail className="h-4 w-4" />Email result</span>Send the outcome, technique focus, milestone, and approved price to the member.</span></label>
               <Button type="submit" disabled={saving} className="w-full">{saving ? "Saving..." : "Save assessment outcome"}</Button>
             </form>

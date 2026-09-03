@@ -548,16 +548,28 @@ this flow.
 4. The member may request an available pod at the selected location, then submits
    the application.
 5. Admin conducts the in-pool assessment, records the baseline and selects
-   Club-ready, Club-ready with modified participation, or Academy first. The
-   result can be emailed from the review screen.
-6. An approved member opens checkout. Checkout retrieves the application price
-   from the server and presents each selected Club quarter, annual SwimBuddz
-   membership if due, optional Community Experience, enabled online payment
-   charges, and total as separate lines.
+   Club-ready, Club-ready with modified participation, or Academy first. For a
+   Club-ready outcome, Admin explicitly allows quarterly prepaid, the temporary
+   2026 pay-per-session transition, or both. Transition approval also records
+   the per-session rate and expiry. The result can be emailed from the review
+   screen.
+6. An approved member sees only the payment arrangements enabled on their
+   application. If both are enabled, they choose one. Checkout retrieves the
+   application price from the server and presents each selected Club quarter,
+   or a ₦0 transition enrollment, plus annual SwimBuddz Membership if due,
+   optional Community Experience, enabled online payment charges, and the total
+   as separate lines. Transition sessions are paid later when booked.
 7. Starting checkout reserves plan and preferred-pod capacity for 30 minutes.
    Successful payment consumes the reservation and creates a separate dated,
    location-specific entitlement for each paid quarter, so a future quarter
    cannot unlock sessions today.
+8. A Club session's server access result determines its member price: prepaid
+   quarter is included (₦0), active transition uses its snapshotted rate, and an
+   annual member uses the Community drop-in rate only when Admin enabled
+   drop-ins on that session. Guest pricing remains independent.
+9. A later Club quarter can reuse a completed Club-ready assessment, with its
+   source application recorded. It remains a member-selected purchase and does
+   not auto-enroll or auto-charge.
 
 ## 16. Referrer → Self-paying Guest → Follow-up
 
@@ -602,3 +614,7 @@ this flow.
    price and applicable membership line, not the internal margin calculation.
 4. Full and installment payments use the same quote policy; membership money is
    not incorrectly counted as an Academy installment.
+5. Admin can configure 0–12 months of post-graduation Club eligibility on the
+   cohort. Graduation calls the existing bridge idempotently when positive;
+   zero or unset grants nothing. This bridge is eligibility, not prepaid Club,
+   and Academy enrollment by itself still never implies Club access.

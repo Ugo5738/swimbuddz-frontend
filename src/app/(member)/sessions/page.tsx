@@ -197,7 +197,15 @@ function SessionsHub() {
   );
 
   const bundleTotal = useMemo(
-    () => selectedSessions.reduce((sum, s) => sum + (s.pool_fee || 0), 0),
+    () =>
+      selectedSessions.reduce(
+        (sum, s) =>
+          sum +
+          (s.access?.fee_amount_kobo == null
+            ? s.pool_fee || 0
+            : s.access.fee_amount_kobo / 100),
+        0
+      ),
     [selectedSessions]
   );
 

@@ -619,7 +619,7 @@ export interface paths {
         put?: never;
         /**
          * Admin Grant Post Academy Club Bridge By Auth
-         * @description Grant the explicit complimentary Club period after graduation.
+         * @description Grant the explicit Club eligibility period after graduation.
          */
         post: operations["admin_grant_post_academy_club_bridge_by_auth_admin_members_by_auth__auth_id__club_post_academy_bridge_post"];
         delete?: never;
@@ -17976,6 +17976,12 @@ export interface components {
              * @default 0
              */
             community_experience_fee_kobo: number;
+            /**
+             * Payment Mode
+             * @default quarterly_prepaid
+             * @enum {string}
+             */
+            payment_mode: "quarterly_prepaid" | "transition_per_session";
         };
         /**
          * ActivateClubRequest
@@ -18946,6 +18952,10 @@ export interface components {
             enrollment_id?: string | null;
             /** Club Id */
             club_id?: string | null;
+            /** Payment Mode */
+            payment_mode?: string | null;
+            /** Fee Amount Kobo */
+            fee_amount_kobo?: number | null;
         };
         /** ClubAccessChecksRequest */
         ClubAccessChecksRequest: {
@@ -18980,6 +18990,12 @@ export interface components {
         ClubApplicationReservationRequest: {
             /** Payment Reference */
             payment_reference: string;
+            /**
+             * Payment Mode
+             * @default quarterly_prepaid
+             * @enum {string}
+             */
+            payment_mode: "quarterly_prepaid" | "transition_per_session";
         };
         /** ClubApplicationReservationResponse */
         ClubApplicationReservationResponse: {
@@ -19039,6 +19055,14 @@ export interface components {
             notes?: string | null;
             /** Quote Id */
             quote_id?: string | null;
+            /** Approved Payment Modes */
+            approved_payment_modes?: ("quarterly_prepaid" | "transition_per_session")[];
+            /** Transition Session Rate Kobo */
+            transition_session_rate_kobo?: number | null;
+            /** Transition Expires At */
+            transition_expires_at?: string | null;
+            /** Selected Payment Mode */
+            selected_payment_mode?: ("quarterly_prepaid" | "transition_per_session") | null;
             plan?: components["schemas"]["ClubPlanResponse"] | null;
             /** Selected Plans */
             selected_plans?: components["schemas"]["ClubPlanResponse"][];
@@ -19402,6 +19426,12 @@ export interface components {
              * @default true
              */
             send_result_email: boolean;
+            /** Approved Payment Modes */
+            approved_payment_modes?: ("quarterly_prepaid" | "transition_per_session")[];
+            /** Transition Session Rate Kobo */
+            transition_session_rate_kobo?: number | null;
+            /** Transition Expires At */
+            transition_expires_at?: string | null;
         };
         /** ClubPaymentContext */
         ClubPaymentContext: {
@@ -19426,6 +19456,17 @@ export interface components {
             plan_version_id: string;
             /** Plan Version Ids */
             plan_version_ids?: string[];
+            /** Approved Payment Modes */
+            approved_payment_modes?: ("quarterly_prepaid" | "transition_per_session")[];
+            /**
+             * Payment Mode
+             * @enum {string}
+             */
+            payment_mode: "quarterly_prepaid" | "transition_per_session";
+            /** Transition Session Rate Kobo */
+            transition_session_rate_kobo?: number | null;
+            /** Transition Expires At */
+            transition_expires_at?: string | null;
             /** Billing Cycle */
             billing_cycle: string;
             /** Currency */
@@ -20788,7 +20829,7 @@ export interface components {
         };
         /**
          * GrantPostAcademyClubBridgeRequest
-         * @description Grant the complimentary Club period earned at Academy graduation.
+         * @description Grant the distinct Club eligibility period earned at graduation.
          */
         GrantPostAcademyClubBridgeRequest: {
             /**
@@ -23400,6 +23441,12 @@ export interface components {
             reason?: string | null;
             /** Message */
             message?: string | null;
+            /** Access Source */
+            access_source?: string | null;
+            /** Fee Amount Kobo */
+            fee_amount_kobo?: number | null;
+            /** Price Label */
+            price_label?: string | null;
             /**
              * Member Id
              * Format: uuid
@@ -23487,6 +23534,12 @@ export interface components {
             reason?: string | null;
             /** Message */
             message?: string | null;
+            /** Access Source */
+            access_source?: string | null;
+            /** Fee Amount Kobo */
+            fee_amount_kobo?: number | null;
+            /** Price Label */
+            price_label?: string | null;
         };
         /** SessionBasic */
         SessionBasic: {
@@ -23522,6 +23575,15 @@ export interface components {
             capacity: number;
             /** Pool Fee */
             pool_fee?: number | null;
+            /** Guest Fee Kobo */
+            guest_fee_kobo?: number | null;
+            /** Community Dropin Fee Kobo */
+            community_dropin_fee_kobo?: number | null;
+            /**
+             * Allows Community Dropins
+             * @default false
+             */
+            allows_community_dropins: boolean;
             /** Ride Share Fee */
             ride_share_fee?: number | null;
             /**
@@ -23615,6 +23677,13 @@ export interface components {
             party_size: number;
             /** Fee Amount Kobo */
             fee_amount_kobo: number;
+            /**
+             * Member Fee Amount Kobo
+             * @default 0
+             */
+            member_fee_amount_kobo: number;
+            /** Access Source */
+            access_source?: string | null;
             /** Payment Intent Id */
             payment_intent_id?: string | null;
             /** Wallet Transaction Id */
@@ -23723,6 +23792,11 @@ export interface components {
             guest_fee?: number | null;
             /** Community Dropin Fee */
             community_dropin_fee?: number | null;
+            /**
+             * Allows Community Dropins
+             * @default false
+             */
+            allows_community_dropins: boolean;
             /**
              * Ride Share Fee
              * @default 0
@@ -23899,6 +23973,11 @@ export interface components {
             guest_fee?: number | null;
             /** Community Dropin Fee */
             community_dropin_fee?: number | null;
+            /**
+             * Allows Community Dropins
+             * @default false
+             */
+            allows_community_dropins: boolean;
             /**
              * Ride Share Fee
              * @default 0
@@ -24188,6 +24267,8 @@ export interface components {
             guest_fee?: number | null;
             /** Community Dropin Fee */
             community_dropin_fee?: number | null;
+            /** Allows Community Dropins */
+            allows_community_dropins?: boolean | null;
             /** Ride Share Fee */
             ride_share_fee?: number | null;
             /** Pricing Mode */
@@ -25149,6 +25230,8 @@ export interface components {
             price_override?: number | null;
             /** Membership Policy Override */
             membership_policy_override?: ("open" | "active_required" | "included") | null;
+            /** Post Graduation Club Bridge Months */
+            post_graduation_club_bridge_months?: number | null;
             /** Notes Internal */
             notes_internal?: string | null;
             /** Default Pool Fee */
@@ -25421,6 +25504,8 @@ export interface components {
             price_override?: number | null;
             /** Membership Policy Override */
             membership_policy_override?: ("open" | "active_required" | "included") | null;
+            /** Post Graduation Club Bridge Months */
+            post_graduation_club_bridge_months?: number | null;
             /** Notes Internal */
             notes_internal?: string | null;
             /** Default Pool Fee */
@@ -25782,6 +25867,8 @@ export interface components {
             price_override?: number | null;
             /** Membership Policy Override */
             membership_policy_override?: ("open" | "active_required" | "included") | null;
+            /** Post Graduation Club Bridge Months */
+            post_graduation_club_bridge_months?: number | null;
             /** Notes Internal */
             notes_internal?: string | null;
             /** Default Pool Fee */
@@ -27169,6 +27256,8 @@ export interface components {
             payment_method: string;
             /** Club Application Id */
             club_application_id?: string | null;
+            /** Club Payment Mode */
+            club_payment_mode?: ("quarterly_prepaid" | "transition_per_session") | null;
             /** Community Experience Offering Id */
             community_experience_offering_id?: string | null;
             /** Enrollment Id */
@@ -27431,6 +27520,8 @@ export interface components {
             club_billing_cycle?: components["schemas"]["ClubBillingCycle"] | null;
             /** Club Application Id */
             club_application_id?: string | null;
+            /** Club Payment Mode */
+            club_payment_mode?: ("quarterly_prepaid" | "transition_per_session") | null;
             /** Community Experience Offering Id */
             community_experience_offering_id?: string | null;
             /** Cohort Id */
@@ -35060,7 +35151,7 @@ export interface components {
             /** Supplier Name */
             supplier_name?: string | null;
             /** Activity Scope */
-            activity_scope?: ("community" | "club" | "academy" | "all") | null;
+            activity_scope?: ("all" | "community" | "club" | "academy") | null;
             /** Charge Basis */
             charge_basis?: ("per_attendee" | "per_staff" | "per_hour" | "per_lane" | "flat_session") | null;
             /** Amount Naira */
@@ -35606,7 +35697,7 @@ export interface components {
         /** PoolRateUpdate */
         PoolRateUpdate: {
             /** Activity Scope */
-            activity_scope?: ("community" | "club" | "academy" | "all") | null;
+            activity_scope?: ("all" | "community" | "club" | "academy") | null;
             /** Charge Basis */
             charge_basis?: ("per_attendee" | "per_staff" | "per_hour" | "per_lane" | "flat_session") | null;
             /** Amount Naira */
@@ -45211,7 +45302,9 @@ export interface operations {
     };
     get_club_application_payment_context_clubs_internal_applications__application_id__payment_context_get: {
         parameters: {
-            query?: never;
+            query?: {
+                payment_mode?: ("quarterly_prepaid" | "transition_per_session") | null;
+            };
             header?: never;
             path: {
                 application_id: string;

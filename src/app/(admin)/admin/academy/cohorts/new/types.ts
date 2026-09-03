@@ -40,6 +40,7 @@ export type CohortFormData = {
   notes_internal: string;
   price_override: number | null;
   membership_policy_override: "open" | "active_required" | "included" | null;
+  post_graduation_club_bridge_months: number;
   default_pool_fee: number | null;
   default_ride_configs: CohortRideConfigEntry[];
   installment_plan_enabled: boolean;

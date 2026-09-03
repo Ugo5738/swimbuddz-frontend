@@ -223,6 +223,8 @@ export interface Cohort {
   // Pricing
   price_override?: number;
   membership_policy_override?: "open" | "active_required" | "included" | null;
+  /** Months of Club eligibility granted on graduation; 0 disables the bridge. */
+  post_graduation_club_bridge_months?: number;
   // ── Session defaults (applied to every generated session) ──
   /** Default pool fee in naira. Used to populate pool_fee on each session. */
   default_pool_fee?: number | null;

@@ -451,11 +451,11 @@ _Last updated: July 2026_
 | ------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | `/upgrade/club/readiness`                   | `src/app/(member)/upgrade/club/readiness/page.tsx`         | Member safety pre-assessment before choosing a Club location                                                       |
 | `/upgrade/club/plan`                        | `src/app/(member)/upgrade/club/plan/page.tsx`              | Area → pool/location → consecutive quarter selection, proration, pod preference, and optional Community Experience |
-| `/checkout?purpose=club&application_id=...` | `src/app/(member)/checkout/page.tsx`                       | Approved server-priced Club checkout with separate additional charges                                              |
+| `/checkout?purpose=club&application_id=...&payment_mode=...` | `src/app/(member)/checkout/page.tsx`                       | Approved server-priced quarterly or admin-enabled 2026 transition checkout with separate additional charges        |
 | `/guest-pass/session/[sessionId]`           | `src/app/(public)/guest-pass/session/[sessionId]/page.tsx` | Public self-paying guest booking; accepts optional `ref` attribution                                               |
 | `/guest-pass/[guestPassId]`                 | `src/app/(public)/guest-pass/[guestPassId]/page.tsx`       | Redacted public guest payment/status receipt                                                                       |
 | `/admin/club-plans`                         | `src/app/(admin)/admin/club-plans/page.tsx`                | Publish effective-dated prices by Club location                                                                    |
-| `/admin/club-applications`                  | `src/app/(admin)/admin/club-applications/page.tsx`         | Review readiness, record baseline/outcome, and send result email                                                   |
+| `/admin/club-applications`                  | `src/app/(admin)/admin/club-applications/page.tsx`         | Review readiness, record baseline/outcome, approve application-specific payment modes, and send result email        |
 | `/admin/guest-passes`                       | `src/app/(admin)/admin/guest-passes/page.tsx`              | Track payment, attendance/swimmer-minutes, assessments, and automatic 10-Bubble referral status                    |
 | `/admin/payment-charges`                    | `src/app/(admin)/admin/payment-charges/page.tsx`           | Configure purpose/method-specific additive or gross-up payment charges                                             |
 

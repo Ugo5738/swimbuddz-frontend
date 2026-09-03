@@ -4,12 +4,14 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
+import { ClubPaymentModeSelector } from "@/components/club/ClubPaymentModeSelector";
 import { useApi } from "@/hooks/useApi";
 import {
   ClubApplication,
   ClubOperatingArea,
   ClubPlan,
   ClubPool,
+  ClubPaymentMode,
   createClubApplication,
   submitClubPreAssessment,
 } from "@/lib/clubOnboarding";
@@ -22,7 +24,7 @@ import {
 import { formatCurrency, useUpgrade } from "@/lib/upgradeContext";
 import { Check, MapPin, Users, Waves } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 type Pod = {
@@ -49,6 +51,7 @@ export default function ClubPlanSelectionPage() {
   const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([]);
   const [experienceSelected, setExperienceSelected] = useState(true);
   const [preferredPodId, setPreferredPodId] = useState("");
+  const [paymentMode, setPaymentMode] = useState<ClubPaymentMode>("quarterly_prepaid");
   const [submitting, setSubmitting] = useState(false);
 
   const plansQuery = useApi<ClubPlan[]>("/api/v1/clubs/plans", { auth: false });
@@ -143,9 +146,27 @@ export default function ClubPlanSelectionPage() {
   const approvedApplication = applicationsQuery.data?.find(
     (application) => application.status === "approved"
   );
+  const approvedPaymentModes = approvedApplication
+    ? approvedApplication.approved_payment_modes.length
+      ? approvedApplication.approved_payment_modes
+      : (["quarterly_prepaid"] as ClubPaymentMode[])
+    : [];
+  const effectivePaymentMode = approvedPaymentModes.includes(paymentMode)
+    ? paymentMode
+    : (approvedPaymentModes[0] ?? paymentMode);
   const openApplication = applicationsQuery.data?.find((application) =>
     ["assessment_required", "assessment_pending", "approved"].includes(application.status)
   );
+  const reusableReadinessApplication = applicationsQuery.data?.find(
+    (application) =>
+      application.status === "enrolled" &&
+      ["club_ready", "club_ready_modified"].includes(application.assessment?.outcome ?? "")
+  );
+
+  useEffect(() => {
+    if (!approvedApplication) return;
+    if (paymentMode !== effectivePaymentMode) setPaymentMode(effectivePaymentMode);
+  }, [approvedApplication, effectivePaymentMode, paymentMode]);
 
   const selectArea = (areaId: string) => {
     setSelectedAreaId(areaId);
@@ -171,21 +192,24 @@ export default function ClubPlanSelectionPage() {
 
   const submit = async () => {
     const readiness = state.clubReadinessData;
-    if (!primaryPlan || !readiness) {
+    if (!primaryPlan) return;
+    if (!readiness && !reusableReadinessApplication) {
       router.push("/upgrade/club/readiness");
       return;
     }
-    const requiredAnswers = [
-      readiness.canSwim25mContinuously,
-      readiness.controlledBreathing,
-      readiness.comfortableInDeepWater,
-      readiness.canFloatOrTread30Seconds,
-      readiness.canStopAndRecover,
-    ];
-    if (!requiredAnswers.every((answer) => typeof answer === "boolean")) {
-      toast.error("Complete the Club safety pre-assessment first.");
-      router.push("/upgrade/club/readiness");
-      return;
+    if (readiness) {
+      const requiredAnswers = [
+        readiness.canSwim25mContinuously,
+        readiness.controlledBreathing,
+        readiness.comfortableInDeepWater,
+        readiness.canFloatOrTread30Seconds,
+        readiness.canStopAndRecover,
+      ];
+      if (!requiredAnswers.every((answer) => typeof answer === "boolean")) {
+        toast.error("Complete the Club safety pre-assessment first.");
+        router.push("/upgrade/club/readiness");
+        return;
+      }
     }
     setSubmitting(true);
     try {
@@ -194,22 +218,36 @@ export default function ClubPlanSelectionPage() {
         plan_version_ids: selectedPlans.slice(1).map((plan) => plan.id),
         community_experience_selected: experienceSelected,
         preferred_pod_id: preferredPodId || undefined,
-        notes: readiness.clubNotes || undefined,
+        notes: readiness?.clubNotes || undefined,
       });
-      await submitClubPreAssessment(application.id, {
-        can_swim_25m_continuously: Boolean(readiness.canSwim25mContinuously),
-        controlled_breathing: Boolean(readiness.controlledBreathing),
-        comfortable_in_deep_water: Boolean(readiness.comfortableInDeepWater),
-        can_float_or_tread_30_seconds: Boolean(readiness.canFloatOrTread30Seconds),
-        can_stop_and_recover: Boolean(readiness.canStopAndRecover),
-        current_nonstop_distance_m: readiness.currentNonstopDistanceM,
-        last_swim_date: readiness.lastSwimDate || undefined,
-        injuries_or_accommodations: readiness.injuriesOrAccommodations || undefined,
-        notes: readiness.clubNotes || undefined,
-      });
+      if (application.status !== "approved") {
+        if (!readiness) {
+          throw new Error(
+            "Your previous readiness approval could not be reused. Please complete the safety pre-assessment."
+          );
+        }
+        await submitClubPreAssessment(application.id, {
+          can_swim_25m_continuously: Boolean(readiness.canSwim25mContinuously),
+          controlled_breathing: Boolean(readiness.controlledBreathing),
+          comfortable_in_deep_water: Boolean(readiness.comfortableInDeepWater),
+          can_float_or_tread_30_seconds: Boolean(readiness.canFloatOrTread30Seconds),
+          can_stop_and_recover: Boolean(readiness.canStopAndRecover),
+          current_nonstop_distance_m: readiness.currentNonstopDistanceM,
+          last_swim_date: readiness.lastSwimDate || undefined,
+          injuries_or_accommodations: readiness.injuriesOrAccommodations || undefined,
+          notes: readiness.clubNotes || undefined,
+        });
+      }
       setClubApplicationId(application.id);
       applicationsQuery.refetch();
-      toast.success("Application submitted. We will arrange your in-pool assessment.");
+      if (application.status === "approved") {
+        toast.success("Your prior Club readiness approval was reused. Your new quarter is ready.");
+        router.push(
+          `/checkout?purpose=club&application_id=${application.id}&payment_mode=quarterly_prepaid`
+        );
+      } else {
+        toast.success("Application submitted. We will arrange your in-pool assessment.");
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not submit your application");
     } finally {
@@ -251,14 +289,23 @@ export default function ClubPlanSelectionPage() {
       {approvedApplication ? (
         <Alert variant="success" title="Assessment approved">
           <div className="space-y-3">
-            <p>Your exact server-calculated Club quote is ready.</p>
+            <p>Your exact server-calculated Club arrangement is ready.</p>
+            <ClubPaymentModeSelector
+              approvedModes={approvedPaymentModes}
+              value={effectivePaymentMode}
+              transitionRateKobo={approvedApplication.transition_session_rate_kobo}
+              transitionExpiresAt={approvedApplication.transition_expires_at}
+              onChange={setPaymentMode}
+            />
             <Button
               size="sm"
               onClick={() =>
-                router.push(`/checkout?purpose=club&application_id=${approvedApplication.id}`)
+                router.push(
+                  `/checkout?purpose=club&application_id=${approvedApplication.id}&payment_mode=${effectivePaymentMode}`
+                )
               }
             >
-              Review approved plan and pay
+              Review approved arrangement
             </Button>
           </div>
         </Alert>
@@ -542,7 +589,11 @@ export default function ClubPlanSelectionPage() {
           </div>
 
           <Button onClick={submit} disabled={submitting} size="lg" className="w-full">
-            {submitting ? "Submitting..." : "Submit for Club assessment"}
+            {submitting
+              ? "Submitting..."
+              : reusableReadinessApplication
+                ? "Renew Club quarter"
+                : "Submit for Club assessment"}
           </Button>
         </Card>
       ) : null}

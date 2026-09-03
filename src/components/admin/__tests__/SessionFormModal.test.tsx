@@ -105,4 +105,19 @@ describe("SessionFormModal Club scope", () => {
       expect.objectContaining({ role_id: "role-checkin", role_title: "Check-in" }),
     ]);
   });
+
+  it("submits the explicit Community drop-in toggle and rate", async () => {
+    const onCreate = renderModal();
+    fireEvent.click(screen.getByLabelText(/Allow Community drop-ins/i));
+    fireEvent.change(screen.getAllByLabelText(/Community drop-in/i)[0], {
+      target: { value: "6500" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create Session" }));
+
+    await waitFor(() => expect(onCreate).toHaveBeenCalledTimes(1));
+    expect(onCreate.mock.calls[0][0]).toMatchObject({
+      allows_community_dropins: true,
+      community_dropin_fee: 6500,
+    });
+  });
 });

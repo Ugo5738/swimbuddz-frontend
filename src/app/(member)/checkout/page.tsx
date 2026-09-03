@@ -4,9 +4,12 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
+import { ClubPaymentModeSelector } from "@/components/club/ClubPaymentModeSelector";
+import { ClubTransitionCheckoutNotice } from "@/components/club/ClubTransitionCheckoutNotice";
 import { apiGet, apiPost } from "@/lib/api";
 import {
   ChargePreview,
+  ClubPaymentMode,
   previewAcademyCheckout,
   previewClubCheckout,
   previewCommunityExperienceCheckout,
@@ -27,7 +30,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-type PaymentIntentRequest = components["schemas"]["CreatePaymentIntentRequest"];
+type PaymentIntentRequest = components["schemas"]["CreatePaymentIntentRequest"] & {
+  club_payment_mode?: ClubPaymentMode;
+};
 
 type Member = {
   id?: string;
@@ -96,6 +101,18 @@ function CheckoutContent() {
   // the URL param is safe and removes the race entirely.
   const purpose = searchParams.get("purpose");
   const clubApplicationId = searchParams.get("application_id");
+  const requestedClubPaymentMode =
+    searchParams.get("payment_mode") === "transition_per_session"
+      ? "transition_per_session"
+      : searchParams.get("payment_mode") === "quarterly_prepaid"
+        ? "quarterly_prepaid"
+        : null;
+  const [clubPaymentMode, setClubPaymentMode] = useState<ClubPaymentMode>(
+    requestedClubPaymentMode ?? "quarterly_prepaid"
+  );
+  const [clubPaymentModeWasChosen, setClubPaymentModeWasChosen] = useState(
+    requestedClubPaymentMode !== null
+  );
   const communityExperienceOfferingId = searchParams.get("offering_id");
 
   // Get club plan from URL params (fallback) or context
@@ -186,7 +203,15 @@ function CheckoutContent() {
 
       if (purpose === "club" && clubApplicationId) {
         try {
-          setClubQuote(await previewClubCheckout(clubApplicationId, paymentMethod));
+          const quote = await previewClubCheckout(
+            clubApplicationId,
+            paymentMethod,
+            clubPaymentModeWasChosen ? clubPaymentMode : undefined
+          );
+          setClubQuote(quote);
+          if (quote.components.club_payment_mode) {
+            setClubPaymentMode(quote.components.club_payment_mode);
+          }
           setQuoteError(null);
         } catch (quoteFailure) {
           setQuoteError(
@@ -273,6 +298,8 @@ function CheckoutContent() {
     setSelectedCohort,
     purpose,
     clubApplicationId,
+    clubPaymentMode,
+    clubPaymentModeWasChosen,
     paymentMethod,
     communityExperienceOfferingId,
     billingMode,
@@ -541,6 +568,7 @@ function CheckoutContent() {
               ...intentPayload,
               purpose: "club",
               club_application_id: clubApplicationId,
+              club_payment_mode: clubPaymentMode,
             }
           : {
               ...intentPayload,
@@ -717,6 +745,31 @@ function CheckoutContent() {
       {/* Order Summary */}
       <Card className="p-6">
         <h2 className="text-lg font-semibold text-slate-900 mb-4">Order Summary</h2>
+
+        {purpose === "club" && clubQuote?.components.approved_payment_modes ? (
+          <div className="mb-5">
+            <ClubPaymentModeSelector
+              approvedModes={clubQuote.components.approved_payment_modes}
+              value={clubPaymentMode}
+              transitionRateKobo={clubQuote.components.transition_session_rate_kobo}
+              transitionExpiresAt={clubQuote.components.transition_expires_at}
+              onChange={(mode) => {
+                setClubQuote(null);
+                setClubPaymentModeWasChosen(true);
+                setClubPaymentMode(mode);
+                const params = new URLSearchParams(searchParams.toString());
+                params.set("payment_mode", mode);
+                router.replace(`/checkout?${params.toString()}`);
+              }}
+            />
+            {clubPaymentMode === "transition_per_session" ? (
+              <ClubTransitionCheckoutNotice
+                sessionRateKobo={clubQuote.components.transition_session_rate_kobo}
+                expiresAt={clubQuote.components.transition_expires_at}
+              />
+            ) : null}
+          </div>
+        ) : null}
 
         <div className="space-y-3">
           {lineItems.map((item, index) => (
