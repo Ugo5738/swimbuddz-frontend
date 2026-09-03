@@ -52,6 +52,34 @@ export type GuestPassInput = {
   referral_code?: string;
 };
 
+export type AdminReferralCode = {
+  member_auth_id: string;
+  code: string;
+  is_active: boolean;
+  expires_at: string | null;
+};
+
+export function buildGuestPassSharePath(
+  sessionId: string,
+  referralCode?: string | null,
+): string {
+  const path = `/guest-pass/session/${encodeURIComponent(sessionId)}`;
+  const normalizedCode = referralCode?.trim().toUpperCase();
+  return normalizedCode
+    ? `${path}?ref=${encodeURIComponent(normalizedCode)}`
+    : path;
+}
+
+export function getOrCreateGuestReferrerCode(
+  memberAuthId: string,
+): Promise<AdminReferralCode> {
+  return apiPost<AdminReferralCode>(
+    `/api/v1/admin/wallet/referrals/code/${encodeURIComponent(memberAuthId)}`,
+    {},
+    { auth: true },
+  );
+}
+
 export function createGuestPass(
   sessionId: string,
   input: GuestPassInput,

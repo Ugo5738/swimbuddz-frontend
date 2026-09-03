@@ -10342,6 +10342,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/wallet/referrals/code/{member_auth_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get Member Referral Code
+         * @description Get or create a member's code for a referred guest-payment link.
+         */
+        post: operations["get_member_referral_code_admin_wallet_referrals_code__member_auth_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/wallet/referrals/": {
         parameters: {
             query?: never;
@@ -30463,6 +30483,20 @@ export interface components {
              * @description Admin notes about why this event is being submitted
              */
             description?: string | null;
+        };
+        /**
+         * AdminReferralCodeResponse
+         * @description Referral code an admin can attach to a guest self-payment link.
+         */
+        AdminReferralCodeResponse: {
+            /** Member Auth Id */
+            member_auth_id: string;
+            /** Code */
+            code: string;
+            /** Is Active */
+            is_active: boolean;
+            /** Expires At */
+            expires_at?: string | null;
         };
         /** AdminReferralListResponse */
         AdminReferralListResponse: {
@@ -59622,6 +59656,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReferralLeaderboardResponse"];
+                };
+            };
+        };
+    };
+    get_member_referral_code_admin_wallet_referrals_code__member_auth_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_auth_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminReferralCodeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

@@ -6,17 +6,113 @@ import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { useApi } from "@/hooks/useApi";
 import {
+  buildGuestPassSharePath,
+  getOrCreateGuestReferrerCode,
   GuestPassAdmin,
   markGuestPassAttendance,
 } from "@/lib/guestPasses";
+import { MemberListItem, MembersApi } from "@/lib/members";
+import { Session, SessionsApi, SessionStatus, SessionType } from "@/lib/sessions";
 import { formatCurrency } from "@/lib/upgradeContext";
-import { Clock, Gift, Mail, UserCheck } from "lucide-react";
-import { useState } from "react";
+import { Clock, Copy, Gift, Link2, Mail, UserCheck } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export default function GuestPassesAdminPage() {
   const passes = useApi<GuestPassAdmin[]>("/api/v1/admin/guest-passes");
   const [minutes, setMinutes] = useState<Record<string, string>>({});
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [members, setMembers] = useState<MemberListItem[]>([]);
+  const [selectedSessionId, setSelectedSessionId] = useState("");
+  const [selectedReferrerAuthId, setSelectedReferrerAuthId] = useState("");
+  const [generatedLink, setGeneratedLink] = useState("");
+  const [builderLoading, setBuilderLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      SessionsApi.listAllSessions({
+        types: SessionType.CLUB,
+        status: SessionStatus.SCHEDULED,
+        from: new Date().toISOString(),
+        auth: true,
+      }),
+      MembersApi.listMembers(0, 500),
+    ])
+      .then(([sessionRows, memberRows]) => {
+        if (!active) return;
+        const guestSessions = sessionRows
+          .filter((session) => session.allows_guests)
+          .sort(
+            (left, right) =>
+              new Date(left.starts_at).getTime() - new Date(right.starts_at).getTime(),
+          );
+        const activeMembers = memberRows
+          .filter(
+            (member) => member.is_active && member.approval_status === "approved",
+          )
+          .sort((left, right) =>
+            `${left.first_name} ${left.last_name}`.localeCompare(
+              `${right.first_name} ${right.last_name}`,
+            ),
+          );
+        setSessions(guestSessions);
+        setMembers(activeMembers);
+        setSelectedSessionId((current) => current || guestSessions[0]?.id || "");
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Guest-link options could not be loaded",
+        );
+      })
+      .finally(() => {
+        if (active) setBuilderLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const selectedSession = useMemo(
+    () => sessions.find((session) => session.id === selectedSessionId) ?? null,
+    [selectedSessionId, sessions],
+  );
+
+  const clearGeneratedLink = () => setGeneratedLink("");
+
+  const generateLink = async () => {
+    if (!selectedSessionId) {
+      toast.error("Choose a guest-enabled Club session first");
+      return;
+    }
+    setGenerating(true);
+    try {
+      const referralCode = selectedReferrerAuthId
+        ? (await getOrCreateGuestReferrerCode(selectedReferrerAuthId)).code
+        : null;
+      const path = buildGuestPassSharePath(selectedSessionId, referralCode);
+      setGeneratedLink(new URL(path, window.location.origin).toString());
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not create guest link",
+      );
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(generatedLink);
+      toast.success("Guest self-payment link copied");
+    } catch {
+      toast.error("Could not copy the link. Select and copy it manually.");
+    }
+  };
 
   const attend = async (pass: GuestPassAdmin) => {
     try {
@@ -45,6 +141,109 @@ export default function GuestPassesAdminPage() {
       <Alert>
         The first paid attendance automatically grants the referrer 10 Bubbles. Repeated swims do not create repeated acquisition rewards.
       </Alert>
+
+      <Card className="border-cyan-100 bg-cyan-50/30">
+        <div className="flex items-start gap-3">
+          <div className="rounded-full bg-cyan-100 p-2 text-cyan-700">
+            <Link2 className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-slate-900">Create a guest self-payment link</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              The guest books and pays in their own name. Choose a referrer only when a member made the introduction; that member can receive the one-time 10-Bubble thank-you after attendance.
+            </p>
+          </div>
+        </div>
+
+        {builderLoading ? (
+          <p className="mt-5 text-sm text-slate-500">Loading upcoming sessions and members...</p>
+        ) : sessions.length === 0 ? (
+          <Alert className="mt-5">
+            There are no upcoming scheduled Club sessions accepting guests. Enable guests and set a guest price on the session first.
+          </Alert>
+        ) : (
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <label className="text-sm font-medium text-slate-700">
+              Club session
+              <select
+                value={selectedSessionId}
+                onChange={(event) => {
+                  setSelectedSessionId(event.target.value);
+                  clearGeneratedLink();
+                }}
+                className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900"
+              >
+                {sessions.map((session) => (
+                  <option key={session.id} value={session.id}>
+                    {session.title} · {new Date(session.starts_at).toLocaleString("en-NG", {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="text-sm font-medium text-slate-700">
+              Referrer (optional)
+              <select
+                value={selectedReferrerAuthId}
+                onChange={(event) => {
+                  setSelectedReferrerAuthId(event.target.value);
+                  clearGeneratedLink();
+                }}
+                className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900"
+              >
+                <option value="">No member referral</option>
+                {members.map((member) => (
+                  <option key={member.id} value={member.auth_id}>
+                    {member.first_name} {member.last_name} · {member.email}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {selectedSession ? (
+              <div className="rounded-xl border border-cyan-100 bg-white p-4 text-sm text-slate-600 md:col-span-2">
+                <p className="font-medium text-slate-900">{selectedSession.location_name || "Location to be confirmed"}</p>
+                <p className="mt-1">
+                  Guest price: {formatCurrency(selectedSession.guest_fee ?? selectedSession.pool_fee)}
+                  {selectedSession.community_dropin_fee != null
+                    ? ` · Community drop-in: ${formatCurrency(selectedSession.community_dropin_fee)}`
+                    : ""}
+                </p>
+              </div>
+            ) : null}
+
+            <div className="flex flex-wrap items-center gap-3 md:col-span-2">
+              <Button onClick={() => void generateLink()} disabled={generating}>
+                <Link2 className="mr-2 h-4 w-4" />
+                {generating ? "Creating link..." : "Create link"}
+              </Button>
+              {generatedLink ? (
+                <Button variant="secondary" onClick={() => void copyLink()}>
+                  <Copy className="mr-2 h-4 w-4" />Copy link
+                </Button>
+              ) : null}
+            </div>
+
+            {generatedLink ? (
+              <div className="md:col-span-2">
+                <label htmlFor="generated-guest-link" className="text-sm font-medium text-slate-700">
+                  Share this link with the guest
+                </label>
+                <input
+                  id="generated-guest-link"
+                  readOnly
+                  value={generatedLink}
+                  onFocus={(event) => event.currentTarget.select()}
+                  className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700"
+                />
+              </div>
+            ) : null}
+          </div>
+        )}
+      </Card>
 
       <div className="space-y-4">
         {(passes.data ?? []).map((pass) => (
