@@ -13,22 +13,36 @@ import {
   Send,
   ShieldCheck,
   Star,
+  Tags,
+  Trash2,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-type Props = { vaultId: string };
+import {
+  VaultActionButton as Action,
+  VaultDeleteDialog,
+  VaultLabelEditor,
+  VaultMediaLabels,
+  VaultStatus as Status,
+} from "./VaultMediaDialogs";
 
-export function VaultReviewGrid({ vaultId }: Props) {
+type Props = { vaultId: string; admin?: boolean };
+
+export function VaultReviewGrid({ vaultId, admin = false }: Props) {
   const [items, setItems] = useState<VaultMedia[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [reviewFilter, setReviewFilter] = useState("all");
   const [mediaFilter, setMediaFilter] = useState("all");
+  const [processingFilter, setProcessingFilter] = useState("ready");
   const [search, setSearch] = useState("");
   const [acting, setActing] = useState(false);
+  const [editingLabels, setEditingLabels] = useState(false);
+  const [labelInput, setLabelInput] = useState("");
+  const [deleteMode, setDeleteMode] = useState<"vault" | "storage" | null>(null);
 
   const loadItems = useCallback(
     async (background = false) => {
@@ -37,6 +51,7 @@ export function VaultReviewGrid({ vaultId }: Props) {
         const query = new URLSearchParams({ page_size: "200" });
         if (reviewFilter !== "all") query.set("review_status", reviewFilter);
         if (mediaFilter !== "all") query.set("media_type", mediaFilter);
+        if (processingFilter !== "ready") query.set("processing_status", processingFilter);
         if (search.trim()) query.set("search", search.trim());
         const result = await mediaVaultApi.listItems(vaultId, `?${query.toString()}`);
         setItems(result.items);
@@ -51,7 +66,7 @@ export function VaultReviewGrid({ vaultId }: Props) {
         if (!background) setLoading(false);
       }
     },
-    [vaultId, reviewFilter, mediaFilter, search]
+    [vaultId, reviewFilter, mediaFilter, processingFilter, search]
   );
 
   useEffect(() => {
@@ -69,6 +84,8 @@ export function VaultReviewGrid({ vaultId }: Props) {
   }, [items, loadItems]);
 
   const chosen = useMemo(() => items.filter((item) => selected.has(item.id)), [items, selected]);
+  const selectionReady =
+    chosen.length > 0 && chosen.every((item) => item.processing_status === "ready");
 
   const runBulk = async (body: Record<string, unknown>, successMessage: string) => {
     if (!selected.size) return;
@@ -161,6 +178,42 @@ export function VaultReviewGrid({ vaultId }: Props) {
     }
   };
 
+  const openLabelEditor = () => {
+    const existing = [...new Set(chosen.flatMap((item) => item.labels ?? []))];
+    setLabelInput(existing.join(", "));
+    setEditingLabels(true);
+  };
+
+  const saveLabels = async () => {
+    const labels = labelInput
+      .split(",")
+      .map((label) => label.trim())
+      .filter(Boolean);
+    await runBulk({ labels }, labels.length ? "Media labels updated" : "Media labels cleared");
+    setEditingLabels(false);
+  };
+
+  const deleteSelection = async () => {
+    if (!deleteMode || !selected.size) return;
+    const permanent = deleteMode === "storage";
+    setActing(true);
+    try {
+      const result = await mediaVaultApi.deleteItems(vaultId, [...selected], permanent);
+      toast.success(
+        permanent
+          ? `${result.storage_deleted_count} file${result.storage_deleted_count === 1 ? "" : "s"} permanently deleted from the vault and AWS storage`
+          : `${result.removed_count} file${result.removed_count === 1 ? "" : "s"} removed from the vault; stored originals were retained`
+      );
+      setSelected(new Set());
+      setDeleteMode(null);
+      await loadItems();
+    } catch (deleteError) {
+      toast.error(deleteError instanceof Error ? deleteError.message : "Could not delete media");
+    } finally {
+      setActing(false);
+    }
+  };
+
   const toggle = (id: string) => {
     setSelected((current) => {
       const next = new Set(current);
@@ -176,7 +229,7 @@ export function VaultReviewGrid({ vaultId }: Props) {
         <input
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search filename…"
+          placeholder="Search filename or label…"
           className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-cyan-500"
         />
         <select
@@ -200,6 +253,19 @@ export function VaultReviewGrid({ vaultId }: Props) {
           <option value="IMAGE">Photos</option>
           <option value="VIDEO">Videos</option>
         </select>
+        {admin && (
+          <select
+            value={processingFilter}
+            onChange={(event) => setProcessingFilter(event.target.value)}
+            className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+          >
+            <option value="ready">Ready uploads</option>
+            <option value="all">All upload states</option>
+            <option value="uploading">Incomplete uploads</option>
+            <option value="failed">Failed uploads</option>
+            <option value="aborted">Aborted uploads</option>
+          </select>
+        )}
         <button
           type="button"
           onClick={() => void loadItems()}
@@ -225,18 +291,24 @@ export function VaultReviewGrid({ vaultId }: Props) {
       {selected.size > 0 && (
         <div className="sticky top-3 z-20 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-700 bg-slate-900 p-3 text-white shadow-xl">
           <span className="mr-2 text-sm font-semibold">{selected.size} selected</span>
-          <Action label="Preview" icon={Eye} onClick={generatePreviews} disabled={acting} />
+          <Action
+            label="Preview"
+            icon={Eye}
+            onClick={generatePreviews}
+            disabled={acting || !selectionReady}
+          />
+          <Action label="Labels" icon={Tags} onClick={openLabelEditor} disabled={acting} />
           <Action
             label="Shortlist"
             icon={Star}
             onClick={() => runBulk({ review_status: "shortlisted" }, "Items shortlisted")}
-            disabled={acting}
+            disabled={acting || !selectionReady}
           />
           <Action
             label="Approve"
             icon={Check}
             onClick={() => runBulk({ review_status: "approved" }, "Items approved")}
-            disabled={acting}
+            disabled={acting || !selectionReady}
           />
           <Action
             label="Consent clear"
@@ -268,16 +340,40 @@ export function VaultReviewGrid({ vaultId }: Props) {
             label={selected.size === 1 ? "Download" : "Build ZIP"}
             icon={selected.size === 1 ? Download : FileArchive}
             onClick={downloadSelection}
-            disabled={acting}
+            disabled={acting || !selectionReady}
           />
           <Action
             label="Social 4:5"
             icon={ImageIcon}
             onClick={buildSocialExport}
-            disabled={acting}
+            disabled={acting || !selectionReady}
           />
-          <Action label="Publish" icon={Send} onClick={publishSelection} disabled={acting} />
+          <Action
+            label="Publish"
+            icon={Send}
+            onClick={publishSelection}
+            disabled={acting || !selectionReady}
+          />
+          {admin && (
+            <Action
+              label="Delete"
+              icon={Trash2}
+              onClick={() => setDeleteMode("vault")}
+              disabled={acting}
+            />
+          )}
         </div>
+      )}
+
+      {editingLabels && (
+        <VaultLabelEditor
+          selectedCount={selected.size}
+          value={labelInput}
+          saving={acting}
+          onChange={setLabelInput}
+          onCancel={() => setEditingLabels(false)}
+          onSave={() => void saveLabels()}
+        />
       )}
 
       {error && (
@@ -320,8 +416,6 @@ export function VaultReviewGrid({ vaultId }: Props) {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    // Private S3 URLs are short-lived and should bypass the
-                    // public Next.js image optimizer.
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={item.preview_url}
@@ -391,56 +485,27 @@ export function VaultReviewGrid({ vaultId }: Props) {
                   {formatBytes(item.size_bytes ?? 0)}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-1">
+                  {item.processing_status !== "ready" && <Status value={item.processing_status} />}
                   <Status value={item.review_status} />
                   <Status value={item.consent_status} />
                 </div>
+                <VaultMediaLabels labels={item.labels ?? []} />
               </div>
             </div>
           ))}
         </div>
       )}
-    </div>
-  );
-}
 
-function Action({
-  label,
-  icon: Icon,
-  onClick,
-  disabled,
-}: {
-  label: string;
-  icon: typeof Check;
-  onClick: () => void;
-  disabled: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-2 text-xs font-semibold hover:bg-white/20 disabled:opacity-50"
-    >
-      {disabled ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-      ) : (
-        <Icon className="h-3.5 w-3.5" />
+      {deleteMode && (
+        <VaultDeleteDialog
+          selectedCount={selected.size}
+          mode={deleteMode}
+          deleting={acting}
+          onModeChange={setDeleteMode}
+          onCancel={() => setDeleteMode(null)}
+          onConfirm={() => void deleteSelection()}
+        />
       )}
-      {label}
-    </button>
-  );
-}
-
-function Status({ value }: { value: string }) {
-  const color =
-    value === "approved" || value === "cleared" || value === "published"
-      ? "bg-emerald-100 text-emerald-700"
-      : value === "rejected" || value === "restricted" || value === "takedown"
-        ? "bg-red-100 text-red-700"
-        : value === "shortlisted"
-          ? "bg-amber-100 text-amber-700"
-          : "bg-slate-100 text-slate-600";
-  return (
-    <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${color}`}>{value}</span>
+    </div>
   );
 }

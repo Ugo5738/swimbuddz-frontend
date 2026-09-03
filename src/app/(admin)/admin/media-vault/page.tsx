@@ -28,7 +28,19 @@ export default function AdminMediaVaultPage() {
   const { data, loading, error, refetch } = useApi<VaultList>("/api/v1/media/vaults");
   const [sessions, setSessions] = useState<Session[]>([]);
   const [showCreate, setShowCreate] = useState(false);
+  const [vaultKind, setVaultKind] = useState<"session" | "standalone">("session");
   const [sessionId, setSessionId] = useState("");
+  const [standaloneTitle, setStandaloneTitle] = useState("");
+  const [standaloneDescription, setStandaloneDescription] = useState("");
+  const [standaloneLocation, setStandaloneLocation] = useState("");
+  const [standaloneDate, setStandaloneDate] = useState(() =>
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Africa/Lagos",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date())
+  );
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -55,25 +67,49 @@ export default function AdminMediaVaultPage() {
   }, [data]);
 
   const createVault = async () => {
-    if (!selectedSession) {
+    if (vaultKind === "session" && !selectedSession) {
       toast.error("Choose a session");
+      return;
+    }
+    if (vaultKind === "standalone" && (!standaloneTitle.trim() || !standaloneDate)) {
+      toast.error("Add a vault title and capture date");
       return;
     }
     setSubmitting(true);
     try {
-      const startsAt = new Date(selectedSession.starts_at);
-      const endsAt = new Date(selectedSession.ends_at);
+      let payload: Record<string, unknown>;
+      if (vaultKind === "session" && selectedSession) {
+        const startsAt = new Date(selectedSession.starts_at);
+        const endsAt = new Date(selectedSession.ends_at);
+        payload = {
+          title: selectedSession.title,
+          description: selectedSession.description || null,
+          session_id: selectedSession.id,
+          capture_date: selectedSession.starts_at.slice(0, 10),
+          starts_at: selectedSession.starts_at,
+          ends_at: selectedSession.ends_at,
+          timezone: selectedSession.timezone || "Africa/Lagos",
+          location_name: selectedSession.location_name || null,
+          upload_opens_at: new Date(startsAt.getTime() - 4 * 60 * 60 * 1000).toISOString(),
+          upload_closes_at: new Date(endsAt.getTime() + 72 * 60 * 60 * 1000).toISOString(),
+        };
+      } else {
+        const captureDayEnds = new Date(`${standaloneDate}T23:59:59+01:00`).getTime();
+        const seventyTwoHours = 72 * 60 * 60 * 1000;
+        payload = {
+          title: standaloneTitle.trim(),
+          description: standaloneDescription.trim() || null,
+          capture_date: standaloneDate,
+          timezone: "Africa/Lagos",
+          location_name: standaloneLocation.trim() || null,
+          upload_opens_at: new Date().toISOString(),
+          upload_closes_at: new Date(
+            Math.max(Date.now() + seventyTwoHours, captureDayEnds + seventyTwoHours)
+          ).toISOString(),
+        };
+      }
       const created = await mediaVaultApi.create({
-        title: selectedSession.title,
-        description: selectedSession.description || null,
-        session_id: selectedSession.id,
-        capture_date: selectedSession.starts_at.slice(0, 10),
-        starts_at: selectedSession.starts_at,
-        ends_at: selectedSession.ends_at,
-        timezone: selectedSession.timezone || "Africa/Lagos",
-        location_name: selectedSession.location_name || null,
-        upload_opens_at: new Date(startsAt.getTime() - 4 * 60 * 60 * 1000).toISOString(),
-        upload_closes_at: new Date(endsAt.getTime() + 72 * 60 * 60 * 1000).toISOString(),
+        ...payload,
         retention_days: 730,
         consent_notice:
           "Confirm participants have not opted out of photography and flag any safeguarding concern in the upload notes.",
@@ -109,7 +145,7 @@ export default function AdminMediaVaultPage() {
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-600 px-5 py-3 font-semibold text-white hover:bg-cyan-500"
         >
           <Plus className="h-5 w-5" />
-          New session vault
+          New vault
         </button>
       </div>
 
@@ -152,7 +188,7 @@ export default function AdminMediaVaultPage() {
       )}
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 px-6 py-4">
-          <h2 className="font-semibold text-slate-900">Session vaults</h2>
+          <h2 className="font-semibold text-slate-900">Media vaults</h2>
         </div>
         {loading ? (
           <div className="space-y-3 p-6">
@@ -162,7 +198,7 @@ export default function AdminMediaVaultPage() {
           </div>
         ) : !data?.items.length ? (
           <div className="p-12 text-center text-slate-500">
-            Create a vault from a scheduled session to get started.
+            Create a vault for a scheduled session or any standalone media collection.
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
@@ -207,40 +243,114 @@ export default function AdminMediaVaultPage() {
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-bold text-slate-950">Create session vault</h2>
+                <h2 className="text-xl font-bold text-slate-950">Create media vault</h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Date, venue and volunteers are pulled from the session.
+                  Link a scheduled swim or create an independent collection.
                 </p>
               </div>
               <button type="button" onClick={() => setShowCreate(false)}>
                 <X className="h-5 w-5 text-slate-500" />
               </button>
             </div>
-            <label className="mt-6 block text-sm font-medium text-slate-700">
-              Session
-              <select
-                value={sessionId}
-                onChange={(event) => setSessionId(event.target.value)}
-                className="mt-2 w-full rounded-xl border border-slate-200 bg-white p-3 outline-none focus:border-cyan-500"
+            <div className="mt-6 grid grid-cols-2 rounded-xl bg-slate-100 p-1">
+              <button
+                type="button"
+                onClick={() => setVaultKind("session")}
+                className={`rounded-lg px-3 py-2 text-sm font-semibold ${
+                  vaultKind === "session" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500"
+                }`}
               >
-                <option value="">Choose a session…</option>
-                {sessions.map((session) => (
-                  <option key={session.id} value={session.id}>
-                    {new Date(session.starts_at).toLocaleDateString("en-NG")} · {session.title}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {selectedSession && (
+                Scheduled session
+              </button>
+              <button
+                type="button"
+                onClick={() => setVaultKind("standalone")}
+                className={`rounded-lg px-3 py-2 text-sm font-semibold ${
+                  vaultKind === "standalone"
+                    ? "bg-white text-slate-950 shadow-sm"
+                    : "text-slate-500"
+                }`}
+              >
+                Standalone vault
+              </button>
+            </div>
+            {vaultKind === "session" ? (
+              <label className="mt-5 block text-sm font-medium text-slate-700">
+                Session
+                <select
+                  value={sessionId}
+                  onChange={(event) => setSessionId(event.target.value)}
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white p-3 outline-none focus:border-cyan-500"
+                >
+                  <option value="">Choose a session…</option>
+                  {sessions.map((session) => (
+                    <option key={session.id} value={session.id}>
+                      {new Date(session.starts_at).toLocaleDateString("en-NG")} · {session.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                <label className="text-sm font-medium text-slate-700 sm:col-span-2">
+                  Vault title
+                  <input
+                    value={standaloneTitle}
+                    onChange={(event) => setStandaloneTitle(event.target.value)}
+                    placeholder="e.g. Brand campaign raw footage"
+                    className="mt-2 w-full rounded-xl border border-slate-200 p-3 outline-none focus:border-cyan-500"
+                  />
+                </label>
+                <label className="text-sm font-medium text-slate-700">
+                  Capture date
+                  <input
+                    type="date"
+                    value={standaloneDate}
+                    onChange={(event) => setStandaloneDate(event.target.value)}
+                    className="mt-2 w-full rounded-xl border border-slate-200 p-3 outline-none focus:border-cyan-500"
+                  />
+                </label>
+                <label className="text-sm font-medium text-slate-700">
+                  Location (optional)
+                  <input
+                    value={standaloneLocation}
+                    onChange={(event) => setStandaloneLocation(event.target.value)}
+                    placeholder="Location or venue"
+                    className="mt-2 w-full rounded-xl border border-slate-200 p-3 outline-none focus:border-cyan-500"
+                  />
+                </label>
+                <label className="text-sm font-medium text-slate-700 sm:col-span-2">
+                  Description (optional)
+                  <textarea
+                    value={standaloneDescription}
+                    onChange={(event) => setStandaloneDescription(event.target.value)}
+                    placeholder="What belongs in this vault?"
+                    className="mt-2 min-h-20 w-full rounded-xl border border-slate-200 p-3 outline-none focus:border-cyan-500"
+                  />
+                </label>
+              </div>
+            )}
+            {vaultKind === "session" && selectedSession && (
               <div className="mt-4 rounded-xl bg-cyan-50 p-4 text-sm text-cyan-900">
                 Uploads open 4 hours before the session and close 72 hours after. Originals retain
                 full quality for 2 years. You can change this inside the vault.
               </div>
             )}
+            {vaultKind === "standalone" && (
+              <div className="mt-4 rounded-xl bg-cyan-50 p-4 text-sm text-cyan-900">
+                The vault opens immediately and remains open for at least 72 hours. It starts with
+                admin-only access; members or guest upload links can be added inside the vault.
+              </div>
+            )}
             <button
               type="button"
               onClick={createVault}
-              disabled={!selectedSession || submitting}
+              disabled={
+                submitting ||
+                (vaultKind === "session"
+                  ? !selectedSession
+                  : !standaloneTitle.trim() || !standaloneDate)
+              }
               className="mt-6 w-full rounded-xl bg-slate-900 px-5 py-3 font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
             >
               {submitting ? "Creating…" : "Create private vault"}

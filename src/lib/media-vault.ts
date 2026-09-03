@@ -68,7 +68,8 @@ export type VaultMedia = {
   created_at: string;
   preview_url: string | null;
   thumbnail_url: string | null;
-  preview_status: "pending" | "processing" | "thumbnail_ready" | "ready" | "failed";
+  preview_status: "pending" | "processing" | "thumbnail_ready" | "ready" | "failed" | "unavailable";
+  labels: string[];
 };
 
 export type VaultList = { items: MediaVault[]; total: number };
@@ -222,6 +223,19 @@ export const mediaVaultApi = {
     apiPatch<VaultMedia[]>(
       `/api/v1/media/vaults/${vaultId}/items`,
       { media_item_ids: mediaItemIds, ...body },
+      { auth: true }
+    ),
+  deleteItems: (vaultId: string, mediaItemIds: string[], deleteFromStorage: boolean) =>
+    apiPost<{
+      removed_count: number;
+      storage_deleted_count: number;
+      bytes_deleted: number;
+    }>(
+      `/api/v1/media/vaults/${vaultId}/items/delete`,
+      {
+        media_item_ids: mediaItemIds,
+        delete_from_storage: deleteFromStorage,
+      },
       { auth: true }
     ),
   requestPreview: (vaultId: string, itemId: string) =>

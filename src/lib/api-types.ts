@@ -15466,6 +15466,26 @@ export interface paths {
         patch: operations["review_item_media_vaults__vault_id__items__item_id__patch"];
         trace?: never;
     };
+    "/api/v1/media/vaults/{vault_id}/items/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete Vault Items
+         * @description Remove vault media, optionally deleting every stored copy permanently.
+         */
+        post: operations["delete_vault_items_media_vaults__vault_id__items_delete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/media/vaults/{vault_id}/publish": {
         parameters: {
             query?: never;
@@ -37734,6 +37754,8 @@ export interface components {
             review_notes?: string | null;
             /** Rejection Reason */
             rejection_reason?: string | null;
+            /** Labels */
+            labels?: string[] | null;
             /** Media Item Ids */
             media_item_ids: string[];
         };
@@ -38219,6 +38241,8 @@ export interface components {
             review_notes?: string | null;
             /** Rejection Reason */
             rejection_reason?: string | null;
+            /** Labels */
+            labels?: string[] | null;
         };
         /** SignedUploadPart */
         SignedUploadPart: {
@@ -38551,6 +38575,25 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** VaultMediaDeleteRequest */
+        VaultMediaDeleteRequest: {
+            /** Media Item Ids */
+            media_item_ids: string[];
+            /**
+             * Delete From Storage
+             * @default false
+             */
+            delete_from_storage: boolean;
+        };
+        /** VaultMediaDeleteResponse */
+        VaultMediaDeleteResponse: {
+            /** Removed Count */
+            removed_count: number;
+            /** Storage Deleted Count */
+            storage_deleted_count: number;
+            /** Bytes Deleted */
+            bytes_deleted: number;
+        };
         /** VaultMediaListResponse */
         VaultMediaListResponse: {
             /** Items */
@@ -38598,6 +38641,8 @@ export interface components {
             review_notes: string | null;
             /** Rejection Reason */
             rejection_reason: string | null;
+            /** Labels */
+            labels?: string[];
             /** Duplicate Of Id */
             duplicate_of_id: string | null;
             /** Published Media Id */
@@ -68228,6 +68273,8 @@ export interface operations {
                 review_status?: string | null;
                 consent_status?: string | null;
                 media_type?: string | null;
+                processing_status?: string;
+                label?: string | null;
                 search?: string | null;
                 duplicate_only?: boolean;
                 page?: number;
@@ -68319,6 +68366,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VaultMediaResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_vault_items_media_vaults__vault_id__items_delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vault_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultMediaDeleteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultMediaDeleteResponse"];
                 };
             };
             /** @description Validation Error */

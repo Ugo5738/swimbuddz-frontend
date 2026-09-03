@@ -130,7 +130,7 @@ export default function AdminMediaVaultDetailPage() {
         />
       </div>
 
-      {tab === "review" && <VaultReviewGrid vaultId={data.id} />}
+      {tab === "review" && <VaultReviewGrid vaultId={data.id} admin />}
       {tab === "upload" && (
         <VaultUploader vault={data} scope={{ kind: "member", vaultId: data.id }} />
       )}

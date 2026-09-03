@@ -85,7 +85,7 @@ export function VaultUploadQueue({
                       ? `${entry.progress.toFixed(0)}% uploaded`
                       : entry.status === "fingerprinting"
                         ? "Checking for possible duplicates…"
-                        : "Ready")}
+                        : "Selected — press Start full-quality upload below")}
                 {entry.duplicate && " · Possible duplicate"}
               </p>
             </div>

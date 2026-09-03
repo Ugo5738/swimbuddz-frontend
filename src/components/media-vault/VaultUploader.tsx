@@ -21,14 +21,7 @@ import {
   type SavedUpload,
   type UploadScope,
 } from "@/lib/media-vault-upload";
-import {
-  BookOpen,
-  CloudUpload,
-  Loader2,
-  RefreshCcw,
-  ShieldCheck,
-  WifiOff,
-} from "lucide-react";
+import { BookOpen, CloudUpload, Loader2, RefreshCcw, ShieldCheck, WifiOff } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -97,11 +90,22 @@ export function VaultUploader({ vault, scope }: Props) {
         toast.error(`${file.name} exceeds ${formatBytes(maxFileBytes)}`);
         continue;
       }
+      if (file.size === 0) {
+        toast.error(
+          `${file.name} is not available locally. Download it from Photos/iCloud first, then select it again.`
+        );
+        continue;
+      }
       const key = `${file.name}:${file.size}:${file.lastModified}`;
       if (files.some((entry) => entry.key === key)) continue;
       accepted.push({ key, file, status: "queued", progress: 0 });
     }
     setFiles((current) => [...current, ...accepted]);
+    if (accepted.length) {
+      toast.success(
+        `${accepted.length} file${accepted.length === 1 ? "" : "s"} selected. Confirm consent, then press Start full-quality upload.`
+      );
+    }
   };
 
   const patchFile = (key: string, patch: Partial<UploadFile>) => {
@@ -112,7 +116,14 @@ export function VaultUploader({ vault, scope }: Props) {
 
   const uploadOne = async (entry: UploadFile, batchId: string): Promise<void> => {
     patchFile(entry.key, { status: "fingerprinting", error: undefined });
-    const fingerprint = await fileFingerprint(entry.file);
+    let fingerprint: string;
+    try {
+      fingerprint = await fileFingerprint(entry.file);
+    } catch {
+      throw new Error(
+        "The browser could not read this file. If it came from Photos/iCloud, download or export the original to this device and select it again."
+      );
+    }
     const persistenceKey = `swimbuddz-vault-upload:${scope.vaultId}:${fingerprint}`;
     const savedRaw = localStorage.getItem(persistenceKey);
     let saved: SavedUpload | null = savedRaw ? (JSON.parse(savedRaw) as SavedUpload) : null;
@@ -224,7 +235,8 @@ export function VaultUploader({ vault, scope }: Props) {
       toast.error("Confirm the consent and safeguarding statement first");
       return;
     }
-    if (totalBytes > remainingBytes) {
+    const pendingBytes = pendingFiles.reduce((sum, entry) => sum + entry.file.size, 0);
+    if (pendingBytes > remainingBytes) {
       toast.error("These files exceed the remaining vault allowance");
       return;
     }
@@ -238,22 +250,40 @@ export function VaultUploader({ vault, scope }: Props) {
       };
       wakeLock = (await navigatorWithWakeLock.wakeLock?.request("screen")) ?? null;
       const batchStorageKey = `swimbuddz-vault-batch:${scope.vaultId}`;
-      const savedBatchId = localStorage.getItem(batchStorageKey);
-      const batch = savedBatchId
-        ? { id: savedBatchId }
-        : await mediaVaultApi.createBatch(
-            scope.kind === "guest" ? { guestToken: scope.guestToken } : { vaultId: scope.vaultId },
-            {
-              expected_files: pendingFiles.length,
-              expected_bytes: pendingFiles.reduce((sum, entry) => sum + entry.file.size, 0),
-              consent_attested: true,
-              consent_attestation_text:
-                "I confirm these files were captured for SwimBuddz and I followed the displayed consent and safeguarding notice.",
-              checklist_completed: checklist,
-              notes: notes || null,
-            }
-          );
-      localStorage.setItem(batchStorageKey, batch.id);
+      const batchSignature = pendingFiles
+        .map((entry) => entry.key)
+        .sort()
+        .join("|");
+      const savedBatchRaw = localStorage.getItem(batchStorageKey);
+      let savedBatch: { id: string; signature: string } | null = null;
+      if (savedBatchRaw?.startsWith("{")) {
+        try {
+          savedBatch = JSON.parse(savedBatchRaw) as { id: string; signature: string };
+        } catch {
+          savedBatch = null;
+        }
+      }
+      const batch =
+        savedBatch?.signature === batchSignature
+          ? { id: savedBatch.id }
+          : await mediaVaultApi.createBatch(
+              scope.kind === "guest"
+                ? { guestToken: scope.guestToken }
+                : { vaultId: scope.vaultId },
+              {
+                expected_files: pendingFiles.length,
+                expected_bytes: pendingFiles.reduce((sum, entry) => sum + entry.file.size, 0),
+                consent_attested: true,
+                consent_attestation_text:
+                  "I confirm these files were captured for SwimBuddz and I followed the displayed consent and safeguarding notice.",
+                checklist_completed: checklist,
+                notes: notes || null,
+              }
+            );
+      localStorage.setItem(
+        batchStorageKey,
+        JSON.stringify({ id: batch.id, signature: batchSignature })
+      );
       let failed = false;
       for (const entry of pendingFiles) {
         try {
@@ -296,8 +326,8 @@ export function VaultUploader({ vault, scope }: Props) {
           <div className="min-w-0 flex-1">
             <h2 className="font-semibold text-slate-950">The session story</h2>
             <p className="mt-1 text-sm text-slate-600">
-              Capture a smaller set of steady, intentional clips that lets someone who was not
-              there understand the session.
+              Capture a smaller set of steady, intentional clips that lets someone who was not there
+              understand the session.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {MEDIA_COVERAGE_STORY.map((step, index) => (
@@ -361,11 +391,18 @@ export function VaultUploader({ vault, scope }: Props) {
           multiple
           accept="image/*,video/*,.heic,.heif,.mov"
           className="hidden"
-          onChange={(event) => event.target.files && addFiles(event.target.files)}
+          onChange={(event) => {
+            if (event.target.files) addFiles(event.target.files);
+            event.currentTarget.value = "";
+          }}
         />
         <p className="mt-3 text-xs text-slate-500">
           Up to {formatBytes(maxFileBytes)} per file · {formatBytes(Math.max(0, remainingBytes))}{" "}
           remaining
+        </p>
+        <p className="mx-auto mt-2 max-w-xl text-xs text-slate-500">
+          Selecting a file does not upload it yet. If a video is only in iCloud, let Photos download
+          it to the device first.
         </p>
       </div>
 
