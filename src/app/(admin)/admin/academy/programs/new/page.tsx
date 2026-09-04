@@ -69,6 +69,7 @@ export default function NewProgramPage() {
     currency: "NGN",
     price_amount: 0, // naira
     billing_type: BillingType.ONE_TIME,
+    membership_policy: "open" as "open" | "active_required" | "included",
     is_published: false,
     cover_image_url: "",
     cover_image_media_id: "",
@@ -430,6 +431,24 @@ export default function NewProgramPage() {
                 }
               />
             </div>
+
+            <Select
+              label="Annual SwimBuddz Membership policy"
+              value={formData.membership_policy}
+              onChange={(event) =>
+                setFormData({
+                  ...formData,
+                  membership_policy: event.target.value as
+                    | "open"
+                    | "active_required"
+                    | "included",
+                })
+              }
+            >
+              <option value="open">Open — Academy can be purchased without membership</option>
+              <option value="active_required">Required — add ₦20,000 when membership is due</option>
+              <option value="included">Included — published Academy price includes membership</option>
+            </Select>
 
             <div className="grid grid-cols-2 gap-4">
               <Input

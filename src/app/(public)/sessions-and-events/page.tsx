@@ -198,7 +198,7 @@ function ClubSessionsTab({
           <p className="text-sm text-slate-500">
             Not a Club member yet?{" "}
             <Link href="/club" className="underline font-semibold hover:text-cyan-700">
-              Learn about Club tier
+              Learn about Club practice
             </Link>
           </p>
         )}

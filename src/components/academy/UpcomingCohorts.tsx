@@ -77,7 +77,7 @@ export function UpcomingCohorts() {
           next one opens.
         </p>
         <Link
-          href="/register"
+          href="/register?goal=academy"
           className="inline-block rounded-full bg-cyan-600 px-6 py-2 font-semibold text-white hover:bg-cyan-500 transition"
         >
           Join Academy Waitlist
@@ -120,7 +120,7 @@ export function UpcomingCohorts() {
         const totalWeeks = cohort.program?.duration_weeks || 0;
         let currentWeek = 0;
         if (isActive && totalWeeks > 0) {
-          const weeksIn = Math.floor((-daysToStart) / 7) + 1;
+          const weeksIn = Math.floor(-daysToStart / 7) + 1;
           currentWeek = Math.min(Math.max(weeksIn, 1), totalWeeks);
         }
 

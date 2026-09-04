@@ -10,15 +10,10 @@ import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const QRCode = dynamic(
-  () => import("qrcode.react").then((mod) => mod.QRCodeCanvas),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="w-24 h-24 bg-slate-200 animate-pulse rounded" />
-    ),
-  },
-);
+const QRCode = dynamic(() => import("qrcode.react").then((mod) => mod.QRCodeCanvas), {
+  ssr: false,
+  loading: () => <div className="w-24 h-24 bg-slate-200 animate-pulse rounded" />,
+});
 
 type MemberVerification = {
   id: string;
@@ -52,9 +47,7 @@ export default function VerifyMemberPage() {
 
     const fetchMember = async () => {
       try {
-        const res = await fetch(
-          `${API_BASE_URL}/api/v1/members/public/${memberId}`,
-        );
+        const res = await fetch(`${API_BASE_URL}/api/v1/members/public/${memberId}`);
 
         if (!res.ok) {
           if (res.status === 404) {
@@ -80,11 +73,9 @@ export default function VerifyMemberPage() {
   const now = Date.now();
 
   const getActiveStatus = () => {
-    if (!member?.membership)
-      return { active: false, tier: null, validUntil: null };
+    if (!member?.membership) return { active: false, tier: null, validUntil: null };
 
-    const { community_paid_until, club_paid_until, academy_paid_until } =
-      member.membership;
+    const { community_paid_until, club_paid_until, academy_paid_until } = member.membership;
 
     // Check tiers in order of priority
     if (academy_paid_until && new Date(academy_paid_until).getTime() > now) {
@@ -93,10 +84,7 @@ export default function VerifyMemberPage() {
     if (club_paid_until && new Date(club_paid_until).getTime() > now) {
       return { active: true, tier: "club", validUntil: club_paid_until };
     }
-    if (
-      community_paid_until &&
-      new Date(community_paid_until).getTime() > now
-    ) {
+    if (community_paid_until && new Date(community_paid_until).getTime() > now) {
       return {
         active: true,
         tier: "community",
@@ -124,9 +112,7 @@ export default function VerifyMemberPage() {
           <div className="mx-auto w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
             <XCircle className="w-8 h-8 text-red-600" />
           </div>
-          <h1 className="text-xl font-bold text-slate-900">
-            Verification Failed
-          </h1>
+          <h1 className="text-xl font-bold text-slate-900">Verification Failed</h1>
           <p className="text-slate-600">{error}</p>
           <p className="text-sm text-slate-500">
             If this is unexpected, please contact SwimBuddz support.
@@ -161,9 +147,7 @@ export default function VerifyMemberPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-cyan-50 flex items-center justify-center p-4">
       <Card className="max-w-md w-full overflow-hidden">
         {/* Header with status */}
-        <div
-          className={`p-6 text-center ${status?.active ? "bg-emerald-500" : "bg-amber-500"}`}
-        >
+        <div className={`p-6 text-center ${status?.active ? "bg-emerald-500" : "bg-amber-500"}`}>
           <div className="mx-auto w-14 h-14 rounded-full bg-white/20 flex items-center justify-center mb-3">
             {status?.active ? (
               <CheckCircle className="w-8 h-8 text-white" />
@@ -203,16 +187,14 @@ export default function VerifyMemberPage() {
             )}
             <div>
               <h2 className="text-lg font-bold text-slate-900">{fullName}</h2>
-              <p className="text-sm text-slate-500">
-                Member since {memberSince}
-              </p>
+              <p className="text-sm text-slate-500">Member since {memberSince}</p>
             </div>
           </div>
 
           {/* Membership details */}
           <div className="bg-slate-50 rounded-lg p-4 space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-slate-600">Membership Tier</span>
+              <span className="text-sm text-slate-600">Current access</span>
               {status?.tier ? (
                 <Badge className={tierColors[status.tier] || ""}>
                   {status.tier.charAt(0).toUpperCase() + status.tier.slice(1)}
@@ -234,9 +216,7 @@ export default function VerifyMemberPage() {
             {validUntil && (
               <div className="flex justify-between items-center">
                 <span className="text-sm text-slate-600">Valid Until</span>
-                <span className="text-sm font-medium text-slate-900">
-                  {validUntil}
-                </span>
+                <span className="text-sm font-medium text-slate-900">{validUntil}</span>
               </div>
             )}
 
@@ -267,8 +247,7 @@ export default function VerifyMemberPage() {
         {/* Footer */}
         <div className="bg-slate-100 px-6 py-3 text-center">
           <p className="text-xs text-slate-500">
-            SwimBuddz Member Verification •{" "}
-            {new Date().toLocaleDateString("en-GB")}
+            SwimBuddz Member Verification • {new Date().toLocaleDateString("en-GB")}
           </p>
         </div>
       </Card>

@@ -16,6 +16,7 @@ export type Cohort = {
   end_date?: string;
   duration_weeks?: number;
   price_override?: number; // Cohort-specific price override
+  membership_policy_override?: "open" | "active_required" | "included" | null;
   status?: string;
   // Installment billing
   installment_plan_enabled?: boolean;
@@ -27,6 +28,7 @@ export type Cohort = {
     price_amount: number;
     duration_weeks?: number;
     currency?: string;
+    membership_policy?: "open" | "active_required" | "included";
   };
 };
 
@@ -40,7 +42,16 @@ export type UpgradeState = {
   clubReadinessData: {
     availableDays: string[];
     clubNotes: string;
+    canSwim25mContinuously?: boolean;
+    controlledBreathing?: boolean;
+    comfortableInDeepWater?: boolean;
+    canFloatOrTread30Seconds?: boolean;
+    canStopAndRecover?: boolean;
+    currentNonstopDistanceM?: number | null;
+    lastSwimDate?: string;
+    injuriesOrAccommodations?: string;
   } | null;
+  clubApplicationId: string | null;
 
   // Academy-specific
   selectedCohortId: string | null;
@@ -85,6 +96,7 @@ type UpgradeContextValue = {
   setTargetTier: (tier: "club" | "academy") => void;
   setClubBillingCycle: (cycle: ClubBillingCycle) => void;
   setClubReadinessData: (data: UpgradeState["clubReadinessData"]) => void;
+  setClubApplicationId: (applicationId: string) => void;
   markClubReadinessComplete: () => void;
   setSelectedCohort: (cohort: Cohort) => void;
   setAcademyDetailsData: (data: UpgradeState["academyDetailsData"]) => void;
@@ -105,7 +117,7 @@ type UpgradeContextValue = {
 // ============================================================================
 
 const STORAGE_KEY = "swimbuddz:upgrade:state";
-const STORAGE_VERSION = 1;
+const STORAGE_VERSION = 2;
 
 type StoredState = {
   version: number;
@@ -161,6 +173,7 @@ const defaultState: UpgradeState = {
   clubBillingCycle: null,
   clubReadinessComplete: false,
   clubReadinessData: null,
+  clubApplicationId: null,
   selectedCohortId: null,
   selectedCohort: null,
   academyDetailsComplete: false,
@@ -215,6 +228,10 @@ export function UpgradeProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, clubReadinessComplete: true }));
   }, []);
 
+  const setClubApplicationId = useCallback((applicationId: string) => {
+    setState((prev) => ({ ...prev, clubApplicationId: applicationId }));
+  }, []);
+
   const setSelectedCohort = useCallback((cohort: Cohort) => {
     setState((prev) => ({
       ...prev,
@@ -265,6 +282,7 @@ export function UpgradeProvider({ children }: { children: React.ReactNode }) {
     setTargetTier,
     setClubBillingCycle,
     setClubReadinessData,
+    setClubApplicationId,
     markClubReadinessComplete,
     setSelectedCohort,
     setAcademyDetailsData,

@@ -221,7 +221,7 @@ export default function AcademyPage() {
       {/* ─── 1. HERO ────────────────────────────────────────────────── */}
       <section className="space-y-6">
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
-          Academy Tier
+          Academy Programmes
         </p>
         <h1 className="text-4xl font-bold text-slate-900 md:text-5xl leading-tight">
           Learn to swim properly — with a plan that actually fits your week.
@@ -229,6 +229,11 @@ export default function AcademyPage() {
         <p className="text-lg text-slate-600 max-w-3xl">
           A structured, cohort-based program built around real technique, measurable progress, and a
           certificate at the end — not another open-ended membership.
+        </p>
+        <p className="max-w-3xl rounded-xl border border-cyan-100 bg-cyan-50 p-4 text-sm text-slate-700">
+          Academy prices vary by programme and cohort. You will see one published all-in learner
+          price and a clear annual-membership policy: open, required and added if due, or included
+          in the published price.
         </p>
 
         {/* Stats chips */}

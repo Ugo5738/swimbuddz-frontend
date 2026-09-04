@@ -37,6 +37,7 @@ export function EditProgramModal({
     currency: program.currency || "NGN",
     price_amount: program.price_amount || 0,
     billing_type: program.billing_type || BillingType.ONE_TIME,
+    membership_policy: program.membership_policy || "open",
     is_published: program.is_published || false,
     curriculum_json: program.curriculum_json || null,
   });
@@ -54,6 +55,7 @@ export function EditProgramModal({
       currency: program.currency || "NGN",
       price_amount: program.price_amount || 0,
       billing_type: program.billing_type || BillingType.ONE_TIME,
+      membership_policy: program.membership_policy || "open",
       is_published: program.is_published || false,
       curriculum_json: program.curriculum_json || null,
     });
@@ -214,7 +216,7 @@ export function EditProgramModal({
           </Select>
 
           <Input
-            label="Price (smallest unit)"
+            label="Published all-in price (₦)"
             type="number"
             min={0}
             value={formData.price_amount}
@@ -224,9 +226,27 @@ export function EditProgramModal({
                 price_amount: parseInt(e.target.value) || 0,
               })
             }
-            placeholder="e.g., 2000000 for ₦20,000"
+            placeholder="e.g., 50000"
           />
         </div>
+
+        <Select
+          label="Annual SwimBuddz Membership policy"
+          value={formData.membership_policy}
+          onChange={(event) =>
+            setFormData({
+              ...formData,
+              membership_policy: event.target.value as
+                | "open"
+                | "active_required"
+                | "included",
+            })
+          }
+        >
+          <option value="open">Open — no membership required</option>
+          <option value="active_required">Required — add ₦20,000 when due</option>
+          <option value="included">Included in the published price</option>
+        </Select>
 
         <div className="flex items-center gap-2">
           <input

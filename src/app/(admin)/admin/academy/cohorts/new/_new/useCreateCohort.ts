@@ -95,6 +95,9 @@ export function useCreateCohort({
         notes_internal: formData.notes_internal || undefined,
         require_approval: formData.require_approval,
         admin_dropout_approval: formData.admin_dropout_approval,
+        price_override: formData.price_override ?? undefined,
+        membership_policy_override: formData.membership_policy_override ?? undefined,
+        post_graduation_club_bridge_months: formData.post_graduation_club_bridge_months,
         // Session defaults
         default_pool_fee: formData.default_pool_fee,
         default_ride_configs:

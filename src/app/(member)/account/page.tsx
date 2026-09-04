@@ -218,10 +218,9 @@ export default function MemberDashboardPage() {
   const communityActive = isTierPaid(member, "community");
   const requestedTiers = getRequestedTiers(member);
   const wantsAcademy = requestedTiers.includes("academy");
-  const wantsClub = requestedTiers.includes("club") || wantsAcademy;
+  const wantsClub = requestedTiers.includes("club");
 
-  const clubContext =
-    wantsClub || hasTierContext(member, "club") || hasTierContext(member, "academy");
+  const clubContext = wantsClub || hasTierContext(member, "club");
   const academyContext = wantsAcademy || hasTierContext(member, "academy");
 
   const hasProfileBasics = Boolean(
@@ -232,18 +231,18 @@ export default function MemberDashboardPage() {
   );
   const hasSwimBackground = Boolean(
     profile.swim_level &&
-    profile.deep_water_comfort &&
-    profile.personal_goals &&
-    String(profile.personal_goals).trim()
+      profile.deep_water_comfort &&
+      profile.personal_goals &&
+      String(profile.personal_goals).trim()
   );
   const hasSafetyLogistics = Boolean(
     emergency.name &&
-    emergency.contact_relationship &&
-    emergency.phone &&
-    availability.preferred_locations &&
-    availability.preferred_locations.length > 0 &&
-    availability.preferred_times &&
-    availability.preferred_times.length > 0
+      emergency.contact_relationship &&
+      emergency.phone &&
+      availability.preferred_locations &&
+      availability.preferred_locations.length > 0 &&
+      availability.preferred_times &&
+      availability.preferred_times.length > 0
   );
   const hasClubAvailability = Boolean(
     availability.available_days && availability.available_days.length > 0
@@ -284,18 +283,17 @@ export default function MemberDashboardPage() {
   const needsOnboarding = !onboardingReadyForPayment;
 
   // Calculate onboarding progress
-  const totalSteps = 2 + (clubContext ? 1 : 0) + (academyContext ? 1 : 0);
+  const totalSteps = 1 + (clubContext ? 1 : 0) + (academyContext ? 1 : 0);
   let completedSteps = 0;
   if (!needsProfileCore) completedSteps++;
-  if (communityActive) completedSteps++;
   if (clubContext && !needsClubReadiness) completedSteps++;
   if (academyContext && !needsAcademyReadiness) completedSteps++;
   const progressPercent = Math.round((completedSteps / totalSteps) * 100);
 
   const paidTier = getPaidMembershipTier(member);
   const tierLabel = getMembershipLabel(member);
-  const isAcademyMember = paidTier === "academy";
-  const isClubMember = paidTier === "club" || paidTier === "academy";
+  const isAcademyMember = isTierPaid(member, "academy");
+  const isClubMember = isTierPaid(member, "club");
 
   const tierVariant: "info" | "success" | "warning" | "default" = isAcademyMember
     ? "warning"
@@ -308,8 +306,11 @@ export default function MemberDashboardPage() {
           : "info";
 
   const resumeCheckoutUrl = resumePaymentIntent?.checkout_url || null;
-  const showPaymentRecoveryBanner = !communityActive && onboardingReadyForPayment;
-  const showCommunityActivationBanner = !communityActive && !onboardingReadyForPayment;
+  const membershipOnlyPath = !wantsClub && !wantsAcademy && !isClubMember && !isAcademyMember;
+  const showPaymentRecoveryBanner =
+    membershipOnlyPath && !communityActive && onboardingReadyForPayment;
+  const showCommunityActivationBanner =
+    membershipOnlyPath && !communityActive && !onboardingReadyForPayment;
   const showAcademy = wantsAcademy || isAcademyMember;
 
   // Show booked session first, fall back to next available session
@@ -353,16 +354,6 @@ export default function MemberDashboardPage() {
                   )}
                   <span className={needsProfileCore ? "text-white" : "text-cyan-200 line-through"}>
                     Complete profile, safety, and swim basics
-                  </span>
-                </li>
-                <li className="flex items-center gap-2 text-sm">
-                  {!communityActive ? (
-                    <Circle className="h-4 w-4 text-cyan-200" />
-                  ) : (
-                    <CheckCircle className="h-4 w-4 text-emerald-300" />
-                  )}
-                  <span className={!communityActive ? "text-white" : "text-cyan-200 line-through"}>
-                    Activate Community membership
                   </span>
                 </li>
                 {clubContext && (
@@ -497,9 +488,7 @@ export default function MemberDashboardPage() {
           // attendance record (upcomingBookings path). Otherwise undefined.
           upcomingBookings.length > 0 ? upcomingBookings[0]?.status : null
         }
-        signInEligible={
-          upcomingBookings.length > 0 ? bookedSessionSignInEligible : false
-        }
+        signInEligible={upcomingBookings.length > 0 ? bookedSessionSignInEligible : false}
       />
 
       {/* ── Section 4b: My Pod (Club members only — see docs/club/POD_OPERATIONS.md) ── */}
@@ -540,8 +529,12 @@ export default function MemberDashboardPage() {
                 plan.
               </p>
             </div>
-            <Link href="/account/onboarding">
-              <Button variant="outline">Complete Readiness</Button>
+            <Link
+              href={wantsAcademy ? "/account/onboarding?step=academy" : "/upgrade/club/readiness"}
+            >
+              <Button variant="outline">
+                {wantsAcademy ? "Continue Academy Setup" : "Continue Club Application"}
+              </Button>
             </Link>
           </div>
         </Card>

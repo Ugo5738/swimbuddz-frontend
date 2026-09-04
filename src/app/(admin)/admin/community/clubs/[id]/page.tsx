@@ -20,32 +20,12 @@ import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { PoolPicker } from "@/components/admin/PoolPicker";
-import {
-  getClub,
-  updateClub,
-  type Club,
-  type ClubDayOfWeek,
-  type ClubInput,
-} from "@/lib/clubs";
-import {
-  formatDay,
-  formatTime,
-  podDisplayName,
-  type PodSummary,
-} from "@/lib/pods";
+import { OperatingArea, PoolPricingApi } from "@/lib/poolPricing";
+import { getClub, updateClub, type Club, type ClubDayOfWeek, type ClubInput } from "@/lib/clubs";
+import { formatDay, formatTime, podDisplayName, type PodSummary } from "@/lib/pods";
 import { supabase } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
-import {
-  ArrowLeft,
-  Calendar,
-  Clock,
-  MapPin,
-  Pencil,
-  Plus,
-  Save,
-  Users,
-  X,
-} from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, Pencil, Plus, Save, Users, X } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -77,10 +57,9 @@ async function fetchPodsForClub(clubId: string): Promise<PodSummary[]> {
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const [publicRes, reviewRes] = await Promise.all([
-    fetch(
-      `${API_BASE_URL}/api/v1/members/pods/public?club_id=${encodeURIComponent(clubId)}`,
-      { headers },
-    ),
+    fetch(`${API_BASE_URL}/api/v1/members/pods/public?club_id=${encodeURIComponent(clubId)}`, {
+      headers,
+    }),
     fetch(`${API_BASE_URL}/api/v1/admin/members/pods/review-queue`, { headers }),
   ]);
 
@@ -92,9 +71,7 @@ async function fetchPodsForClub(clubId: string): Promise<PodSummary[]> {
   for (const p of reviewPods) {
     if (p.club_id === clubId) map.set(p.id, p);
   }
-  return Array.from(map.values()).sort((a, b) =>
-    a.created_at < b.created_at ? 1 : -1,
-  );
+  return Array.from(map.values()).sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
 }
 
 export default function AdminClubDetailPage() {
@@ -103,6 +80,7 @@ export default function AdminClubDetailPage() {
 
   const [club, setClub] = useState<Club | null>(null);
   const [pods, setPods] = useState<PodSummary[]>([]);
+  const [operatingAreas, setOperatingAreas] = useState<OperatingArea[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -121,12 +99,14 @@ export default function AdminClubDetailPage() {
     if (!clubId) return;
     setError(null);
     try {
-      const [c, ps] = await Promise.all([
+      const [c, ps, areas] = await Promise.all([
         getClub(clubId),
         fetchPodsForClub(clubId),
+        PoolPricingApi.listAreas().catch(() => []),
       ]);
       setClub(c);
       setPods(ps);
+      setOperatingAreas(areas);
       setForm(toForm(c));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load club");
@@ -168,7 +148,7 @@ export default function AdminClubDetailPage() {
         if (a.status !== b.status) return a.status === "active" ? -1 : 1;
         return podDisplayName(a).localeCompare(podDisplayName(b));
       }),
-    [pods],
+    [pods]
   );
 
   if (loading) return <LoadingPage text="Loading club..." />;
@@ -193,9 +173,7 @@ export default function AdminClubDetailPage() {
           <ArrowLeft className="h-4 w-4" />
           Back to clubs
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">
-          {club.name}
-        </h1>
+        <h1 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">{club.name}</h1>
         <p className="mt-1 text-sm text-slate-500">
           <code className="rounded bg-slate-100 px-1 text-xs">{club.slug}</code>
           {!club.is_active && (
@@ -207,9 +185,7 @@ export default function AdminClubDetailPage() {
       </div>
 
       {error && (
-        <Card className="border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
-          {error}
-        </Card>
+        <Card className="border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</Card>
       )}
 
       {/* Settings */}
@@ -250,9 +226,10 @@ export default function AdminClubDetailPage() {
             setForm={setForm}
             autoSlug={autoSlug}
             setAutoSlug={setAutoSlug}
+            operatingAreas={operatingAreas}
           />
         ) : (
-          <ClubReadView club={club} />
+          <ClubReadView club={club} operatingAreas={operatingAreas} />
         )}
       </Card>
 
@@ -260,12 +237,10 @@ export default function AdminClubDetailPage() {
       <Card className="overflow-hidden">
         <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-5 py-3">
           <div>
-            <h2 className="font-semibold text-slate-900">
-              Pods in this club ({pods.length})
-            </h2>
+            <h2 className="font-semibold text-slate-900">Pods in this club ({pods.length})</h2>
             <p className="text-xs text-slate-500">
-              Small training crews (2–5 swimmers each). New pods inherit
-              this club's default schedule.
+              Small training crews (2–5 swimmers each). New pods inherit this club's default
+              schedule.
             </p>
           </div>
           <Link href={`/admin/community/pods/new?club_id=${club.id}`}>
@@ -278,16 +253,14 @@ export default function AdminClubDetailPage() {
 
         {sortedPods.length === 0 ? (
           <div className="px-5 py-10 text-center text-sm text-slate-500">
-            No pods in this club yet. Create the first one — handle like
-            "dolphins" gets you the WhatsApp group name{" "}
-            <code className="text-xs">SB Club – Dolphins</code>.
+            No pods in this club yet. Create the first one — handle like "dolphins" gets you the
+            WhatsApp group name <code className="text-xs">SB Club – Dolphins</code>.
           </div>
         ) : (
           <ul className="divide-y divide-slate-100">
             {sortedPods.map((pod) => {
               const reviewOverdue =
-                pod.status === "active" &&
-                new Date(pod.review_due_at) <= new Date();
+                pod.status === "active" && new Date(pod.review_due_at) <= new Date();
               return (
                 <li key={pod.id}>
                   <Link
@@ -302,15 +275,9 @@ export default function AdminClubDetailPage() {
                         <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">
                           {pod.slug}
                         </span>
-                        {pod.status === "inactive" && (
-                          <Badge variant="default">Dissolved</Badge>
-                        )}
-                        {reviewOverdue && (
-                          <Badge variant="warning">Review due</Badge>
-                        )}
-                        {pod.visibility === "private" && (
-                          <Badge variant="default">Private</Badge>
-                        )}
+                        {pod.status === "inactive" && <Badge variant="default">Dissolved</Badge>}
+                        {reviewOverdue && <Badge variant="warning">Review due</Badge>}
+                        {pod.visibility === "private" && <Badge variant="default">Private</Badge>}
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-500">
                         <span className="inline-flex items-center gap-1">
@@ -353,6 +320,7 @@ function toForm(c: Club): ClubInput {
     default_session_time: c.default_session_time.slice(0, 5),
     default_session_duration_minutes: c.default_session_duration_minutes,
     default_pool_id: c.default_pool_id,
+    operating_area_id: c.operating_area_id,
   };
 }
 
@@ -360,7 +328,8 @@ function toForm(c: Club): ClubInput {
 // Read-only view & edit form
 // ---------------------------------------------------------------------------
 
-function ClubReadView({ club }: { club: Club }) {
+function ClubReadView({ club, operatingAreas }: { club: Club; operatingAreas: OperatingArea[] }) {
+  const areaName = operatingAreas.find((area) => area.id === club.operating_area_id)?.name;
   return (
     <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
       <Field label="Location">
@@ -374,12 +343,10 @@ function ClubReadView({ club }: { club: Club }) {
         )}
       </Field>
       <Field label="Default session day">
-        {DAYS.find((d) => d.value === club.default_session_day)?.label ??
-          club.default_session_day}
+        {DAYS.find((d) => d.value === club.default_session_day)?.label ?? club.default_session_day}
       </Field>
       <Field label="Default session time">
-        {club.default_session_time.slice(0, 5)} ·{" "}
-        {club.default_session_duration_minutes} min
+        {club.default_session_time.slice(0, 5)} · {club.default_session_duration_minutes} min
       </Field>
       <Field label="Default pool">
         {club.default_pool_id ? (
@@ -387,6 +354,9 @@ function ClubReadView({ club }: { club: Club }) {
         ) : (
           <span className="italic text-slate-400">Not set</span>
         )}
+      </Field>
+      <Field label="Operating area">
+        {areaName ?? <span className="italic text-slate-400">Not set</span>}
       </Field>
       <Field label="Description" wide>
         {club.description || <span className="italic text-slate-400">None</span>}
@@ -400,11 +370,13 @@ function ClubEditForm({
   setForm,
   autoSlug,
   setAutoSlug,
+  operatingAreas,
 }: {
   form: ClubInput;
   setForm: (f: ClubInput) => void;
   autoSlug: boolean;
   setAutoSlug: (v: boolean) => void;
+  operatingAreas: OperatingArea[];
 }) {
   return (
     <div className="space-y-3">
@@ -471,9 +443,7 @@ function ClubEditForm({
           label="Default session time"
           type="time"
           value={form.default_session_time ?? "09:00"}
-          onChange={(e) =>
-            setForm({ ...form, default_session_time: e.target.value })
-          }
+          onChange={(e) => setForm({ ...form, default_session_time: e.target.value })}
         />
         <Input
           label="Duration (min)"
@@ -490,13 +460,47 @@ function ClubEditForm({
         />
       </div>
 
+      <Select
+        label="Operating area"
+        value={form.operating_area_id ?? ""}
+        onChange={(e) => {
+          const operatingAreaId = e.target.value || null;
+          setForm({
+            ...form,
+            operating_area_id: operatingAreaId,
+            // A pool from the previous area can never remain silently paired
+            // with the new area. The server enforces the same invariant.
+            default_pool_id: null,
+          });
+        }}
+      >
+        <option value="">Select Mainland, Island, or another configured area</option>
+        {operatingAreas.map((area) => (
+          <option key={area.id} value={area.id}>
+            {area.name}
+          </option>
+        ))}
+      </Select>
+
       <PoolPicker
         label="Default pool"
         value={form.default_pool_id}
-        onChange={(poolId) =>
-          setForm({ ...form, default_pool_id: poolId ?? null })
+        operatingAreaId={form.operating_area_id}
+        disabled={!form.operating_area_id}
+        activePartnersOnly
+        required={Boolean(form.operating_area_id)}
+        onChange={(poolId, _poolName, pool) =>
+          setForm({
+            ...form,
+            default_pool_id: poolId ?? null,
+            operating_area_id: pool?.operating_area_id ?? form.operating_area_id ?? null,
+          })
         }
-        hint="Where this club's sessions are held by default. Pods inherit this."
+        hint={
+          form.operating_area_id
+            ? "Only active partner pools in this operating area are shown."
+            : "Select an operating area first, then choose its default pool."
+        }
       />
 
       <label className="flex items-center gap-2 text-sm">

@@ -169,7 +169,14 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
   const perSeatRideCost = selectedArea && selectedPickupLocationId ? selectedArea.cost : 0;
   const rideShareCost = perSeatRideCost * numSeats;
   const partySize = 1 + guests.length;
-  const poolFee = isRideOnlyFlow ? 0 : (session?.pool_fee ?? 0) * partySize;
+  const memberSessionFee =
+    session?.access?.fee_amount_kobo == null
+      ? session?.pool_fee ?? 0
+      : session.access.fee_amount_kobo / 100;
+  const guestUnitFee = session?.guest_fee ?? session?.pool_fee ?? 0;
+  const poolFee = isRideOnlyFlow
+    ? 0
+    : memberSessionFee + guestUnitFee * guests.length;
   const subtotal = poolFee + rideShareCost;
   const discountAmount = validatedDiscount?.amount ?? 0;
   const total = Math.max(0, subtotal - discountAmount);
@@ -464,7 +471,7 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
             `/api/v1/sessions/${params.id}/book`,
             {
               session_id: params.id,
-              fee_amount_kobo: Math.round((session?.pool_fee ?? 0) * partySize * 100),
+              fee_amount_kobo: Math.round(poolFee * 100),
               pay_with_bubbles: false,
               guests: guestsPayload,
               ...bookingAttribution,
@@ -523,7 +530,7 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
           `/api/v1/sessions/${session!.id}/book`,
           {
             session_id: session!.id,
-            fee_amount_kobo: Math.round((session?.pool_fee ?? 0) * partySize * 100),
+            fee_amount_kobo: Math.round(poolFee * 100),
             pay_with_bubbles: false,
             guests: guestsPayload,
             ...bookingAttribution,

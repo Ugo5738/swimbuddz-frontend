@@ -81,14 +81,11 @@ export default function ProgramLandingPage() {
     let cancelled = false;
     const loadGallery = async () => {
       try {
-        const albumsRes = await fetch(
-          `${apiEndpoints.media}/albums?album_type=ACADEMY`
-        );
+        const albumsRes = await fetch(`${apiEndpoints.media}/albums?album_type=ACADEMY`);
         if (!albumsRes.ok) return;
         const albums = await albumsRes.json();
         if (!Array.isArray(albums) || albums.length === 0) return;
-        const album =
-          albums.find((a: { is_public?: boolean }) => a.is_public) ?? albums[0];
+        const album = albums.find((a: { is_public?: boolean }) => a.is_public) ?? albums[0];
         const detailRes = await fetch(`${apiEndpoints.media}/albums/${album.id}`);
         if (!detailRes.ok) return;
         const detail = await detailRes.json();
@@ -101,9 +98,7 @@ export default function ProgramLandingPage() {
           title?: string | null;
         }>;
         const images = items
-          .filter(
-            (m) => (m.media_type ?? "IMAGE").toUpperCase() === "IMAGE" && m.file_url
-          )
+          .filter((m) => (m.media_type ?? "IMAGE").toUpperCase() === "IMAGE" && m.file_url)
           .slice(0, 8)
           .map((m) => ({
             src: m.thumbnail_url || (m.file_url as string),
@@ -122,10 +117,7 @@ export default function ProgramLandingPage() {
 
   useEffect(() => {
     if (galleryImages.length <= 1) return;
-    const timer = setInterval(
-      () => setGalleryIndex((i) => (i + 1) % galleryImages.length),
-      4500
-    );
+    const timer = setInterval(() => setGalleryIndex((i) => (i + 1) % galleryImages.length), 4500);
     return () => clearInterval(timer);
   }, [galleryImages.length]);
 
@@ -246,9 +238,7 @@ export default function ProgramLandingPage() {
       {curriculum && curriculum.weeks.length > 0 && (
         <section className="space-y-6">
           <div>
-            <h2 className="text-2xl font-semibold text-slate-900">
-              Your week-by-week journey
-            </h2>
+            <h2 className="text-2xl font-semibold text-slate-900">Your week-by-week journey</h2>
             <p className="text-slate-600 mt-2">
               Every week builds on the last — here&apos;s exactly what you&apos;ll work on.
             </p>
@@ -345,7 +335,7 @@ export default function ProgramLandingPage() {
               We&apos;re between cohorts for this program. Join the waitlist and we&apos;ll notify
               you when the next one opens.
             </p>
-            <Link href="/register">
+            <Link href="/register?goal=academy">
               <Button>Join waitlist</Button>
             </Link>
           </Card>
@@ -429,10 +419,7 @@ export default function ProgramLandingPage() {
                       them to /login?redirect=..., and the cohort_id is
                       preserved end-to-end (login → register → onboarding
                       → final destination). */}
-                  <Link
-                    href={`/account/academy/cohorts/${cohort.id}`}
-                    className="block w-full"
-                  >
+                  <Link href={`/account/academy/cohorts/${cohort.id}`} className="block w-full">
                     <Button className="w-full">Reserve your spot</Button>
                   </Link>
                   <p className="text-center text-xs text-slate-500">Requires Academy Membership</p>
@@ -447,9 +434,7 @@ export default function ProgramLandingPage() {
       {program.faq_json && program.faq_json.length > 0 && (
         <section className="space-y-6">
           <div>
-            <h2 className="text-2xl font-semibold text-slate-900">
-              Frequently asked questions
-            </h2>
+            <h2 className="text-2xl font-semibold text-slate-900">Frequently asked questions</h2>
             <p className="text-slate-600 mt-2">
               New to swimming? Here&apos;s what beginners ask us most.
             </p>
@@ -461,9 +446,7 @@ export default function ProgramLandingPage() {
                 className="group rounded-2xl border border-slate-200 bg-white open:border-cyan-200"
               >
                 <summary className="flex cursor-pointer list-none items-center gap-4 p-4">
-                  <span className="flex-1 font-semibold text-slate-900">
-                    {item.question}
-                  </span>
+                  <span className="flex-1 font-semibold text-slate-900">{item.question}</span>
                   <svg
                     className="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-180"
                     fill="none"
@@ -494,9 +477,7 @@ export default function ProgramLandingPage() {
       {galleryImages.length > 0 && (
         <section className="space-y-6">
           <div>
-            <h2 className="text-2xl font-semibold text-slate-900">
-              Life at the Academy
-            </h2>
+            <h2 className="text-2xl font-semibold text-slate-900">Life at the Academy</h2>
             <p className="text-slate-600 mt-2">Real sessions, real swimmers.</p>
           </div>
           <div className="relative aspect-[16/9] w-full overflow-hidden rounded-3xl bg-slate-100">

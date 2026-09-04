@@ -28,6 +28,9 @@ type PoolPickerProps = {
    * to schedule a trial session at a pool we're still evaluating.
    */
   activePartnersOnly?: boolean;
+  /** Limit choices to the selected operating area (for example Mainland). */
+  operatingAreaId?: string | null;
+  disabled?: boolean;
   className?: string;
   required?: boolean;
   id?: string;
@@ -40,8 +43,13 @@ type CacheEntry = { data: PoolOption[]; fetchedAt: number };
 const POOL_CACHE: Record<string, CacheEntry> = {};
 const CACHE_TTL_MS = 2 * 60 * 1000;
 
-async function fetchPools(activePartnersOnly: boolean): Promise<PoolOption[]> {
-  const cacheKey = activePartnersOnly ? "active-partners" : "all-active";
+async function fetchPools(
+  activePartnersOnly: boolean,
+  operatingAreaId?: string | null
+): Promise<PoolOption[]> {
+  const cacheKey = `${activePartnersOnly ? "active-partners" : "all-active"}:${
+    operatingAreaId || "all-areas"
+  }`;
   const cached = POOL_CACHE[cacheKey];
   if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
     return cached.data;
@@ -54,6 +62,9 @@ async function fetchPools(activePartnersOnly: boolean): Promise<PoolOption[]> {
   params.set("is_active", "true");
   if (activePartnersOnly) {
     params.set("partnership_status", "active_partner");
+  }
+  if (operatingAreaId) {
+    params.set("operating_area_id", operatingAreaId);
   }
   const resp = await apiGet<PoolListResponse>(`/api/v1/admin/pools?${params.toString()}`, {
     auth: true,
@@ -84,6 +95,8 @@ export function PoolPicker({
   value,
   onChange,
   activePartnersOnly = false,
+  operatingAreaId,
+  disabled = false,
   className = "",
   required = false,
   id,
@@ -105,7 +118,7 @@ export function PoolPicker({
   useEffect(() => {
     let cancelled = false;
     setError(null);
-    fetchPools(activePartnersOnly)
+    fetchPools(activePartnersOnly, operatingAreaId)
       .then((data) => {
         if (!cancelled) setPools(data);
       })
@@ -118,7 +131,7 @@ export function PoolPicker({
     return () => {
       cancelled = true;
     };
-  }, [activePartnersOnly]);
+  }, [activePartnersOnly, operatingAreaId]);
 
   // Sync the input text with the externally-controlled `value` so when a
   // caller programmatically sets/clears the pool, the input matches.
@@ -209,7 +222,7 @@ export function PoolPicker({
           aria-controls={listboxId}
           value={query}
           placeholder={pools === null ? "Loading pools..." : "Search or pick a pool..."}
-          disabled={pools === null}
+          disabled={disabled || pools === null}
           onChange={(e) => {
             setQuery(e.target.value);
             setOpen(true);
@@ -243,6 +256,7 @@ export function PoolPicker({
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}
+            disabled={disabled}
             className="p-1 rounded hover:bg-slate-100 text-slate-400"
             aria-label="Toggle options"
           >
@@ -250,7 +264,7 @@ export function PoolPicker({
           </button>
         </div>
 
-        {open && pools !== null && (
+        {open && !disabled && pools !== null && (
           <div
             id={listboxId}
             role="listbox"

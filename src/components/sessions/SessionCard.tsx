@@ -2,7 +2,11 @@
 
 import { SessionWeatherChip } from "@/components/sessions/SessionWeatherChip";
 import { Badge } from "@/components/ui/Badge";
-import { tierDisplayLabel, type SessionAccessTier } from "@/lib/sessionAccess";
+import {
+  getSessionPriceDisplay,
+  tierDisplayLabel,
+  type SessionAccessTier,
+} from "@/lib/sessionAccess";
 import {
   excuseBooking,
   getCohortColor,
@@ -143,6 +147,7 @@ export function SessionCard({
   const sessionEnded = new Date(session.ends_at).getTime() < Date.now();
   const effectivelyPast = isPast || sessionEnded;
   const canSelect = selectable && !isBooked && !effectivelyPast && canBook;
+  const price = getSessionPriceDisplay(access, session.pool_fee);
 
   // Sign-in window for a booked, paid-up member to confirm they showed
   // up. Only renders the button when we're inside the window AND the
@@ -381,8 +386,10 @@ export function SessionCard({
         {!effectivelyPast && (
           <div className="mt-4 flex flex-wrap gap-4 text-sm">
             <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500">Session price</p>
-              <p className="font-semibold text-slate-900">{formatCurrency(session.pool_fee)}</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">{price.label}</p>
+              <p className="font-semibold text-slate-900">
+                {price.amountNaira === 0 ? "Included" : formatCurrency(price.amountNaira)}
+              </p>
             </div>
           </div>
         )}

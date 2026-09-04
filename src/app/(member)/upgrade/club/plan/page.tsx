@@ -1,236 +1,617 @@
 "use client";
 
+import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
-import { apiGet } from "@/lib/api";
+import { ClubPaymentModeSelector } from "@/components/club/ClubPaymentModeSelector";
+import { useApi } from "@/hooks/useApi";
 import {
-  ClubBillingCycle,
-  CLUB_PRICING,
-  formatCurrency,
-  useUpgrade,
-} from "@/lib/upgradeContext";
-import { Check, Clock, Sparkles, TrendingUp } from "lucide-react";
+  ClubApplication,
+  ClubOperatingArea,
+  ClubPlan,
+  ClubPool,
+  ClubPaymentMode,
+  createClubApplication,
+  submitClubPreAssessment,
+} from "@/lib/clubOnboarding";
+import {
+  clubQuarterLabel,
+  isPlanReachable,
+  sortClubPlans,
+  toggleContiguousClubPlan,
+} from "@/lib/clubPlanSelection";
+import { formatCurrency, useUpgrade } from "@/lib/upgradeContext";
+import { Check, MapPin, Users, Waves } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
-type Member = {
-  id?: string;
-  membership?: {
-    community_paid_until?: string | null;
-  } | null;
+type Pod = {
+  id: string;
+  club_id: string;
+  name: string;
+  handle: string | null;
+  active_member_count: number;
+  max_size: number;
 };
 
-const PLAN_OPTIONS: {
-  key: ClubBillingCycle;
-  label: string;
-  description: string;
-  savings?: string;
-  icon: React.ElementType;
-  highlight?: boolean;
-}[] = [
-  {
-    key: "quarterly",
-    label: "Quarterly",
-    description: "Pay every 3 months",
-    icon: Clock,
-  },
-  {
-    key: "biannual",
-    label: "Bi-annual",
-    description: "Pay every 6 months",
-    savings: "Save ₦5,000",
-    icon: TrendingUp,
-  },
-  {
-    key: "annual",
-    label: "Annual",
-    description: "Pay once a year",
-    savings: "Save ₦20,000",
-    icon: Sparkles,
-    highlight: true,
-  },
-];
+type PoolList = {
+  items: ClubPool[];
+  total: number;
+};
+
+const UNASSIGNED_AREA = "unassigned";
 
 export default function ClubPlanSelectionPage() {
   const router = useRouter();
-  const { state, setClubBillingCycle } = useUpgrade();
+  const { state, setClubApplicationId } = useUpgrade();
+  const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
+  const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
+  const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([]);
+  const [experienceSelected, setExperienceSelected] = useState(true);
+  const [preferredPodId, setPreferredPodId] = useState("");
+  const [paymentMode, setPaymentMode] = useState<ClubPaymentMode>("quarterly_prepaid");
+  const [submitting, setSubmitting] = useState(false);
 
-  const [selectedPlan, setSelectedPlan] = useState<ClubBillingCycle | null>(
-    state.clubBillingCycle || "quarterly",
+  const plansQuery = useApi<ClubPlan[]>("/api/v1/clubs/plans", { auth: false });
+  const areasQuery = useApi<ClubOperatingArea[]>("/api/v1/pools/operating-areas", {
+    auth: false,
+  });
+  const poolsQuery = useApi<PoolList>(
+    selectedAreaId
+      ? `/api/v1/pools?page_size=100${
+          selectedAreaId === UNASSIGNED_AREA
+            ? ""
+            : `&operating_area_id=${encodeURIComponent(selectedAreaId)}`
+        }`
+      : null,
+    { auth: false }
   );
-  const [loading, setLoading] = useState(true);
+  const applicationsQuery = useApi<ClubApplication[]>("/api/v1/clubs/applications/me");
 
-  // Check if community is active
-  const loadMember = useCallback(async () => {
-    setLoading(true);
-    try {
-      await apiGet<Member>("/api/v1/members/me", { auth: true });
-    } catch (e) {
-      console.error("Failed to load member:", e);
-    } finally {
-      setLoading(false);
+  const plans = useMemo(() => plansQuery.data ?? [], [plansQuery.data]);
+  const areas = useMemo(() => {
+    const planAreaIds = new Set(plans.map((plan) => plan.operating_area_id).filter(Boolean));
+    const configured = (areasQuery.data ?? []).filter((area) => planAreaIds.has(area.id));
+    const configuredIds = new Set(configured.map((area) => area.id));
+    const missingNames = [...planAreaIds].filter((id) => id && !configuredIds.has(id));
+    const result: Array<ClubOperatingArea & { isFallback?: boolean }> = [
+      ...configured,
+      ...missingNames.map((id) => ({
+        id: id as string,
+        name: "Other configured area",
+        slug: `area-${id}`,
+        area_type: "locality" as const,
+        parent_id: null,
+        country_code: "NG",
+        timezone: "Africa/Lagos",
+        currency: "NGN",
+        is_active: true,
+        isFallback: true,
+      })),
+    ];
+    if (plans.some((plan) => !plan.operating_area_id)) {
+      result.push({
+        id: UNASSIGNED_AREA,
+        name: "Other Lagos locations",
+        slug: UNASSIGNED_AREA,
+        area_type: "locality",
+        parent_id: null,
+        country_code: "NG",
+        timezone: "Africa/Lagos",
+        currency: "NGN",
+        is_active: true,
+        isFallback: true,
+      });
     }
-  }, []);
+    return result;
+  }, [areasQuery.data, plans]);
+
+  const areaPlans = useMemo(
+    () =>
+      selectedAreaId
+        ? plans.filter((plan) =>
+            selectedAreaId === UNASSIGNED_AREA
+              ? !plan.operating_area_id
+              : plan.operating_area_id === selectedAreaId
+          )
+        : [],
+    [plans, selectedAreaId]
+  );
+  const locations = useMemo(() => {
+    const grouped = new Map<string, ClubPlan[]>();
+    areaPlans.forEach((plan) => {
+      grouped.set(plan.club_id, [...(grouped.get(plan.club_id) ?? []), plan]);
+    });
+    return [...grouped.entries()].map(
+      ([clubId, clubPlans]) => [clubId, sortClubPlans(clubPlans)] as const
+    );
+  }, [areaPlans]);
+  const poolsById = useMemo(
+    () => new Map((poolsQuery.data?.items ?? []).map((pool) => [pool.id, pool])),
+    [poolsQuery.data]
+  );
+  const locationPlans = selectedClubId
+    ? (locations.find(([clubId]) => clubId === selectedClubId)?.[1] ?? [])
+    : [];
+  const selectedPlans = locationPlans.filter((plan) => selectedPlanIds.includes(plan.id));
+  const primaryPlan = selectedPlans[0] ?? null;
+  const podsQuery = useApi<Pod[]>(
+    selectedClubId ? `/api/v1/members/pods/public?club_id=${selectedClubId}` : null,
+    { auth: false }
+  );
+
+  const latestApplication = applicationsQuery.data?.[0] ?? null;
+  const approvedApplication = applicationsQuery.data?.find(
+    (application) => application.status === "approved"
+  );
+  const approvedPaymentModes = approvedApplication
+    ? approvedApplication.approved_payment_modes.length
+      ? approvedApplication.approved_payment_modes
+      : (["quarterly_prepaid"] as ClubPaymentMode[])
+    : [];
+  const effectivePaymentMode = approvedPaymentModes.includes(paymentMode)
+    ? paymentMode
+    : (approvedPaymentModes[0] ?? paymentMode);
+  const openApplication = applicationsQuery.data?.find((application) =>
+    ["assessment_required", "assessment_pending", "approved"].includes(application.status)
+  );
+  const reusableReadinessApplication = applicationsQuery.data?.find(
+    (application) =>
+      application.status === "enrolled" &&
+      ["club_ready", "club_ready_modified"].includes(application.assessment?.outcome ?? "")
+  );
 
   useEffect(() => {
-    loadMember();
-  }, [loadMember]);
+    if (!approvedApplication) return;
+    if (paymentMode !== effectivePaymentMode) setPaymentMode(effectivePaymentMode);
+  }, [approvedApplication, effectivePaymentMode, paymentMode]);
 
-  const handleSelectPlan = (plan: ClubBillingCycle) => {
-    setSelectedPlan(plan);
+  const selectArea = (areaId: string) => {
+    setSelectedAreaId(areaId);
+    setSelectedClubId(null);
+    setSelectedPlanIds([]);
+    setPreferredPodId("");
   };
 
-  const handleContinue = () => {
-    if (!selectedPlan) return;
-
-    // Save to context
-    setClubBillingCycle(selectedPlan);
-
-    // Navigate to checkout with plan in URL (as fallback for context)
-    router.push(`/checkout?purpose=club&plan=${selectedPlan}`);
+  const selectLocation = (clubPlans: ClubPlan[]) => {
+    const primary = clubPlans.find((plan) => plan.entry_available);
+    setSelectedClubId(clubPlans[0].club_id);
+    setSelectedPlanIds(primary ? [primary.id] : []);
+    setExperienceSelected(primary?.community_experience_default_selected ?? true);
+    setPreferredPodId("");
   };
 
-  if (loading) {
-    return <LoadingCard text="Loading..." />;
+  const toggleFutureQuarter = (plan: ClubPlan) => {
+    if (!primaryPlan || plan.id === primaryPlan.id) return;
+    setSelectedPlanIds((current) =>
+      toggleContiguousClubPlan(locationPlans, current, primaryPlan.id, plan.id)
+    );
+  };
+
+  const submit = async () => {
+    const readiness = state.clubReadinessData;
+    if (!primaryPlan) return;
+    if (!readiness && !reusableReadinessApplication) {
+      router.push("/upgrade/club/readiness");
+      return;
+    }
+    if (readiness) {
+      const requiredAnswers = [
+        readiness.canSwim25mContinuously,
+        readiness.controlledBreathing,
+        readiness.comfortableInDeepWater,
+        readiness.canFloatOrTread30Seconds,
+        readiness.canStopAndRecover,
+      ];
+      if (!requiredAnswers.every((answer) => typeof answer === "boolean")) {
+        toast.error("Complete the Club safety pre-assessment first.");
+        router.push("/upgrade/club/readiness");
+        return;
+      }
+    }
+    setSubmitting(true);
+    try {
+      const application = await createClubApplication({
+        plan_version_id: primaryPlan.id,
+        plan_version_ids: selectedPlans.slice(1).map((plan) => plan.id),
+        community_experience_selected: experienceSelected,
+        preferred_pod_id: preferredPodId || undefined,
+        notes: readiness?.clubNotes || undefined,
+      });
+      if (application.status !== "approved") {
+        if (!readiness) {
+          throw new Error(
+            "Your previous readiness approval could not be reused. Please complete the safety pre-assessment."
+          );
+        }
+        await submitClubPreAssessment(application.id, {
+          can_swim_25m_continuously: Boolean(readiness.canSwim25mContinuously),
+          controlled_breathing: Boolean(readiness.controlledBreathing),
+          comfortable_in_deep_water: Boolean(readiness.comfortableInDeepWater),
+          can_float_or_tread_30_seconds: Boolean(readiness.canFloatOrTread30Seconds),
+          can_stop_and_recover: Boolean(readiness.canStopAndRecover),
+          current_nonstop_distance_m: readiness.currentNonstopDistanceM,
+          last_swim_date: readiness.lastSwimDate || undefined,
+          injuries_or_accommodations: readiness.injuriesOrAccommodations || undefined,
+          notes: readiness.clubNotes || undefined,
+        });
+      }
+      setClubApplicationId(application.id);
+      applicationsQuery.refetch();
+      if (application.status === "approved") {
+        toast.success("Your prior Club readiness approval was reused. Your new quarter is ready.");
+        router.push(
+          `/checkout?purpose=club&application_id=${application.id}&payment_mode=quarterly_prepaid`
+        );
+      } else {
+        toast.success("Application submitted. We will arrange your in-pool assessment.");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not submit your application");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (plansQuery.loading || areasQuery.loading || applicationsQuery.loading) {
+    return <LoadingCard text="Loading Club locations..." />;
   }
 
+  const planSubtotal = selectedPlans.reduce((sum, plan) => sum + plan.current_price_kobo, 0);
+  const experienceFee = primaryPlan?.community_experience_fee_kobo ?? 0;
+
   return (
-    <div className="max-w-xl mx-auto space-y-6 pb-24 sm:pb-8">
-      {/* Header - tighter on mobile */}
-      <div className="text-center space-y-2">
-        <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 text-white shadow-lg shadow-cyan-500/25">
-          <Sparkles className="w-6 h-6 sm:w-7 sm:h-7" />
+    <div className="mx-auto max-w-3xl space-y-6 pb-16">
+      <div className="space-y-2 text-center">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-600 text-white">
+          <MapPin className="h-7 w-7" />
         </div>
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
-          Choose Your Plan
-        </h1>
-        <p className="text-sm sm:text-base text-slate-500">
-          Select a billing cycle that works for you.
+        <h1 className="text-2xl font-bold text-slate-900">Choose where you want to practise</h1>
+        <p className="text-slate-600">
+          Start with an area, then choose an available pool. Each pool has its own server-priced
+          Club quarters.
         </p>
       </div>
 
-      {/* Plan Cards - tighter spacing on mobile */}
-      <div className="space-y-2 sm:space-y-3">
-        {PLAN_OPTIONS.map((plan) => {
-          const isSelected = selectedPlan === plan.key;
-          const price = CLUB_PRICING[plan.key];
-          const Icon = plan.icon;
+      {plansQuery.error || areasQuery.error ? (
+        <Alert variant="error" title="Could not load Club options">
+          {plansQuery.error || areasQuery.error}
+        </Alert>
+      ) : null}
 
-          return (
-            <button
-              key={plan.key}
-              type="button"
-              onClick={() => handleSelectPlan(plan.key)}
-              className={`relative w-full p-3 sm:p-4 rounded-2xl border-2 text-left transition-all duration-200 ${
-                isSelected
-                  ? "border-cyan-500 bg-gradient-to-r from-cyan-50 to-blue-50 shadow-lg shadow-cyan-500/10"
-                  : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-md"
-              } ${plan.highlight ? "ring-2 ring-cyan-100" : ""}`}
+      <Alert title="One SwimBuddz identity, one checkout">
+        Club is a practice programme. If your annual SwimBuddz Membership is due, it appears as a
+        separate ₦20,000 line in your approved quote—you do not register twice.
+      </Alert>
+
+      {approvedApplication ? (
+        <Alert variant="success" title="Assessment approved">
+          <div className="space-y-3">
+            <p>Your exact server-calculated Club arrangement is ready.</p>
+            <ClubPaymentModeSelector
+              approvedModes={approvedPaymentModes}
+              value={effectivePaymentMode}
+              transitionExpiresAt={approvedApplication.transition_expires_at}
+              onChange={setPaymentMode}
+            />
+            <Button
+              size="sm"
+              onClick={() =>
+                router.push(
+                  `/checkout?purpose=club&application_id=${approvedApplication.id}&payment_mode=${effectivePaymentMode}`
+                )
+              }
             >
-              <div className="flex items-center gap-3 sm:gap-4">
-                {/* Icon - smaller on mobile */}
-                <div
-                  className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                    isSelected
-                      ? "bg-cyan-500 text-white"
-                      : "bg-slate-100 text-slate-500"
+              Review approved arrangement
+            </Button>
+          </div>
+        </Alert>
+      ) : openApplication?.status === "assessment_pending" ? (
+        <Alert variant="success" title="Application received">
+          We will complete a 10–15 minute in-pool assessment, then email your result.
+        </Alert>
+      ) : openApplication?.status === "assessment_required" ? (
+        <Alert variant="info" title="Finish your safety pre-assessment">
+          Your Club location is saved, but the safety answers were not submitted. Return to Club
+          readiness to complete this application.
+          <div className="mt-3">
+            <Button size="sm" onClick={() => router.push("/upgrade/club/readiness")}>
+              Continue readiness
+            </Button>
+          </div>
+        </Alert>
+      ) : latestApplication?.status === "academy_recommended" ? (
+        <Alert variant="info" title="Academy recommended">
+          Your assessment recommends building your foundation through an Academy programme before
+          Club practice.
+          <div className="mt-3">
+            <Button size="sm" onClick={() => router.push("/upgrade/academy/cohort")}>
+              View Academy programmes
+            </Button>
+          </div>
+        </Alert>
+      ) : null}
+
+      {!openApplication ? (
+        <fieldset className="space-y-3">
+          <legend className="text-base font-semibold text-slate-900">1. Choose an area</legend>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {areas.map((area) => {
+              const selected = selectedAreaId === area.id;
+              const optionCount = new Set(
+                plans
+                  .filter((plan) =>
+                    area.id === UNASSIGNED_AREA
+                      ? !plan.operating_area_id
+                      : plan.operating_area_id === area.id
+                  )
+                  .map((plan) => plan.club_id)
+              ).size;
+              return (
+                <button
+                  key={area.id}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => selectArea(area.id)}
+                  className={`rounded-xl border p-4 text-left transition ${
+                    selected
+                      ? "border-cyan-500 bg-cyan-50 ring-2 ring-cyan-100"
+                      : "border-slate-200 bg-white hover:border-slate-300"
                   }`}
                 >
-                  <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
-                </div>
+                  <span className="font-semibold text-slate-900">{area.name}</span>
+                  <span className="mt-1 block text-xs text-slate-500">
+                    {optionCount} Club {optionCount === 1 ? "location" : "locations"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {!areas.length ? (
+            <Card className="text-sm text-slate-600">
+              No Club locations are accepting applications right now.
+            </Card>
+          ) : null}
+        </fieldset>
+      ) : null}
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-base sm:text-lg font-semibold text-slate-900">
-                      {plan.label}
-                    </h3>
-                    {plan.highlight && (
-                      <span className="px-2 py-0.5 text-xs font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-full">
-                        Best Value
+      {selectedAreaId ? (
+        <fieldset className="space-y-3">
+          <legend className="text-base font-semibold text-slate-900">
+            2. Choose a pool location
+          </legend>
+          {poolsQuery.error ? <Alert variant="error">{poolsQuery.error}</Alert> : null}
+          <div className="space-y-3">
+            {locations.map(([clubId, clubPlans]) => {
+              const firstAvailable = clubPlans.find((plan) => plan.entry_available);
+              const first = clubPlans[0];
+              const planPoolId = first.pool_id || first.default_pool_id;
+              const pool = planPoolId ? poolsById.get(planPoolId) : null;
+              const selected = selectedClubId === clubId;
+              return (
+                <button
+                  key={clubId}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => selectLocation(clubPlans)}
+                  className="w-full text-left"
+                >
+                  <Card
+                    className={
+                      selected
+                        ? "border-cyan-500 bg-cyan-50/40 ring-2 ring-cyan-100"
+                        : "hover:border-slate-300"
+                    }
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="font-semibold text-slate-900">
+                          {pool?.name || first.location || first.club_name}
+                        </p>
+                        <p className="text-sm text-slate-600">
+                          {first.club_name}
+                          {pool?.location_area ? ` · ${pool.location_area}` : ""}
+                        </p>
+                        {pool?.address ? (
+                          <p className="mt-1 text-xs text-slate-500">{pool.address}</p>
+                        ) : null}
+                        {!firstAvailable ? (
+                          <p className="mt-1 text-xs text-amber-700">
+                            Use drop-ins until a new Club quarter opens.
+                          </p>
+                        ) : null}
+                      </div>
+                      {firstAvailable ? (
+                        <div className="text-right">
+                          <p className="text-xl font-bold text-slate-900">
+                            {formatCurrency(firstAvailable.current_price_kobo / 100)}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {clubQuarterLabel(firstAvailable)}
+                          </p>
+                        </div>
+                      ) : null}
+                    </div>
+                  </Card>
+                </button>
+              );
+            })}
+          </div>
+          {!locations.length ? (
+            <Card className="text-sm text-slate-600">
+              No Club pool is available in this area yet.
+            </Card>
+          ) : null}
+        </fieldset>
+      ) : null}
+
+      {selectedClubId && !primaryPlan ? (
+        <Alert variant="info" title="Quarterly entry is closed">
+          You can use Community drop-in swims for now. Come back when the next Club quarter is
+          published; you can still complete your assessment ahead of time.
+        </Alert>
+      ) : null}
+
+      {primaryPlan ? (
+        <Card className="space-y-5 border-cyan-100">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-cyan-700">
+              3. Build your application
+            </p>
+            <h2 className="mt-1 font-semibold text-slate-900">Choose consecutive Club quarters</h2>
+            <p className="text-sm text-slate-600">
+              Your first available quarter is required. Future quarters start unselected; choosing a
+              later one automatically includes the quarters between them.
+            </p>
+          </div>
+          <div className="space-y-2">
+            {locationPlans.map((plan) => {
+              const checked = selectedPlanIds.includes(plan.id);
+              const required = plan.id === primaryPlan.id;
+              const reachable = isPlanReachable(locationPlans, primaryPlan.id, plan.id);
+              const disabled = required || !plan.entry_available || !reachable;
+              return (
+                <label
+                  key={plan.id}
+                  className={`flex items-start gap-3 rounded-xl border p-3 ${
+                    disabled && !required ? "opacity-60" : ""
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={disabled}
+                    onChange={() => toggleFutureQuarter(plan)}
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-600"
+                  />
+                  <span className="flex-1">
+                    <span className="font-medium text-slate-900">{clubQuarterLabel(plan)}</span>
+                    <span className="block text-xs text-slate-500">
+                      {plan.remaining_sessions} sessions remaining
+                      {required ? " · required entry quarter" : " · optional prepayment"}
+                    </span>
+                    {!plan.entry_available ? (
+                      <span className="block text-xs text-amber-700">{plan.entry_reason}</span>
+                    ) : !reachable ? (
+                      <span className="block text-xs text-amber-700">
+                        A preceding quarter is not available, so this quarter cannot be prepaid
+                        here.
                       </span>
-                    )}
-                  </div>
-                  <p className="text-xs sm:text-sm text-slate-500 hidden sm:block">
-                    {plan.description}
-                  </p>
-                  {plan.savings && (
-                    <p className="text-xs sm:text-sm font-medium text-emerald-600">
-                      {plan.savings}
-                    </p>
-                  )}
-                </div>
+                    ) : null}
+                  </span>
+                  <span className="text-right font-semibold text-slate-900">
+                    {formatCurrency(plan.current_price_kobo / 100)}
+                    {plan.current_price_kobo !== plan.club_fee_kobo ? (
+                      <span className="block text-xs font-normal text-slate-400 line-through">
+                        {formatCurrency(plan.club_fee_kobo / 100)}
+                      </span>
+                    ) : null}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
 
-                {/* Price */}
-                <div className="text-right flex-shrink-0">
-                  <div className="text-lg sm:text-xl font-bold text-slate-900">
-                    {formatCurrency(price)}
-                  </div>
-                  <div className="text-xs text-slate-400">
-                    /
-                    {plan.key === "quarterly"
-                      ? "quarter"
-                      : plan.key === "biannual"
-                        ? "6 mo"
-                        : "year"}
-                  </div>
-                </div>
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-cyan-100 bg-cyan-50 p-4">
+            <input
+              type="checkbox"
+              checked={experienceSelected}
+              onChange={(event) => setExperienceSelected(event.target.checked)}
+              className="mt-1 h-5 w-5 rounded border-slate-300 text-cyan-600"
+            />
+            <span className="flex-1">
+              <span className="font-semibold text-slate-900">
+                {clubQuarterLabel(primaryPlan)} Community Experience
+              </span>
+              <span className="block text-sm text-slate-600">
+                Optional and selected by default. Add it now for the ₦30,000 Club bundle rate. An
+                active Club member buying later pays ₦40,000; the standard member rate is ₦50,000.
+                Each later quarter starts afresh and is not added automatically here.
+              </span>
+              <span className="mt-1 block text-xs font-medium text-cyan-800">
+                Untick this box to remove it before submitting.
+              </span>
+            </span>
+            <span className="font-semibold text-slate-900">
+              {formatCurrency(experienceFee / 100)}
+            </span>
+          </label>
 
-                {/* Selected indicator */}
-                <div
-                  className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
-                    isSelected
-                      ? "bg-cyan-500 border-cyan-500"
-                      : "border-slate-300"
-                  }`}
-                >
-                  {isSelected && (
-                    <Check className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-                  )}
-                </div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
+          {podsQuery.data?.length ? (
+            <label className="block space-y-2 text-sm font-medium text-slate-800">
+              Preferred pod (optional)
+              <select
+                value={preferredPodId}
+                onChange={(event) => setPreferredPodId(event.target.value)}
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 font-normal"
+              >
+                <option value="">Let SwimBuddz assign the best fit</option>
+                {podsQuery.data.map((pod) => (
+                  <option
+                    key={pod.id}
+                    value={pod.id}
+                    disabled={pod.active_member_count >= pod.max_size}
+                  >
+                    {pod.handle || pod.name} · {pod.active_member_count}/{pod.max_size}
+                    {pod.active_member_count >= pod.max_size ? " · full" : ""}
+                  </option>
+                ))}
+              </select>
+              <span className="block text-xs font-normal text-slate-500">
+                A preference is not a guarantee; final placement depends on assessment fit and
+                capacity.
+              </span>
+            </label>
+          ) : null}
 
-      {/* What's included - more compact on mobile */}
-      <div className="bg-slate-50 rounded-2xl p-4 sm:p-5">
-        <h4 className="text-sm font-semibold text-slate-900 mb-2 sm:mb-3">
-          What's included with Club
-        </h4>
-        <ul className="space-y-1.5 sm:space-y-2">
-          {[
-            "Priority session booking",
-            "Access to all pool locations",
-            "Group training sessions",
-            "Coach matching & feedback",
-            "Pause or cancel anytime",
-          ].map((item) => (
-            <li
-              key={item}
-              className="flex items-center gap-2 text-xs sm:text-sm text-slate-600"
-            >
-              <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 flex-shrink-0" />
+          <div className="space-y-2 border-t border-slate-100 pt-4 text-sm">
+            <div className="flex justify-between gap-3">
+              <span>Selected Club quarters</span>
+              <span>{formatCurrency(planSubtotal / 100)}</span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span>Community Experience (optional)</span>
+              <span>{experienceSelected ? formatCurrency(experienceFee / 100) : "Not added"}</span>
+            </div>
+            <div className="flex justify-between gap-3 border-t border-slate-100 pt-2 font-semibold">
+              <span>Application subtotal</span>
+              <span>
+                {formatCurrency((planSubtotal + (experienceSelected ? experienceFee : 0)) / 100)}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500">
+              This is a preview. Your approved server quote itemises annual Membership if due and
+              any enabled payment-processing charge before you pay.
+            </p>
+          </div>
+
+          <Button onClick={submit} disabled={submitting} size="lg" className="w-full">
+            {submitting
+              ? "Submitting..."
+              : reusableReadinessApplication
+                ? "Renew Club quarter"
+                : "Submit for Club assessment"}
+          </Button>
+        </Card>
+      ) : null}
+
+      <div className="grid gap-3 rounded-2xl bg-slate-50 p-5 sm:grid-cols-3">
+        {["Structured weekly practice", "Location-matched pods", "Assessment result by email"].map(
+          (item, index) => (
+            <div key={item} className="flex gap-2 text-sm text-slate-600">
+              {index === 0 ? (
+                <Waves className="h-4 w-4 text-cyan-600" />
+              ) : index === 1 ? (
+                <Users className="h-4 w-4 text-cyan-600" />
+              ) : (
+                <Check className="h-4 w-4 text-cyan-600" />
+              )}
               {item}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Sticky CTA on mobile */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-100 sm:relative sm:p-0 sm:bg-transparent sm:border-0">
-        <Button
-          onClick={handleContinue}
-          disabled={!selectedPlan}
-          size="lg"
-          className="w-full"
-        >
-          Continue to Checkout
-        </Button>
-        <p className="text-center text-xs text-slate-400 mt-2 sm:mt-3">
-          You'll review your order on the next step
-        </p>
+            </div>
+          )
+        )}
       </div>
     </div>
   );

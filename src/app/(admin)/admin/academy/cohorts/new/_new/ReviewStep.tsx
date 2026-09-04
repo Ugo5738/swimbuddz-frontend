@@ -49,6 +49,12 @@ export function ReviewStep({ selectedProgram, formData, schedule, sessionCount }
                 : "Automatic after threshold"}
             </div>
             <div>
+              <span className="text-slate-500">Post-graduation Club bridge:</span>{" "}
+              {formData.post_graduation_club_bridge_months > 0
+                ? `${formData.post_graduation_club_bridge_months} month(s) of eligibility`
+                : "Disabled"}
+            </div>
+            <div>
               <span className="text-slate-500">Lead Coach:</span>{" "}
               {formData.lead_coach_id ? "Assigned" : "Not assigned"}
             </div>

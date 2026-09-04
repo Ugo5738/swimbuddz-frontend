@@ -54,6 +54,8 @@ export default function NewCohortPage() {
     location_address: "",
     notes_internal: "",
     price_override: null,
+    membership_policy_override: null,
+    post_graduation_club_bridge_months: 0,
     default_pool_fee: null,
     default_ride_configs: [],
     installment_plan_enabled: false,

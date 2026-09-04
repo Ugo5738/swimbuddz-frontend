@@ -7,6 +7,11 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet, apiPatch } from "@/lib/api";
+import {
+  requestedProgrammesForPath,
+  startPathFromGoal,
+  type MemberStartPath,
+} from "@/lib/memberPaths";
 import { createPendingRegistration } from "@/lib/registration";
 import clsx from "clsx";
 import dynamic from "next/dynamic";
@@ -20,7 +25,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 const RegistrationEssentialsStep = dynamic(
   () =>
     import("@/components/registration/RegistrationEssentialsStep").then(
-      (m) => m.RegistrationEssentialsStep,
+      (m) => m.RegistrationEssentialsStep
     ),
   {
     ssr: false,
@@ -29,10 +34,10 @@ const RegistrationEssentialsStep = dynamic(
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-cyan-200 border-t-cyan-600" />
       </div>
     ),
-  },
+  }
 );
 
-type Tier = "community" | "club" | "academy";
+type Tier = MemberStartPath;
 type StepKey = "tier" | "essentials" | "confirm";
 
 type Step = {
@@ -157,18 +162,13 @@ const initialFormData: FormData = {
   communityRulesAccepted: false,
 };
 
-function expandTier(tier: Tier): Tier[] {
-  if (tier === "academy") return ["academy", "club", "community"];
-  if (tier === "club") return ["club", "community"];
-  return ["community"];
-}
-
 function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isUpgrade = searchParams.get("upgrade") === "true";
   const isCoachRegistration = searchParams.get("coach") === "true";
   const referralCode = searchParams.get("ref") || "";
+  const intendedStartPath = startPathFromGoal(searchParams.get("goal"));
   // Deep-link target preserved across the registration funnel:
   //   public link (e.g. /account/academy/cohorts/<id>)
   //     → login redirect (?redirect=)
@@ -193,6 +193,15 @@ function RegisterContent() {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [currentTier, setCurrentTier] = useState<Tier | null>(null);
   const [currentTiers, setCurrentTiers] = useState<Tier[]>([]);
+
+  // Public Club, Academy and Membership CTAs all land on this form. Preserve
+  // that intent in the selected path and, later, in requested_programmes on
+  // the member record so email verification cannot drop it.
+  useEffect(() => {
+    if (!isUpgrade && !isCoachRegistration && intendedStartPath) {
+      setFormData((current) => ({ ...current, membershipTier: intendedStartPath }));
+    }
+  }, [intendedStartPath, isCoachRegistration, isUpgrade]);
 
   useEffect(() => {
     if (isUpgrade) {
@@ -259,8 +268,8 @@ function RegisterContent() {
   // Determine which steps to show based on mode and selected tier
   const steps = useMemo<Step[]>(() => {
     if (isUpgrade) {
-      // Upgrade mode only needs tier selection - we redirect to onboarding after
-      return [{ key: "tier", title: "Choose Tier", required: true }];
+      // Existing members choose another programme/path, then continue there.
+      return [{ key: "tier", title: "Choose a Path", required: true }];
     }
 
     if (isCoachRegistration) {
@@ -269,7 +278,7 @@ function RegisterContent() {
     }
 
     return [
-      { key: "tier", title: "Choose Tier", required: true },
+      { key: "tier", title: "Choose a Path", required: true },
       { key: "essentials", title: "Create Account", required: true },
       { key: "confirm", title: "Confirm & Finish", required: true },
     ];
@@ -309,17 +318,17 @@ function RegisterContent() {
       case "essentials":
         return Boolean(
           formData.firstName &&
-          formData.lastName &&
-          formData.email &&
-          formData.password &&
-          formData.password.length >= 8 &&
-          formData.phone &&
-          formData.state &&
-          formData.city &&
-          formData.country &&
-          formData.swimLevel &&
-          // Coach registration skips acquisition source — only members feed the funnel.
-          (isCoachRegistration || formData.acquisitionSource)
+            formData.lastName &&
+            formData.email &&
+            formData.password &&
+            formData.password.length >= 8 &&
+            formData.phone &&
+            formData.state &&
+            formData.city &&
+            formData.country &&
+            formData.swimLevel &&
+            // Coach registration skips acquisition source — only members feed the funnel.
+            (isCoachRegistration || formData.acquisitionSource)
         );
 
       case "confirm":
@@ -353,11 +362,17 @@ function RegisterContent() {
     try {
       if (isUpgrade) {
         if (!formData.membershipTier) {
-          throw new Error("Please select a tier to upgrade to.");
+          throw new Error("Please choose the programme or membership path you want.");
         }
 
-        // Save the requested tier to member profile
-        const requestedTiers = expandTier(formData.membershipTier);
+        if (formData.membershipTier === "community") {
+          router.push("/checkout?purpose=community");
+          return;
+        }
+
+        // Keep programme requests independent. Annual Membership is quoted by
+        // the selected product when its policy requires it.
+        const requestedTiers = requestedProgrammesForPath(formData.membershipTier);
 
         await apiPatch(
           "/api/v1/members/me",
@@ -374,7 +389,7 @@ function RegisterContent() {
       }
 
       if (!formData.membershipTier && !isCoachRegistration) {
-        throw new Error("Please select a membership tier.");
+        throw new Error("Please choose how you would like to start.");
       }
 
       // Coach registration - create minimal account and redirect to /coach/apply
@@ -415,7 +430,7 @@ function RegisterContent() {
       }
 
       const selectedTier = formData.membershipTier!;
-      const requestedTiers = selectedTier === "community" ? undefined : expandTier(selectedTier);
+      const requestedTiers = requestedProgrammesForPath(selectedTier);
 
       const registrationPayload = {
         email: formData.email,
@@ -434,7 +449,7 @@ function RegisterContent() {
         // Always allow account access after email verification; tier upgrades are handled separately.
         membership_tier: "community",
         membership_tiers: ["community"],
-        requested_membership_tiers: requestedTiers,
+        requested_membership_tiers: requestedTiers.length ? requestedTiers : undefined,
         community_rules_accepted: true,
         // Pass referral code so the backend can apply it during registration completion
         ...(referralCode ? { referral_code: referralCode } : {}),
@@ -446,7 +461,9 @@ function RegisterContent() {
       // tab keeps the deep link visible in the URL. The authoritative
       // handoff is sessionStorage (set above) since the email link strips
       // our query params.
-      router.push(safeNext ? `/register/success?next=${encodeURIComponent(safeNext)}` : "/register/success");
+      router.push(
+        safeNext ? `/register/success?next=${encodeURIComponent(safeNext)}` : "/register/success"
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to complete registration.";
       setErrorMessage(message);
@@ -525,14 +542,14 @@ function RegisterContent() {
             {isCoachRegistration
               ? "Create Coach Account"
               : isUpgrade
-                ? "Upgrade Membership"
+                ? "Choose Your Next Programme"
                 : "Join SwimBuddz"}
           </h1>
           <p className="mt-2 text-sm text-slate-600">
             {isCoachRegistration
               ? "Create an account to apply as a SwimBuddz coach."
               : isUpgrade
-                ? "Select a new tier to upgrade your membership."
+                ? "Your SwimBuddz identity stays the same—choose what you want to join next."
                 : "Become part of our thriving swimming community."}
           </p>
         </div>

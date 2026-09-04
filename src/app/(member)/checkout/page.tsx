@@ -4,7 +4,16 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
+import { ClubPaymentModeSelector } from "@/components/club/ClubPaymentModeSelector";
+import { ClubTransitionCheckoutNotice } from "@/components/club/ClubTransitionCheckoutNotice";
 import { apiGet, apiPost } from "@/lib/api";
+import {
+  ChargePreview,
+  ClubPaymentMode,
+  previewAcademyCheckout,
+  previewClubCheckout,
+  previewCommunityExperienceCheckout,
+} from "@/lib/clubOnboarding";
 import type { components } from "@/lib/api-types";
 import { savePaymentIntentCache } from "@/lib/paymentCache";
 import { isTierPaid } from "@/lib/tiers";
@@ -18,10 +27,12 @@ import {
 import { ArrowLeft, CreditCard, Tag } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-type PaymentIntentRequest = components["schemas"]["CreatePaymentIntentRequest"];
+type PaymentIntentRequest = components["schemas"]["CreatePaymentIntentRequest"] & {
+  club_payment_mode?: ClubPaymentMode;
+};
 
 type Member = {
   id?: string;
@@ -58,6 +69,10 @@ function CheckoutContent() {
 
   const [member, setMember] = useState<Member | null>(null);
   const [pricing, setPricing] = useState<PricingConfig | null>(null);
+  const [clubQuote, setClubQuote] = useState<ChargePreview | null>(null);
+  const [academyQuote, setAcademyQuote] = useState<ChargePreview | null>(null);
+  const [experienceQuote, setExperienceQuote] = useState<ChargePreview | null>(null);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [discountInput, setDiscountInput] = useState(state.discountCode);
@@ -85,6 +100,20 @@ function CheckoutContent() {
   // page always builds an explicit ?purpose=academy_cohort URL, so requiring
   // the URL param is safe and removes the race entirely.
   const purpose = searchParams.get("purpose");
+  const clubApplicationId = searchParams.get("application_id");
+  const requestedClubPaymentMode =
+    searchParams.get("payment_mode") === "transition_per_session"
+      ? "transition_per_session"
+      : searchParams.get("payment_mode") === "quarterly_prepaid"
+        ? "quarterly_prepaid"
+        : null;
+  const [clubPaymentMode, setClubPaymentMode] = useState<ClubPaymentMode>(
+    requestedClubPaymentMode ?? "quarterly_prepaid"
+  );
+  const [clubPaymentModeWasChosen, setClubPaymentModeWasChosen] = useState(
+    requestedClubPaymentMode !== null
+  );
+  const communityExperienceOfferingId = searchParams.get("offering_id");
 
   // Get club plan from URL params (fallback) or context
   const urlPlan = searchParams.get("plan") as "quarterly" | "biannual" | "annual" | null;
@@ -102,6 +131,64 @@ function CheckoutContent() {
     return Number.isFinite(n) && n > 0 ? Math.floor(n) : undefined;
   })();
   const { setSelectedCohort } = useUpgrade();
+  const enrollmentStarted = useRef(false);
+
+  useEffect(() => {
+    if (
+      purpose !== "academy_cohort" ||
+      urlEnrollmentId ||
+      !state.selectedCohortId ||
+      enrollmentStarted.current
+    ) {
+      return;
+    }
+    enrollmentStarted.current = true;
+    void (async () => {
+      try {
+        const enrollmentBody: {
+          cohort_id: string;
+          preferences?: { late_join: typeof state.lateJoinPreferences };
+        } = { cohort_id: state.selectedCohortId! };
+        if (state.lateJoinPreferences) {
+          enrollmentBody.preferences = { late_join: state.lateJoinPreferences };
+        }
+        let enrollmentId: string;
+        try {
+          const enrollment = await apiPost<{ id: string }>(
+            "/api/v1/academy/enrollments/me",
+            enrollmentBody,
+            { auth: true }
+          );
+          enrollmentId = enrollment.id;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "";
+          if (!message.toLowerCase().includes("already")) throw error;
+          const existing = await apiGet<
+            { id: string; cohort_id: string; payment_status: string }[]
+          >("/api/v1/academy/my-enrollments", { auth: true });
+          const enrollment = existing.find(
+            (item) => item.cohort_id === state.selectedCohortId && item.payment_status !== "paid"
+          );
+          if (!enrollment) throw new Error("No unpaid Academy enrollment is available");
+          enrollmentId = enrollment.id;
+        }
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("enrollment_id", enrollmentId);
+        router.replace(`/checkout?${params.toString()}`);
+      } catch (error) {
+        setQuoteError(
+          error instanceof Error ? error.message : "Could not prepare Academy checkout"
+        );
+      }
+    })();
+  }, [
+    purpose,
+    router,
+    searchParams,
+    state.lateJoinPreferences,
+    state.selectedCohortId,
+    urlEnrollmentId,
+  ]);
 
   // Load member data and pricing (and cohort if needed)
   const loadData = useCallback(async () => {
@@ -113,6 +200,60 @@ function CheckoutContent() {
       ]);
       setMember(memberData);
       setPricing(pricingData);
+
+      if (purpose === "club" && clubApplicationId) {
+        try {
+          const quote = await previewClubCheckout(
+            clubApplicationId,
+            paymentMethod,
+            clubPaymentModeWasChosen ? clubPaymentMode : undefined
+          );
+          setClubQuote(quote);
+          if (quote.components.club_payment_mode) {
+            setClubPaymentMode(quote.components.club_payment_mode);
+          }
+          setQuoteError(null);
+        } catch (quoteFailure) {
+          setQuoteError(
+            quoteFailure instanceof Error
+              ? quoteFailure.message
+              : "Could not load the approved Club price"
+          );
+        }
+      }
+      if (purpose === "community_experience" && communityExperienceOfferingId) {
+        try {
+          setExperienceQuote(
+            await previewCommunityExperienceCheckout(communityExperienceOfferingId, paymentMethod)
+          );
+          setQuoteError(null);
+        } catch (quoteFailure) {
+          setQuoteError(
+            quoteFailure instanceof Error
+              ? quoteFailure.message
+              : "Could not load the Community Experience price"
+          );
+        }
+      }
+      if (purpose === "academy_cohort" && urlEnrollmentId) {
+        try {
+          setAcademyQuote(
+            await previewAcademyCheckout(
+              urlEnrollmentId,
+              billingMode === "installments",
+              paymentMethod,
+              urlAmountOverrideKobo
+            )
+          );
+          setQuoteError(null);
+        } catch (quoteFailure) {
+          setQuoteError(
+            quoteFailure instanceof Error
+              ? quoteFailure.message
+              : "Could not load the Academy price"
+          );
+        }
+      }
 
       // If we have cohort_id in URL but no selectedCohort in context, fetch it
       // This allows resuming pending payments from billing page or deep link
@@ -150,7 +291,20 @@ function CheckoutContent() {
     } finally {
       setLoading(false);
     }
-  }, [urlCohortId, state.selectedCohort, setSelectedCohort]);
+  }, [
+    urlCohortId,
+    urlEnrollmentId,
+    state.selectedCohort,
+    setSelectedCohort,
+    purpose,
+    clubApplicationId,
+    clubPaymentMode,
+    clubPaymentModeWasChosen,
+    paymentMethod,
+    communityExperienceOfferingId,
+    billingMode,
+    urlAmountOverrideKobo,
+  ]);
 
   useEffect(() => {
     loadData();
@@ -171,8 +325,41 @@ function CheckoutContent() {
   };
 
   if (purpose === "club" || purpose === "club_bundle") {
-    // Club upgrade
-    if (!communityActive) {
+    if (clubApplicationId && clubQuote) {
+      const experienceFee = (clubQuote.components.community_experience || 0) / 100;
+      const clubItems = clubQuote.components.club_items ?? [];
+      if (clubItems.length) {
+        clubItems.forEach((item) => {
+          const adjusted = item.amount_kobo !== item.full_quarter_fee_kobo;
+          lineItems.push({
+            label: `${item.name} (${item.period_start} to ${item.period_end})${adjusted ? ` · adjusted for ${item.remaining_sessions} sessions` : ""}`,
+            amount: item.amount_kobo / 100,
+          });
+        });
+      } else {
+        lineItems.push({
+          label: "Club practice (selected location)",
+          amount: (clubQuote.components.club || 0) / 100,
+        });
+      }
+      const annualMembership = (clubQuote.components.annual_swimbuddz_membership || 0) / 100;
+      if (annualMembership > 0) {
+        lineItems.push({
+          label: "SwimBuddz Membership — annual",
+          amount: annualMembership,
+        });
+      }
+      if (clubQuote.components.community_experience_selected && experienceFee > 0) {
+        lineItems.push({
+          label: "Current-quarter Community Experience — optional Club bundle rate",
+          amount: experienceFee,
+        });
+      }
+      clubQuote.additional_charges.forEach((charge) => {
+        lineItems.push({ label: charge.label, amount: charge.amount_kobo / 100 });
+      });
+      subtotal = clubQuote.total_kobo / 100;
+    } else if (!communityActive) {
       lineItems.push({
         label: "Community membership (annual)",
         amount: communityFee,
@@ -180,39 +367,57 @@ function CheckoutContent() {
       subtotal += communityFee;
     }
 
-    if (clubBillingCycle) {
+    if (!clubApplicationId && clubBillingCycle) {
       const clubFee = clubPricing[clubBillingCycle];
       lineItems.push({
-        label: `Club membership (${getClubCycleLabel(clubBillingCycle).toLowerCase()})`,
+        label: `Club practice (${getClubCycleLabel(clubBillingCycle).toLowerCase()})`,
         amount: clubFee,
       });
       subtotal += clubFee;
     }
 
     // Community extension if applicable
-    if (state.extensionInfo?.required && state.includeCommunityExtension) {
+    if (!clubApplicationId && state.extensionInfo?.required && state.includeCommunityExtension) {
       lineItems.push({
         label: `Community extension (${state.extensionInfo.months} months)`,
         amount: state.extensionInfo.amount,
       });
       subtotal += state.extensionInfo.amount;
     }
-  } else if (purpose === "academy_cohort") {
-    // Academy enrollment - use price_override or program.price_amount
-    // Price is stored in naira (major unit)
-    const cohortPrice =
-      state.selectedCohort?.price_override ?? state.selectedCohort?.program?.price_amount;
-    if (cohortPrice) {
-      lineItems.push({
-        label: `Academy: ${state.selectedCohort?.name}`,
-        amount: cohortPrice,
-      });
-      subtotal += cohortPrice;
+  } else if (purpose === "academy_cohort" && academyQuote) {
+    const academyAmount = (academyQuote.components.academy || 0) / 100;
+    const annualMembership = (academyQuote.components.annual_swimbuddz_membership || 0) / 100;
+    const installmentNumber = academyQuote.components.installment_number;
+    lineItems.push({
+      label: `Academy: ${state.selectedCohort?.name || "cohort"}${installmentNumber ? ` · installment ${installmentNumber}` : ""}`,
+      amount: academyAmount,
+    });
+    if (annualMembership > 0) {
+      lineItems.push({ label: "SwimBuddz Membership — annual", amount: annualMembership });
+    } else if (academyQuote.components.academy_membership_policy === "included") {
+      lineItems.push({ label: "Annual SwimBuddz Membership — included", amount: 0 });
     }
+    academyQuote.additional_charges.forEach((charge) => {
+      lineItems.push({ label: charge.label, amount: charge.amount_kobo / 100 });
+    });
+    subtotal = academyQuote.total_kobo / 100;
+  } else if (purpose === "community_experience" && experienceQuote) {
+    lineItems.push({
+      label: "Quarterly Community Experience",
+      amount: (experienceQuote.components.community_experience || 0) / 100,
+    });
+    const annualMembership = (experienceQuote.components.annual_swimbuddz_membership || 0) / 100;
+    if (annualMembership > 0) {
+      lineItems.push({ label: "SwimBuddz Membership — annual", amount: annualMembership });
+    }
+    experienceQuote.additional_charges.forEach((charge) => {
+      lineItems.push({ label: charge.label, amount: charge.amount_kobo / 100 });
+    });
+    subtotal = experienceQuote.total_kobo / 100;
   } else if (purpose === "community") {
     // Community only
     lineItems.push({
-      label: "Community membership (annual)",
+      label: "SwimBuddz Membership — annual",
       amount: communityFee,
     });
     subtotal += communityFee;
@@ -228,6 +433,20 @@ function CheckoutContent() {
 
   const installmentPreview = (() => {
     if (!installmentsEnabled || !cohortForInstallments) return null;
+    if (billingMode === "installments" && academyQuote) {
+      return {
+        count:
+          academyQuote.components.total_installments ??
+          cohortForInstallments.installment_count ??
+          2,
+        deposit: total,
+        subsequentAmount: null,
+        totalFee:
+          cohortForInstallments.price_override ??
+          cohortForInstallments.program?.price_amount ??
+          total,
+      };
+    }
     const totalFee = total; // after any discount
     const durationWeeks =
       cohortForInstallments.duration_weeks ?? cohortForInstallments.program?.duration_weeks ?? 8;
@@ -248,7 +467,7 @@ function CheckoutContent() {
       ? Math.floor((totalFee - depositOverride) / (count - 1))
       : evenSplit;
 
-    return { count, deposit, subsequentAmount, totalFee };
+    return { count, deposit, subsequentAmount: subsequentAmount as number | null, totalFee };
   })();
 
   // Validate discount code against backend
@@ -344,15 +563,22 @@ function CheckoutContent() {
       };
 
       if (purpose === "club" || purpose === "club_bundle") {
-        intentPayload = {
-          ...intentPayload,
-          purpose: communityActive ? "club" : "club_bundle",
-          club_billing_cycle: clubBillingCycle,
-          months: 1,
-          years: communityActive ? undefined : 1,
-          include_community_extension:
-            state.extensionInfo?.required && state.includeCommunityExtension,
-        };
+        intentPayload = clubApplicationId
+          ? {
+              ...intentPayload,
+              purpose: "club",
+              club_application_id: clubApplicationId,
+              club_payment_mode: clubPaymentMode,
+            }
+          : {
+              ...intentPayload,
+              purpose: communityActive ? "club" : "club_bundle",
+              club_billing_cycle: clubBillingCycle,
+              months: 1,
+              years: communityActive ? undefined : 1,
+              include_community_extension:
+                state.extensionInfo?.required && state.includeCommunityExtension,
+            };
       } else if (purpose === "academy_cohort") {
         // Use existing enrollment ID from URL if available (set by quick-enroll paths)
         let enrollmentId: string | undefined = urlEnrollmentId || undefined;
@@ -414,6 +640,15 @@ function CheckoutContent() {
           purpose: "community",
           years: 1,
         };
+      } else if (purpose === "community_experience") {
+        if (!communityExperienceOfferingId) {
+          throw new Error("Choose a Community Experience before paying");
+        }
+        intentPayload = {
+          ...intentPayload,
+          purpose: "community_experience",
+          community_experience_offering_id: communityExperienceOfferingId,
+        };
       }
 
       const intent = await apiPost<PaymentIntent>("/api/v1/payments/intents", intentPayload, {
@@ -458,11 +693,18 @@ function CheckoutContent() {
     if (purpose === "academy_cohort") {
       return "/upgrade/academy/details";
     }
+    if (purpose === "community_experience") {
+      return "/community/experiences";
+    }
     return "/account/billing";
   };
 
   if (loading) {
     return <LoadingCard text="Loading checkout..." />;
+  }
+
+  if (purpose === "academy_cohort" && !urlEnrollmentId && !quoteError) {
+    return <LoadingCard text="Preparing your Academy quote..." />;
   }
 
   // Validate we have required data. Route the user back to a useful place
@@ -472,9 +714,11 @@ function CheckoutContent() {
     const isAcademyFlow = purpose === "academy_cohort";
     const backLabel = isAcademyFlow ? "Back to Cohort Selection" : "Back to Billing";
     const backPath = isAcademyFlow ? "/upgrade/academy/cohort" : "/account/billing";
-    const message = isAcademyFlow
-      ? "We couldn't load the cohort details. Please pick a cohort again."
-      : "Missing checkout information. Please start the upgrade process again.";
+    const message =
+      quoteError ||
+      (isAcademyFlow
+        ? "We couldn't load the cohort details. Please pick a cohort again."
+        : "Missing checkout information. Please start the upgrade process again.");
     return (
       <div className="space-y-6 text-center">
         <Alert variant="error" title="Checkout Error">
@@ -502,6 +746,29 @@ function CheckoutContent() {
       <Card className="p-6">
         <h2 className="text-lg font-semibold text-slate-900 mb-4">Order Summary</h2>
 
+        {purpose === "club" && clubQuote?.components.approved_payment_modes ? (
+          <div className="mb-5">
+            <ClubPaymentModeSelector
+              approvedModes={clubQuote.components.approved_payment_modes}
+              value={clubPaymentMode}
+              transitionExpiresAt={clubQuote.components.transition_expires_at}
+              onChange={(mode) => {
+                setClubQuote(null);
+                setClubPaymentModeWasChosen(true);
+                setClubPaymentMode(mode);
+                const params = new URLSearchParams(searchParams.toString());
+                params.set("payment_mode", mode);
+                router.replace(`/checkout?${params.toString()}`);
+              }}
+            />
+            {clubPaymentMode === "transition_per_session" ? (
+              <ClubTransitionCheckoutNotice
+                expiresAt={clubQuote.components.transition_expires_at}
+              />
+            ) : null}
+          </div>
+        ) : null}
+
         <div className="space-y-3">
           {lineItems.map((item, index) => (
             <div key={index} className="flex justify-between py-2">
@@ -511,106 +778,109 @@ function CheckoutContent() {
           ))}
 
           {/* Discount section */}
-          <div className="pt-3 border-t border-slate-100">
-            {validatedDiscount ? (
-              <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-2 min-w-0">
-                    <Tag className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-emerald-700">
-                        {validatedDiscount.code}
-                      </p>
-                      {validatedDiscount.appliesTo && (
-                        <p className="text-xs text-emerald-600">
-                          Applied to {validatedDiscount.appliesTo.replace("_", " ")}
+          {!clubApplicationId ? (
+            <div className="pt-3 border-t border-slate-100">
+              {validatedDiscount ? (
+                <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-2 min-w-0">
+                      <Tag className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-emerald-700">
+                          {validatedDiscount.code}
                         </p>
-                      )}
+                        {validatedDiscount.appliesTo && (
+                          <p className="text-xs text-emerald-600">
+                            Applied to {validatedDiscount.appliesTo.replace("_", " ")}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-sm font-semibold text-emerald-700">
+                        -{discountAmount > 0 ? formatCurrency(discountAmount) : "Applied"}
+                      </span>
+                      <button
+                        onClick={handleClearDiscount}
+                        className="p-1 rounded-full text-emerald-400 hover:text-emerald-600 hover:bg-emerald-100 transition-colors"
+                        aria-label="Remove discount"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-sm font-semibold text-emerald-700">
-                      -{discountAmount > 0 ? formatCurrency(discountAmount) : "Applied"}
-                    </span>
-                    <button
-                      onClick={handleClearDiscount}
-                      className="p-1 rounded-full text-emerald-400 hover:text-emerald-600 hover:bg-emerald-100 transition-colors"
-                      aria-label="Remove discount"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M6 18L18 6M6 6l12 12"
-                        />
-                      </svg>
-                    </button>
-                  </div>
                 </div>
-              </div>
-            ) : showDiscountInput ? (
-              <div className="flex items-center gap-2">
-                <Tag className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                <input
-                  type="text"
-                  value={discountInput}
-                  onChange={(e) => setDiscountInput(e.target.value.toUpperCase())}
-                  placeholder="Discount code"
-                  autoFocus
-                  className="flex-1 min-w-0 px-3 py-2 text-sm border border-slate-200 rounded-lg text-slate-700 focus:ring-2 focus:ring-cyan-400 focus:border-transparent uppercase placeholder:text-slate-400"
-                />
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleApplyDiscount}
-                  disabled={!discountInput.trim() || validatingDiscount}
-                  className="flex-shrink-0"
-                >
-                  {validatingDiscount ? "..." : "Apply"}
-                </Button>
+              ) : showDiscountInput ? (
+                <div className="flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                  <input
+                    type="text"
+                    value={discountInput}
+                    onChange={(e) => setDiscountInput(e.target.value.toUpperCase())}
+                    placeholder="Discount code"
+                    autoFocus
+                    className="flex-1 min-w-0 px-3 py-2 text-sm border border-slate-200 rounded-lg text-slate-700 focus:ring-2 focus:ring-cyan-400 focus:border-transparent uppercase placeholder:text-slate-400"
+                  />
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleApplyDiscount}
+                    disabled={!discountInput.trim() || validatingDiscount}
+                    className="flex-shrink-0"
+                  >
+                    {validatingDiscount ? "..." : "Apply"}
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDiscountInput("");
+                      setShowDiscountInput(false);
+                    }}
+                    className="flex-shrink-0 p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                    aria-label="Cancel discount entry"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
                 <button
                   type="button"
-                  onClick={() => {
-                    setDiscountInput("");
-                    setShowDiscountInput(false);
-                  }}
-                  className="flex-shrink-0 p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-                  aria-label="Cancel discount entry"
+                  onClick={() => setShowDiscountInput(true)}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-cyan-600 hover:text-cyan-700 hover:underline"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
+                  <Tag className="w-4 h-4" />
+                  Have a discount code?
                 </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowDiscountInput(true)}
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-cyan-600 hover:text-cyan-700 hover:underline"
-              >
-                <Tag className="w-4 h-4" />
-                Have a discount code?
-              </button>
-            )}
-          </div>
+              )}
+            </div>
+          ) : null}
 
           {billingMode === "installments" && installmentPreview ? (
             <div className="pt-4 border-t border-slate-200 flex justify-between items-start gap-3">
               <div className="min-w-0">
                 <span className="text-base font-semibold text-slate-900 block">Due today</span>
                 <span className="text-xs text-slate-500">
-                  Installment 1 of {installmentPreview.count} • {formatCurrency(total)} total
+                  Installment {academyQuote?.components.installment_number ?? 1} of{" "}
+                  {installmentPreview.count}
                 </span>
               </div>
               <span className="text-xl font-bold text-cyan-600 whitespace-nowrap">
@@ -644,8 +914,10 @@ function CheckoutContent() {
       {/* ── Installment details — shown when installments selected ── */}
       {installmentsEnabled && installmentPreview && billingMode === "installments" && (
         <p className="text-center text-sm text-slate-500 -mt-2">
-          Then {installmentPreview.count - 1} ×{" "}
-          {formatCurrency(installmentPreview.subsequentAmount)} every 4 weeks —{" "}
+          {installmentPreview.subsequentAmount != null
+            ? `Then ${installmentPreview.count - 1} × ${formatCurrency(installmentPreview.subsequentAmount)} every 4 weeks`
+            : "Remaining installments follow the cohort payment schedule"}{" "}
+          —{" "}
           <button
             type="button"
             onClick={() => setBillingMode("full")}

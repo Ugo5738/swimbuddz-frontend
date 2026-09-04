@@ -141,7 +141,7 @@ export function hasTierContext(
   const status = tierStatus?.status;
   return Boolean(
     (status && ["active", "payment_pending", "requested", "approved_unpaid"].includes(status)) ||
-    status === "expired"
+      status === "expired"
   );
 }
 
@@ -177,11 +177,12 @@ export function getPaidMembershipTiers(
     return sortTiersByPriority(backendTiers) as MembershipTier[];
   }
 
-  const paidTier = getPaidMembershipTier(member);
-  if (paidTier === "academy") return ["academy", "club", "community"];
-  if (paidTier === "club") return ["club", "community"];
-  if (paidTier === "community") return ["community"];
-  return [];
+  // Programme access is independent: Academy does not imply Club, and
+  // neither programme implies annual SwimBuddz Membership. Fall back to the
+  // per-product statuses when older API responses omit effective_paid_tiers.
+  return MEMBERSHIP_TIERS.filter((tier) => getTierStatus(member, tier)?.status === "active").sort(
+    (left, right) => TIER_PRIORITY[right] - TIER_PRIORITY[left]
+  );
 }
 
 /**

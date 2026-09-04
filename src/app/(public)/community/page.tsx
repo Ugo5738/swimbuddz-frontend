@@ -19,6 +19,13 @@ import { useEffect, useState } from "react";
 
 const communityFeatures = [
   {
+    title: "Quarterly Community Experiences",
+    description:
+      "Optional end-of-quarter get-togethers and shared experiences, with your eligible price calculated transparently.",
+    link: "/community/experiences",
+    icon: "🎉",
+  },
+  {
     title: "Meet Our Coaches",
     description:
       "Discover our certified swimming coaches, their expertise, and the programs they teach.",
@@ -650,7 +657,7 @@ export default function CommunityPage() {
           commitments or training expectations.
         </p>
         <Link
-          href="/register"
+          href="/register?goal=community"
           className="inline-block rounded-full bg-white px-8 py-3 font-semibold text-cyan-700 hover:bg-slate-50 transition"
         >
           Join SwimBuddz
@@ -662,7 +669,7 @@ export default function CommunityPage() {
         <h2 className="text-xl font-semibold text-slate-900">Want More?</h2>
         <div className="grid gap-4 md:grid-cols-2">
           <Card className="space-y-2">
-            <h3 className="text-lg font-semibold text-cyan-700">Club Tier</h3>
+            <h3 className="text-lg font-semibold text-cyan-700">Club Practice</h3>
             <p className="text-sm text-slate-600">
               Join structured training sessions, track your attendance, and build consistency.
             </p>
@@ -674,7 +681,7 @@ export default function CommunityPage() {
             </Link>
           </Card>
           <Card className="space-y-2">
-            <h3 className="text-lg font-semibold text-cyan-700">Academy Tier</h3>
+            <h3 className="text-lg font-semibold text-cyan-700">Academy Programmes</h3>
             <p className="text-sm text-slate-600">
               Enroll in structured learning programs with clear milestones and coach feedback.
             </p>

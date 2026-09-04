@@ -7,7 +7,6 @@ import { listPodsILead } from "@/lib/pods";
 import {
   getMembershipDetail,
   getMembershipLabel,
-  getPaidMembershipTier,
   getPaidMembershipTiers,
   getRequestedTiers,
   hasTierContext,
@@ -148,6 +147,7 @@ const navSections: NavSection[] = [
   },
   {
     title: "Community",
+    showFor: ["community"],
     items: [
       { href: "/account/chat", label: "Chat", icon: MessageCircle },
       { href: "/community/directory", label: "Members", icon: Users },
@@ -333,7 +333,6 @@ export function MemberLayout({ children }: MemberLayoutProps) {
   const clubActive = paidTiers.includes("club");
   const academyActive = paidTiers.includes("academy");
   const communityActive = paidTiers.includes("community");
-  const paidTier = getPaidMembershipTier(member);
   const memberTiers = paidTiers;
 
   const requestedTiers = getRequestedTiers(member);
@@ -341,13 +340,13 @@ export function MemberLayout({ children }: MemberLayoutProps) {
     (tier) =>
       !(
         (tier === "community" && communityActive) ||
-        (tier === "club" && (paidTier === "club" || paidTier === "academy")) ||
-        (tier === "academy" && paidTier === "academy")
+        (tier === "club" && clubActive) ||
+        (tier === "academy" && academyActive)
       )
   );
   const wantsAcademy = filteredRequests.includes("academy");
-  const wantsClub = filteredRequests.includes("club") || wantsAcademy;
-  const clubEntitled = hasTierContext(member, "club") || hasTierContext(member, "academy");
+  const wantsClub = filteredRequests.includes("club");
+  const clubEntitled = hasTierContext(member, "club");
   const academyEntitled = hasTierContext(member, "academy");
   const membershipLabel = getMembershipLabel(member);
   const membershipDetail = getMembershipDetail(member);

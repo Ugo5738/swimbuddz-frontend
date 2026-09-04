@@ -107,15 +107,15 @@ export function requiresMemberAccess(pathname: string): boolean {
 // Tier access requirements per protected route prefix. Mirrors the
 // original middleware's TIER_ROUTES exactly.
 const TIER_ROUTES: Record<string, MembershipTier[]> = {
-  "/community": ["community", "club", "academy"],
-  "/club": ["club", "academy"],
+  "/community": ["community"],
+  "/club": ["club"],
   // Sessions include Community sessions, so Community members must be
   // able to access /sessions/*. Per-session tier restrictions are
   // enforced by the sessions API/UI, not this blanket rule.
   "/sessions": ["community", "club", "academy"],
   "/academy": ["academy"],
-  "/account/pods": ["club", "academy"],
-  "/account/pod-lead": ["club", "academy"],
+  "/account/pods": ["club"],
+  "/account/pod-lead": ["club"],
   // Personal quarterly reports measure all active members, including low or
   // zero participation. Pod-specific reporting has its own stricter checks.
   "/account/reports": ["community", "club", "academy"],
@@ -180,7 +180,7 @@ function getPaidTier(membership: MiddlewareMember["membership"]): DisplayMembers
 }
 
 function hasPaidEntitlement(membership: MiddlewareMember["membership"]): boolean {
-  return getPaidTier(membership) !== "prospect";
+  return MEMBERSHIP_TIERS.some((tier) => tierIsActive(membership, tier));
 }
 
 function routeGateRedirectForRequiredTier(
@@ -234,8 +234,6 @@ export function evaluateMemberAccess(input: AccessInput): AccessDecision {
   }
 
   const membership = member.membership;
-  const paidTier = getPaidTier(membership);
-
   // 3. Community activation paywall. Account recovery/payment surfaces are
   // always reachable; feature/history routes require an effective paid tier.
   const paywallAllowedPrefixes = [
@@ -243,6 +241,10 @@ export function evaluateMemberAccess(input: AccessInput): AccessDecision {
     "/account/billing",
     "/account/onboarding",
     "/account/access",
+    // Programme checkout may bundle or enforce annual Membership according
+    // to the selected Club/Academy configuration. Requiring Membership before
+    // these pages would create a circular registration path.
+    "/upgrade",
   ];
   const paywallAllowed =
     pathname === "/account" ||
@@ -267,22 +269,10 @@ export function evaluateMemberAccess(input: AccessInput): AccessDecision {
 
   if (protectedRoute) {
     const allowedTiers = TIER_ROUTES[protectedRoute];
-    const effectiveTier = paidTier === "prospect" ? "community" : paidTier;
+    const hasRequiredProduct = allowedTiers.some((tier) => tierIsActive(membership, tier));
 
-    if (!allowedTiers.includes(effectiveTier)) {
-      // The cheapest tier that grants access — the LOWEST-privilege
-      // entry in allowedTiers, not the highest. Only /club
-      // (["club","academy"] → "club") and /academy (["academy"] →
-      // "academy") reach this block; /community and /sessions always
-      // include "community" in allowedTiers and community is the
-      // effective-tier floor, so they never get here.
-      //
-      // (The pre-F4 code computed `includes("academy") ? "academy" :
-      // "club"`, which was always "academy" and made the
-      // approved-but-unpaid → billing branch dead. Fixed deliberately
-      // here so an approved-but-lapsed member is sent to billing to
-      // reactivate, not back through the upgrade-request flow.)
-      const requiredTier: MembershipTier = allowedTiers.includes("club") ? "club" : "academy";
+    if (!hasRequiredProduct) {
+      const requiredTier: MembershipTier = allowedTiers[0];
 
       return routeGateRedirectForRequiredTier(membership, requiredTier, returnTo);
     }
