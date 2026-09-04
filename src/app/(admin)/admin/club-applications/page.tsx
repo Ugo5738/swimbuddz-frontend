@@ -41,7 +41,6 @@ export default function ClubApplicationsPage() {
     send_result_email: true,
     paymentArrangement: {
       approvedModes: ["quarterly_prepaid"],
-      transitionRateNaira: "5000",
       transitionExpiresAt: "2026-12-31",
     } as ClubPaymentArrangementValue,
   });
@@ -58,14 +57,8 @@ export default function ClubApplicationsPage() {
     const transitionEnabled =
       form.outcome !== "academy_first" &&
       form.paymentArrangement.approvedModes.includes("transition_per_session");
-    const transitionRateNaira = Number(form.paymentArrangement.transitionRateNaira);
-    if (
-      transitionEnabled &&
-      (!Number.isFinite(transitionRateNaira) ||
-        transitionRateNaira < 0 ||
-        !form.paymentArrangement.transitionExpiresAt)
-    ) {
-      toast.error("Enter a valid transition session rate and expiry date.");
+    if (transitionEnabled && !form.paymentArrangement.transitionExpiresAt) {
+      toast.error("Enter a transition expiry date.");
       return;
     }
     setSaving(true);
@@ -81,9 +74,6 @@ export default function ClubApplicationsPage() {
         send_result_email: form.send_result_email,
         approved_payment_modes:
           form.outcome === "academy_first" ? [] : form.paymentArrangement.approvedModes,
-        transition_session_rate_kobo: transitionEnabled
-          ? Math.round(transitionRateNaira * 100)
-          : undefined,
         transition_expires_at: transitionEnabled
           ? form.paymentArrangement.transitionExpiresAt
           : undefined,

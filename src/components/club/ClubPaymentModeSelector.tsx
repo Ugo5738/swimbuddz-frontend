@@ -7,14 +7,13 @@ const COPY: Record<ClubPaymentMode, { title: string; detail: string }> = {
   },
   transition_per_session: {
     title: "2026 per-session transition",
-    detail: "No quarterly Club charge. Pay your approved rate each time you book a Club session.",
+    detail: "No quarterly Club charge. Pay each Club session's current price when you book.",
   },
 };
 
 type Props = {
   approvedModes: ClubPaymentMode[];
   value: ClubPaymentMode;
-  transitionRateKobo?: number | null;
   transitionExpiresAt?: string | null;
   onChange: (mode: ClubPaymentMode) => void;
 };
@@ -22,7 +21,6 @@ type Props = {
 export function ClubPaymentModeSelector({
   approvedModes,
   value,
-  transitionRateKobo,
   transitionExpiresAt,
   onChange,
 }: Props) {
@@ -32,10 +30,9 @@ export function ClubPaymentModeSelector({
       <div className="rounded-xl border border-cyan-100 bg-cyan-50/40 p-4 text-sm">
         <p className="font-semibold text-slate-900">{COPY[mode].title}</p>
         <p className="text-slate-600">{COPY[mode].detail}</p>
-        {mode === "transition_per_session" && transitionRateKobo != null ? (
+        {mode === "transition_per_session" && transitionExpiresAt ? (
           <p className="mt-1 text-xs font-medium text-cyan-800">
-            ₦{(transitionRateKobo / 100).toLocaleString()} per Club session
-            {transitionExpiresAt ? ` through ${transitionExpiresAt}` : ""}
+            Active through {transitionExpiresAt}
           </p>
         ) : null}
       </div>
@@ -67,10 +64,9 @@ export function ClubPaymentModeSelector({
             <span className="text-sm">
               <span className="font-semibold text-slate-900">{COPY[mode].title}</span>
               <span className="block text-slate-600">{COPY[mode].detail}</span>
-              {mode === "transition_per_session" && transitionRateKobo != null ? (
+              {mode === "transition_per_session" && transitionExpiresAt ? (
                 <span className="mt-1 block text-xs font-medium text-cyan-800">
-                  ₦{(transitionRateKobo / 100).toLocaleString()} per Club session
-                  {transitionExpiresAt ? ` through ${transitionExpiresAt}` : ""}
+                  Active through {transitionExpiresAt}
                 </span>
               ) : null}
             </span>

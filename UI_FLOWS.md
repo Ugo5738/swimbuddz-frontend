@@ -550,15 +550,17 @@ this flow.
 5. Admin conducts the in-pool assessment, records the baseline and selects
    Club-ready, Club-ready with modified participation, or Academy first. For a
    Club-ready outcome, Admin explicitly allows quarterly prepaid, the temporary
-   2026 pay-per-session transition, or both. Transition approval also records
-   the per-session rate and expiry. The result can be emailed from the review
-   screen.
+   2026 pay-per-session transition, or both. Transition approval records the
+   expiry only; each session's Admin-set price remains authoritative. The result
+   can be emailed from the review screen.
 6. An approved member sees only the payment arrangements enabled on their
    application. If both are enabled, they choose one. Checkout retrieves the
    application price from the server and presents each selected Club quarter,
    or a ₦0 transition enrollment, plus annual SwimBuddz Membership if due,
-   optional Community Experience, enabled online payment charges, and the total
-   as separate lines. Transition sessions are paid later when booked.
+   enabled online payment charges, and the total as separate lines. A transition
+   activation never carries the quarterly Community Experience bundle; that
+   remains a separate explicit purchase. Transition sessions are paid later at
+   each session's current Admin-set price when booked.
 7. Starting checkout reserves plan and preferred-pod capacity for 30 minutes.
    Successful payment consumes the reservation and creates a separate dated,
    location-specific entitlement for each paid quarter, so a future quarter

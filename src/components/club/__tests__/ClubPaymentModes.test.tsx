@@ -14,7 +14,6 @@ describe("Club payment arrangement controls", () => {
       <ClubPaymentArrangementFields
         value={{
           approvedModes: ["quarterly_prepaid"],
-          transitionRateNaira: "5000",
           transitionExpiresAt: "2026-12-31",
         }}
         onChange={onChange}
@@ -25,6 +24,7 @@ describe("Club payment arrangement controls", () => {
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ approvedModes: ["quarterly_prepaid", "transition_per_session"] })
     );
+    expect(screen.queryByLabelText(/transition session rate/i)).not.toBeInTheDocument();
   });
 
   it("shows a selector only when the application allows both modes", () => {
@@ -33,7 +33,6 @@ describe("Club payment arrangement controls", () => {
       <ClubPaymentModeSelector
         approvedModes={["transition_per_session"]}
         value="transition_per_session"
-        transitionRateKobo={500000}
         transitionExpiresAt="2026-12-31"
         onChange={onChange}
       />
@@ -45,26 +44,20 @@ describe("Club payment arrangement controls", () => {
       <ClubPaymentModeSelector
         approvedModes={["quarterly_prepaid", "transition_per_session"]}
         value="quarterly_prepaid"
-        transitionRateKobo={500000}
         transitionExpiresAt="2026-12-31"
         onChange={onChange}
       />
     );
     fireEvent.click(screen.getByRole("radio", { name: /2026 per-session transition/i }));
     expect(onChange).toHaveBeenCalledWith("transition_per_session");
-    expect(screen.getByText(/₦5,000 per Club session/)).toBeInTheDocument();
+    expect(screen.getByText(/current price when you book/)).toBeInTheDocument();
   });
 
-  it("shows the transition checkout rate, zero-quarterly message, and expiry", () => {
-    render(
-      <ClubTransitionCheckoutNotice
-        sessionRateKobo={520000}
-        expiresAt="2026-12-31"
-      />
-    );
+  it("shows session-owned pricing, zero-quarterly message, and expiry", () => {
+    render(<ClubTransitionCheckoutNotice expiresAt="2026-12-31" />);
 
     expect(screen.getByText(/No quarterly Club fee/)).toHaveTextContent(
-      "Club sessions are ₦5,200 when booked"
+      "each Club session's current Admin-set price"
     );
     expect(screen.getByText(/Transition ends/)).toHaveTextContent("31 Dec 2026");
   });

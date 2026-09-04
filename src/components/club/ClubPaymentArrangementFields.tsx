@@ -2,7 +2,6 @@ import type { ClubPaymentMode } from "@/lib/clubOnboarding";
 
 export type ClubPaymentArrangementValue = {
   approvedModes: ClubPaymentMode[];
-  transitionRateNaira: string;
   transitionExpiresAt: string;
 };
 
@@ -57,43 +56,28 @@ export function ClubPaymentArrangementFields({ value, disabled = false, onChange
         <span>
           <span className="font-medium">2026 per-session transition</span>
           <span className="block text-xs text-slate-500">
-            Member pays the snapshotted Club rate when booking an eligible Club session.
+            Member pays each eligible session&apos;s current Admin-set price when booking.
           </span>
         </span>
       </label>
       {transitionEnabled ? (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="space-y-1 text-sm font-medium text-slate-800">
-            Session rate (₦)
-            <input
-              aria-label="Transition session rate"
-              type="number"
-              min="0"
-              step="1"
-              required
-              disabled={disabled}
-              value={value.transitionRateNaira}
-              onChange={(event) =>
-                onChange({ ...value, transitionRateNaira: event.target.value })
-              }
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 font-normal"
-            />
-          </label>
-          <label className="space-y-1 text-sm font-medium text-slate-800">
-            Transition expiry
-            <input
-              aria-label="Transition expiry"
-              type="date"
-              required
-              disabled={disabled}
-              value={value.transitionExpiresAt}
-              onChange={(event) =>
-                onChange({ ...value, transitionExpiresAt: event.target.value })
-              }
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 font-normal"
-            />
-          </label>
-        </div>
+        <label className="block space-y-1 text-sm font-medium text-slate-800">
+          Transition expiry
+          <input
+            aria-label="Transition expiry"
+            type="date"
+            required
+            disabled={disabled}
+            value={value.transitionExpiresAt}
+            onChange={(event) =>
+              onChange({ ...value, transitionExpiresAt: event.target.value })
+            }
+            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 font-normal sm:max-w-xs"
+          />
+          <span className="block text-xs font-normal text-slate-500">
+            Session prices are configured on each Club session, not on this application.
+          </span>
+        </label>
       ) : null}
     </fieldset>
   );

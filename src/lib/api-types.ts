@@ -19057,8 +19057,6 @@ export interface components {
             quote_id?: string | null;
             /** Approved Payment Modes */
             approved_payment_modes?: ("quarterly_prepaid" | "transition_per_session")[];
-            /** Transition Session Rate Kobo */
-            transition_session_rate_kobo?: number | null;
             /** Transition Expires At */
             transition_expires_at?: string | null;
             /** Selected Payment Mode */
@@ -19428,8 +19426,6 @@ export interface components {
             send_result_email: boolean;
             /** Approved Payment Modes */
             approved_payment_modes?: ("quarterly_prepaid" | "transition_per_session")[];
-            /** Transition Session Rate Kobo */
-            transition_session_rate_kobo?: number | null;
             /** Transition Expires At */
             transition_expires_at?: string | null;
         };
@@ -19463,8 +19459,6 @@ export interface components {
              * @enum {string}
              */
             payment_mode: "quarterly_prepaid" | "transition_per_session";
-            /** Transition Session Rate Kobo */
-            transition_session_rate_kobo?: number | null;
             /** Transition Expires At */
             transition_expires_at?: string | null;
             /** Billing Cycle */

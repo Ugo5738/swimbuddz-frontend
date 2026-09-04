@@ -293,7 +293,6 @@ export default function ClubPlanSelectionPage() {
             <ClubPaymentModeSelector
               approvedModes={approvedPaymentModes}
               value={effectivePaymentMode}
-              transitionRateKobo={approvedApplication.transition_session_rate_kobo}
               transitionExpiresAt={approvedApplication.transition_expires_at}
               onChange={setPaymentMode}
             />

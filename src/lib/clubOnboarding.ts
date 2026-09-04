@@ -83,7 +83,6 @@ export type ClubApplication = {
   selected_plans: ClubPlan[];
   assessment: ClubAssessment | null;
   approved_payment_modes: ClubPaymentMode[];
-  transition_session_rate_kobo: number | null;
   transition_expires_at: string | null;
   selected_payment_mode: ClubPaymentMode | null;
 };
@@ -129,7 +128,6 @@ export type ChargePreview = {
     community_experience_selected?: boolean;
     club_payment_mode?: ClubPaymentMode;
     approved_payment_modes?: ClubPaymentMode[];
-    transition_session_rate_kobo?: number | null;
     transition_expires_at?: string | null;
   };
 };
@@ -314,7 +312,6 @@ export function completeObservedClubAssessment(
     assessor_notes?: string;
     send_result_email: boolean;
     approved_payment_modes: ClubPaymentMode[];
-    transition_session_rate_kobo?: number;
     transition_expires_at?: string;
   }
 ): Promise<ClubApplication> {

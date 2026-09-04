@@ -751,7 +751,6 @@ function CheckoutContent() {
             <ClubPaymentModeSelector
               approvedModes={clubQuote.components.approved_payment_modes}
               value={clubPaymentMode}
-              transitionRateKobo={clubQuote.components.transition_session_rate_kobo}
               transitionExpiresAt={clubQuote.components.transition_expires_at}
               onChange={(mode) => {
                 setClubQuote(null);
@@ -764,7 +763,6 @@ function CheckoutContent() {
             />
             {clubPaymentMode === "transition_per_session" ? (
               <ClubTransitionCheckoutNotice
-                sessionRateKobo={clubQuote.components.transition_session_rate_kobo}
                 expiresAt={clubQuote.components.transition_expires_at}
               />
             ) : null}
