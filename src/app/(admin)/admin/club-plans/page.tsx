@@ -19,10 +19,10 @@ import { toast } from "sonner";
 
 const today = new Date().toISOString().slice(0, 10);
 const current = new Date();
-const quarterStart = new Date(current.getFullYear(), Math.floor(current.getMonth() / 3) * 3, 1)
+const quarterStart = new Date(Date.UTC(current.getUTCFullYear(), Math.floor(current.getUTCMonth() / 3) * 3, 1))
   .toISOString()
   .slice(0, 10);
-const quarterEnd = new Date(current.getFullYear(), Math.floor(current.getMonth() / 3) * 3 + 3, 0)
+const quarterEnd = new Date(Date.UTC(current.getUTCFullYear(), Math.floor(current.getUTCMonth() / 3) * 3 + 3, 0))
   .toISOString()
   .slice(0, 10);
 
@@ -34,7 +34,6 @@ export default function ClubPlansAdminPage() {
     club_id: "",
     name: "Quarterly Club",
     club_fee_naira: "60000",
-    experience_fee_naira: "30000",
     experience_default_selected: true,
     sessions_included: "12",
     period_start: quarterStart,
@@ -71,9 +70,9 @@ export default function ClubPlansAdminPage() {
         currency: "NGN",
         club_fee_kobo: Math.round(Number(form.club_fee_naira) * 100),
         community_experience_fee_kobo:
-          selectedExperience?.club_bundle_fee_kobo ??
-          Math.round(Number(form.experience_fee_naira) * 100),
-        community_experience_default_selected: form.experience_default_selected,
+          selectedExperience?.club_bundle_fee_kobo ?? 0,
+        community_experience_default_selected:
+          Boolean(selectedExperience) && form.experience_default_selected,
         community_experience_offering_id: form.community_experience_offering_id || undefined,
         sessions_included: Number(form.sessions_included),
         period_start: form.period_start,
@@ -170,9 +169,9 @@ export default function ClubPlansAdminPage() {
                   Community Experience:{" "}
                   {linkedExperience
                     ? `${linkedExperience.name} · ${formatCurrency(linkedExperience.club_bundle_fee_kobo / 100)} bundled`
-                    : `${formatCurrency(plan.community_experience_fee_kobo / 100)} legacy fallback`}{" "}
+                    : "not offered with this plan"}{" "}
                   ·{" "}
-                  {plan.community_experience_default_selected
+                  {linkedExperience && plan.community_experience_default_selected
                     ? "selected by default"
                     : "not selected by default"}
                 </p>
@@ -235,29 +234,12 @@ export default function ClubPlansAdminPage() {
               className="w-full rounded-lg border border-slate-200 px-3 py-2 font-normal"
             />
           </label>
-          {!form.community_experience_offering_id ? (
-            <label className="space-y-1 text-sm font-medium">
-              Legacy Community Experience fallback (₦)
-              <input
-                required
-                type="number"
-                min="0"
-                value={form.experience_fee_naira}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, experience_fee_naira: event.target.value }))
-                }
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 font-normal"
-              />
-              <span className="block text-xs font-normal text-amber-700">
-                Used only for older quarters without a linked Experience offering.
-              </span>
-            </label>
-          ) : (
+          {form.community_experience_offering_id ? (
             <div className="rounded-lg border border-cyan-100 bg-cyan-50 p-3 text-sm text-cyan-900">
-              The linked offering supplies the ₦50k standard, ₦40k Club-later, and ₦30k bundled
-              prices. This plan stores its bundled price snapshot automatically.
+              The linked offering supplies the standard, Club member, and bundled prices.
+              This plan stores its bundled price automatically.
             </div>
-          )}
+          ) : null}
           <label className="space-y-1 text-sm font-medium">
             Sessions included
             <input
@@ -316,14 +298,17 @@ export default function ClubPlansAdminPage() {
                 setForm((current) => ({
                   ...current,
                   community_experience_offering_id: event.target.value,
+                  experience_default_selected: event.target.value
+                    ? current.experience_default_selected
+                    : false,
                 }))
               }
               className="w-full rounded-lg border border-slate-200 px-3 py-2 font-normal"
             >
-              <option value="">Legacy ₦30,000 plan line only</option>
+              <option value="">No Community Experience bundle</option>
               {experiences.data?.map((experience) => (
                 <option key={experience.id} value={experience.id}>
-                  {experience.name} · {experience.period_start} · ₦50k/₦40k/₦30k
+                  {experience.name} · {experience.period_start} · {formatCurrency(experience.club_bundle_fee_kobo / 100)} bundled
                 </option>
               ))}
             </select>
@@ -376,7 +361,8 @@ export default function ClubPlansAdminPage() {
           <label className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"
-              checked={form.experience_default_selected}
+              disabled={!form.community_experience_offering_id}
+              checked={Boolean(form.community_experience_offering_id) && form.experience_default_selected}
               onChange={(event) =>
                 setForm((current) => ({
                   ...current,
@@ -384,7 +370,7 @@ export default function ClubPlansAdminPage() {
                 }))
               }
             />
-            Add the optional Community Experience by default
+            Add the linked Community Experience by default
           </label>
           <label className="flex items-center gap-2 text-sm">
             <input

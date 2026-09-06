@@ -374,8 +374,9 @@ export interface Enrollment {
   // optional and the persisted column is JSONB.
   preferences?: Record<string, unknown>;
   // Payment tracking
-  price_snapshot_amount?: number;
-  currency_snapshot?: string;
+  /** Frozen enrollment price in kobo. */
+  price_snapshot_amount?: number | null;
+  currency_snapshot?: string | null;
   payment_reference?: string;
   paid_at?: string;
   // Installment tracking

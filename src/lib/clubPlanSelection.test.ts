@@ -2,10 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import type { ClubPlan } from "./clubOnboarding";
 import {
-  areAdjacentClubPlans,
   clubQuarterLabel,
-  isPlanReachable,
-  toggleContiguousClubPlan,
+  sortClubPlans,
+  toggleIndependentClubPlan,
 } from "./clubPlanSelection";
 
 function plan(
@@ -48,7 +47,6 @@ function plan(
 }
 
 const q1 = plan("q1", "2027-01-01", "2027-03-31");
-const q2 = plan("q2", "2027-04-01", "2027-06-30");
 const q3 = plan("q3", "2027-07-01", "2027-09-30");
 
 describe("Club quarter selection", () => {
@@ -56,30 +54,17 @@ describe("Club quarter selection", () => {
     expect(clubQuarterLabel(q1)).toBe("Q1 2027");
   });
 
-  it("recognizes adjacent plan periods", () => {
-    expect(areAdjacentClubPlans(q1, q2)).toBe(true);
-    expect(areAdjacentClubPlans(q1, q3)).toBe(false);
+  it("sorts published quarters without imposing adjacency", () => {
+    expect(sortClubPlans([q3, q1])).toEqual([q1, q3]);
   });
 
-  it("selects every intermediate quarter when a later quarter is chosen", () => {
-    expect(toggleContiguousClubPlan([q3, q1, q2], ["q1"], "q1", "q3")).toEqual([
-      "q1",
-      "q2",
-      "q3",
-    ]);
+  it("selects a future quarter without adding an intermediate quarter", () => {
+    expect(toggleIndependentClubPlan([q1.id], q3)).toEqual([q1.id, q3.id]);
   });
 
-  it("truncates later selections when an earlier quarter is removed", () => {
+  it("does not select a future quarter whose entry is unavailable", () => {
     expect(
-      toggleContiguousClubPlan([q1, q2, q3], ["q1", "q2", "q3"], "q1", "q2"),
-    ).toEqual(["q1"]);
-  });
-
-  it("does not cross a missing or unavailable quarter", () => {
-    const unavailableQ2 = { ...q2, entry_available: false };
-    expect(isPlanReachable([q1, unavailableQ2, q3], "q1", "q3")).toBe(false);
-    expect(toggleContiguousClubPlan([q1, unavailableQ2, q3], ["q1"], "q1", "q3")).toEqual([
-      "q1",
-    ]);
+      toggleIndependentClubPlan([q1.id], { ...q3, entry_available: false }),
+    ).toEqual([q1.id]);
   });
 });

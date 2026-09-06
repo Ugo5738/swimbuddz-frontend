@@ -550,8 +550,8 @@ export function EditCohortModal({
           <div>
             <h4 className="text-sm font-semibold text-slate-900">Pricing and membership</h4>
             <p className="mt-1 text-xs text-slate-500">
-              These settings apply to new checkouts. Existing paid enrollments keep their price
-              snapshot.
+              Price changes apply to enrollments created after this update. Existing enrollments
+              keep their stored price snapshot.
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">

@@ -13,6 +13,20 @@ type Props = {
 };
 
 export function ClubCard({ member, clubActive, communityActive, history }: Props) {
+  if (!clubActive && history?.club_renewal_status === "upcoming") {
+    const nextPeriod = [...history.periods]
+      .filter((period) => period.product === "club" && period.status === "upcoming")
+      .sort((left, right) => (left.starts_at ?? "").localeCompare(right.starts_at ?? ""))[0];
+    return (
+      <Card className="space-y-3 p-4 md:p-6">
+        <h2 className="text-base font-semibold text-slate-900 md:text-lg">Your next Club period is booked</h2>
+        <p className="text-sm text-slate-600">
+          {nextPeriod?.starts_at ? `Club access starts on ${formatDate(nextPeriod.starts_at)}.` : "Your Club access starts in the upcoming period."}
+          {" "}Your prepaid period does not include sessions before its start date.
+        </p>
+      </Card>
+    );
+  }
   if (clubActive) {
     const clubAccess = member?.membership?.tier_statuses?.club;
     const highestPaidTier = member?.membership?.highest_paid_tier || member?.membership?.paid_tier;
@@ -67,7 +81,7 @@ export function ClubCard({ member, clubActive, communityActive, history }: Props
               </Button>
             </Link>
             <p className="text-xs text-slate-500">
-              Your selected period starts after your current Club access ends.
+              Review the available quarters and their coverage dates before paying.
             </p>
           </div>
         )}

@@ -26241,6 +26241,10 @@ export interface components {
              * Format: uuid
              */
             member_id: string;
+            /** Price Snapshot Amount */
+            price_snapshot_amount?: number | null;
+            /** Currency Snapshot */
+            currency_snapshot?: string | null;
             /** Preferences */
             preferences?: {
                 [key: string]: unknown;
@@ -36382,6 +36386,51 @@ export interface components {
             /** Explanation */
             explanation: string;
         };
+        /**
+         * AdminProductVariantResponse
+         * @description Admin variant response including internal unit cost.
+         */
+        AdminProductVariantResponse: {
+            /** Sku */
+            sku: string;
+            /** Name */
+            name?: string | null;
+            /** Options */
+            options?: {
+                [key: string]: unknown;
+            };
+            /** Price Override Ngn */
+            price_override_ngn?: string | null;
+            /** Weight Grams */
+            weight_grams?: number | null;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Product Id
+             * Format: uuid
+             */
+            product_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Cost Price Ngn */
+            cost_price_ngn?: string | null;
+        };
         /** ApplyDiscountRequest */
         ApplyDiscountRequest: {
             /** Code */
@@ -37250,8 +37299,6 @@ export interface components {
             size_chart_media_id?: string | null;
             /** Supplier Id */
             supplier_id?: string | null;
-            /** Cost Price Ngn */
-            cost_price_ngn?: string | null;
             /**
              * Id
              * Format: uuid
@@ -37276,6 +37323,8 @@ export interface components {
             images: components["schemas"]["ProductImageResponse"][];
             default_variant?: components["schemas"]["DefaultVariantResponse"] | null;
             category?: components["schemas"]["CategoryResponse"] | null;
+            /** Cost Price Ngn */
+            cost_price_ngn?: string | null;
             /**
              * Variants
              * @default []
@@ -37422,8 +37471,6 @@ export interface components {
             size_chart_media_id?: string | null;
             /** Supplier Id */
             supplier_id?: string | null;
-            /** Cost Price Ngn */
-            cost_price_ngn?: string | null;
             /**
              * Id
              * Format: uuid
@@ -37526,48 +37573,6 @@ export interface components {
              */
             is_active: boolean;
         };
-        /** ProductVariantResponse */
-        ProductVariantResponse: {
-            /** Sku */
-            sku: string;
-            /** Name */
-            name?: string | null;
-            /** Options */
-            options?: {
-                [key: string]: unknown;
-            };
-            /** Price Override Ngn */
-            price_override_ngn?: string | null;
-            /** Cost Price Ngn */
-            cost_price_ngn?: string | null;
-            /** Weight Grams */
-            weight_grams?: number | null;
-            /**
-             * Is Active
-             * @default true
-             */
-            is_active: boolean;
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /**
-             * Product Id
-             * Format: uuid
-             */
-            product_id: string;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
-        };
         /** ProductVariantUpdate */
         ProductVariantUpdate: {
             /** Sku */
@@ -37602,8 +37607,6 @@ export interface components {
             };
             /** Price Override Ngn */
             price_override_ngn?: string | null;
-            /** Cost Price Ngn */
-            cost_price_ngn?: string | null;
             /** Weight Grams */
             weight_grams?: number | null;
             /**
@@ -37631,6 +37634,8 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /** Cost Price Ngn */
+            cost_price_ngn?: string | null;
             /**
              * Quantity Available
              * @default 0
@@ -37748,8 +37753,6 @@ export interface components {
             size_chart_media_id?: string | null;
             /** Supplier Id */
             supplier_id?: string | null;
-            /** Cost Price Ngn */
-            cost_price_ngn?: string | null;
             /**
              * Id
              * Format: uuid
@@ -37800,8 +37803,6 @@ export interface components {
             };
             /** Price Override Ngn */
             price_override_ngn?: string | null;
-            /** Cost Price Ngn */
-            cost_price_ngn?: string | null;
             /** Weight Grams */
             weight_grams?: number | null;
             /**
@@ -67039,7 +67040,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProductVariantResponse"];
+                    "application/json": components["schemas"]["AdminProductVariantResponse"];
                 };
             };
             /** @description Validation Error */
@@ -67105,7 +67106,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProductVariantResponse"];
+                    "application/json": components["schemas"]["AdminProductVariantResponse"];
                 };
             };
             /** @description Validation Error */

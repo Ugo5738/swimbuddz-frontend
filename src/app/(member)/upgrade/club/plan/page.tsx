@@ -17,9 +17,8 @@ import {
 } from "@/lib/clubOnboarding";
 import {
   clubQuarterLabel,
-  isPlanReachable,
   sortClubPlans,
-  toggleContiguousClubPlan,
+  toggleIndependentClubPlan,
 } from "@/lib/clubPlanSelection";
 import { formatCurrency, useUpgrade } from "@/lib/upgradeContext";
 import { Check, MapPin, Users, Waves } from "lucide-react";
@@ -49,7 +48,7 @@ export default function ClubPlanSelectionPage() {
   const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
   const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
   const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([]);
-  const [experienceSelected, setExperienceSelected] = useState(true);
+  const [experienceSelected, setExperienceSelected] = useState(false);
   const [preferredPodId, setPreferredPodId] = useState("");
   const [paymentMode, setPaymentMode] = useState<ClubPaymentMode>("quarterly_prepaid");
   const [submitting, setSubmitting] = useState(false);
@@ -179,15 +178,16 @@ export default function ClubPlanSelectionPage() {
     const primary = clubPlans.find((plan) => plan.entry_available);
     setSelectedClubId(clubPlans[0].club_id);
     setSelectedPlanIds(primary ? [primary.id] : []);
-    setExperienceSelected(primary?.community_experience_default_selected ?? true);
+    setExperienceSelected(
+      Boolean(primary?.community_experience_offering_id) &&
+        Boolean(primary?.community_experience_default_selected),
+    );
     setPreferredPodId("");
   };
 
   const toggleFutureQuarter = (plan: ClubPlan) => {
-    if (!primaryPlan || plan.id === primaryPlan.id) return;
-    setSelectedPlanIds((current) =>
-      toggleContiguousClubPlan(locationPlans, current, primaryPlan.id, plan.id)
-    );
+    if (!primaryPlan || plan.id === primaryPlan.id || !plan.entry_available) return;
+    setSelectedPlanIds((current) => toggleIndependentClubPlan(current, plan));
   };
 
   const submit = async () => {
@@ -216,7 +216,8 @@ export default function ClubPlanSelectionPage() {
       const application = await createClubApplication({
         plan_version_id: primaryPlan.id,
         plan_version_ids: selectedPlans.slice(1).map((plan) => plan.id),
-        community_experience_selected: experienceSelected,
+        community_experience_selected:
+          Boolean(primaryPlan.community_experience_offering_id) && experienceSelected,
         preferred_pod_id: preferredPodId || undefined,
         notes: readiness?.clubNotes || undefined,
       });
@@ -460,18 +461,17 @@ export default function ClubPlanSelectionPage() {
             <p className="text-xs font-semibold uppercase tracking-wide text-cyan-700">
               3. Build your application
             </p>
-            <h2 className="mt-1 font-semibold text-slate-900">Choose consecutive Club quarters</h2>
+            <h2 className="mt-1 font-semibold text-slate-900">Choose Club quarters</h2>
             <p className="text-sm text-slate-600">
-              Your first available quarter is required. Future quarters start unselected; choosing a
-              later one automatically includes the quarters between them.
+              Your current or first available quarter is required. Future published quarters are
+              optional and can be selected independently.
             </p>
           </div>
           <div className="space-y-2">
             {locationPlans.map((plan) => {
               const checked = selectedPlanIds.includes(plan.id);
               const required = plan.id === primaryPlan.id;
-              const reachable = isPlanReachable(locationPlans, primaryPlan.id, plan.id);
-              const disabled = required || !plan.entry_available || !reachable;
+              const disabled = required || !plan.entry_available;
               return (
                 <label
                   key={plan.id}
@@ -494,11 +494,6 @@ export default function ClubPlanSelectionPage() {
                     </span>
                     {!plan.entry_available ? (
                       <span className="block text-xs text-amber-700">{plan.entry_reason}</span>
-                    ) : !reachable ? (
-                      <span className="block text-xs text-amber-700">
-                        A preceding quarter is not available, so this quarter cannot be prepaid
-                        here.
-                      </span>
                     ) : null}
                   </span>
                   <span className="text-right font-semibold text-slate-900">
@@ -514,30 +509,33 @@ export default function ClubPlanSelectionPage() {
             })}
           </div>
 
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-cyan-100 bg-cyan-50 p-4">
-            <input
-              type="checkbox"
-              checked={experienceSelected}
-              onChange={(event) => setExperienceSelected(event.target.checked)}
-              className="mt-1 h-5 w-5 rounded border-slate-300 text-cyan-600"
-            />
-            <span className="flex-1">
+          {primaryPlan.community_experience_offering_id ? (
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-cyan-100 bg-cyan-50 p-4">
+              <input
+                type="checkbox"
+                checked={experienceSelected}
+                onChange={(event) => setExperienceSelected(event.target.checked)}
+                className="mt-1 h-5 w-5 rounded border-slate-300 text-cyan-600"
+              />
+              <span className="flex-1">
+                <span className="font-semibold text-slate-900">
+                  {clubQuarterLabel(primaryPlan)} Community Experience
+                </span>
+                <span className="block text-sm text-slate-600">
+                  Optional. Add the linked Community Experience at the configured Club bundle
+                  rate. Each later quarter starts afresh and is not added automatically here.
+                </span>
+                {experienceSelected ? (
+                  <span className="mt-1 block text-xs font-medium text-cyan-800">
+                    Untick this box to remove it before submitting.
+                  </span>
+                ) : null}
+              </span>
               <span className="font-semibold text-slate-900">
-                {clubQuarterLabel(primaryPlan)} Community Experience
+                {formatCurrency(experienceFee / 100)}
               </span>
-              <span className="block text-sm text-slate-600">
-                Optional and selected by default. Add it now for the ₦30,000 Club bundle rate. An
-                active Club member buying later pays ₦40,000; the standard member rate is ₦50,000.
-                Each later quarter starts afresh and is not added automatically here.
-              </span>
-              <span className="mt-1 block text-xs font-medium text-cyan-800">
-                Untick this box to remove it before submitting.
-              </span>
-            </span>
-            <span className="font-semibold text-slate-900">
-              {formatCurrency(experienceFee / 100)}
-            </span>
-          </label>
+            </label>
+          ) : null}
 
           {podsQuery.data?.length ? (
             <label className="block space-y-2 text-sm font-medium text-slate-800">

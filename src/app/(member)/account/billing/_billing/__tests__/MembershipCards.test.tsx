@@ -6,6 +6,16 @@ import { CommunityCard } from "../CommunityCard";
 import { MembershipHistoryCard } from "../MembershipHistoryCard";
 
 describe("membership renewal actions", () => {
+  it("recognizes a prepaid upcoming Club period without asking the member to buy it again", () => {
+    render(<ClubCard member={null} clubActive={false} communityActive history={{
+      club_renewal_status: "upcoming", club_renewal_due_at: "2026-12-31T00:00:00Z", club_action: "renew",
+      periods: [{ id: "future-club", product: "club", label: "Yaba Club", status: "upcoming",
+        starts_at: "2026-10-01T00:00:00Z", ends_at: "2026-12-31T00:00:00Z",
+        source: "club_enrollment", dates_are_estimated: false, club_name: "Yaba Club", payment_mode: "quarterly_prepaid" }],
+    }} />);
+    expect(screen.getByText(/your next Club period is booked/i)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /renew or rejoin Club/i })).not.toBeInTheDocument();
+  });
   it("offers early renewal to an active Community member", () => {
     render(
       <CommunityCard
