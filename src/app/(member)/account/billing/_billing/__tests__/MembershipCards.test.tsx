@@ -53,7 +53,7 @@ describe("membership renewal actions", () => {
       <ClubCard
         member={{
           membership: {
-            highest_paid_tier: "club",
+            highest_paid_tier: "academy",
             post_academy_club_until: "2026-09-01T00:00:00Z",
             tier_statuses: {
               club: {
@@ -102,7 +102,7 @@ describe("membership renewal actions", () => {
     expect(screen.getByText(/your club access ended/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /renew or rejoin club/i })).toHaveAttribute(
       "href",
-      "/upgrade/club/readiness"
+      "/upgrade/club/plan"
     );
   });
 
@@ -148,7 +148,27 @@ describe("membership renewal actions", () => {
     expect(screen.getAllByText(/approximate legacy start/i)).toHaveLength(2);
     expect(screen.getByRole("link", { name: /renew or rejoin club/i })).toHaveAttribute(
       "href",
-      "/upgrade/club/readiness"
+      "/upgrade/club/plan"
+    );
+  });
+
+  it.each(["community", "academy", undefined] as const)(
+    "offers early Club renewal independently of the legacy paid tier (%s)",
+    (highestPaidTier) => {
+      render(<ClubCard member={{ membership: {
+        highest_paid_tier: highestPaidTier,
+        club_enrollment_until: "2026-12-31T00:00:00Z",
+      } }} clubActive communityActive />);
+      expect(screen.getByRole("link", { name: /renew club early/i })).toHaveAttribute(
+        "href", "/upgrade/club/plan",
+      );
+    },
+  );
+
+  it("keeps readiness as the entry point for a new Club applicant", () => {
+    render(<ClubCard member={null} clubActive={false} communityActive />);
+    expect(screen.getByRole("link", { name: /upgrade to club/i })).toHaveAttribute(
+      "href", "/upgrade/club/readiness",
     );
   });
 });

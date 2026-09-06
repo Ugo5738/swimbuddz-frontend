@@ -29,13 +29,11 @@ export function ClubCard({ member, clubActive, communityActive, history }: Props
   }
   if (clubActive) {
     const clubAccess = member?.membership?.tier_statuses?.club;
-    const highestPaidTier = member?.membership?.highest_paid_tier || member?.membership?.paid_tier;
     const clubAccessUntil =
       clubAccess?.effective_until ||
       member?.membership?.club_enrollment_until ||
       member?.membership?.club_paid_until ||
       member?.membership?.post_academy_club_until;
-    const canRenewClub = highestPaidTier === "club";
     const accessDescription =
       clubAccess?.access_source === "post_academy"
         ? "Your complimentary post-Academy Club period is active."
@@ -71,20 +69,18 @@ export function ClubCard({ member, clubActive, communityActive, history }: Props
             You can book sessions and access all Club features.
           </p>
         </div>
-        {canRenewClub && (
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <Link href="/upgrade/club/plan" className="block">
-              <Button variant="outline" className="w-full sm:w-auto">
-                {clubAccess?.access_source === "post_academy"
-                  ? "Continue with Club"
-                  : "Renew Club early"}
-              </Button>
-            </Link>
-            <p className="text-xs text-slate-500">
-              Review the available quarters and their coverage dates before paying.
-            </p>
-          </div>
-        )}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Link href="/upgrade/club/plan" className="block">
+            <Button variant="outline" className="w-full sm:w-auto">
+              {clubAccess?.access_source === "post_academy"
+                ? "Continue with Club"
+                : "Renew Club early"}
+            </Button>
+          </Link>
+          <p className="text-xs text-slate-500">
+            Review the available quarters and their coverage dates before paying.
+          </p>
+        </div>
       </Card>
     );
   }
@@ -118,7 +114,10 @@ export function ClubCard({ member, clubActive, communityActive, history }: Props
         )}
       </div>
       <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:items-center">
-        <Link href="/upgrade/club/readiness" className="block">
+        <Link
+          href={formerClubMember ? "/upgrade/club/plan" : "/upgrade/club/readiness"}
+          className="block"
+        >
           <Button className="w-full sm:w-auto">
             {formerClubMember
               ? "Renew or rejoin Club"

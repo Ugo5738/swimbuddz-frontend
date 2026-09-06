@@ -5,6 +5,8 @@ import ClubPlanSelectionPage from "../page";
 
 const mocks = vi.hoisted(() => ({
   plans: [] as ClubPlan[],
+  applications: [] as Array<{ id: string; status: string; assessment: { outcome: string } }>,
+  hasReadiness: true,
   create: vi.fn(),
   submitAssessment: vi.fn(),
   push: vi.fn(),
@@ -20,11 +22,11 @@ vi.mock("@/lib/upgradeContext", () => ({
   useUpgrade: () => ({
     setClubApplicationId: vi.fn(),
     state: {
-      clubReadinessData: {
+      clubReadinessData: mocks.hasReadiness ? {
         canSwim25mContinuously: true, controlledBreathing: true,
         comfortableInDeepWater: true, canFloatOrTread30Seconds: true,
         canStopAndRecover: true,
-      },
+      } : null,
     },
   }),
 }));
@@ -32,6 +34,7 @@ vi.mock("@/hooks/useApi", () => ({
   useApi: (path: string | null) => ({
     loading: false, error: null, refetch: vi.fn(),
     data: path === "/api/v1/clubs/plans" ? mocks.plans
+      : path === "/api/v1/clubs/applications/me" ? mocks.applications
       : path === "/api/v1/pools/operating-areas" ? [{ id: "mainland", name: "Mainland" }]
       : path?.startsWith("/api/v1/pools?") ? { items: [{ id: "rowe", name: "Rowe Park" }] }
       : [],
@@ -60,6 +63,8 @@ function chooseLocation() {
 describe("Club plan application", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.applications = [];
+    mocks.hasReadiness = true;
     mocks.plans = [
       plan("q4", "2026-10-01", "2026-12-31"),
       plan("q1", "2027-01-01", "2027-03-31"),
@@ -105,5 +110,33 @@ describe("Club plan application", () => {
     await waitFor(() => expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({
       community_experience_selected: false,
     })));
+  });
+
+  it.each(["club_ready", "club_ready_modified"])(
+    "renews with reusable %s readiness without repeating the questionnaire",
+    async (outcome) => {
+      mocks.hasReadiness = false;
+      mocks.applications = [{ id: "previous-application", status: "enrolled", assessment: { outcome } }];
+      mocks.create.mockResolvedValue({ id: "renewal", status: "approved" });
+      render(<ClubPlanSelectionPage />);
+      chooseLocation();
+      fireEvent.click(screen.getByRole("button", { name: /Renew Club quarter/ }));
+      await waitFor(() => expect(mocks.push).toHaveBeenCalledWith(
+        "/checkout?purpose=club&application_id=renewal&payment_mode=quarterly_prepaid",
+      ));
+      expect(mocks.submitAssessment).not.toHaveBeenCalled();
+      expect(mocks.push).not.toHaveBeenCalledWith("/upgrade/club/readiness");
+    },
+  );
+
+  it("requires readiness when a returning member has no reusable approval", () => {
+    mocks.hasReadiness = false;
+    mocks.applications = [{ id: "previous-application", status: "enrolled", assessment: { outcome: "academy_first" } }];
+    render(<ClubPlanSelectionPage />);
+    chooseLocation();
+    fireEvent.click(screen.getByRole("button", { name: /Submit for Club assessment/ }));
+    expect(mocks.push).toHaveBeenCalledWith("/upgrade/club/readiness");
+    expect(mocks.create).not.toHaveBeenCalled();
+    expect(mocks.submitAssessment).not.toHaveBeenCalled();
   });
 });

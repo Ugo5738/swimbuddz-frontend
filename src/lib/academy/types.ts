@@ -376,6 +376,7 @@ export interface Enrollment {
   // Payment tracking
   /** Frozen enrollment price in kobo. */
   price_snapshot_amount?: number | null;
+  membership_policy_snapshot?: "open" | "active_required" | "included" | null;
   currency_snapshot?: string | null;
   payment_reference?: string;
   paid_at?: string;

@@ -69,7 +69,7 @@ export function MembershipHistoryCard({ history }: Props) {
             Your annual Membership can remain active even when a Club period ends. Start the Club
             flow again to choose a location and renew or rejoin.
           </p>
-          <Link href="/upgrade/club/readiness" className="mt-3 inline-block">
+          <Link href="/upgrade/club/plan" className="mt-3 inline-block">
             <Button size="sm">Renew or rejoin Club</Button>
           </Link>
         </div>

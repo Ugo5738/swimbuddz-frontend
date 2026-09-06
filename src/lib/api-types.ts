@@ -26245,6 +26245,8 @@ export interface components {
             price_snapshot_amount?: number | null;
             /** Currency Snapshot */
             currency_snapshot?: string | null;
+            /** Membership Policy Snapshot */
+            membership_policy_snapshot?: ("open" | "active_required" | "included") | null;
             /** Preferences */
             preferences?: {
                 [key: string]: unknown;
