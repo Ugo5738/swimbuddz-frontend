@@ -10,6 +10,7 @@ export type Member = {
     club_paid_until?: string | null;
     academy_paid_until?: string | null;
     post_academy_club_until?: string | null;
+    club_enrollment_until?: string | null;
     active_tiers?: string[] | null;
     requested_tiers?: string[] | null;
     primary_tier?: string | null;
@@ -21,6 +22,26 @@ export type Member = {
     pending_payment_reference?: string | null;
     tier_statuses?: Partial<Record<"community" | "club" | "academy", MembershipTierStatus>> | null;
   } | null;
+};
+
+export type MembershipHistoryPeriod = {
+  id: string;
+  product: "community" | "club" | string;
+  label: string;
+  starts_at: string | null;
+  ends_at: string | null;
+  status: "active" | "upcoming" | "expired" | "cancelled" | string;
+  source: string;
+  dates_are_estimated: boolean;
+  club_name: string | null;
+  payment_mode: "quarterly_prepaid" | "transition_per_session" | null;
+};
+
+export type MembershipHistory = {
+  periods: MembershipHistoryPeriod[];
+  club_renewal_status: "active" | "upcoming" | "due" | "never";
+  club_renewal_due_at: string | null;
+  club_action: "renew" | "join";
 };
 
 export type PaymentRecord = {

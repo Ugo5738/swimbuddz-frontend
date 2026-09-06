@@ -221,7 +221,7 @@ export interface Cohort {
   /** Resolved coach name (first + last) — best-effort from list endpoints. */
   coach_name?: string | null;
   // Pricing
-  price_override?: number;
+  price_override?: number | null;
   membership_policy_override?: "open" | "active_required" | "included" | null;
   /** Months of Club eligibility granted on graduation; 0 disables the bridge. */
   post_graduation_club_bridge_months?: number;

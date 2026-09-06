@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { ClubCard } from "../ClubCard";
 import { CommunityCard } from "../CommunityCard";
+import { MembershipHistoryCard } from "../MembershipHistoryCard";
 
 describe("membership renewal actions", () => {
   it("offers early renewal to an active Community member", () => {
@@ -65,5 +66,79 @@ describe("membership renewal actions", () => {
       "/upgrade/club/plan"
     );
     expect(screen.getByText(/complimentary post-Academy Club period/i)).toBeInTheDocument();
+  });
+
+  it("guides a former Club member to renew or rejoin", () => {
+    render(
+      <ClubCard
+        member={{
+          membership: {
+            highest_paid_tier: "community",
+            declared_tiers: ["community", "club"],
+            club_paid_until: "2026-09-01T00:00:00Z",
+          },
+        }}
+        clubActive={false}
+        communityActive
+        history={{
+          periods: [],
+          club_renewal_status: "due",
+          club_renewal_due_at: "2026-09-01T00:00:00Z",
+          club_action: "renew",
+        }}
+      />
+    );
+
+    expect(screen.getByText(/your club access ended/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /renew or rejoin club/i })).toHaveAttribute(
+      "href",
+      "/upgrade/club/readiness"
+    );
+  });
+
+  it("shows dated Membership and Club history with legacy estimates identified", () => {
+    render(
+      <MembershipHistoryCard
+        history={{
+          club_renewal_status: "due",
+          club_renewal_due_at: "2026-07-20T00:00:00Z",
+          club_action: "renew",
+          periods: [
+            {
+              id: "community",
+              product: "community",
+              label: "Annual Membership",
+              starts_at: "2026-02-19T00:00:00Z",
+              ends_at: "2027-02-19T00:00:00Z",
+              status: "active",
+              source: "legacy_membership",
+              dates_are_estimated: true,
+              club_name: null,
+              payment_mode: null,
+            },
+            {
+              id: "club",
+              product: "club",
+              label: "Club",
+              starts_at: "2026-04-20T00:00:00Z",
+              ends_at: "2026-07-20T00:00:00Z",
+              status: "expired",
+              source: "legacy_membership",
+              dates_are_estimated: true,
+              club_name: null,
+              payment_mode: null,
+            },
+          ],
+        }}
+      />
+    );
+
+    expect(screen.getByText("Annual Membership")).toBeInTheDocument();
+    expect(screen.getByText("Club")).toBeInTheDocument();
+    expect(screen.getAllByText(/approximate legacy start/i)).toHaveLength(2);
+    expect(screen.getByRole("link", { name: /renew or rejoin club/i })).toHaveAttribute(
+      "href",
+      "/upgrade/club/readiness"
+    );
   });
 });

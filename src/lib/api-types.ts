@@ -195,6 +195,30 @@ export interface paths {
         patch: operations["update_current_member_members_me_patch"];
         trace?: never;
     };
+    "/api/v1/members/me/membership-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Current Member Membership History
+         * @description Return the authenticated member's dated Membership and Club history.
+         *
+         *     New Club purchases use exact immutable enrollment dates. Older membership
+         *     rows only retained an expiry, so their calculated starts are explicitly
+         *     marked as estimates instead of being presented as audited payment dates.
+         */
+        get: operations["get_current_member_membership_history_members_me_membership_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/members/me/badges": {
         parameters: {
             query?: never;
@@ -21690,6 +21714,49 @@ export interface components {
             preferences?: components["schemas"]["MemberPreferencesInput"] | null;
         };
         /**
+         * MembershipHistoryPeriodResponse
+         * @description One dated period shown in the member's own membership history.
+         */
+        MembershipHistoryPeriodResponse: {
+            /** Id */
+            id: string;
+            /** Product */
+            product: string;
+            /** Label */
+            label: string;
+            /** Starts At */
+            starts_at?: string | null;
+            /** Ends At */
+            ends_at?: string | null;
+            /** Status */
+            status: string;
+            /** Source */
+            source: string;
+            /**
+             * Dates Are Estimated
+             * @default false
+             */
+            dates_are_estimated: boolean;
+            /** Club Name */
+            club_name?: string | null;
+            /** Payment Mode */
+            payment_mode?: string | null;
+        };
+        /**
+         * MembershipHistoryResponse
+         * @description Member-facing product history plus the current Club renewal state.
+         */
+        MembershipHistoryResponse: {
+            /** Periods */
+            periods?: components["schemas"]["MembershipHistoryPeriodResponse"][];
+            /** Club Renewal Status */
+            club_renewal_status: string;
+            /** Club Renewal Due At */
+            club_renewal_due_at?: string | null;
+            /** Club Action */
+            club_action: string;
+        };
+        /**
          * MembershipPatchRequest
          * @description Partial update for membership fields.
          */
@@ -37449,6 +37516,8 @@ export interface components {
             };
             /** Price Override Ngn */
             price_override_ngn?: number | string | null;
+            /** Cost Price Ngn */
+            cost_price_ngn?: number | string | null;
             /** Weight Grams */
             weight_grams?: number | null;
             /**
@@ -37469,6 +37538,8 @@ export interface components {
             };
             /** Price Override Ngn */
             price_override_ngn?: string | null;
+            /** Cost Price Ngn */
+            cost_price_ngn?: string | null;
             /** Weight Grams */
             weight_grams?: number | null;
             /**
@@ -37509,6 +37580,8 @@ export interface components {
             } | null;
             /** Price Override Ngn */
             price_override_ngn?: number | string | null;
+            /** Cost Price Ngn */
+            cost_price_ngn?: number | string | null;
             /** Weight Grams */
             weight_grams?: number | null;
             /** Is Active */
@@ -37529,6 +37602,8 @@ export interface components {
             };
             /** Price Override Ngn */
             price_override_ngn?: string | null;
+            /** Cost Price Ngn */
+            cost_price_ngn?: string | null;
             /** Weight Grams */
             weight_grams?: number | null;
             /**
@@ -37725,6 +37800,8 @@ export interface components {
             };
             /** Price Override Ngn */
             price_override_ngn?: string | null;
+            /** Cost Price Ngn */
+            cost_price_ngn?: string | null;
             /** Weight Grams */
             weight_grams?: number | null;
             /**
@@ -43323,6 +43400,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_current_member_membership_history_members_me_membership_history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipHistoryResponse"];
                 };
             };
         };

@@ -6,8 +6,10 @@ export type VariantFormState = {
   name: string;
   sku: string;
   price_override_ngn: string;
+  cost_price_ngn: string;
   weight_grams: string;
   options: string;
+  is_active: boolean;
 };
 
 type Props = {
@@ -17,6 +19,12 @@ type Props = {
   variantForm: VariantFormState;
   setVariantForm: React.Dispatch<React.SetStateAction<VariantFormState>>;
   onAddVariant: (e: React.FormEvent) => Promise<void>;
+  editingVariantId: string | null;
+  editVariantForm: VariantFormState;
+  setEditVariantForm: React.Dispatch<React.SetStateAction<VariantFormState>>;
+  onStartEditVariant: (variant: Variant) => void;
+  onCancelEditVariant: () => void;
+  onUpdateVariant: (e: React.FormEvent) => Promise<void>;
   onDeleteVariant: (variantId: string) => Promise<void>;
   savingVariant: boolean;
   deletingVariantId: string | null;
@@ -29,6 +37,12 @@ export function VariantsSidebar({
   variantForm,
   setVariantForm,
   onAddVariant,
+  editingVariantId,
+  editVariantForm,
+  setEditVariantForm,
+  onStartEditVariant,
+  onCancelEditVariant,
+  onUpdateVariant,
   onDeleteVariant,
   savingVariant,
   deletingVariantId,
@@ -135,6 +149,23 @@ export function VariantsSidebar({
             </div>
           </div>
 
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">
+              Unit Cost (₦)
+            </label>
+            <input
+              type="number"
+              value={variantForm.cost_price_ngn}
+              onChange={(e) =>
+                setVariantForm((prev) => ({ ...prev, cost_price_ngn: e.target.value }))
+              }
+              min="0"
+              step="0.01"
+              placeholder="Inherit product cost"
+              className="w-full px-2.5 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500"
+            />
+          </div>
+
           <button
             type="submit"
             disabled={savingVariant}
@@ -154,39 +185,216 @@ export function VariantsSidebar({
         <div className="space-y-2">
           {variants.map((variant) => (
             <div key={variant.id} className="p-3 bg-slate-50 rounded-lg group">
-              <div className="flex justify-between items-start">
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-sm text-slate-900 truncate">
-                    {variant.name || "Default"}
-                  </p>
-                  <p className="text-xs text-slate-500 font-mono">{variant.sku}</p>
-                  {variant.price_override_ngn && (
-                    <p className="text-xs text-slate-600 mt-0.5">
-                      ₦{Number(variant.price_override_ngn).toLocaleString()}
+              {editingVariantId === variant.id ? (
+                <form onSubmit={onUpdateVariant} className="space-y-3">
+                  <div>
+                    <label
+                      htmlFor={`variant-name-${variant.id}`}
+                      className="block text-xs font-medium text-slate-600 mb-1"
+                    >
+                      Variant Name
+                    </label>
+                    <input
+                      id={`variant-name-${variant.id}`}
+                      value={editVariantForm.name}
+                      onChange={(event) =>
+                        setEditVariantForm((current) => ({
+                          ...current,
+                          name: event.target.value,
+                        }))
+                      }
+                      className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor={`variant-sku-${variant.id}`}
+                      className="block text-xs font-medium text-slate-600 mb-1"
+                    >
+                      SKU
+                    </label>
+                    <input
+                      id={`variant-sku-${variant.id}`}
+                      required
+                      value={editVariantForm.sku}
+                      onChange={(event) =>
+                        setEditVariantForm((current) => ({
+                          ...current,
+                          sku: event.target.value,
+                        }))
+                      }
+                      className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 font-mono text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor={`variant-options-${variant.id}`}
+                      className="block text-xs font-medium text-slate-600 mb-1"
+                    >
+                      Options <span className="font-normal text-slate-400">(Key: Value)</span>
+                    </label>
+                    <textarea
+                      id={`variant-options-${variant.id}`}
+                      rows={2}
+                      value={editVariantForm.options}
+                      onChange={(event) =>
+                        setEditVariantForm((current) => ({
+                          ...current,
+                          options: event.target.value,
+                        }))
+                      }
+                      className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label
+                        htmlFor={`variant-price-${variant.id}`}
+                        className="block text-xs font-medium text-slate-600 mb-1"
+                      >
+                        Selling Price (₦)
+                      </label>
+                      <input
+                        id={`variant-price-${variant.id}`}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={editVariantForm.price_override_ngn}
+                        onChange={(event) =>
+                          setEditVariantForm((current) => ({
+                            ...current,
+                            price_override_ngn: event.target.value,
+                          }))
+                        }
+                        placeholder="Base price"
+                        className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor={`variant-cost-${variant.id}`}
+                        className="block text-xs font-medium text-slate-600 mb-1"
+                      >
+                        Unit Cost (₦)
+                      </label>
+                      <input
+                        id={`variant-cost-${variant.id}`}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={editVariantForm.cost_price_ngn}
+                        onChange={(event) =>
+                          setEditVariantForm((current) => ({
+                            ...current,
+                            cost_price_ngn: event.target.value,
+                          }))
+                        }
+                        placeholder="Product cost"
+                        className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label
+                        htmlFor={`variant-weight-${variant.id}`}
+                        className="block text-xs font-medium text-slate-600 mb-1"
+                      >
+                        Weight (g)
+                      </label>
+                      <input
+                        id={`variant-weight-${variant.id}`}
+                        type="number"
+                        min="0"
+                        value={editVariantForm.weight_grams}
+                        onChange={(event) =>
+                          setEditVariantForm((current) => ({
+                            ...current,
+                            weight_grams: event.target.value,
+                          }))
+                        }
+                        className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+                      />
+                    </div>
+                    <label className="flex items-end gap-2 pb-2 text-xs text-slate-700">
+                      <input
+                        id={`variant-active-${variant.id}`}
+                        type="checkbox"
+                        checked={editVariantForm.is_active}
+                        onChange={(event) =>
+                          setEditVariantForm((current) => ({
+                            ...current,
+                            is_active: event.target.checked,
+                          }))
+                        }
+                      />
+                      Active
+                    </label>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      disabled={savingVariant}
+                      className="flex-1 rounded-md bg-cyan-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+                    >
+                      {savingVariant ? "Saving..." : "Save variant"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onCancelEditVariant}
+                      className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="flex justify-between items-start">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm text-slate-900 truncate">
+                      {variant.name || "Default"}
                     </p>
-                  )}
+                    <p className="text-xs text-slate-500 font-mono">{variant.sku}</p>
+                    {variant.price_override_ngn && (
+                      <p className="text-xs text-slate-600 mt-0.5">
+                        ₦{Number(variant.price_override_ngn).toLocaleString()}
+                      </p>
+                    )}
+                    {variant.cost_price_ngn != null ? (
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        Cost ₦{Number(variant.cost_price_ngn).toLocaleString()}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="flex items-center gap-2 ml-2">
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded whitespace-nowrap ${
+                        (variant.quantity_available ?? variant.quantity_on_hand ?? 0) > 0
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-red-100 text-red-700"
+                      }`}
+                    >
+                      {variant.quantity_available ?? variant.quantity_on_hand ?? 0}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onStartEditVariant(variant)}
+                      className="text-xs font-medium text-cyan-700 hover:text-cyan-900"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onDeleteVariant(variant.id)}
+                      disabled={deletingVariantId === variant.id}
+                      className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity disabled:opacity-50"
+                      title="Deactivate variant"
+                    >
+                      {deletingVariantId === variant.id ? "..." : "×"}
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 ml-2">
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded whitespace-nowrap ${
-                      (variant.quantity_available ?? variant.quantity_on_hand ?? 0) > 0
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
-                  >
-                    {variant.quantity_available ?? variant.quantity_on_hand ?? 0}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => onDeleteVariant(variant.id)}
-                    disabled={deletingVariantId === variant.id}
-                    className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity disabled:opacity-50"
-                    title="Deactivate variant"
-                  >
-                    {deletingVariantId === variant.id ? "..." : "×"}
-                  </button>
-                </div>
-              </div>
+              )}
             </div>
           ))}
         </div>

@@ -100,7 +100,7 @@ function CohortDetailPageInner() {
         program_name: program.name,
         start_date: cohort.start_date,
         end_date: cohort.end_date,
-        price_override: cohort.price_override,
+        price_override: cohort.price_override ?? undefined,
         status: cohort.status,
         // Installment billing fields
         installment_plan_enabled: cohort.installment_plan_enabled,

@@ -13,7 +13,10 @@ import { ImagesCard } from "./_edit/ImagesCard";
 import { PricingSection } from "./_edit/PricingSection";
 import { SettingsSection } from "./_edit/SettingsSection";
 import { VariantOptionsEditor } from "./_edit/VariantOptionsEditor";
-import { VariantsSidebar } from "./_edit/VariantsSidebar";
+import {
+  VariantsSidebar,
+  type VariantFormState,
+} from "./_edit/VariantsSidebar";
 import { VideosCard } from "./_edit/VideosCard";
 import type {
   Category,
@@ -43,12 +46,24 @@ export default function EditProductPage() {
   const [showVariantForm, setShowVariantForm] = useState(false);
   const [savingVariant, setSavingVariant] = useState(false);
   const [deletingVariantId, setDeletingVariantId] = useState<string | null>(null);
-  const [variantForm, setVariantForm] = useState({
+  const [variantForm, setVariantForm] = useState<VariantFormState>({
     name: "",
     sku: "",
     price_override_ngn: "",
+    cost_price_ngn: "",
     weight_grams: "",
     options: "" as string,
+    is_active: true,
+  });
+  const [editingVariantId, setEditingVariantId] = useState<string | null>(null);
+  const [editVariantForm, setEditVariantForm] = useState<VariantFormState>({
+    name: "",
+    sku: "",
+    price_override_ngn: "",
+    cost_price_ngn: "",
+    weight_grams: "",
+    options: "",
+    is_active: true,
   });
 
   // Image management state
@@ -231,6 +246,9 @@ export default function EditProductPage() {
       if (variantForm.price_override_ngn) {
         payload.price_override_ngn = parseFloat(variantForm.price_override_ngn);
       }
+      if (variantForm.cost_price_ngn) {
+        payload.cost_price_ngn = parseFloat(variantForm.cost_price_ngn);
+      }
       if (variantForm.weight_grams) {
         payload.weight_grams = parseInt(variantForm.weight_grams);
       }
@@ -242,11 +260,93 @@ export default function EditProductPage() {
       );
 
       setVariants((prev) => [...prev, newVariant]);
-      setVariantForm({ name: "", sku: "", price_override_ngn: "", weight_grams: "", options: "" });
+      setVariantForm({
+        name: "",
+        sku: "",
+        price_override_ngn: "",
+        cost_price_ngn: "",
+        weight_grams: "",
+        options: "",
+        is_active: true,
+      });
       setShowVariantForm(false);
       toast.success(`Variant created (SKU: ${newVariant.sku})`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to create variant");
+    } finally {
+      setSavingVariant(false);
+    }
+  };
+
+  const handleStartEditVariant = (variant: Variant) => {
+    setEditingVariantId(variant.id);
+    setEditVariantForm({
+      name: variant.name || "",
+      sku: variant.sku,
+      price_override_ngn:
+        variant.price_override_ngn == null ? "" : String(variant.price_override_ngn),
+      cost_price_ngn: variant.cost_price_ngn == null ? "" : String(variant.cost_price_ngn),
+      weight_grams: variant.weight_grams == null ? "" : String(variant.weight_grams),
+      options: Object.entries(variant.options || {})
+        .map(([key, value]) => `${key}: ${value}`)
+        .join("\n"),
+      is_active: variant.is_active,
+    });
+  };
+
+  const handleUpdateVariant = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editingVariantId || !editVariantForm.sku.trim()) {
+      toast.error("SKU is required");
+      return;
+    }
+
+    const options: Record<string, string> = {};
+    editVariantForm.options
+      .split("\n")
+      .filter((line) => line.includes(":"))
+      .forEach((line) => {
+        const [key, ...rest] = line.split(":");
+        if (key.trim()) options[key.trim()] = rest.join(":").trim();
+      });
+
+    setSavingVariant(true);
+    try {
+      const updated = await apiPatch<Variant>(
+        `/api/v1/admin/store/products/${productId}/variants/${editingVariantId}`,
+        {
+          name: editVariantForm.name.trim() || null,
+          sku: editVariantForm.sku.trim(),
+          options,
+          price_override_ngn: editVariantForm.price_override_ngn
+            ? Number(editVariantForm.price_override_ngn)
+            : null,
+          cost_price_ngn: editVariantForm.cost_price_ngn
+            ? Number(editVariantForm.cost_price_ngn)
+            : null,
+          weight_grams: editVariantForm.weight_grams
+            ? Number(editVariantForm.weight_grams)
+            : null,
+          is_active: editVariantForm.is_active,
+        },
+        { auth: true },
+      );
+      setVariants((current) =>
+        current.map((variant) =>
+          variant.id === editingVariantId
+            ? {
+                ...variant,
+                ...updated,
+                quantity_available: variant.quantity_available,
+                quantity_on_hand: variant.quantity_on_hand,
+              }
+            : variant,
+        ),
+      );
+      setEditingVariantId(null);
+      toast.success("Variant updated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update variant");
     } finally {
       setSavingVariant(false);
     }
@@ -597,6 +697,12 @@ export default function EditProductPage() {
             variantForm={variantForm}
             setVariantForm={setVariantForm}
             onAddVariant={handleAddVariant}
+            editingVariantId={editingVariantId}
+            editVariantForm={editVariantForm}
+            setEditVariantForm={setEditVariantForm}
+            onStartEditVariant={handleStartEditVariant}
+            onCancelEditVariant={() => setEditingVariantId(null)}
+            onUpdateVariant={handleUpdateVariant}
             onDeleteVariant={handleDeleteVariant}
             savingVariant={savingVariant}
             deletingVariantId={deletingVariantId}

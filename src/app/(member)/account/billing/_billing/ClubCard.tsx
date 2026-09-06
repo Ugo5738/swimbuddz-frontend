@@ -2,21 +2,23 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import Link from "next/link";
 
-import type { Member } from "../types";
+import type { Member, MembershipHistory } from "../types";
 import { formatDate } from "../utils";
 
 type Props = {
   member: Member | null;
   clubActive: boolean;
   communityActive: boolean;
+  history?: MembershipHistory | null;
 };
 
-export function ClubCard({ member, clubActive, communityActive }: Props) {
+export function ClubCard({ member, clubActive, communityActive, history }: Props) {
   if (clubActive) {
     const clubAccess = member?.membership?.tier_statuses?.club;
     const highestPaidTier = member?.membership?.highest_paid_tier || member?.membership?.paid_tier;
     const clubAccessUntil =
       clubAccess?.effective_until ||
+      member?.membership?.club_enrollment_until ||
       member?.membership?.club_paid_until ||
       member?.membership?.post_academy_club_until;
     const canRenewClub = highestPaidTier === "club";
@@ -73,12 +75,27 @@ export function ClubCard({ member, clubActive, communityActive }: Props) {
     );
   }
 
+  const formerClubMember =
+    history?.club_action === "renew" ||
+    member?.membership?.declared_tiers?.includes("club") ||
+    Boolean(
+      member?.membership?.club_paid_until || member?.membership?.post_academy_club_until
+    );
+  const previousClubEnd =
+    history?.club_renewal_due_at ||
+    member?.membership?.club_paid_until ||
+    member?.membership?.post_academy_club_until;
+
   return (
     <Card className="p-4 md:p-6 space-y-3 md:space-y-4">
       <div>
-        <h2 className="text-base md:text-lg font-semibold text-slate-900">Want to join Club?</h2>
+        <h2 className="text-base md:text-lg font-semibold text-slate-900">
+          {formerClubMember ? "Your Club access ended" : "Want to join Club?"}
+        </h2>
         <p className="text-xs md:text-sm text-slate-600 mt-0.5 md:mt-1">
-          Choose a location-priced quarter for structured practice, pods and progress tracking.
+          {formerClubMember && previousClubEnd
+            ? `Your previous Club period ended on ${formatDate(previousClubEnd)}. Choose a location to renew or rejoin.`
+            : "Choose a location-priced quarter for structured practice, pods and progress tracking."}
         </p>
         {!communityActive && (
           <p className="text-xs md:text-sm text-emerald-700 mt-2 font-medium">
@@ -89,7 +106,11 @@ export function ClubCard({ member, clubActive, communityActive }: Props) {
       <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:items-center">
         <Link href="/upgrade/club/readiness" className="block">
           <Button className="w-full sm:w-auto">
-            {communityActive ? "Upgrade to Club" : "Join Club"}
+            {formerClubMember
+              ? "Renew or rejoin Club"
+              : communityActive
+                ? "Upgrade to Club"
+                : "Join Club"}
           </Button>
         </Link>
         <Link

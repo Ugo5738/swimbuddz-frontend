@@ -10,11 +10,19 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AcademySection } from "./_billing/AcademySection";
 import { ClubCard } from "./_billing/ClubCard";
 import { CommunityCard } from "./_billing/CommunityCard";
+import { MembershipHistoryCard } from "./_billing/MembershipHistoryCard";
 import { OutstandingSessionFeesCard } from "./_billing/OutstandingSessionFeesCard";
 import { PaystackReturnAlerts } from "./_billing/PaystackReturnAlerts";
 import { PendingTransfersCard } from "./_billing/PendingTransfersCard";
 import { usePaystackReturn } from "./_billing/usePaystackReturn";
-import type { Cohort, Enrollment, Member, PaymentRecord, PricingConfig } from "./types";
+import type {
+  Cohort,
+  Enrollment,
+  Member,
+  MembershipHistory,
+  PaymentRecord,
+  PricingConfig,
+} from "./types";
 import { formatDate } from "./utils";
 
 export default function BillingPage() {
@@ -37,19 +45,24 @@ export default function BillingPage() {
   const [openCohorts, setOpenCohorts] = useState<Cohort[]>([]);
   const [myEnrollments, setMyEnrollments] = useState<Enrollment[]>([]);
   const [pendingTransfers, setPendingTransfers] = useState<PaymentRecord[]>([]);
+  const [membershipHistory, setMembershipHistory] = useState<MembershipHistory | null>(null);
 
   // Load member, pricing, payments. Stable identity (empty deps) so children
   // and hooks can call it without thrash.
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [memberData, pricingData, paymentsData] = await Promise.all([
+      const [memberData, pricingData, paymentsData, historyData] = await Promise.all([
         apiGet<Member>("/api/v1/members/me", { auth: true }),
         apiGet<PricingConfig>("/api/v1/payments/pricing"),
         apiGet<PaymentRecord[]>("/api/v1/payments/me", { auth: true }),
+        apiGet<MembershipHistory>("/api/v1/members/me/membership-history", {
+          auth: true,
+        }).catch(() => null),
       ]);
       setMember(memberData);
       setPricing(pricingData);
+      setMembershipHistory(historyData);
 
       // Filter for pending manual transfers (pending or pending_review status with manual_transfer method)
       const pending = paymentsData.filter(
@@ -263,7 +276,14 @@ export default function BillingPage() {
         communityFee={communityFee}
       />
 
-      <ClubCard member={member} clubActive={clubActive} communityActive={communityActive} />
+      <ClubCard
+        member={member}
+        clubActive={clubActive}
+        communityActive={communityActive}
+        history={membershipHistory}
+      />
+
+      <MembershipHistoryCard history={membershipHistory} />
 
       <AcademySection
         myEnrollments={myEnrollments}

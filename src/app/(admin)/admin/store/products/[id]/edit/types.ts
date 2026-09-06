@@ -25,6 +25,8 @@ export interface Variant {
   name: string | null;
   options: Record<string, string>;
   price_override_ngn: number | null;
+  cost_price_ngn: number | null;
+  weight_grams: number | null;
   is_active: boolean;
   quantity_available?: number;
   quantity_on_hand?: number;

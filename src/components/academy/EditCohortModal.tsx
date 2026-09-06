@@ -110,6 +110,11 @@ export function EditCohortModal({
     notes_internal: cohort.notes_internal || "",
     allow_mid_entry: cohort.allow_mid_entry || false,
     admin_dropout_approval: cohort.admin_dropout_approval || false,
+    price_override: cohort.price_override ?? null,
+    membership_policy_override: cohort.membership_policy_override ?? null,
+    installment_plan_enabled: cohort.installment_plan_enabled ?? false,
+    installment_count: cohort.installment_count ?? null,
+    installment_deposit_amount: cohort.installment_deposit_amount ?? null,
   });
 
   // Update form data when cohort changes
@@ -127,6 +132,11 @@ export function EditCohortModal({
       notes_internal: cohort.notes_internal || "",
       allow_mid_entry: cohort.allow_mid_entry || false,
       admin_dropout_approval: cohort.admin_dropout_approval || false,
+      price_override: cohort.price_override ?? null,
+      membership_policy_override: cohort.membership_policy_override ?? null,
+      installment_plan_enabled: cohort.installment_plan_enabled ?? false,
+      installment_count: cohort.installment_count ?? null,
+      installment_deposit_amount: cohort.installment_deposit_amount ?? null,
     });
     setShiftLinkedTimeline(true);
     setShiftReason("");
@@ -274,6 +284,11 @@ export function EditCohortModal({
             notes_internal: formData.notes_internal,
             allow_mid_entry: formData.allow_mid_entry,
             admin_dropout_approval: formData.admin_dropout_approval,
+            price_override: formData.price_override,
+            membership_policy_override: formData.membership_policy_override,
+            installment_plan_enabled: formData.installment_plan_enabled,
+            installment_count: formData.installment_count,
+            installment_deposit_amount: formData.installment_deposit_amount,
           }
         : formData;
 
@@ -299,7 +314,7 @@ export function EditCohortModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Edit Cohort">
+    <Modal isOpen={isOpen} onClose={onClose} title="Edit Cohort" size="wide">
       <form
         onSubmit={handleSubmit}
         className="space-y-4 max-h-[70vh] overflow-y-auto pr-2"
@@ -529,6 +544,117 @@ export function EditCohortModal({
           >
             Require admin approval for dropouts
           </label>
+        </div>
+
+        <div className="space-y-4 border-t pt-4">
+          <div>
+            <h4 className="text-sm font-semibold text-slate-900">Pricing and membership</h4>
+            <p className="mt-1 text-xs text-slate-500">
+              These settings apply to new checkouts. Existing paid enrollments keep their price
+              snapshot.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label="Price Override (₦)"
+              type="number"
+              min={0}
+              value={formData.price_override ?? ""}
+              onChange={(event) =>
+                setFormData({
+                  ...formData,
+                  price_override: event.target.value ? Number(event.target.value) : null,
+                })
+              }
+              placeholder={
+                cohort.program?.price_amount
+                  ? `Programme price: ₦${cohort.program.price_amount.toLocaleString()}`
+                  : "Use programme price"
+              }
+              hint="Leave empty to use the programme price."
+            />
+            <Select
+              label="Annual membership policy"
+              value={formData.membership_policy_override ?? ""}
+              onChange={(event) =>
+                setFormData({
+                  ...formData,
+                  membership_policy_override:
+                    (event.target.value as "open" | "active_required" | "included") || null,
+                })
+              }
+              hint="Leave inherited unless this cohort has different terms."
+            >
+              <option value="">Use programme policy</option>
+              <option value="open">Open — no annual Membership required</option>
+              <option value="active_required">
+                Active Membership required — add annual fee if due
+              </option>
+              <option value="included">Included in the Academy price</option>
+            </Select>
+          </div>
+        </div>
+
+        <div className="space-y-4 border-t pt-4">
+          <div>
+            <h4 className="text-sm font-semibold text-slate-900">Installment plan</h4>
+            <p className="mt-1 text-xs text-slate-500">
+              Changes affect members who choose installments after this update. Existing schedules
+              are not rewritten.
+            </p>
+          </div>
+          <label className="flex items-start gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={formData.installment_plan_enabled}
+              onChange={(event) =>
+                setFormData({
+                  ...formData,
+                  installment_plan_enabled: event.target.checked,
+                  ...(!event.target.checked
+                    ? { installment_count: null, installment_deposit_amount: null }
+                    : {}),
+                })
+              }
+              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+            />
+            <span>Allow members to choose installment payments</span>
+          </label>
+          {formData.installment_plan_enabled ? (
+            <div className="grid gap-4 rounded-lg border border-cyan-100 bg-cyan-50/50 p-4 sm:grid-cols-2">
+              <Input
+                label="Installment Count (override)"
+                type="number"
+                min={2}
+                max={12}
+                value={formData.installment_count ?? ""}
+                onChange={(event) =>
+                  setFormData({
+                    ...formData,
+                    installment_count: event.target.value ? Number(event.target.value) : null,
+                  })
+                }
+                placeholder="Auto-computed"
+                hint="Leave empty to derive it from the programme duration."
+              />
+              <Input
+                label="Deposit / First Installment (₦)"
+                type="number"
+                min={0}
+                value={formData.installment_deposit_amount ?? ""}
+                onChange={(event) =>
+                  setFormData({
+                    ...formData,
+                    installment_deposit_amount: event.target.value
+                      ? Number(event.target.value)
+                      : null,
+                  })
+                }
+                placeholder="Even split"
+                hint="Leave empty for the automatic split."
+              />
+            </div>
+          ) : null}
         </div>
 
         <Textarea
