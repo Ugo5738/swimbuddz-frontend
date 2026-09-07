@@ -30,9 +30,9 @@ export default function CommunityExperiencesPage() {
           calculated before payment.
         </p>
       </header>
-      <Alert title="Transparent quarterly rates">
-        Standard member: ₦50,000. Active Club member buying later: ₦40,000. Bought with the current
-        Club quarter: ₦30,000.
+      <Alert title="A separate Community offering">
+        Experiences may be a day out or a multi-day trip. Each offering has its own member,
+        Club and guest prices. Review the actual Events and your party before paying.
       </Alert>
       {experiences.error ? <Alert variant="error">{experiences.error}</Alert> : null}
       <div className="space-y-4">
@@ -50,7 +50,7 @@ export default function CommunityExperiencesPage() {
             </div>
             <Button
               onClick={() =>
-                router.push(`/checkout?purpose=community_experience&offering_id=${experience.id}`)
+                router.push(`/experiences/${experience.id}`)
               }
             >
               Review my price

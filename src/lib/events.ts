@@ -7,6 +7,7 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from "./api";
 
 export interface EventResponse {
+  community_experience_offering_id?: string | null;
   id: string;
   title: string;
   description: string | null;
