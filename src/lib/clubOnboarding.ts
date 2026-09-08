@@ -44,6 +44,7 @@ export type ClubPlan = {
   recommended_fee_kobo?: number;
   published_at?: string | null;
   source_plan_id?: string | null;
+  source_template_id?: string | null;
   period_start: string;
   period_end: string;
   minimum_entry_sessions: number;

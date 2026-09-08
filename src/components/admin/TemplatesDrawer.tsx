@@ -17,6 +17,8 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Calendar, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useApi } from "@/hooks/useApi";
+import type { Club } from "@/lib/clubs";
 
 import { IBtn } from "@/app/(admin)/admin/sessions/components";
 import type { RideArea, RideShareConfigEntry, Template } from "@/app/(admin)/admin/sessions/types";
@@ -29,6 +31,9 @@ import { DAY_NAMES, locationLabel } from "@/app/(admin)/admin/sessions/utils";
  * the persisted Template record.
  */
 export type TemplateFormPayload = {
+  club_id?: string | null;
+  club_access_mode?: "plan_included" | "active_club" | "paid_addon";
+  pricing_settings?: Template["pricing_settings"];
   title: string;
   session_type: string;
   pool_id: string | null;
@@ -185,6 +190,8 @@ function TemplateFormInline({
   onUpdate: (id: string, data: TemplateFormPayload) => void;
 }) {
   const [form, setForm] = useState({
+    club_id: template?.club_id ?? (null as string | null),
+    club_access_mode: template?.club_access_mode ?? "plan_included",
     title: template?.title || "",
     session_type: template?.session_type || "club",
     // Prefer pool_id; legacy `location` enum kept for pre-registry templates.
@@ -198,6 +205,17 @@ function TemplateFormInline({
     pool_fee: template?.pool_fee || 2000,
     capacity: template?.capacity || 20,
     auto_generate: template?.auto_generate || false,
+  });
+  const clubs = useApi<Club[]>(
+    form.session_type === "club" ? "/api/v1/clubs?active_only=true" : null
+  );
+  const [pricing, setPricing] = useState({
+    pricing_expected_attendees: template?.pricing_settings?.pricing_expected_attendees ?? 20,
+    margin_type: template?.pricing_settings?.margin_type ?? "fixed_per_attendee",
+    margin_value: template?.pricing_settings?.margin_value ?? 0,
+    expected_staff: template?.pricing_settings?.expected_staff ?? 0,
+    lanes: template?.pricing_settings?.lanes ?? 1,
+    cost_lines: template?.pricing_settings?.cost_lines ?? [],
   });
   const [clubScope, setClubScope] = useState<"general" | "pod">(
     template?.pod_id ? "pod" : "general"
@@ -243,6 +261,9 @@ function TemplateFormInline({
     }
     const data: TemplateFormPayload = {
       ...form,
+      club_id: form.session_type === "club" ? form.club_id : null,
+      club_access_mode: form.session_type === "club" ? form.club_access_mode : "plan_included",
+      pricing_settings: form.session_type === "club" && form.club_id ? pricing : null,
       pod_id: form.session_type === "club" && clubScope === "pod" ? (form.pod_id ?? null) : null,
       ride_share_config: rideConfigs
         .filter((c) => c.ride_area_id)
@@ -292,6 +313,32 @@ function TemplateFormInline({
       {form.session_type === "club" && (
         <fieldset className="space-y-3">
           <legend className="text-sm font-medium text-slate-700">Club scope</legend>
+          <Select
+            label="Club location"
+            value={form.club_id ?? ""}
+            onChange={(e) => setForm({ ...form, club_id: e.target.value || null, pod_id: null })}
+          >
+            <option value="">Legacy / choose a Club for inherited pricing</option>
+            {clubs.data?.map((club) => (
+              <option key={club.id} value={club.id}>
+                {club.name}
+              </option>
+            ))}
+          </Select>
+          <Select
+            label="Club access"
+            value={form.club_access_mode}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                club_access_mode: e.target.value as NonNullable<Template["club_access_mode"]>,
+              })
+            }
+          >
+            <option value="plan_included">Included in a purchased quarter</option>
+            <option value="active_club">Extra practice for active Club members</option>
+            <option value="paid_addon">Paid add-on for active Club members</option>
+          </Select>
           <div
             className="grid grid-cols-2 rounded-md border border-slate-200 p-1"
             role="radiogroup"
@@ -329,15 +376,23 @@ function TemplateFormInline({
             <Select
               label="Pod"
               value={form.pod_id ?? ""}
-              onChange={(e) => setForm({ ...form, pod_id: e.target.value || null })}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  pod_id: e.target.value || null,
+                  club_id: pods.find((p) => p.id === e.target.value)?.club_id ?? form.club_id,
+                })
+              }
               required
             >
               <option value="">Select a pod</option>
-              {pods.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.label}
-                </option>
-              ))}
+              {pods
+                .filter((p) => !form.club_id || p.club_id === form.club_id)
+                .map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.label}
+                  </option>
+                ))}
             </Select>
           )}
         </fieldset>
@@ -382,6 +437,7 @@ function TemplateFormInline({
       <div className="grid grid-cols-2 gap-3">
         <Input
           label="Pool Fee (N)"
+          disabled={form.session_type === "club" && Boolean(form.club_id)}
           type="number"
           value={form.pool_fee}
           onChange={(e) => setForm({ ...form, pool_fee: parseInt(e.target.value) || 0 })}
@@ -395,6 +451,68 @@ function TemplateFormInline({
       </div>
 
       {/* Ride share config */}
+      {form.session_type === "club" && form.club_id && (
+        <fieldset className="space-y-3 rounded border p-3">
+          <legend>Inherited Session pricing</legend>
+          <p className="text-sm">
+            Each generated date gets current pool and operating rates, including configured
+            refreshments. The saved margin below is applied by the normal Session cost-plus engine;
+            the old Pool Fee is not copied.
+          </p>
+          <Input
+            label="Expected attendees"
+            type="number"
+            min="1"
+            max="500"
+            required
+            value={pricing.pricing_expected_attendees}
+            onChange={(e) =>
+              setPricing({ ...pricing, pricing_expected_attendees: Number(e.target.value) })
+            }
+          />
+          <Select
+            label="Margin basis"
+            value={pricing.margin_type}
+            onChange={(e) =>
+              setPricing({ ...pricing, margin_type: e.target.value as typeof pricing.margin_type })
+            }
+          >
+            <option value="fixed_per_attendee">Fixed ₦ per attendee</option>
+            <option value="percentage">Percentage</option>
+          </Select>
+          <Input
+            label="Margin value (₦ or %)"
+            type="number"
+            min="0"
+            step="0.01"
+            required
+            value={pricing.margin_value}
+            onChange={(e) => setPricing({ ...pricing, margin_value: Number(e.target.value) })}
+          />
+          <Input
+            label="Expected staff"
+            type="number"
+            min="0"
+            max="50"
+            required
+            value={pricing.expected_staff}
+            onChange={(e) => setPricing({ ...pricing, expected_staff: Number(e.target.value) })}
+          />
+          <Input
+            label="Lanes"
+            type="number"
+            min="1"
+            max="50"
+            required
+            value={pricing.lanes}
+            onChange={(e) => setPricing({ ...pricing, lanes: Number(e.target.value) })}
+          />
+          <p className="text-sm">
+            Existing template-specific ancillary cost lines are preserved. Review the generated
+            Session’s detailed cost lines before publication.
+          </p>
+        </fieldset>
+      )}
       <div className="border-t border-slate-200 pt-4">
         <div className="mb-2 flex items-center justify-between">
           <span className="text-sm font-medium text-slate-700">Ride Share (optional)</span>

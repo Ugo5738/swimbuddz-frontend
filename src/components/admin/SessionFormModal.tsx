@@ -17,6 +17,9 @@ import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { apiGet } from "@/lib/api";
+import { useApi } from "@/hooks/useApi";
+import type { Club } from "@/lib/clubs";
+import { RescheduleClubPractice } from "@/components/club/RescheduleClubPractice";
 import { PoolPricingApi } from "@/lib/poolPricing";
 import { Calculator, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -82,6 +85,8 @@ export function SessionFormModal({
   const defaultEnd = new Date(defaultStart.getTime() + 3 * 60 * 60 * 1000);
 
   const [form, setForm] = useState({
+    club_id: session?.club_id ?? (null as string | null),
+    club_access_mode: session?.club_access_mode ?? "plan_included",
     title: session?.title || "",
     session_type: session?.session_type || "club",
     // Preferred: pool_id from the registry. Keep location (legacy enum) and
@@ -122,6 +127,9 @@ export function SessionFormModal({
     session?.pod_id ? "pod" : "general"
   );
   const [volunteerNeeds, setVolunteerNeeds] = useState<VolunteerNeedDraft[]>([]);
+  const clubs = useApi<Club[]>(
+    form.session_type === "club" ? "/api/v1/clubs?active_only=true" : null
+  );
 
   // Lazy-load active pods only when session_type is "club" — avoids the
   // round-trip for academy/community/event sessions where pod_id doesn't
@@ -318,6 +326,8 @@ export function SessionFormModal({
     }
 
     const sessionData: SessionPayload = {
+      club_id: form.session_type === "club" ? form.club_id : null,
+      club_access_mode: form.session_type === "club" ? form.club_access_mode : "plan_included",
       title: form.title,
       session_type: form.session_type,
       // Send ONLY the context FK that matches the session_type so we
@@ -338,8 +348,7 @@ export function SessionFormModal({
         form.session_type === "club" && form.allows_community_dropins
           ? form.community_dropin_fee
           : null,
-      allows_community_dropins:
-        form.session_type === "club" && form.allows_community_dropins,
+      allows_community_dropins: form.session_type === "club" && form.allows_community_dropins,
       capacity: form.capacity,
       pricing_mode: form.pricing_mode,
       pricing_expected_attendees: form.pricing_expected_attendees,
@@ -371,514 +380,557 @@ export function SessionFormModal({
   };
 
   const formContent = (
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <Input
-          label="Title"
-          value={form.title}
-          onChange={(e) => setForm({ ...form, title: e.target.value })}
-          required
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <Input
+        label="Title"
+        value={form.title}
+        onChange={(e) => setForm({ ...form, title: e.target.value })}
+        required
+      />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Select
+          label="Session Type"
+          value={form.session_type}
+          onChange={(e) => setForm({ ...form, session_type: e.target.value as SessionType })}
+        >
+          <option value="club">Club</option>
+          <option value="cohort_class">Academy / Cohort Class</option>
+          <option value="community">Community</option>
+          <option value="event">Event</option>
+        </Select>
+        <PoolPicker
+          label="Pool"
+          value={form.pool_id}
+          onChange={(poolId, poolName) =>
+            setForm({
+              ...form,
+              pool_id: poolId,
+              location_name: poolName ?? null,
+            })
+          }
+          hint="Managed at Admin → Pool Registry."
         />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Select
-            label="Session Type"
-            value={form.session_type}
-            onChange={(e) => setForm({ ...form, session_type: e.target.value as SessionType })}
-          >
-            <option value="club">Club</option>
-            <option value="cohort_class">Academy / Cohort Class</option>
-            <option value="community">Community</option>
-            <option value="event">Event</option>
-          </Select>
-          <PoolPicker
-            label="Pool"
-            value={form.pool_id}
-            onChange={(poolId, poolName) =>
-              setForm({
-                ...form,
-                pool_id: poolId,
-                location_name: poolName ?? null,
-              })
-            }
-            hint="Managed at Admin → Pool Registry."
-          />
-        </div>
-        {/* Cohort link — REQUIRED for Academy / Cohort Class sessions
+      </div>
+      {/* Cohort link — REQUIRED for Academy / Cohort Class sessions
             (discriminator rule). Without it the backend rejects the
             session. Only active/upcoming cohorts are listed. */}
-        {form.session_type === "cohort_class" && (
-          <Select
-            label="Cohort"
-            value={form.cohort_id ?? ""}
-            onChange={(e) => setForm({ ...form, cohort_id: e.target.value || null })}
-            required
-            hint="Which academy cohort is this class for?"
-          >
-            <option value="">— Select a cohort —</option>
-            {cohorts.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.label}
-              </option>
-            ))}
-          </Select>
-        )}
-        {/* Event link — REQUIRED for Event sessions (discriminator rule). */}
-        {form.session_type === "event" && (
-          <Select
-            label="Event"
-            value={form.event_id ?? ""}
-            onChange={(e) => setForm({ ...form, event_id: e.target.value || null })}
-            required
-            hint="Which community event is this session part of?"
-          >
-            <option value="">— Select an event —</option>
-            {events.map((ev) => (
-              <option key={ev.id} value={ev.id}>
-                {ev.label}
-              </option>
-            ))}
-          </Select>
-        )}
-        {/* Pod link — only meaningful for Club sessions. NULL = general
+      {form.session_type === "cohort_class" && (
+        <Select
+          label="Cohort"
+          value={form.cohort_id ?? ""}
+          onChange={(e) => setForm({ ...form, cohort_id: e.target.value || null })}
+          required
+          hint="Which academy cohort is this class for?"
+        >
+          <option value="">— Select a cohort —</option>
+          {cohorts.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.label}
+            </option>
+          ))}
+        </Select>
+      )}
+      {/* Event link — REQUIRED for Event sessions (discriminator rule). */}
+      {form.session_type === "event" && (
+        <Select
+          label="Event"
+          value={form.event_id ?? ""}
+          onChange={(e) => setForm({ ...form, event_id: e.target.value || null })}
+          required
+          hint="Which community event is this session part of?"
+        >
+          <option value="">— Select an event —</option>
+          {events.map((ev) => (
+            <option key={ev.id} value={ev.id}>
+              {ev.label}
+            </option>
+          ))}
+        </Select>
+      )}
+      {/* Pod link — only meaningful for Club sessions. NULL = general
             Club session open to any club member. Set = scheduled for that
             specific pod's roster (Saturday for Dolphins, etc). */}
-        {form.session_type === "club" && (
-          <fieldset className="space-y-3">
-            <legend className="text-sm font-medium text-slate-700">Club scope</legend>
-            <div
-              className="grid grid-cols-2 rounded-md border border-slate-200 p-1"
-              role="radiogroup"
-              aria-label="Club session scope"
+      {form.session_type === "club" && (
+        <fieldset className="space-y-3" disabled={Boolean(session?.published_at)}>
+          <legend className="text-sm font-medium text-slate-700">Club scope</legend>
+          <Select
+            label="Club location"
+            value={form.club_id ?? ""}
+            onChange={(e) => setForm({ ...form, club_id: e.target.value || null, pod_id: null })}
+          >
+            <option value="">Legacy / choose location</option>
+            {clubs.data?.map((club) => (
+              <option key={club.id} value={club.id}>
+                {club.name}
+              </option>
+            ))}
+          </Select>
+          <Select
+            label="Club access mode"
+            value={form.club_access_mode}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                club_access_mode: e.target.value as NonNullable<Session["club_access_mode"]>,
+              })
+            }
+          >
+            <option value="plan_included">Purchased-quarter inclusion (link to plan)</option>
+            <option value="active_club">
+              Extra practice included for active prepaid Club members
+            </option>
+            <option value="paid_addon">Paid add-on for active Club members</option>
+          </Select>
+          <div
+            className="grid grid-cols-2 rounded-md border border-slate-200 p-1"
+            role="radiogroup"
+            aria-label="Club session scope"
+          >
+            <button
+              type="button"
+              role="radio"
+              aria-checked={clubScope === "general"}
+              onClick={() => {
+                setClubScope("general");
+                setForm({ ...form, pod_id: null });
+              }}
+              className={`min-h-10 rounded px-3 py-2 text-sm font-medium transition ${
+                clubScope === "general"
+                  ? "bg-cyan-700 text-white"
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}
             >
-              <button
-                type="button"
-                role="radio"
-                aria-checked={clubScope === "general"}
-                onClick={() => {
-                  setClubScope("general");
-                  setForm({ ...form, pod_id: null });
-                }}
-                className={`min-h-10 rounded px-3 py-2 text-sm font-medium transition ${
-                  clubScope === "general"
-                    ? "bg-cyan-700 text-white"
-                    : "text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                General Club
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={clubScope === "pod"}
-                onClick={() => setClubScope("pod")}
-                className={`min-h-10 rounded px-3 py-2 text-sm font-medium transition ${
-                  clubScope === "pod"
-                    ? "bg-cyan-700 text-white"
-                    : "text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                Pod-specific
-              </button>
-            </div>
-            {clubScope === "pod" && (
-              <Select
-                label="Pod"
-                value={form.pod_id ?? ""}
-                onChange={(e) => setForm({ ...form, pod_id: e.target.value || null })}
-                required
-              >
-                <option value="">Select a pod</option>
-                {pods.map((p) => (
+              General Club
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={clubScope === "pod"}
+              onClick={() => setClubScope("pod")}
+              className={`min-h-10 rounded px-3 py-2 text-sm font-medium transition ${
+                clubScope === "pod" ? "bg-cyan-700 text-white" : "text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              Pod-specific
+            </button>
+          </div>
+          {clubScope === "pod" && (
+            <Select
+              label="Pod"
+              value={form.pod_id ?? ""}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  pod_id: e.target.value || null,
+                  club_id: pods.find((p) => p.id === e.target.value)?.club_id ?? form.club_id,
+                })
+              }
+              required
+            >
+              <option value="">Select a pod</option>
+              {pods
+                .filter((p) => !form.club_id || p.club_id === form.club_id)
+                .map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.label}
                   </option>
                 ))}
-              </Select>
-            )}
-          </fieldset>
-        )}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Input
-            label="Start Time"
-            type="datetime-local"
-            value={form.starts_at}
-            onChange={(e) => setForm({ ...form, starts_at: e.target.value })}
-            required
-          />
-          <Input
-            label="End Time"
-            type="datetime-local"
-            value={form.ends_at}
-            onChange={(e) => setForm({ ...form, ends_at: e.target.value })}
-            required
-          />
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Input
-            label="Booking price per attendee (₦)"
-            type="number"
-            min={0}
-            step="0.01"
-            value={
-              form.pricing_mode === "cost_plus"
-                ? Number(costPlusBookingPrice.toFixed(2))
-                : form.pool_fee
+            </Select>
+          )}
+        </fieldset>
+      )}
+      {session?.published_at && session.session_type === "club" && (
+        <RescheduleClubPractice
+          sessionId={session.id}
+          onChanged={async () => {
+            const updated = await apiGet<Session>(`/api/v1/sessions/${session.id}`, { auth: true });
+            setForm((old) => ({
+              ...old,
+              starts_at: formatDateTimeLocal(new Date(updated.starts_at)),
+              ends_at: formatDateTimeLocal(new Date(updated.ends_at)),
+            }));
+          }}
+        />
+      )}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Input
+          label="Start Time"
+          disabled={session?.session_type === "club" && Boolean(session?.published_at)}
+          type="datetime-local"
+          value={form.starts_at}
+          onChange={(e) => setForm({ ...form, starts_at: e.target.value })}
+          required
+        />
+        <Input
+          label="End Time"
+          disabled={session?.session_type === "club" && Boolean(session?.published_at)}
+          type="datetime-local"
+          value={form.ends_at}
+          onChange={(e) => setForm({ ...form, ends_at: e.target.value })}
+          required
+        />
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Input
+          label="Booking price per attendee (₦)"
+          type="number"
+          min={0}
+          step="0.01"
+          value={
+            form.pricing_mode === "cost_plus"
+              ? Number(costPlusBookingPrice.toFixed(2))
+              : form.pool_fee
+          }
+          onChange={(e) => setForm({ ...form, pool_fee: parseInt(e.target.value) || 0 })}
+          disabled={form.pricing_mode === "cost_plus"}
+          required
+        />
+        <Input
+          label="Capacity"
+          type="number"
+          value={form.capacity}
+          onChange={(e) => setForm({ ...form, capacity: parseInt(e.target.value) || 0 })}
+          required
+        />
+      </div>
+      <div className="grid grid-cols-1 gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4 sm:grid-cols-3">
+        <Input
+          label="Guest rate (₦)"
+          type="number"
+          min={0}
+          value={form.guest_fee}
+          onChange={(e) => setForm({ ...form, guest_fee: parseInt(e.target.value) || 0 })}
+          hint="Independent trial/guest rate. Zero uses the normal booking price."
+        />
+        <Input
+          label="Community drop-in (₦)"
+          type="number"
+          min={0}
+          value={form.community_dropin_fee}
+          onChange={(e) =>
+            setForm({ ...form, community_dropin_fee: parseInt(e.target.value) || 0 })
+          }
+          hint="Independent from the guest rate, even when both currently match."
+        />
+      </div>
+      {form.session_type === "club" ? (
+        <label className="flex items-start gap-3 rounded-xl border border-cyan-100 bg-cyan-50 p-4 text-sm text-cyan-950">
+          <input
+            type="checkbox"
+            checked={form.allows_community_dropins}
+            onChange={(event) =>
+              setForm({ ...form, allows_community_dropins: event.target.checked })
             }
-            onChange={(e) => setForm({ ...form, pool_fee: parseInt(e.target.value) || 0 })}
-            disabled={form.pricing_mode === "cost_plus"}
-            required
+            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-cyan-700"
           />
-          <Input
-            label="Capacity"
-            type="number"
-            value={form.capacity}
-            onChange={(e) => setForm({ ...form, capacity: parseInt(e.target.value) || 0 })}
-            required
-          />
+          <span>
+            <span className="block font-semibold">Allow Community drop-ins</span>
+            Active annual SwimBuddz Membership is required. When enabled, the backend charges the
+            Community drop-in rate above and applies normal capacity limits.
+          </span>
+        </label>
+      ) : null}
+      <fieldset className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+        <div>
+          <legend className="text-sm font-semibold text-slate-900">
+            How should the booking price be set?
+          </legend>
+          <p className="mt-1 text-xs text-slate-500">
+            Use a manual price for the usual quick setup. Use cost plus margin when you want the
+            system to calculate a sustainable price from pool, staffing, lane, and other costs.
+          </p>
         </div>
-        <div className="grid grid-cols-1 gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4 sm:grid-cols-3">
-          <Input
-            label="Guest rate (₦)"
-            type="number"
-            min={0}
-            value={form.guest_fee}
-            onChange={(e) => setForm({ ...form, guest_fee: parseInt(e.target.value) || 0 })}
-            hint="Independent trial/guest rate. Zero uses the normal booking price."
-          />
-          <Input
-            label="Community drop-in (₦)"
-            type="number"
-            min={0}
-            value={form.community_dropin_fee}
-            onChange={(e) =>
-              setForm({ ...form, community_dropin_fee: parseInt(e.target.value) || 0 })
-            }
-            hint="Independent from the guest rate, even when both currently match."
-          />
-        </div>
-        {form.session_type === "club" ? (
-          <label className="flex items-start gap-3 rounded-xl border border-cyan-100 bg-cyan-50 p-4 text-sm text-cyan-950">
-            <input
-              type="checkbox"
-              checked={form.allows_community_dropins}
-              onChange={(event) =>
-                setForm({ ...form, allows_community_dropins: event.target.checked })
-              }
-              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-cyan-700"
-            />
-            <span>
-              <span className="block font-semibold">Allow Community drop-ins</span>
-              Active annual SwimBuddz Membership is required. When enabled, the backend charges
-              the Community drop-in rate above and applies normal capacity limits.
-            </span>
-          </label>
-        ) : null}
-        <fieldset className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-          <div>
-            <legend className="text-sm font-semibold text-slate-900">
-              How should the booking price be set?
-            </legend>
-            <p className="mt-1 text-xs text-slate-500">
-              Use a manual price for the usual quick setup. Use cost plus margin when you want the
-              system to calculate a sustainable price from pool, staffing, lane, and other costs.
-            </p>
+        <Select
+          label="Pricing method"
+          value={form.pricing_mode}
+          onChange={(e) =>
+            setForm({
+              ...form,
+              pricing_mode: e.target.value as "manual" | "cost_plus",
+            })
+          }
+        >
+          <option value="manual">Set one booking price manually</option>
+          <option value="cost_plus">Calculate from costs + margin</option>
+        </Select>
+
+        {form.pricing_mode === "manual" ? (
+          <div className="rounded-lg border border-cyan-100 bg-white p-3 text-sm text-slate-600">
+            Enter the amount each member pays in <strong>Booking price per attendee </strong>
+            above. Capacity controls how many places can be booked; no cost breakdown is needed.
           </div>
-          <Select
-            label="Pricing method"
-            value={form.pricing_mode}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                pricing_mode: e.target.value as "manual" | "cost_plus",
-              })
-            }
-          >
-            <option value="manual">Set one booking price manually</option>
-            <option value="cost_plus">Calculate from costs + margin</option>
-          </Select>
-
-          {form.pricing_mode === "manual" ? (
-            <div className="rounded-lg border border-cyan-100 bg-white p-3 text-sm text-slate-600">
-              Enter the amount each member pays in <strong>Booking price per attendee </strong>
-              above. Capacity controls how many places can be booked; no cost breakdown is needed.
+        ) : (
+          <>
+            <div className="rounded-lg border border-cyan-100 bg-white p-3 text-xs leading-5 text-slate-600">
+              <strong>1.</strong> Enter expected attendance, staff, and lanes. <strong>2.</strong>{" "}
+              Load the pool rates or add costs yourself. <strong>3.</strong> Choose the margin. The
+              calculated booking price is shown above and in the summary below.
             </div>
-          ) : (
-            <>
-              <div className="rounded-lg border border-cyan-100 bg-white p-3 text-xs leading-5 text-slate-600">
-                <strong>1.</strong> Enter expected attendance, staff, and lanes. <strong>2.</strong>{" "}
-                Load the pool rates or add costs yourself. <strong>3.</strong> Choose the margin.
-                The calculated booking price is shown above and in the summary below.
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Input
-                  label="Expected attendees"
-                  type="number"
-                  min={1}
-                  value={form.pricing_expected_attendees}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      pricing_expected_attendees: Math.max(parseInt(e.target.value) || 1, 1),
-                    })
-                  }
-                />
-                <div className="flex items-end">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => void loadCostQuote()}
-                    disabled={quoting || !form.pool_id}
-                    className="w-full"
-                  >
-                    <Calculator className="mr-2 h-4 w-4" />
-                    {quoting ? "Loading..." : `Load ${activityScope} rates`}
-                  </Button>
-                </div>
-                <Input
-                  label="Expected staff"
-                  type="number"
-                  min={0}
-                  value={quoteStaff}
-                  onChange={(e) => setQuoteStaff(Math.max(parseInt(e.target.value) || 0, 0))}
-                />
-                <Input
-                  label="Lanes"
-                  type="number"
-                  min={1}
-                  value={quoteLanes}
-                  onChange={(e) => setQuoteLanes(Math.max(parseInt(e.target.value) || 1, 1))}
-                />
-              </div>
-
-              <div className="space-y-3">
-                {form.cost_lines.map((line, index) => (
-                  <div
-                    key={`${line.category}-${index}`}
-                    className="grid gap-3 border-t border-slate-100 pt-3 sm:grid-cols-[1fr_1fr_7rem_7rem_2.5rem]"
-                  >
-                    <Input
-                      label={index === 0 ? "Cost" : undefined}
-                      value={line.description}
-                      onChange={(e) => updateCostLine(index, "description", e.target.value)}
-                    />
-                    <Select
-                      label={index === 0 ? "Basis" : undefined}
-                      value={line.charge_basis}
-                      onChange={(e) =>
-                        updateCostLine(
-                          index,
-                          "charge_basis",
-                          e.target.value as SessionCostLine["charge_basis"]
-                        )
-                      }
-                    >
-                      <option value="per_attendee">Per attendee</option>
-                      <option value="per_staff">Per staff</option>
-                      <option value="per_hour">Per hour</option>
-                      <option value="per_lane">Per lane</option>
-                      <option value="flat_session">Flat session</option>
-                    </Select>
-                    <Input
-                      label={index === 0 ? "Unit (₦)" : undefined}
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={line.unit_cost_naira}
-                      onChange={(e) =>
-                        updateCostLine(index, "unit_cost_naira", Number(e.target.value) || 0)
-                      }
-                    />
-                    <Input
-                      label={index === 0 ? "Qty" : undefined}
-                      type="number"
-                      min={0}
-                      step="0.25"
-                      value={line.quantity}
-                      onChange={(e) =>
-                        updateCostLine(index, "quantity", Number(e.target.value) || 0)
-                      }
-                    />
-                    <div className="flex items-end">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setForm({
-                            ...form,
-                            cost_lines: form.cost_lines.filter(
-                              (_, lineIndex) => lineIndex !== index
-                            ),
-                          })
-                        }
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-md text-red-600 hover:bg-red-50"
-                        title="Remove cost"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Input
+                label="Expected attendees"
+                type="number"
+                min={1}
+                value={form.pricing_expected_attendees}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    pricing_expected_attendees: Math.max(parseInt(e.target.value) || 1, 1),
+                  })
+                }
+              />
+              <div className="flex items-end">
                 <Button
                   type="button"
                   variant="secondary"
-                  onClick={() =>
-                    setForm({
-                      ...form,
-                      cost_lines: [
-                        ...form.cost_lines,
-                        {
-                          category: "other",
-                          description: "Other cost",
-                          charge_basis: "flat_session",
-                          unit_cost_naira: 0,
-                          quantity: 1,
-                        },
-                      ],
-                    })
-                  }
+                  onClick={() => void loadCostQuote()}
+                  disabled={quoting || !form.pool_id}
+                  className="w-full"
                 >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add cost
+                  <Calculator className="mr-2 h-4 w-4" />
+                  {quoting ? "Loading..." : `Load ${activityScope} rates`}
                 </Button>
               </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Select
-                  label="Margin method"
-                  value={form.margin_type}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      margin_type: e.target.value as "fixed_per_attendee" | "percentage",
-                    })
-                  }
-                >
-                  <option value="fixed_per_attendee">Fixed per attendee</option>
-                  <option value="percentage">Percentage of cost</option>
-                </Select>
-                <Input
-                  label={
-                    form.margin_type === "percentage" ? "Margin (%)" : "Margin per attendee (₦)"
-                  }
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={form.margin_value}
-                  onChange={(e) => setForm({ ...form, margin_value: Number(e.target.value) || 0 })}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 text-sm sm:grid-cols-4">
-                <Metric label="Total cost" value={estimatedTotalCost} />
-                <Metric label="Cost / attendee" value={estimatedCostPerAttendee} />
-                <Metric label="Margin / attendee" value={marginPerAttendee} />
-                <Metric label="Booking price" value={costPlusBookingPrice} />
-              </div>
-            </>
-          )}
-        </fieldset>
-        <Textarea
-          label="Description (optional)"
-          value={form.description}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
-        />
-
-        {mode === "create" && (
-          <Select
-            label="Status"
-            value={form.publish_status}
-            onChange={(e) =>
-              setForm({ ...form, publish_status: e.target.value as "draft" | "published" })
-            }
-          >
-            <option value="draft">Draft</option>
-            <option value="published">Published (visible to members immediately)</option>
-          </Select>
-        )}
-
-        {mode === "edit" && session && (
-          <SessionVolunteerOpportunitiesSection sessionId={session.id} />
-        )}
-
-        <VolunteerNeedsDraftSection
-          needs={volunteerNeeds}
-          onChange={setVolunteerNeeds}
-          description={
-            mode === "create"
-              ? "Optional. Add roles only when this session needs volunteer support. They are opened to eligible members when the session is saved."
-              : "Optional. Add another role only when this session needs one. Current opportunities are shown above."
-          }
-          defaultStartTime={form.starts_at.slice(11, 16)}
-          defaultEndTime={form.ends_at.slice(11, 16)}
-        />
-
-        {/* Ride Share section */}
-        <div className="border-t border-slate-200 pt-4">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm font-medium text-slate-700">Ride Share Options</span>
-            <button
-              type="button"
-              onClick={addRideConfig}
-              className="text-sm text-cyan-600 hover:text-cyan-800"
-            >
-              + Add Ride Area
-            </button>
-          </div>
-          {rideConfigs.map((cfg, i) => (
-            <div key={i} className="mb-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-700">Ride Area {i + 1}</span>
-                <button
-                  type="button"
-                  onClick={() => removeRideConfig(i)}
-                  className="text-sm text-red-600 hover:text-red-800"
-                >
-                  Remove
-                </button>
-              </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Select
-                  label="Area"
-                  value={cfg.ride_area_id}
-                  onChange={(e) => updateRideConfig(i, "ride_area_id", e.target.value)}
-                  required
-                >
-                  <option value="">-- Select --</option>
-                  {rideAreas.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name} ({a.pickup_locations.length} stops)
-                    </option>
-                  ))}
-                </Select>
-                <Input
-                  label="Cost (N)"
-                  type="number"
-                  value={cfg.cost}
-                  onChange={(e) => updateRideConfig(i, "cost", parseFloat(e.target.value))}
-                />
-                <Input
-                  label="Capacity (seats)"
-                  type="number"
-                  value={cfg.capacity}
-                  onChange={(e) => updateRideConfig(i, "capacity", parseInt(e.target.value))}
-                />
-                <Input
-                  label="Departure Time"
-                  type="datetime-local"
-                  value={cfg.departure_time}
-                  onChange={(e) => updateRideConfig(i, "departure_time", e.target.value)}
-                />
-              </div>
+              <Input
+                label="Expected staff"
+                type="number"
+                min={0}
+                value={quoteStaff}
+                onChange={(e) => setQuoteStaff(Math.max(parseInt(e.target.value) || 0, 0))}
+              />
+              <Input
+                label="Lanes"
+                type="number"
+                min={1}
+                value={quoteLanes}
+                onChange={(e) => setQuoteLanes(Math.max(parseInt(e.target.value) || 1, 1))}
+              />
             </div>
-          ))}
-        </div>
 
-        <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={submitting}>
-            {submitting ? "Saving..." : mode === "create" ? "Create Session" : "Save Changes"}
-          </Button>
+            <div className="space-y-3">
+              {form.cost_lines.map((line, index) => (
+                <div
+                  key={`${line.category}-${index}`}
+                  className="grid gap-3 border-t border-slate-100 pt-3 sm:grid-cols-[1fr_1fr_7rem_7rem_2.5rem]"
+                >
+                  <Input
+                    label={index === 0 ? "Cost" : undefined}
+                    value={line.description}
+                    onChange={(e) => updateCostLine(index, "description", e.target.value)}
+                  />
+                  <Select
+                    label={index === 0 ? "Basis" : undefined}
+                    value={line.charge_basis}
+                    onChange={(e) =>
+                      updateCostLine(
+                        index,
+                        "charge_basis",
+                        e.target.value as SessionCostLine["charge_basis"]
+                      )
+                    }
+                  >
+                    <option value="per_attendee">Per attendee</option>
+                    <option value="per_staff">Per staff</option>
+                    <option value="per_hour">Per hour</option>
+                    <option value="per_lane">Per lane</option>
+                    <option value="flat_session">Flat session</option>
+                  </Select>
+                  <Input
+                    label={index === 0 ? "Unit (₦)" : undefined}
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={line.unit_cost_naira}
+                    onChange={(e) =>
+                      updateCostLine(index, "unit_cost_naira", Number(e.target.value) || 0)
+                    }
+                  />
+                  <Input
+                    label={index === 0 ? "Qty" : undefined}
+                    type="number"
+                    min={0}
+                    step="0.25"
+                    value={line.quantity}
+                    onChange={(e) => updateCostLine(index, "quantity", Number(e.target.value) || 0)}
+                  />
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm({
+                          ...form,
+                          cost_lines: form.cost_lines.filter((_, lineIndex) => lineIndex !== index),
+                        })
+                      }
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-md text-red-600 hover:bg-red-50"
+                      title="Remove cost"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() =>
+                  setForm({
+                    ...form,
+                    cost_lines: [
+                      ...form.cost_lines,
+                      {
+                        category: "other",
+                        description: "Other cost",
+                        charge_basis: "flat_session",
+                        unit_cost_naira: 0,
+                        quantity: 1,
+                      },
+                    ],
+                  })
+                }
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add cost
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Select
+                label="Margin method"
+                value={form.margin_type}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    margin_type: e.target.value as "fixed_per_attendee" | "percentage",
+                  })
+                }
+              >
+                <option value="fixed_per_attendee">Fixed per attendee</option>
+                <option value="percentage">Percentage of cost</option>
+              </Select>
+              <Input
+                label={form.margin_type === "percentage" ? "Margin (%)" : "Margin per attendee (₦)"}
+                type="number"
+                min={0}
+                step="0.01"
+                value={form.margin_value}
+                onChange={(e) => setForm({ ...form, margin_value: Number(e.target.value) || 0 })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 text-sm sm:grid-cols-4">
+              <Metric label="Total cost" value={estimatedTotalCost} />
+              <Metric label="Cost / attendee" value={estimatedCostPerAttendee} />
+              <Metric label="Margin / attendee" value={marginPerAttendee} />
+              <Metric label="Booking price" value={costPlusBookingPrice} />
+            </div>
+          </>
+        )}
+      </fieldset>
+      <Textarea
+        label="Description (optional)"
+        value={form.description}
+        onChange={(e) => setForm({ ...form, description: e.target.value })}
+      />
+
+      {mode === "create" && (
+        <Select
+          label="Status"
+          value={form.publish_status}
+          onChange={(e) =>
+            setForm({ ...form, publish_status: e.target.value as "draft" | "published" })
+          }
+        >
+          <option value="draft">Draft</option>
+          <option value="published">Published (visible to members immediately)</option>
+        </Select>
+      )}
+
+      {mode === "edit" && session && (
+        <SessionVolunteerOpportunitiesSection sessionId={session.id} />
+      )}
+
+      <VolunteerNeedsDraftSection
+        needs={volunteerNeeds}
+        onChange={setVolunteerNeeds}
+        description={
+          mode === "create"
+            ? "Optional. Add roles only when this session needs volunteer support. They are opened to eligible members when the session is saved."
+            : "Optional. Add another role only when this session needs one. Current opportunities are shown above."
+        }
+        defaultStartTime={form.starts_at.slice(11, 16)}
+        defaultEndTime={form.ends_at.slice(11, 16)}
+      />
+
+      {/* Ride Share section */}
+      <div className="border-t border-slate-200 pt-4">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-sm font-medium text-slate-700">Ride Share Options</span>
+          <button
+            type="button"
+            onClick={addRideConfig}
+            className="text-sm text-cyan-600 hover:text-cyan-800"
+          >
+            + Add Ride Area
+          </button>
         </div>
-      </form>
+        {rideConfigs.map((cfg, i) => (
+          <div key={i} className="mb-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-sm font-medium text-slate-700">Ride Area {i + 1}</span>
+              <button
+                type="button"
+                onClick={() => removeRideConfig(i)}
+                className="text-sm text-red-600 hover:text-red-800"
+              >
+                Remove
+              </button>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Select
+                label="Area"
+                value={cfg.ride_area_id}
+                onChange={(e) => updateRideConfig(i, "ride_area_id", e.target.value)}
+                required
+              >
+                <option value="">-- Select --</option>
+                {rideAreas.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name} ({a.pickup_locations.length} stops)
+                  </option>
+                ))}
+              </Select>
+              <Input
+                label="Cost (N)"
+                type="number"
+                value={cfg.cost}
+                onChange={(e) => updateRideConfig(i, "cost", parseFloat(e.target.value))}
+              />
+              <Input
+                label="Capacity (seats)"
+                type="number"
+                value={cfg.capacity}
+                onChange={(e) => updateRideConfig(i, "capacity", parseInt(e.target.value))}
+              />
+              <Input
+                label="Departure Time"
+                type="datetime-local"
+                value={cfg.departure_time}
+                onChange={(e) => updateRideConfig(i, "departure_time", e.target.value)}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex justify-end gap-3 pt-2">
+        <Button type="button" variant="secondary" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={submitting}>
+          {submitting ? "Saving..." : mode === "create" ? "Create Session" : "Save Changes"}
+        </Button>
+      </div>
+    </form>
   );
 
   if (presentation === "page") return formContent;
