@@ -105,6 +105,7 @@ export interface Session {
   cohort_id?: string;
   event_id?: string;
   pod_id?: string | null;
+  club_id?: string | null;
   booking_id?: string;
 
   // Cohort-specific

@@ -18959,6 +18959,8 @@ export interface components {
              * Format: date-time
              */
             at: string;
+            /** Club Id */
+            club_id?: string | null;
             /** Pool Id */
             pool_id?: string | null;
             /** Pod Id */
@@ -23545,6 +23547,8 @@ export interface components {
             location_name?: string | null;
             /** Cohort Id */
             cohort_id?: string | null;
+            /** Club Id */
+            club_id?: string | null;
             /** Pod Id */
             pod_id?: string | null;
             /** Event Id */
@@ -23630,6 +23634,8 @@ export interface components {
             location?: string | null;
             /** Cohort Id */
             cohort_id?: string | null;
+            /** Club Id */
+            club_id?: string | null;
             /** Pod Id */
             pod_id?: string | null;
             /** Capacity */
@@ -23898,6 +23904,8 @@ export interface components {
             cohort_id?: string | null;
             /** Event Id */
             event_id?: string | null;
+            /** Club Id */
+            club_id?: string | null;
             /** Pod Id */
             pod_id?: string | null;
             /** Week Number */
@@ -23961,6 +23969,10 @@ export interface components {
             location_name?: string | null;
             /** Location */
             location?: string | null;
+            /** Club Id */
+            club_id?: string | null;
+            /** Pod Id */
+            pod_id?: string | null;
         };
         /**
          * SessionLocation
@@ -24079,6 +24091,8 @@ export interface components {
             cohort_id?: string | null;
             /** Event Id */
             event_id?: string | null;
+            /** Club Id */
+            club_id?: string | null;
             /** Pod Id */
             pod_id?: string | null;
             /** Week Number */
@@ -24150,6 +24164,8 @@ export interface components {
             location_name?: string | null;
             /** @default community */
             session_type: components["schemas"]["SessionType"];
+            /** Club Id */
+            club_id?: string | null;
             /** Pod Id */
             pod_id?: string | null;
             /**
@@ -24203,6 +24219,8 @@ export interface components {
             location_name?: string | null;
             /** @default community */
             session_type: components["schemas"]["SessionType"];
+            /** Club Id */
+            club_id?: string | null;
             /** Pod Id */
             pod_id?: string | null;
             /**
@@ -24269,6 +24287,8 @@ export interface components {
             /** Location Name */
             location_name?: string | null;
             session_type?: components["schemas"]["SessionType"] | null;
+            /** Club Id */
+            club_id?: string | null;
             /** Pod Id */
             pod_id?: string | null;
             /** Pool Fee */
@@ -24346,6 +24366,8 @@ export interface components {
             cohort_id?: string | null;
             /** Event Id */
             event_id?: string | null;
+            /** Club Id */
+            club_id?: string | null;
             /** Pod Id */
             pod_id?: string | null;
             /** Week Number */

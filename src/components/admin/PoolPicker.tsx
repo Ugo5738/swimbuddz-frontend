@@ -83,6 +83,12 @@ async function fetchPools(
   return items;
 }
 
+/** Resolve a pool snapshot for programmatic defaults (for example Pod defaults). */
+export async function getPoolOption(poolId: string): Promise<PoolOption | null> {
+  const pools = await fetchPools(false);
+  return pools.find((pool) => pool.id === poolId) ?? null;
+}
+
 /**
  * Searchable pool dropdown. Type to filter, click to select.
  *

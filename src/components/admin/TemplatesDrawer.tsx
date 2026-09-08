@@ -6,8 +6,10 @@
 
 "use client";
 
+import { ClubSessionScopeFields } from "@/components/admin/ClubSessionScopeFields";
 import { PoolPicker } from "@/components/admin/PoolPicker";
 import { SessionTemplateVolunteerSlotsSection } from "@/components/admin/SessionTemplateVolunteerSlotsSection";
+import { useClubSessionScope } from "@/components/admin/useClubSessionScope";
 import {
   VolunteerNeedsDraftSection,
   type VolunteerNeedDraft,
@@ -16,7 +18,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Calendar, Pencil, Plus, Trash2, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { IBtn } from "@/app/(admin)/admin/sessions/components";
 import type { RideArea, RideShareConfigEntry, Template } from "@/app/(admin)/admin/sessions/types";
@@ -34,6 +36,7 @@ export type TemplateFormPayload = {
   pool_id: string | null;
   location: string | null;
   location_name: string | null;
+  club_id: string | null;
   pod_id: string | null;
   day_of_week: number;
   start_time: string;
@@ -191,6 +194,7 @@ function TemplateFormInline({
     pool_id: template?.pool_id ?? null,
     location: template?.location || null,
     location_name: template?.location_name ?? null,
+    club_id: template?.club_id ?? null,
     pod_id: template?.pod_id ?? null,
     day_of_week: template?.day_of_week ?? 5,
     start_time: template?.start_time || "09:00",
@@ -199,10 +203,21 @@ function TemplateFormInline({
     capacity: template?.capacity || 20,
     auto_generate: template?.auto_generate || false,
   });
-  const [clubScope, setClubScope] = useState<"general" | "pod">(
-    template?.pod_id ? "pod" : "general"
-  );
   const [volunteerNeeds, setVolunteerNeeds] = useState<VolunteerNeedDraft[]>([]);
+  const {
+    scope: clubScope,
+    selectedPod,
+    podDefaultPoolName,
+    applyDefaultPool,
+    handleClubChange,
+    handlePodChange,
+    handleScopeChange,
+    resetScope,
+  } = useClubSessionScope({
+    sessionType: form.session_type,
+    podId: form.pod_id,
+    setForm,
+  });
 
   const [rideConfigs, setRideConfigs] = useState<RideShareConfigEntry[]>(
     template?.ride_share_config && Array.isArray(template.ride_share_config)
@@ -214,35 +229,19 @@ function TemplateFormInline({
       : []
   );
 
-  const [pods, setPods] = useState<Array<{ id: string; label: string; club_id: string }>>([]);
-  useEffect(() => {
-    if (form.session_type !== "club") return;
-    if (pods.length > 0) return;
-    void (async () => {
-      try {
-        const { listPublicPods, podDisplayName } = await import("@/lib/pods");
-        const list = await listPublicPods();
-        setPods(
-          list.map((p) => ({
-            id: p.id,
-            label: podDisplayName(p),
-            club_id: p.club_id,
-          }))
-        );
-      } catch (e) {
-        console.warn("Failed to load pods for template form", e);
-      }
-    })();
-  }, [form.session_type, pods.length]);
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (form.session_type === "club" && !form.club_id) {
+      alert("Pick the Club and location this template belongs to.");
+      return;
+    }
     if (form.session_type === "club" && clubScope === "pod" && !form.pod_id) {
       alert("Pick the pod this Club template is for.");
       return;
     }
     const data: TemplateFormPayload = {
       ...form,
+      club_id: form.session_type === "club" ? form.club_id : null,
       pod_id: form.session_type === "club" && clubScope === "pod" ? (form.pod_id ?? null) : null,
       ride_share_config: rideConfigs
         .filter((c) => c.ride_area_id)
@@ -276,13 +275,18 @@ function TemplateFormInline({
       <Select
         label="Session Type"
         value={form.session_type}
-        onChange={(e) =>
+        onChange={(e) => {
+          const sessionType = e.target.value;
+          if (sessionType !== "club") {
+            resetScope();
+          }
           setForm({
             ...form,
-            session_type: e.target.value,
-            pod_id: e.target.value === "club" ? form.pod_id : null,
-          })
-        }
+            session_type: sessionType,
+            club_id: sessionType === "club" ? form.club_id : null,
+            pod_id: sessionType === "club" ? form.pod_id : null,
+          });
+        }}
       >
         <option value="club">Club</option>
         <option value="cohort_class">Academy / Cohort Class</option>
@@ -290,57 +294,14 @@ function TemplateFormInline({
         <option value="event">Event</option>
       </Select>
       {form.session_type === "club" && (
-        <fieldset className="space-y-3">
-          <legend className="text-sm font-medium text-slate-700">Club scope</legend>
-          <div
-            className="grid grid-cols-2 rounded-md border border-slate-200 p-1"
-            role="radiogroup"
-            aria-label="Club template scope"
-          >
-            <button
-              type="button"
-              role="radio"
-              aria-checked={clubScope === "general"}
-              onClick={() => {
-                setClubScope("general");
-                setForm({ ...form, pod_id: null });
-              }}
-              className={`min-h-10 rounded px-3 py-2 text-sm font-medium transition ${
-                clubScope === "general"
-                  ? "bg-cyan-700 text-white"
-                  : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              General Club
-            </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={clubScope === "pod"}
-              onClick={() => setClubScope("pod")}
-              className={`min-h-10 rounded px-3 py-2 text-sm font-medium transition ${
-                clubScope === "pod" ? "bg-cyan-700 text-white" : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              Pod-specific
-            </button>
-          </div>
-          {clubScope === "pod" && (
-            <Select
-              label="Pod"
-              value={form.pod_id ?? ""}
-              onChange={(e) => setForm({ ...form, pod_id: e.target.value || null })}
-              required
-            >
-              <option value="">Select a pod</option>
-              {pods.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.label}
-                </option>
-              ))}
-            </Select>
-          )}
-        </fieldset>
+        <ClubSessionScopeFields
+          clubId={form.club_id}
+          scope={clubScope}
+          podId={form.pod_id}
+          onClubChange={handleClubChange}
+          onScopeChange={handleScopeChange}
+          onPodChange={handlePodChange}
+        />
       )}
       <Select
         label="Day of Week"
@@ -370,8 +331,27 @@ function TemplateFormInline({
             location_name: poolName ?? null,
           })
         }
-        hint="Templates inherit the pool for every session they generate."
+        hint={
+          form.session_type === "club"
+            ? "Prefilled from the selected Club or Pod. You can override it for this template."
+            : "Templates inherit the pool for every session they generate."
+        }
       />
+      {selectedPod?.default_pool_id && form.pool_id !== selectedPod.default_pool_id && (
+        <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+          <p>
+            This Pod normally swims at {podDefaultPoolName ?? "its default pool"}. You can keep this
+            template pool or restore the Pod default.
+          </p>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => applyDefaultPool(selectedPod.default_pool_id!)}
+          >
+            Use Pod default
+          </Button>
+        </div>
+      )}
       <Input
         label="Duration (minutes)"
         type="number"

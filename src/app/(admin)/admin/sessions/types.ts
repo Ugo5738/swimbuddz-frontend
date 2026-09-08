@@ -51,6 +51,7 @@ export interface Session {
   is_recurring_instance?: boolean;
   cohort_id?: string | null;
   event_id?: string | null;
+  club_id?: string | null;
   pod_id?: string | null;
   timezone?: string;
 }
@@ -84,6 +85,7 @@ export interface SessionPayload {
   session_type: SessionType;
   cohort_id: string | null;
   event_id: string | null;
+  club_id: string | null;
   pool_id: string | null;
   location: string | null;
   location_name: string | null;
@@ -112,6 +114,7 @@ export interface Template {
   pool_id?: string | null;
   location: string | null;
   location_name?: string | null;
+  club_id?: string | null;
   pod_id?: string | null;
   session_type?: string;
   pool_fee: number;
