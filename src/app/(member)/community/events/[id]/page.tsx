@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 interface Event {
+  community_experience_offering_id?: string | null;
   id: string;
   title: string;
   description: string;
@@ -270,7 +271,8 @@ export default function EventDetailPage() {
       </Card>
 
       {/* RSVP Section */}
-      {!isPastEvent && (
+      {event.community_experience_offering_id && <Card className="p-6"><h3 className="font-semibold">Included in a Community Experience</h3><p className="my-3 text-slate-600">Review the package and named guest tickets. There is no separate Event entry payment.</p><Link className="text-cyan-700 underline" href={`/experiences/${event.community_experience_offering_id}`}>View Experience and my tickets</Link></Card>}
+      {!isPastEvent && !event.community_experience_offering_id && (
         <Card className="p-6">
           <h3 className="mb-4 text-lg font-semibold text-slate-900">Your RSVP</h3>
 

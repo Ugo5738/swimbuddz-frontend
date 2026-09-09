@@ -119,6 +119,19 @@ describe("SessionFormModal Club scope", () => {
     vi.clearAllMocks();
   });
 
+  it("keeps a paid extra practice separate from purchased-quarter inclusion", async () => {
+    const onCreate = renderModal();
+    fireEvent.change(screen.getByLabelText("Club access mode"), {
+      target: { value: "paid_addon" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create Session" }));
+    await waitFor(() => expect(onCreate).toHaveBeenCalledOnce());
+    expect(onCreate.mock.calls[0][0]).toMatchObject({
+      club_id: "club-lagos",
+      club_access_mode: "paid_addon",
+    });
+  });
+
   it("creates a general Club session with no pod", async () => {
     const onCreate = renderModal();
 

@@ -40,6 +40,11 @@ export type ClubPlan = {
   community_experience_default_selected: boolean;
   community_experience_offering_id: string | null;
   sessions_included: number;
+  session_ids?: string[];
+  recommended_fee_kobo?: number;
+  published_at?: string | null;
+  source_plan_id?: string | null;
+  source_template_id?: string | null;
   period_start: string;
   period_end: string;
   minimum_entry_sessions: number;
@@ -141,6 +146,10 @@ export type CommunityExperienceOffering = {
   standard_member_fee_kobo: number;
   club_member_fee_kobo: number;
   club_bundle_fee_kobo: number;
+  member_guest_fee_kobo?: number | null;
+  public_guest_fee_kobo?: number | null;
+  max_guests_per_member?: number;
+  capacity?: number | null;
   purchase_opens_at: string | null;
   purchase_closes_at: string | null;
   is_active: boolean;
@@ -276,11 +285,12 @@ export function createClubPlan(
     name: string;
     billing_cycle: "quarterly";
     currency: string;
-    club_fee_kobo: number;
+    club_fee_kobo: number | null;
     community_experience_fee_kobo: number;
     community_experience_default_selected: boolean;
     community_experience_offering_id?: string;
     sessions_included: number;
+    session_ids?: string[];
     period_start: string;
     period_end: string;
     minimum_entry_sessions: number;

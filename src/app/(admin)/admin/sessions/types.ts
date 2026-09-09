@@ -21,6 +21,7 @@ export interface SessionCostLine {
 }
 
 export interface Session {
+  club_access_mode?: "plan_included" | "active_club" | "paid_addon";
   id: string;
   title: string;
   session_type?: SessionType;
@@ -81,6 +82,7 @@ export interface SessionRideConfig {
  * state). Optional fields default to `null` server-side.
  */
 export interface SessionPayload {
+  club_access_mode?: "plan_included" | "active_club" | "paid_addon";
   title: string;
   session_type: SessionType;
   cohort_id: string | null;
@@ -106,6 +108,8 @@ export interface SessionPayload {
 }
 
 export interface Template {
+  club_access_mode?: "plan_included" | "active_club" | "paid_addon";
+  pricing_settings?: ClubTemplatePricing | null;
   id: string;
   title: string;
   day_of_week: number;
@@ -130,4 +134,13 @@ export interface RideArea {
   id: string;
   name: string;
   pickup_locations: any[];
+}
+
+export interface ClubTemplatePricing {
+  pricing_expected_attendees: number;
+  margin_type: "fixed_per_attendee" | "percentage";
+  margin_value: number;
+  cost_lines: SessionCostLine[];
+  expected_staff: number;
+  lanes: number;
 }

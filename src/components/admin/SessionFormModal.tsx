@@ -7,6 +7,7 @@
 
 import { ClubSessionScopeFields } from "@/components/admin/ClubSessionScopeFields";
 import { PoolPicker } from "@/components/admin/PoolPicker";
+import { RescheduleClubPractice } from "@/components/club/RescheduleClubPractice";
 import { SessionVolunteerOpportunitiesSection } from "@/components/admin/SessionVolunteerOpportunitiesSection";
 import { useClubSessionScope } from "@/components/admin/useClubSessionScope";
 import {
@@ -82,8 +83,11 @@ export function SessionFormModal({
   const now = new Date();
   const defaultStart = initialDate || now;
   const defaultEnd = new Date(defaultStart.getTime() + 3 * 60 * 60 * 1000);
+  const publishedClub =
+    mode === "edit" && !!session?.published_at && session.session_type === "club";
 
   const [form, setForm] = useState({
+    club_access_mode: session?.club_access_mode ?? "plan_included",
     title: session?.title || "",
     session_type: session?.session_type || "club",
     // Preferred: pool_id from the registry. Keep location (legacy enum) and
@@ -311,6 +315,7 @@ export function SessionFormModal({
     }
 
     const sessionData: SessionPayload = {
+      club_access_mode: form.session_type === "club" ? form.club_access_mode : "plan_included",
       title: form.title,
       session_type: form.session_type,
       // Send ONLY the context FK that matches the session_type so we
@@ -373,6 +378,7 @@ export function SessionFormModal({
       />
       <Select
         label="Session Type"
+        disabled={publishedClub}
         value={form.session_type}
         onChange={(event) => {
           const sessionType = event.target.value as SessionType;
@@ -429,17 +435,36 @@ export function SessionFormModal({
         </Select>
       )}
       {form.session_type === "club" && (
-        <ClubSessionScopeFields
-          clubId={form.club_id}
-          scope={clubScope}
-          podId={form.pod_id}
-          onClubChange={handleClubChange}
-          onScopeChange={handleScopeChange}
-          onPodChange={handlePodChange}
-        />
+        <fieldset disabled={publishedClub} className="space-y-4">
+          <ClubSessionScopeFields
+            clubId={form.club_id}
+            scope={clubScope}
+            podId={form.pod_id}
+            onClubChange={handleClubChange}
+            onScopeChange={handleScopeChange}
+            onPodChange={handlePodChange}
+          />
+          <Select
+            label="Club access mode"
+            value={form.club_access_mode}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                club_access_mode: e.target.value as NonNullable<Session["club_access_mode"]>,
+              })
+            }
+          >
+            <option value="plan_included">Purchased-quarter inclusion (link to plan)</option>
+            <option value="active_club">
+              Extra practice included for active prepaid Club members
+            </option>
+            <option value="paid_addon">Paid add-on for active Club members</option>
+          </Select>
+        </fieldset>
       )}
       <PoolPicker
         label="Pool"
+        disabled={publishedClub}
         value={form.pool_id}
         onChange={(poolId, poolName) =>
           setForm({
@@ -449,9 +474,11 @@ export function SessionFormModal({
           })
         }
         hint={
-          form.session_type === "club"
-            ? "Prefilled from the selected Club or Pod. You can change it for this session."
-            : "Managed at Admin → Pool Registry."
+          publishedClub
+            ? "Published Club sessions keep their pool and audience. Use the reschedule action to move the swim."
+            : form.session_type === "club"
+              ? "Prefilled from the selected Club or Pod. You can change it for this session."
+              : "Managed at Admin → Pool Registry."
         }
       />
       {selectedPod?.default_pool_id && form.pool_id !== selectedPod.default_pool_id && (
@@ -463,6 +490,7 @@ export function SessionFormModal({
           <Button
             type="button"
             variant="secondary"
+            disabled={publishedClub}
             className="shrink-0"
             onClick={() => applyDefaultPool(selectedPod.default_pool_id!)}
           >
@@ -473,6 +501,7 @@ export function SessionFormModal({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Input
           label="Start Time"
+          disabled={publishedClub}
           type="datetime-local"
           value={form.starts_at}
           onChange={(e) => setForm({ ...form, starts_at: e.target.value })}
@@ -480,12 +509,26 @@ export function SessionFormModal({
         />
         <Input
           label="End Time"
+          disabled={publishedClub}
           type="datetime-local"
           value={form.ends_at}
           onChange={(e) => setForm({ ...form, ends_at: e.target.value })}
           required
         />
       </div>
+      {publishedClub && session && (
+        <RescheduleClubPractice
+          sessionId={session.id}
+          onChanged={async () => {
+            const updated = await apiGet<Session>(`/api/v1/sessions/${session.id}`, { auth: true });
+            setForm((old) => ({
+              ...old,
+              starts_at: formatDateTimeLocal(new Date(updated.starts_at)),
+              ends_at: formatDateTimeLocal(new Date(updated.ends_at)),
+            }));
+          }}
+        />
+      )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Input
           label="Booking price per attendee (₦)"

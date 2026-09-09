@@ -928,8 +928,8 @@ function CheckoutContent() {
         </p>
       )}
 
-      {/* Payment Method Selector - Only show for session payments, not membership */}
-      {purpose === "session" && (
+      {/* Approved Club applications can reconcile an existing bank transfer. */}
+      {(purpose === "session" || (purpose === "club" && clubApplicationId)) && (
         <Card className="p-6">
           <h2 className="text-lg font-semibold text-slate-900 mb-4">Payment Method</h2>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -975,6 +975,7 @@ function CheckoutContent() {
           {paymentMethod === "manual_transfer" && (
             <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
               <h3 className="font-medium text-amber-900 mb-2">📋 Bank Transfer Details</h3>
+              {purpose === "club" && <p className="mb-3 text-sm text-amber-900">Already transferred? Do not pay again. Continue to upload the existing receipt for Admin reconciliation against this approved quote. If the amount differs, contact Admin before continuing.</p>}
               <div className="space-y-1 text-sm text-amber-800">
                 <p>
                   <span className="text-amber-600">Bank:</span> <strong>OPay</strong>

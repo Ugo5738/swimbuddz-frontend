@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Calendar, Pencil, Plus, Trash2, X } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 import { IBtn } from "@/app/(admin)/admin/sessions/components";
@@ -31,6 +32,8 @@ import { DAY_NAMES, locationLabel } from "@/app/(admin)/admin/sessions/utils";
  * the persisted Template record.
  */
 export type TemplateFormPayload = {
+  club_access_mode?: Template["club_access_mode"];
+  pricing_settings?: Template["pricing_settings"];
   title: string;
   session_type: string;
   pool_id: string | null;
@@ -127,8 +130,9 @@ export function TemplatesDrawer({
                             {t.duration_minutes}min
                           </p>
                           <p className="text-xs text-slate-500">
-                            {locationLabel(t.location)} &middot; N{t.pool_fee} &middot; {t.capacity}{" "}
-                            cap
+                            {locationLabel(t.location)} &middot;{" "}
+                            {t.session_type === "club" ? "Inherited pricing" : `N${t.pool_fee}`}{" "}
+                            &middot; {t.capacity} cap
                           </p>
                         </div>
                         <IBtn
@@ -140,13 +144,23 @@ export function TemplatesDrawer({
                         </IBtn>
                       </div>
                       <div className="mt-3 flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => onGenerate(t)}
-                          className="flex items-center gap-1"
-                        >
-                          <Calendar className="h-3.5 w-3.5" /> Generate
-                        </Button>
+                        {t.session_type === "club" &&
+                        (t.club_access_mode ?? "plan_included") === "plan_included" ? (
+                          <Link
+                            href="/admin/club-plans"
+                            className="inline-flex min-h-[36px] items-center gap-1 rounded-md bg-cyan-600 px-3 py-2 text-sm font-medium text-white hover:bg-cyan-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2"
+                          >
+                            <Calendar className="h-3.5 w-3.5" /> Generate Club quarter
+                          </Link>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => onGenerate(t)}
+                            className="flex items-center gap-1"
+                          >
+                            <Calendar className="h-3.5 w-3.5" /> Generate
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="secondary"
@@ -188,6 +202,7 @@ function TemplateFormInline({
   onUpdate: (id: string, data: TemplateFormPayload) => void;
 }) {
   const [form, setForm] = useState({
+    club_access_mode: template?.club_access_mode ?? "plan_included",
     title: template?.title || "",
     session_type: template?.session_type || "club",
     // Prefer pool_id; legacy `location` enum kept for pre-registry templates.
@@ -204,6 +219,15 @@ function TemplateFormInline({
     auto_generate: template?.auto_generate || false,
   });
   const [volunteerNeeds, setVolunteerNeeds] = useState<VolunteerNeedDraft[]>([]);
+  const [pricing, setPricing] = useState({
+    pricing_expected_attendees:
+      template?.pricing_settings?.pricing_expected_attendees ?? template?.capacity ?? 20,
+    margin_type: template?.pricing_settings?.margin_type ?? "fixed_per_attendee",
+    margin_value: template?.pricing_settings?.margin_value ?? 0,
+    expected_staff: template?.pricing_settings?.expected_staff ?? 0,
+    lanes: template?.pricing_settings?.lanes ?? 1,
+    cost_lines: template?.pricing_settings?.cost_lines ?? [],
+  });
   const {
     scope: clubScope,
     selectedPod,
@@ -241,6 +265,8 @@ function TemplateFormInline({
     }
     const data: TemplateFormPayload = {
       ...form,
+      club_access_mode: form.session_type === "club" ? form.club_access_mode : "plan_included",
+      pricing_settings: form.session_type === "club" && form.club_id ? pricing : null,
       club_id: form.session_type === "club" ? form.club_id : null,
       pod_id: form.session_type === "club" && clubScope === "pod" ? (form.pod_id ?? null) : null,
       ride_share_config: rideConfigs
@@ -294,14 +320,30 @@ function TemplateFormInline({
         <option value="event">Event</option>
       </Select>
       {form.session_type === "club" && (
-        <ClubSessionScopeFields
-          clubId={form.club_id}
-          scope={clubScope}
-          podId={form.pod_id}
-          onClubChange={handleClubChange}
-          onScopeChange={handleScopeChange}
-          onPodChange={handlePodChange}
-        />
+        <>
+          <ClubSessionScopeFields
+            clubId={form.club_id}
+            scope={clubScope}
+            podId={form.pod_id}
+            onClubChange={handleClubChange}
+            onScopeChange={handleScopeChange}
+            onPodChange={handlePodChange}
+          />
+          <Select
+            label="Club access mode"
+            value={form.club_access_mode}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                club_access_mode: e.target.value as NonNullable<Template["club_access_mode"]>,
+              })
+            }
+          >
+            <option value="plan_included">Included in a purchased quarter</option>
+            <option value="active_club">Extra practice for active Club members</option>
+            <option value="paid_addon">Paid add-on for active Club members</option>
+          </Select>
+        </>
       )}
       <Select
         label="Day of Week"
@@ -362,6 +404,7 @@ function TemplateFormInline({
       <div className="grid grid-cols-2 gap-3">
         <Input
           label="Pool Fee (N)"
+          disabled={form.session_type === "club"}
           type="number"
           value={form.pool_fee}
           onChange={(e) => setForm({ ...form, pool_fee: parseInt(e.target.value) || 0 })}
@@ -374,6 +417,68 @@ function TemplateFormInline({
         />
       </div>
 
+      {form.session_type === "club" && form.club_id && (
+        <fieldset className="space-y-3 rounded border p-3">
+          <legend>Inherited Session pricing</legend>
+          <p className="text-sm">
+            Each generated date gets current pool and operating rates, including configured
+            refreshments. The normal Session cost-plus engine applies this margin; the old Pool Fee
+            is not copied.
+          </p>
+          <Input
+            label="Expected attendees"
+            type="number"
+            min={1}
+            max={500}
+            required
+            value={pricing.pricing_expected_attendees}
+            onChange={(e) =>
+              setPricing({ ...pricing, pricing_expected_attendees: Number(e.target.value) })
+            }
+          />
+          <Select
+            label="Margin basis"
+            value={pricing.margin_type}
+            onChange={(e) =>
+              setPricing({ ...pricing, margin_type: e.target.value as typeof pricing.margin_type })
+            }
+          >
+            <option value="fixed_per_attendee">Fixed ₦ per attendee</option>
+            <option value="percentage">Percentage</option>
+          </Select>
+          <Input
+            label="Margin value (₦ or %)"
+            type="number"
+            min={0}
+            step="0.01"
+            required
+            value={pricing.margin_value}
+            onChange={(e) => setPricing({ ...pricing, margin_value: Number(e.target.value) })}
+          />
+          <Input
+            label="Expected staff"
+            type="number"
+            min={0}
+            max={50}
+            required
+            value={pricing.expected_staff}
+            onChange={(e) => setPricing({ ...pricing, expected_staff: Number(e.target.value) })}
+          />
+          <Input
+            label="Lanes"
+            type="number"
+            min={1}
+            max={50}
+            required
+            value={pricing.lanes}
+            onChange={(e) => setPricing({ ...pricing, lanes: Number(e.target.value) })}
+          />
+          <p className="text-sm">
+            Existing template-specific ancillary cost lines are preserved. Review each generated
+            Session’s detailed costs before publication.
+          </p>
+        </fieldset>
+      )}
       {/* Ride share config */}
       <div className="border-t border-slate-200 pt-4">
         <div className="mb-2 flex items-center justify-between">

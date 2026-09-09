@@ -127,6 +127,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/clubs/operations/authorize-pod": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Authorize Pod */
+        post: operations["authorize_pod_internal_clubs_operations_authorize_pod_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/clubs/operations/promises": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check Promises */
+        post: operations["check_promises_internal_clubs_operations_promises_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/members/coaches": {
         parameters: {
             query?: never;
@@ -1249,6 +1283,279 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/clubs/community-experiences/admin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin Offerings */
+        get: operations["admin_offerings_clubs_community_experiences_admin_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/community-experiences/admin/{offering_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Offering */
+        put: operations["update_offering_clubs_community_experiences_admin__offering_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/community-experiences/admin/{offering_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin Events */
+        get: operations["admin_events_clubs_community_experiences_admin__offering_id__events_get"];
+        /** Set Events */
+        put: operations["set_events_clubs_community_experiences_admin__offering_id__events_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/community-experiences/admin/{offering_id}/operations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Configuration Operations */
+        get: operations["configuration_operations_clubs_community_experiences_admin__offering_id__operations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/community-experiences/admin/{offering_id}/operations/{operation_id}/recover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recover Configuration */
+        post: operations["recover_configuration_clubs_community_experiences_admin__offering_id__operations__operation_id__recover_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/community-experiences/admin/{offering_id}/participants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Participants */
+        get: operations["participants_clubs_community_experiences_admin__offering_id__participants_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/community-experiences/admin/{offering_id}/club-sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Affected Session Options */
+        get: operations["affected_session_options_clubs_community_experiences_admin__offering_id__club_sessions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/community-experiences/admin/participants/{participant_id}/check-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check In */
+        post: operations["check_in_clubs_community_experiences_admin_participants__participant_id__check_in_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/community-experiences/public/{offering_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Offering */
+        get: operations["public_offering_clubs_community_experiences_public__offering_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/community-experiences/{offering_id}/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Order */
+        post: operations["create_order_clubs_community_experiences__offering_id__orders_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/community-experiences/orders/{order_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Order Status */
+        post: operations["order_status_clubs_community_experiences_orders__order_id__status_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/community-experiences/{offering_id}/tickets/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My Tickets */
+        get: operations["my_tickets_clubs_community_experiences__offering_id__tickets_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/community-experiences/participants/{participant_id}/my-details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Complete Member Details */
+        put: operations["complete_member_details_clubs_community_experiences_participants__participant_id__my_details_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/community-experiences/orders/{order_id}/checkout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Order Checkout */
+        post: operations["order_checkout_clubs_community_experiences_orders__order_id__checkout_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/community-experiences/internal/orders/{order_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Order */
+        post: operations["confirm_order_clubs_community_experiences_internal_orders__order_id__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/community-experiences/internal/{offering_id}/events/{event_id}/participants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Event Participants */
+        get: operations["event_participants_clubs_community_experiences_internal__offering_id__events__event_id__participants_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/clubs/community-experiences": {
         parameters: {
             query?: never;
@@ -1312,6 +1619,91 @@ export interface paths {
         put?: never;
         /** Activate Community Experience */
         post: operations["activate_community_experience_clubs_community_experiences_internal__offering_id__activate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/admin/plans/{plan_id}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Plan Schedule */
+        get: operations["plan_schedule_clubs_admin_plans__plan_id__schedule_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/admin/plans/{plan_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Draft */
+        put: operations["update_draft_clubs_admin_plans__plan_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/admin/plans/{plan_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish Draft */
+        post: operations["publish_draft_clubs_admin_plans__plan_id__publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/admin/plans/recommendations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Recommendation */
+        post: operations["create_recommendation_clubs_admin_plans_recommendations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/admin/plans/{plan_id}/next-quarter": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate Next Quarter */
+        post: operations["generate_next_quarter_clubs_admin_plans__plan_id__next_quarter_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3215,6 +3607,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sessions/club-operations/pods/{pod_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pod Sessions */
+        get: operations["pod_sessions_sessions_club_operations_pods__pod_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/club-operations/extra-practices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Extra Practice */
+        post: operations["extra_practice_sessions_club_operations_extra_practices_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/club-operations/{session_id}/reschedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reschedule Practice */
+        post: operations["reschedule_practice_sessions_club_operations__session_id__reschedule_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/club-operations/{session_id}/operations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Session Operations */
+        get: operations["session_operations_sessions_club_operations__session_id__operations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/club-operations/{session_id}/operations/{operation_id}/retry-notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry Notifications */
+        post: operations["retry_notifications_sessions_club_operations__session_id__operations__operation_id__retry_notifications_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sessions/bundles": {
         parameters: {
             query?: never;
@@ -4141,6 +4618,91 @@ export interface paths {
          * @description Delete all sessions (and related rows) for a cohort.
          */
         delete: operations["delete_sessions_for_cohort_sessions_by_cohort__cohort_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/sessions/club-schedule/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Query Schedule */
+        post: operations["query_schedule_internal_sessions_club_schedule_query_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/sessions/club-schedule/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate Quarter */
+        post: operations["generate_quarter_internal_sessions_club_schedule_generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/sessions/club-schedule/replace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Replace Sessions */
+        post: operations["replace_sessions_internal_sessions_club_schedule_replace_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/sessions/club-schedule/operations/{operation_id}/undo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Undo Replacement */
+        post: operations["undo_replacement_internal_sessions_club_schedule_operations__operation_id__undo_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/sessions/club-schedule/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish Sessions */
+        post: operations["publish_sessions_internal_sessions_club_schedule_publish_post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -15005,6 +15567,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/events/experiences/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Query Events */
+        post: operations["query_events_internal_events_experiences_query_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/events/experiences/bind": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bind Events */
+        post: operations["bind_events_internal_events_experiences_bind_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/events/experiences/unbind": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Unbind Events */
+        post: operations["unbind_events_internal_events_experiences_unbind_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/events/planning/templates": {
         parameters: {
             query?: never;
@@ -18949,6 +19562,16 @@ export interface components {
         ClubAccessCheck: {
             /** Context Key */
             context_key: string;
+            /** Session Id */
+            session_id?: string | null;
+            /** Club Id */
+            club_id?: string | null;
+            /**
+             * Club Access Mode
+             * @default plan_included
+             * @enum {string}
+             */
+            club_access_mode: "plan_included" | "active_club" | "paid_addon";
             /**
              * Member Id
              * Format: uuid
@@ -18959,8 +19582,6 @@ export interface components {
              * Format: date-time
              */
             at: string;
-            /** Club Id */
-            club_id?: string | null;
             /** Pool Id */
             pool_id?: string | null;
             /** Pod Id */
@@ -19016,6 +19637,16 @@ export interface components {
         ClubApplicationReservationRequest: {
             /** Payment Reference */
             payment_reference: string;
+            /**
+             * Community Experience Selected
+             * @default false
+             */
+            community_experience_selected: boolean;
+            /**
+             * Community Experience Fee Kobo
+             * @default 0
+             */
+            community_experience_fee_kobo: number;
             /**
              * Payment Mode
              * @default quarterly_prepaid
@@ -19535,24 +20166,26 @@ export interface components {
              */
             currency: string;
             /** Club Fee Kobo */
-            club_fee_kobo: number;
+            club_fee_kobo?: number | null;
             /**
              * Community Experience Fee Kobo
-             * @default 3000000
+             * @default 0
              */
             community_experience_fee_kobo: number;
             /**
              * Community Experience Default Selected
-             * @default true
+             * @default false
              */
             community_experience_default_selected: boolean;
             /** Community Experience Offering Id */
             community_experience_offering_id?: string | null;
             /**
              * Sessions Included
-             * @default 12
+             * @default 0
              */
             sessions_included: number;
+            /** Session Ids */
+            session_ids?: string[];
             /**
              * Period Start
              * Format: date
@@ -19586,7 +20219,7 @@ export interface components {
             effective_to?: string | null;
             /**
              * Is Active
-             * @default true
+             * @default false
              */
             is_active: boolean;
         };
@@ -19609,21 +20242,23 @@ export interface components {
             club_fee_kobo: number;
             /**
              * Community Experience Fee Kobo
-             * @default 3000000
+             * @default 0
              */
             community_experience_fee_kobo: number;
             /**
              * Community Experience Default Selected
-             * @default true
+             * @default false
              */
             community_experience_default_selected: boolean;
             /** Community Experience Offering Id */
             community_experience_offering_id?: string | null;
             /**
              * Sessions Included
-             * @default 12
+             * @default 0
              */
             sessions_included: number;
+            /** Session Ids */
+            session_ids?: string[];
             /**
              * Period Start
              * Format: date
@@ -19657,9 +20292,20 @@ export interface components {
             effective_to?: string | null;
             /**
              * Is Active
-             * @default true
+             * @default false
              */
             is_active: boolean;
+            /**
+             * Recommended Fee Kobo
+             * @default 0
+             */
+            recommended_fee_kobo: number;
+            /** Published At */
+            published_at?: string | null;
+            /** Source Plan Id */
+            source_plan_id?: string | null;
+            /** Source Template Id */
+            source_template_id?: string | null;
             /**
              * Id
              * Format: uuid
@@ -20601,6 +21247,17 @@ export interface components {
              * @default 3000000
              */
             club_bundle_fee_kobo: number;
+            /** Member Guest Fee Kobo */
+            member_guest_fee_kobo?: number | null;
+            /** Public Guest Fee Kobo */
+            public_guest_fee_kobo?: number | null;
+            /**
+             * Max Guests Per Member
+             * @default 0
+             */
+            max_guests_per_member: number;
+            /** Capacity */
+            capacity?: number | null;
             /** Purchase Opens At */
             purchase_opens_at?: string | null;
             /** Purchase Closes At */
@@ -20645,6 +21302,17 @@ export interface components {
              * @default 3000000
              */
             club_bundle_fee_kobo: number;
+            /** Member Guest Fee Kobo */
+            member_guest_fee_kobo?: number | null;
+            /** Public Guest Fee Kobo */
+            public_guest_fee_kobo?: number | null;
+            /**
+             * Max Guests Per Member
+             * @default 0
+             */
+            max_guests_per_member: number;
+            /** Capacity */
+            capacity?: number | null;
             /** Purchase Opens At */
             purchase_opens_at?: string | null;
             /** Purchase Closes At */
@@ -20802,6 +21470,124 @@ export interface components {
              * @default true
              */
             is_available: boolean;
+        };
+        /** ExperienceAttendanceInput */
+        ExperienceAttendanceInput: {
+            /**
+             * Event Id
+             * Format: uuid
+             */
+            event_id: string;
+        };
+        /** ExperienceEventLinkInput */
+        ExperienceEventLinkInput: {
+            /**
+             * Event Id
+             * Format: uuid
+             */
+            event_id: string;
+            /**
+             * Club Impact
+             * @default separate
+             * @enum {string}
+             */
+            club_impact: "separate" | "parallel" | "replaces";
+            /** Replaced Session Ids */
+            replaced_session_ids?: string[];
+        };
+        /** ExperienceEventsUpdate */
+        ExperienceEventsUpdate: {
+            /** Events */
+            events?: components["schemas"]["ExperienceEventLinkInput"][];
+        };
+        /** ExperienceOrderAccess */
+        ExperienceOrderAccess: {
+            /** Access Token */
+            access_token: string;
+        };
+        /** ExperienceOrderConfirm */
+        ExperienceOrderConfirm: {
+            /** Payment Reference */
+            payment_reference: string;
+            /** Amount Kobo */
+            amount_kobo: number;
+        };
+        /** ExperienceOrderCreate */
+        ExperienceOrderCreate: {
+            /**
+             * Idempotency Key
+             * Format: uuid
+             */
+            idempotency_key: string;
+            /** Access Token */
+            access_token: string;
+            /**
+             * Include Member
+             * @default true
+             */
+            include_member: boolean;
+            participant: components["schemas"]["ExperienceParticipantInput"];
+            /** Guests */
+            guests?: components["schemas"]["ExperienceParticipantInput"][];
+        };
+        /** ExperienceOrderResponse */
+        ExperienceOrderResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Offering Id
+             * Format: uuid
+             */
+            offering_id: string;
+            /** Status */
+            status: string;
+            /** Currency */
+            currency: string;
+            /** Amount Kobo */
+            amount_kobo: number;
+            /** Membership Fee Kobo */
+            membership_fee_kobo: number;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Payment Reference */
+            payment_reference: string;
+            /** Participant Count */
+            participant_count: number;
+            /** Tickets */
+            tickets?: {
+                [key: string]: unknown;
+            }[];
+            /** Events */
+            events?: {
+                [key: string]: unknown;
+            }[];
+        };
+        /** ExperienceParticipantInput */
+        ExperienceParticipantInput: {
+            /** Full Name */
+            full_name: string;
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Phone */
+            phone: string;
+            /** Emergency Contact Name */
+            emergency_contact_name: string;
+            /** Emergency Contact Phone */
+            emergency_contact_phone: string;
+            /**
+             * Waiver Accepted
+             * @constant
+             */
+            waiver_accepted: true;
         };
         /**
          * ExtendClubRequest
@@ -21770,6 +22556,17 @@ export interface components {
             /** Expected Pending Payment Reference */
             expected_pending_payment_reference?: string | null;
         };
+        /** NextQuarterRequest */
+        NextQuarterRequest: {
+            /** Template Id */
+            template_id?: string | null;
+            /** Pricing Settings */
+            pricing_settings?: {
+                [key: string]: unknown;
+            } | null;
+            /** Excluded Dates */
+            excluded_dates?: string[];
+        };
         /**
          * PendingMemberResponse
          * @description Extended response for pending members (admin view).
@@ -22120,6 +22917,16 @@ export interface components {
                 [key: string]: string[];
             };
         };
+        /** PodSchedulingAuthorization */
+        PodSchedulingAuthorization: {
+            /** Auth Id */
+            auth_id: string;
+            /**
+             * Pod Id
+             * Format: uuid
+             */
+            pod_id: string;
+        };
         /**
          * PodStatus
          * @description Lifecycle marker. Active pods accept members and surface in the
@@ -22276,6 +23083,55 @@ export interface components {
             paid_until?: string | null;
             /** Source Reference */
             source_reference?: string | null;
+        };
+        /** PromiseCheck */
+        PromiseCheck: {
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /** Starts At */
+            starts_at?: string | null;
+            /** Ends At */
+            ends_at?: string | null;
+            /** Pool Id */
+            pool_id?: string | null;
+        };
+        /** QuarterRecommendationRequest */
+        QuarterRecommendationRequest: {
+            /**
+             * Club Id
+             * Format: uuid
+             */
+            club_id: string;
+            /** Year */
+            year: number;
+            /** Quarter */
+            quarter: number;
+            /** Template Id */
+            template_id?: string | null;
+            /** Pricing Settings */
+            pricing_settings?: {
+                [key: string]: unknown;
+            } | null;
+            /** Excluded Dates */
+            excluded_dates?: string[];
+            /**
+             * Capacity
+             * @default 20
+             */
+            capacity: number;
+            /**
+             * Minimum Entry Sessions
+             * @default 5
+             */
+            minimum_entry_sessions: number;
+            /**
+             * Refreshments Included
+             * @default true
+             */
+            refreshments_included: boolean;
         };
         /**
          * RecurringBlockInput
@@ -22989,6 +23845,31 @@ export interface components {
              */
             expired: number;
         };
+        /** ClubTemplatePricing */
+        ClubTemplatePricing: {
+            /** Pricing Expected Attendees */
+            pricing_expected_attendees: number;
+            /**
+             * Margin Type
+             * @default fixed_per_attendee
+             * @enum {string}
+             */
+            margin_type: "fixed_per_attendee" | "percentage";
+            /** Margin Value */
+            margin_value: number;
+            /** Cost Lines */
+            cost_lines?: components["schemas"]["SessionCostLine"][];
+            /**
+             * Expected Staff
+             * @default 0
+             */
+            expected_staff: number;
+            /**
+             * Lanes
+             * @default 1
+             */
+            lanes: number;
+        };
         /** ConvertedGuestHours */
         ConvertedGuestHours: {
             /**
@@ -23006,6 +23887,26 @@ export interface components {
         CreateBundleCartRequest: {
             /** Session Ids */
             session_ids: string[];
+        };
+        /** ExtraPractice */
+        ExtraPractice: {
+            /**
+             * Operation Id
+             * Format: uuid
+             */
+            operation_id: string;
+            /**
+             * Pod Id
+             * Format: uuid
+             */
+            pod_id: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /** Pool Time Confirmed */
+            pool_time_confirmed: boolean;
         };
         /** GenerateCohortSessionsRequest */
         GenerateCohortSessionsRequest: {
@@ -23030,6 +23931,53 @@ export interface components {
             week_numbers: number[];
             /** Reason */
             reason?: string | null;
+        };
+        /** GenerateQuarter */
+        GenerateQuarter: {
+            /**
+             * Club Id
+             * Format: uuid
+             */
+            club_id: string;
+            /**
+             * Pool Id
+             * Format: uuid
+             */
+            pool_id: string;
+            /** Template Id */
+            template_id?: string | null;
+            /**
+             * Title
+             * @default Club practice
+             */
+            title: string;
+            /**
+             * Period Start
+             * Format: date
+             */
+            period_start: string;
+            /**
+             * Period End
+             * Format: date
+             */
+            period_end: string;
+            /** Weekday */
+            weekday: number;
+            /**
+             * Starts At Local
+             * Format: time
+             */
+            starts_at_local: string;
+            /** Duration Minutes */
+            duration_minutes: number;
+            /**
+             * Capacity
+             * @default 20
+             */
+            capacity: number;
+            pricing_settings?: components["schemas"]["ClubTemplatePricing"] | null;
+            /** Excluded Dates */
+            excluded_dates?: string[];
         };
         /** GenerateSessionsRequest */
         GenerateSessionsRequest: {
@@ -23565,6 +24513,58 @@ export interface components {
             /** Location Name */
             location_name?: string | null;
         };
+        /** PublishSessionInput */
+        PublishSessionInput: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Fee Kobo */
+            fee_kobo: number;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /**
+             * Pool Id
+             * Format: uuid
+             */
+            pool_id: string;
+        };
+        /** PublishSessions */
+        PublishSessions: {
+            /**
+             * Club Id
+             * Format: uuid
+             */
+            club_id: string;
+            /** Sessions */
+            sessions: components["schemas"]["PublishSessionInput"][];
+        };
+        /** ReschedulePractice */
+        ReschedulePractice: {
+            /**
+             * Operation Id
+             * Format: uuid
+             */
+            operation_id: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /** Reason */
+            reason: string;
+            /** Pool Time Confirmed */
+            pool_time_confirmed: boolean;
+        };
         /**
          * RunningLateRequest
          * @description Member toggles their "I'll be late" flag on a booking.
@@ -23578,6 +24578,36 @@ export interface components {
              * @default true
              */
             running_late: boolean;
+        };
+        /** ScheduleChange */
+        ScheduleChange: {
+            /**
+             * Operation Id
+             * Format: uuid
+             */
+            operation_id: string;
+            /**
+             * Validate Only
+             * @default false
+             */
+            validate_only: boolean;
+            /** Session Ids */
+            session_ids: string[];
+            /** Reason */
+            reason: string;
+        };
+        /** ScheduleQuery */
+        ScheduleQuery: {
+            /** Club Id */
+            club_id?: string | null;
+            /** Session Ids */
+            session_ids?: string[];
+            /** Pool Id */
+            pool_id?: string | null;
+            /** Period Start */
+            period_start?: string | null;
+            /** Period End */
+            period_end?: string | null;
         };
         /** SessionAccessResponse */
         SessionAccessResponse: {
@@ -23814,6 +24844,14 @@ export interface components {
         };
         /** SessionCreate */
         SessionCreate: {
+            /** Club Id */
+            club_id?: string | null;
+            /**
+             * Club Access Mode
+             * @default plan_included
+             * @enum {string}
+             */
+            club_access_mode: "plan_included" | "active_club" | "paid_addon";
             /** Title */
             title: string;
             /** Description */
@@ -23904,8 +24942,6 @@ export interface components {
             cohort_id?: string | null;
             /** Event Id */
             event_id?: string | null;
-            /** Club Id */
-            club_id?: string | null;
             /** Pod Id */
             pod_id?: string | null;
             /** Week Number */
@@ -24001,6 +25037,14 @@ export interface components {
         };
         /** SessionResponse */
         SessionResponse: {
+            /** Club Id */
+            club_id?: string | null;
+            /**
+             * Club Access Mode
+             * @default plan_included
+             * @enum {string}
+             */
+            club_access_mode: "plan_included" | "active_club" | "paid_addon";
             /** Title */
             title: string;
             /** Description */
@@ -24091,8 +25135,6 @@ export interface components {
             cohort_id?: string | null;
             /** Event Id */
             event_id?: string | null;
-            /** Club Id */
-            club_id?: string | null;
             /** Pod Id */
             pod_id?: string | null;
             /** Week Number */
@@ -24152,6 +25194,15 @@ export interface components {
         };
         /** SessionTemplateCreate */
         SessionTemplateCreate: {
+            /** Club Id */
+            club_id?: string | null;
+            /**
+             * Club Access Mode
+             * @default plan_included
+             * @enum {string}
+             */
+            club_access_mode: "plan_included" | "active_club" | "paid_addon";
+            pricing_settings?: components["schemas"]["ClubTemplatePricing"] | null;
             /** Title */
             title: string;
             /** Description */
@@ -24164,8 +25215,6 @@ export interface components {
             location_name?: string | null;
             /** @default community */
             session_type: components["schemas"]["SessionType"];
-            /** Club Id */
-            club_id?: string | null;
             /** Pod Id */
             pod_id?: string | null;
             /**
@@ -24207,6 +25256,15 @@ export interface components {
         };
         /** SessionTemplateResponse */
         SessionTemplateResponse: {
+            /** Club Id */
+            club_id?: string | null;
+            /**
+             * Club Access Mode
+             * @default plan_included
+             * @enum {string}
+             */
+            club_access_mode: "plan_included" | "active_club" | "paid_addon";
+            pricing_settings?: components["schemas"]["ClubTemplatePricing"] | null;
             /** Title */
             title: string;
             /** Description */
@@ -24219,8 +25277,6 @@ export interface components {
             location_name?: string | null;
             /** @default community */
             session_type: components["schemas"]["SessionType"];
-            /** Club Id */
-            club_id?: string | null;
             /** Pod Id */
             pod_id?: string | null;
             /**
@@ -24276,6 +25332,11 @@ export interface components {
         };
         /** SessionTemplateUpdate */
         SessionTemplateUpdate: {
+            /** Club Id */
+            club_id?: string | null;
+            /** Club Access Mode */
+            club_access_mode?: ("plan_included" | "active_club" | "paid_addon") | null;
+            pricing_settings?: components["schemas"]["ClubTemplatePricing"] | null;
             /** Title */
             title?: string | null;
             /** Description */
@@ -24287,8 +25348,6 @@ export interface components {
             /** Location Name */
             location_name?: string | null;
             session_type?: components["schemas"]["SessionType"] | null;
-            /** Club Id */
-            club_id?: string | null;
             /** Pod Id */
             pod_id?: string | null;
             /** Pool Fee */
@@ -24319,6 +25378,10 @@ export interface components {
         SessionType: "cohort_class" | "club" | "community" | "event";
         /** SessionUpdate */
         SessionUpdate: {
+            /** Club Id */
+            club_id?: string | null;
+            /** Club Access Mode */
+            club_access_mode?: ("plan_included" | "active_club" | "paid_addon") | null;
             /** Title */
             title?: string | null;
             /** Description */
@@ -24366,8 +25429,6 @@ export interface components {
             cohort_id?: string | null;
             /** Event Id */
             event_id?: string | null;
-            /** Club Id */
-            club_id?: string | null;
             /** Pod Id */
             pod_id?: string | null;
             /** Week Number */
@@ -38221,6 +39282,23 @@ export interface components {
             /** Revenue Ngn */
             revenue_ngn: string;
         };
+        /** BindEvents */
+        BindEvents: {
+            /** Event Ids */
+            event_ids: string[];
+            /**
+             * Offering Id
+             * Format: uuid
+             */
+            offering_id: string;
+            /** Operation Id */
+            operation_id?: string | null;
+            /**
+             * Compensate
+             * @default false
+             */
+            compensate: boolean;
+        };
         /** Body_preview_calendar_workbook_events_planning_imports_xlsx_preview_post */
         Body_preview_calendar_workbook_events_planning_imports_xlsx_preview_post: {
             /**
@@ -38479,6 +39557,11 @@ export interface components {
             /** Occurrences */
             occurrences: components["schemas"]["EventOccurrence"][];
         };
+        /** EventIds */
+        EventIds: {
+            /** Event Ids */
+            event_ids: string[];
+        };
         /**
          * EventInviteCreate
          * @description Bulk invitation input for a private event.
@@ -38553,6 +39636,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Community Experience Offering Id */
+            community_experience_offering_id?: string | null;
             /** Title */
             title: string;
             /** Description */
@@ -43325,6 +44410,72 @@ export interface operations {
             };
         };
     };
+    authorize_pod_internal_clubs_operations_authorize_pod_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PodSchedulingAuthorization"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_promises_internal_clubs_operations_promises_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PromiseCheck"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_coaches_members_coaches_get: {
         parameters: {
             query?: never;
@@ -44946,6 +46097,558 @@ export interface operations {
             };
         };
     };
+    admin_offerings_clubs_community_experiences_admin_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityExperienceOfferingResponse"][];
+                };
+            };
+        };
+    };
+    update_offering_clubs_community_experiences_admin__offering_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                offering_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommunityExperienceOfferingCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityExperienceOfferingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_events_clubs_community_experiences_admin__offering_id__events_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                offering_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_events_clubs_community_experiences_admin__offering_id__events_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                offering_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExperienceEventsUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    configuration_operations_clubs_community_experiences_admin__offering_id__operations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                offering_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recover_configuration_clubs_community_experiences_admin__offering_id__operations__operation_id__recover_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                offering_id: string;
+                operation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    participants_clubs_community_experiences_admin__offering_id__participants_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                offering_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    affected_session_options_clubs_community_experiences_admin__offering_id__club_sessions_get: {
+        parameters: {
+            query: {
+                pool_id: string;
+            };
+            header?: never;
+            path: {
+                offering_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_in_clubs_community_experiences_admin_participants__participant_id__check_in_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                participant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExperienceAttendanceInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_offering_clubs_community_experiences_public__offering_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                offering_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_order_clubs_community_experiences__offering_id__orders_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                offering_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExperienceOrderCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExperienceOrderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    order_status_clubs_community_experiences_orders__order_id__status_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExperienceOrderAccess"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExperienceOrderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_tickets_clubs_community_experiences__offering_id__tickets_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                offering_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExperienceOrderResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_member_details_clubs_community_experiences_participants__participant_id__my_details_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                participant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExperienceParticipantInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    order_checkout_clubs_community_experiences_orders__order_id__checkout_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExperienceOrderAccess"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_order_clubs_community_experiences_internal_orders__order_id__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExperienceOrderConfirm"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    event_participants_clubs_community_experiences_internal__offering_id__events__event_id__participants_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                offering_id: string;
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_community_experiences_clubs_community_experiences_get: {
         parameters: {
             query?: never;
@@ -45085,6 +46788,173 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CommunityExperienceOfferingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    plan_schedule_clubs_admin_plans__plan_id__schedule_get: {
+        parameters: {
+            query?: {
+                pool_id?: string | null;
+            };
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_draft_clubs_admin_plans__plan_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClubPlanCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubPlanResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_draft_clubs_admin_plans__plan_id__publish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubPlanResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_recommendation_clubs_admin_plans_recommendations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuarterRecommendationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubPlanResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_next_quarter_clubs_admin_plans__plan_id__next_quarter_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NextQuarterRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubPlanResponse"];
                 };
             };
             /** @description Validation Error */
@@ -48210,6 +50080,168 @@ export interface operations {
             };
         };
     };
+    pod_sessions_sessions_club_operations_pods__pod_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pod_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    extra_practice_sessions_club_operations_extra_practices_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExtraPractice"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reschedule_practice_sessions_club_operations__session_id__reschedule_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReschedulePractice"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    session_operations_sessions_club_operations__session_id__operations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_notifications_sessions_club_operations__session_id__operations__operation_id__retry_notifications_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+                operation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_bundle_cart_sessions_bundles_post: {
         parameters: {
             query?: never;
@@ -49561,6 +51593,169 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    query_schedule_internal_sessions_club_schedule_query_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleQuery"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_quarter_internal_sessions_club_schedule_generate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateQuarter"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_sessions_internal_sessions_club_schedule_replace_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    undo_replacement_internal_sessions_club_schedule_operations__operation_id__undo_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                operation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_sessions_internal_sessions_club_schedule_publish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublishSessions"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
             };
             /** @description Validation Error */
             422: {
@@ -68931,6 +71126,105 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RSVPResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    query_events_internal_events_experiences_query_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventIds"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bind_events_internal_events_experiences_bind_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BindEvents"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unbind_events_internal_events_experiences_unbind_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BindEvents"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

@@ -164,6 +164,7 @@ const navSections: NavSection[] = [
     // section, so the queue page they can't act on doesn't appear.
     title: "Pod Lead Tools",
     items: [
+      { href: "/account/pod-lead/sessions", label: "Practice scheduling", icon: Calendar },
       {
         href: "/account/pod-lead/review",
         label: "Submission Review",

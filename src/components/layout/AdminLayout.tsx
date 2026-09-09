@@ -76,6 +76,7 @@ const navSections: NavSection[] = [
       { href: "/admin/attendance", label: "Attendance", icon: ClipboardCheck },
       { href: "/admin/club-applications", label: "Club Assessments", icon: ClipboardCheck },
       { href: "/admin/club-plans", label: "Club Pricing", icon: Waves },
+      { href: "/admin/community/experiences", label: "Experience Offerings", icon: Calendar },
       { href: "/admin/guest-passes", label: "Guest Passes", icon: UserCheck },
       { href: "/admin/payment-charges", label: "Payment Charges", icon: Receipt },
       { href: "/admin/ai/queue", label: "Stroke Lab Queue", icon: Activity },
