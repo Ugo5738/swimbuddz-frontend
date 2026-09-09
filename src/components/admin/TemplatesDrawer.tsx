@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Calendar, Pencil, Plus, Trash2, X } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 import { IBtn } from "@/app/(admin)/admin/sessions/components";
@@ -129,8 +130,9 @@ export function TemplatesDrawer({
                             {t.duration_minutes}min
                           </p>
                           <p className="text-xs text-slate-500">
-                            {locationLabel(t.location)} &middot; N{t.pool_fee} &middot; {t.capacity}{" "}
-                            cap
+                            {locationLabel(t.location)} &middot;{" "}
+                            {t.session_type === "club" ? "Inherited pricing" : `N${t.pool_fee}`}{" "}
+                            &middot; {t.capacity} cap
                           </p>
                         </div>
                         <IBtn
@@ -142,13 +144,23 @@ export function TemplatesDrawer({
                         </IBtn>
                       </div>
                       <div className="mt-3 flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => onGenerate(t)}
-                          className="flex items-center gap-1"
-                        >
-                          <Calendar className="h-3.5 w-3.5" /> Generate
-                        </Button>
+                        {t.session_type === "club" &&
+                        (t.club_access_mode ?? "plan_included") === "plan_included" ? (
+                          <Link
+                            href="/admin/club-plans"
+                            className="inline-flex min-h-[36px] items-center gap-1 rounded-md bg-cyan-600 px-3 py-2 text-sm font-medium text-white hover:bg-cyan-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2"
+                          >
+                            <Calendar className="h-3.5 w-3.5" /> Generate Club quarter
+                          </Link>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => onGenerate(t)}
+                            className="flex items-center gap-1"
+                          >
+                            <Calendar className="h-3.5 w-3.5" /> Generate
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="secondary"

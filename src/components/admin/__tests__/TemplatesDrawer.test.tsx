@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TemplatesDrawer } from "../TemplatesDrawer";
+import type { Template } from "@/app/(admin)/admin/sessions/types";
 
 vi.mock("@/components/admin/PoolPicker", () => ({
   PoolPicker: () => <div data-testid="pool-picker" />,
@@ -190,5 +191,71 @@ describe("TemplatesDrawer Club scope", () => {
     expect(onCreate.mock.calls[0][1]).toEqual([
       expect.objectContaining({ role_id: "role-safety", slots_needed: 2 }),
     ]);
+  });
+});
+
+describe("Template generation routes and pricing labels", () => {
+  const saved: Template = {
+    id: "template",
+    title: "Saturday template",
+    session_type: "club",
+    club_access_mode: "plan_included",
+    club_id: "club-lagos",
+    day_of_week: 5,
+    start_time: "09:00",
+    duration_minutes: 90,
+    location: "sunfit_pool",
+    pool_fee: 8765,
+    capacity: 20,
+    auto_generate: false,
+    is_active: true,
+  };
+  function show(template: Template) {
+    const generate = vi.fn();
+    render(
+      <TemplatesDrawer
+        templates={[template]}
+        rideAreas={[]}
+        templateForm={null}
+        editingTemplate={null}
+        onClose={vi.fn()}
+        onCreateTemplate={vi.fn()}
+        onUpdateTemplate={vi.fn()}
+        onDeleteTemplate={vi.fn()}
+        onGenerate={generate}
+        onOpenForm={vi.fn()}
+      />
+    );
+    return generate;
+  }
+  it.each(["plan_included", undefined] as const)(
+    "routes included templates (%s) to the quarter workflow",
+    (mode) => {
+      const generate = show({ ...saved, club_access_mode: mode });
+      expect(screen.getByRole("link", { name: "Generate Club quarter" })).toHaveAttribute(
+        "href",
+        "/admin/club-plans"
+      );
+      expect(screen.queryByRole("button", { name: "Generate" })).not.toBeInTheDocument();
+      expect(screen.getByText(/Inherited pricing/)).toBeInTheDocument();
+      expect(screen.queryByText(/8765/)).not.toBeInTheDocument();
+      expect(generate).not.toHaveBeenCalled();
+    }
+  );
+  it.each(["active_club", "paid_addon"] as const)("retains generic generation for %s", (mode) => {
+    const template = { ...saved, club_access_mode: mode };
+    const generate = show(template);
+    fireEvent.click(screen.getByRole("button", { name: "Generate" }));
+    expect(generate).toHaveBeenCalledWith(template);
+    expect(screen.getByText(/Inherited pricing/)).toBeInTheDocument();
+    expect(screen.queryByText(/8765/)).not.toBeInTheDocument();
+  });
+  it("keeps the stored fee and Generate action for non-Club templates", () => {
+    const template = { ...saved, session_type: "community", club_id: null };
+    const generate = show(template);
+    expect(screen.getByText(/N8765/)).toBeInTheDocument();
+    expect(screen.queryByText(/Inherited pricing/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Generate" }));
+    expect(generate).toHaveBeenCalledWith(template);
   });
 });

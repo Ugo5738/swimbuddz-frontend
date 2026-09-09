@@ -159,4 +159,22 @@ describe("Admin actual-session quarter drafts", () => {
     expect(mocks.post.mock.calls[0][1]).not.toHaveProperty("source_session_id");
     expect(mocks.post.mock.calls.some(([url]) => url.endsWith("/publish"))).toBe(false);
   });
+
+  it("shows an existing-draft conflict instead of treating changed settings as applied", async () => {
+    mocks.post.mockRejectedValueOnce(
+      new Error(
+        "A draft already exists for this Club and quarter. Open the existing draft to edit it."
+      )
+    );
+    render(<ClubPlansAdminPage />);
+    fireEvent.change(screen.getByLabelText("Recommendation Club"), { target: { value: "yaba" } });
+    fireEvent.change(screen.getByLabelText("Quarter"), { target: { value: "4" } });
+    fireEvent.change(screen.getByLabelText("Margin (₦)"), { target: { value: "1500" } });
+    fireEvent.click(screen.getByRole("button", { name: "Generate reviewable quarter" }));
+    expect(await screen.findByText(/A draft already exists/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Review draft" })).toBeInTheDocument();
+    expect(mocks.get).not.toHaveBeenCalled();
+    expect(mocks.put).not.toHaveBeenCalled();
+    expect(mocks.post.mock.calls.some(([url]) => url.endsWith("/publish"))).toBe(false);
+  });
 });
