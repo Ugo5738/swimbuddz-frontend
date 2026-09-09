@@ -18,7 +18,9 @@ function completeForm() {
 }
 
 describe("Club same-identity rescheduling", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
   it("sends only time and reason, never a pool or paid-price replacement", async () => {
     mocks.post.mockResolvedValue({ notification_status: "sent" });
     const changed = vi.fn(async () => {});

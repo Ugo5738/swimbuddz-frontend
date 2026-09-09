@@ -14,13 +14,13 @@
 import { Input } from "@/components/ui/Input";
 import { Club, listClubs } from "@/lib/clubs";
 import { ChevronDown, Loader2, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 interface ClubPickerProps {
   /** Currently-selected club id (or null) */
   value: string | null;
-  /** Called with a club id, or null when cleared */
-  onChange: (clubId: string | null) => void;
+  /** Called with a club id and record, or null when cleared. */
+  onChange: (clubId: string | null, club?: Club | null) => void;
   /** Optional label rendered above the picker */
   label?: string;
   /** Placeholder text when nothing is selected */
@@ -31,6 +31,8 @@ interface ClubPickerProps {
   activeOnly?: boolean;
   /** Disabled state */
   disabled?: boolean;
+  /** Mark the picker as required in its label and accessibility metadata. */
+  required?: boolean;
 }
 
 export function ClubPicker({
@@ -41,7 +43,11 @@ export function ClubPicker({
   helpText,
   activeOnly = true,
   disabled = false,
+  required = false,
 }: ClubPickerProps) {
+  const id = useId();
+  const labelId = `${id}-label`;
+  const listboxId = `${id}-options`;
   const [clubs, setClubs] = useState<Club[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -56,8 +62,7 @@ export function ClubPicker({
         if (!cancelled) setClubs(data);
       })
       .catch((err) => {
-        if (!cancelled)
-          setError(err instanceof Error ? err.message : "Failed to load");
+        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -70,10 +75,7 @@ export function ClubPicker({
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     };
@@ -81,24 +83,14 @@ export function ClubPicker({
     return () => window.removeEventListener("mousedown", handler);
   }, [open]);
 
-  const selected = useMemo(
-    () => clubs.find((c) => c.id === value) ?? null,
-    [clubs, value],
-  );
+  const selected = useMemo(() => clubs.find((c) => c.id === value) ?? null, [clubs, value]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return clubs.slice(0, 50);
     return clubs
       .filter((c) => {
-        const haystack = [
-          c.name,
-          c.slug,
-          c.location ?? "",
-          c.id,
-        ]
-          .join(" ")
-          .toLowerCase();
+        const haystack = [c.name, c.slug, c.location ?? "", c.id].join(" ").toLowerCase();
         return haystack.includes(q);
       })
       .slice(0, 50);
@@ -106,27 +98,26 @@ export function ClubPicker({
 
   const handleSelect = useCallback(
     (id: string) => {
-      onChange(id);
+      onChange(id, clubs.find((club) => club.id === id) ?? null);
       setQuery("");
       setOpen(false);
     },
-    [onChange],
+    [clubs, onChange]
   );
 
   return (
     <div ref={containerRef} className="relative">
       {label && (
-        <label className="mb-1 block text-sm font-medium text-slate-700">
+        <span id={labelId} className="mb-1 block text-sm font-medium text-slate-700">
           {label}
-        </label>
+          {required && <span className="text-rose-600"> *</span>}
+        </span>
       )}
 
       {selected ? (
         <div className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-slate-900">
-              {selected.name}
-            </p>
+            <p className="truncate text-sm font-medium text-slate-900">{selected.name}</p>
             <p className="truncate text-xs text-slate-500">
               {selected.slug}
               {selected.location ? ` · ${selected.location}` : ""}
@@ -145,7 +136,7 @@ export function ClubPicker({
               </button>
               <button
                 type="button"
-                onClick={() => onChange(null)}
+                onClick={() => onChange(null, null)}
                 className="rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
                 aria-label="Clear club"
               >
@@ -159,6 +150,9 @@ export function ClubPicker({
           type="button"
           onClick={() => setOpen(true)}
           disabled={disabled}
+          aria-labelledby={label ? labelId : undefined}
+          aria-expanded={open}
+          aria-controls={listboxId}
           className="flex w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500 hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <span>{placeholder}</span>
@@ -174,6 +168,7 @@ export function ClubPicker({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search by name, slug, or location…"
+              aria-labelledby={label ? labelId : undefined}
             />
           </div>
           <div className="max-h-72 overflow-y-auto">
@@ -191,19 +186,20 @@ export function ClubPicker({
                   : "No clubs match."}
               </div>
             ) : (
-              <ul role="listbox" className="py-1">
+              <ul id={listboxId} role="listbox" className="py-1">
                 {filtered.map((c) => (
-                  <li key={c.id}>
+                  <li key={c.id} role="presentation">
                     <button
                       type="button"
+                      role="option"
+                      aria-selected={c.id === value}
+                      aria-label={[c.name, c.location, c.slug].filter(Boolean).join(", ")}
                       onClick={() => handleSelect(c.id)}
                       className={`flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left hover:bg-cyan-50 ${
                         c.id === value ? "bg-cyan-50" : ""
                       }`}
                     >
-                      <span className="text-sm font-medium text-slate-900">
-                        {c.name}
-                      </span>
+                      <span className="text-sm font-medium text-slate-900">{c.name}</span>
                       <span className="text-xs text-slate-500">
                         {c.slug}
                         {c.location ? ` · ${c.location}` : ""}
@@ -217,9 +213,7 @@ export function ClubPicker({
         </div>
       )}
 
-      {helpText && (
-        <p className="mt-1 text-xs text-slate-500">{helpText}</p>
-      )}
+      {helpText && <p className="mt-1 text-xs text-slate-500">{helpText}</p>}
     </div>
   );
 }

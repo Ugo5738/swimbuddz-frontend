@@ -21,7 +21,6 @@ export interface SessionCostLine {
 }
 
 export interface Session {
-  club_id?: string | null;
   club_access_mode?: "plan_included" | "active_club" | "paid_addon";
   id: string;
   title: string;
@@ -53,6 +52,7 @@ export interface Session {
   is_recurring_instance?: boolean;
   cohort_id?: string | null;
   event_id?: string | null;
+  club_id?: string | null;
   pod_id?: string | null;
   timezone?: string;
 }
@@ -82,12 +82,12 @@ export interface SessionRideConfig {
  * state). Optional fields default to `null` server-side.
  */
 export interface SessionPayload {
-  club_id?: string | null;
   club_access_mode?: "plan_included" | "active_club" | "paid_addon";
   title: string;
   session_type: SessionType;
   cohort_id: string | null;
   event_id: string | null;
+  club_id: string | null;
   pool_id: string | null;
   location: string | null;
   location_name: string | null;
@@ -108,7 +108,6 @@ export interface SessionPayload {
 }
 
 export interface Template {
-  club_id?: string | null;
   club_access_mode?: "plan_included" | "active_club" | "paid_addon";
   pricing_settings?: ClubTemplatePricing | null;
   id: string;
@@ -119,6 +118,7 @@ export interface Template {
   pool_id?: string | null;
   location: string | null;
   location_name?: string | null;
+  club_id?: string | null;
   pod_id?: string | null;
   session_type?: string;
   pool_fee: number;

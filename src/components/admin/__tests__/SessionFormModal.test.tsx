@@ -7,6 +7,67 @@ import { SessionFormModal } from "../SessionFormModal";
 
 vi.mock("@/components/admin/PoolPicker", () => ({
   PoolPicker: () => <div data-testid="pool-picker" />,
+  getPoolOption: vi.fn(async () => ({ id: "pool-rowe", name: "Rowe Park Pool" })),
+}));
+
+vi.mock("@/components/admin/ClubSessionScopeFields", () => ({
+  ClubSessionScopeFields: ({
+    scope,
+    onClubChange,
+    onScopeChange,
+    onPodChange,
+  }: {
+    scope: "general" | "pod";
+    onClubChange: (id: string, club: unknown) => void;
+    onScopeChange: (scope: "general" | "pod") => void;
+    onPodChange: (id: string, pod: unknown) => void;
+  }) => (
+    <div>
+      <button
+        type="button"
+        onClick={() =>
+          onClubChange("club-lagos", {
+            id: "club-lagos",
+            name: "Lagos Mainland Club",
+            default_pool_id: "pool-rowe",
+          })
+        }
+      >
+        Select Lagos Club
+      </button>
+      <button
+        type="button"
+        role="radio"
+        aria-checked={scope === "general"}
+        onClick={() => onScopeChange("general")}
+      >
+        General Club
+      </button>
+      <button
+        type="button"
+        role="radio"
+        aria-checked={scope === "pod"}
+        onClick={() => onScopeChange("pod")}
+      >
+        Pod-specific
+      </button>
+      {scope === "pod" && (
+        <button
+          type="button"
+          onClick={() =>
+            onPodChange("pod-orca", {
+              id: "pod-orca",
+              club_id: "club-lagos",
+              name: "Orca",
+              default_pool_id: "pool-rowe",
+            })
+          }
+        >
+          Select Orca pod
+        </button>
+      )}
+    </div>
+  ),
 }));
 
 vi.mock("@/components/admin/VolunteerNeedsDraftSection", () => ({
@@ -32,14 +93,7 @@ vi.mock("@/components/admin/VolunteerNeedsDraftSection", () => ({
 }));
 
 vi.mock("@/lib/pods", () => ({
-  listPublicPods: vi.fn(async () => [
-    {
-      id: "pod-orca",
-      club_id: "club-lagos",
-      name: "Orca",
-    },
-  ]),
-  podDisplayName: vi.fn(() => "Orca"),
+  adminGetPod: vi.fn(),
 }));
 
 function renderModal(onCreate = vi.fn()) {
@@ -56,12 +110,26 @@ function renderModal(onCreate = vi.fn()) {
   fireEvent.change(screen.getByLabelText(/Title/), {
     target: { value: "Saturday Club Swim" },
   });
+  fireEvent.click(screen.getByRole("button", { name: "Select Lagos Club" }));
   return onCreate;
 }
 
 describe("SessionFormModal Club scope", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("keeps a paid extra practice separate from purchased-quarter inclusion", async () => {
+    const onCreate = renderModal();
+    fireEvent.change(screen.getByLabelText("Club access mode"), {
+      target: { value: "paid_addon" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create Session" }));
+    await waitFor(() => expect(onCreate).toHaveBeenCalledOnce());
+    expect(onCreate.mock.calls[0][0]).toMatchObject({
+      club_id: "club-lagos",
+      club_access_mode: "paid_addon",
+    });
   });
 
   it("creates a general Club session with no pod", async () => {
@@ -76,6 +144,7 @@ describe("SessionFormModal Club scope", () => {
     await waitFor(() => expect(onCreate).toHaveBeenCalledTimes(1));
     expect(onCreate.mock.calls[0][0]).toMatchObject({
       session_type: "club",
+      club_id: "club-lagos",
       pod_id: null,
     });
   });
@@ -84,13 +153,13 @@ describe("SessionFormModal Club scope", () => {
     const onCreate = renderModal();
 
     fireEvent.click(screen.getByRole("radio", { name: "Pod-specific" }));
-    const podSelect = await screen.findByLabelText(/Pod/);
-    fireEvent.change(podSelect, { target: { value: "pod-orca" } });
+    fireEvent.click(screen.getByRole("button", { name: "Select Orca pod" }));
     fireEvent.click(screen.getByRole("button", { name: "Create Session" }));
 
     await waitFor(() => expect(onCreate).toHaveBeenCalledTimes(1));
     expect(onCreate.mock.calls[0][0]).toMatchObject({
       session_type: "club",
+      club_id: "club-lagos",
       pod_id: "pod-orca",
     });
   });

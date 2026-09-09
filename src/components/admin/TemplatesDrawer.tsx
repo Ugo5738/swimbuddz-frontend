@@ -6,8 +6,10 @@
 
 "use client";
 
+import { ClubSessionScopeFields } from "@/components/admin/ClubSessionScopeFields";
 import { PoolPicker } from "@/components/admin/PoolPicker";
 import { SessionTemplateVolunteerSlotsSection } from "@/components/admin/SessionTemplateVolunteerSlotsSection";
+import { useClubSessionScope } from "@/components/admin/useClubSessionScope";
 import {
   VolunteerNeedsDraftSection,
   type VolunteerNeedDraft,
@@ -16,9 +18,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Calendar, Pencil, Plus, Trash2, X } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useApi } from "@/hooks/useApi";
-import type { Club } from "@/lib/clubs";
+import { useState } from "react";
 
 import { IBtn } from "@/app/(admin)/admin/sessions/components";
 import type { RideArea, RideShareConfigEntry, Template } from "@/app/(admin)/admin/sessions/types";
@@ -31,14 +31,14 @@ import { DAY_NAMES, locationLabel } from "@/app/(admin)/admin/sessions/utils";
  * the persisted Template record.
  */
 export type TemplateFormPayload = {
-  club_id?: string | null;
-  club_access_mode?: "plan_included" | "active_club" | "paid_addon";
+  club_access_mode?: Template["club_access_mode"];
   pricing_settings?: Template["pricing_settings"];
   title: string;
   session_type: string;
   pool_id: string | null;
   location: string | null;
   location_name: string | null;
+  club_id: string | null;
   pod_id: string | null;
   day_of_week: number;
   start_time: string;
@@ -190,7 +190,6 @@ function TemplateFormInline({
   onUpdate: (id: string, data: TemplateFormPayload) => void;
 }) {
   const [form, setForm] = useState({
-    club_id: template?.club_id ?? (null as string | null),
     club_access_mode: template?.club_access_mode ?? "plan_included",
     title: template?.title || "",
     session_type: template?.session_type || "club",
@@ -198,6 +197,7 @@ function TemplateFormInline({
     pool_id: template?.pool_id ?? null,
     location: template?.location || null,
     location_name: template?.location_name ?? null,
+    club_id: template?.club_id ?? null,
     pod_id: template?.pod_id ?? null,
     day_of_week: template?.day_of_week ?? 5,
     start_time: template?.start_time || "09:00",
@@ -206,21 +206,30 @@ function TemplateFormInline({
     capacity: template?.capacity || 20,
     auto_generate: template?.auto_generate || false,
   });
-  const clubs = useApi<Club[]>(
-    form.session_type === "club" ? "/api/v1/clubs?active_only=true" : null
-  );
+  const [volunteerNeeds, setVolunteerNeeds] = useState<VolunteerNeedDraft[]>([]);
   const [pricing, setPricing] = useState({
-    pricing_expected_attendees: template?.pricing_settings?.pricing_expected_attendees ?? 20,
+    pricing_expected_attendees:
+      template?.pricing_settings?.pricing_expected_attendees ?? template?.capacity ?? 20,
     margin_type: template?.pricing_settings?.margin_type ?? "fixed_per_attendee",
     margin_value: template?.pricing_settings?.margin_value ?? 0,
     expected_staff: template?.pricing_settings?.expected_staff ?? 0,
     lanes: template?.pricing_settings?.lanes ?? 1,
     cost_lines: template?.pricing_settings?.cost_lines ?? [],
   });
-  const [clubScope, setClubScope] = useState<"general" | "pod">(
-    template?.pod_id ? "pod" : "general"
-  );
-  const [volunteerNeeds, setVolunteerNeeds] = useState<VolunteerNeedDraft[]>([]);
+  const {
+    scope: clubScope,
+    selectedPod,
+    podDefaultPoolName,
+    applyDefaultPool,
+    handleClubChange,
+    handlePodChange,
+    handleScopeChange,
+    resetScope,
+  } = useClubSessionScope({
+    sessionType: form.session_type,
+    podId: form.pod_id,
+    setForm,
+  });
 
   const [rideConfigs, setRideConfigs] = useState<RideShareConfigEntry[]>(
     template?.ride_share_config && Array.isArray(template.ride_share_config)
@@ -232,38 +241,21 @@ function TemplateFormInline({
       : []
   );
 
-  const [pods, setPods] = useState<Array<{ id: string; label: string; club_id: string }>>([]);
-  useEffect(() => {
-    if (form.session_type !== "club") return;
-    if (pods.length > 0) return;
-    void (async () => {
-      try {
-        const { listPublicPods, podDisplayName } = await import("@/lib/pods");
-        const list = await listPublicPods();
-        setPods(
-          list.map((p) => ({
-            id: p.id,
-            label: podDisplayName(p),
-            club_id: p.club_id,
-          }))
-        );
-      } catch (e) {
-        console.warn("Failed to load pods for template form", e);
-      }
-    })();
-  }, [form.session_type, pods.length]);
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (form.session_type === "club" && !form.club_id) {
+      alert("Pick the Club and location this template belongs to.");
+      return;
+    }
     if (form.session_type === "club" && clubScope === "pod" && !form.pod_id) {
       alert("Pick the pod this Club template is for.");
       return;
     }
     const data: TemplateFormPayload = {
       ...form,
-      club_id: form.session_type === "club" ? form.club_id : null,
       club_access_mode: form.session_type === "club" ? form.club_access_mode : "plan_included",
       pricing_settings: form.session_type === "club" && form.club_id ? pricing : null,
+      club_id: form.session_type === "club" ? form.club_id : null,
       pod_id: form.session_type === "club" && clubScope === "pod" ? (form.pod_id ?? null) : null,
       ride_share_config: rideConfigs
         .filter((c) => c.ride_area_id)
@@ -297,13 +289,18 @@ function TemplateFormInline({
       <Select
         label="Session Type"
         value={form.session_type}
-        onChange={(e) =>
+        onChange={(e) => {
+          const sessionType = e.target.value;
+          if (sessionType !== "club") {
+            resetScope();
+          }
           setForm({
             ...form,
-            session_type: e.target.value,
-            pod_id: e.target.value === "club" ? form.pod_id : null,
-          })
-        }
+            session_type: sessionType,
+            club_id: sessionType === "club" ? form.club_id : null,
+            pod_id: sessionType === "club" ? form.pod_id : null,
+          });
+        }}
       >
         <option value="club">Club</option>
         <option value="cohort_class">Academy / Cohort Class</option>
@@ -311,22 +308,17 @@ function TemplateFormInline({
         <option value="event">Event</option>
       </Select>
       {form.session_type === "club" && (
-        <fieldset className="space-y-3">
-          <legend className="text-sm font-medium text-slate-700">Club scope</legend>
+        <>
+          <ClubSessionScopeFields
+            clubId={form.club_id}
+            scope={clubScope}
+            podId={form.pod_id}
+            onClubChange={handleClubChange}
+            onScopeChange={handleScopeChange}
+            onPodChange={handlePodChange}
+          />
           <Select
-            label="Club location"
-            value={form.club_id ?? ""}
-            onChange={(e) => setForm({ ...form, club_id: e.target.value || null, pod_id: null })}
-          >
-            <option value="">Legacy / choose a Club for inherited pricing</option>
-            {clubs.data?.map((club) => (
-              <option key={club.id} value={club.id}>
-                {club.name}
-              </option>
-            ))}
-          </Select>
-          <Select
-            label="Club access"
+            label="Club access mode"
             value={form.club_access_mode}
             onChange={(e) =>
               setForm({
@@ -339,63 +331,7 @@ function TemplateFormInline({
             <option value="active_club">Extra practice for active Club members</option>
             <option value="paid_addon">Paid add-on for active Club members</option>
           </Select>
-          <div
-            className="grid grid-cols-2 rounded-md border border-slate-200 p-1"
-            role="radiogroup"
-            aria-label="Club template scope"
-          >
-            <button
-              type="button"
-              role="radio"
-              aria-checked={clubScope === "general"}
-              onClick={() => {
-                setClubScope("general");
-                setForm({ ...form, pod_id: null });
-              }}
-              className={`min-h-10 rounded px-3 py-2 text-sm font-medium transition ${
-                clubScope === "general"
-                  ? "bg-cyan-700 text-white"
-                  : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              General Club
-            </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={clubScope === "pod"}
-              onClick={() => setClubScope("pod")}
-              className={`min-h-10 rounded px-3 py-2 text-sm font-medium transition ${
-                clubScope === "pod" ? "bg-cyan-700 text-white" : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              Pod-specific
-            </button>
-          </div>
-          {clubScope === "pod" && (
-            <Select
-              label="Pod"
-              value={form.pod_id ?? ""}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  pod_id: e.target.value || null,
-                  club_id: pods.find((p) => p.id === e.target.value)?.club_id ?? form.club_id,
-                })
-              }
-              required
-            >
-              <option value="">Select a pod</option>
-              {pods
-                .filter((p) => !form.club_id || p.club_id === form.club_id)
-                .map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.label}
-                  </option>
-                ))}
-            </Select>
-          )}
-        </fieldset>
+        </>
       )}
       <Select
         label="Day of Week"
@@ -425,8 +361,27 @@ function TemplateFormInline({
             location_name: poolName ?? null,
           })
         }
-        hint="Templates inherit the pool for every session they generate."
+        hint={
+          form.session_type === "club"
+            ? "Prefilled from the selected Club or Pod. You can override it for this template."
+            : "Templates inherit the pool for every session they generate."
+        }
       />
+      {selectedPod?.default_pool_id && form.pool_id !== selectedPod.default_pool_id && (
+        <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+          <p>
+            This Pod normally swims at {podDefaultPoolName ?? "its default pool"}. You can keep this
+            template pool or restore the Pod default.
+          </p>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => applyDefaultPool(selectedPod.default_pool_id!)}
+          >
+            Use Pod default
+          </Button>
+        </div>
+      )}
       <Input
         label="Duration (minutes)"
         type="number"
@@ -437,7 +392,7 @@ function TemplateFormInline({
       <div className="grid grid-cols-2 gap-3">
         <Input
           label="Pool Fee (N)"
-          disabled={form.session_type === "club" && Boolean(form.club_id)}
+          disabled={form.session_type === "club"}
           type="number"
           value={form.pool_fee}
           onChange={(e) => setForm({ ...form, pool_fee: parseInt(e.target.value) || 0 })}
@@ -450,20 +405,19 @@ function TemplateFormInline({
         />
       </div>
 
-      {/* Ride share config */}
       {form.session_type === "club" && form.club_id && (
         <fieldset className="space-y-3 rounded border p-3">
           <legend>Inherited Session pricing</legend>
           <p className="text-sm">
             Each generated date gets current pool and operating rates, including configured
-            refreshments. The saved margin below is applied by the normal Session cost-plus engine;
-            the old Pool Fee is not copied.
+            refreshments. The normal Session cost-plus engine applies this margin; the old Pool Fee
+            is not copied.
           </p>
           <Input
             label="Expected attendees"
             type="number"
-            min="1"
-            max="500"
+            min={1}
+            max={500}
             required
             value={pricing.pricing_expected_attendees}
             onChange={(e) =>
@@ -483,7 +437,7 @@ function TemplateFormInline({
           <Input
             label="Margin value (₦ or %)"
             type="number"
-            min="0"
+            min={0}
             step="0.01"
             required
             value={pricing.margin_value}
@@ -492,8 +446,8 @@ function TemplateFormInline({
           <Input
             label="Expected staff"
             type="number"
-            min="0"
-            max="50"
+            min={0}
+            max={50}
             required
             value={pricing.expected_staff}
             onChange={(e) => setPricing({ ...pricing, expected_staff: Number(e.target.value) })}
@@ -501,18 +455,19 @@ function TemplateFormInline({
           <Input
             label="Lanes"
             type="number"
-            min="1"
-            max="50"
+            min={1}
+            max={50}
             required
             value={pricing.lanes}
             onChange={(e) => setPricing({ ...pricing, lanes: Number(e.target.value) })}
           />
           <p className="text-sm">
-            Existing template-specific ancillary cost lines are preserved. Review the generated
-            Session’s detailed cost lines before publication.
+            Existing template-specific ancillary cost lines are preserved. Review each generated
+            Session’s detailed costs before publication.
           </p>
         </fieldset>
       )}
+      {/* Ride share config */}
       <div className="border-t border-slate-200 pt-4">
         <div className="mb-2 flex items-center justify-between">
           <span className="text-sm font-medium text-slate-700">Ride Share (optional)</span>

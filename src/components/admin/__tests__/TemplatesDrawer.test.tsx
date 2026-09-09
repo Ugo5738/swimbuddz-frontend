@@ -5,6 +5,67 @@ import { TemplatesDrawer } from "../TemplatesDrawer";
 
 vi.mock("@/components/admin/PoolPicker", () => ({
   PoolPicker: () => <div data-testid="pool-picker" />,
+  getPoolOption: vi.fn(async () => ({ id: "pool-rowe", name: "Rowe Park Pool" })),
+}));
+
+vi.mock("@/components/admin/ClubSessionScopeFields", () => ({
+  ClubSessionScopeFields: ({
+    scope,
+    onClubChange,
+    onScopeChange,
+    onPodChange,
+  }: {
+    scope: "general" | "pod";
+    onClubChange: (id: string, club: unknown) => void;
+    onScopeChange: (scope: "general" | "pod") => void;
+    onPodChange: (id: string, pod: unknown) => void;
+  }) => (
+    <div>
+      <button
+        type="button"
+        onClick={() =>
+          onClubChange("club-lagos", {
+            id: "club-lagos",
+            name: "Lagos Mainland Club",
+            default_pool_id: "pool-rowe",
+          })
+        }
+      >
+        Select Lagos Club
+      </button>
+      <button
+        type="button"
+        role="radio"
+        aria-checked={scope === "general"}
+        onClick={() => onScopeChange("general")}
+      >
+        General Club
+      </button>
+      <button
+        type="button"
+        role="radio"
+        aria-checked={scope === "pod"}
+        onClick={() => onScopeChange("pod")}
+      >
+        Pod-specific
+      </button>
+      {scope === "pod" && (
+        <button
+          type="button"
+          onClick={() =>
+            onPodChange("pod-orca", {
+              id: "pod-orca",
+              club_id: "club-lagos",
+              name: "Orca",
+              default_pool_id: "pool-rowe",
+            })
+          }
+        >
+          Select Orca pod
+        </button>
+      )}
+    </div>
+  ),
 }));
 
 vi.mock("@/components/admin/SessionTemplateVolunteerSlotsSection", () => ({
@@ -34,14 +95,7 @@ vi.mock("@/components/admin/VolunteerNeedsDraftSection", () => ({
 }));
 
 vi.mock("@/lib/pods", () => ({
-  listPublicPods: vi.fn(async () => [
-    {
-      id: "pod-orca",
-      club_id: "club-lagos",
-      name: "Orca",
-    },
-  ]),
-  podDisplayName: vi.fn(() => "Orca"),
+  adminGetPod: vi.fn(),
 }));
 
 function renderCreateDrawer(onCreateTemplate = vi.fn()) {
@@ -62,12 +116,35 @@ function renderCreateDrawer(onCreateTemplate = vi.fn()) {
   fireEvent.change(screen.getByLabelText(/Title/), {
     target: { value: "Saturday Club Swim" },
   });
+  fireEvent.click(screen.getByRole("button", { name: "Select Lagos Club" }));
   return onCreateTemplate;
 }
 
 describe("TemplatesDrawer Club scope", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("saves inherited pricing inputs with the selected Club, not a fixed template fee", async () => {
+    const onCreate = renderCreateDrawer();
+    expect(screen.getByLabelText("Pool Fee (N)")).toBeDisabled();
+    fireEvent.change(screen.getByLabelText("Club access mode"), {
+      target: { value: "active_club" },
+    });
+    fireEvent.change(screen.getByLabelText("Expected attendees"), { target: { value: "15" } });
+    fireEvent.change(screen.getByLabelText("Margin basis"), { target: { value: "percentage" } });
+    fireEvent.change(screen.getByLabelText("Margin value (₦ or %)"), { target: { value: "25" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create Template" }));
+    await waitFor(() => expect(onCreate).toHaveBeenCalledOnce());
+    expect(onCreate.mock.calls[0][0]).toMatchObject({
+      club_id: "club-lagos",
+      club_access_mode: "active_club",
+      pricing_settings: {
+        pricing_expected_attendees: 15,
+        margin_type: "percentage",
+        margin_value: 25,
+      },
+    });
   });
 
   it("creates a general Club template with no pod", async () => {
@@ -83,6 +160,7 @@ describe("TemplatesDrawer Club scope", () => {
     await waitFor(() => expect(onCreate).toHaveBeenCalledTimes(1));
     expect(onCreate.mock.calls[0][0]).toMatchObject({
       session_type: "club",
+      club_id: "club-lagos",
       pod_id: null,
     });
   });
@@ -91,13 +169,13 @@ describe("TemplatesDrawer Club scope", () => {
     const onCreate = renderCreateDrawer();
 
     fireEvent.click(screen.getByRole("radio", { name: "Pod-specific" }));
-    const podSelect = await screen.findByLabelText(/^Pod/);
-    fireEvent.change(podSelect, { target: { value: "pod-orca" } });
+    fireEvent.click(screen.getByRole("button", { name: "Select Orca pod" }));
     fireEvent.click(screen.getByRole("button", { name: "Create Template" }));
 
     await waitFor(() => expect(onCreate).toHaveBeenCalledTimes(1));
     expect(onCreate.mock.calls[0][0]).toMatchObject({
       session_type: "club",
+      club_id: "club-lagos",
       pod_id: "pod-orca",
     });
   });

@@ -5,8 +5,11 @@
 
 "use client";
 
+import { ClubSessionScopeFields } from "@/components/admin/ClubSessionScopeFields";
 import { PoolPicker } from "@/components/admin/PoolPicker";
+import { RescheduleClubPractice } from "@/components/club/RescheduleClubPractice";
 import { SessionVolunteerOpportunitiesSection } from "@/components/admin/SessionVolunteerOpportunitiesSection";
+import { useClubSessionScope } from "@/components/admin/useClubSessionScope";
 import {
   VolunteerNeedsDraftSection,
   type VolunteerNeedDraft,
@@ -17,9 +20,6 @@ import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { apiGet } from "@/lib/api";
-import { useApi } from "@/hooks/useApi";
-import type { Club } from "@/lib/clubs";
-import { RescheduleClubPractice } from "@/components/club/RescheduleClubPractice";
 import { PoolPricingApi } from "@/lib/poolPricing";
 import { Calculator, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -83,9 +83,10 @@ export function SessionFormModal({
   const now = new Date();
   const defaultStart = initialDate || now;
   const defaultEnd = new Date(defaultStart.getTime() + 3 * 60 * 60 * 1000);
+  const publishedClub =
+    mode === "edit" && !!session?.published_at && session.session_type === "club";
 
   const [form, setForm] = useState({
-    club_id: session?.club_id ?? (null as string | null),
     club_access_mode: session?.club_access_mode ?? "plan_included",
     title: session?.title || "",
     session_type: session?.session_type || "club",
@@ -113,47 +114,31 @@ export function SessionFormModal({
     margin_value: session?.margin_value ?? 0,
     description: session?.description || "",
     publish_status: "draft" as "draft" | "published",
-    // Optional Pod link for Club sessions. NULL = "general Club session,
-    // any Club member welcome". Set = "this Saturday's session for
-    // Dolphins specifically". See docs/club/POD_OPERATIONS.md.
+    // Every Club session has a stable Club owner; Pod is an optional narrower
+    // audience within that Club.
+    club_id: session?.club_id ?? null,
     pod_id: session?.pod_id ?? null,
     // Context FKs the session_type discriminator requires (A1):
     //   cohort_class → cohort_id required;  event → event_id required;
-    //   club → pod_id optional;  community → none.
+    //   club → club_id required, pod_id optional;  community → none.
     cohort_id: session?.cohort_id ?? null,
     event_id: session?.event_id ?? null,
   });
-  const [clubScope, setClubScope] = useState<"general" | "pod">(
-    session?.pod_id ? "pod" : "general"
-  );
   const [volunteerNeeds, setVolunteerNeeds] = useState<VolunteerNeedDraft[]>([]);
-  const clubs = useApi<Club[]>(
-    form.session_type === "club" ? "/api/v1/clubs?active_only=true" : null
-  );
-
-  // Lazy-load active pods only when session_type is "club" — avoids the
-  // round-trip for academy/community/event sessions where pod_id doesn't
-  // apply.
-  const [pods, setPods] = useState<Array<{ id: string; label: string; club_id: string }>>([]);
-  useEffect(() => {
-    if (form.session_type !== "club") return;
-    if (pods.length > 0) return;
-    void (async () => {
-      try {
-        const { listPublicPods, podDisplayName } = await import("@/lib/pods");
-        const list = await listPublicPods();
-        setPods(
-          list.map((p) => ({
-            id: p.id,
-            label: podDisplayName(p),
-            club_id: p.club_id,
-          }))
-        );
-      } catch (e) {
-        console.warn("Failed to load pods for session form", e);
-      }
-    })();
-  }, [form.session_type, pods.length]);
+  const {
+    scope: clubScope,
+    selectedPod,
+    podDefaultPoolName,
+    applyDefaultPool,
+    handleClubChange,
+    handlePodChange,
+    handleScopeChange,
+    resetScope,
+  } = useClubSessionScope({
+    sessionType: form.session_type,
+    podId: form.pod_id,
+    setForm,
+  });
 
   // Lazy-load cohorts only when the type is "cohort_class" — required by
   // the discriminator. Mirrors the pods pattern.
@@ -320,13 +305,16 @@ export function SessionFormModal({
       alert("Pick the event this session belongs to.");
       return;
     }
+    if (form.session_type === "club" && !form.club_id) {
+      alert("Pick the Club and location this session belongs to.");
+      return;
+    }
     if (form.session_type === "club" && clubScope === "pod" && !form.pod_id) {
       alert("Pick the pod this Club session is for.");
       return;
     }
 
     const sessionData: SessionPayload = {
-      club_id: form.session_type === "club" ? form.club_id : null,
       club_access_mode: form.session_type === "club" ? form.club_access_mode : "plan_included",
       title: form.title,
       session_type: form.session_type,
@@ -334,6 +322,7 @@ export function SessionFormModal({
       // never ship a discriminator-violating combination.
       cohort_id: form.session_type === "cohort_class" ? form.cohort_id : null,
       event_id: form.session_type === "event" ? form.event_id : null,
+      club_id: form.session_type === "club" ? form.club_id : null,
       // When a pool is picked, send pool_id as the authoritative link and
       // skip the legacy enum. Pre-registry sessions without a pool_id
       // continue to send the `location` enum for backwards compatibility.
@@ -387,30 +376,28 @@ export function SessionFormModal({
         onChange={(e) => setForm({ ...form, title: e.target.value })}
         required
       />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Select
-          label="Session Type"
-          value={form.session_type}
-          onChange={(e) => setForm({ ...form, session_type: e.target.value as SessionType })}
-        >
-          <option value="club">Club</option>
-          <option value="cohort_class">Academy / Cohort Class</option>
-          <option value="community">Community</option>
-          <option value="event">Event</option>
-        </Select>
-        <PoolPicker
-          label="Pool"
-          value={form.pool_id}
-          onChange={(poolId, poolName) =>
-            setForm({
-              ...form,
-              pool_id: poolId,
-              location_name: poolName ?? null,
-            })
+      <Select
+        label="Session Type"
+        disabled={publishedClub}
+        value={form.session_type}
+        onChange={(event) => {
+          const sessionType = event.target.value as SessionType;
+          if (sessionType !== "club") {
+            resetScope();
           }
-          hint="Managed at Admin → Pool Registry."
-        />
-      </div>
+          setForm({
+            ...form,
+            session_type: sessionType,
+            club_id: sessionType === "club" ? form.club_id : null,
+            pod_id: sessionType === "club" ? form.pod_id : null,
+          });
+        }}
+      >
+        <option value="club">Club</option>
+        <option value="cohort_class">Academy / Cohort Class</option>
+        <option value="community">Community</option>
+        <option value="event">Event</option>
+      </Select>
       {/* Cohort link — REQUIRED for Academy / Cohort Class sessions
             (discriminator rule). Without it the backend rejects the
             session. Only active/upcoming cohorts are listed. */}
@@ -447,24 +434,16 @@ export function SessionFormModal({
           ))}
         </Select>
       )}
-      {/* Pod link — only meaningful for Club sessions. NULL = general
-            Club session open to any club member. Set = scheduled for that
-            specific pod's roster (Saturday for Dolphins, etc). */}
       {form.session_type === "club" && (
-        <fieldset className="space-y-3" disabled={Boolean(session?.published_at)}>
-          <legend className="text-sm font-medium text-slate-700">Club scope</legend>
-          <Select
-            label="Club location"
-            value={form.club_id ?? ""}
-            onChange={(e) => setForm({ ...form, club_id: e.target.value || null, pod_id: null })}
-          >
-            <option value="">Legacy / choose location</option>
-            {clubs.data?.map((club) => (
-              <option key={club.id} value={club.id}>
-                {club.name}
-              </option>
-            ))}
-          </Select>
+        <fieldset disabled={publishedClub} className="space-y-4">
+          <ClubSessionScopeFields
+            clubId={form.club_id}
+            scope={clubScope}
+            podId={form.pod_id}
+            onClubChange={handleClubChange}
+            onScopeChange={handleScopeChange}
+            onPodChange={handlePodChange}
+          />
           <Select
             label="Club access mode"
             value={form.club_access_mode}
@@ -481,65 +460,63 @@ export function SessionFormModal({
             </option>
             <option value="paid_addon">Paid add-on for active Club members</option>
           </Select>
-          <div
-            className="grid grid-cols-2 rounded-md border border-slate-200 p-1"
-            role="radiogroup"
-            aria-label="Club session scope"
-          >
-            <button
-              type="button"
-              role="radio"
-              aria-checked={clubScope === "general"}
-              onClick={() => {
-                setClubScope("general");
-                setForm({ ...form, pod_id: null });
-              }}
-              className={`min-h-10 rounded px-3 py-2 text-sm font-medium transition ${
-                clubScope === "general"
-                  ? "bg-cyan-700 text-white"
-                  : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              General Club
-            </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={clubScope === "pod"}
-              onClick={() => setClubScope("pod")}
-              className={`min-h-10 rounded px-3 py-2 text-sm font-medium transition ${
-                clubScope === "pod" ? "bg-cyan-700 text-white" : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              Pod-specific
-            </button>
-          </div>
-          {clubScope === "pod" && (
-            <Select
-              label="Pod"
-              value={form.pod_id ?? ""}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  pod_id: e.target.value || null,
-                  club_id: pods.find((p) => p.id === e.target.value)?.club_id ?? form.club_id,
-                })
-              }
-              required
-            >
-              <option value="">Select a pod</option>
-              {pods
-                .filter((p) => !form.club_id || p.club_id === form.club_id)
-                .map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.label}
-                  </option>
-                ))}
-            </Select>
-          )}
         </fieldset>
       )}
-      {session?.published_at && session.session_type === "club" && (
+      <PoolPicker
+        label="Pool"
+        disabled={publishedClub}
+        value={form.pool_id}
+        onChange={(poolId, poolName) =>
+          setForm({
+            ...form,
+            pool_id: poolId,
+            location_name: poolName ?? null,
+          })
+        }
+        hint={
+          publishedClub
+            ? "Published Club sessions keep their pool and audience. Use the reschedule action to move the swim."
+            : form.session_type === "club"
+              ? "Prefilled from the selected Club or Pod. You can change it for this session."
+              : "Managed at Admin → Pool Registry."
+        }
+      />
+      {selectedPod?.default_pool_id && form.pool_id !== selectedPod.default_pool_id && (
+        <div className="flex flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950 sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            This Pod normally swims at {podDefaultPoolName ?? "its default pool"}. You can keep the
+            current pool for this session or restore the Pod default.
+          </p>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={publishedClub}
+            className="shrink-0"
+            onClick={() => applyDefaultPool(selectedPod.default_pool_id!)}
+          >
+            Use Pod default
+          </Button>
+        </div>
+      )}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Input
+          label="Start Time"
+          disabled={publishedClub}
+          type="datetime-local"
+          value={form.starts_at}
+          onChange={(e) => setForm({ ...form, starts_at: e.target.value })}
+          required
+        />
+        <Input
+          label="End Time"
+          disabled={publishedClub}
+          type="datetime-local"
+          value={form.ends_at}
+          onChange={(e) => setForm({ ...form, ends_at: e.target.value })}
+          required
+        />
+      </div>
+      {publishedClub && session && (
         <RescheduleClubPractice
           sessionId={session.id}
           onChanged={async () => {
@@ -552,24 +529,6 @@ export function SessionFormModal({
           }}
         />
       )}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Input
-          label="Start Time"
-          disabled={session?.session_type === "club" && Boolean(session?.published_at)}
-          type="datetime-local"
-          value={form.starts_at}
-          onChange={(e) => setForm({ ...form, starts_at: e.target.value })}
-          required
-        />
-        <Input
-          label="End Time"
-          disabled={session?.session_type === "club" && Boolean(session?.published_at)}
-          type="datetime-local"
-          value={form.ends_at}
-          onChange={(e) => setForm({ ...form, ends_at: e.target.value })}
-          required
-        />
-      </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Input
           label="Booking price per attendee (₦)"
