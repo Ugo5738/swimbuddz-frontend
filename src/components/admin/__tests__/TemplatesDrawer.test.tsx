@@ -127,13 +127,14 @@ describe("TemplatesDrawer Club scope", () => {
 
   it("saves inherited pricing inputs with the selected Club, not a fixed template fee", async () => {
     const onCreate = renderCreateDrawer();
+    await screen.findByLabelText(/^Expected attendees/);
     expect(screen.getByLabelText("Pool Fee (N)")).toBeDisabled();
     fireEvent.change(screen.getByLabelText("Club access mode"), {
       target: { value: "active_club" },
     });
-    fireEvent.change(screen.getByLabelText("Expected attendees"), { target: { value: "15" } });
+    fireEvent.change(screen.getByLabelText(/^Expected attendees/), { target: { value: "15" } });
     fireEvent.change(screen.getByLabelText("Margin basis"), { target: { value: "percentage" } });
-    fireEvent.change(screen.getByLabelText("Margin value (₦ or %)"), { target: { value: "25" } });
+    fireEvent.change(screen.getByLabelText(/^Margin value/), { target: { value: "25" } });
     fireEvent.click(screen.getByRole("button", { name: "Create Template" }));
     await waitFor(() => expect(onCreate).toHaveBeenCalledOnce());
     expect(onCreate.mock.calls[0][0]).toMatchObject({
