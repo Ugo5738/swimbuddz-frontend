@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/api", () => ({ apiGet: mocks.get, apiPost: mocks.post, apiPut: mocks.put }));
 vi.mock("@/lib/clubOnboarding", () => ({ createClubPlan: mocks.create }));
+vi.mock("@/components/club/RescheduleClubPractice", () => ({ RescheduleClubPractice: () => null }));
 vi.mock("@/hooks/useApi", () => ({
   useApi: (path: string) => ({
     loading: false,
@@ -136,6 +137,7 @@ describe("Admin actual-session quarter drafts", () => {
   });
   it("generates an inaugural quarter without a source session or an existing plan", async () => {
     mocks.plans = [];
+    mocks.post.mockResolvedValueOnce({ ...plan, id: "new-draft" });
     render(<ClubPlansAdminPage />);
     fireEvent.change(screen.getByLabelText("Recommendation Club"), { target: { value: "yaba" } });
     fireEvent.change(screen.getByLabelText("Quarter"), { target: { value: "4" } });
@@ -158,9 +160,51 @@ describe("Admin actual-session quarter drafts", () => {
     );
     expect(mocks.post.mock.calls[0][1]).not.toHaveProperty("source_session_id");
     expect(mocks.post.mock.calls.some(([url]) => url.endsWith("/publish"))).toBe(false);
+    await waitFor(() =>
+      expect(mocks.get).toHaveBeenCalledWith("/api/v1/clubs/admin/plans/new-draft/schedule", {
+        auth: true,
+      })
+    );
+    expect(
+      await screen.findByText(/2 included sessions · recommended ₦12,000/)
+    ).toBeInTheDocument();
+    expect(mocks.create).not.toHaveBeenCalled();
   });
 
-  it("shows an existing-draft conflict instead of treating changed settings as applied", async () => {
+  it("populates an existing empty draft and opens that same draft for review", async () => {
+    const empty = {
+      ...plan,
+      id: "saved-empty-draft",
+      name: "Admin's Q4",
+      session_ids: [],
+      sessions_included: 0,
+      club_fee_kobo: 0,
+      recommended_fee_kobo: 0,
+    };
+    mocks.plans = [empty];
+    mocks.post.mockResolvedValueOnce({ ...plan, id: empty.id, name: empty.name, capacity: 15 });
+    render(<ClubPlansAdminPage />);
+    fireEvent.change(screen.getByLabelText("Recommendation Club"), { target: { value: "yaba" } });
+    fireEvent.change(screen.getByLabelText("Quarter"), { target: { value: "4" } });
+    fireEvent.change(screen.getByLabelText("Margin (₦)"), { target: { value: "1500" } });
+    fireEvent.change(screen.getByLabelText("Capacity"), { target: { value: "15" } });
+    fireEvent.click(screen.getByRole("button", { name: "Generate reviewable quarter" }));
+    expect(
+      await screen.findByText(/2 included sessions · recommended ₦12,000/)
+    ).toBeInTheDocument();
+    expect(mocks.get).toHaveBeenCalledWith(`/api/v1/clubs/admin/plans/${empty.id}/schedule`, {
+      auth: true,
+    });
+    expect(screen.getByLabelText("Plan name")).toHaveValue(empty.name);
+    expect(screen.getByLabelText("Plan capacity (optional)")).toHaveValue(15);
+    expect(screen.getByRole("checkbox", { name: /Mainland swim/ })).toBeChecked();
+    expect(screen.getByRole("button", { name: "Save and publish reviewed quarter" })).toBeEnabled();
+    expect(mocks.post).toHaveBeenCalledOnce();
+    expect(mocks.create).not.toHaveBeenCalled();
+    expect(mocks.put).not.toHaveBeenCalled();
+  });
+
+  it("shows a configured-draft conflict instead of treating changed settings as applied", async () => {
     mocks.post.mockRejectedValueOnce(
       new Error(
         "A draft already exists for this Club and quarter. Open the existing draft to edit it."
@@ -176,5 +220,34 @@ describe("Admin actual-session quarter drafts", () => {
     expect(mocks.get).not.toHaveBeenCalled();
     expect(mocks.put).not.toHaveBeenCalled();
     expect(mocks.post.mock.calls.some(([url]) => url.endsWith("/publish"))).toBe(false);
+  });
+
+  it("opens an already-published quarter read-only without regenerating or publishing it", async () => {
+    const published = {
+      ...plan,
+      id: "published-plan",
+      name: "Published Q4",
+      published_at: "2026-09-09T09:00:00Z",
+    };
+    mocks.plans = [published];
+    mocks.post.mockResolvedValueOnce(published);
+    render(<ClubPlansAdminPage />);
+    fireEvent.change(screen.getByLabelText("Recommendation Club"), { target: { value: "yaba" } });
+    fireEvent.change(screen.getByLabelText("Quarter"), { target: { value: "4" } });
+    fireEvent.change(screen.getByLabelText("Margin (₦)"), { target: { value: "9999" } });
+    fireEvent.click(screen.getByRole("button", { name: "Generate reviewable quarter" }));
+    expect(await screen.findByText("Published schedule (read-only)")).toBeInTheDocument();
+    expect(mocks.get).toHaveBeenCalledWith(`/api/v1/clubs/admin/plans/${published.id}/schedule`, {
+      auth: true,
+    });
+    expect(screen.getByLabelText("Plan name")).toHaveValue(published.name);
+    expect(screen.getByLabelText("Plan name")).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Save draft" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Save and publish reviewed quarter" })
+    ).not.toBeInTheDocument();
+    expect(mocks.post).toHaveBeenCalledOnce();
+    expect(mocks.put).not.toHaveBeenCalled();
+    expect(mocks.create).not.toHaveBeenCalled();
   });
 });
