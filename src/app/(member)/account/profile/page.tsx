@@ -179,9 +179,8 @@ function ProfileContent() {
           </div>
         </div>
 
-        {/* View Card Button (only for Club/Academy) */}
-        {(profile?.membershipTiers.includes("club") ||
-          profile?.membershipTiers.includes("academy")) && (
+        {/* Every paid member can show their identity card. */}
+        {profile?.membershipTiers.length ? (
           <div className="flex-shrink-0">
             <a
               href="#membership-card"
@@ -190,7 +189,7 @@ function ProfileContent() {
               View Member Card
             </a>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
@@ -230,21 +229,32 @@ function ProfileContent() {
             <h2 className="text-lg font-semibold text-slate-900">Membership</h2>
 
             {/* Membership Card */}
-            {(profile.membershipTiers.includes("club") ||
-              profile.membershipTiers.includes("academy")) && (
+            {profile.membershipTiers.length > 0 && (
               <div className="mb-4" id="membership-card">
                 <MembershipCard
                   name={profile.name}
-                  tier={profile.membershipTiers.includes("academy") ? "academy" : "club"}
+                  tier={
+                    profile.membershipTiers.includes("academy")
+                      ? "academy"
+                      : profile.membershipTiers.includes("club")
+                        ? "club"
+                        : "community"
+                  }
                   memberId={profile.id}
                   joinedAt={profile.joinedAt}
                   photoUrl={profile.profilePhotoUrl}
                   validUntil={
                     profile.membershipTiers.includes("academy")
                       ? (profile.academyPaidUntil ?? undefined)
-                      : (profile.clubPaidUntil ?? undefined)
+                      : profile.membershipTiers.includes("club")
+                        ? (profile.clubPaidUntil ?? undefined)
+                        : (profile.communityPaidUntil ?? undefined)
                   }
                 />
+                <p className="mt-3 text-xs text-slate-500">
+                  Your QR code identifies you as a member. A swim still needs its own valid booking
+                  and any required payment.
+                </p>
               </div>
             )}
 

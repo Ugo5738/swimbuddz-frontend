@@ -70,6 +70,8 @@ function CheckoutContent() {
   const [member, setMember] = useState<Member | null>(null);
   const [pricing, setPricing] = useState<PricingConfig | null>(null);
   const [clubQuote, setClubQuote] = useState<ChargePreview | null>(null);
+  const [clubExperienceSelected, setClubExperienceSelected] = useState<boolean | undefined>();
+  const quoteRequest = useRef(0);
   const [academyQuote, setAcademyQuote] = useState<ChargePreview | null>(null);
   const [experienceQuote, setExperienceQuote] = useState<ChargePreview | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
@@ -192,6 +194,7 @@ function CheckoutContent() {
 
   // Load member data and pricing (and cohort if needed)
   const loadData = useCallback(async () => {
+    const request = ++quoteRequest.current;
     setLoading(true);
     try {
       const [memberData, pricingData] = await Promise.all([
@@ -206,14 +209,18 @@ function CheckoutContent() {
           const quote = await previewClubCheckout(
             clubApplicationId,
             paymentMethod,
-            clubPaymentModeWasChosen ? clubPaymentMode : undefined
+            clubPaymentModeWasChosen ? clubPaymentMode : undefined,
+            clubExperienceSelected
           );
+          if (request !== quoteRequest.current) return;
           setClubQuote(quote);
           if (quote.components.club_payment_mode) {
             setClubPaymentMode(quote.components.club_payment_mode);
           }
           setQuoteError(null);
         } catch (quoteFailure) {
+          if (request !== quoteRequest.current) return;
+          setClubQuote(null);
           setQuoteError(
             quoteFailure instanceof Error
               ? quoteFailure.message
@@ -289,7 +296,7 @@ function CheckoutContent() {
     } catch (e) {
       console.error("Failed to load data:", e);
     } finally {
-      setLoading(false);
+      if (request === quoteRequest.current) setLoading(false);
     }
   }, [
     urlCohortId,
@@ -300,6 +307,7 @@ function CheckoutContent() {
     clubApplicationId,
     clubPaymentMode,
     clubPaymentModeWasChosen,
+    clubExperienceSelected,
     paymentMethod,
     communityExperienceOfferingId,
     billingMode,
@@ -349,9 +357,9 @@ function CheckoutContent() {
           amount: annualMembership,
         });
       }
-      if (clubQuote.components.community_experience_selected && experienceFee > 0) {
+      if (clubQuote.components.community_experience_selected) {
         lineItems.push({
-          label: "Current-quarter Community Experience — optional Club bundle rate",
+          label: clubQuote.components.community_experience_option?.name || "Community Experience",
           amount: experienceFee,
         });
       }
@@ -426,6 +434,11 @@ function CheckoutContent() {
   // Apply discount
   const discountAmount = validatedDiscount?.amount || 0;
   const total = Math.max(0, subtotal - discountAmount);
+  const isTransition =
+    purpose === "club" &&
+    !!clubApplicationId &&
+    clubQuote?.components.club_payment_mode === "transition_per_session";
+  const nothingDue = isTransition && total === 0;
 
   // ── Installment plan preview (mirrors installments.py logic) ─────────────
   const cohortForInstallments = purpose === "academy_cohort" ? state.selectedCohort : null;
@@ -569,6 +582,8 @@ function CheckoutContent() {
               purpose: "club",
               club_application_id: clubApplicationId,
               club_payment_mode: clubPaymentMode,
+              club_community_experience_selected:
+                clubQuote?.components.community_experience_selected,
             }
           : {
               ...intentPayload,
@@ -663,14 +678,16 @@ function CheckoutContent() {
         clearState();
         // Redirect to payment provider
         window.location.href = intent.checkout_url;
-      } else if (paymentMethod === "manual_transfer") {
+      } else if (paymentMethod === "manual_transfer" && intent.status !== "paid") {
         // For manual transfers, go to proof upload page
         toast.success(`Payment reference created: ${intent.reference}`);
         clearState();
         router.push(`/account/billing?pending_transfer=${intent.reference}`);
       } else {
         if (intent.status === "paid") {
-          toast.success("Payment complete. Access activated.");
+          toast.success(
+            nothingDue ? "Club access activated." : "Payment complete. Access activated."
+          );
         } else {
           toast.success(`Payment reference created: ${intent.reference}`);
         }
@@ -736,15 +753,21 @@ function CheckoutContent() {
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 text-white">
           <CreditCard className="w-8 h-8" />
         </div>
-        <h1 className="text-2xl font-bold text-slate-900">Review & Pay</h1>
+        <h1 className="text-2xl font-bold text-slate-900">
+          {isTransition ? "Activate your Club access" : "Review & Pay"}
+        </h1>
         <p className="text-slate-600 max-w-md mx-auto">
-          Please review your order before proceeding to payment.
+          {isTransition
+            ? "Review your Club access and choose any extras below."
+            : "Please review your order before proceeding to payment."}
         </p>
       </div>
 
       {/* Order Summary */}
       <Card className="p-6">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Order Summary</h2>
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">
+          {isTransition ? "Your Club access" : "Order Summary"}
+        </h2>
 
         {purpose === "club" && clubQuote?.components.approved_payment_modes ? (
           <div className="mb-5">
@@ -753,6 +776,7 @@ function CheckoutContent() {
               value={clubPaymentMode}
               transitionExpiresAt={clubQuote.components.transition_expires_at}
               onChange={(mode) => {
+                quoteRequest.current++;
                 setClubQuote(null);
                 setClubPaymentModeWasChosen(true);
                 setClubPaymentMode(mode);
@@ -767,6 +791,36 @@ function CheckoutContent() {
               />
             ) : null}
           </div>
+        ) : null}
+
+        {clubQuote?.components.community_experience_option ? (
+          <label className="mb-5 flex items-start gap-3 rounded-xl border border-cyan-200 p-4 text-sm">
+            <input
+              type="checkbox"
+              checked={!!clubQuote.components.community_experience_selected}
+              onChange={(event) => {
+                quoteRequest.current++;
+                setClubQuote(null);
+                setClubExperienceSelected(event.target.checked);
+              }}
+              className="mt-1"
+            />
+            <span className="flex-1">
+              <span className="font-semibold">
+                Add {clubQuote.components.community_experience_option.name}
+              </span>
+              <span className="block text-slate-600">
+                Optional.{" "}
+                {isTransition
+                  ? "Standard member price; pay-per-swim access does not include the quarter bundle discount."
+                  : "Club bundle price when you buy the quarter."}{" "}
+                You can remove this before continuing.
+              </span>
+            </span>
+            <span>
+              {formatCurrency(clubQuote.components.community_experience_option.amount_kobo / 100)}
+            </span>
+          </label>
         ) : null}
 
         <div className="space-y-3">
@@ -889,8 +943,12 @@ function CheckoutContent() {
             </div>
           ) : (
             <div className="pt-4 border-t border-slate-200 flex justify-between">
-              <span className="text-base font-semibold text-slate-900">Total</span>
-              <span className="text-xl font-bold text-cyan-600">{formatCurrency(total)}</span>
+              <span className="text-base font-semibold text-slate-900">
+                {nothingDue ? "Nothing due today" : isTransition ? "Due today" : "Total"}
+              </span>
+              {!nothingDue && (
+                <span className="text-xl font-bold text-cyan-600">{formatCurrency(total)}</span>
+              )}
             </div>
           )}
         </div>
@@ -929,7 +987,7 @@ function CheckoutContent() {
       )}
 
       {/* Approved Club applications can reconcile an existing bank transfer. */}
-      {(purpose === "session" || (purpose === "club" && clubApplicationId)) && (
+      {!nothingDue && (purpose === "session" || (purpose === "club" && clubApplicationId)) && (
         <Card className="p-6">
           <h2 className="text-lg font-semibold text-slate-900 mb-4">Payment Method</h2>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -975,7 +1033,13 @@ function CheckoutContent() {
           {paymentMethod === "manual_transfer" && (
             <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
               <h3 className="font-medium text-amber-900 mb-2">📋 Bank Transfer Details</h3>
-              {purpose === "club" && <p className="mb-3 text-sm text-amber-900">Already transferred? Do not pay again. Continue to upload the existing receipt for Admin reconciliation against this approved quote. If the amount differs, contact Admin before continuing.</p>}
+              {purpose === "club" && (
+                <p className="mb-3 text-sm text-amber-900">
+                  Already transferred? Do not pay again. Continue to upload the existing receipt for
+                  Admin reconciliation against this approved quote. If the amount differs, contact
+                  Admin before continuing.
+                </p>
+              )}
               <div className="space-y-1 text-sm text-amber-800">
                 <p>
                   <span className="text-amber-600">Bank:</span> <strong>OPay</strong>
@@ -1006,11 +1070,15 @@ function CheckoutContent() {
         <Button onClick={handlePayment} disabled={processing} size="lg" className="w-full">
           {processing
             ? "Processing..."
-            : installmentsEnabled && billingMode === "installments"
-              ? `Pay ${formatCurrency(installmentPreview?.deposit ?? 0)} — Start Installment Plan`
-              : paymentMethod === "paystack"
-                ? `Pay ${formatCurrency(total)}`
-                : `Confirm & Get Reference`}
+            : nothingDue
+              ? "Activate Club access"
+              : isTransition && paymentMethod === "paystack"
+                ? `Pay ${formatCurrency(total)} & activate Club access`
+                : installmentsEnabled && billingMode === "installments"
+                  ? `Pay ${formatCurrency(installmentPreview?.deposit ?? 0)} — Start Installment Plan`
+                  : paymentMethod === "paystack"
+                    ? `Pay ${formatCurrency(total)}`
+                    : `Confirm & Get Reference`}
         </Button>
 
         <Link
@@ -1024,9 +1092,11 @@ function CheckoutContent() {
 
       {/* Security note */}
       <p className="text-center text-xs text-slate-400">
-        {paymentMethod === "paystack"
-          ? "Payments are securely processed by Paystack. Your card details are never stored on our servers."
-          : "After creating your payment reference, upload proof of payment for admin verification."}
+        {nothingDue
+          ? "No payment is needed to activate your Club access. You'll pay for each swim when you book."
+          : paymentMethod === "paystack"
+            ? "Payments are securely processed by Paystack. Your card details are never stored on our servers."
+            : "After creating your payment reference, upload proof of payment for admin verification."}
       </p>
     </div>
   );

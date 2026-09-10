@@ -24,7 +24,7 @@ export function ClubPaymentArrangementFields({ value, disabled = false, onChange
   return (
     <fieldset className="space-y-3 rounded-xl border border-cyan-100 bg-cyan-50/50 p-4">
       <legend className="px-1 text-sm font-semibold text-slate-900">
-        Approved payment arrangements
+        How this member can join Club
       </legend>
       <p className="text-xs text-slate-600">
         These options apply only to this application. The 2026 transition option never becomes a
@@ -39,9 +39,9 @@ export function ClubPaymentArrangementFields({ value, disabled = false, onChange
           className="mt-1"
         />
         <span>
-          <span className="font-medium">Quarterly prepaid</span>
+          <span className="font-medium">Pay for the quarter</span>
           <span className="block text-xs text-slate-500">
-            The approved location-specific Club quarter is paid before attendance.
+            The member pays for their Club quarter before attending.
           </span>
         </span>
       </label>
@@ -54,7 +54,7 @@ export function ClubPaymentArrangementFields({ value, disabled = false, onChange
           className="mt-1"
         />
         <span>
-          <span className="font-medium">2026 per-session transition</span>
+          <span className="font-medium">Pay per swim</span>
           <span className="block text-xs text-slate-500">
             Member pays each eligible session&apos;s current Admin-set price when booking.
           </span>
@@ -62,16 +62,14 @@ export function ClubPaymentArrangementFields({ value, disabled = false, onChange
       </label>
       {transitionEnabled ? (
         <label className="block space-y-1 text-sm font-medium text-slate-800">
-          Transition expiry
+          Pay-per-swim access ends
           <input
-            aria-label="Transition expiry"
+            aria-label="Pay-per-swim access ends"
             type="date"
             required
             disabled={disabled}
             value={value.transitionExpiresAt}
-            onChange={(event) =>
-              onChange({ ...value, transitionExpiresAt: event.target.value })
-            }
+            onChange={(event) => onChange({ ...value, transitionExpiresAt: event.target.value })}
             className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 font-normal sm:max-w-xs"
           />
           <span className="block text-xs font-normal text-slate-500">

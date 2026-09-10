@@ -228,6 +228,11 @@ export default function VerifyMemberPage() {
             </div>
           </div>
 
+          <p className="text-sm text-slate-600">
+            This verifies membership only. Check the swimmer&apos;s booking and any required payment
+            before admitting them to a session.
+          </p>
+
           {/* QR Code for re-scan */}
           <div className="text-center pt-2">
             <div className="inline-block bg-white p-3 rounded-lg shadow-sm border">

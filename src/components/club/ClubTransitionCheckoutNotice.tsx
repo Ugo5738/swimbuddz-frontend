@@ -14,12 +14,11 @@ export function ClubTransitionCheckoutNotice({ expiresAt }: Props) {
 
   return (
     <div className="mt-3 rounded-xl border border-cyan-200 bg-cyan-50 p-4 text-sm text-cyan-950">
-      <p className="font-semibold">2026 Club Transition — Pay Per Session</p>
+      <p className="font-semibold">Pay per swim until {expiry}</p>
       <p className="mt-1">
-        No quarterly Club fee. You will see and pay each Club session&apos;s current Admin-set price
-        when you book it.
+        There&apos;s no quarterly Club fee to pay today. You&apos;ll pay the price shown for each
+        swim when you book.
       </p>
-      <p className="mt-1">Transition ends {expiry}. Quarterly Club enrollment is standard from 2027.</p>
     </div>
   );
 }

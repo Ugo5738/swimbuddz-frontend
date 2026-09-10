@@ -20,7 +20,7 @@ describe("Club payment arrangement controls", () => {
       />
     );
 
-    fireEvent.click(screen.getByLabelText(/2026 per-session transition/i));
+    fireEvent.click(screen.getByLabelText(/Pay per swim/i));
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ approvedModes: ["quarterly_prepaid", "transition_per_session"] })
     );
@@ -38,7 +38,7 @@ describe("Club payment arrangement controls", () => {
       />
     );
     expect(screen.queryByRole("radio")).not.toBeInTheDocument();
-    expect(screen.getByText("2026 per-session transition")).toBeInTheDocument();
+    expect(screen.getByText("Pay per swim")).toBeInTheDocument();
 
     rerender(
       <ClubPaymentModeSelector
@@ -48,17 +48,17 @@ describe("Club payment arrangement controls", () => {
         onChange={onChange}
       />
     );
-    fireEvent.click(screen.getByRole("radio", { name: /2026 per-session transition/i }));
+    fireEvent.click(screen.getByRole("radio", { name: /Pay per swim/i }));
     expect(onChange).toHaveBeenCalledWith("transition_per_session");
-    expect(screen.getByText(/current price when you book/)).toBeInTheDocument();
+    expect(screen.getByText(/price shown for each swim when you book/)).toBeInTheDocument();
   });
 
   it("shows session-owned pricing, zero-quarterly message, and expiry", () => {
     render(<ClubTransitionCheckoutNotice expiresAt="2026-12-31" />);
 
-    expect(screen.getByText(/No quarterly Club fee/)).toHaveTextContent(
-      "each Club session's current Admin-set price"
+    expect(screen.getByText(/no quarterly Club fee/)).toHaveTextContent(
+      "You'll pay the price shown for each swim when you book."
     );
-    expect(screen.getByText(/Transition ends/)).toHaveTextContent("31 Dec 2026");
+    expect(screen.getByText(/Pay per swim until/)).toHaveTextContent("31 Dec 2026");
   });
 });

@@ -2,12 +2,12 @@ import type { ClubPaymentMode } from "@/lib/clubOnboarding";
 
 const COPY: Record<ClubPaymentMode, { title: string; detail: string }> = {
   quarterly_prepaid: {
-    title: "Quarterly prepaid",
-    detail: "Pay the approved Club quarter now; included Club sessions show ₦0 at booking.",
+    title: "Pay for the quarter",
+    detail: "Pay for your Club quarter now. Included swims are already covered when you book.",
   },
   transition_per_session: {
-    title: "2026 per-session transition",
-    detail: "No quarterly Club charge. Pay each Club session's current price when you book.",
+    title: "Pay per swim",
+    detail: "No quarterly Club fee. You'll pay the price shown for each swim when you book.",
   },
 };
 
@@ -32,7 +32,7 @@ export function ClubPaymentModeSelector({
         <p className="text-slate-600">{COPY[mode].detail}</p>
         {mode === "transition_per_session" && transitionExpiresAt ? (
           <p className="mt-1 text-xs font-medium text-cyan-800">
-            Active through {transitionExpiresAt}
+            Pay-per-swim access ends {transitionExpiresAt}
           </p>
         ) : null}
       </div>
@@ -43,7 +43,9 @@ export function ClubPaymentModeSelector({
 
   return (
     <fieldset className="space-y-3 rounded-xl border border-cyan-100 bg-cyan-50/40 p-4">
-      <legend className="px-1 text-sm font-semibold text-slate-900">Choose how to pay for Club</legend>
+      <legend className="px-1 text-sm font-semibold text-slate-900">
+        Choose how to pay for Club
+      </legend>
       {approvedModes.map((mode) => {
         const selected = value === mode;
         return (
@@ -66,7 +68,7 @@ export function ClubPaymentModeSelector({
               <span className="block text-slate-600">{COPY[mode].detail}</span>
               {mode === "transition_per_session" && transitionExpiresAt ? (
                 <span className="mt-1 block text-xs font-medium text-cyan-800">
-                  Active through {transitionExpiresAt}
+                  Pay-per-swim access ends {transitionExpiresAt}
                 </span>
               ) : null}
             </span>
