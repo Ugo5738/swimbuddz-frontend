@@ -131,6 +131,12 @@ export type ChargePreview = {
     total_installments?: number | null;
     community_experience?: number;
     community_experience_selected?: boolean;
+    community_experience_option?: {
+      offering_id: string;
+      name: string;
+      amount_kobo: number;
+      price_context: "standard_member" | "club_bundle";
+    } | null;
     club_payment_mode?: ClubPaymentMode;
     approved_payment_modes?: ClubPaymentMode[];
     transition_expires_at?: string | null;
@@ -246,7 +252,8 @@ export function submitClubPreAssessment(
 export function previewClubCheckout(
   applicationId: string,
   paymentMethod: "paystack" | "manual_transfer" = "paystack",
-  paymentMode?: ClubPaymentMode
+  paymentMode?: ClubPaymentMode,
+  communityExperienceSelected?: boolean
 ): Promise<ChargePreview> {
   return apiPost<ChargePreview>(
     "/api/v1/payments/charges/preview",
@@ -255,6 +262,9 @@ export function previewClubCheckout(
       payment_method: paymentMethod,
       club_application_id: applicationId,
       ...(paymentMode ? { club_payment_mode: paymentMode } : {}),
+      ...(communityExperienceSelected !== undefined
+        ? { club_community_experience_selected: communityExperienceSelected }
+        : {}),
     },
     { auth: true }
   );

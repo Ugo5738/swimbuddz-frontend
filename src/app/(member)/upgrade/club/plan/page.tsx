@@ -180,7 +180,7 @@ export default function ClubPlanSelectionPage() {
     setSelectedPlanIds(primary ? [primary.id] : []);
     setExperienceSelected(
       Boolean(primary?.community_experience_offering_id) &&
-        Boolean(primary?.community_experience_default_selected),
+        Boolean(primary?.community_experience_default_selected)
     );
     setPreferredPodId("");
   };
@@ -271,8 +271,8 @@ export default function ClubPlanSelectionPage() {
         </div>
         <h1 className="text-2xl font-bold text-slate-900">Choose where you want to practise</h1>
         <p className="text-slate-600">
-          Start with an area, then choose an available pool. Each pool has its own server-priced
-          Club quarters.
+          Start with an area, then choose an available pool. Compare the available Club Club
+          quarters.
         </p>
       </div>
 
@@ -290,7 +290,7 @@ export default function ClubPlanSelectionPage() {
       {approvedApplication ? (
         <Alert variant="success" title="Assessment approved">
           <div className="space-y-3">
-            <p>Your exact server-calculated Club arrangement is ready.</p>
+            <p>You&apos;re approved. Review your options and continue your registration.</p>
             <ClubPaymentModeSelector
               approvedModes={approvedPaymentModes}
               value={effectivePaymentMode}
@@ -305,7 +305,7 @@ export default function ClubPlanSelectionPage() {
                 )
               }
             >
-              Review approved arrangement
+              Continue Club registration
             </Button>
           </div>
         </Alert>
@@ -490,7 +490,7 @@ export default function ClubPlanSelectionPage() {
                     <span className="font-medium text-slate-900">{clubQuarterLabel(plan)}</span>
                     <span className="block text-xs text-slate-500">
                       {plan.remaining_sessions} sessions remaining
-                      {required ? " · required entry quarter" : " · optional prepayment"}
+                      {required ? " · your starting quarter" : " · add another quarter"}
                     </span>
                     {!plan.entry_available ? (
                       <span className="block text-xs text-amber-700">{plan.entry_reason}</span>
@@ -522,8 +522,9 @@ export default function ClubPlanSelectionPage() {
                   {clubQuarterLabel(primaryPlan)} Community Experience
                 </span>
                 <span className="block text-sm text-slate-600">
-                  Optional. Add the linked Community Experience at the configured Club bundle
-                  rate. Each later quarter starts afresh and is not added automatically here.
+                  Optional. This price applies when buying the Club quarter. If you join on
+                  pay-per-swim access, the Standard member price applies instead. You can review or
+                  remove this at checkout.
                 </span>
                 {experienceSelected ? (
                   <span className="mt-1 block text-xs font-medium text-cyan-800">
@@ -574,14 +575,14 @@ export default function ClubPlanSelectionPage() {
               <span>{experienceSelected ? formatCurrency(experienceFee / 100) : "Not added"}</span>
             </div>
             <div className="flex justify-between gap-3 border-t border-slate-100 pt-2 font-semibold">
-              <span>Application subtotal</span>
+              <span>Estimated total</span>
               <span>
                 {formatCurrency((planSubtotal + (experienceSelected ? experienceFee : 0)) / 100)}
               </span>
             </div>
             <p className="text-xs text-slate-500">
-              This is a preview. Your approved server quote itemises annual Membership if due and
-              any enabled payment-processing charge before you pay.
+              This is an estimate. Before you pay, you&apos;ll see the final amount, including
+              annual Membership if due and any payment-processing fee.
             </p>
           </div>
 

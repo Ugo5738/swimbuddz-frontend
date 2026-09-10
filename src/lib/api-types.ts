@@ -9359,6 +9359,7 @@ export interface paths {
          *     - coach_application_rejected: Coach application rejected
          *     - coach_application_more_info: More info requested from coach applicant
          *     - member_approved: Member application approved
+         *     - club_assessment_result: Club approval or Academy recommendation with next steps
          *     - member_rejected: Member application rejected
          *     - payment_approved: Payment was approved
          *     - session_confirmation: Session booking confirmed
@@ -20142,6 +20143,10 @@ export interface components {
             community_experience_selected: boolean;
             /** Community Experience Fee Kobo */
             community_experience_fee_kobo: number;
+            /** Community Experience Option */
+            community_experience_option?: {
+                [key: string]: unknown;
+            } | null;
             /** Subtotal Kobo */
             subtotal_kobo: number;
             /**
@@ -28410,6 +28415,8 @@ export interface components {
             club_payment_mode?: ("quarterly_prepaid" | "transition_per_session") | null;
             /** Community Experience Offering Id */
             community_experience_offering_id?: string | null;
+            /** Club Community Experience Selected */
+            club_community_experience_selected?: boolean | null;
             /** Enrollment Id */
             enrollment_id?: string | null;
             /**
@@ -28674,6 +28681,8 @@ export interface components {
             club_payment_mode?: ("quarterly_prepaid" | "transition_per_session") | null;
             /** Community Experience Offering Id */
             community_experience_offering_id?: string | null;
+            /** Club Community Experience Selected */
+            club_community_experience_selected?: boolean | null;
             /** Cohort Id */
             cohort_id?: string | null;
             /** Enrollment Id */
@@ -47290,6 +47299,7 @@ export interface operations {
         parameters: {
             query?: {
                 payment_mode?: ("quarterly_prepaid" | "transition_per_session") | null;
+                community_experience_selected?: boolean | null;
             };
             header?: never;
             path: {
