@@ -8,12 +8,15 @@ import {
   Cohort,
   CohortStatus,
   Enrollment,
+  EnrollmentStatus,
   Milestone,
   PaymentStatus,
   Program,
   ProgramCurriculum,
   ProgramLevel,
 } from "@/lib/academy";
+import { canPayAcademyEnrollment } from "@/lib/academy/paymentEligibility";
+import { getPostAuthRedirectPath } from "@/lib/registration";
 import { Member, MembersApi } from "@/lib/members";
 import { UpgradeProvider, useUpgrade } from "@/lib/upgradeContext";
 import Image from "next/image";
@@ -85,6 +88,9 @@ function CohortDetailPageInner() {
     if (!cohort || !program) return;
     setEnrolling(true);
     try {
+      const destination = `/account/academy/cohorts/${cohort.id}`;
+      const nextPath = await getPostAuthRedirectPath(destination);
+      if (nextPath !== destination) { router.push(nextPath); return; }
       if (myEnrollment?.payment_status === PaymentStatus.PAID) {
         toast.info("Payment received. Awaiting approval or activation.");
         router.push(`/account/academy/enrollments/${myEnrollment.id}`);
@@ -93,6 +99,13 @@ function CohortDetailPageInner() {
 
       const enrollment = myEnrollment ?? (await AcademyApi.selfEnroll({ cohort_id: cohort.id }));
 
+      setMyEnrollment(enrollment);
+      if (!canPayAcademyEnrollment(enrollment.status)) {
+        toast.info(enrollment.status === EnrollmentStatus.WAITLIST
+          ? "You're on the waitlist. No payment is due until a place is available."
+          : "This enrollment is not currently payable.");
+        return;
+      }
       setTargetTier("academy");
       setSelectedCohort({
         id: cohort.id,
@@ -157,7 +170,7 @@ function CohortDetailPageInner() {
   const daysSinceStart = Math.floor(
     (now.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000)
   );
-  const currentWeek = Math.floor(daysSinceStart / 7) + 1;
+  const currentWeek = daysSinceStart + 1;
   const midCutoff = cohort.mid_entry_cutoff_week ?? 2;
   const isMidEntryOpen =
     cohort.status === CohortStatus.ACTIVE &&
@@ -309,6 +322,14 @@ function CohortDetailPageInner() {
                 </Button>
               </Link>
             </div>
+          ) : myEnrollment && !canPayAcademyEnrollment(myEnrollment.status) ? (
+            <div className="space-y-2">
+              <p className="font-semibold text-slate-900">
+                {myEnrollment.status === EnrollmentStatus.WAITLIST ? "You're on the waitlist" : "Enrollment on hold"}
+              </p>
+              <p className="text-sm text-slate-600">No payment is due. We'll notify you when you can continue.</p>
+              <Link className="inline-flex min-h-11 items-center font-semibold text-cyan-700" href={`/account/academy/enrollments/${myEnrollment.id}`}>View enrollment status</Link>
+            </div>
           ) : isEnrolled ? (
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -334,7 +355,7 @@ function CohortDetailPageInner() {
                 <p className="text-sm text-slate-500">
                   {isMidEntryOpen
                     ? `Mid-entry is open through week ${midCutoff}. You can still catch up.`
-                    : `Starts ${startDate.toLocaleDateString("en-NG", { month: "long", day: "numeric" })} · ${cohort.capacity} spots remaining`}
+                    : `Starts ${startDate.toLocaleDateString("en-NG", { month: "long", day: "numeric" })} · Capacity: ${cohort.capacity} learners`}
                 </p>
               </div>
               <Button

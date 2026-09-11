@@ -4,6 +4,8 @@ import { Card } from "@/components/ui/Card";
 import { supabase } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
 import { CheckCircle, Clock, RefreshCw, XCircle } from "lucide-react";
+import { getPostAuthRedirectPath } from "@/lib/registration";
+import { safeReturnPath } from "@/lib/returnPath";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -26,7 +28,7 @@ export default function RegistrationPendingPage() {
       } = await supabase.auth.getSession();
 
       if (!session) {
-        router.push("/login");
+        router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
         return;
       }
 
@@ -41,11 +43,11 @@ export default function RegistrationPendingPage() {
         setMemberName(member.first_name);
         setStatus(member.approval_status || "pending");
 
-        // If approved, redirect to profile
+        // Resume onboarding or the intended destination once approved
         if (member.approval_status === "approved") {
           // Force session refresh to ensure middleware sees the new status
           await supabase.auth.refreshSession();
-          router.push("/account/profile");
+          router.push(await getPostAuthRedirectPath(safeReturnPath(new URLSearchParams(window.location.search).get("next"))));
         }
       } else {
         // Member not found - maybe registration incomplete
@@ -134,16 +136,16 @@ export default function RegistrationPendingPage() {
             </h1>
             <p className="text-slate-600 mb-6">
               Welcome to SwimBuddz{memberName ? `, ${memberName}` : ""}!
-              Redirecting you to your profile...
+              Returning you to your next step...
             </p>
             <button
               onClick={async () => {
                 await supabase.auth.refreshSession();
-                router.push("/account/profile");
+                router.push(await getPostAuthRedirectPath(safeReturnPath(new URLSearchParams(window.location.search).get("next"))));
               }}
               className="inline-flex items-center justify-center rounded-full bg-cyan-600 px-6 py-3 font-semibold text-white hover:bg-cyan-700 transition-colors"
             >
-              Go to Profile
+              Continue setup
             </button>
           </>
         )}

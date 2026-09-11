@@ -187,6 +187,29 @@ describe("getPostAuthRedirectPath", () => {
     };
   }
 
+  it("keeps a first-time Academy prospect's selected cohort through onboarding", async () => {
+    mockedApiGet.mockResolvedValue(buildMember({ profile_photo_media_id: null, membership: { tier_statuses: { community: { status: "inactive" } } } }));
+    expect(await getPostAuthRedirectPath("/account/academy/cohorts/chosen")).toBe("/account/onboarding?next=%2Faccount%2Facademy%2Fcohorts%2Fchosen");
+  });
+
+  it("returns a ready prospect to the selected cohort without Community payment", async () => {
+    mockedApiGet.mockResolvedValue(buildMember({ membership: {
+      tier_statuses: { community: { status: "inactive" }, academy: { status: "requested" } },
+      academy_skill_assessment: { canFloat: false }, academy_goals: "Learn", academy_preferred_coach_gender: "any", academy_lesson_preference: "group"
+    } }));
+    expect(await getPostAuthRedirectPath("/account/academy/cohorts/chosen")).toBe("/account/academy/cohorts/chosen");
+  });
+
+  it("requires Academy readiness when intent exists only in the deep link", async () => {
+    mockedApiGet.mockResolvedValue(buildMember());
+    expect(await getPostAuthRedirectPath("/checkout?purpose=academy_cohort&cohort_id=chosen")).toContain("/account/onboarding?next=");
+  });
+
+  it("rejects external post-auth destinations", async () => {
+    mockedApiGet.mockResolvedValue(buildMember());
+    expect(await getPostAuthRedirectPath("//other.example")).toBe("/account");
+  });
+
   // --- Coach routing ---
 
   it("redirects approved coach to /coach/onboarding", async () => {

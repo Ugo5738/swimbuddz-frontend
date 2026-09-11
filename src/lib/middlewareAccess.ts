@@ -229,7 +229,7 @@ export function evaluateMemberAccess(input: AccessInput): AccessDecision {
   const approval = member.approval_status;
   if (approval === "pending" || approval === "rejected") {
     if (pathname !== "/register/pending") {
-      return { kind: "redirect", path: "/register/pending" };
+      return { kind: "redirect", path: "/register/pending", search: { next: returnTo } };
     }
   }
 
@@ -241,6 +241,7 @@ export function evaluateMemberAccess(input: AccessInput): AccessDecision {
     "/account/billing",
     "/account/onboarding",
     "/account/access",
+    "/account/academy",
     // Programme checkout may bundle or enforce annual Membership according
     // to the selected Club/Academy configuration. Requiring Membership before
     // these pages would create a circular registration path.

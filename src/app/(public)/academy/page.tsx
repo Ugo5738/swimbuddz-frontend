@@ -52,7 +52,7 @@ const benefitGroups: BenefitGroup[] = [
       {
         title: "Cohort-Based Scheduling",
         description:
-          "4+ week programs with classmates who start and graduate together — built around real work schedules.",
+          "At least 12 weeks for beginner learn-to-swim, with classmates and a regular weekly schedule. Specialty programmes have their own durations.",
       },
       {
         title: "Coach-Assigned Drills & Goals",
@@ -187,28 +187,28 @@ const journeySteps = [
   },
 ];
 
-// Typical 8-week cohort curriculum phases (static, representative)
+// Typical 12-week cohort curriculum phases (static, representative)
 const curriculumPhases = [
   {
-    phase: "Weeks 1–2",
+    phase: "Weeks 1–3",
     title: "Foundation",
     focus: "Water comfort, breathing, body position",
     color: "from-cyan-500 to-cyan-600",
   },
   {
-    phase: "Weeks 3–4",
+    phase: "Weeks 4–6",
     title: "Mechanics",
     focus: "Kick, arm movement, balance",
     color: "from-sky-500 to-sky-600",
   },
   {
-    phase: "Weeks 5–6",
+    phase: "Weeks 7–9",
     title: "Integration",
     focus: "Full stroke, breathing rhythm, drills",
     color: "from-indigo-500 to-indigo-600",
   },
   {
-    phase: "Weeks 7–8",
+    phase: "Weeks 10–12",
     title: "Endurance & Assessment",
     focus: "Distance, efficiency, final evaluation",
     color: "from-emerald-500 to-emerald-600",
@@ -217,23 +217,34 @@ const curriculumPhases = [
 
 export default function AcademyPage() {
   return (
-    <div className="space-y-14">
+    <div className="space-y-10 sm:space-y-14">
       {/* ─── 1. HERO ────────────────────────────────────────────────── */}
       <section className="space-y-6">
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
           Academy Programmes
         </p>
-        <h1 className="text-4xl font-bold text-slate-900 md:text-5xl leading-tight">
-          Learn to swim properly — with a plan that actually fits your week.
+        <h1 className="text-3xl font-bold text-slate-900 sm:text-4xl md:text-5xl leading-tight">
+          Build confidence. Learn to swim.
         </h1>
         <p className="text-lg text-slate-600 max-w-3xl">
-          A structured, cohort-based program built around real technique, measurable progress, and a
-          certificate at the end — not another open-ended membership.
+          Start with at least 12 weeks of guided practice, a regular swim group, and a coach who helps you progress at your pace.
         </p>
+        <div className="flex flex-col gap-3 pt-2 sm:flex-row">
+          <a
+            href="#upcoming-cohorts"
+            className="inline-flex min-h-12 items-center justify-center rounded-full bg-cyan-600 px-6 py-3 font-semibold text-white hover:bg-cyan-500 transition"
+          >
+            Find your cohort →
+          </a>
+          <a
+            href="#how-it-works"
+            className="inline-flex min-h-12 items-center justify-center rounded-full border border-slate-300 bg-white px-6 py-3 font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-50 transition"
+          >
+            How it works
+          </a>
+        </div>
         <p className="max-w-3xl rounded-xl border border-cyan-100 bg-cyan-50 p-4 text-sm text-slate-700">
-          Academy prices vary by programme and cohort. You will see one published all-in learner
-          price and a clear annual-membership policy: open, required and added if due, or included
-          in the published price.
+          Choose a cohort to see its schedule, location and full price. Any required annual membership is shown at checkout. Waitlisted learners pay only when a place becomes available.
         </p>
 
         {/* Stats chips */}
@@ -251,7 +262,7 @@ export default function AcademyPage() {
               <a
                 key={p.anchor}
                 href={p.anchor}
-                className={`inline-block rounded-full border px-4 py-2 text-sm font-medium transition ${personaToneClasses[p.tone]}`}
+                className={`inline-flex min-h-11 items-center rounded-full border px-4 py-2 text-sm font-medium transition ${personaToneClasses[p.tone]}`}
               >
                 {p.label} →
               </a>
@@ -259,20 +270,7 @@ export default function AcademyPage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-3 pt-2">
-          <a
-            href="#upcoming-cohorts"
-            className="inline-block rounded-full bg-cyan-600 px-6 py-3 font-semibold text-white hover:bg-cyan-500 transition"
-          >
-            See next cohort →
-          </a>
-          <a
-            href="#how-it-works"
-            className="inline-block rounded-full border border-slate-300 bg-white px-6 py-3 font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-50 transition"
-          >
-            How it works
-          </a>
-        </div>
+
       </section>
 
       {/* ─── 2. UPCOMING COHORTS ────────────────────────────────────── */}
@@ -281,7 +279,7 @@ export default function AcademyPage() {
           <div>
             <h2 className="text-2xl font-semibold text-slate-900">Upcoming Cohorts</h2>
             <p className="text-slate-600 mt-2">
-              Reserve your spot now — cohort prep materials start arriving as soon as you enroll.
+              Choose a location and schedule that work for you. Complete your profile, then review your checkout.
             </p>
           </div>
           <Link
@@ -321,10 +319,10 @@ export default function AcademyPage() {
       <section className="space-y-6">
         <div>
           <h2 className="text-2xl font-semibold text-slate-900">
-            What a typical 8-week cohort looks like
+            What a 12-week learn-to-swim programme looks like
           </h2>
           <p className="text-base text-slate-600 mt-2">
-            Concrete milestones, week by week. (Duration varies by program.)
+            Beginner learn-to-swim takes a minimum of 12 weeks. Your coach adapts the pace to your progress.
           </p>
         </div>
 

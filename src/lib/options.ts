@@ -98,18 +98,7 @@ export const timeOfDayOptions = [
   { value: "evening", label: "Evening (6 pm - 9 pm)" },
 ];
 
-export const locationOptions = [
-  { value: "ago", label: "Ago" },
-  { value: "yaba", label: "Yaba" },
-  { value: "victoria_island", label: "Victoria Island" },
-  { value: "ikeja", label: "Ikeja" },
-  { value: "lekki", label: "Lekki" },
-  { value: "ikoyi", label: "Ikoyi" },
-  { value: "surulere", label: "Surulere" },
-  { value: "festac", label: "Festac" },
-  { value: "traveling_locations", label: "Traveling locations" },
-  { value: "remote_global", label: "Remote / Global" },
-];
+
 
 export const countryOptions = [
   { value: "NG", label: "Nigeria" },

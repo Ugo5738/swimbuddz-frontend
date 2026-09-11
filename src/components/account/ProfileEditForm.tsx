@@ -5,6 +5,8 @@
 
 "use client";
 
+import { useLocationOptions } from "@/hooks/useLocationOptions";
+
 import { OptionPillGroup } from "@/components/forms/OptionPillGroup";
 import { SingleSelectPills } from "@/components/forms/SingleSelectPills";
 import { TimezoneCombobox } from "@/components/forms/TimezoneCombobox";
@@ -24,7 +26,6 @@ import {
   facilityAccessOptions,
   interestOptions,
   languageOptions,
-  locationOptions,
   paymentReadinessOptions,
   strokesOptions,
   timeOfDayOptions,
@@ -45,6 +46,7 @@ import type {
 import { levelLabels } from "@/app/(member)/account/profile/utils";
 
 export function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps) {
+  const { options: locationOptions } = useLocationOptions("areas", profile.locationPreference);
   const [formState, setFormState] = useState<FormState>({
     phone: profile.phone,
     city: profile.city,

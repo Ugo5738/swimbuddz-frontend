@@ -74,6 +74,7 @@ export function RegistrationEssentialsStep({
         <Input
           label="First Name"
           name="firstName"
+          autoComplete="given-name"
           value={formData.firstName}
           onChange={(e) => onUpdate("firstName", e.target.value)}
           required
@@ -82,6 +83,7 @@ export function RegistrationEssentialsStep({
         <Input
           label="Last Name"
           name="lastName"
+          autoComplete="family-name"
           value={formData.lastName}
           onChange={(e) => onUpdate("lastName", e.target.value)}
           required
@@ -93,6 +95,7 @@ export function RegistrationEssentialsStep({
         <Input
           label="Email Address"
           name="email"
+          autoComplete="email"
           type="email"
           value={formData.email || ""}
           onChange={(e) => onUpdate("email", e.target.value)}
@@ -103,42 +106,50 @@ export function RegistrationEssentialsStep({
 
       {mode === "registration" ? (
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-slate-700">
+          <label htmlFor="registration-password" className="block text-sm font-medium text-slate-700">
             Password <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
+              id="registration-password"
               name="password"
+              autoComplete="new-password"
+              aria-describedby="registration-password-hint"
               value={formData.password || ""}
               onChange={(e) => onUpdate("password", e.target.value)}
               required
               placeholder="••••••••"
-              className="flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 pr-10 text-sm ring-offset-white placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex min-h-12 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 pr-12 text-sm ring-offset-white placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
             <button
               type="button"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
               onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+              className="absolute right-1 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-md text-slate-500 hover:text-slate-600 transition-colors"
             >
               {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
           </div>
-          <p className="text-xs text-slate-500">Must be at least 8 characters</p>
+          <p id="registration-password-hint" className="text-xs text-slate-500">Must be at least 8 characters</p>
         </div>
       ) : null}
 
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">
+        <label htmlFor="registration-phone" className="block text-sm font-medium text-slate-700 mb-1">
           Phone Number <span className="text-red-500">*</span>
         </label>
         <PhoneInput
           key={phoneCountryCode}
+          id="registration-phone"
+          autoComplete="tel"
+          required
           placeholder="Enter phone number"
           value={formData.phone}
           onChange={(value) => onUpdate("phone", value || "")}
           defaultCountry={phoneCountryCode}
-          className="flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex min-h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm [&_input]:min-h-11 ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
 

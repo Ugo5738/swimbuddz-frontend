@@ -412,14 +412,16 @@ export function Header() {
         {/* Mobile menu button */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden p-2 rounded-xl text-slate-600 hover:text-cyan-700 hover:bg-slate-100 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
-          aria-label="Toggle menu"
+          className="lg:hidden p-2 rounded-xl text-slate-600 hover:text-cyan-700 hover:bg-slate-100 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+          aria-label={mobileMenuOpen ? "Close navigation" : "Open navigation"}
+          aria-expanded={mobileMenuOpen}
+          aria-controls="mobile-navigation"
         >
           {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
 
         {/* Desktop Navigation */}
-        <nav ref={desktopNavRef} className="hidden md:flex items-center gap-1 text-sm font-medium">
+        <nav ref={desktopNavRef} className="hidden lg:flex items-center gap-1 text-sm font-medium">
           {effectiveNavGroups.map((item) => renderNavItem(item))}
 
           {/* Auth Actions */}
@@ -499,11 +501,13 @@ export function Header() {
 
       {/* Mobile Navigation - Slide down */}
       <div
-        className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${
+        className={`lg:hidden overflow-hidden transition-all duration-300 ease-in-out ${
           mobileMenuOpen ? "max-h-[80vh] opacity-100" : "max-h-0 opacity-0"
         }`}
       >
         <nav
+          id="mobile-navigation"
+          hidden={!mobileMenuOpen}
           ref={mobileNavRef}
           className="border-t bg-white px-4 py-4 max-h-[calc(80vh-1rem)] overflow-y-auto"
         >

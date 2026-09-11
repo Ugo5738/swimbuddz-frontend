@@ -23,14 +23,14 @@ export default function MemberLayoutWrapper({
 
         if (!user) {
           console.log("No authenticated user, redirecting to login");
-          router.push("/login");
+          router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
           return;
         }
 
         setIsAuthorized(true);
       } catch (error) {
         console.error("Auth check failed", error);
-        router.push("/login");
+        router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
       } finally {
         setIsLoading(false);
       }
@@ -43,7 +43,7 @@ export default function MemberLayoutWrapper({
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
-        router.push("/login");
+        router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
       }
     });
 

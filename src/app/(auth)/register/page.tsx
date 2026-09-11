@@ -12,6 +12,7 @@ import {
   startPathFromGoal,
   type MemberStartPath,
 } from "@/lib/memberPaths";
+import { isAcademyDestination, safeReturnPath } from "@/lib/returnPath";
 import { createPendingRegistration } from "@/lib/registration";
 import clsx from "clsx";
 import dynamic from "next/dynamic";
@@ -168,24 +169,23 @@ function RegisterContent() {
   const isUpgrade = searchParams.get("upgrade") === "true";
   const isCoachRegistration = searchParams.get("coach") === "true";
   const referralCode = searchParams.get("ref") || "";
-  const intendedStartPath = startPathFromGoal(searchParams.get("goal"));
+  const intendedStartPath = startPathFromGoal(searchParams.get("goal")) ??
+    (isAcademyDestination(searchParams.get("next")) ? "academy" : null);
   // Deep-link target preserved across the registration funnel:
   //   public link (e.g. /account/academy/cohorts/<id>)
   //     → login redirect (?redirect=)
   //     → register (?next=)
   //     → register/success (?next=)
-  //     → email confirm (sessionStorage fallback — survives the email
-  //       click on the same device but not cross-device)
+  //     → email confirm (email link + signup metadata, with same-tab fallback)
   //     → onboarding (?next=)
   //     → final CTA href
   // Restricted to same-origin relative paths to avoid open-redirect.
   const nextParamRaw = searchParams.get("next");
-  const safeNext =
-    nextParamRaw && nextParamRaw.startsWith("/") && !nextParamRaw.startsWith("//")
-      ? nextParamRaw
-      : null;
+  const safeNext = safeReturnPath(nextParamRaw);
 
-  const [currentStep, setCurrentStep] = useState(0);
+  const isAcademyEntry = !isUpgrade && !isCoachRegistration &&
+    intendedStartPath === "academy" && isAcademyDestination(safeNext);
+  const [currentStep, setCurrentStep] = useState(isAcademyEntry ? 1 : 0);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -417,22 +417,18 @@ function RegisterContent() {
         return;
       }
 
-      // Stash the deep-link target so the email-confirm page (which has no
-      // way to recover query params from the Supabase confirmation URL) can
-      // pick it up after verifyOtp succeeds. Sessionstorage scope: same
-      // browser tab/window — works for the common single-device flow.
-      if (safeNext && typeof window !== "undefined") {
-        try {
-          window.sessionStorage.setItem("post_auth_next", safeNext);
-        } catch {
-          /* sessionStorage unavailable (Safari private mode etc) — silently skip */
-        }
-      }
+      // Keep a same-tab fallback; the backend also includes this destination
+      // in the confirmation email and signup metadata for cross-device use.
+      try {
+        if (safeNext) window.sessionStorage.setItem("post_auth_next", safeNext);
+        else window.sessionStorage.removeItem("post_auth_next");
+      } catch { /* Private browsing may disable session storage. */ }
 
       const selectedTier = formData.membershipTier!;
       const requestedTiers = requestedProgrammesForPath(selectedTier);
 
       const registrationPayload = {
+        return_to: safeNext ?? undefined,
         email: formData.email,
         first_name: formData.firstName,
         last_name: formData.lastName,
@@ -534,8 +530,8 @@ function RegisterContent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-3xl space-y-8">
+    <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+      <div className="mx-auto max-w-3xl space-y-6 sm:space-y-8">
         {/* Header */}
         <div className="text-center">
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">
@@ -550,7 +546,9 @@ function RegisterContent() {
               ? "Create an account to apply as a SwimBuddz coach."
               : isUpgrade
                 ? "Your SwimBuddz identity stays the same—choose what you want to join next."
-                : "Become part of our thriving swimming community."}
+                : isAcademyEntry
+                  ? "Create your Academy profile. After setup, we’ll return you to your selected cohort."
+                  : "Become part of our thriving swimming community."}
           </p>
         </div>
 
@@ -609,7 +607,7 @@ function RegisterContent() {
         )}
 
         {/* Step Content */}
-        <Card className="p-6">
+        <Card className="p-4 sm:p-6">
           <div className="mb-6">
             <p className="text-sm font-semibold uppercase tracking-wide text-cyan-600">
               Step {currentStep + 1} of {totalSteps}

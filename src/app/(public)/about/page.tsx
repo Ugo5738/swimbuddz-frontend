@@ -1,3 +1,4 @@
+import { OperatingLocations } from "@/components/sections/OperatingLocations";
 import { Card } from "@/components/ui/Card";
 import Link from "next/link";
 
@@ -31,7 +32,7 @@ const participationPaths = [
     name: "Academy Programmes",
     subtitle: "For learners who want a more guided swimming journey",
     benefits: [
-      "Structured programs and cohorts (e.g. 6–8 week beginner course)",
+      "Structured programs and cohorts (at least 12 weeks for beginner learn-to-swim courses)",
       "Clearly defined milestones (water comfort, floating, breathing, strokes, etc.)",
       "Coach feedback and basic progress tracking",
       'A small group environment focused on learning, not just "laps"',
@@ -70,17 +71,7 @@ const approach = [
   },
 ];
 
-const locations = [
-  {
-    name: "Yaba / Rowe Park",
-    purpose: "for structured training sessions (Club & Academy)",
-  },
-  { name: "Ago Palace / Sunfit", purpose: "for specific Academy sessions" },
-  {
-    name: "Victoria Island / Federal Palace",
-    purpose: "often for community events and relaxed meets",
-  },
-];
+
 
 const facilities = [
   {
@@ -239,19 +230,7 @@ export default function AboutPage() {
             We currently run activities at different pools and venues around Lagos, including:
           </p>
         </div>
-        <div className="space-y-3">
-          {locations.map((location) => (
-            <Card key={location.name} className="flex items-center gap-4">
-              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-cyan-100">
-                <span className="text-xl">📍</span>
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-900">{location.name}</h3>
-                <p className="text-sm text-slate-600">{location.purpose}</p>
-              </div>
-            </Card>
-          ))}
-        </div>
+        <OperatingLocations />
         <p className="text-slate-600 italic">
           As we grow, we'll expand and adjust locations to serve more members in different parts of
           the city (and beyond).

@@ -3,6 +3,7 @@
 import { Alert } from "@/components/ui/Alert";
 import { Card } from "@/components/ui/Card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { safeReturnPath } from "@/lib/returnPath";
 import { supabase } from "@/lib/auth";
 import { completePendingRegistrationOnBackend, getPostAuthRedirectPath } from "@/lib/registration";
 import Link from "next/link";
@@ -16,29 +17,25 @@ function getParam(name: string) {
   return hashParams.get(name) ?? searchParams.get(name);
 }
 
-// Recovers a `next` deep-link target that was stashed by /register before the
-// user clicked the email confirmation link. Cleared after read so it doesn't
-// leak into a future session. If the resolved auth path is /account/onboarding
-// we append `?next=...` so onboarding can route the user back to the deep link
-// once they finish onboarding; otherwise we route directly to `next`.
-function applyPendingNext(nextPath: string): string {
-  if (typeof window === "undefined") return nextPath;
-  let pending: string | null = null;
+async function pendingReturnPath(): Promise<string | null> {
+  const explicit = safeReturnPath(getParam("next"));
+  let stored: string | null = null;
   try {
-    pending = window.sessionStorage.getItem("post_auth_next");
-    if (pending) window.sessionStorage.removeItem("post_auth_next");
+    stored = safeReturnPath(window.sessionStorage.getItem("post_auth_next"));
+    window.sessionStorage.removeItem("post_auth_next");
+  } catch { /* Storage may be unavailable in a private browser. */ }
+
+  try {
+    const { data } = await supabase.auth.getUser();
+    const signupDestination = safeReturnPath(data.user?.user_metadata?.registration_return_to);
+    if (signupDestination) {
+      // Consume this cross-device fallback once so future sign-ins use their own destination.
+      await supabase.auth.updateUser({ data: { registration_return_to: null } });
+    }
+    return explicit ?? stored ?? signupDestination;
   } catch {
-    return nextPath;
+    return explicit ?? stored;
   }
-  // Only trust same-origin relative paths.
-  if (!pending || !pending.startsWith("/") || pending.startsWith("//")) {
-    return nextPath;
-  }
-  if (nextPath.startsWith("/account/onboarding")) {
-    const sep = nextPath.includes("?") ? "&" : "?";
-    return `${nextPath}${sep}next=${encodeURIComponent(pending)}`;
-  }
-  return pending;
 }
 
 export default function ConfirmPage() {
@@ -100,8 +97,8 @@ export default function ConfirmPage() {
           return;
         }
 
-        const nextPath = await getPostAuthRedirectPath();
-        router.replace(applyPendingNext(nextPath));
+        const nextPath = await getPostAuthRedirectPath(await pendingReturnPath());
+        router.replace(nextPath);
         return;
       }
 
@@ -129,8 +126,8 @@ export default function ConfirmPage() {
           return;
         }
 
-        const nextPath = await getPostAuthRedirectPath();
-        router.replace(applyPendingNext(nextPath));
+        const nextPath = await getPostAuthRedirectPath(await pendingReturnPath());
+        router.replace(nextPath);
         return;
       }
 
@@ -140,8 +137,8 @@ export default function ConfirmPage() {
       } = await supabase.auth.getSession();
       if (session) {
         // User is already authenticated, just redirect
-        const nextPath = await getPostAuthRedirectPath();
-        router.replace(applyPendingNext(nextPath));
+        const nextPath = await getPostAuthRedirectPath(await pendingReturnPath());
+        router.replace(nextPath);
         return;
       }
 

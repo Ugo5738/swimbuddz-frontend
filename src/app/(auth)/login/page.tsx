@@ -1,5 +1,7 @@
 "use client";
 
+import { safeReturnPath } from "@/lib/returnPath";
+
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -65,7 +67,7 @@ function LoginContent() {
     const redirectParam = searchParams.get("redirect");
     const errorParam = searchParams.get("error");
     const redirectPath =
-      redirectParam && redirectParam.startsWith("/") ? redirectParam : null;
+      safeReturnPath(redirectParam);
     if (!redirectPath && !errorParam) return;
 
     let isMounted = true;
@@ -76,7 +78,7 @@ function LoginContent() {
       if (!isMounted) return;
       if (!session) return;
       if (redirectPath) {
-        router.replace(redirectPath);
+        router.replace(await getPostAuthRedirectPath(redirectPath));
         return;
       }
       const nextPath = await getPostAuthRedirectPath();
@@ -134,7 +136,7 @@ function LoginContent() {
 
     const redirect = searchParams.get("redirect");
     if (redirect) {
-      router.push(redirect);
+      router.push(await getPostAuthRedirectPath(safeReturnPath(redirect)));
       return;
     }
 
@@ -156,10 +158,8 @@ function LoginContent() {
     // (members → /account, finance-team users → /admin/finance/reports),
     // matching password-login routing. /auth/callback redirects to `next`
     // verbatim, so pointing it straight at /account would skip that logic.
-    const nextPath =
-      redirectParam && redirectParam.startsWith("/")
-        ? redirectParam
-        : "/confirm";
+    const destination = safeReturnPath(redirectParam);
+    const nextPath = destination ? `/confirm?next=${encodeURIComponent(destination)}` : "/confirm";
 
     setMagicLoading(true);
     const { error: otpError } = await supabase.auth.signInWithOtp({
@@ -257,8 +257,8 @@ function LoginContent() {
               // login redirects post-signin while register has to thread the
               // value through email confirmation.
               const r = searchParams.get("redirect");
-              return r && r.startsWith("/") && !r.startsWith("//")
-                ? `/register?next=${encodeURIComponent(r)}`
+              return safeReturnPath(r)
+                ? `/register?next=${encodeURIComponent(safeReturnPath(r)!)}`
                 : "/register";
             })()}
             className="font-semibold text-cyan-700 hover:underline"

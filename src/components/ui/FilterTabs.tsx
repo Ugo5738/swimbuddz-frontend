@@ -33,9 +33,11 @@ export function FilterTabs<T extends string>({
       {options.map((option) => (
         <button
           key={option.value}
+          type="button"
+          aria-pressed={value === option.value}
           onClick={() => onChange(option.value)}
           className={clsx(
-            "rounded-lg font-medium transition-colors",
+            "min-h-11 rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600 focus-visible:ring-offset-2",
             sizeStyles,
             value === option.value
               ? "bg-cyan-100 text-cyan-700 border border-cyan-300"

@@ -1,10 +1,10 @@
 "use client";
 
+import { useLocationOptions } from "@/hooks/useLocationOptions";
 import { OptionPillGroup } from "@/components/forms/OptionPillGroup";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import {
-  locationOptions as areaLocationOptions,
   timeOfDayOptions,
 } from "@/lib/options";
 
@@ -24,12 +24,6 @@ interface ClubDetailsStepProps {
   onToggleMulti: (field: string, value: string) => void;
 }
 
-const clubLocationOptions = [
-  { value: "rowe_park_yaba", label: "Rowe Park, Yaba" },
-  { value: "sunfit_ago", label: "Sunfit, Ago" },
-  { value: "federal_palace_vi", label: "Federal Palace Hotel, VI" },
-];
-
 const clubTimeOptions = [
   { value: "early_morning", label: "Early Morning (6 AM - 9 AM)" },
   { value: "late_morning", label: "Late Morning (9 AM - 12 Noon)" },
@@ -46,8 +40,7 @@ export function ClubDetailsStep({
   onUpdate,
   onToggleMulti,
 }: ClubDetailsStepProps) {
-  const resolvedLocationOptions =
-    mode === "onboarding" ? areaLocationOptions : clubLocationOptions;
+  const { options: resolvedLocationOptions, loading: locationsLoading, error: locationsError, refetch: retryLocations } = useLocationOptions(mode === "onboarding" ? "areas" : "pools", formData.locationPreference);
   const resolvedTimeOptions =
     mode === "onboarding" ? timeOfDayOptions : clubTimeOptions;
   const locationValues = resolvedLocationOptions.map((option) => option.value);
@@ -140,6 +133,9 @@ export function ClubDetailsStep({
       />
 
       {/* Training Preferences */}
+      {locationsLoading && <p role="status" className="text-sm text-slate-500">Loading locations…</p>}
+      {locationsError && <p role="alert" className="text-sm text-red-700">Could not load locations. <button type="button" onClick={() => retryLocations()} className="min-h-11 underline">Try again</button></p>}
+      {!locationsLoading && !locationsError && resolvedLocationOptions.length === 0 && <p className="text-sm text-slate-600">No swimming locations are available yet. Please check back soon.</p>}
       <OptionPillGroup
         label="Preferred swimming locations"
         options={locationOptions}

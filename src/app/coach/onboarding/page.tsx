@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocationOptions } from "@/hooks/useLocationOptions";
+
 import { OptionPillGroup } from "@/components/forms/OptionPillGroup";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -14,7 +16,6 @@ import {
   CoachesApi,
   CoachOnboardingData,
 } from "@/lib/coaches";
-import { locationOptions } from "@/lib/options";
 import { CheckCircle, FileSignature } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -47,6 +48,8 @@ export default function CoachOnboardingPage() {
     max_swimmers_per_session: 10,
     preferred_cohort_types: [],
   });
+
+  const { options: locationOptions } = useLocationOptions("areas", formData.pools_supported ?? []);
 
   useEffect(() => {
     const checkStatus = async () => {

@@ -184,7 +184,7 @@ export default function HomePage() {
         </div>
 
         {/* Hero Content */}
-        <div className="relative z-10 w-full max-w-6xl mx-auto px-6 py-20 md:px-12">
+        <div className="relative z-10 w-full max-w-6xl mx-auto px-6 py-12 sm:py-20 md:px-12">
           <div className="max-w-3xl space-y-6">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 text-sm font-medium text-white">
               <span className="relative flex h-2 w-2">
@@ -194,7 +194,7 @@ export default function HomePage() {
               {trustBadgeMessages[trustBadgeIndex]}
             </div>
 
-            <h1 className="text-4xl font-bold leading-tight text-white md:text-5xl lg:text-6xl">
+            <h1 className="text-3xl sm:text-4xl font-bold leading-tight text-white md:text-5xl lg:text-6xl">
               Learn, train, and enjoy swimming with{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-300">
                 our swimming community

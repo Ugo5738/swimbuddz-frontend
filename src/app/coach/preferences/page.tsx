@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocationOptions } from "@/hooks/useLocationOptions";
+
 import { OptionPillGroup } from "@/components/forms/OptionPillGroup";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -9,7 +11,6 @@ import { Input } from "@/components/ui/Input";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { RewardNotificationPreferences } from "@/components/wallet/RewardNotificationPreferences";
 import { getCoachProfile, updateCoachPreferences } from "@/lib/coach";
-import { locationOptions } from "@/lib/options";
 import { Loader2, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -26,6 +27,7 @@ export default function CoachPreferencesPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [poolsSupported, setPoolsSupported] = useState<string[]>([]);
+  const { options: locationOptions } = useLocationOptions("areas", poolsSupported);
   const [canTravel, setCanTravel] = useState(false);
   const [travelRadius, setTravelRadius] = useState<number | undefined>();
   const [preferredCohortTypes, setPreferredCohortTypes] = useState<string[]>([]);

@@ -330,6 +330,8 @@ export default function VolunteerHubPage() {
       />
 
       {/* ── Opportunities tab ───────────────────────────── */}
+      <Link href="/community/volunteers/opportunities?period=past" className="inline-flex min-h-11 items-center text-sm font-semibold text-cyan-700">Past volunteer opportunities →</Link>
+
       {activeTab === "opportunities" && (
         <section className="space-y-4">
           {hasNoInterests && (

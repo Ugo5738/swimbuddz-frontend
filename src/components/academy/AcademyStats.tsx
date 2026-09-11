@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocationOptions } from "@/hooks/useLocationOptions";
 import { AcademyApi, type PublicAcademyStats } from "@/lib/academy";
 import { useEffect, useState } from "react";
 
@@ -11,6 +12,7 @@ type Stat = {
 };
 
 export function AcademyStats() {
+  const { options: locations } = useLocationOptions();
   const [stats, setStats] = useState<PublicAcademyStats | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -77,9 +79,9 @@ export function AcademyStats() {
     icon: "🏊",
     tone: "bg-purple-50 border-purple-200 text-purple-700",
   });
-  chips.push({
+  if (locations.length) chips.push({
     key: "locations",
-    label: "Starting in Lagos, scaling globally",
+    label: `${locations.length} swimming area${locations.length === 1 ? "" : "s"}`,
     icon: "🌍",
     tone: "bg-slate-50 border-slate-200 text-slate-700",
   });
@@ -87,11 +89,11 @@ export function AcademyStats() {
   if (chips.length === 0) return null;
 
   return (
-    <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+    <div className="flex flex-wrap gap-3 pb-2">
       {chips.map((stat) => (
         <div
           key={stat.key}
-          className={`flex-shrink-0 inline-flex items-center gap-2 rounded-full border px-4 py-2 ${stat.tone}`}
+          className={`min-w-0 inline-flex items-center gap-2 rounded-full border px-4 py-2 ${stat.tone}`}
         >
           <span className="text-lg">{stat.icon}</span>
           <span className="text-sm font-semibold">{stat.label}</span>

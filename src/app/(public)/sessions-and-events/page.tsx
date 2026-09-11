@@ -1,5 +1,7 @@
 "use client";
 
+import { OperatingLocations } from "@/components/sections/OperatingLocations";
+
 import { Card } from "@/components/ui/Card";
 import { apiGet } from "@/lib/api";
 import { supabase } from "@/lib/auth";
@@ -207,7 +209,7 @@ function ClubSessionsTab({
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="space-y-2">
           <h3 className="font-semibold text-slate-900">📍 Locations</h3>
-          <p className="text-sm text-slate-600">Yaba, Festac, and Victoria Island</p>
+          <OperatingLocations compact />
         </Card>
         <Card className="space-y-2">
           <h3 className="font-semibold text-slate-900">⏰ Schedule</h3>

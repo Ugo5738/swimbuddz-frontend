@@ -41,6 +41,8 @@ export interface PodMemberOut {
 export interface PodSummary {
   id: string;
   club_id: string;
+  club_name?: string | null;
+  club_location?: string | null;
   name: string;
   slug: string;
   handle: string | null;
@@ -291,10 +293,9 @@ export function formatTime(time: string): string {
   return time.length >= 5 ? time.slice(0, 5) : time;
 }
 
-/** Render the pod's friendly handle ("Dolphins") if present, else the slug. */
-export function podDisplayName(pod: Pick<PodSummary, "handle" | "slug" | "name">): string {
-  if (pod.handle) {
-    return pod.handle.charAt(0).toUpperCase() + pod.handle.slice(1);
-  }
-  return pod.name || pod.slug;
+/** Keep the descriptive name and location visible when handles repeat across Clubs. */
+export function podDisplayName(pod: Pick<PodSummary, "handle" | "slug" | "name" | "club_name" | "club_location">): string {
+  const name = pod.name?.trim() || (pod.handle ? pod.handle.charAt(0).toUpperCase() + pod.handle.slice(1) : pod.slug);
+  const location = pod.club_location?.trim() || pod.club_name?.trim();
+  return location && !name.toLowerCase().includes(location.toLowerCase()) ? `${name} · ${location}` : name;
 }

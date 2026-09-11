@@ -1,4 +1,5 @@
 import { apiGet, apiPost } from "./api";
+import { isAcademyDestination, safeReturnPath } from "./returnPath";
 import { getCurrentAccessToken } from "./auth";
 import {
   getRequestedTiers,
@@ -78,6 +79,7 @@ type MemberForRedirect = {
 };
 
 export type PendingRegistrationPayload = {
+  return_to?: string;
   email: string;
   first_name: string;
   last_name: string;
@@ -139,7 +141,8 @@ export async function completePendingRegistrationOnBackend(): Promise<PendingCom
   }
 }
 
-export async function getPostAuthRedirectPath(): Promise<string> {
+export async function getPostAuthRedirectPath(destination?: string | null): Promise<string> {
+  const returnTo = safeReturnPath(destination);
   try {
     const member = await apiGet<MemberForRedirect>("/api/v1/members/me", {
       auth: true,
@@ -187,7 +190,7 @@ export async function getPostAuthRedirectPath(): Promise<string> {
     const communityActive = getTierStatus(member, "community")?.status === "active";
     const academyActive = getTierStatus(member, "academy")?.status === "active";
     const requestedTiers = getRequestedTiers(member);
-    const wantsAcademy = requestedTiers.includes("academy");
+    const wantsAcademy = requestedTiers.includes("academy") || isAcademyDestination(returnTo);
     const wantsClub = requestedTiers.includes("club");
 
     const clubContext = wantsClub || hasTierContext(member, "club");
@@ -246,8 +249,10 @@ export async function getPostAuthRedirectPath(): Promise<string> {
       hasClubReadiness &&
       (!academyContext || hasAcademyReadiness);
     if (!onboardingComplete) {
-      return "/account/onboarding";
+      return returnTo ? `/account/onboarding?next=${encodeURIComponent(returnTo)}` : "/account/onboarding";
     }
+
+    if (returnTo) return returnTo;
 
     if (academyActive) return "/account/academy";
 

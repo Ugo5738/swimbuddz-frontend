@@ -346,6 +346,9 @@ export const VolunteersApi = {
 
   // Opportunities (member)
   listOpportunities: (params?: {
+    period?: "upcoming" | "past" | "all";
+    skip?: number;
+    limit?: number;
     status?: OpportunityStatus;
     role_id?: string;
     from_date?: string;
@@ -360,6 +363,9 @@ export const VolunteersApi = {
     if (params?.to_date) search.set("to_date", params.to_date);
     if (params?.session_id) search.set("session_id", params.session_id);
     if (params?.event_id) search.set("event_id", params.event_id);
+    if (params?.period) search.set("period", params.period);
+    if (params?.skip != null) search.set("skip", String(params.skip));
+    if (params?.limit != null) search.set("limit", String(params.limit));
     const qs = search.toString();
     return apiGet<VolunteerOpportunity[]>(`${V}/opportunities${qs ? `?${qs}` : ""}`, {
       auth: true,
@@ -661,4 +667,10 @@ export interface VolunteerOpportunityTemplate {
   updated_at: string;
   role_title?: string | null;
   role_category?: string | null;
+}
+
+/** Opportunity dates follow the service's Lagos calendar, independent of the viewer's timezone. */
+export function isPastOpportunity(date: string, now = new Date()): boolean {
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Lagos", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+  return date < today;
 }

@@ -56,7 +56,7 @@ describe("requiresMemberAccess", () => {
     expect(requiresMemberAccess("/community-centre")).toBe(false);
   });
 
-  it("keeps only account recovery surfaces reachable without a paid tier", () => {
+  it("keeps onboarding, Academy enrollment and recovery reachable without a paid tier", () => {
     const unpaid: MiddlewareMember = {
       approval_status: "approved",
       membership: {
@@ -67,9 +67,12 @@ describe("requiresMemberAccess", () => {
       },
     };
 
-    expect(decide("/account/academy", unpaid)).toEqual(
-      accessRedirect("community", "inactive", "/account/academy")
-    );
+    for (const path of ["/account/academy", "/account/academy/cohorts/chosen", "/account/academy/enrollments/waitlisted", "/account/academy/enrollment-success"]) {
+      expect(decide(path, unpaid)).toEqual({ kind: "allow" });
+      expect(requiresMemberAccess(path)).toBe(true);
+    }
+    expect(decide("/account/academy-private", unpaid)).toEqual(accessRedirect("community", "inactive", "/account/academy-private"));
+    expect(decide("/community/directory", unpaid).kind).toBe("redirect");
     expect(decide("/account/billing", unpaid)).toEqual({ kind: "allow" });
     expect(decide("/account/profile", unpaid)).toEqual({ kind: "allow" });
     expect(decide("/account/onboarding", unpaid)).toEqual({ kind: "allow" });
@@ -93,6 +96,7 @@ describe("evaluateMemberAccess — approval gate", () => {
     expect(decide("/sessions", { approval_status: "pending" })).toEqual({
       kind: "redirect",
       path: "/register/pending",
+      search: { next: "/sessions" },
     });
   });
 
@@ -100,6 +104,7 @@ describe("evaluateMemberAccess — approval gate", () => {
     expect(decide("/account", { approval_status: "rejected" })).toEqual({
       kind: "redirect",
       path: "/register/pending",
+      search: { next: "/account" },
     });
   });
 
@@ -110,7 +115,7 @@ describe("evaluateMemberAccess — approval gate", () => {
         approval_status: "pending",
         membership: { community_paid_until: null },
       })
-    ).toEqual({ kind: "redirect", path: "/register/pending" });
+    ).toEqual({ kind: "redirect", path: "/register/pending", search: { next: "/sessions" } });
   });
 });
 

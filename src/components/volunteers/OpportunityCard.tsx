@@ -1,5 +1,7 @@
 "use client";
 
+import { isPastOpportunity } from "@/lib/volunteers";
+
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -74,7 +76,7 @@ export function OpportunityCard({
   // required ones intentionally route through the detail page so the member
   // reads more before committing.
   const showInlineClaim =
-    !!onClaim && !isApproval && !isFull && !hasClaimed && eligible;
+    !!onClaim && !isPastOpportunity(opp.date) && ["open", "in_progress"].includes(opp.status) && !isApproval && !isFull && !hasClaimed && eligible;
 
   const body = (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -84,6 +86,7 @@ export function OpportunityCard({
           {opp.role_title && (
             <Badge variant="default">{opp.role_title}</Badge>
           )}
+          {isPastOpportunity(opp.date) && <Badge variant="default">Past opportunity</Badge>}
           {isApproval && <Badge variant="warning">Approval Required</Badge>}
           {!eligible && (
             <Badge variant="outline">

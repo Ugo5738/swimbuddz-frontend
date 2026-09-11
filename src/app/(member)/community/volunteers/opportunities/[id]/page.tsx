@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
-import { TIER_SHORT_LABELS, VolunteersApi, type VolunteerOpportunity } from "@/lib/volunteers";
+import { isPastOpportunity, TIER_SHORT_LABELS, VolunteersApi, type VolunteerOpportunity } from "@/lib/volunteers";
 import { ArrowLeft, Calendar, CheckCircle, Clock, MapPin, QrCode, Users } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -131,6 +131,8 @@ export default function OpportunityDetailPage() {
       {error && <Alert variant="error">{error}</Alert>}
       {actionMsg && <Alert variant="success">{actionMsg}</Alert>}
 
+      {isPastOpportunity(opp.date) && <Alert variant="info">This is a past opportunity. New claims are closed.</Alert>}
+
       {/* Details Card */}
       <Card className="space-y-4">
         {opp.description && (
@@ -190,7 +192,7 @@ export default function OpportunityDetailPage() {
       </Card>
 
       {/* Action */}
-      {(opp.status === "open" || opp.status === "in_progress") && (
+      {!isPastOpportunity(opp.date) && (opp.status === "open" || opp.status === "in_progress") && (
         <Card>
           {hasClaimed ? (
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -249,7 +251,7 @@ export default function OpportunityDetailPage() {
       {/* Sticky mobile CTA — mirrors the Action card so the button is always
           reachable without scrolling on small screens. Hidden on md+ where
           the in-flow Card is already visible. */}
-      {(opp.status === "open" || opp.status === "in_progress") && (
+      {!isPastOpportunity(opp.date) && (opp.status === "open" || opp.status === "in_progress") && (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur-sm px-4 py-3 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] md:hidden">
           <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
             {hasClaimed ? (

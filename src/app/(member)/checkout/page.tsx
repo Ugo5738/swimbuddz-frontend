@@ -1,5 +1,7 @@
 "use client";
 
+import { canPayAcademyEnrollment } from "@/lib/academy/paymentEligibility";
+
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -156,22 +158,30 @@ function CheckoutContent() {
         }
         let enrollmentId: string;
         try {
-          const enrollment = await apiPost<{ id: string }>(
+          const enrollment = await apiPost<{ id: string; status: string }>(
             "/api/v1/academy/enrollments/me",
             enrollmentBody,
             { auth: true }
           );
+          if (!canPayAcademyEnrollment(enrollment.status)) {
+            router.replace(`/account/academy/enrollments/${enrollment.id}`);
+            return;
+          }
           enrollmentId = enrollment.id;
         } catch (error) {
           const message = error instanceof Error ? error.message : "";
           if (!message.toLowerCase().includes("already")) throw error;
           const existing = await apiGet<
-            { id: string; cohort_id: string; payment_status: string }[]
+            { id: string; cohort_id: string; payment_status: string; status: string }[]
           >("/api/v1/academy/my-enrollments", { auth: true });
           const enrollment = existing.find(
             (item) => item.cohort_id === state.selectedCohortId && item.payment_status !== "paid"
           );
           if (!enrollment) throw new Error("No unpaid Academy enrollment is available");
+          if (!canPayAcademyEnrollment(enrollment.status)) {
+            router.replace(`/account/academy/enrollments/${enrollment.id}`);
+            return;
+          }
           enrollmentId = enrollment.id;
         }
         const params = new URLSearchParams(searchParams.toString());
@@ -244,6 +254,14 @@ function CheckoutContent() {
       }
       if (purpose === "academy_cohort" && urlEnrollmentId) {
         try {
+          const enrollments = await apiGet<{ id: string; status: string }[]>("/api/v1/academy/my-enrollments", { auth: true });
+          const enrollment = enrollments.find((item) => item.id === urlEnrollmentId);
+          if (!enrollment) throw new Error("Academy enrollment not found");
+          if (!canPayAcademyEnrollment(enrollment.status)) {
+            setAcademyQuote(null);
+            router.replace(`/account/academy/enrollments/${enrollment.id}`);
+            return;
+          }
           setAcademyQuote(
             await previewAcademyCheckout(
               urlEnrollmentId,
@@ -299,6 +317,7 @@ function CheckoutContent() {
       if (request === quoteRequest.current) setLoading(false);
     }
   }, [
+    router,
     urlCohortId,
     urlEnrollmentId,
     state.selectedCohort,
@@ -595,57 +614,14 @@ function CheckoutContent() {
                 state.extensionInfo?.required && state.includeCommunityExtension,
             };
       } else if (purpose === "academy_cohort") {
-        // Use existing enrollment ID from URL if available (set by quick-enroll paths)
-        let enrollmentId: string | undefined = urlEnrollmentId || undefined;
-
-        if (!enrollmentId) {
-          // Try to create a new enrollment, or use existing one if already enrolled.
-          // Include late-join preferences when the member acknowledged the
-          // mid-cohort disclosure on the cohort selection page — the academy
-          // service stores them on Enrollment.preferences so coaches/admins
-          // can schedule make-ups around the member's availability.
-          const enrollmentBody: {
-            cohort_id: string;
-            preferences?: { late_join: typeof state.lateJoinPreferences };
-          } = { cohort_id: state.selectedCohortId! };
-          if (state.lateJoinPreferences) {
-            enrollmentBody.preferences = {
-              late_join: state.lateJoinPreferences,
-            };
-          }
-          try {
-            const newEnrollment = await apiPost<{ id: string }>(
-              "/api/v1/academy/enrollments/me",
-              enrollmentBody,
-              { auth: true }
-            );
-            enrollmentId = newEnrollment.id;
-          } catch (enrollError) {
-            // If already enrolled, try to get existing enrollment
-            const enrollMessage = enrollError instanceof Error ? enrollError.message : "";
-            if (enrollMessage.includes("already")) {
-              // Fetch existing enrollments and find the one for this cohort
-              const existingEnrollments = await apiGet<
-                { id: string; cohort_id: string; payment_status: string }[]
-              >("/api/v1/academy/my-enrollments", { auth: true });
-              const existingEnrollment = existingEnrollments.find(
-                (e) => e.cohort_id === state.selectedCohortId && e.payment_status !== "paid"
-              );
-              if (existingEnrollment) {
-                enrollmentId = existingEnrollment.id;
-              } else {
-                throw new Error("You already have a paid enrollment for this cohort");
-              }
-            } else {
-              throw enrollError;
-            }
-          }
+        if (!urlEnrollmentId || !academyQuote || quoteError) {
+          throw new Error("Please wait for your Academy enrollment and price to be confirmed.");
         }
 
         intentPayload = {
           ...intentPayload,
           purpose: "academy_cohort",
-          enrollment_id: enrollmentId,
+          enrollment_id: urlEnrollmentId,
           use_installments: installmentsEnabled && billingMode === "installments",
           ...(urlAmountOverrideKobo ? { amount_override_kobo: urlAmountOverrideKobo } : {}),
         };

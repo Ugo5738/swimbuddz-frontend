@@ -14,6 +14,7 @@ import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet } from "@/lib/api";
 import { getRequestedTiers, hasTierContext, isTierPaid } from "@/lib/tiers";
+import { isAcademyDestination, safeReturnPath } from "@/lib/returnPath";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -59,7 +60,7 @@ export default function DashboardOnboardingPage() {
   }, [member]);
 
   const requestedTiers = useMemo(() => getRequestedTiers(member), [member]);
-  const wantsAcademy = requestedTiers.includes("academy");
+  const wantsAcademy = requestedTiers.includes("academy") || isAcademyDestination(searchParams.get("next")) || searchParams.get("step") === "academy";
   const wantsClub = requestedTiers.includes("club");
 
   const clubContext = wantsClub || hasTierContext(member, "club");
@@ -393,8 +394,7 @@ export default function DashboardOnboardingPage() {
   // and signed up; we want to return them to that cohort after onboarding).
   // Restricted to same-origin relative paths to avoid open-redirect issues.
   const nextParam = searchParams.get("next");
-  const safeNext =
-    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : null;
+  const safeNext = safeReturnPath(nextParam);
 
   // Preserve the selected participation product. Academy and Club are
   // independent; only an explicit Club request enters the Club path.
@@ -458,6 +458,7 @@ export default function DashboardOnboardingPage() {
     signalsForm,
     clubContext,
     academyContext,
+    requestedTiers,
     coreFormValid,
     safetyFormValid,
     swimFormValid,

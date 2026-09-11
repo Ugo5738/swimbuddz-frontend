@@ -1,3 +1,4 @@
+import { safeReturnPath } from "@/lib/returnPath";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
@@ -7,8 +8,7 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/account";
-  const nextPath =
-    next.startsWith("/") && !next.startsWith("//") ? next : "/account";
+  const nextPath = safeReturnPath(next) ?? "/account";
 
   if (code) {
     try {

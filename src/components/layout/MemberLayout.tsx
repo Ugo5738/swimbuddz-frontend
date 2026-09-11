@@ -193,6 +193,19 @@ export function MemberLayout({ children }: MemberLayoutProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const desktop = window.matchMedia("(min-width: 768px)");
+    const closeOnDesktop = () => { if (desktop.matches) setSidebarOpen(false); };
+    desktop.addEventListener("change", closeOnDesktop);
+    closeOnDesktop();
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") setSidebarOpen(false); };
+    document.addEventListener("keydown", onKeyDown);
+    return () => { document.body.style.overflow = previous; document.removeEventListener("keydown", onKeyDown); desktop.removeEventListener("change", closeOnDesktop); };
+  }, [sidebarOpen]);
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [member, setMember] = useState<MemberInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -439,9 +452,10 @@ export function MemberLayout({ children }: MemberLayoutProps) {
 
       {/* Sidebar */}
       <aside
+        id="member-navigation"
         className={`fixed inset-y-0 left-0 z-50 w-72 transform bg-gradient-to-b from-cyan-700 via-cyan-600 to-blue-600 text-white transition-[width,transform] duration-300 ease-in-out md:translate-x-0 ${
           sidebarCollapsed ? "md:w-20" : "md:w-64 lg:w-72"
-        } ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+        } ${sidebarOpen ? "visible translate-x-0" : "invisible -translate-x-full md:visible"}`}
       >
         <div className="flex h-full flex-col">
           {/* Header with Logo */}
@@ -684,7 +698,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
 
       {/* Main Content */}
       <div
-        className={`flex-1 transition-[margin] duration-300 ${
+        className={`min-w-0 flex-1 transition-[margin] duration-300 ${
           sidebarCollapsed ? "md:ml-20" : "md:ml-64 lg:ml-72"
         }`}
       >
@@ -692,6 +706,9 @@ export function MemberLayout({ children }: MemberLayoutProps) {
         <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur-sm md:hidden">
           <div className="flex items-center justify-between px-4 py-3">
             <button
+              aria-label="Open navigation"
+              aria-expanded={sidebarOpen}
+              aria-controls="member-navigation"
               onClick={() => setSidebarOpen(true)}
               className="text-slate-600 hover:text-cyan-700 transition min-w-[44px] min-h-[44px] flex items-center justify-center -ml-2"
             >

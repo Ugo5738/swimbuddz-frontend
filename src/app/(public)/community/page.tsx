@@ -54,7 +54,7 @@ const communityFeatures = [
   {
     title: "Tips & Articles",
     description: "Educational content on swimming techniques, safety, breathing, and more.",
-    link: "/community/tips",
+    link: "/tips",
     icon: "📚",
   },
 ];

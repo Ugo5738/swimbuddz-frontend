@@ -6,6 +6,7 @@ import {
   WithdrawEnrollmentModal,
   WithdrawLink,
 } from "@/components/academy/WithdrawEnrollmentModal";
+import { canPayAcademyEnrollment } from "@/lib/academy/paymentEligibility";
 import { PaymentChoicePanel } from "@/components/payment/PaymentChoicePanel";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -128,7 +129,7 @@ export default function EnrollmentDetailPage() {
    *  used the "Pay a different amount" option, it's their chosen value and
    *  gets passed as amount_override_kobo to the payment intent. */
   const handlePayWithCard = (chosenAmountKobo: number) => {
-    if (!openPaymentModal) return;
+    if (!openPaymentModal || !canPayAcademyEnrollment(enrollment?.status)) return;
     const inst = installments.find((i) => i.id === openPaymentModal);
     if (!inst) return;
     const params = new URLSearchParams({
@@ -201,6 +202,8 @@ export default function EnrollmentDetailPage() {
 
   const cohort = enrollment.cohort;
   const program = enrollment.program || cohort?.program;
+  const canPay = canPayAcademyEnrollment(enrollment.status);
+  const isWaitlisted = enrollment.status === EnrollmentStatus.WAITLIST;
   const isPaid = enrollment.payment_status === PaymentStatus.PAID;
   const isPending = enrollment.payment_status === PaymentStatus.PENDING;
   const isDropoutPending = enrollment.status === EnrollmentStatus.DROPOUT_PENDING;
@@ -264,7 +267,7 @@ export default function EnrollmentDetailPage() {
                           ? "✓ Active"
                           : "Payment Pending"}
                 </Badge>
-                {hasInstallments && (
+                {canPay && hasInstallments && (
                   <Badge className="bg-white/20 text-white text-xs">
                     {paidCount}/{totalInstallments} installments paid
                   </Badge>
@@ -315,8 +318,12 @@ export default function EnrollmentDetailPage() {
           </div>
         )}
 
+        {isWaitlisted && <div className="border-b border-cyan-200 bg-cyan-50 p-4 text-cyan-900" role="status">
+          <p className="font-semibold">You're on the waitlist. No payment is due.</p>
+          <p className="mt-1 text-sm">We'll notify you when a place becomes available before you proceed to checkout.</p>
+        </div>}
         {/* Payment Pending Alert */}
-        {isPending && !isSuspended && (
+        {canPay && isPending && !isSuspended && (
           <div className="border-b border-yellow-200 bg-yellow-50 p-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -362,7 +369,7 @@ export default function EnrollmentDetailPage() {
           </Card>
 
           {/* ── Installment Payment Schedule ── */}
-          {hasInstallments && (
+          {canPay && hasInstallments && (
             <Card className="p-6">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-slate-900">
@@ -686,7 +693,7 @@ export default function EnrollmentDetailPage() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Next Payment Due Callout — academy cohort fees are real-money only */}
-          {nextPending && (
+          {canPay && nextPending && (
             <Card className="overflow-hidden">
               <div className="bg-gradient-to-br from-slate-700 to-slate-900 p-4 text-white">
                 <div className="text-xs font-medium uppercase tracking-wide opacity-80">
@@ -743,7 +750,7 @@ export default function EnrollmentDetailPage() {
                     </dd>
                   </div>
                 )}
-                {hasInstallments && (
+                {canPay && hasInstallments && (
                   <>
                     <hr className="border-slate-100" />
                     <div className="flex justify-between">
@@ -888,7 +895,7 @@ export default function EnrollmentDetailPage() {
       />
 
       {/* Payment Choice Modal */}
-      {openPaymentModal && (() => {
+      {canPay && openPaymentModal && (() => {
         const activeInstallment = installments.find(
           (i) => i.id === openPaymentModal,
         );

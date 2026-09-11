@@ -6,6 +6,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { supabase } from "@/lib/auth";
 import { buildAppUrl } from "@/lib/config";
 import { ArrowRight, CheckCircle, Mail, RefreshCw } from "lucide-react";
+import { safeReturnPath } from "@/lib/returnPath";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -37,7 +38,8 @@ function RegistrationSuccessContent() {
     setResendMessage(null);
 
     try {
-      const emailRedirectTo = buildAppUrl("/confirm");
+      const returnTo = safeReturnPath(searchParams.get("next"));
+      const emailRedirectTo = buildAppUrl(returnTo ? `/confirm?next=${encodeURIComponent(returnTo)}` : "/confirm");
       const { error } = await supabase.auth.resend({
         type: "signup",
         email: email.trim(),
@@ -314,7 +316,7 @@ function RegistrationSuccessContent() {
         <h3 className="mb-4 font-semibold text-slate-900">Quick Links</h3>
         <div className="space-y-3">
           <Link
-            href="/login"
+            href={safeReturnPath(searchParams.get("next")) ? `/login?redirect=${encodeURIComponent(safeReturnPath(searchParams.get("next"))!)}` : "/login"}
             className="flex items-center justify-between rounded-md border border-slate-200 bg-white p-3 text-sm font-medium text-slate-900 transition-colors hover:border-cyan-300 hover:bg-cyan-50"
           >
             <span>Log in to your account</span>

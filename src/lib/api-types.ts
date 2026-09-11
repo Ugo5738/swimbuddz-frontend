@@ -16444,6 +16444,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/media/vaults/library": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Media Library */
+        get: operations["list_media_library_media_vaults_library_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/vaults/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Media Tags */
+        get: operations["list_media_tags_media_vaults_tags_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/media/vaults/{vault_id}": {
         parameters: {
             query?: never;
@@ -22647,6 +22681,8 @@ export interface components {
             last_name: string;
             /** Password */
             password?: string | null;
+            /** Return To */
+            return_to?: string | null;
             profile?: components["schemas"]["MemberProfileInput"] | null;
             emergency_contact?: components["schemas"]["MemberEmergencyContactInput"] | null;
             availability?: components["schemas"]["MemberAvailabilityInput"] | null;
@@ -22742,6 +22778,10 @@ export interface components {
              * Format: uuid
              */
             club_id: string;
+            /** Club Name */
+            club_name?: string | null;
+            /** Club Location */
+            club_location?: string | null;
             /** Name */
             name: string;
             /** Slug */
@@ -22958,6 +22998,10 @@ export interface components {
              * Format: uuid
              */
             club_id: string;
+            /** Club Name */
+            club_name?: string | null;
+            /** Club Location */
+            club_location?: string | null;
             /** Name */
             name: string;
             /** Slug */
@@ -65173,6 +65217,7 @@ export interface operations {
                 to_date?: string | null;
                 session_id?: string | null;
                 event_id?: string | null;
+                period?: "upcoming" | "past" | "all";
                 skip?: number;
                 limit?: number;
             };
@@ -73055,6 +73100,63 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_media_library_media_vaults_library_get: {
+        parameters: {
+            query?: {
+                vault_id?: string | null;
+                tags?: string[];
+                tag_match?: "any" | "all";
+                media_type?: ("IMAGE" | "VIDEO") | null;
+                search?: string | null;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultMediaListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_media_tags_media_vaults_tags_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string[];
                 };
             };
         };

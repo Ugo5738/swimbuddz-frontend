@@ -27,6 +27,7 @@ type Params = {
   // Context
   clubContext: boolean;
   academyContext: boolean;
+  requestedTiers?: string[];
   // Validity flags
   coreFormValid: boolean;
   safetyFormValid: boolean;
@@ -51,6 +52,7 @@ export function useSaveOnboarding({
   signalsForm,
   clubContext,
   academyContext,
+  requestedTiers = [],
   coreFormValid,
   safetyFormValid,
   swimFormValid,
@@ -194,6 +196,7 @@ export function useSaveOnboarding({
         "/api/v1/members/me",
         {
           membership: {
+            requested_tiers: Array.from(new Set([...requestedTiers, "academy"])),
             academy_skill_assessment: academyForm.academySkillAssessment,
             academy_goals: academyForm.academyGoals,
             academy_preferred_coach_gender: academyForm.academyPreferredCoachGender,

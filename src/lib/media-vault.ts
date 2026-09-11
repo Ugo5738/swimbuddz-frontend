@@ -194,6 +194,9 @@ export const formatBytes = (bytes: number) => {
 
 export const mediaVaultApi = {
   list: () => apiGet<VaultList>("/api/v1/media/vaults", { auth: true }),
+  library: (query: URLSearchParams) =>
+    apiGet<VaultMediaList>(`/api/v1/media/vaults/library?${query.toString()}`, { auth: true }),
+  tags: () => apiGet<string[]>("/api/v1/media/vaults/tags", { auth: true }),
   get: (vaultId: string) => apiGet<MediaVault>(`/api/v1/media/vaults/${vaultId}`, { auth: true }),
   create: (body: Record<string, unknown>) =>
     apiPost<MediaVault>("/api/v1/media/vaults", body, { auth: true }),

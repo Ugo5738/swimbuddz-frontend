@@ -1,5 +1,8 @@
 "use client";
 
+import { VaultLibrary } from "@/components/media-vault/VaultLibrary";
+import { FilterTabs } from "@/components/ui/FilterTabs";
+
 import { useApi } from "@/hooks/useApi";
 import {
   DEFAULT_MEDIA_VAULT_CHECKLIST,
@@ -25,6 +28,7 @@ import { toast } from "sonner";
 
 export default function AdminMediaVaultPage() {
   const router = useRouter();
+  const [view, setView] = useState("all");
   const { data, loading, error, refetch } = useApi<VaultList>("/api/v1/media/vaults");
   const [sessions, setSessions] = useState<Session[]>([]);
   const [showCreate, setShowCreate] = useState(false);
@@ -186,6 +190,8 @@ export default function AdminMediaVaultPage() {
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">{error}</div>
       )}
+      <FilterTabs options={[{ value: "all", label: "All media" }, { value: "vaults", label: "Media vaults" }]} value={view} onChange={setView} />
+      {view === "all" ? <VaultLibrary vaults={data?.items ?? []} admin /> : (
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 px-6 py-4">
           <h2 className="font-semibold text-slate-900">Media vaults</h2>
@@ -237,6 +243,8 @@ export default function AdminMediaVaultPage() {
           </div>
         )}
       </div>
+
+      )}
 
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">

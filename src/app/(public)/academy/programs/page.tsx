@@ -68,7 +68,7 @@ export default function ProgramsIndexPage() {
           All published programs
         </h1>
         <p className="text-lg text-slate-600 max-w-3xl">
-          Pick the program that matches where you are today and where you want to be in 4–8 weeks.
+          Pick a programme for your starting point and goals. Beginner learn-to-swim programmes require at least 12 weeks.
         </p>
       </header>
 

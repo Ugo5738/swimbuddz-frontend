@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocationOptions } from "@/hooks/useLocationOptions";
+
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -16,7 +18,6 @@ import {
   facilityAccessOptions,
   interestOptions,
   languageOptions,
-  locationOptions,
   paymentReadinessOptions,
   strokesOptions,
   timeOfDayOptions,
@@ -662,6 +663,7 @@ function AvailabilitySection({
 }: {
   availability: MemberAvailabilityData | null | undefined;
 }) {
+  const { options: locationOptions } = useLocationOptions("areas", availability?.preferred_locations ?? []);
   return (
     <CollapsiblePanel
       title="Availability & Logistics"

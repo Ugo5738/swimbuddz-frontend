@@ -1,11 +1,16 @@
 "use client";
 
+import { useState } from "react";
+import { VaultLibrary } from "@/components/media-vault/VaultLibrary";
+import { FilterTabs } from "@/components/ui/FilterTabs";
+
 import { useApi } from "@/hooks/useApi";
 import { formatBytes, type VaultList } from "@/lib/media-vault";
 import { CalendarDays, ChevronRight, CloudUpload, MapPin, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
 export default function MemberMediaVaultPage() {
+  const [view, setView] = useState("all");
   const { data, loading, error } = useApi<VaultList>("/api/v1/media/vaults");
 
   return (
@@ -24,6 +29,8 @@ export default function MemberMediaVaultPage() {
         </div>
       </div>
 
+      <FilterTabs options={[{ value: "all", label: "All media" }, { value: "vaults", label: "My vaults" }]} value={view} onChange={setView} />
+      {view === "all" ? <VaultLibrary vaults={data?.items ?? []} /> : <>
       {loading && (
         <div className="grid gap-4 md:grid-cols-2">
           {[0, 1, 2].map((item) => (
@@ -79,6 +86,7 @@ export default function MemberMediaVaultPage() {
           </Link>
         ))}
       </div>
+      </>}
     </div>
   );
 }
