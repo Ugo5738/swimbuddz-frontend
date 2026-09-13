@@ -56,7 +56,7 @@ export function WithdrawEnrollmentModal({
       });
       const refundLabel =
         result.refund_kobo > 0
-          ? `${formatNairaFromKobo(result.refund_kobo)} refund recorded — admin will reach out to disburse.`
+          ? `${formatNairaFromKobo(result.refund_kobo)} policy refund credit recorded — discounts are excluded from payout and Bubbles return to your wallet. Admin will confirm the cash/Bubbles breakdown.`
           : "No refund applies for this withdrawal window.";
       toast.success(`Withdrawn from cohort. ${refundLabel}`);
       onWithdrawn(result);
@@ -79,9 +79,7 @@ export function WithdrawEnrollmentModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
           <div>
-            <h2 className="text-base font-semibold text-slate-900">
-              Withdraw from cohort
-            </h2>
+            <h2 className="text-base font-semibold text-slate-900">Withdraw from cohort</h2>
             <p className="text-xs text-slate-500 mt-0.5 truncate">
               {programName ? `${programName} — ` : ""}
               {cohortName}
@@ -102,24 +100,23 @@ export function WithdrawEnrollmentModal({
             <p className="font-medium text-slate-900">What happens next</p>
             <ul className="space-y-1.5 text-xs leading-relaxed">
               <li>
-                <span className="text-slate-500">•</span> Your remaining unpaid
-                installments will be <strong>waived</strong>.
+                <span className="text-slate-500">•</span> Your remaining unpaid installments will be{" "}
+                <strong>waived</strong>.
               </li>
               <li>
-                <span className="text-slate-500">•</span> A refund (if any)
-                follows our policy based on when you withdraw:
+                <span className="text-slate-500">•</span> A refund (if any) follows our policy based
+                on when you withdraw:
                 <span className="block ml-3 mt-1 text-slate-500">
-                  before start → 90% · in mid-entry window → 50% of unused ·
-                  after cutoff → none
+                  before start → 90% · in mid-entry window → 50% of unused · after cutoff → none
                 </span>
               </li>
               <li>
-                <span className="text-slate-500">•</span> Refunds are disbursed
-                manually by our team — we&apos;ll reach out within a few days.
+                <span className="text-slate-500">•</span> Refunds are disbursed manually by our team
+                — we&apos;ll reach out within a few days.
               </li>
               <li>
-                <span className="text-slate-500">•</span> You keep your
-                Community access. This action cannot be undone from the app.
+                <span className="text-slate-500">•</span> You keep your Community access. This
+                action cannot be undone from the app.
               </li>
             </ul>
           </div>
@@ -150,8 +147,8 @@ export function WithdrawEnrollmentModal({
               className="mt-0.5 h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-400"
             />
             <span className="text-xs text-slate-700">
-              I understand my enrollment will end and the refund (if any) will
-              be determined by the policy above.
+              I understand my enrollment will end and the refund (if any) will be determined by the
+              policy above.
             </span>
           </label>
         </div>
@@ -176,11 +173,7 @@ export function WithdrawEnrollmentModal({
 }
 
 /** Subtle inline trigger — a small grey text link, intentionally low-visibility. */
-export function WithdrawLink({
-  onClick,
-}: {
-  onClick: () => void;
-}) {
+export function WithdrawLink({ onClick }: { onClick: () => void }) {
   return (
     <button
       type="button"

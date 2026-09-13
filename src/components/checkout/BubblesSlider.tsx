@@ -49,6 +49,7 @@ export function BubblesSlider({
       <div className="space-y-2">
         <input
           type="range"
+          aria-label="Bubbles to apply"
           min={0}
           max={sliderMax}
           value={effectiveBubbles}

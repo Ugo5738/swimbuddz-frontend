@@ -30,8 +30,7 @@ export function PaystackReturnAlerts({
   if (!isPaystackReturn) return null;
 
   const showSuccessBanner =
-    returnedPayment?.status === "paid" &&
-    Boolean(returnedPayment.entitlement_applied_at);
+    returnedPayment?.status === "paid" && Boolean(returnedPayment.entitlement_applied_at);
 
   let successTitle = "Welcome to Community! 🎉";
   let successDescription =
@@ -53,8 +52,8 @@ export function PaystackReturnAlerts({
       {/* Verification Error Alert */}
       {verificationError && (
         <Alert variant="error" title="Payment verification issue">
-          {verificationError}. Your payment may still have been processed.
-          Please check your email or contact support if the issue persists.
+          {verificationError}. Your payment may still have been processed. Please check your email
+          or contact support if the issue persists.
         </Alert>
       )}
 
@@ -76,6 +75,27 @@ export function PaystackReturnAlerts({
         <Alert variant="success" title={successTitle}>
           <div className="space-y-2">
             <p>{successDescription}</p>
+            {returnedPayment?.payment_metadata?.checkout_quote &&
+              (() => {
+                const receipt = returnedPayment.payment_metadata.checkout_quote;
+                const money = (kobo: number) => `₦${(kobo / 100).toLocaleString()}`;
+                return (
+                  <div className="text-sm" aria-label="Payment breakdown">
+                    <p>Original price: {money(receipt.subtotal_kobo)}</p>
+                    {receipt.discount_kobo > 0 && <p>Discount: −{money(receipt.discount_kobo)}</p>}
+                    {receipt.bubbles_to_apply > 0 && (
+                      <p>Paid with Bubbles: {receipt.bubbles_to_apply}</p>
+                    )}
+                    <p>
+                      Paid in cash: {money(receipt.total_kobo)}
+                      {receipt.additional_charges_total_kobo > 0
+                        ? ` (includes ${money(receipt.additional_charges_total_kobo)} processing charges)`
+                        : ""}
+                    </p>
+                    <p>Reference: {returnedPayment.reference}</p>
+                  </div>
+                );
+              })()}
             {isMembershipPayment && (
               <p>
                 {walletSummary?.welcomeBonusGranted

@@ -107,11 +107,19 @@ export type ClubPreAssessment = {
 };
 
 export type ChargePreview = {
+  selection_locked?: boolean;
   currency: string;
   subtotal_kobo: number;
   additional_charges: Array<{ label: string; amount_kobo: number }>;
   additional_charges_total_kobo: number;
   total_kobo: number;
+  discount_code?: string | null;
+  discount_kobo?: number;
+  discount_allocations_kobo?: Record<string, number>;
+  net_subtotal_kobo?: number | null;
+  bubbles_to_apply?: number;
+  bubbles_value_kobo?: number;
+  maximum_bubbles?: number;
   components: {
     club?: number;
     club_items?: Array<{
@@ -191,7 +199,8 @@ export function previewAcademyCheckout(
   enrollmentId: string,
   useInstallments: boolean,
   paymentMethod: "paystack" | "manual_transfer" = "paystack",
-  amountOverrideKobo?: number
+  amountOverrideKobo?: number,
+  adjustments?: { discount_code?: string; bubbles_to_apply?: number }
 ): Promise<ChargePreview> {
   return apiPost<ChargePreview>(
     "/api/v1/payments/charges/preview",
@@ -201,6 +210,7 @@ export function previewAcademyCheckout(
       enrollment_id: enrollmentId,
       use_installments: useInstallments,
       amount_override_kobo: amountOverrideKobo,
+      ...adjustments,
     },
     { auth: true }
   );
@@ -253,7 +263,8 @@ export function previewClubCheckout(
   applicationId: string,
   paymentMethod: "paystack" | "manual_transfer" = "paystack",
   paymentMode?: ClubPaymentMode,
-  communityExperienceSelected?: boolean
+  communityExperienceSelected?: boolean,
+  adjustments?: { discount_code?: string; bubbles_to_apply?: number }
 ): Promise<ChargePreview> {
   return apiPost<ChargePreview>(
     "/api/v1/payments/charges/preview",
@@ -261,6 +272,7 @@ export function previewClubCheckout(
       purpose: "club",
       payment_method: paymentMethod,
       club_application_id: applicationId,
+      ...adjustments,
       ...(paymentMode ? { club_payment_mode: paymentMode } : {}),
       ...(communityExperienceSelected !== undefined
         ? { club_community_experience_selected: communityExperienceSelected }

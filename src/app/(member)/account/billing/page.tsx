@@ -14,6 +14,7 @@ import { MembershipHistoryCard } from "./_billing/MembershipHistoryCard";
 import { OutstandingSessionFeesCard } from "./_billing/OutstandingSessionFeesCard";
 import { PaystackReturnAlerts } from "./_billing/PaystackReturnAlerts";
 import { PendingTransfersCard } from "./_billing/PendingTransfersCard";
+import { ProductPaymentReceipts } from "./_billing/ProductPaymentReceipts";
 import { usePaystackReturn } from "./_billing/usePaystackReturn";
 import type {
   Cohort,
@@ -45,6 +46,7 @@ export default function BillingPage() {
   const [openCohorts, setOpenCohorts] = useState<Cohort[]>([]);
   const [myEnrollments, setMyEnrollments] = useState<Enrollment[]>([]);
   const [pendingTransfers, setPendingTransfers] = useState<PaymentRecord[]>([]);
+  const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [membershipHistory, setMembershipHistory] = useState<MembershipHistory | null>(null);
 
   // Load member, pricing, payments. Stable identity (empty deps) so children
@@ -61,6 +63,7 @@ export default function BillingPage() {
         }).catch(() => null),
       ]);
       setMember(memberData);
+      setPayments(paymentsData);
       setPricing(pricingData);
       setMembershipHistory(historyData);
 
@@ -284,6 +287,7 @@ export default function BillingPage() {
       />
 
       <MembershipHistoryCard history={membershipHistory} />
+      <ProductPaymentReceipts payments={payments} />
 
       <AcademySection
         myEnrollments={myEnrollments}

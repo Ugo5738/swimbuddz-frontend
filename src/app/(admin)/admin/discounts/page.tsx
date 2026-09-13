@@ -44,6 +44,8 @@ const PAYMENT_PURPOSES = [
   "CLUB_BUNDLE",
   "ACADEMY_COHORT",
   "SESSION_FEE",
+  "COMMUNITY_EXPERIENCE",
+  "COMMUNITY_EXPERIENCE_BUNDLE",
 ];
 
 export default function AdminDiscountsPage() {
@@ -66,10 +68,7 @@ export default function AdminDiscountsPage() {
 
   const loadDiscounts = useCallback(async () => {
     try {
-      const data = await apiGet<Discount[]>(
-        "/api/v1/payments/admin/discounts",
-        { auth: true },
-      );
+      const data = await apiGet<Discount[]>("/api/v1/payments/admin/discounts", { auth: true });
       setDiscounts(data);
     } catch (error) {
       toast.error("Failed to load discounts");
@@ -106,9 +105,7 @@ export default function AdminDiscountsPage() {
       value: String(discount.value),
       applies_to: discount.applies_to || [],
       valid_from: discount.valid_from ? discount.valid_from.split("T")[0] : "",
-      valid_until: discount.valid_until
-        ? discount.valid_until.split("T")[0]
-        : "",
+      valid_until: discount.valid_until ? discount.valid_until.split("T")[0] : "",
       max_uses: discount.max_uses ? String(discount.max_uses) : "",
       is_active: discount.is_active,
     });
@@ -127,22 +124,16 @@ export default function AdminDiscountsPage() {
         discount_type: formData.discount_type,
         value: parseFloat(formData.value),
         applies_to: formData.applies_to.length > 0 ? formData.applies_to : null,
-        valid_from: formData.valid_from
-          ? new Date(formData.valid_from).toISOString()
-          : null,
-        valid_until: formData.valid_until
-          ? new Date(formData.valid_until).toISOString()
-          : null,
+        valid_from: formData.valid_from ? new Date(formData.valid_from).toISOString() : null,
+        valid_until: formData.valid_until ? new Date(formData.valid_until).toISOString() : null,
         max_uses: formData.max_uses ? parseInt(formData.max_uses) : null,
         is_active: formData.is_active,
       };
 
       if (editingDiscount) {
-        await apiPatch(
-          `/api/v1/payments/admin/discounts/${editingDiscount.id}`,
-          payload,
-          { auth: true },
-        );
+        await apiPatch(`/api/v1/payments/admin/discounts/${editingDiscount.id}`, payload, {
+          auth: true,
+        });
         toast.success("Discount updated successfully");
       } else {
         await apiPost("/api/v1/payments/admin/discounts", payload, {
@@ -154,21 +145,14 @@ export default function AdminDiscountsPage() {
       resetForm();
       loadDiscounts();
     } catch (error) {
-      toast.error(
-        editingDiscount
-          ? "Failed to update discount"
-          : "Failed to create discount",
-      );
+      toast.error(editingDiscount ? "Failed to update discount" : "Failed to create discount");
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = async (discount: Discount) => {
-    if (
-      !confirm(`Are you sure you want to delete discount "${discount.code}"?`)
-    )
-      return;
+    if (!confirm(`Are you sure you want to delete discount "${discount.code}"?`)) return;
 
     try {
       await apiDelete(`/api/v1/payments/admin/discounts/${discount.id}`, {
@@ -212,9 +196,7 @@ export default function AdminDiscountsPage() {
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Discount Codes</h1>
-          <p className="text-slate-600 text-sm">
-            Manage discount codes for payments
-          </p>
+          <p className="text-slate-600 text-sm">Manage discount codes for payments</p>
         </div>
         {!showForm && (
           <Button onClick={() => setShowForm(true)} className="gap-2">
@@ -231,10 +213,7 @@ export default function AdminDiscountsPage() {
             <h2 className="text-lg font-semibold">
               {editingDiscount ? "Edit Discount" : "Create New Discount"}
             </h2>
-            <button
-              onClick={resetForm}
-              className="text-slate-400 hover:text-slate-600"
-            >
+            <button onClick={resetForm} className="text-slate-400 hover:text-slate-600">
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -242,9 +221,7 @@ export default function AdminDiscountsPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Code *
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Code *</label>
                 <input
                   type="text"
                   required
@@ -261,15 +238,11 @@ export default function AdminDiscountsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Description
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
                 <input
                   type="text"
                   value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Summer sale discount"
                   className="w-full px-3 py-2 border rounded-lg"
                 />
@@ -278,9 +251,7 @@ export default function AdminDiscountsPage() {
 
             <div className="grid gap-4 md:grid-cols-3">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Type *
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Type *</label>
                 <select
                   value={formData.discount_type}
                   onChange={(e) =>
@@ -297,8 +268,7 @@ export default function AdminDiscountsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Value * ({formData.discount_type === "percentage" ? "%" : "₦"}
-                  )
+                  Value * ({formData.discount_type === "percentage" ? "%" : "₦"})
                 </label>
                 <input
                   type="number"
@@ -306,26 +276,18 @@ export default function AdminDiscountsPage() {
                   min="0"
                   step={formData.discount_type === "percentage" ? "1" : "100"}
                   value={formData.value}
-                  onChange={(e) =>
-                    setFormData({ ...formData, value: e.target.value })
-                  }
-                  placeholder={
-                    formData.discount_type === "percentage" ? "10" : "5000"
-                  }
+                  onChange={(e) => setFormData({ ...formData, value: e.target.value })}
+                  placeholder={formData.discount_type === "percentage" ? "10" : "5000"}
                   className="w-full px-3 py-2 border rounded-lg"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Max Uses
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Max Uses</label>
                 <input
                   type="number"
                   min="1"
                   value={formData.max_uses}
-                  onChange={(e) =>
-                    setFormData({ ...formData, max_uses: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, max_uses: e.target.value })}
                   placeholder="Unlimited"
                   className="w-full px-3 py-2 border rounded-lg"
                 />
@@ -334,28 +296,20 @@ export default function AdminDiscountsPage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Valid From
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Valid From</label>
                 <input
                   type="date"
                   value={formData.valid_from}
-                  onChange={(e) =>
-                    setFormData({ ...formData, valid_from: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, valid_from: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Valid Until
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Valid Until</label>
                 <input
                   type="date"
                   value={formData.valid_until}
-                  onChange={(e) =>
-                    setFormData({ ...formData, valid_until: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, valid_until: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg"
                 />
               </div>
@@ -363,7 +317,7 @@ export default function AdminDiscountsPage() {
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                Applies To (leave empty for all)
+                Eligible products (leave empty for regular-price products)
               </label>
               <div className="flex flex-wrap gap-2">
                 {PAYMENT_PURPOSES.map((purpose) => (
@@ -381,6 +335,11 @@ export default function AdminDiscountsPage() {
                   </button>
                 ))}
               </div>
+              <p className="mt-2 text-xs text-slate-500">
+                Membership, Club and Academy codes affect only their own line items. Community
+                Experience excludes its already-discounted Club bundle price unless you explicitly
+                select COMMUNITY EXPERIENCE BUNDLE. Bubbles are payment, not an extra discount.
+              </p>
             </div>
 
             <div className="flex items-center gap-2">
@@ -388,9 +347,7 @@ export default function AdminDiscountsPage() {
                 type="checkbox"
                 id="is_active"
                 checked={formData.is_active}
-                onChange={(e) =>
-                  setFormData({ ...formData, is_active: e.target.checked })
-                }
+                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                 className="rounded"
               />
               <label htmlFor="is_active" className="text-sm text-slate-700">
@@ -400,11 +357,7 @@ export default function AdminDiscountsPage() {
 
             <div className="flex gap-3">
               <Button type="submit" disabled={submitting}>
-                {submitting
-                  ? "Saving..."
-                  : editingDiscount
-                    ? "Update Discount"
-                    : "Create Discount"}
+                {submitting ? "Saving..." : editingDiscount ? "Update Discount" : "Create Discount"}
               </Button>
               <Button type="button" variant="outline" onClick={resetForm}>
                 Cancel
@@ -442,17 +395,14 @@ export default function AdminDiscountsPage() {
                     </Badge>
                   </div>
                   {discount.description && (
-                    <p className="text-sm text-slate-600 mt-1">
-                      {discount.description}
-                    </p>
+                    <p className="text-sm text-slate-600 mt-1">{discount.description}</p>
                   )}
                   <div className="flex flex-wrap gap-4 mt-2 text-xs text-slate-500">
                     <span>
                       Uses: {discount.current_uses}/{discount.max_uses || "∞"}
                     </span>
                     <span>
-                      Valid: {formatDate(discount.valid_from)} -{" "}
-                      {formatDate(discount.valid_until)}
+                      Valid: {formatDate(discount.valid_from)} - {formatDate(discount.valid_until)}
                     </span>
                     {discount.applies_to && discount.applies_to.length > 0 && (
                       <span>For: {discount.applies_to.join(", ")}</span>
@@ -460,11 +410,7 @@ export default function AdminDiscountsPage() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEdit(discount)}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => handleEdit(discount)}>
                     <Pencil className="h-4 w-4" />
                   </Button>
                   <Button
