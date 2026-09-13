@@ -59,6 +59,13 @@ export type PaymentRecord = {
   entitlement_error?: string | null;
   created_at: string;
   payment_metadata?: {
+    checkout_quote?: {
+      subtotal_kobo: number;
+      discount_kobo: number;
+      bubbles_to_apply: number;
+      total_kobo: number;
+      additional_charges_total_kobo: number;
+    };
     purpose?: string; // Legacy/backup
   } | null;
 };

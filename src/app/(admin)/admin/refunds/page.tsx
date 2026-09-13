@@ -15,6 +15,9 @@ interface RefundOwedItem {
   member_auth_id: string;
   refund_kobo: number;
   refund_naira: number;
+  refund_bubbles?: number;
+  refund_bubbles_remainder_kobo?: number;
+  discount_excluded_kobo?: number;
   enrollment_id: string;
   window: string;
   reason: string | null;
@@ -66,10 +69,9 @@ export default function AdminRefundsPage() {
       } = await supabase.auth.getSession();
       const token = session?.access_token;
 
-      const res = await fetch(
-        `${API_BASE_URL}/api/v1/payments/admin/refunds-owed`,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      const res = await fetch(`${API_BASE_URL}/api/v1/payments/admin/refunds-owed`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!res.ok) throw new Error("Failed to fetch refund queue");
       const data: RefundQueueResponse = await res.json();
       setQueue(data);
@@ -105,7 +107,7 @@ export default function AdminRefundsPage() {
             enrollment_id: item.enrollment_id,
             note: notes[key] || undefined,
           }),
-        },
+        }
       );
       if (!res.ok) {
         const body = await res.text();
@@ -122,13 +124,11 @@ export default function AdminRefundsPage() {
   return (
     <div className="space-y-6">
       <header className="space-y-1">
-        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
-          Refund Queue
-        </h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Refund Queue</h1>
         <p className="text-sm md:text-base text-slate-600">
-          Outstanding refund obligations from member withdrawals. Disburse via
-          the original payment channel (typically direct bank transfer for
-          Paystack-originated payments), then mark disbursed here.
+          Outstanding refund obligations from member withdrawals. Disburse via the original payment
+          channel (typically direct bank transfer for Paystack-originated payments), then mark
+          disbursed here.
         </p>
       </header>
 
@@ -185,26 +185,20 @@ export default function AdminRefundsPage() {
                       <dl className="mt-2 text-xs text-slate-500 space-y-0.5">
                         <div>
                           Annotated{" "}
-                          <span className="text-slate-700">
-                            {formatDate(item.annotated_at)}
-                          </span>
+                          <span className="text-slate-700">{formatDate(item.annotated_at)}</span>
                         </div>
                         <div>
                           Enrollment{" "}
-                          <span className="font-mono text-slate-700">
-                            {item.enrollment_id}
-                          </span>
+                          <span className="font-mono text-slate-700">{item.enrollment_id}</span>
                         </div>
                         {item.reason && (
-                          <div className="mt-1 italic text-slate-600">
-                            “{item.reason}”
-                          </div>
+                          <div className="mt-1 italic text-slate-600">“{item.reason}”</div>
                         )}
                       </dl>
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-xs uppercase tracking-wide text-slate-500">
-                        Refund Owed
+                        Cash Refund Owed
                       </p>
                       <p className="text-xl font-bold text-slate-900">
                         {formatNaira(item.refund_naira)}
@@ -212,30 +206,44 @@ export default function AdminRefundsPage() {
                       <p className="text-xs text-slate-400 mt-0.5">
                         of {formatNaira(item.payment_amount)} paid
                       </p>
+                      {!!item.refund_bubbles && (
+                        <p className="text-sm text-cyan-700">
+                          Plus {item.refund_bubbles} Bubbles to wallet (credited when marked
+                          disbursed)
+                        </p>
+                      )}
+                      {!!item.discount_excluded_kobo && (
+                        <p className="text-xs text-slate-500">
+                          Promotional discount excluded:{" "}
+                          {formatNaira(item.discount_excluded_kobo / 100)}
+                        </p>
+                      )}
+                      {!!item.refund_bubbles_remainder_kobo && (
+                        <p role="alert" className="text-sm text-amber-700">
+                          Fractional wallet value of{" "}
+                          {formatNaira(item.refund_bubbles_remainder_kobo / 100)} needs
+                          reconciliation. Do not pay Bubbles as cash.
+                        </p>
+                      )}
                     </div>
                   </div>
 
                   <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-end gap-2">
                     <div className="flex-1">
-                      <label
-                        htmlFor={`note-${key}`}
-                        className="text-xs text-slate-500 block mb-1"
-                      >
+                      <label htmlFor={`note-${key}`} className="text-xs text-slate-500 block mb-1">
                         Disbursement note (optional)
                       </label>
                       <Input
                         id={`note-${key}`}
                         value={notes[key] || ""}
-                        onChange={(e) =>
-                          setNotes({ ...notes, [key]: e.target.value })
-                        }
+                        onChange={(e) => setNotes({ ...notes, [key]: e.target.value })}
                         placeholder="e.g. UBA transfer ref ABC123, sent 2026-05-15"
                         disabled={isProcessing}
                       />
                     </div>
                     <Button
                       onClick={() => handleMarkDisbursed(item)}
-                      disabled={isProcessing}
+                      disabled={isProcessing || !!item.refund_bubbles_remainder_kobo}
                       className="shrink-0"
                     >
                       {isProcessing ? "Marking…" : "Mark Disbursed"}

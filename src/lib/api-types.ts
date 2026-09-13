@@ -1505,6 +1505,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/clubs/community-experiences/orders/{order_id}/checkout-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Order Checkout */
+        post: operations["preview_order_checkout_clubs_community_experiences_orders__order_id__checkout_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/clubs/community-experiences/orders/{order_id}/checkout": {
         parameters: {
             query?: never;
@@ -8040,6 +8057,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/payments/checkout/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Internal Preview Product Checkout */
+        post: operations["internal_preview_product_checkout_internal_payments_checkout_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/payments/paystack/verify/{reference}": {
         parameters: {
             query?: never;
@@ -8180,8 +8214,8 @@ export interface paths {
          * Annotate Refund Obligation
          * @description Write a refund obligation to a payment's metadata.
          *
-         *     Idempotent: multiple calls for the same enrollment_id overwrite the prior
-         *     entry rather than appending duplicates.
+         *     Idempotent: the same enrollment/amount returns the existing obligation,
+         *     including its disbursement state. Amount changes require reconciliation.
          */
         post: operations["annotate_refund_obligation_internal_payments__reference__annotate_refund_post"];
         delete?: never;
@@ -21544,6 +21578,20 @@ export interface components {
             /** Access Token */
             access_token: string;
         };
+        /** ExperienceOrderCheckout */
+        ExperienceOrderCheckout: {
+            /** Access Token */
+            access_token: string;
+            /** Discount Code */
+            discount_code?: string | null;
+            /**
+             * Bubbles To Apply
+             * @default 0
+             */
+            bubbles_to_apply: number;
+            /** Expected Total Kobo */
+            expected_total_kobo?: number | null;
+        };
         /** ExperienceOrderConfirm */
         ExperienceOrderConfirm: {
             /** Payment Reference */
@@ -28453,6 +28501,18 @@ export interface components {
              * @default paystack
              */
             payment_method: string;
+            /** Discount Code */
+            discount_code?: string | null;
+            /**
+             * Bubbles To Apply
+             * @default 0
+             */
+            bubbles_to_apply: number;
+            /**
+             * Years
+             * @default 1
+             */
+            years: number;
             /** Club Application Id */
             club_application_id?: string | null;
             /** Club Payment Mode */
@@ -28494,6 +28554,34 @@ export interface components {
             components?: {
                 [key: string]: unknown;
             };
+            /** Discount Code */
+            discount_code?: string | null;
+            /**
+             * Discount Kobo
+             * @default 0
+             */
+            discount_kobo: number;
+            /** Discount Allocations Kobo */
+            discount_allocations_kobo?: {
+                [key: string]: number;
+            };
+            /** Net Subtotal Kobo */
+            net_subtotal_kobo?: number | null;
+            /**
+             * Bubbles To Apply
+             * @default 0
+             */
+            bubbles_to_apply: number;
+            /**
+             * Bubbles Value Kobo
+             * @default 0
+             */
+            bubbles_value_kobo: number;
+            /**
+             * Maximum Bubbles
+             * @default 0
+             */
+            maximum_bubbles: number;
         };
         /**
          * ClubBillingCycle
@@ -28770,6 +28858,10 @@ export interface components {
             } | null;
             /** Bubbles To Apply */
             bubbles_to_apply?: number | null;
+            /** Expected Total Kobo */
+            expected_total_kobo?: number | null;
+            /** Idempotency Key */
+            idempotency_key?: string | null;
             /** Amount Override Kobo */
             amount_override_kobo?: number | null;
             /** Metadata */
@@ -28958,6 +29050,15 @@ export interface components {
             metadata?: {
                 [key: string]: unknown;
             } | null;
+            /** Discount Code */
+            discount_code?: string | null;
+            /**
+             * Bubbles To Apply
+             * @default 0
+             */
+            bubbles_to_apply: number;
+            /** Expected Total Kobo */
+            expected_total_kobo?: number | null;
         };
         /**
          * InternalInitializeResponse
@@ -28976,6 +29077,15 @@ export interface components {
             additional_charges?: {
                 [key: string]: unknown;
             }[];
+            /**
+             * Confirmed
+             * @default false
+             */
+            confirmed: boolean;
+            /** Checkout Quote */
+            checkout_quote?: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * InternalPaystackVerifyResponse
@@ -29217,6 +29327,8 @@ export interface components {
             currency: string;
             purpose: components["schemas"]["PaymentPurpose"];
             status: components["schemas"]["PaymentStatus"];
+            /** Entitlement Applied At */
+            entitlement_applied_at?: string | null;
             /** Checkout Url */
             checkout_url?: string | null;
             /**
@@ -29258,6 +29370,10 @@ export interface components {
              * @default 0
              */
             additional_charges_total: number;
+            /** Checkout Quote */
+            checkout_quote?: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * PaymentPurpose
@@ -29718,6 +29834,21 @@ export interface components {
             refund_kobo: number;
             /** Refund Naira */
             refund_naira: number;
+            /**
+             * Refund Bubbles
+             * @default 0
+             */
+            refund_bubbles: number;
+            /**
+             * Refund Bubbles Remainder Kobo
+             * @default 0
+             */
+            refund_bubbles_remainder_kobo: number;
+            /**
+             * Discount Excluded Kobo
+             * @default 0
+             */
+            discount_excluded_kobo: number;
             /** Enrollment Id */
             enrollment_id: string;
             /** Window */
@@ -46600,6 +46731,41 @@ export interface operations {
             };
         };
     };
+    preview_order_checkout_clubs_community_experiences_orders__order_id__checkout_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExperienceOrderCheckout"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     order_checkout_clubs_community_experiences_orders__order_id__checkout_post: {
         parameters: {
             query?: never;
@@ -46611,7 +46777,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ExperienceOrderAccess"];
+                "application/json": components["schemas"]["ExperienceOrderCheckout"];
             };
         };
         responses: {
@@ -57300,6 +57466,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InternalInitializeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    internal_preview_product_checkout_internal_payments_checkout_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InternalInitializeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

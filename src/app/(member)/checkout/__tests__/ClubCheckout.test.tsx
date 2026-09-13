@@ -20,7 +20,11 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/lib/api", () => ({
   apiGet: vi.fn(async (path: string) =>
-    path.endsWith("/pricing") ? { community_annual: 20000 } : { id: "member" }
+    path.endsWith("/pricing")
+      ? { community_annual: 20000 }
+      : path.endsWith("/wallet/me")
+        ? { balance: 500, available_balance: 500 }
+        : { id: "member" }
   ),
   apiPost: mocks.post,
 }));
@@ -41,21 +45,36 @@ vi.mock("@/lib/paymentCache", () => ({ savePaymentIntentCache: vi.fn() }));
 describe("Club checkout", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
     mocks.selected = false;
     mocks.membership = 0;
     mocks.available = true;
     mocks.mode = "transition_per_session";
     mocks.post.mockResolvedValue({ reference: "PAY-AY", amount: 0, status: "paid" });
     mocks.preview.mockImplementation(
-      async (_id: string, _method: string, mode: string, choice?: boolean) => {
+      async (
+        _id: string,
+        _method: string,
+        mode: string,
+        choice?: boolean,
+        adjustments: { discount_code?: string; bubbles_to_apply?: number } = {}
+      ) => {
         const selected = mocks.available && (choice ?? mocks.selected);
         const fee = mode === "transition_per_session" ? 5_000_000 : 3_000_000;
         const club = mode === "transition_per_session" ? 0 : 6_500_000;
         const total = club + mocks.membership + (selected ? fee : 0);
+        const discount = adjustments.discount_code === "CLUB10" ? club / 10 : 0;
+        const bubbles = adjustments.bubbles_to_apply || 0;
         return {
           currency: "NGN",
           subtotal_kobo: total,
-          total_kobo: total,
+          total_kobo: total - discount - bubbles * 10000,
+          discount_code: adjustments.discount_code,
+          discount_kobo: discount,
+          discount_allocations_kobo: discount ? { club: discount } : {},
+          net_subtotal_kobo: total - discount,
+          bubbles_to_apply: bubbles,
+          bubbles_value_kobo: bubbles * 10000,
           additional_charges: [],
           components: {
             club,
@@ -117,7 +136,8 @@ describe("Club checkout", () => {
       "ay",
       "paystack",
       "transition_per_session",
-      false
+      false,
+      {}
     );
     expect(screen.queryByText("Payment Method")).not.toBeInTheDocument();
   });
@@ -170,5 +190,32 @@ describe("Club checkout", () => {
     fireEvent.click(await screen.findByRole("checkbox", { name: /Add Q4 Community Experience/ }));
     fireEvent.click(await screen.findByRole("button", { name: "Activate Club access" }));
     await waitFor(() => expect(mocks.router.push).toHaveBeenCalledWith("/account/billing"));
+  });
+
+  it("submits the reviewed discount and partial Bubbles without discounting Membership", async () => {
+    mocks.mode = "quarterly_prepaid";
+    mocks.membership = 2000000;
+    render(<CheckoutPage />);
+    fireEvent.click(await screen.findByRole("button", { name: "Have a discount code?" }));
+    fireEvent.change(screen.getByLabelText("Discount code"), { target: { value: "CLUB10" } });
+    fireEvent.click(screen.getByRole("button", { name: "Apply code" }));
+    await screen.findByRole("button", { name: "Pay ₦78,500" });
+    expect(screen.getByText("₦20,000")).toBeInTheDocument();
+    fireEvent.change(await screen.findByRole("slider", { name: "Bubbles to apply" }), {
+      target: { value: "10" },
+    });
+    fireEvent.click(await screen.findByRole("button", { name: "Pay ₦77,500 + 10 Bubbles" }));
+    await waitFor(() =>
+      expect(mocks.post).toHaveBeenCalledWith(
+        "/api/v1/payments/intents",
+        expect.objectContaining({
+          discount_code: "CLUB10",
+          bubbles_to_apply: 10,
+          expected_total_kobo: 7750000,
+          idempotency_key: expect.any(String),
+        }),
+        { auth: true }
+      )
+    );
   });
 });

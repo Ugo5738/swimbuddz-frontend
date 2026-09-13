@@ -8,6 +8,11 @@ import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { ClubPaymentModeSelector } from "@/components/club/ClubPaymentModeSelector";
 import { ClubTransitionCheckoutNotice } from "@/components/club/ClubTransitionCheckoutNotice";
+import {
+  ProductPaymentOptions,
+  PaymentAdjustments,
+} from "@/components/checkout/ProductPaymentOptions";
+import { productCheckoutAttempt } from "@/lib/productCheckoutAttempt";
 import { apiGet, apiPost } from "@/lib/api";
 import {
   ChargePreview,
@@ -58,6 +63,7 @@ type PaymentIntent = {
   currency: string;
   purpose: string;
   status: string;
+  entitlement_applied_at?: string | null;
   checkout_url?: string | null;
   created_at: string;
   discount_amount?: number;
@@ -76,6 +82,11 @@ function CheckoutContent() {
   const quoteRequest = useRef(0);
   const [academyQuote, setAcademyQuote] = useState<ChargePreview | null>(null);
   const [experienceQuote, setExperienceQuote] = useState<ChargePreview | null>(null);
+  const [membershipQuote, setMembershipQuote] = useState<ChargePreview | null>(null);
+  const [adjustments, setAdjustments] = useState<PaymentAdjustments>({});
+  const [adjustmentError, setAdjustmentError] = useState<string | null>(null);
+  const [quotePending, setQuotePending] = useState(false);
+  const dataLoaded = useRef(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -205,7 +216,8 @@ function CheckoutContent() {
   // Load member data and pricing (and cohort if needed)
   const loadData = useCallback(async () => {
     const request = ++quoteRequest.current;
-    setLoading(true);
+    setLoading(!dataLoaded.current);
+    setQuotePending(true);
     try {
       const [memberData, pricingData] = await Promise.all([
         apiGet<Member>("/api/v1/members/me", { auth: true }),
@@ -220,7 +232,8 @@ function CheckoutContent() {
             clubApplicationId,
             paymentMethod,
             clubPaymentModeWasChosen ? clubPaymentMode : undefined,
-            clubExperienceSelected
+            clubExperienceSelected,
+            adjustments
           );
           if (request !== quoteRequest.current) return;
           setClubQuote(quote);
@@ -228,14 +241,39 @@ function CheckoutContent() {
             setClubPaymentMode(quote.components.club_payment_mode);
           }
           setQuoteError(null);
+          setAdjustmentError(null);
         } catch (quoteFailure) {
           if (request !== quoteRequest.current) return;
+          if (dataLoaded.current && (adjustments.discount_code || adjustments.bubbles_to_apply)) {
+            setAdjustmentError(
+              quoteFailure instanceof Error
+                ? quoteFailure.message
+                : "Could not apply payment options"
+            );
+            return;
+          }
           setClubQuote(null);
           setQuoteError(
             quoteFailure instanceof Error
               ? quoteFailure.message
               : "Could not load the approved Club price"
           );
+        }
+      }
+      if (purpose === "community") {
+        try {
+          const quote = await apiPost<ChargePreview>(
+            "/api/v1/payments/charges/preview",
+            { purpose: "community", payment_method: paymentMethod, ...adjustments },
+            { auth: true }
+          );
+          if (request !== quoteRequest.current) return;
+          setMembershipQuote(quote);
+          setQuoteError(null);
+          setAdjustmentError(null);
+        } catch (error) {
+          if (request !== quoteRequest.current) return;
+          setAdjustmentError(error instanceof Error ? error.message : "Could not price Membership");
         }
       }
       if (purpose === "community_experience" && communityExperienceOfferingId) {
@@ -254,7 +292,10 @@ function CheckoutContent() {
       }
       if (purpose === "academy_cohort" && urlEnrollmentId) {
         try {
-          const enrollments = await apiGet<{ id: string; status: string }[]>("/api/v1/academy/my-enrollments", { auth: true });
+          const enrollments = await apiGet<{ id: string; status: string }[]>(
+            "/api/v1/academy/my-enrollments",
+            { auth: true }
+          );
           const enrollment = enrollments.find((item) => item.id === urlEnrollmentId);
           if (!enrollment) throw new Error("Academy enrollment not found");
           if (!canPayAcademyEnrollment(enrollment.status)) {
@@ -262,16 +303,27 @@ function CheckoutContent() {
             router.replace(`/account/academy/enrollments/${enrollment.id}`);
             return;
           }
-          setAcademyQuote(
-            await previewAcademyCheckout(
-              urlEnrollmentId,
-              billingMode === "installments",
-              paymentMethod,
-              urlAmountOverrideKobo
-            )
+          const quote = await previewAcademyCheckout(
+            urlEnrollmentId,
+            billingMode === "installments",
+            paymentMethod,
+            urlAmountOverrideKobo,
+            adjustments
           );
+          if (request !== quoteRequest.current) return;
+          setAcademyQuote(quote);
           setQuoteError(null);
+          setAdjustmentError(null);
         } catch (quoteFailure) {
+          if (request !== quoteRequest.current) return;
+          if (dataLoaded.current && (adjustments.discount_code || adjustments.bubbles_to_apply)) {
+            setAdjustmentError(
+              quoteFailure instanceof Error
+                ? quoteFailure.message
+                : "Could not apply payment options"
+            );
+            return;
+          }
           setQuoteError(
             quoteFailure instanceof Error
               ? quoteFailure.message
@@ -313,8 +365,13 @@ function CheckoutContent() {
       }
     } catch (e) {
       console.error("Failed to load data:", e);
+      setAdjustmentError("Could not refresh checkout. Reload the page before paying.");
     } finally {
-      if (request === quoteRequest.current) setLoading(false);
+      if (request === quoteRequest.current) {
+        setLoading(false);
+        setQuotePending(false);
+        dataLoaded.current = true;
+      }
     }
   }, [
     router,
@@ -327,6 +384,7 @@ function CheckoutContent() {
     clubPaymentMode,
     clubPaymentModeWasChosen,
     clubExperienceSelected,
+    adjustments,
     paymentMethod,
     communityExperienceOfferingId,
     billingMode,
@@ -448,16 +506,34 @@ function CheckoutContent() {
       amount: communityFee,
     });
     subtotal += communityFee;
+    membershipQuote?.additional_charges.forEach((charge) => {
+      lineItems.push({ label: charge.label, amount: charge.amount_kobo / 100 });
+    });
   }
 
   // Apply discount
   const discountAmount = validatedDiscount?.amount || 0;
-  const total = Math.max(0, subtotal - discountAmount);
+  const productQuote =
+    purpose === "club" && clubApplicationId
+      ? clubQuote
+      : purpose === "academy_cohort"
+        ? academyQuote
+        : purpose === "community"
+          ? membershipQuote
+          : null;
+  const productCheckout =
+    (purpose === "club" && !!clubApplicationId) ||
+    purpose === "academy_cohort" ||
+    purpose === "community";
+  const total = productQuote
+    ? productQuote.total_kobo / 100
+    : Math.max(0, subtotal - discountAmount);
+  const appliedBubbles = productQuote?.bubbles_to_apply || 0;
   const isTransition =
     purpose === "club" &&
     !!clubApplicationId &&
     clubQuote?.components.club_payment_mode === "transition_per_session";
-  const nothingDue = isTransition && total === 0;
+  const nothingDue = isTransition && total === 0 && appliedBubbles === 0;
 
   // ── Installment plan preview (mirrors installments.py logic) ─────────────
   const cohortForInstallments = purpose === "academy_cohort" ? state.selectedCohort : null;
@@ -591,7 +667,11 @@ function CheckoutContent() {
       let intentPayload: Partial<PaymentIntentRequest> = {
         currency: "NGN",
         payment_method: paymentMethod,
-        discount_code: state.discountCode || undefined,
+        discount_code: productCheckout
+          ? productQuote?.discount_code || undefined
+          : state.discountCode || undefined,
+        bubbles_to_apply: productCheckout ? appliedBubbles : undefined,
+        expected_total_kobo: productQuote?.total_kobo,
       };
 
       if (purpose === "club" || purpose === "club_bundle") {
@@ -642,12 +722,20 @@ function CheckoutContent() {
         };
       }
 
+      const attempt = productCheckout
+        ? productCheckoutAttempt(member?.id || member?.email || "me", intentPayload)
+        : null;
+      if (attempt) intentPayload.idempotency_key = attempt.idempotencyKey;
       const intent = await apiPost<PaymentIntent>("/api/v1/payments/intents", intentPayload, {
         auth: true,
       });
 
       // Cache the intent
       savePaymentIntentCache(intent, member?.id || member?.email || "me");
+      // Once the response is safely cached, Billing/provider return owns recovery.
+      // Retain the key only for a lost or incomplete initialization response.
+      if (intent.status === "paid" || intent.checkout_url || paymentMethod === "manual_transfer")
+        attempt?.complete();
 
       if (intent.checkout_url) {
         // Clear upgrade state before redirect
@@ -662,7 +750,11 @@ function CheckoutContent() {
       } else {
         if (intent.status === "paid") {
           toast.success(
-            nothingDue ? "Club access activated." : "Payment complete. Access activated."
+            intent.entitlement_applied_at
+              ? nothingDue
+                ? "Club access activated."
+                : "Payment complete. Access activated."
+              : "Payment confirmed. Access activation is processing."
           );
         } else {
           toast.success(`Payment reference created: ${intent.reference}`);
@@ -808,7 +900,7 @@ function CheckoutContent() {
           ))}
 
           {/* Discount section */}
-          {!clubApplicationId ? (
+          {!productCheckout ? (
             <div className="pt-3 border-t border-slate-100">
               {validatedDiscount ? (
                 <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3">
@@ -904,6 +996,22 @@ function CheckoutContent() {
             </div>
           ) : null}
 
+          {adjustmentError && !productQuote && <Alert variant="error">{adjustmentError}</Alert>}
+          {productQuote && (
+            <ProductPaymentOptions
+              quote={productQuote}
+              value={adjustments}
+              error={adjustmentError}
+              disabled={processing || quotePending}
+              online={paymentMethod === "paystack"}
+              onChange={(value) => {
+                quoteRequest.current++;
+                setQuotePending(true);
+                setAdjustments(value);
+              }}
+            />
+          )}
+
           {billingMode === "installments" && installmentPreview ? (
             <div className="pt-4 border-t border-slate-200 flex justify-between items-start gap-3">
               <div className="min-w-0">
@@ -920,7 +1028,13 @@ function CheckoutContent() {
           ) : (
             <div className="pt-4 border-t border-slate-200 flex justify-between">
               <span className="text-base font-semibold text-slate-900">
-                {nothingDue ? "Nothing due today" : isTransition ? "Due today" : "Total"}
+                {nothingDue
+                  ? "Nothing due today"
+                  : appliedBubbles > 0
+                    ? "Remaining online payment"
+                    : isTransition
+                      ? "Due today"
+                      : "Total"}
               </span>
               {!nothingDue && (
                 <span className="text-xl font-bold text-cyan-600">{formatCurrency(total)}</span>
@@ -997,7 +1111,10 @@ function CheckoutContent() {
                 name="payment_method"
                 value="manual_transfer"
                 checked={paymentMethod === "manual_transfer"}
-                onChange={() => setPaymentMethod("manual_transfer")}
+                onChange={() => {
+                  setAdjustments((value) => ({ ...value, bubbles_to_apply: 0 }));
+                  setPaymentMethod("manual_transfer");
+                }}
                 className="sr-only"
               />
               <span className="text-lg font-medium text-slate-900">🏦 Bank Transfer</span>
@@ -1043,18 +1160,29 @@ function CheckoutContent() {
 
       {/* Payment Button */}
       <div className="space-y-4">
-        <Button onClick={handlePayment} disabled={processing} size="lg" className="w-full">
+        <Button
+          onClick={handlePayment}
+          disabled={
+            processing || quotePending || !!adjustmentError || (productCheckout && !productQuote)
+          }
+          size="lg"
+          className="w-full"
+        >
           {processing
             ? "Processing..."
-            : nothingDue
-              ? "Activate Club access"
-              : isTransition && paymentMethod === "paystack"
-                ? `Pay ${formatCurrency(total)} & activate Club access`
-                : installmentsEnabled && billingMode === "installments"
-                  ? `Pay ${formatCurrency(installmentPreview?.deposit ?? 0)} — Start Installment Plan`
-                  : paymentMethod === "paystack"
-                    ? `Pay ${formatCurrency(total)}`
-                    : `Confirm & Get Reference`}
+            : appliedBubbles > 0
+              ? total > 0
+                ? `Pay ${formatCurrency(total)} + ${appliedBubbles} Bubbles`
+                : `Pay ${appliedBubbles} Bubbles`
+              : nothingDue
+                ? "Activate Club access"
+                : isTransition && paymentMethod === "paystack"
+                  ? `Pay ${formatCurrency(total)} & activate Club access`
+                  : installmentsEnabled && billingMode === "installments"
+                    ? `Pay ${formatCurrency(productQuote ? total : (installmentPreview?.deposit ?? 0))} — Start Installment Plan`
+                    : paymentMethod === "paystack"
+                      ? `Pay ${formatCurrency(total)}`
+                      : `Confirm & Get Reference`}
         </Button>
 
         <Link
