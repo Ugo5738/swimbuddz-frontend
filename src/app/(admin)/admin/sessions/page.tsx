@@ -34,14 +34,7 @@ import { toast } from "sonner";
 
 import { IBtn, StatCard, StatusBadge, TypeBadge } from "./components";
 import { SessionCadencePanel } from "./SessionCadencePanel";
-import type {
-  FilterTab,
-  RideArea,
-  Session,
-  SessionStatusType,
-  Template,
-  ViewMode,
-} from "./types";
+import type { FilterTab, RideArea, Session, SessionStatusType, Template, ViewMode } from "./types";
 import { apiFetch, fmtDate, fmtTime, LEGEND_ITEMS, locationLabel, PER_PAGE } from "./utils";
 
 // ---------------------------------------------------------------------------
@@ -73,7 +66,7 @@ export default function AdminSessionsPage() {
       setIsLoading(true);
       const [sessionRows, tmplRes, areasRes] = await Promise.all([
         SessionsApi.listAllSessions({ include_drafts: true }),
-        apiFetch("/api/v1/sessions/templates").catch(() => null),
+        apiFetch("/api/v1/sessions/templates?active_only=false").catch(() => null),
         apiFetch("/api/v1/transport/areas").catch(() => null),
       ]);
       setSessions(sessionRows as Session[]);
@@ -149,9 +142,12 @@ export default function AdminSessionsPage() {
   );
 
   // ---- Calendar handlers ----
-  const handleDateSelect = useCallback((info: DateSelectArg) => {
-    router.push(`/admin/sessions/new?starts_at=${encodeURIComponent(info.start.toISOString())}`);
-  }, [router]);
+  const handleDateSelect = useCallback(
+    (info: DateSelectArg) => {
+      router.push(`/admin/sessions/new?starts_at=${encodeURIComponent(info.start.toISOString())}`);
+    },
+    [router]
+  );
 
   const handleEventClick = useCallback(
     (info: EventClickArg) => {
@@ -290,21 +286,57 @@ export default function AdminSessionsPage() {
     [fetchData]
   );
 
-  const handleDeleteTemplate = useCallback(
-    async (id: string) => {
-      if (!confirm("Delete this template?")) return;
+  const handleArchiveTemplate = useCallback(
+    async (id: string, archived: boolean) => {
+      if (
+        !confirm(
+          archived
+            ? "Archive this template? Existing sessions and bookings will be kept; future generation will stop."
+            : "Restore this template? Automatic generation will remain off."
+        )
+      )
+        return;
       try {
-        await apiFetch(`/api/v1/sessions/templates/${id}`, { method: "DELETE" });
-        toast.success("Template deleted");
+        await apiFetch(`/api/v1/sessions/templates/${id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ is_active: !archived, auto_generate: false }),
+        });
+        toast.success(
+          archived
+            ? "Template archived; existing sessions kept"
+            : "Template restored; automatic generation is off"
+        );
         await fetchData();
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Failed to delete template");
+        toast.error(
+          err instanceof Error ? err.message : "Failed to update template archive status"
+        );
       }
     },
     [fetchData]
   );
 
   // ---- Interaction helpers ----
+  const handleDeleteTemplate = async (id: string) => {
+    if (
+      !confirm(
+        "Permanently delete this archived template? This cannot be undone. Templates referenced by sessions cannot be deleted."
+      )
+    )
+      return;
+    try {
+      await apiFetch(`/api/v1/sessions/templates/${id}`, { method: "DELETE" });
+      toast.success("Unused template permanently deleted");
+      await fetchData();
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Unable to delete template. Keep it archived if it is in use."
+      );
+    }
+  };
+
   const openCreate = () => {
     router.push("/admin/sessions/new");
   };
@@ -666,6 +698,7 @@ export default function AdminSessionsPage() {
           }}
           onCreateTemplate={handleCreateTemplate}
           onUpdateTemplate={handleUpdateTemplate}
+          onArchiveTemplate={handleArchiveTemplate}
           onDeleteTemplate={handleDeleteTemplate}
           onGenerate={(t) => {
             setGenerateTemplate(t);

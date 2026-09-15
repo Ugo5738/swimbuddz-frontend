@@ -25,8 +25,9 @@ export function SessionDefaultsField({ formData, rideAreas, onChange }: Props) {
     <div className="border-t pt-4 mt-4">
       <h3 className="font-semibold text-slate-900 mb-1">Session defaults</h3>
       <p className="text-xs text-slate-500 mb-3">
-        These apply to every session generated for this cohort. You can still override fees or
-        ride areas on individual sessions later.
+        Regular generated classes are included in tuition; students are not charged again to book
+        them. Stored pool rates and ride areas can be adjusted on individual sessions. Designate
+        separately chargeable extra classes in the session editor.
       </p>
       <div className="grid grid-cols-2 gap-4">
         <Input
@@ -41,6 +42,7 @@ export function SessionDefaultsField({ formData, rideAreas, onChange }: Props) {
             })
           }
           placeholder="e.g. 2500"
+          hint="Stored rate for the session, not an extra charge for enrolled students."
         />
       </div>
 
@@ -99,18 +101,14 @@ export function SessionDefaultsField({ formData, rideAreas, onChange }: Props) {
                 type="number"
                 min={0}
                 value={rc.cost}
-                onChange={(e) =>
-                  updateRideConfig(idx, { cost: Number(e.target.value) || 0 })
-                }
+                onChange={(e) => updateRideConfig(idx, { cost: Number(e.target.value) || 0 })}
               />
               <Input
                 label="Capacity"
                 type="number"
                 min={1}
                 value={rc.capacity}
-                onChange={(e) =>
-                  updateRideConfig(idx, { capacity: Number(e.target.value) || 1 })
-                }
+                onChange={(e) => updateRideConfig(idx, { capacity: Number(e.target.value) || 1 })}
               />
               <button
                 type="button"

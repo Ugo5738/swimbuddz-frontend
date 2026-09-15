@@ -4,10 +4,11 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import { supabase } from "@/lib/auth";
-import { API_BASE_URL } from "@/lib/config";
+import { apiPost } from "@/lib/api";
+import { useApi } from "@/hooks/useApi";
+import { PaymentProofLink } from "@/components/admin/PaymentProofLink";
 import { formatDistance } from "date-fns";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 interface Payment {
   id: string;
@@ -19,83 +20,42 @@ interface Payment {
   currency: string;
   status: string;
   payment_method: string | null;
-  proof_of_payment_url: string | null;
+  proof_of_payment_media_id: string | null;
   admin_review_note: string | null;
   created_at: string;
 }
 
 export default function AdminPaymentsPage() {
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    data,
+    loading,
+    error: loadError,
+    refetch: fetchPendingPayments,
+  } = useApi<Payment[]>("/api/v1/payments/admin/pending-reviews");
+  const payments = data ?? [];
   const [error, setError] = useState("");
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState<{ [key: string]: string }>({});
-
-  const fetchPendingPayments = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const token = session?.access_token;
-
-      const res = await fetch(
-        `${API_BASE_URL}/api/v1/payments/admin/pending-reviews`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      if (!res.ok) {
-        throw new Error("Failed to fetch pending payments");
-      }
-
-      const data = await res.json();
-      setPayments(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load payments");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchPendingPayments();
-  }, []);
+  const [reviewNote, setReviewNote] = useState<Record<string, string>>({});
 
   const handleApprove = async (reference: string) => {
+    if (
+      !confirm(
+        "Confirm the bank credit and the amount allocated to this payment. Approve this payment and activate its access?"
+      )
+    )
+      return;
     setProcessingId(reference);
+    setError("");
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const token = session?.access_token;
-
-      const res = await fetch(
-        `${API_BASE_URL}/api/v1/payments/admin/${reference}/approve`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ note: "Approved via admin panel" }),
-        },
+      await apiPost(
+        `/api/v1/payments/admin/${reference}/approve`,
+        { note: reviewNote[reference]?.trim() || "Bank credit verified via admin panel" },
+        { auth: true }
       );
-
-      if (!res.ok) {
-        throw new Error("Failed to approve payment");
-      }
-
-      // Remove from list
-      setPayments(payments.filter((p) => p.reference !== reference));
+      fetchPendingPayments();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to approve payment",
-      );
+      setError(err instanceof Error ? err.message : "Failed to approve payment");
     } finally {
       setProcessingId(null);
     }
@@ -103,32 +63,14 @@ export default function AdminPaymentsPage() {
 
   const handleReject = async (reference: string) => {
     setProcessingId(reference);
+    setError("");
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const token = session?.access_token;
-
-      const res = await fetch(
-        `${API_BASE_URL}/api/v1/payments/admin/${reference}/reject`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            note: rejectNote[reference] || "Proof of payment rejected",
-          }),
-        },
+      await apiPost(
+        `/api/v1/payments/admin/${reference}/reject`,
+        { note: rejectNote[reference] || "Proof of payment rejected" },
+        { auth: true }
       );
-
-      if (!res.ok) {
-        throw new Error("Failed to reject payment");
-      }
-
-      // Remove from list
-      setPayments(payments.filter((p) => p.reference !== reference));
+      fetchPendingPayments();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to reject payment");
     } finally {
@@ -150,12 +92,10 @@ export default function AdminPaymentsPage() {
           Admin · Payments
         </p>
         <h1 className="text-4xl font-bold text-slate-900">Payment Reviews</h1>
-        <p className="text-slate-600 mt-2">
-          Review and approve manual bank transfer payments
-        </p>
+        <p className="text-slate-600 mt-2">Review and approve manual bank transfer payments</p>
       </div>
 
-      {error && <Alert variant="error">{error}</Alert>}
+      {(error || loadError) && <Alert variant="error">{error || loadError}</Alert>}
 
       {loading ? (
         <Card className="p-8 text-center">
@@ -165,9 +105,7 @@ export default function AdminPaymentsPage() {
         <Card className="p-8 text-center">
           <div className="space-y-2">
             <p className="text-2xl">✅</p>
-            <h3 className="text-lg font-semibold text-slate-900">
-              All caught up!
-            </h3>
+            <h3 className="text-lg font-semibold text-slate-900">All caught up!</h3>
             <p className="text-slate-600">No payments awaiting review.</p>
           </div>
         </Card>
@@ -177,12 +115,8 @@ export default function AdminPaymentsPage() {
             <Card key={payment.id} className="p-6 space-y-4">
               <div className="flex flex-wrap justify-between items-start gap-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-900">
-                    {payment.reference}
-                  </h3>
-                  <p className="text-sm text-slate-600">
-                    {payment.payer_email || "Unknown email"}
-                  </p>
+                  <h3 className="text-lg font-semibold text-slate-900">{payment.reference}</h3>
+                  <p className="text-sm text-slate-600">{payment.payer_email || "Unknown email"}</p>
                   <p className="text-xs text-slate-500">
                     Created{" "}
                     {formatDistance(new Date(payment.created_at), new Date(), {
@@ -202,27 +136,21 @@ export default function AdminPaymentsPage() {
 
               {/* Proof of Payment */}
               <div className="border-t border-slate-200 pt-4">
-                <h4 className="text-sm font-medium text-slate-700 mb-2">
-                  Proof of Payment
-                </h4>
-                {payment.proof_of_payment_url ? (
-                  <a
-                    href={payment.proof_of_payment_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-cyan-600 hover:text-cyan-700 underline text-sm"
-                  >
-                    📎 View Uploaded Proof
-                  </a>
-                ) : (
-                  <p className="text-sm text-slate-500 italic">
-                    No proof uploaded yet
-                  </p>
-                )}
+                <h4 className="text-sm font-medium text-slate-700 mb-2">Proof of Payment</h4>
+                <PaymentProofLink mediaId={payment.proof_of_payment_media_id} />
               </div>
 
               {/* Actions */}
               <div className="border-t border-slate-200 pt-4 space-y-3">
+                <Input
+                  label="Verification / allocation note"
+                  value={reviewNote[payment.reference] ?? ""}
+                  maxLength={500}
+                  onChange={(event) =>
+                    setReviewNote({ ...reviewNote, [payment.reference]: event.target.value })
+                  }
+                  hint="Record the bank reference and received date. If one transfer covers Membership and swims, specify this payment’s allocated amount and record the remaining portion separately—never credit the full transfer twice."
+                />
                 <div className="flex flex-wrap gap-3">
                   <Button
                     onClick={() => handleApprove(payment.reference)}
@@ -259,11 +187,7 @@ export default function AdminPaymentsPage() {
         </div>
       )}
 
-      <Button
-        variant="secondary"
-        onClick={fetchPendingPayments}
-        disabled={loading}
-      >
+      <Button variant="secondary" onClick={fetchPendingPayments} disabled={loading}>
         🔄 Refresh
       </Button>
     </div>

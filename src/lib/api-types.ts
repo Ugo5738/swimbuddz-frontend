@@ -3946,8 +3946,8 @@ export interface paths {
          *     pre-booking online. Used by the attendance UI's "Mark walk-in" action.
          *
          *     Behavior:
-         *       - Looks up the session to default ``fee_amount_kobo`` to the session's
-         *         own ``pool_fee`` when the caller didn't specify one.
+         *       - Tuition-included cohort classes have no additional fee. Other sessions
+         *         default to ``pool_fee`` unless Admin specifies the originally agreed fee.
          *       - Idempotent: if a PENDING or CONFIRMED booking already exists for
          *         ``(session_id, member_id)``, returns it instead of creating a new one.
          *         Cancelled/expired bookings raise 409 (admin must investigate).
@@ -3957,6 +3957,31 @@ export interface paths {
          *         when an attendance row records Present/Late for this booking.
          */
         post: operations["admin_walk_in_booking_sessions__session_id__admin_walk_in_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/bookings/{booking_id}/admin/reconcile-missing-cohort-fee": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reconcile Missing Cohort Fee
+         * @description Correct only the historical null-access, zero-price cohort booking bug.
+         *
+         *     Admin must verify the agreed fee and explain the correction. Paid bookings,
+         *     deliberately free new bookings, guests and missing sessions are excluded.
+         *     Attendance stays untouched. Record verified funds separately through the
+         *     existing Payments offline-payment endpoint after this correction.
+         */
+        post: operations["reconcile_missing_cohort_fee_sessions_bookings__booking_id__admin_reconcile_missing_cohort_fee_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -23609,14 +23634,27 @@ export interface components {
             refund_heads?: number | null;
         };
         /**
+         * AdminUnpricedCohortBookingRequest
+         * @description Explicit correction of a legacy cohort booking created without a price.
+         *
+         *     This is not a general price override and does not collect payment.
+         */
+        AdminUnpricedCohortBookingRequest: {
+            /** Fee Amount Kobo */
+            fee_amount_kobo: number;
+            /** Reason */
+            reason: string;
+        };
+        /**
          * AdminWalkInRequest
          * @description Admin creates a CONFIRMED booking for a member who showed up without
          *     pre-booking online (the "walk-in" case).
          *
          *     Used by the admin attendance UI. The admin clicks "Mark walk-in" on a
          *     cohort member who paid the pool fee at the door — this creates the
-         *     booking record so the financials reconcile. Default fee is the session's
-         *     own ``pool_fee`` (in kobo); override is allowed for unusual cases.
+         *     booking record so the financials reconcile. Tuition-included classes stay
+         *     zero. Other sessions default to ``pool_fee`` (kobo); an explicit original
+         *     agreed fee may be supplied for historical reconciliation.
          */
         AdminWalkInRequest: {
             /**
@@ -24769,6 +24807,11 @@ export interface components {
             capacity: number;
             /** Pool Fee */
             pool_fee?: number | null;
+            /**
+             * Cohort Fee Mode
+             * @default included
+             */
+            cohort_fee_mode: string;
             /** Guest Fee Kobo */
             guest_fee_kobo?: number | null;
             /** Community Dropin Fee Kobo */
@@ -24990,6 +25033,12 @@ export interface components {
              * @default 0
              */
             pool_fee: number;
+            /**
+             * Cohort Fee Mode
+             * @default included
+             * @enum {string}
+             */
+            cohort_fee_mode: "included" | "paid_extra";
             /** Guest Fee */
             guest_fee?: number | null;
             /** Community Dropin Fee */
@@ -25183,6 +25232,12 @@ export interface components {
              * @default 0
              */
             pool_fee: number;
+            /**
+             * Cohort Fee Mode
+             * @default included
+             * @enum {string}
+             */
+            cohort_fee_mode: "included" | "paid_extra";
             /** Guest Fee */
             guest_fee?: number | null;
             /** Community Dropin Fee */
@@ -25504,6 +25559,8 @@ export interface components {
             capacity?: number | null;
             /** Pool Fee */
             pool_fee?: number | null;
+            /** Cohort Fee Mode */
+            cohort_fee_mode?: ("included" | "paid_extra") | null;
             /** Guest Fee */
             guest_fee?: number | null;
             /** Community Dropin Fee */
@@ -29917,7 +29974,10 @@ export interface components {
          * @description Submit proof of payment for manual transfer.
          */
         SubmitProofRequest: {
-            /** Proof Media Id */
+            /**
+             * Proof Media Id
+             * Format: uuid
+             */
             proof_media_id: string;
         };
         /** _BankItem */
@@ -50768,6 +50828,41 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionBookingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reconcile_missing_cohort_fee_sessions_bookings__booking_id__admin_reconcile_missing_cohort_fee_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUnpricedCohortBookingRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

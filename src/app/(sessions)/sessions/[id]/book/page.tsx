@@ -171,12 +171,10 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
   const partySize = 1 + guests.length;
   const memberSessionFee =
     session?.access?.fee_amount_kobo == null
-      ? session?.pool_fee ?? 0
+      ? (session?.pool_fee ?? 0)
       : session.access.fee_amount_kobo / 100;
   const guestUnitFee = session?.guest_fee ?? session?.pool_fee ?? 0;
-  const poolFee = isRideOnlyFlow
-    ? 0
-    : memberSessionFee + guestUnitFee * guests.length;
+  const poolFee = isRideOnlyFlow ? 0 : memberSessionFee + guestUnitFee * guests.length;
   const subtotal = poolFee + rideShareCost;
   const discountAmount = validatedDiscount?.amount ?? 0;
   const total = Math.max(0, subtotal - discountAmount);
@@ -467,7 +465,7 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
           // Free bookings are confirmed immediately. Confirmation creates
           // the default PRESENT attendance row; coaches/admins record any
           // day-of exception such as absence or lateness.
-          await apiPost(
+          const booking = await apiPost<{ status: string }>(
             `/api/v1/sessions/${params.id}/book`,
             {
               session_id: params.id,
@@ -478,6 +476,11 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
             },
             { auth: true }
           );
+          if (booking.status !== "confirmed") {
+            throw new Error(
+              "This booking still requires payment. Refresh to review the current price; your booking is not confirmed yet."
+            );
+          }
         }
 
         // Book ride if ride selected

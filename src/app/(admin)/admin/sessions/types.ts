@@ -21,6 +21,7 @@ export interface SessionCostLine {
 }
 
 export interface Session {
+  cohort_fee_mode?: "included" | "paid_extra";
   club_access_mode?: "plan_included" | "active_club" | "paid_addon";
   id: string;
   title: string;
@@ -82,6 +83,7 @@ export interface SessionRideConfig {
  * state). Optional fields default to `null` server-side.
  */
 export interface SessionPayload {
+  cohort_fee_mode?: "included" | "paid_extra";
   club_access_mode?: "plan_included" | "active_club" | "paid_addon";
   title: string;
   session_type: SessionType;
