@@ -6,6 +6,8 @@
 "use client";
 
 import { ClubSessionScopeFields } from "@/components/admin/ClubSessionScopeFields";
+import { ClubAccessModeHint } from "@/components/admin/ClubAccessModeHint";
+import { withExpectedAttendance, withSessionCapacity } from "@/lib/sessionPricingForm";
 import { PoolPicker } from "@/components/admin/PoolPicker";
 import { RescheduleClubPractice } from "@/components/club/RescheduleClubPractice";
 import { SessionVolunteerOpportunitiesSection } from "@/components/admin/SessionVolunteerOpportunitiesSection";
@@ -102,6 +104,7 @@ export function SessionFormModal({
       ? formatDateTimeLocal(new Date(session.ends_at))
       : formatDateTimeLocal(defaultEnd),
     pool_fee: session?.pool_fee ?? 2000,
+    cohort_fee_mode: session?.cohort_fee_mode ?? "included",
     guest_fee: session?.guest_fee ?? 0,
     community_dropin_fee: session?.community_dropin_fee ?? 0,
     allows_community_dropins: session?.allows_community_dropins ?? false,
@@ -213,6 +216,12 @@ export function SessionFormModal({
         : "community";
 
   const loadCostQuote = async () => {
+    if (form.pricing_expected_attendees > form.capacity) {
+      toast.error(
+        "Expected attendees cannot exceed capacity. Correct the attendance estimate first."
+      );
+      return;
+    }
     if (!form.pool_id) {
       toast.error("Select a pool before loading its cost rates");
       return;
@@ -294,6 +303,12 @@ export function SessionFormModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (form.pricing_mode === "cost_plus" && form.pricing_expected_attendees > form.capacity) {
+      toast.error(
+        "Expected attendees cannot exceed capacity. Correct the attendance estimate before saving."
+      );
+      return;
+    }
 
     // Discriminator guard (A1): give the admin instant feedback instead
     // of a backend 422 when the required context FK is missing.
@@ -318,6 +333,7 @@ export function SessionFormModal({
       club_access_mode: form.session_type === "club" ? form.club_access_mode : "plan_included",
       title: form.title,
       session_type: form.session_type,
+      cohort_fee_mode: form.session_type === "cohort_class" ? form.cohort_fee_mode : "included",
       // Send ONLY the context FK that matches the session_type so we
       // never ship a discriminator-violating combination.
       cohort_id: form.session_type === "cohort_class" ? form.cohort_id : null,
@@ -388,6 +404,7 @@ export function SessionFormModal({
           setForm({
             ...form,
             session_type: sessionType,
+            cohort_fee_mode: "included",
             club_id: sessionType === "club" ? form.club_id : null,
             pod_id: sessionType === "club" ? form.pod_id : null,
           });
@@ -402,20 +419,39 @@ export function SessionFormModal({
             (discriminator rule). Without it the backend rejects the
             session. Only active/upcoming cohorts are listed. */}
       {form.session_type === "cohort_class" && (
-        <Select
-          label="Cohort"
-          value={form.cohort_id ?? ""}
-          onChange={(e) => setForm({ ...form, cohort_id: e.target.value || null })}
-          required
-          hint="Which academy cohort is this class for?"
-        >
-          <option value="">— Select a cohort —</option>
-          {cohorts.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.label}
-            </option>
-          ))}
-        </Select>
+        <>
+          <Select
+            label="Cohort"
+            value={form.cohort_id ?? ""}
+            onChange={(e) => setForm({ ...form, cohort_id: e.target.value || null })}
+            required
+            hint="Which cohort are these regular or extra classes for? Enrollment in this cohort is still required."
+          >
+            <option value="">— Select a cohort —</option>
+            {cohorts.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
+              </option>
+            ))}
+          </Select>
+          <Select
+            label="Class payment"
+            value={form.cohort_fee_mode}
+            onChange={(e) =>
+              setForm({ ...form, cohort_fee_mode: e.target.value as "included" | "paid_extra" })
+            }
+            hint="Regular classes are already paid through tuition. Choose a paid extra only for a separately agreed additional class."
+          >
+            <option value="included">Included in tuition / no extra charge</option>
+            <option value="paid_extra">Paid extra class — charge separately</option>
+          </Select>
+          {form.cohort_fee_mode === "included" && (
+            <p className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm">
+              Enrolled students pay ₦0 to book this class. Any pool cost stored below is not an
+              additional tuition charge.
+            </p>
+          )}
+        </>
       )}
       {/* Event link — REQUIRED for Event sessions (discriminator rule). */}
       {form.session_type === "event" && (
@@ -454,12 +490,11 @@ export function SessionFormModal({
               })
             }
           >
-            <option value="plan_included">Purchased-quarter inclusion (link to plan)</option>
-            <option value="active_club">
-              Extra practice included for active prepaid Club members
-            </option>
-            <option value="paid_addon">Paid add-on for active Club members</option>
+            <option value="plan_included">Quarter schedule — included for prepaid members</option>
+            <option value="active_club">Extra practice — free for prepaid members</option>
+            <option value="paid_addon">Separate paid swim — all Club members pay</option>
           </Select>
+          <ClubAccessModeHint mode={form.club_access_mode} />
         </fieldset>
       )}
       <PoolPicker
@@ -531,7 +566,11 @@ export function SessionFormModal({
       )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Input
-          label="Booking price per attendee (₦)"
+          label={
+            form.session_type === "cohort_class" && form.cohort_fee_mode === "included"
+              ? "Stored session rate (₦)"
+              : "Booking price per attendee (₦)"
+          }
           type="number"
           min={0}
           step="0.01"
@@ -540,15 +579,25 @@ export function SessionFormModal({
               ? Number(costPlusBookingPrice.toFixed(2))
               : form.pool_fee
           }
-          onChange={(e) => setForm({ ...form, pool_fee: parseInt(e.target.value) || 0 })}
+          onChange={(e) => setForm({ ...form, pool_fee: Number(e.target.value) || 0 })}
+          hint={
+            form.session_type === "cohort_class"
+              ? form.cohort_fee_mode === "included"
+                ? "Stored session rate for costing/guests; enrolled students pay ₦0 because this class is included in tuition."
+                : "Enrolled students pay this amount for the extra class. Discounts and Bubbles are available in the normal checkout."
+              : undefined
+          }
           disabled={form.pricing_mode === "cost_plus"}
           required
         />
         <Input
           label="Capacity"
           type="number"
+          min={1}
           value={form.capacity}
-          onChange={(e) => setForm({ ...form, capacity: parseInt(e.target.value) || 0 })}
+          onChange={(e) =>
+            setForm((current) => withSessionCapacity(current, parseInt(e.target.value) || 0))
+          }
           required
         />
       </div>
@@ -615,8 +664,15 @@ export function SessionFormModal({
 
         {form.pricing_mode === "manual" ? (
           <div className="rounded-lg border border-cyan-100 bg-white p-3 text-sm text-slate-600">
-            Enter the amount each member pays in <strong>Booking price per attendee </strong>
-            above. Capacity controls how many places can be booked; no cost breakdown is needed.
+            {form.session_type === "cohort_class" && form.cohort_fee_mode === "included" ? (
+              "Enrolled students pay no additional fee. The stored session rate does not override tuition inclusion."
+            ) : (
+              <>
+                Enter the amount each member pays in <strong>Booking price per attendee </strong>{" "}
+                above.
+              </>
+            )}{" "}
+            Capacity controls how many places can be booked; no cost breakdown is needed.
           </div>
         ) : (
           <>
@@ -624,18 +680,24 @@ export function SessionFormModal({
               <strong>1.</strong> Enter expected attendance, staff, and lanes. <strong>2.</strong>{" "}
               Load the pool rates or add costs yourself. <strong>3.</strong> Choose the margin. The
               calculated booking price is shown above and in the summary below.
+              <p className="mt-2">
+                Per-attendee costs stay per swimmer. Shared costs (for example, staff travel or lane
+                hire) are divided by expected attendance, then your margin is added. This estimate
+                sets the price before booking; actual turnout does not reprice paid bookings.
+              </p>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Input
                 label="Expected attendees"
                 type="number"
                 min={1}
+                max={form.capacity}
+                hint="Swimmers expected to share the costs. Must not exceed session capacity."
                 value={form.pricing_expected_attendees}
                 onChange={(e) =>
-                  setForm({
-                    ...form,
-                    pricing_expected_attendees: Math.max(parseInt(e.target.value) || 1, 1),
-                  })
+                  setForm((current) =>
+                    withExpectedAttendance(current, Math.max(parseInt(e.target.value) || 1, 1))
+                  )
                 }
               />
               <div className="flex items-end">
@@ -655,7 +717,18 @@ export function SessionFormModal({
                 type="number"
                 min={0}
                 value={quoteStaff}
-                onChange={(e) => setQuoteStaff(Math.max(parseInt(e.target.value) || 0, 0))}
+                onChange={(e) => {
+                  const staff = Math.max(parseInt(e.target.value) || 0, 0);
+                  setForm((current) => ({
+                    ...current,
+                    cost_lines: current.cost_lines.map((line) =>
+                      line.charge_basis === "per_staff" && line.quantity === quoteStaff
+                        ? { ...line, quantity: staff }
+                        : line
+                    ),
+                  }));
+                  setQuoteStaff(staff);
+                }}
               />
               <Input
                 label="Lanes"
@@ -680,13 +753,26 @@ export function SessionFormModal({
                   <Select
                     label={index === 0 ? "Basis" : undefined}
                     value={line.charge_basis}
-                    onChange={(e) =>
-                      updateCostLine(
-                        index,
-                        "charge_basis",
-                        e.target.value as SessionCostLine["charge_basis"]
-                      )
-                    }
+                    onChange={(e) => {
+                      const basis = e.target.value as SessionCostLine["charge_basis"];
+                      setForm((current) => ({
+                        ...current,
+                        cost_lines: current.cost_lines.map((item, i) =>
+                          i === index
+                            ? {
+                                ...item,
+                                charge_basis: basis,
+                                quantity:
+                                  basis === "per_attendee"
+                                    ? current.pricing_expected_attendees
+                                    : basis === "per_staff"
+                                      ? quoteStaff
+                                      : 1,
+                              }
+                            : item
+                        ),
+                      }));
+                    }}
                   >
                     <option value="per_attendee">Per attendee</option>
                     <option value="per_staff">Per staff</option>
@@ -705,7 +791,15 @@ export function SessionFormModal({
                     }
                   />
                   <Input
-                    label={index === 0 ? "Qty" : undefined}
+                    label="Quantity"
+                    hint={
+                      line.charge_basis === "per_staff"
+                        ? "Staff paid this cost; the total is shared across swimmers."
+                        : line.charge_basis === "per_attendee" &&
+                            line.quantity !== form.pricing_expected_attendees
+                          ? `Check quantity: ${form.pricing_expected_attendees} swimmers expected, but this line charges ${line.quantity}.`
+                          : undefined
+                    }
                     type="number"
                     min={0}
                     step="0.25"
@@ -780,7 +874,14 @@ export function SessionFormModal({
               <Metric label="Total cost" value={estimatedTotalCost} />
               <Metric label="Cost / attendee" value={estimatedCostPerAttendee} />
               <Metric label="Margin / attendee" value={marginPerAttendee} />
-              <Metric label="Booking price" value={costPlusBookingPrice} />
+              <Metric
+                label="Booking price"
+                value={
+                  form.session_type === "cohort_class" && form.cohort_fee_mode === "included"
+                    ? 0
+                    : costPlusBookingPrice
+                }
+              />
             </div>
           </>
         )}

@@ -192,6 +192,37 @@ describe("Club checkout", () => {
     await waitFor(() => expect(mocks.router.push).toHaveBeenCalledWith("/account/billing"));
   });
 
+  it("shows discounts for Membership due but reconciles an existing transfer without Bubbles or another charge", async () => {
+    mocks.membership = 2000000;
+    mocks.post.mockResolvedValue({ reference: "PAY-TRANSFER", amount: 20000, status: "pending" });
+    render(<CheckoutPage />);
+    expect(
+      await screen.findByRole("button", { name: "Have a discount code?" })
+    ).toBeInTheDocument();
+    fireEvent.change(await screen.findByRole("slider", { name: "Bubbles to apply" }), {
+      target: { value: "10" },
+    });
+    fireEvent.click(screen.getByRole("radio", { name: /Bank Transfer/ }));
+    expect(screen.queryByRole("slider")).not.toBeInTheDocument();
+    expect(screen.getByText(/Already transferred\? Do not pay again/)).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "Confirm & Get Reference" }));
+    await waitFor(() =>
+      expect(mocks.post).toHaveBeenCalledWith(
+        "/api/v1/payments/intents",
+        expect.objectContaining({
+          payment_method: "manual_transfer",
+          bubbles_to_apply: 0,
+          club_payment_mode: "transition_per_session",
+          club_community_experience_selected: false,
+        }),
+        { auth: true }
+      )
+    );
+    expect(mocks.router.push).toHaveBeenCalledWith(
+      "/account/billing?pending_transfer=PAY-TRANSFER"
+    );
+  });
+
   it("submits the reviewed discount and partial Bubbles without discounting Membership", async () => {
     mocks.mode = "quarterly_prepaid";
     mocks.membership = 2000000;

@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  AcademyApi,
-  LocationType,
-  type CoachAssignmentInput,
-  type Program,
-} from "@/lib/academy";
+import { AcademyApi, LocationType, type CoachAssignmentInput, type Program } from "@/lib/academy";
 import { apiPost } from "@/lib/api";
 import { SessionLocation, SessionsApi, SessionType } from "@/lib/sessions";
 import { useRouter } from "next/navigation";
@@ -145,6 +140,7 @@ export function useCreateCohort({
               const createdSession = await SessionsApi.createSession({
                 title: `Week ${weekNumber} - ${selectedProgram?.name || "Session"}`,
                 session_type: SessionType.COHORT_CLASS,
+                cohort_fee_mode: "included",
                 cohort_id: cohort.id,
                 week_number: weekNumber,
                 starts_at: sessionStart.toISOString(),
@@ -172,7 +168,7 @@ export function useCreateCohort({
                   // Departure defaults to 2 hours before session start (matches
                   // the session edit form's default).
                   const departureIso = new Date(
-                    sessionStart.getTime() - 2 * 60 * 60 * 1000,
+                    sessionStart.getTime() - 2 * 60 * 60 * 1000
                   ).toISOString();
                   await apiPost(
                     `/api/v1/transport/sessions/${createdSession.id}/ride-configs`,
@@ -182,7 +178,7 @@ export function useCreateCohort({
                       capacity: rc.capacity,
                       departure_time: departureIso,
                     })),
-                    { auth: true },
+                    { auth: true }
                   );
                 } catch (rideErr) {
                   console.error("Failed to attach default ride configs to session:", rideErr);
@@ -204,11 +200,11 @@ export function useCreateCohort({
 
       if (sessionCount === 0) {
         toast.error(
-          "Cohort created, but no sessions were generated. Double-check the cohort dates and schedule.",
+          "Cohort created, but no sessions were generated. Double-check the cohort dates and schedule."
         );
       } else if (failedSessionCount > 0) {
         toast.success(
-          `Cohort created with ${sessionCount} sessions (${failedSessionCount} failed).`,
+          `Cohort created with ${sessionCount} sessions (${failedSessionCount} failed).`
         );
       } else {
         toast.success(`Cohort created with ${sessionCount} sessions!`);

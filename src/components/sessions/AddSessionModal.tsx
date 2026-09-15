@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Textarea } from "@/components/ui/Textarea";
+import { Select } from "@/components/ui/Select";
 import { SessionsApi, SessionType, type Session } from "@/lib/sessions";
 import { useState } from "react";
 
@@ -50,6 +51,7 @@ export function AddSessionModal({
     location_name: cohortLocationName,
     capacity: 10,
     pool_fee: 0,
+    cohort_fee_mode: "included" as "included" | "paid_extra",
     guest_fee: 0,
     community_dropin_fee: 0,
     notes: "",
@@ -79,6 +81,7 @@ export function AddSessionModal({
         location_name: formData.location_name || undefined,
         capacity: formData.capacity,
         pool_fee: formData.pool_fee,
+        cohort_fee_mode: formData.cohort_fee_mode,
         guest_fee: formData.guest_fee || undefined,
         community_dropin_fee: formData.community_dropin_fee || undefined,
         notes: formData.notes || undefined,
@@ -100,6 +103,7 @@ export function AddSessionModal({
         location_name: cohortLocationName,
         capacity: 10,
         pool_fee: 0,
+        cohort_fee_mode: "included",
         guest_fee: 0,
         community_dropin_fee: 0,
         notes: "",
@@ -145,9 +149,7 @@ export function AddSessionModal({
             type="number"
             min={0}
             value={formData.guest_fee}
-            onChange={(e) =>
-              setFormData({ ...formData, guest_fee: parseInt(e.target.value) || 0 })
-            }
+            onChange={(e) => setFormData({ ...formData, guest_fee: parseInt(e.target.value) || 0 })}
             hint="Separate from the member rate. Falls back to Pool Fee when blank."
           />
           <Input
@@ -217,6 +219,20 @@ export function AddSessionModal({
           hint="Defaults to this cohort's pool. Override if this one-off session is at a different pool."
         />
 
+        <Select
+          label="Class payment"
+          value={formData.cohort_fee_mode}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              cohort_fee_mode: e.target.value as "included" | "paid_extra",
+            })
+          }
+          hint="Regular classes are covered by tuition. Only choose paid extra for a separately agreed additional class."
+        >
+          <option value="included">Included in tuition / no extra charge</option>
+          <option value="paid_extra">Paid extra class — charge separately</option>
+        </Select>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Capacity"
@@ -231,15 +247,25 @@ export function AddSessionModal({
             }
           />
           <Input
-            label="Pool Fee"
+            label={
+              formData.cohort_fee_mode === "included"
+                ? "Stored session rate (₦)"
+                : "Extra class price per student (₦)"
+            }
             type="number"
             min={0}
+            step="0.01"
             value={formData.pool_fee}
             onChange={(e) =>
               setFormData({
                 ...formData,
-                pool_fee: parseInt(e.target.value) || 0,
+                pool_fee: Number(e.target.value) || 0,
               })
+            }
+            hint={
+              formData.cohort_fee_mode === "included"
+                ? "Enrolled students pay ₦0 to book, regardless of this stored rate."
+                : "Charged through normal session checkout, with discounts and Bubbles available."
             }
           />
         </div>

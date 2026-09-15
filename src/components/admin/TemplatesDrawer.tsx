@@ -7,6 +7,7 @@
 "use client";
 
 import { ClubSessionScopeFields } from "@/components/admin/ClubSessionScopeFields";
+import { ClubAccessModeHint } from "@/components/admin/ClubAccessModeHint";
 import { PoolPicker } from "@/components/admin/PoolPicker";
 import { SessionTemplateVolunteerSlotsSection } from "@/components/admin/SessionTemplateVolunteerSlotsSection";
 import { useClubSessionScope } from "@/components/admin/useClubSessionScope";
@@ -17,7 +18,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-import { Calendar, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Archive, ArchiveRestore, Calendar, Pencil, Plus, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -65,6 +66,7 @@ export function TemplatesDrawer({
   onClose,
   onCreateTemplate,
   onUpdateTemplate,
+  onArchiveTemplate,
   onDeleteTemplate,
   onGenerate,
   onOpenForm,
@@ -76,11 +78,14 @@ export function TemplatesDrawer({
   onClose: () => void;
   onCreateTemplate: (data: TemplateFormPayload, volunteerNeeds: VolunteerNeedDraft[]) => void;
   onUpdateTemplate: (id: string, data: TemplateFormPayload) => void;
+  onArchiveTemplate: (id: string, archived: boolean) => void;
   onDeleteTemplate: (id: string) => void;
   onGenerate: (t: Template) => void;
   // `null` mode closes the inline form and returns to the list view.
   onOpenForm: (mode: "create" | "edit" | null, tmpl?: Template) => void;
 }) {
+  const [showArchived, setShowArchived] = useState(false);
+  const visibleTemplates = templates.filter((template) => showArchived || template.is_active);
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       {/* Backdrop */}
@@ -114,17 +119,33 @@ export function TemplatesDrawer({
                 <Plus className="h-4 w-4" /> New Template
               </Button>
 
-              {templates.length === 0 ? (
+              <label className="mb-4 flex items-center gap-2 text-sm text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={showArchived}
+                  onChange={(event) => setShowArchived(event.target.checked)}
+                />
+                Show archived templates
+              </label>
+              <p className="mb-4 text-xs text-slate-500">
+                Archiving stops future generation. Existing sessions, bookings, and attendance are
+                kept. Restoring does not automatically restart recurrence. Archived templates can be
+                permanently deleted only when nothing references them.
+              </p>
+              {visibleTemplates.length === 0 ? (
                 <p className="py-8 text-center text-sm text-slate-500">
                   No templates yet. Create one to generate recurring sessions.
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {templates.map((t) => (
+                  {visibleTemplates.map((t) => (
                     <div key={t.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
                           <p className="font-medium text-slate-900">{t.title}</p>
+                          {!t.is_active && (
+                            <span className="text-xs font-medium text-amber-700">Archived</span>
+                          )}
                           <p className="mt-0.5 text-xs text-slate-500">
                             {DAY_NAMES[t.day_of_week]} at {t.start_time} &middot;{" "}
                             {t.duration_minutes}min
@@ -136,40 +157,56 @@ export function TemplatesDrawer({
                           </p>
                         </div>
                         <IBtn
-                          title="Delete template"
-                          className="text-slate-400 hover:bg-red-50 hover:text-red-600"
-                          onClick={() => onDeleteTemplate(t.id)}
+                          title={t.is_active ? "Archive template" : "Restore template"}
+                          className="text-slate-500 hover:bg-slate-100"
+                          onClick={() => onArchiveTemplate(t.id, t.is_active)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          {t.is_active ? (
+                            <Archive className="h-4 w-4" />
+                          ) : (
+                            <ArchiveRestore className="h-4 w-4" />
+                          )}
                         </IBtn>
                       </div>
-                      <div className="mt-3 flex gap-2">
-                        {t.session_type === "club" &&
-                        (t.club_access_mode ?? "plan_included") === "plan_included" ? (
-                          <Link
-                            href="/admin/club-plans"
-                            className="inline-flex min-h-[36px] items-center gap-1 rounded-md bg-cyan-600 px-3 py-2 text-sm font-medium text-white hover:bg-cyan-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2"
-                          >
-                            <Calendar className="h-3.5 w-3.5" /> Generate Club quarter
-                          </Link>
-                        ) : (
+                      {t.is_active && (
+                        <div className="mt-3 flex gap-2">
+                          {t.session_type === "club" &&
+                          (t.club_access_mode ?? "plan_included") === "plan_included" ? (
+                            <Link
+                              href="/admin/club-plans"
+                              className="inline-flex min-h-[36px] items-center gap-1 rounded-md bg-cyan-600 px-3 py-2 text-sm font-medium text-white hover:bg-cyan-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2"
+                            >
+                              <Calendar className="h-3.5 w-3.5" /> Generate Club quarter
+                            </Link>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={() => onGenerate(t)}
+                              className="flex items-center gap-1"
+                            >
+                              <Calendar className="h-3.5 w-3.5" /> Generate
+                            </Button>
+                          )}
                           <Button
                             size="sm"
-                            onClick={() => onGenerate(t)}
+                            variant="secondary"
+                            onClick={() => onOpenForm("edit", t)}
                             className="flex items-center gap-1"
                           >
-                            <Calendar className="h-3.5 w-3.5" /> Generate
+                            <Pencil className="h-3.5 w-3.5" /> Edit
                           </Button>
-                        )}
+                        </div>
+                      )}
+                      {!t.is_active && (
                         <Button
                           size="sm"
-                          variant="secondary"
-                          onClick={() => onOpenForm("edit", t)}
-                          className="flex items-center gap-1"
+                          variant="outline"
+                          className="mt-3 text-red-700"
+                          onClick={() => onDeleteTemplate(t.id)}
                         >
-                          <Pencil className="h-3.5 w-3.5" /> Edit
+                          Delete permanently
                         </Button>
-                      </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -255,6 +292,10 @@ function TemplateFormInline({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (form.session_type === "club" && pricing.pricing_expected_attendees > form.capacity) {
+      alert("Expected attendees cannot exceed template capacity.");
+      return;
+    }
     if (form.session_type === "club" && !form.club_id) {
       alert("Pick the Club and location this template belongs to.");
       return;
@@ -339,10 +380,11 @@ function TemplateFormInline({
               })
             }
           >
-            <option value="plan_included">Included in a purchased quarter</option>
-            <option value="active_club">Extra practice for active Club members</option>
-            <option value="paid_addon">Paid add-on for active Club members</option>
+            <option value="plan_included">Quarter schedule — included for prepaid members</option>
+            <option value="active_club">Extra practice — free for prepaid members</option>
+            <option value="paid_addon">Separate paid swim — all Club members pay</option>
           </Select>
+          <ClubAccessModeHint mode={form.club_access_mode} />
         </>
       )}
       <Select
@@ -413,7 +455,16 @@ function TemplateFormInline({
           label="Capacity"
           type="number"
           value={form.capacity}
-          onChange={(e) => setForm({ ...form, capacity: parseInt(e.target.value) || 0 })}
+          onChange={(e) => {
+            const capacity = parseInt(e.target.value) || 0;
+            if (
+              pricing.pricing_expected_attendees === form.capacity ||
+              pricing.pricing_expected_attendees > capacity
+            ) {
+              setPricing({ ...pricing, pricing_expected_attendees: Math.max(capacity, 1) });
+            }
+            setForm({ ...form, capacity });
+          }}
         />
       </div>
 
@@ -429,9 +480,9 @@ function TemplateFormInline({
             label="Expected attendees"
             type="number"
             min={1}
-            max={500}
             required
             value={pricing.pricing_expected_attendees}
+            max={form.capacity}
             onChange={(e) =>
               setPricing({ ...pricing, pricing_expected_attendees: Number(e.target.value) })
             }

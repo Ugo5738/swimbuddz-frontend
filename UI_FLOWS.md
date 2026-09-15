@@ -134,6 +134,32 @@ The implementation of pages should follow these flows closely.
 
 ## 4. Admin → Manage Sessions & Attendance
 
+### Included Academy classes and paid extras
+
+- Cohort-generated regular classes use `cohort_fee_mode=included`. Enrolled
+  students book at ₦0 even if a nonzero operating/pool rate is stored.
+- To offer extra practice, use Admin Sessions or the cohort's Add Session form:
+  select **Paid extra class**, set the per-student price/capacity, and publish.
+  Eligible students use the normal session link/dashboard checkout. Successful
+  payment confirms and links the booking automatically; discounts and Bubbles
+  remain supported. Pending payment must not display a confirmed booking.
+- Cost-plus spreads shared operating costs over expected attendance (never above
+  capacity). Manual pricing is simply the per-student amount. Neither reprices
+  an already-paid booking after the fact.
+- Admin Attendance can search for a registered member outside the roster to
+  record an actual past swim. This does not collect payment or activate Club.
+  **Record paid** records verified off-platform funds against an outstanding
+  booking. It is separate from an outgoing coach payout and uses the existing
+  incoming-payment/ledger workflow.
+- **Correct missing class fee** is restricted to legacy unpriced paid-extra
+  bookings and requires a verification reason. It creates no payment and cannot
+  rewrite a paid, priced or deliberately included booking.
+- Session templates can be archived/restored. Archived templates cannot generate
+  sessions. Permanent deletion remains available for unused templates; linked
+  templates must be archived to preserve their sessions and bookings.
+- Admin payment review loads the submitted receipt from its media UUID through
+  authenticated access, and supports an allocation/reference review note.
+
 ### Flow: Admin Dashboard → Sessions → Session Attendance
 
 1. Admin logs in and navigates to `/admin/dashboard`.

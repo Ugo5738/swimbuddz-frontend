@@ -109,6 +109,7 @@ function renderCreateDrawer(onCreateTemplate = vi.fn()) {
       onClose={vi.fn()}
       onCreateTemplate={onCreateTemplate}
       onUpdateTemplate={vi.fn()}
+      onArchiveTemplate={vi.fn()}
       onDeleteTemplate={vi.fn()}
       onGenerate={vi.fn()}
       onOpenForm={vi.fn()}
@@ -210,7 +211,7 @@ describe("Template generation routes and pricing labels", () => {
     auto_generate: false,
     is_active: true,
   };
-  function show(template: Template) {
+  function show(template: Template, archive = vi.fn(), remove = vi.fn()) {
     const generate = vi.fn();
     render(
       <TemplatesDrawer
@@ -221,7 +222,8 @@ describe("Template generation routes and pricing labels", () => {
         onClose={vi.fn()}
         onCreateTemplate={vi.fn()}
         onUpdateTemplate={vi.fn()}
-        onDeleteTemplate={vi.fn()}
+        onArchiveTemplate={archive}
+        onDeleteTemplate={remove}
         onGenerate={generate}
         onOpenForm={vi.fn()}
       />
@@ -242,6 +244,29 @@ describe("Template generation routes and pricing labels", () => {
       expect(generate).not.toHaveBeenCalled();
     }
   );
+  it("offers archive without deleting active templates", () => {
+    const archive = vi.fn();
+    const remove = vi.fn();
+    show(saved, archive, remove);
+    fireEvent.click(screen.getByTitle("Archive template"));
+    expect(archive).toHaveBeenCalledWith(saved.id, true);
+    expect(remove).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "Delete permanently" })).not.toBeInTheDocument();
+  });
+  it("hides archived templates by default and offers restore or guarded permanent deletion", () => {
+    const archive = vi.fn();
+    const remove = vi.fn();
+    show({ ...saved, is_active: false }, archive, remove);
+    expect(screen.queryByText(saved.title)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Show archived templates"));
+    expect(screen.getByText("Archived")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Generate Club quarter" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Generate" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTitle("Restore template"));
+    expect(archive).toHaveBeenCalledWith(saved.id, false);
+    fireEvent.click(screen.getByRole("button", { name: "Delete permanently" }));
+    expect(remove).toHaveBeenCalledWith(saved.id);
+  });
   it.each(["active_club", "paid_addon"] as const)("retains generic generation for %s", (mode) => {
     const template = { ...saved, club_access_mode: mode };
     const generate = show(template);

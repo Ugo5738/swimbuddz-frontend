@@ -5,6 +5,8 @@ import {
   type OfflineSessionPaymentInput,
 } from "@/components/admin/OfflineSessionPaymentModal";
 import { Alert } from "@/components/ui/Alert";
+import { RecordSessionWalkIn } from "@/components/admin/RecordSessionWalkIn";
+import { CorrectMissingCohortFee } from "@/components/admin/CorrectMissingCohortFee";
 import { Button } from "@/components/ui/Button";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { apiGet, apiPost } from "@/lib/api";
@@ -39,6 +41,7 @@ type Session = {
   lesson_title: string | null;
   week_number: number | null;
   cohort_id: string | null;
+  cohort_fee_mode?: "included" | "paid_extra";
   session_type: string | null;
   pod_id: string | null;
   // Per-session pool fee in NAIRA (the member endpoint converts kobo→naira
@@ -421,42 +424,42 @@ export default function AdminAttendancePage() {
           cohortEnrollments,
           clubMembers,
         ] = await Promise.all([
-            apiGet<Attendance[]>(`/api/v1/attendance/sessions/${selectedSessionId}/attendance`, {
-              auth: true,
-            }),
-            apiGet<RideBooking[]>(`/api/v1/transport/sessions/${selectedSessionId}/bookings`, {
-              auth: true,
-            }).catch((err) => {
-              console.warn("Failed to fetch ride bookings", err);
-              return [];
-            }), // Fail gracefully if transport service is down or no bookings
-            apiGet<RideConfig[]>(`/api/v1/transport/sessions/${selectedSessionId}/ride-configs`, {
-              auth: true,
-            }).catch((err) => {
-              console.warn("Failed to fetch ride configs", err);
-              return [];
-            }),
-            apiGet<SessionBookingResponse[]>(`/api/v1/sessions/${selectedSessionId}/bookings`, {
-              auth: true,
-            }).catch((err) => {
-              console.warn("Failed to fetch session bookings", err);
-              return [] as SessionBookingResponse[];
-            }),
-            cohortId
-              ? apiGet<EnrollmentResponse[]>(`/api/v1/academy/cohorts/${cohortId}/enrollments`, {
-                  auth: true,
-                }).catch((err) => {
-                  console.warn("Failed to fetch cohort enrollments", err);
-                  return [] as EnrollmentResponse[];
-                })
-              : Promise.resolve([] as EnrollmentResponse[]),
-            session
-              ? loadClubRoster(session).catch((err) => {
-                  console.warn("Failed to fetch Club roster", err);
-                  return [] as ClubRosterMember[];
-                })
-              : Promise.resolve([] as ClubRosterMember[]),
-          ]);
+          apiGet<Attendance[]>(`/api/v1/attendance/sessions/${selectedSessionId}/attendance`, {
+            auth: true,
+          }),
+          apiGet<RideBooking[]>(`/api/v1/transport/sessions/${selectedSessionId}/bookings`, {
+            auth: true,
+          }).catch((err) => {
+            console.warn("Failed to fetch ride bookings", err);
+            return [];
+          }), // Fail gracefully if transport service is down or no bookings
+          apiGet<RideConfig[]>(`/api/v1/transport/sessions/${selectedSessionId}/ride-configs`, {
+            auth: true,
+          }).catch((err) => {
+            console.warn("Failed to fetch ride configs", err);
+            return [];
+          }),
+          apiGet<SessionBookingResponse[]>(`/api/v1/sessions/${selectedSessionId}/bookings`, {
+            auth: true,
+          }).catch((err) => {
+            console.warn("Failed to fetch session bookings", err);
+            return [] as SessionBookingResponse[];
+          }),
+          cohortId
+            ? apiGet<EnrollmentResponse[]>(`/api/v1/academy/cohorts/${cohortId}/enrollments`, {
+                auth: true,
+              }).catch((err) => {
+                console.warn("Failed to fetch cohort enrollments", err);
+                return [] as EnrollmentResponse[];
+              })
+            : Promise.resolve([] as EnrollmentResponse[]),
+          session
+            ? loadClubRoster(session).catch((err) => {
+                console.warn("Failed to fetch Club roster", err);
+                return [] as ClubRosterMember[];
+              })
+            : Promise.resolve([] as ClubRosterMember[]),
+        ]);
         const bookingsData = rideBookingsData;
 
         // Build lookup maps
@@ -777,10 +780,7 @@ export default function AdminAttendancePage() {
   const filteredRoster = useMemo(() => {
     const normalizedQuery = rosterQuery.trim().toLowerCase();
     return roster.filter((row) => {
-      if (
-        normalizedQuery &&
-        !`${row.name} ${row.email}`.toLowerCase().includes(normalizedQuery)
-      ) {
+      if (normalizedQuery && !`${row.name} ${row.email}`.toLowerCase().includes(normalizedQuery)) {
         return false;
       }
       if (rosterStatusFilter !== "all" && row.effectiveStatus !== rosterStatusFilter) {
@@ -804,7 +804,7 @@ export default function AdminAttendancePage() {
   // Mark walk-in: cohort member showed up without pre-booking. Creates an
   // admin-channel SessionBooking (fee defaulted by the backend to the
   // session's own pool_fee) and marks them PRESENT — all in one click.
-  const handleMarkWalkIn = async (memberId: string) => {
+  const handleMarkWalkIn = async (memberId: string, feeAmountKobo?: number, note?: string) => {
     if (!selectedSessionId) return;
     setSubmittingMark(true);
     setError(null);
@@ -813,14 +813,18 @@ export default function AdminAttendancePage() {
       // 1) Create the booking. Backend defaults fee to session.pool_fee.
       await apiPost(
         `/api/v1/sessions/${selectedSessionId}/admin/walk-in`,
-        { member_id: memberId },
+        {
+          member_id: memberId,
+          ...(feeAmountKobo !== undefined ? { fee_amount_kobo: feeAmountKobo } : {}),
+          ...(note ? { notes: note } : {}),
+        },
         { auth: true }
       );
       // 2) Mark the member PRESENT for this session.
       await apiPost(
         `/api/v1/attendance/sessions/${selectedSessionId}/coach-mark`,
         {
-          entries: [{ member_id: memberId, status: "present", notes: "Walk-in" }],
+          entries: [{ member_id: memberId, status: "present", notes: note || "Walk-in" }],
         },
         { auth: true }
       );
@@ -1247,6 +1251,19 @@ export default function AdminAttendancePage() {
         ) : null}
 
         {/* Print-only header */}
+        {!loadingAttendance && selectedSessionId && sessionStarted && (
+          <RecordSessionWalkIn
+            key={selectedSessionId}
+            defaultFee={
+              isCohortSession && selectedSession?.cohort_fee_mode !== "paid_extra"
+                ? 0
+                : (selectedSession?.pool_fee ?? 0)
+            }
+            disabled={submittingMark}
+            onRecord={handleMarkWalkIn}
+          />
+        )}
+
         <div className="hidden print:block">
           <h2 className="text-xl font-bold">Attendance List</h2>
           {selectedSessionId &&
@@ -1310,11 +1327,20 @@ export default function AdminAttendancePage() {
                 isCohortSession={isCohortSession}
                 isClubSession={isClubSession}
                 sessionStarted={sessionStarted}
-                sessionPoolFeeNaira={selectedSession?.pool_fee ?? null}
+                sessionPoolFeeNaira={
+                  isCohortSession && selectedSession?.cohort_fee_mode !== "paid_extra"
+                    ? 0
+                    : (selectedSession?.pool_fee ?? null)
+                }
                 unmatchedBookingCount={unmatchedBookings.length}
                 onDraftStatus={handleDraftStatus}
                 onMarkWalkIn={handleMarkWalkIn}
                 onGeneratePayLink={handleGeneratePayLink}
+                onBookingCorrected={(corrected) =>
+                  setBookings((existing) =>
+                    existing.map((booking) => (booking.id === corrected.id ? corrected : booking))
+                  )
+                }
                 onRecordOfflinePayment={(bookingId, memberName, amountNaira) => {
                   setOfflinePaymentError(null);
                   setOfflinePaymentModal({ bookingId, memberName, amountNaira });
@@ -1518,6 +1544,7 @@ function UnifiedRoster({
   onMarkWalkIn,
   onGeneratePayLink,
   onRecordOfflinePayment,
+  onBookingCorrected,
   onRefundPoolFee,
   onBulkMarkPresent,
   onSaveRoster,
@@ -1536,6 +1563,7 @@ function UnifiedRoster({
   onMarkWalkIn: (memberId: string) => void;
   onGeneratePayLink: (bookingId: string, memberName: string) => void;
   onRecordOfflinePayment: (bookingId: string, memberName: string, amountNaira: number) => void;
+  onBookingCorrected: (booking: SessionBookingResponse) => void;
   onRefundPoolFee: (bookingId: string, memberName: string, feeNaira: number) => void;
   onBulkMarkPresent: () => void;
   onSaveRoster: () => void;
@@ -1550,9 +1578,9 @@ function UnifiedRoster({
           ? "No members are enrolled in this cohort yet."
           : isClubSession
             ? "No active Club members were found for this session's roster."
-          : sessionStarted
-            ? "No bookings or walk-ins recorded for this session."
-            : "No bookings yet — paid attendees will appear here."}
+            : sessionStarted
+              ? "No bookings or walk-ins recorded for this session."
+              : "No bookings yet — paid attendees will appear here."}
       </div>
     );
   }
@@ -1614,6 +1642,10 @@ function UnifiedRoster({
                 onMarkWalkIn={onMarkWalkIn}
                 onGeneratePayLink={onGeneratePayLink}
                 onRecordOfflinePayment={onRecordOfflinePayment}
+                allowMissingFeeCorrection={
+                  isCohortSession && sessionStarted && (sessionPoolFeeNaira ?? 0) > 0
+                }
+                onBookingCorrected={onBookingCorrected}
                 onRefundPoolFee={onRefundPoolFee}
                 disabled={submitting}
               />
@@ -1649,6 +1681,8 @@ function RosterTableRow({
   onMarkWalkIn,
   onGeneratePayLink,
   onRecordOfflinePayment,
+  onBookingCorrected,
+  allowMissingFeeCorrection,
   onRefundPoolFee,
   disabled,
 }: {
@@ -1659,6 +1693,8 @@ function RosterTableRow({
   onMarkWalkIn: (memberId: string) => void;
   onGeneratePayLink: (bookingId: string, memberName: string) => void;
   onRecordOfflinePayment: (bookingId: string, memberName: string, amountNaira: number) => void;
+  onBookingCorrected: (booking: SessionBookingResponse) => void;
+  allowMissingFeeCorrection: boolean;
   onRefundPoolFee: (bookingId: string, memberName: string, feeNaira: number) => void;
   disabled: boolean;
 }) {
@@ -1740,8 +1776,7 @@ function RosterTableRow({
   // attendance predates the booking/payment workflow. Once the booking exists,
   // its fee can be settled online or recorded as paid off-platform.
   const canCreateWalkInBooking =
-    !row.booking &&
-    (row.source === "cohort" || row.source === "club" || row.source === "walkin");
+    !row.booking && (row.source === "cohort" || row.source === "club" || row.source === "walkin");
 
   // Disable the Set dropdown when there's no booking AND no attendance —
   // the workflow is "use Mark walk-in to bring them onto the roster
@@ -1854,6 +1889,14 @@ function RosterTableRow({
                 Record paid
               </button>
             </div>
+          )}
+          {allowMissingFeeCorrection && row.booking && (
+            <CorrectMissingCohortFee
+              booking={row.booking}
+              memberName={row.name}
+              defaultFee={sessionPoolFeeNaira ?? 0}
+              onCorrected={onBookingCorrected}
+            />
           )}
           {canRefundPoolFee && row.booking && (
             <button

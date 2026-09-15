@@ -96,6 +96,15 @@ vi.mock("@/lib/pods", () => ({
   adminGetPod: vi.fn(),
 }));
 
+vi.mock("@/lib/academy", () => ({
+  AcademyApi: {
+    listCohorts: vi.fn(async () => [
+      { id: "cohort-1", name: "September cohort", status: "active" },
+    ]),
+  },
+  CohortStatus: { COMPLETED: "completed", CANCELLED: "cancelled" },
+}));
+
 function renderModal(onCreate = vi.fn()) {
   render(
     <SessionFormModal
@@ -118,6 +127,64 @@ describe("SessionFormModal Club scope", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
+
+  it("updates stale attendance when capacity changes and keeps manual per-person pricing", async () => {
+    const create = renderModal();
+    fireEvent.change(screen.getByLabelText(/^Capacity/), { target: { value: "2" } });
+    fireEvent.change(screen.getByLabelText(/^Booking price per attendee/), {
+      target: { value: "9800.50" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create Session" }));
+    await waitFor(() => expect(create).toHaveBeenCalledOnce());
+    expect(create.mock.calls[0][0]).toMatchObject({
+      capacity: 2,
+      pricing_expected_attendees: 2,
+      pricing_mode: "manual",
+      pool_fee: 9800.5,
+    });
+  });
+
+  it("explains shared costs and shows two expected swimmers instead of twenty", async () => {
+    renderModal();
+    fireEvent.change(screen.getByLabelText(/^Capacity/), { target: { value: "2" } });
+    fireEvent.change(screen.getByLabelText("Pricing method"), { target: { value: "cost_plus" } });
+    expect(screen.getByLabelText(/^Expected attendees/)).toHaveValue(2);
+    expect(screen.getByLabelText(/^Expected attendees/)).toHaveAttribute("max", "2");
+    expect(screen.getByText(/actual turnout does not reprice paid bookings/)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Load club rates" })).toBeInTheDocument()
+    );
+  });
+
+  it.each(["included", "paid_extra"] as const)(
+    "persists the explicit %s cohort billing mode without inferring it from pool cost",
+    async (mode) => {
+      const create = renderModal();
+      fireEvent.change(screen.getByLabelText("Session Type"), {
+        target: { value: "cohort_class" },
+      });
+      await screen.findByRole("option", { name: "September cohort" });
+      fireEvent.change(screen.getByLabelText(/^Cohort/), { target: { value: "cohort-1" } });
+      expect(screen.getByLabelText(/^Class payment/)).toHaveValue("included");
+      fireEvent.change(screen.getByLabelText(/^Class payment/), { target: { value: mode } });
+      fireEvent.change(
+        screen.getByLabelText(
+          mode === "included" ? /^Stored session rate/ : /^Booking price per attendee/
+        ),
+        { target: { value: "15000" } }
+      );
+      if (mode === "included")
+        expect(screen.getByText(/Enrolled students pay ₦0 to book this class/)).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Create Session" }));
+      await waitFor(() => expect(create).toHaveBeenCalledOnce());
+      expect(create.mock.calls[0][0]).toMatchObject({
+        session_type: "cohort_class",
+        cohort_id: "cohort-1",
+        cohort_fee_mode: mode,
+        pool_fee: 15000,
+      });
+    }
+  );
 
   it("keeps a paid extra practice separate from purchased-quarter inclusion", async () => {
     const onCreate = renderModal();

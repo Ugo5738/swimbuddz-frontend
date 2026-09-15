@@ -53,6 +53,7 @@ export function getCohortColor(cohortId: string): string {
 // --- Types ---
 
 export interface Session {
+  cohort_fee_mode?: "included" | "paid_extra";
   id: string;
   title: string;
   description?: string;
@@ -159,6 +160,7 @@ export interface SessionCoach {
 }
 
 export interface SessionCreate {
+  cohort_fee_mode?: "included" | "paid_extra";
   title: string;
   description?: string;
   notes?: string;
@@ -189,6 +191,7 @@ export interface SessionCreate {
 }
 
 export interface SessionUpdate {
+  cohort_fee_mode?: "included" | "paid_extra";
   title?: string;
   description?: string;
   notes?: string;
