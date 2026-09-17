@@ -81,11 +81,10 @@ const navGroups = [
         badge: "Coming Soon",
       },
       {
-        href: "/stroke-analyzer",
-        label: "Stroke Analyzer",
+        href: "https://analyzer.swimbuddz.com",
+        label: "Stroke Lab",
         description: "Video analysis of your technique",
         icon: Video,
-        badge: "Coming Soon",
       },
     ],
   },

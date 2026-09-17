@@ -39,7 +39,7 @@ const tierOptions: TierOption[] = [
     value: "club",
     label: "Join Club",
     tagline: "Practise and improve consistently",
-    price: "Location-priced",
+    price: "By location",
     priceNote: "quarter",
     icon: <Star className="h-6 w-6" />,
     accentColor: "emerald",
@@ -57,7 +57,7 @@ const tierOptions: TierOption[] = [
     value: "academy",
     label: "Learn through Academy",
     tagline: "Choose a structured learning programme",
-    price: "Programme-priced",
+    price: "By programme",
     priceNote: "cohort",
     icon: <Sparkles className="h-6 w-6" />,
     accentColor: "purple",
@@ -130,23 +130,27 @@ export function TierSelectionStep({
           const colors = colorStyles[tier.accentColor as keyof typeof colorStyles];
 
           return (
-            <div
+            <button
+              type="button"
+              disabled={isDisabled}
+              aria-pressed={isSelected}
+              aria-label={tier.label}
               key={tier.value}
-              className={`relative rounded-2xl transition-all duration-200 ${
+              className={`relative min-w-0 text-left rounded-2xl border border-slate-200 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600 ${
                 isDisabled
                   ? "opacity-50 cursor-not-allowed"
                   : "cursor-pointer hover:shadow-xl hover:-translate-y-1"
               } ${
                 isSelected
-                  ? `ring-2 ${colors.border} shadow-lg ${colors.bg}`
-                  : "bg-white border border-slate-200 hover:border-slate-300"
+                  ? `ring-2 ring-cyan-600 ${colors.border} shadow-lg ${colors.bg}`
+                  : "bg-white hover:border-slate-300"
               } ${tier.featured && !isSelected ? "ring-1 ring-emerald-200" : ""}`}
               onClick={() => !isDisabled && onSelectTier(tier.value)}
             >
               {/* Featured Badge */}
               {tier.featured && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-semibold shadow-md">
+                  <span className="inline-flex whitespace-nowrap items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-semibold shadow-md">
                     <Star className="h-3 w-3 fill-current" />
                     Regular practice
                   </span>
@@ -164,7 +168,7 @@ export function TierSelectionStep({
 
               <div className="p-6 flex flex-col h-full">
                 {/* Icon & Title */}
-                <div className="space-y-3">
+                <div className="space-y-3 lg:min-h-[176px]">
                   <div
                     className={`inline-flex items-center justify-center w-12 h-12 rounded-xl ${colors.icon}`}
                   >
@@ -177,17 +181,19 @@ export function TierSelectionStep({
                 </div>
 
                 {/* Price */}
-                <div className="py-4 mt-4 border-b border-slate-100">
-                  <div className="flex items-baseline gap-1">
-                    <span className={`text-3xl font-bold ${colors.text}`}>{tier.price}</span>
+                <div className="py-4 mt-4 border-b border-slate-100 lg:min-h-[104px]">
+                  <div className="flex flex-col gap-1">
+                    <span className={`text-2xl font-bold break-words ${colors.text}`}>
+                      {tier.price}
+                    </span>
                     {tier.priceNote && (
-                      <span className="text-sm text-slate-500">/{tier.priceNote}</span>
+                      <span className="text-sm text-slate-500">per {tier.priceNote}</span>
                     )}
                   </div>
                 </div>
 
                 {/* Includes note - fixed height placeholder for alignment */}
-                <div className="h-6 mt-4">
+                <div className="min-h-10 mt-4">
                   {tier.includes && (
                     <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
                       {tier.includes}
@@ -206,25 +212,19 @@ export function TierSelectionStep({
                 </ul>
 
                 {/* Select Button - always at bottom */}
-                <button
-                  type="button"
-                  disabled={isDisabled}
-                  className={`w-full py-3 px-4 rounded-xl font-semibold text-sm transition-all mt-6 ${
+                <span
+                  className={`block text-center w-full py-3 px-4 rounded-xl font-semibold text-sm transition-all mt-6 ${
                     isSelected
                       ? `${colors.text} bg-white border-2 ${colors.border}`
                       : isDisabled
                         ? "bg-slate-100 text-slate-400 cursor-not-allowed"
                         : `bg-slate-100 text-slate-700 hover:bg-slate-200`
                   }`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!isDisabled) onSelectTier(tier.value);
-                  }}
                 >
                   {isSelected ? "✓ Selected" : isDisabled ? "Already active" : "Choose this path"}
-                </button>
+                </span>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>

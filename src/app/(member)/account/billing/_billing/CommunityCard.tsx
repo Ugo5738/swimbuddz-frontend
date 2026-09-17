@@ -70,11 +70,23 @@ export function CommunityCard({ member, communityActive, communityFee }: Props) 
           )}
         </>
       ) : (
-        <Link href="/checkout?purpose=community" className="block">
-          <Button className="w-full sm:w-auto">
-            Activate Community ({formatCurrency(communityFee)})
-          </Button>
-        </Link>
+        <div className="space-y-3">
+          <Link href="/checkout?purpose=community" className="block">
+            <Button className="w-full sm:w-auto">
+              Activate Community ({formatCurrency(communityFee)})
+            </Button>
+          </Link>
+          <Link
+            href="/checkout?purpose=community&payment_method=manual_transfer"
+            className="block text-sm font-medium text-cyan-700 underline underline-offset-2"
+          >
+            Already paid by bank transfer? Submit your receipt
+          </Link>
+          <p className="text-xs text-slate-500">
+            Do not transfer again. If your receipt covers Membership and a swim together, contact
+            Admin to allocate it to the correct items.
+          </p>
+        </div>
       )}
     </Card>
   );

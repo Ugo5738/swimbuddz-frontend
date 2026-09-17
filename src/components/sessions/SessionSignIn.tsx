@@ -1,5 +1,7 @@
 "use client";
 
+import { BANK_TRANSFER_ACCOUNT } from "@/lib/bank-transfer";
+
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -49,12 +51,8 @@ export function SessionSignIn({ session }: SessionSignInProps) {
   const [note, setNote] = useState("");
 
   // New State for Ride Share Booking
-  const [selectedRideShareAreaId, setSelectedRideShareAreaId] = useState<
-    string | null
-  >(null);
-  const [selectedRideShareLocation, setSelectedRideShareLocation] = useState<
-    string | null
-  >(null);
+  const [selectedRideShareAreaId, setSelectedRideShareAreaId] = useState<string | null>(null);
+  const [selectedRideShareLocation, setSelectedRideShareLocation] = useState<string | null>(null);
 
   // Payment option state - defaults to Paystack (online) for session payments
   const [showManualPayment, setShowManualPayment] = useState(false);
@@ -63,9 +61,7 @@ export function SessionSignIn({ session }: SessionSignInProps) {
   const [error, setError] = useState<string | null>(null);
   const [isTierError, setIsTierError] = useState(false);
   const [confirmation, setConfirmation] = useState<boolean>(false);
-  const [member, setMember] = useState<{ name: string; email: string } | null>(
-    null,
-  );
+  const [member, setMember] = useState<{ name: string; email: string } | null>(null);
   const [loadingMember, setLoadingMember] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
@@ -80,13 +76,10 @@ export function SessionSignIn({ session }: SessionSignInProps) {
     hour: "2-digit",
     minute: "2-digit",
   });
-  const hasRideShareAreas =
-    session.rideShareAreas && session.rideShareAreas.length > 0;
+  const hasRideShareAreas = session.rideShareAreas && session.rideShareAreas.length > 0;
 
   // Calculate total cost
-  const selectedArea = session.rideShareAreas?.find(
-    (a) => a.id === selectedRideShareAreaId,
-  );
+  const selectedArea = session.rideShareAreas?.find((a) => a.id === selectedRideShareAreaId);
   const rideShareCost = selectedArea ? selectedArea.cost : 0;
   const poolFee = session.pool_fee ?? 0;
   const totalCost = poolFee + rideShareCost;
@@ -99,8 +92,7 @@ export function SessionSignIn({ session }: SessionSignInProps) {
           return;
         }
         const fullName =
-          `${profile.first_name || ""} ${profile.last_name || ""}`.trim() ||
-          profile.email;
+          `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || profile.email;
         setMember({
           name: fullName,
           email: profile.email || "",
@@ -139,12 +131,15 @@ export function SessionSignIn({ session }: SessionSignInProps) {
         setConfirmation(true);
       } catch (error) {
         const message =
-          error instanceof Error
-            ? error.message
-            : "Unable to book this session. Please try again.";
+          error instanceof Error ? error.message : "Unable to book this session. Please try again.";
         setError(message);
         // Detect tier access errors (membership/enrollment messages from backend)
-        const tierKeywords = ["club session", "academy cohort", "active membership", "membership isn't"];
+        const tierKeywords = [
+          "club session",
+          "academy cohort",
+          "active membership",
+          "membership isn't",
+        ];
         setIsTierError(tierKeywords.some((kw) => message.toLowerCase().includes(kw.toLowerCase())));
       } finally {
         setSaving(false);
@@ -168,7 +163,7 @@ export function SessionSignIn({ session }: SessionSignInProps) {
           pickup_location_id: selectedRideShareLocation || undefined,
           attendance_status: status,
         },
-        { auth: true },
+        { auth: true }
       );
 
       if (intent.checkout_url) {
@@ -179,11 +174,14 @@ export function SessionSignIn({ session }: SessionSignInProps) {
       }
     } catch (error) {
       const message =
-        error instanceof Error
-          ? error.message
-          : "Unable to process payment. Please try again.";
+        error instanceof Error ? error.message : "Unable to process payment. Please try again.";
       setError(message);
-      const tierKeywords = ["club session", "academy cohort", "active membership", "membership isn't"];
+      const tierKeywords = [
+        "club session",
+        "academy cohort",
+        "active membership",
+        "membership isn't",
+      ];
       setIsTierError(tierKeywords.some((kw) => message.toLowerCase().includes(kw.toLowerCase())));
     } finally {
       setSaving(false);
@@ -233,9 +231,7 @@ export function SessionSignIn({ session }: SessionSignInProps) {
             {!showManualPayment ? (
               <>
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-                  <p className="font-semibold text-emerald-900">
-                    💳 Pay Online with Paystack
-                  </p>
+                  <p className="font-semibold text-emerald-900">💳 Pay Online with Paystack</p>
                   <p className="mt-1 text-sm text-emerald-700">
                     Secure payment via card, bank transfer, or USSD.
                   </p>
@@ -251,27 +247,23 @@ export function SessionSignIn({ session }: SessionSignInProps) {
             ) : (
               <>
                 <div className="rounded-lg border border-slate-200 bg-white p-4">
-                  <p className="font-semibold text-slate-900">
-                    💳 Bank Transfer
-                  </p>
+                  <p className="font-semibold text-slate-900">💳 Bank Transfer</p>
                   <div className="mt-2 space-y-1 text-sm text-slate-700">
                     <div className="flex justify-between">
                       <span className="text-slate-600">Bank:</span>
-                      <span className="font-medium">OPay</span>
+                      <span className="font-medium">{BANK_TRANSFER_ACCOUNT.bankName}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-600">Account Number:</span>
-                      <span className="font-medium">7033588400</span>
+                      <span className="font-medium">{BANK_TRANSFER_ACCOUNT.accountNumber}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-600">Account Name:</span>
-                      <span className="font-medium">Ugochukwu Nwachukwu</span>
+                      <span className="font-medium">{BANK_TRANSFER_ACCOUNT.accountName}</span>
                     </div>
                   </div>
                   <div className="mt-3 rounded bg-cyan-50 p-3 text-sm">
-                    <p className="font-medium text-cyan-900">
-                      📱 Send Receipt via WhatsApp
-                    </p>
+                    <p className="font-medium text-cyan-900">📱 Send Receipt via WhatsApp</p>
                     <p className="mt-1 text-cyan-800">
                       After payment, please send your receipt to:{" "}
                       <a
@@ -306,9 +298,7 @@ export function SessionSignIn({ session }: SessionSignInProps) {
         <div className="space-y-1">
           <p className="text-sm font-semibold text-cyan-600">Session</p>
           <h1 className="text-3xl font-bold text-slate-900">{session.title}</h1>
-          <p className="text-sm text-slate-600">
-            {session.location_name ?? session.location}
-          </p>
+          <p className="text-sm text-slate-600">{session.location_name ?? session.location}</p>
           <p className="text-sm font-semibold text-slate-700">
             {startsAt.toLocaleDateString("en-NG", {
               weekday: "long",
@@ -332,9 +322,7 @@ export function SessionSignIn({ session }: SessionSignInProps) {
                   : "border-slate-200 bg-white text-slate-500"
             }`}
           >
-            <span className="text-xs font-semibold uppercase">
-              Step {index + 1}
-            </span>
+            <span className="text-xs font-semibold uppercase">Step {index + 1}</span>
             <span className="font-semibold">{item.title}</span>
             <span className="text-xs">{item.description}</span>
           </div>
@@ -363,9 +351,7 @@ export function SessionSignIn({ session }: SessionSignInProps) {
       <Card className="space-y-4">
         {step === 0 && (
           <div className="space-y-3">
-            <h2 className="text-xl font-semibold text-slate-900">
-              Signing in as
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900">Signing in as</h2>
             {loadingMember ? (
               <p className="text-sm text-slate-500">Loading profile...</p>
             ) : member ? (
@@ -373,9 +359,7 @@ export function SessionSignIn({ session }: SessionSignInProps) {
                 <p className="text-base text-slate-700">{member.name}</p>
                 <p className="text-sm text-slate-500">{member.email}</p>
                 <div className="mt-4 rounded-lg border border-cyan-200 bg-cyan-50 p-3">
-                  <p className="text-sm font-medium text-cyan-900">
-                    ✨ Coming Soon
-                  </p>
+                  <p className="text-sm font-medium text-cyan-900">✨ Coming Soon</p>
                   <p className="mt-1 text-xs text-cyan-700">
                     Invite and book sessions with friends!
                   </p>
@@ -394,9 +378,7 @@ export function SessionSignIn({ session }: SessionSignInProps) {
             <Select
               label="Attendance status"
               value={status}
-              onChange={(event) =>
-                setStatus(event.target.value as typeof status)
-              }
+              onChange={(event) => setStatus(event.target.value as typeof status)}
             >
               <option value="present">Attend full session</option>
               <option value="late">Arriving late or leaving early</option>
@@ -413,12 +395,8 @@ export function SessionSignIn({ session }: SessionSignInProps) {
 
             {hasRideShareAreas && (
               <div className="space-y-4 border-t border-slate-200 pt-4">
-                <h3 className="font-semibold text-slate-900">
-                  Ride Share Options
-                </h3>
-                <p className="text-sm text-slate-600">
-                  Select a ride share area to book a seat.
-                </p>
+                <h3 className="font-semibold text-slate-900">Ride Share Options</h3>
+                <p className="text-sm text-slate-600">Select a ride share area to book a seat.</p>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   {session.rideShareAreas!.map((area) => (
@@ -436,16 +414,12 @@ export function SessionSignIn({ session }: SessionSignInProps) {
                       }}
                     >
                       <div className="flex justify-between">
-                        <span className="font-semibold text-slate-900">
-                          {area.ride_area_name}
-                        </span>
+                        <span className="font-semibold text-slate-900">{area.ride_area_name}</span>
                         <span className="font-medium text-slate-700">
                           ₦{area.cost.toLocaleString()}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-500">
-                        Capacity: {area.capacity} per ride
-                      </p>
+                      <p className="text-xs text-slate-500">Capacity: {area.capacity} per ride</p>
                     </div>
                   ))}
                 </div>
@@ -453,23 +427,17 @@ export function SessionSignIn({ session }: SessionSignInProps) {
                 {selectedRideShareAreaId && (
                   <div className="mt-4 space-y-3 rounded-xl bg-slate-50 p-4">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-slate-900">
-                        Select Pickup Location
-                      </p>
+                      <p className="text-sm font-medium text-slate-900">Select Pickup Location</p>
                       <span className="text-xs text-slate-500">
                         *Only one location per area can be active at a time
                       </span>
                     </div>
                     <div className="grid gap-3">
                       {session
-                        .rideShareAreas!.find(
-                          (a) => a.id === selectedRideShareAreaId,
-                        )
+                        .rideShareAreas!.find((a) => a.id === selectedRideShareAreaId)
                         ?.pickup_locations.map((loc) => {
-                          const isSelected =
-                            selectedRideShareLocation === loc.id;
-                          const isFull =
-                            loc.current_bookings >= loc.max_capacity;
+                          const isSelected = selectedRideShareLocation === loc.id;
+                          const isFull = loc.current_bookings >= loc.max_capacity;
 
                           return (
                             <div
@@ -538,8 +506,7 @@ export function SessionSignIn({ session }: SessionSignInProps) {
                                   >
                                     <span>👥</span>
                                     <span>
-                                      {loc.current_bookings} /{" "}
-                                      {loc.max_capacity}
+                                      {loc.current_bookings} / {loc.max_capacity}
                                     </span>
                                   </div>
                                 </div>
@@ -582,9 +549,7 @@ export function SessionSignIn({ session }: SessionSignInProps) {
                                       {loc.departure_time_calculated && (
                                         <div className="flex items-baseline justify-between border-t border-slate-200 pt-2.5">
                                           <div className="flex items-center gap-2">
-                                            <span className="text-base">
-                                              🚗
-                                            </span>
+                                            <span className="text-base">🚗</span>
                                             <span className="font-medium text-slate-700">
                                               Departure:
                                             </span>
@@ -593,7 +558,7 @@ export function SessionSignIn({ session }: SessionSignInProps) {
                                             className={`text-sm font-semibold ${isSelected ? "text-cyan-600" : "text-slate-900"}`}
                                           >
                                             {new Date(
-                                              loc.departure_time_calculated,
+                                              loc.departure_time_calculated
                                             ).toLocaleTimeString([], {
                                               hour: "2-digit",
                                               minute: "2-digit",
@@ -607,17 +572,16 @@ export function SessionSignIn({ session }: SessionSignInProps) {
                               )}
 
                               {/* Warning Message */}
-                              {!loc.is_available &&
-                                loc.current_bookings === 0 && (
-                                  <div className="px-4 pb-3 pt-2">
-                                    <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                                      <span>⚠️</span>
-                                      <span className="font-medium">
-                                        Another location in this area is active
-                                      </span>
-                                    </div>
+                              {!loc.is_available && loc.current_bookings === 0 && (
+                                <div className="px-4 pb-3 pt-2">
+                                  <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                                    <span>⚠️</span>
+                                    <span className="font-medium">
+                                      Another location in this area is active
+                                    </span>
                                   </div>
-                                )}
+                                </div>
+                              )}
                             </div>
                           );
                         })}
@@ -634,26 +598,21 @@ export function SessionSignIn({ session }: SessionSignInProps) {
             <p>Review your selections and submit.</p>
             <ul className="list-disc space-y-2 pl-5">
               <li>
-                Status:{" "}
-                {status === "present" ? "Full session" : "Arriving late or leaving early"}
+                Status: {status === "present" ? "Full session" : "Arriving late or leaving early"}
               </li>
               {selectedArea && (
                 <>
                   <li>
-                    Ride Share:{" "}
-                    <span className="font-semibold">
-                      {selectedArea.ride_area_name}
-                    </span>
+                    Ride Share: <span className="font-semibold">{selectedArea.ride_area_name}</span>
                   </li>
                   <li>
                     Pickup:{" "}
-                    {selectedArea.pickup_locations.find(
-                      (l) => l.id === selectedRideShareLocation,
-                    )?.name || "Not selected"}
+                    {selectedArea.pickup_locations.find((l) => l.id === selectedRideShareLocation)
+                      ?.name || "Not selected"}
                   </li>
                   {(() => {
                     const selectedLoc = selectedArea.pickup_locations.find(
-                      (l) => l.id === selectedRideShareLocation,
+                      (l) => l.id === selectedRideShareLocation
                     );
                     return selectedLoc?.distance_text ? (
                       <>
@@ -663,12 +622,13 @@ export function SessionSignIn({ session }: SessionSignInProps) {
                           <>
                             <li>
                               Departure:{" "}
-                              {new Date(
-                                selectedLoc.departure_time_calculated,
-                              ).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
+                              {new Date(selectedLoc.departure_time_calculated).toLocaleTimeString(
+                                [],
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )}
                             </li>
                           </>
                         )}
@@ -681,9 +641,7 @@ export function SessionSignIn({ session }: SessionSignInProps) {
             </ul>
 
             <div className="border-t border-slate-200 pt-4">
-              <h3 className="font-semibold text-slate-900">
-                Payment Breakdown
-              </h3>
+              <h3 className="font-semibold text-slate-900">Payment Breakdown</h3>
               <div className="mt-2 space-y-2 text-sm text-slate-700">
                 <div className="flex justify-between">
                   <span>Pool Fee:</span>
@@ -706,9 +664,7 @@ export function SessionSignIn({ session }: SessionSignInProps) {
               {!showManualPayment ? (
                 <>
                   <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-                    <p className="font-semibold text-emerald-900">
-                      💳 Pay Online with Paystack
-                    </p>
+                    <p className="font-semibold text-emerald-900">💳 Pay Online with Paystack</p>
                     <p className="mt-1 text-sm text-emerald-700">
                       Secure payment via card, bank transfer, or USSD.
                     </p>
@@ -724,27 +680,23 @@ export function SessionSignIn({ session }: SessionSignInProps) {
               ) : (
                 <>
                   <div className="rounded-lg border border-slate-200 bg-white p-4">
-                    <p className="font-semibold text-slate-900">
-                      💳 Bank Transfer Details
-                    </p>
+                    <p className="font-semibold text-slate-900">💳 Bank Transfer Details</p>
                     <div className="mt-2 space-y-1 text-sm text-slate-700">
                       <div className="flex justify-between">
                         <span className="text-slate-600">Bank:</span>
-                        <span className="font-medium">OPay</span>
+                        <span className="font-medium">{BANK_TRANSFER_ACCOUNT.bankName}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-slate-600">Account Number:</span>
-                        <span className="font-medium">7033588400</span>
+                        <span className="font-medium">{BANK_TRANSFER_ACCOUNT.accountNumber}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-slate-600">Account Name:</span>
-                        <span className="font-medium">Ugochukwu Nwachukwu</span>
+                        <span className="font-medium">{BANK_TRANSFER_ACCOUNT.accountName}</span>
                       </div>
                     </div>
                     <div className="mt-3 rounded bg-cyan-50 p-3 text-sm">
-                      <p className="font-medium text-cyan-900">
-                        📱 Send Receipt via WhatsApp
-                      </p>
+                      <p className="font-medium text-cyan-900">📱 Send Receipt via WhatsApp</p>
                       <p className="mt-1 text-cyan-800">
                         After payment, please send your receipt to:{" "}
                         <a

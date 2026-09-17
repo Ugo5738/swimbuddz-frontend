@@ -413,6 +413,23 @@ The implementation of pages should follow these flows closely.
 
 ## 12. Admin → Manage Payments & Verify Records
 
+Annual Membership supports Paystack or Bank Transfer. Billing includes an
+**Already paid?** link for inactive members; it selects Bank Transfer, and
+**Continue to upload receipt** opens the pending receipt section after creating
+a payment reference. The payment remains pending until Admin verifies it.
+Combined transfers need explicit Membership/session allocations, not duplicate
+payments or discount codes. All receiving-account displays use the shared
+`src/lib/bank-transfer.ts` configuration.
+
+Published Club plans can attach a previously absent optional same-quarter
+Community Experience in Admin Club Pricing. This leaves all Club commercial
+terms unchanged and adds an unselected checkout option; it cannot replace an
+existing link. Merely creating an offering does not attach it to a Club plan.
+
+Member navigation shows Make-ups only for members with Academy payment/history,
+including members who also have Club. Stroke Lab links to
+`https://analyzer.swimbuddz.com`; old `/account/strokelab` reports remain available.
+
 ### Flow: Admin Dashboard → Payments → Verify
 
 1. Admin navigates to `/admin/payments`.
