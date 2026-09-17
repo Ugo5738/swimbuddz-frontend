@@ -6,13 +6,41 @@ import { CommunityCard } from "../CommunityCard";
 import { MembershipHistoryCard } from "../MembershipHistoryCard";
 
 describe("membership renewal actions", () => {
+  it("gives unpaid annual members a direct route to submit an existing bank receipt", () => {
+    render(<CommunityCard member={null} communityActive={false} communityFee={20_000} />);
+    expect(screen.getByRole("link", { name: /already paid by bank transfer/i })).toHaveAttribute(
+      "href",
+      "/checkout?purpose=community&payment_method=manual_transfer"
+    );
+    expect(screen.getByText(/receipt covers Membership and a swim/)).toBeInTheDocument();
+  });
   it("recognizes a prepaid upcoming Club period without asking the member to buy it again", () => {
-    render(<ClubCard member={null} clubActive={false} communityActive history={{
-      club_renewal_status: "upcoming", club_renewal_due_at: "2026-12-31T00:00:00Z", club_action: "renew",
-      periods: [{ id: "future-club", product: "club", label: "Yaba Club", status: "upcoming",
-        starts_at: "2026-10-01T00:00:00Z", ends_at: "2026-12-31T00:00:00Z",
-        source: "club_enrollment", dates_are_estimated: false, club_name: "Yaba Club", payment_mode: "quarterly_prepaid" }],
-    }} />);
+    render(
+      <ClubCard
+        member={null}
+        clubActive={false}
+        communityActive
+        history={{
+          club_renewal_status: "upcoming",
+          club_renewal_due_at: "2026-12-31T00:00:00Z",
+          club_action: "renew",
+          periods: [
+            {
+              id: "future-club",
+              product: "club",
+              label: "Yaba Club",
+              status: "upcoming",
+              starts_at: "2026-10-01T00:00:00Z",
+              ends_at: "2026-12-31T00:00:00Z",
+              source: "club_enrollment",
+              dates_are_estimated: false,
+              club_name: "Yaba Club",
+              payment_mode: "quarterly_prepaid",
+            },
+          ],
+        }}
+      />
+    );
     expect(screen.getByText(/your next Club period is booked/i)).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /renew or rejoin Club/i })).not.toBeInTheDocument();
   });
@@ -155,20 +183,30 @@ describe("membership renewal actions", () => {
   it.each(["community", "academy", undefined] as const)(
     "offers early Club renewal independently of the legacy paid tier (%s)",
     (highestPaidTier) => {
-      render(<ClubCard member={{ membership: {
-        highest_paid_tier: highestPaidTier,
-        club_enrollment_until: "2026-12-31T00:00:00Z",
-      } }} clubActive communityActive />);
-      expect(screen.getByRole("link", { name: /renew club early/i })).toHaveAttribute(
-        "href", "/upgrade/club/plan",
+      render(
+        <ClubCard
+          member={{
+            membership: {
+              highest_paid_tier: highestPaidTier,
+              club_enrollment_until: "2026-12-31T00:00:00Z",
+            },
+          }}
+          clubActive
+          communityActive
+        />
       );
-    },
+      expect(screen.getByRole("link", { name: /renew club early/i })).toHaveAttribute(
+        "href",
+        "/upgrade/club/plan"
+      );
+    }
   );
 
   it("keeps readiness as the entry point for a new Club applicant", () => {
     render(<ClubCard member={null} clubActive={false} communityActive />);
     expect(screen.getByRole("link", { name: /upgrade to club/i })).toHaveAttribute(
-      "href", "/upgrade/club/readiness",
+      "href",
+      "/upgrade/club/readiness"
     );
   });
 });

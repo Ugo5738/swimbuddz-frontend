@@ -169,7 +169,8 @@ function RegisterContent() {
   const isUpgrade = searchParams.get("upgrade") === "true";
   const isCoachRegistration = searchParams.get("coach") === "true";
   const referralCode = searchParams.get("ref") || "";
-  const intendedStartPath = startPathFromGoal(searchParams.get("goal")) ??
+  const intendedStartPath =
+    startPathFromGoal(searchParams.get("goal")) ??
     (isAcademyDestination(searchParams.get("next")) ? "academy" : null);
   // Deep-link target preserved across the registration funnel:
   //   public link (e.g. /account/academy/cohorts/<id>)
@@ -183,8 +184,11 @@ function RegisterContent() {
   const nextParamRaw = searchParams.get("next");
   const safeNext = safeReturnPath(nextParamRaw);
 
-  const isAcademyEntry = !isUpgrade && !isCoachRegistration &&
-    intendedStartPath === "academy" && isAcademyDestination(safeNext);
+  const isAcademyEntry =
+    !isUpgrade &&
+    !isCoachRegistration &&
+    intendedStartPath === "academy" &&
+    isAcademyDestination(safeNext);
   const [currentStep, setCurrentStep] = useState(isAcademyEntry ? 1 : 0);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -318,17 +322,17 @@ function RegisterContent() {
       case "essentials":
         return Boolean(
           formData.firstName &&
-            formData.lastName &&
-            formData.email &&
-            formData.password &&
-            formData.password.length >= 8 &&
-            formData.phone &&
-            formData.state &&
-            formData.city &&
-            formData.country &&
-            formData.swimLevel &&
-            // Coach registration skips acquisition source — only members feed the funnel.
-            (isCoachRegistration || formData.acquisitionSource)
+          formData.lastName &&
+          formData.email &&
+          formData.password &&
+          formData.password.length >= 8 &&
+          formData.phone &&
+          formData.state &&
+          formData.city &&
+          formData.country &&
+          formData.swimLevel &&
+          // Coach registration skips acquisition source — only members feed the funnel.
+          (isCoachRegistration || formData.acquisitionSource)
         );
 
       case "confirm":
@@ -422,7 +426,9 @@ function RegisterContent() {
       try {
         if (safeNext) window.sessionStorage.setItem("post_auth_next", safeNext);
         else window.sessionStorage.removeItem("post_auth_next");
-      } catch { /* Private browsing may disable session storage. */ }
+      } catch {
+        /* Private browsing may disable session storage. */
+      }
 
       const selectedTier = formData.membershipTier!;
       const requestedTiers = requestedProgrammesForPath(selectedTier);
@@ -531,7 +537,9 @@ function RegisterContent() {
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
-      <div className="mx-auto max-w-3xl space-y-6 sm:space-y-8">
+      <div
+        className={`mx-auto space-y-6 sm:space-y-8 ${steps[currentStep].key === "tier" ? "max-w-6xl" : "max-w-3xl"}`}
+      >
         {/* Header */}
         <div className="text-center">
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">

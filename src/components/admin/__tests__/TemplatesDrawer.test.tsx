@@ -248,7 +248,7 @@ describe("Template generation routes and pricing labels", () => {
     const archive = vi.fn();
     const remove = vi.fn();
     show(saved, archive, remove);
-    fireEvent.click(screen.getByTitle("Archive template"));
+    fireEvent.click(screen.getByRole("button", { name: "Archive" }));
     expect(archive).toHaveBeenCalledWith(saved.id, true);
     expect(remove).not.toHaveBeenCalled();
     expect(screen.queryByRole("button", { name: "Delete permanently" })).not.toBeInTheDocument();
@@ -262,7 +262,7 @@ describe("Template generation routes and pricing labels", () => {
     expect(screen.getByText("Archived")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Generate Club quarter" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Generate" })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByTitle("Restore template"));
+    fireEvent.click(screen.getByRole("button", { name: "Restore" }));
     expect(archive).toHaveBeenCalledWith(saved.id, false);
     fireEvent.click(screen.getByRole("button", { name: "Delete permanently" }));
     expect(remove).toHaveBeenCalledWith(saved.id);

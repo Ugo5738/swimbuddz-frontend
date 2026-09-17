@@ -1,7 +1,7 @@
 "use client";
 
 import { NotificationBell } from "@/components/notifications/NotificationBell";
-import { apiGet } from "@/lib/api";
+import { useApi } from "@/hooks/useApi";
 import { supabase } from "@/lib/auth";
 import { listPodsILead } from "@/lib/pods";
 import {
@@ -44,7 +44,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
 type MemberLayoutProps = {
   children: ReactNode;
@@ -130,7 +130,7 @@ const navSections: NavSection[] = [
         icon: ClipboardCheck,
       },
       { href: "/account/makeups", label: "Make-ups", icon: Calendar },
-      { href: "/account/strokelab", label: "Stroke Lab", icon: Activity },
+      { href: "https://analyzer.swimbuddz.com", label: "Stroke Lab", icon: Activity },
     ],
   },
   {
@@ -196,19 +196,26 @@ export function MemberLayout({ children }: MemberLayoutProps) {
   useEffect(() => {
     if (!sidebarOpen) return;
     const desktop = window.matchMedia("(min-width: 768px)");
-    const closeOnDesktop = () => { if (desktop.matches) setSidebarOpen(false); };
+    const closeOnDesktop = () => {
+      if (desktop.matches) setSidebarOpen(false);
+    };
     desktop.addEventListener("change", closeOnDesktop);
     closeOnDesktop();
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") setSidebarOpen(false); };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSidebarOpen(false);
+    };
     document.addEventListener("keydown", onKeyDown);
-    return () => { document.body.style.overflow = previous; document.removeEventListener("keydown", onKeyDown); desktop.removeEventListener("change", closeOnDesktop); };
+    return () => {
+      document.body.style.overflow = previous;
+      document.removeEventListener("keydown", onKeyDown);
+      desktop.removeEventListener("change", closeOnDesktop);
+    };
   }, [sidebarOpen]);
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [member, setMember] = useState<MemberInfo | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: member, refetch: refreshMember } = useApi<MemberInfo>("/api/v1/members/me");
   const [isCoach, setIsCoach] = useState(false);
   // True when this user is the lead or assistant lead of at least one pod.
   // Drives the conditional "Pod Lead Tools" sidebar section. Default false
@@ -229,21 +236,8 @@ export function MemberLayout({ children }: MemberLayoutProps) {
     });
   };
 
-  const refreshMember = useCallback(async () => {
-    try {
-      const data = await apiGet<MemberInfo>("/api/v1/members/me", {
-        auth: true,
-      });
-      setMember(data);
-    } catch (err) {
-      console.error("Failed to load member info", err);
-    }
-  }, []);
-
   useEffect(() => {
-    setLoading(true);
     Promise.all([
-      refreshMember(),
       // Check if user has coach role
       supabase.auth
         .getUser()
@@ -258,8 +252,8 @@ export function MemberLayout({ children }: MemberLayoutProps) {
       listPodsILead()
         .then((pods) => setLeadsAnyPod(pods.some((pod) => pod.status === "active")))
         .catch(() => setLeadsAnyPod(false)),
-    ]).finally(() => setLoading(false));
-  }, [refreshMember]);
+    ]);
+  }, []);
 
   // Keep sidebar membership/status in sync after in-app navigation
   // (e.g., checkout -> billing without a Paystack reference query param).
@@ -404,6 +398,17 @@ export function MemberLayout({ children }: MemberLayoutProps) {
 
   const visibleSections = navSections
     .map((section) => {
+      if (section.title === "Swim") {
+        return {
+          ...section,
+          items: section.items.filter(
+            (item) =>
+              item.href !== "/account/makeups" ||
+              academyActive ||
+              Boolean(member?.membership?.academy_paid_until)
+          ),
+        };
+      }
       // Hide Complete Setup when onboarding is done
       if (section.title === "") {
         const items = needsOnboarding

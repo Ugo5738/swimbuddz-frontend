@@ -19,6 +19,7 @@ import { Club } from "@/lib/clubs";
 import { formatCurrency } from "@/lib/upgradeContext";
 import { ClubQuarterRecommendation } from "@/components/admin/ClubQuarterRecommendation";
 import { RescheduleClubPractice } from "@/components/club/RescheduleClubPractice";
+import { AttachClubExperience } from "@/components/admin/AttachClubExperience";
 
 type ScheduleRow = {
   id: string;
@@ -195,6 +196,13 @@ export default function ClubPlansAdminPage() {
                 Generate next quarter
               </Button>
             </div>
+            {plan.published_at && (
+              <AttachClubExperience
+                plan={plan}
+                offerings={experiences.data ?? []}
+                onSaved={plans.refetch}
+              />
+            )}
           </Card>
         ))}
       </div>

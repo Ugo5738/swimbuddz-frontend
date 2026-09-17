@@ -72,6 +72,36 @@ describe("MemberLayout desktop navigation", () => {
     expect(localStorage.getItem("swimbuddz-member-sidebar-collapsed")).toBe("true");
   });
 
+  it("hides Academy make-ups from a Club-only member and links to the latest Stroke Lab", async () => {
+    render(
+      <MemberLayout>
+        <div>Content</div>
+      </MemberLayout>
+    );
+    await screen.findAllByText("Amara Emrey");
+    expect(screen.queryByRole("link", { name: "Make-ups" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Stroke Lab" })).toHaveAttribute(
+      "href",
+      "https://analyzer.swimbuddz.com"
+    );
+  });
+
+  it("retains make-ups for someone with both Club and Academy membership", async () => {
+    apiGet.mockResolvedValue({
+      id: "learner",
+      membership: { paid_tiers: ["club", "academy"], academy_paid_until: "2099-01-01T00:00:00Z" },
+    });
+    render(
+      <MemberLayout>
+        <div>Content</div>
+      </MemberLayout>
+    );
+    expect(await screen.findByRole("link", { name: "Make-ups" })).toHaveAttribute(
+      "href",
+      "/account/makeups"
+    );
+  });
+
   it("restores a previously collapsed sidebar", async () => {
     localStorage.setItem("swimbuddz-member-sidebar-collapsed", "true");
 

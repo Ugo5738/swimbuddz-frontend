@@ -1642,6 +1642,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/clubs/admin/plans/{plan_id}/community-experience": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Attach Plan Experience
+         * @description Attach a newly available optional offering, including after publication.
+         *
+         *     Existing links cannot be replaced: pending checkouts and paid fulfillments
+         *     may rely on that identity. Adding a previously absent offer never selects it
+         *     on an application, changes Club prices/schedules, or touches a payment.
+         */
+        put: operations["attach_plan_experience_clubs_admin_plans__plan_id__community_experience_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/clubs/admin/plans/{plan_id}/schedule": {
         parameters: {
             query?: never;
@@ -19156,6 +19180,14 @@ export interface components {
             answers: {
                 [key: string]: number;
             };
+        };
+        /** AttachClubExperienceRequest */
+        AttachClubExperienceRequest: {
+            /**
+             * Offering Id
+             * Format: uuid
+             */
+            offering_id: string;
         };
         /**
          * BankAccountCreate
@@ -47067,6 +47099,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CommunityExperienceOfferingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attach_plan_experience_clubs_admin_plans__plan_id__community_experience_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttachClubExperienceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubPlanResponse"];
                 };
             };
             /** @description Validation Error */

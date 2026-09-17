@@ -156,7 +156,9 @@ export function TemplatesDrawer({
                             &middot; {t.capacity} cap
                           </p>
                         </div>
-                        <IBtn
+                        <Button
+                          size="sm"
+                          variant="outline"
                           title={t.is_active ? "Archive template" : "Restore template"}
                           className="text-slate-500 hover:bg-slate-100"
                           onClick={() => onArchiveTemplate(t.id, t.is_active)}
@@ -166,7 +168,8 @@ export function TemplatesDrawer({
                           ) : (
                             <ArchiveRestore className="h-4 w-4" />
                           )}
-                        </IBtn>
+                          <span className="ml-1">{t.is_active ? "Archive" : "Restore"}</span>
+                        </Button>
                       </div>
                       {t.is_active && (
                         <div className="mt-3 flex gap-2">

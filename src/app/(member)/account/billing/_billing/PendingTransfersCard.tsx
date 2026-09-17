@@ -4,6 +4,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { apiPost } from "@/lib/api";
+import { BANK_TRANSFER_ACCOUNT } from "@/lib/bank-transfer";
 import { uploadMedia } from "@/lib/media";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -32,14 +33,14 @@ export function PendingTransfersCard({ pendingTransfers, onReload }: Props) {
         file,
         "payment_proof",
         payment.reference,
-        `Payment proof ${payment.reference}`,
+        `Payment proof ${payment.reference}`
       );
       const proofMediaId = mediaItem.id;
 
       await apiPost(
         `/api/v1/payments/${payment.reference}/proof`,
         { proof_media_id: proofMediaId },
-        { auth: true },
+        { auth: true }
       );
       toast.success("Proof uploaded! Awaiting admin review.");
       await onReload();
@@ -52,7 +53,10 @@ export function PendingTransfersCard({ pendingTransfers, onReload }: Props) {
   };
 
   return (
-    <Card className="p-4 md:p-6 space-y-3 md:space-y-4 border-amber-200 bg-amber-50">
+    <Card
+      id="bank-transfer-receipts"
+      className="scroll-mt-24 p-4 md:p-6 space-y-3 md:space-y-4 border-amber-200 bg-amber-50"
+    >
       <div>
         <h2 className="text-base md:text-lg font-semibold text-amber-900">
           🏦 Pending Bank Transfers
@@ -126,10 +130,7 @@ export function PendingTransfersCard({ pendingTransfers, onReload }: Props) {
                   <Button
                     size="sm"
                     className="w-full sm:w-auto flex-shrink-0"
-                    disabled={
-                      !proofFile[payment.reference] ||
-                      uploadingProof === payment.reference
-                    }
+                    disabled={!proofFile[payment.reference] || uploadingProof === payment.reference}
                     onClick={() => submitProof(payment)}
                   >
                     {uploadingProof === payment.reference ? "Uploading..." : "Submit"}
@@ -143,8 +144,7 @@ export function PendingTransfersCard({ pendingTransfers, onReload }: Props) {
               <div className="flex items-start gap-2 text-xs md:text-sm text-blue-700 bg-blue-50 p-2.5 md:p-3 rounded-lg">
                 <span className="flex-shrink-0">⏳</span>
                 <span>
-                  Your proof is being reviewed by our team. You'll be notified once
-                  approved.
+                  Your proof is being reviewed by our team. You'll be notified once approved.
                 </span>
               </div>
             )}
@@ -156,15 +156,16 @@ export function PendingTransfersCard({ pendingTransfers, onReload }: Props) {
               </summary>
               <div className="mt-2 p-2.5 md:p-3 bg-amber-50 rounded-lg space-y-1 text-amber-800">
                 <p>
-                  <span className="text-amber-600">Bank:</span> <strong>OPay</strong>
+                  <span className="text-amber-600">Bank:</span>{" "}
+                  <strong>{BANK_TRANSFER_ACCOUNT.bankName}</strong>
                 </p>
                 <p>
                   <span className="text-amber-600">Account Number:</span>{" "}
-                  <strong>7033588400</strong>
+                  <strong>{BANK_TRANSFER_ACCOUNT.accountNumber}</strong>
                 </p>
                 <p>
                   <span className="text-amber-600">Account Name:</span>{" "}
-                  <strong>Ugochukwu Nwachukwu</strong>
+                  <strong>{BANK_TRANSFER_ACCOUNT.accountName}</strong>
                 </p>
               </div>
             </details>
