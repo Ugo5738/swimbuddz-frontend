@@ -16572,7 +16572,14 @@ export interface paths {
         get: operations["get_vault_media_vaults__vault_id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete Vault
+         * @description Remove a vault from use while retaining originals for recovery.
+         *
+         *     Existing S3 objects are deliberately not deleted here. Admins can remove
+         *     individual files from storage through the separate, explicit media action.
+         */
+        delete: operations["delete_vault_media_vaults__vault_id__delete"];
         options?: never;
         head?: never;
         /** Update Vault */
@@ -73553,6 +73560,35 @@ export interface operations {
             };
         };
     };
+    delete_vault_media_vaults__vault_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vault_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     update_vault_media_vaults__vault_id__patch: {
         parameters: {
             query?: never;
@@ -74204,7 +74240,9 @@ export interface operations {
     };
     request_item_preview_media_vaults__vault_id__items__item_id__preview_generate_post: {
         parameters: {
-            query?: never;
+            query?: {
+                force?: boolean;
+            };
             header?: never;
             path: {
                 vault_id: string;
