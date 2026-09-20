@@ -204,6 +204,8 @@ export const mediaVaultApi = {
     apiPatch<MediaVault>(`/api/v1/media/vaults/${vaultId}`, body, {
       auth: true,
     }),
+  deleteVault: (vaultId: string) =>
+    apiDelete<void>(`/api/v1/media/vaults/${vaultId}`, { auth: true }),
   getGuest: (token: string) =>
     apiGet<GuestVault>(`/api/v1/media/vaults/guest/${token}`, {
       auth: false,
@@ -241,9 +243,9 @@ export const mediaVaultApi = {
       },
       { auth: true }
     ),
-  requestPreview: (vaultId: string, itemId: string) =>
+  requestPreview: (vaultId: string, itemId: string, force = false) =>
     apiPost<{ status: string }>(
-      `/api/v1/media/vaults/${vaultId}/items/${itemId}/preview/generate`,
+      `/api/v1/media/vaults/${vaultId}/items/${itemId}/preview/generate${force ? "?force=true" : ""}`,
       {},
       { auth: true }
     ),

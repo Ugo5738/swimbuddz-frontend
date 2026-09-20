@@ -31,14 +31,14 @@ export default function AdminMediaVaultDetailPage() {
     params.id ? `/api/v1/media/vaults/${params.id}` : null
   );
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="flex min-h-96 items-center justify-center">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-cyan-200 border-t-cyan-600" />
       </div>
     );
   }
-  if (error || !data) {
+  if (!data) {
     return (
       <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
         <LockKeyhole className="mx-auto h-9 w-9 text-red-500" />
@@ -49,6 +49,11 @@ export default function AdminMediaVaultDetailPage() {
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          Could not refresh vault details: {error}. Showing the last loaded information.
+        </div>
+      )}
       <Link
         href="/admin/media-vault"
         className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-cyan-700"

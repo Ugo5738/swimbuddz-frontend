@@ -65,7 +65,7 @@ export default function MemberMediaVaultDetailPage() {
         <div className="space-y-4">
           <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900">
             You are the social curator for this session. Lightweight thumbnails appear
-            automatically; select a video and choose Preview when you need a playable proxy. Review
+            automatically; tap Watch on a video to prepare a playable proxy when needed. Review
             consent, download originals or build a ZIP, then publish only the cleared selection.
           </div>
           <div className="flex w-fit gap-1 rounded-xl border border-slate-200 bg-white p-1">

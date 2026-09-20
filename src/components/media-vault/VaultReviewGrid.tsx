@@ -6,7 +6,6 @@ import {
   Download,
   Eye,
   FileArchive,
-  FileVideo,
   Image as ImageIcon,
   Loader2,
   RefreshCcw,
@@ -27,6 +26,7 @@ import {
   VaultMediaLabels,
   VaultStatus as Status,
 } from "./VaultMediaDialogs";
+import { VaultVideoDialog, VaultVideoThumbnail } from "./VaultVideoDialog";
 
 type Props = { vaultId: string; admin?: boolean };
 
@@ -43,6 +43,9 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
   const [editingLabels, setEditingLabels] = useState(false);
   const [labelInput, setLabelInput] = useState("");
   const [deleteMode, setDeleteMode] = useState<"vault" | "storage" | null>(null);
+  const [viewingVideoId, setViewingVideoId] = useState<string | null>(null);
+  const [playerWorking, setPlayerWorking] = useState(false);
+  const [playerError, setPlayerError] = useState(false);
 
   const loadItems = useCallback(
     async (background = false) => {
@@ -84,8 +87,8 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
   }, [items, loadItems]);
 
   const chosen = useMemo(() => items.filter((item) => selected.has(item.id)), [items, selected]);
-  const selectionReady =
-    chosen.length > 0 && chosen.every((item) => item.processing_status === "ready");
+  const viewingVideo = items.find((item) => item.id === viewingVideoId);
+  const selectionReady = chosen.length > 0 && chosen.every((item) => item.processing_status === "ready");
 
   const runBulk = async (body: Record<string, unknown>, successMessage: string) => {
     if (!selected.size) return;
@@ -105,17 +108,34 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
     if (!selected.size) return;
     setActing(true);
     try {
-      await Promise.all(
-        [...selected].map((itemId) => mediaVaultApi.requestPreview(vaultId, itemId))
-      );
+      await Promise.all([...selected].map((itemId) => mediaVaultApi.requestPreview(vaultId, itemId)));
       toast.success("Review previews queued. Originals remain untouched.");
       await loadItems(true);
     } catch (previewError) {
-      toast.error(
-        previewError instanceof Error ? previewError.message : "Could not generate previews"
-      );
+      toast.error(previewError instanceof Error ? previewError.message : "Could not generate previews");
     } finally {
       setActing(false);
+    }
+  };
+
+  const requestVideoPreview = async (itemId: string, force = false) => {
+    setPlayerWorking(true);
+    try {
+      await mediaVaultApi.requestPreview(vaultId, itemId, force);
+      setPlayerError(false);
+      await loadItems(true);
+    } catch (previewError) {
+      toast.error(previewError instanceof Error ? previewError.message : "Could not prepare video");
+    } finally {
+      setPlayerWorking(false);
+    }
+  };
+
+  const openVideo = (item: VaultMedia) => {
+    setViewingVideoId(item.id);
+    setPlayerError(false);
+    if (!item.preview_url) {
+      void requestVideoPreview(item.id);
     }
   };
 
@@ -405,46 +425,28 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
               }`}
             >
               <div className="relative aspect-square bg-slate-100">
-                {item.preview_url ? (
-                  item.media_type === "VIDEO" ? (
-                    <video
-                      src={item.preview_url}
-                      muted
-                      preload="metadata"
-                      controls
-                      playsInline
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={item.preview_url}
-                      alt={item.original_filename ?? "Vault media"}
-                      loading="lazy"
-                      className="h-full w-full object-cover"
-                    />
-                  )
+                {item.media_type === "VIDEO" ? (
+                  <VaultVideoThumbnail item={item} onWatch={() => openVideo(item)} />
+                ) : item.preview_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={item.preview_url}
+                    alt={item.original_filename ?? "Vault media"}
+                    loading="lazy"
+                    className="h-full w-full object-cover"
+                  />
                 ) : item.thumbnail_url ? (
-                  <>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={item.thumbnail_url}
-                      alt={item.original_filename ?? "Vault media thumbnail"}
-                      loading="lazy"
-                      className="h-full w-full object-cover"
-                    />
-                    {item.media_type === "VIDEO" && (
-                      <div className="absolute bottom-2 right-2 rounded-full bg-slate-950/75 p-2 text-white">
-                        <FileVideo className="h-4 w-4" />
-                      </div>
-                    )}
-                  </>
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={item.thumbnail_url}
+                    alt={item.original_filename ?? "Vault media thumbnail"}
+                    loading="lazy"
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   <div className="flex h-full flex-col items-center justify-center text-slate-400">
                     {item.preview_status === "pending" || item.preview_status === "processing" ? (
                       <Loader2 className="h-9 w-9 animate-spin" />
-                    ) : item.media_type === "VIDEO" ? (
-                      <FileVideo className="h-9 w-9" />
                     ) : (
                       <ImageIcon className="h-9 w-9" />
                     )}
@@ -463,7 +465,7 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
                       ? `Deselect ${item.original_filename}`
                       : `Select ${item.original_filename}`
                   }
-                  className={`absolute left-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border-2 ${
+                  className={`absolute left-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 ${
                     selected.has(item.id)
                       ? "border-cyan-500 bg-cyan-500 text-white"
                       : "border-white bg-slate-900/40"
@@ -504,6 +506,16 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
           onModeChange={setDeleteMode}
           onCancel={() => setDeleteMode(null)}
           onConfirm={() => void deleteSelection()}
+        />
+      )}
+      {viewingVideo && (
+        <VaultVideoDialog
+          item={viewingVideo}
+          working={playerWorking}
+          error={playerError}
+          onError={() => setPlayerError(true)}
+          onRequest={(force) => void requestVideoPreview(viewingVideo.id, force)}
+          onClose={() => setViewingVideoId(null)}
         />
       )}
     </div>

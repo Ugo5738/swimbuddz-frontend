@@ -162,9 +162,10 @@ export function VaultAccessPanel({
         { auth: true }
       );
       setNewLink(link);
-      await load();
-      onVaultUpdated?.();
       toast.success("One-time upload link created");
+      // The secret exists only in the create response. Refreshing the parent
+      // page unmounts this panel and irretrievably loses it.
+      void load().catch(() => toast.warning("Link created, but the list could not refresh"));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not create link");
     } finally {
@@ -179,6 +180,7 @@ export function VaultAccessPanel({
 
   const revokeLink = async (linkId: string) => {
     await apiDelete<void>(`/api/v1/media/vaults/${vault.id}/guest-links/${linkId}`, { auth: true });
+    if (newLink?.id === linkId) setNewLink(null);
     await load();
   };
 
@@ -306,7 +308,7 @@ export function VaultAccessPanel({
         <button
           type="button"
           onClick={createGuestLink}
-          disabled={working}
+          disabled={working || Boolean(newLink?.upload_url)}
           className="mt-5 w-full rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-800 hover:bg-indigo-100"
         >
           Create 100 GB guest link
@@ -324,15 +326,27 @@ export function VaultAccessPanel({
               />
               <button
                 type="button"
-                onClick={() => {
-                  navigator.clipboard.writeText(newLink.upload_url!);
-                  toast.success("Upload link copied");
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(newLink.upload_url!);
+                    toast.success("Upload link copied");
+                  } catch {
+                    toast.error("Could not copy automatically. Select the link and copy it manually.");
+                  }
                 }}
+                aria-label="Copy guest upload link"
                 className="rounded-lg bg-emerald-700 p-2 text-white"
               >
                 <Copy className="h-4 w-4" />
               </button>
             </div>
+            <button
+              type="button"
+              onClick={() => setNewLink(null)}
+              className="mt-3 text-xs font-semibold text-emerald-800 underline"
+            >
+              I have saved this link
+            </button>
           </div>
         )}
         <div className="mt-5 divide-y divide-slate-100">

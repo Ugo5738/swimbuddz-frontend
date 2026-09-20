@@ -4,7 +4,7 @@ import { VaultLibrary } from "../VaultLibrary";
 import { mediaVaultApi, type MediaVault, type VaultMedia } from "@/lib/media-vault";
 
 vi.mock("@/lib/media-vault", () => ({
-  mediaVaultApi: { library: vi.fn(), tags: vi.fn(), review: vi.fn() },
+  mediaVaultApi: { library: vi.fn(), tags: vi.fn(), review: vi.fn(), requestPreview: vi.fn() },
 }));
 const vault = {
   id: "vault-one",
@@ -31,6 +31,7 @@ beforeEach(() => {
     page_size: 24,
   });
   vi.mocked(mediaVaultApi.review).mockResolvedValue([item]);
+  vi.mocked(mediaVaultApi.requestPreview).mockResolvedValue({ status: "pending" });
 });
 
 describe("Vault media library", () => {
@@ -75,5 +76,14 @@ describe("Vault media library", () => {
     render(<VaultLibrary vaults={[{ ...vault, effective_role: "contributor" }]} />);
     await screen.findByText(item.original_filename!);
     expect(screen.queryByRole("button", { name: /Edit tags/ })).not.toBeInTheDocument();
+  });
+
+  it("opens a phone-sized video player and requests an on-demand proxy", async () => {
+    render(<VaultLibrary vaults={[vault]} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Watch video" }));
+    expect(screen.getByRole("dialog", { name: "Watch Freestyle practice.mp4" })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(mediaVaultApi.requestPreview).toHaveBeenCalledWith(vault.id, item.id, false)
+    );
   });
 });

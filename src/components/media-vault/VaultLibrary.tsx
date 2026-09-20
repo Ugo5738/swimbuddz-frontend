@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { FileVideo, Image as ImageIcon, Tags } from "lucide-react";
+import { FileVideo, Image as ImageIcon, Play, Tags } from "lucide-react";
+import { toast } from "sonner";
 import {
   mediaVaultApi,
   type MediaVault,
@@ -12,6 +13,7 @@ import {
 } from "@/lib/media-vault";
 import { FilterTabs } from "@/components/ui/FilterTabs";
 import { VaultMediaLabels } from "./VaultMediaDialogs";
+import { VaultVideoDialog } from "./VaultVideoDialog";
 
 export function VaultLibrary({ vaults, admin = false }: { vaults: MediaVault[]; admin?: boolean }) {
   const [data, setData] = useState<VaultMediaList | null>(null);
@@ -31,8 +33,40 @@ export function VaultLibrary({ vaults, admin = false }: { vaults: MediaVault[]; 
   const [newTag, setNewTag] = useState("");
   const [saving, setSaving] = useState(false);
   const [tagError, setTagError] = useState<string | null>(null);
+  const [viewingVideoId, setViewingVideoId] = useState<string | null>(null);
+  const [videoWorking, setVideoWorking] = useState(false);
+  const [videoError, setVideoError] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
   const editButton = useRef<HTMLButtonElement | null>(null);
+  const viewingVideo = data?.items.find((item) => item.id === viewingVideoId);
+  const viewingVault = vaults.find((vault) => vault.id === viewingVideo?.vault_id);
+  const canRequestVideo =
+    admin || viewingVault?.effective_role === "curator" || viewingVault?.effective_role === "admin";
+
+  const requestVideoPreview = async (item: VaultMedia, force = false) => {
+    setVideoWorking(true);
+    try {
+      await mediaVaultApi.requestPreview(item.vault_id, item.id, force);
+      setVideoError(false);
+      setRevision((value) => value + 1);
+    } catch (failure) {
+      toast.error(failure instanceof Error ? failure.message : "Could not prepare video");
+    } finally {
+      setVideoWorking(false);
+    }
+  };
+
+  const openVideo = (item: VaultMedia, canRequest: boolean) => {
+    setViewingVideoId(item.id);
+    setVideoError(false);
+    if (!item.preview_url && canRequest) void requestVideoPreview(item);
+  };
+
+  useEffect(() => {
+    if (!viewingVideoId || !viewingVideo || !["pending", "processing"].includes(viewingVideo.preview_status)) return;
+    const interval = window.setInterval(() => setRevision((value) => value + 1), 4000);
+    return () => window.clearInterval(interval);
+  }, [viewingVideoId, viewingVideo]);
 
   useEffect(() => {
     let cancelled = false;
@@ -305,6 +339,15 @@ export function VaultLibrary({ vaults, admin = false }: { vaults: MediaVault[]; 
                       {vault?.title ?? "Open vault"} →
                     </Link>
                     <VaultMediaLabels labels={item.labels ?? []} />
+                    {item.media_type === "VIDEO" && (item.preview_url || canTag) && (
+                      <button
+                        type="button"
+                        onClick={() => openVideo(item, canTag)}
+                        className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-cyan-200 px-3 text-sm font-semibold text-cyan-800"
+                      >
+                        <Play className="h-4 w-4" /> Watch video
+                      </button>
+                    )}
                     {canTag && (
                       <button
                         type="button"
@@ -445,6 +488,17 @@ export function VaultLibrary({ vaults, admin = false }: { vaults: MediaVault[]; 
             </div>
           </div>
         </div>
+      )}
+      {viewingVideo && (
+        <VaultVideoDialog
+          item={viewingVideo}
+          working={videoWorking}
+          error={videoError}
+          canRequest={canRequestVideo}
+          onError={() => setVideoError(true)}
+          onRequest={(force) => void requestVideoPreview(viewingVideo, force)}
+          onClose={() => setViewingVideoId(null)}
+        />
       )}
     </section>
   );

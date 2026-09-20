@@ -1,7 +1,8 @@
 "use client";
 
 import { mediaVaultApi, type MediaVault } from "@/lib/media-vault";
-import { Save, ShieldCheck } from "lucide-react";
+import { Save, ShieldCheck, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -16,6 +17,7 @@ function toLocalDateTime(value: string) {
 }
 
 export function VaultSettingsPanel({ vault, onSaved }: { vault: MediaVault; onSaved: () => void }) {
+  const router = useRouter();
   const [status, setStatus] = useState(vault.status);
   const [location, setLocation] = useState(vault.location_name ?? "");
   const [opensAt, setOpensAt] = useState(toLocalDateTime(vault.upload_opens_at));
@@ -26,6 +28,23 @@ export function VaultSettingsPanel({ vault, onSaved }: { vault: MediaVault; onSa
   const [consentNotice, setConsentNotice] = useState(vault.consent_notice ?? "");
   const [checklist, setChecklist] = useState(vault.shot_checklist.join("\n"));
   const [saving, setSaving] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
+  const deleteVault = async () => {
+    if (deleteConfirmation !== vault.title) return;
+    setDeleting(true);
+    try {
+      await mediaVaultApi.deleteVault(vault.id);
+      toast.success("Vault deleted. Stored originals were retained for recovery.");
+      router.push("/admin/media-vault");
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not delete vault");
+      setDeleting(false);
+    }
+  };
 
   const save = async () => {
     if (
@@ -181,6 +200,59 @@ export function VaultSettingsPanel({ vault, onSaved }: { vault: MediaVault; onSa
           separate, opt-in derivatives and can expire without affecting the originals.
         </p>
       </aside>
+      <section className="rounded-2xl border border-red-200 bg-red-50 p-6 xl:col-span-2">
+        <h2 className="font-bold text-red-950">Delete vault</h2>
+        <p className="mt-2 text-sm text-red-900/80">
+          Removes this vault from vault lists and revokes member and guest access. Original files
+          stay private in AWS storage for recovery and continue to incur storage costs. Previously
+          issued download links may work until they expire, and already published gallery copies
+          are unaffected. To permanently remove individual files from AWS, use Delete in the Review
+          tab first.
+        </p>
+        {!confirmingDelete ? (
+          <button
+            type="button"
+            onClick={() => setConfirmingDelete(true)}
+            className="mt-4 inline-flex items-center gap-2 rounded-xl border border-red-300 px-4 py-2 text-sm font-semibold text-red-800 hover:bg-red-100"
+          >
+            <Trash2 className="h-4 w-4" /> Delete vault
+          </button>
+        ) : (
+          <div className="mt-4 space-y-3">
+            <label htmlFor="vault-delete-confirmation" className="block text-sm text-red-950">
+              Type <strong>{vault.title}</strong> to confirm deletion.
+            </label>
+            <input
+              id="vault-delete-confirmation"
+              value={deleteConfirmation}
+              onChange={(event) => setDeleteConfirmation(event.target.value)}
+              autoComplete="off"
+              className="w-full max-w-md rounded-lg border border-red-300 bg-white px-3 py-2 text-sm"
+            />
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void deleteVault()}
+                disabled={deleting || deleteConfirmation !== vault.title}
+                className="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                {deleting ? "Deleting…" : "Confirm delete vault"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmingDelete(false);
+                  setDeleteConfirmation("");
+                }}
+                disabled={deleting}
+                className="rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-800"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
     </div>
   );
 }
