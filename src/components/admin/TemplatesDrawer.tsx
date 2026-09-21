@@ -7,6 +7,7 @@
 "use client";
 
 import { ClubSessionScopeFields } from "@/components/admin/ClubSessionScopeFields";
+import { AcademyTemplateFields } from "@/components/admin/AcademyTemplateFields";
 import { ClubAccessModeHint } from "@/components/admin/ClubAccessModeHint";
 import { PoolPicker } from "@/components/admin/PoolPicker";
 import { SessionTemplateVolunteerSlotsSection } from "@/components/admin/SessionTemplateVolunteerSlotsSection";
@@ -33,6 +34,8 @@ import { DAY_NAMES, locationLabel } from "@/app/(admin)/admin/sessions/utils";
  * the persisted Template record.
  */
 export type TemplateFormPayload = {
+  cohort_id: string | null;
+  cohort_fee_mode: "included" | "paid_extra";
   club_access_mode?: Template["club_access_mode"];
   pricing_settings?: Template["pricing_settings"];
   title: string;
@@ -173,8 +176,12 @@ export function TemplatesDrawer({
                       </div>
                       {t.is_active && (
                         <div className="mt-3 flex gap-2">
-                          {t.session_type === "club" &&
-                          (t.club_access_mode ?? "plan_included") === "plan_included" ? (
+                          {t.session_type === "cohort_class" && !t.cohort_id ? (
+                            <Button size="sm" onClick={() => onOpenForm("edit", t)}>
+                              Choose cohort before generating
+                            </Button>
+                          ) : t.session_type === "club" &&
+                            (t.club_access_mode ?? "plan_included") === "plan_included" ? (
                             <Link
                               href="/admin/club-plans"
                               className="inline-flex min-h-[36px] items-center gap-1 rounded-md bg-cyan-600 px-3 py-2 text-sm font-medium text-white hover:bg-cyan-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2"
@@ -242,6 +249,8 @@ function TemplateFormInline({
   onUpdate: (id: string, data: TemplateFormPayload) => void;
 }) {
   const [form, setForm] = useState({
+    cohort_id: template?.cohort_id ?? null,
+    cohort_fee_mode: template?.cohort_fee_mode ?? "included",
     club_access_mode: template?.club_access_mode ?? "plan_included",
     title: template?.title || "",
     session_type: template?.session_type || "club",
@@ -254,7 +263,7 @@ function TemplateFormInline({
     day_of_week: template?.day_of_week ?? 5,
     start_time: template?.start_time || "09:00",
     duration_minutes: template?.duration_minutes || 180,
-    pool_fee: template?.pool_fee || 2000,
+    pool_fee: template?.pool_fee ?? 2000,
     capacity: template?.capacity || 20,
     auto_generate: template?.auto_generate || false,
   });
@@ -295,6 +304,10 @@ function TemplateFormInline({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (form.session_type === "cohort_class" && !form.cohort_id) {
+      alert("Choose the cohort this Academy template belongs to.");
+      return;
+    }
     if (form.session_type === "club" && pricing.pricing_expected_attendees > form.capacity) {
       alert("Expected attendees cannot exceed template capacity.");
       return;
@@ -309,6 +322,8 @@ function TemplateFormInline({
     }
     const data: TemplateFormPayload = {
       ...form,
+      cohort_id: form.session_type === "cohort_class" ? form.cohort_id : null,
+      cohort_fee_mode: form.session_type === "cohort_class" ? form.cohort_fee_mode : "included",
       club_access_mode: form.session_type === "club" ? form.club_access_mode : "plan_included",
       pricing_settings: form.session_type === "club" && form.club_id ? pricing : null,
       club_id: form.session_type === "club" ? form.club_id : null,
@@ -353,6 +368,8 @@ function TemplateFormInline({
           setForm({
             ...form,
             session_type: sessionType,
+            cohort_id: sessionType === "cohort_class" ? form.cohort_id : null,
+            cohort_fee_mode: "included",
             club_id: sessionType === "club" ? form.club_id : null,
             pod_id: sessionType === "club" ? form.pod_id : null,
           });
@@ -361,8 +378,18 @@ function TemplateFormInline({
         <option value="club">Club</option>
         <option value="cohort_class">Academy / Cohort Class</option>
         <option value="community">Community</option>
-        <option value="event">Event</option>
+        <option value="event" disabled>
+          Event — create from a specific Event
+        </option>
       </Select>
+      {form.session_type === "cohort_class" && (
+        <AcademyTemplateFields
+          cohortId={form.cohort_id}
+          feeMode={form.cohort_fee_mode}
+          onCohortChange={(id) => setForm({ ...form, cohort_id: id })}
+          onFeeModeChange={(mode) => setForm({ ...form, cohort_fee_mode: mode })}
+        />
+      )}
       {form.session_type === "club" && (
         <>
           <ClubSessionScopeFields
@@ -448,7 +475,9 @@ function TemplateFormInline({
       />
       <div className="grid grid-cols-2 gap-3">
         <Input
-          label="Pool Fee (N)"
+          label={
+            form.session_type === "cohort_class" ? "Booking price per student (₦)" : "Pool Fee (N)"
+          }
           disabled={form.session_type === "club"}
           type="number"
           value={form.pool_fee}

@@ -110,6 +110,8 @@ export interface SessionPayload {
 }
 
 export interface Template {
+  cohort_id?: string | null;
+  cohort_fee_mode?: "included" | "paid_extra";
   club_access_mode?: "plan_included" | "active_club" | "paid_addon";
   pricing_settings?: ClubTemplatePricing | null;
   id: string;
