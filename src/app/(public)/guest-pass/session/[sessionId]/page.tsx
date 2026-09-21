@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  PaymentMethodChoice,
+  type CheckoutPaymentMethod,
+} from "@/components/checkout/PaymentMethodChoice";
+
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -30,6 +35,7 @@ export default function GuestPassBookingPage() {
     referral_code: searchParams.get("ref") || "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("paystack");
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const update = (key: keyof typeof form, value: string | boolean) =>
@@ -41,6 +47,7 @@ export default function GuestPassBookingPage() {
     setSubmitError(null);
     try {
       const receipt = await createGuestPass(sessionId, {
+        payment_method: paymentMethod,
         ...form,
         date_of_birth: form.date_of_birth || undefined,
         guardian_name: form.guardian_name || undefined,
@@ -114,6 +121,11 @@ export default function GuestPassBookingPage() {
         </Alert>
       ) : (
         <form onSubmit={submit} className="space-y-5">
+          <PaymentMethodChoice
+            value={paymentMethod}
+            onChange={setPaymentMethod}
+            disabled={submitting}
+          />
           <Card className="space-y-4">
             <h2 className="font-semibold text-slate-900">Your details</h2>
             {(

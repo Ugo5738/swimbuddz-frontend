@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { apiPost } from "@/lib/api";
 import { useApi } from "@/hooks/useApi";
 import { PaymentProofLink } from "@/components/admin/PaymentProofLink";
+import { AdminPaymentRecording } from "@/components/admin/AdminPaymentRecording";
 import { formatDistance } from "date-fns";
 import { useState } from "react";
 
@@ -96,6 +97,7 @@ export default function AdminPaymentsPage() {
       </div>
 
       {(error || loadError) && <Alert variant="error">{error || loadError}</Alert>}
+      <AdminPaymentRecording />
 
       {loading ? (
         <Card className="p-8 text-center">

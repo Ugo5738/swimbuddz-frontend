@@ -1081,90 +1081,87 @@ function CheckoutContent() {
       )}
 
       {/* Approved Club applications can reconcile an existing bank transfer. */}
-      {!nothingDue &&
-        (purpose === "community" ||
-          purpose === "session" ||
-          (purpose === "club" && clubApplicationId)) && (
-          <Card className="p-6">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">Payment Method</h2>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label
-                className={`relative flex cursor-pointer flex-col rounded-xl border-2 p-4 transition-all ${
-                  paymentMethod === "paystack"
-                    ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-500"
-                    : "border-slate-200 bg-white hover:border-slate-300"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="payment_method"
-                  value="paystack"
-                  checked={paymentMethod === "paystack"}
-                  onChange={() => setPaymentMethod("paystack")}
-                  className="sr-only"
-                />
-                <span className="text-lg font-medium text-slate-900">💳 Pay Online</span>
-                <span className="text-sm text-slate-500">Instant payment via Paystack</span>
-              </label>
-              <label
-                className={`relative flex cursor-pointer flex-col rounded-xl border-2 p-4 transition-all ${
-                  paymentMethod === "manual_transfer"
-                    ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-500"
-                    : "border-slate-200 bg-white hover:border-slate-300"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="payment_method"
-                  value="manual_transfer"
-                  checked={paymentMethod === "manual_transfer"}
-                  onChange={() => {
-                    setAdjustments((value) => ({ ...value, bubbles_to_apply: 0 }));
-                    setPaymentMethod("manual_transfer");
-                  }}
-                  className="sr-only"
-                />
-                <span className="text-lg font-medium text-slate-900">🏦 Bank Transfer</span>
-                <span className="text-sm text-slate-500">Manual transfer with proof</span>
-              </label>
-            </div>
+      {!nothingDue && (
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">Payment Method</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label
+              className={`relative flex cursor-pointer flex-col rounded-xl border-2 p-4 transition-all ${
+                paymentMethod === "paystack"
+                  ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-500"
+                  : "border-slate-200 bg-white hover:border-slate-300"
+              }`}
+            >
+              <input
+                type="radio"
+                name="payment_method"
+                value="paystack"
+                checked={paymentMethod === "paystack"}
+                onChange={() => setPaymentMethod("paystack")}
+                className="sr-only"
+              />
+              <span className="text-lg font-medium text-slate-900">💳 Pay Online</span>
+              <span className="text-sm text-slate-500">Instant payment via Paystack</span>
+            </label>
+            <label
+              className={`relative flex cursor-pointer flex-col rounded-xl border-2 p-4 transition-all ${
+                paymentMethod === "manual_transfer"
+                  ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-500"
+                  : "border-slate-200 bg-white hover:border-slate-300"
+              }`}
+            >
+              <input
+                type="radio"
+                name="payment_method"
+                value="manual_transfer"
+                checked={paymentMethod === "manual_transfer"}
+                onChange={() => {
+                  setAdjustments((value) => ({ ...value, bubbles_to_apply: 0 }));
+                  setPaymentMethod("manual_transfer");
+                }}
+                className="sr-only"
+              />
+              <span className="text-lg font-medium text-slate-900">🏦 Bank Transfer</span>
+              <span className="text-sm text-slate-500">Manual transfer with proof</span>
+            </label>
+          </div>
 
-            {/* Bank Transfer Details */}
-            {paymentMethod === "manual_transfer" && (
-              <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
-                <h3 className="font-medium text-amber-900 mb-2">📋 Bank Transfer Details</h3>
-                {(purpose === "club" || purpose === "community") && (
-                  <p className="mb-3 text-sm text-amber-900">
-                    Already transferred? Do not pay again. Continue to upload the existing receipt
-                    for Admin reconciliation against this approved quote. If the amount differs,
-                    contact Admin before continuing.
-                  </p>
-                )}
-                <div className="space-y-1 text-sm text-amber-800">
-                  <p>
-                    <span className="text-amber-600">Bank:</span>{" "}
-                    <strong>{BANK_TRANSFER_ACCOUNT.bankName}</strong>
-                  </p>
-                  <p>
-                    <span className="text-amber-600">Account Number:</span>{" "}
-                    <strong>{BANK_TRANSFER_ACCOUNT.accountNumber}</strong>
-                  </p>
-                  <p>
-                    <span className="text-amber-600">Account Name:</span>{" "}
-                    <strong>{BANK_TRANSFER_ACCOUNT.accountName}</strong>
-                  </p>
-                  <p>
-                    <span className="text-amber-600">Amount:</span>{" "}
-                    <strong>{formatCurrency(total)}</strong>
-                  </p>
-                </div>
-                <p className="mt-3 text-xs text-amber-700">
-                  💡 After transfer, you'll be asked to upload proof of payment for verification.
+          {/* Bank Transfer Details */}
+          {paymentMethod === "manual_transfer" && (
+            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <h3 className="font-medium text-amber-900 mb-2">📋 Bank Transfer Details</h3>
+              {(purpose === "club" || purpose === "community") && (
+                <p className="mb-3 text-sm text-amber-900">
+                  Already transferred? Do not pay again. Continue to upload the existing receipt for
+                  Admin reconciliation against this approved quote. If the amount differs, contact
+                  Admin before continuing.
+                </p>
+              )}
+              <div className="space-y-1 text-sm text-amber-800">
+                <p>
+                  <span className="text-amber-600">Bank:</span>{" "}
+                  <strong>{BANK_TRANSFER_ACCOUNT.bankName}</strong>
+                </p>
+                <p>
+                  <span className="text-amber-600">Account Number:</span>{" "}
+                  <strong>{BANK_TRANSFER_ACCOUNT.accountNumber}</strong>
+                </p>
+                <p>
+                  <span className="text-amber-600">Account Name:</span>{" "}
+                  <strong>{BANK_TRANSFER_ACCOUNT.accountName}</strong>
+                </p>
+                <p>
+                  <span className="text-amber-600">Amount:</span>{" "}
+                  <strong>{formatCurrency(total)}</strong>
                 </p>
               </div>
-            )}
-          </Card>
-        )}
+              <p className="mt-3 text-xs text-amber-700">
+                💡 After transfer, you'll be asked to upload proof of payment for verification.
+              </p>
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Payment Button */}
       <div className="space-y-4">
@@ -1186,11 +1183,13 @@ function CheckoutContent() {
                 ? "Activate Club access"
                 : isTransition && paymentMethod === "paystack"
                   ? `Pay ${formatCurrency(total)} & activate Club access`
-                  : installmentsEnabled && billingMode === "installments"
-                    ? `Pay ${formatCurrency(productQuote ? total : (installmentPreview?.deposit ?? 0))} — Start Installment Plan`
-                    : paymentMethod === "paystack"
-                      ? `Pay ${formatCurrency(total)}`
-                      : "Continue to upload receipt"}
+                  : paymentMethod === "manual_transfer"
+                    ? "Continue to transfer details"
+                    : installmentsEnabled && billingMode === "installments"
+                      ? `Pay ${formatCurrency(productQuote ? total : (installmentPreview?.deposit ?? 0))} — Start Installment Plan`
+                      : paymentMethod === "paystack"
+                        ? `Pay ${formatCurrency(total)}`
+                        : "Continue to upload receipt"}
         </Button>
 
         <Link

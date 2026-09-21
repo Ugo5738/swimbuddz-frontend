@@ -1,4 +1,8 @@
 import { Button } from "@/components/ui/Button";
+import {
+  PaymentMethodChoice,
+  type CheckoutPaymentMethod,
+} from "@/components/checkout/PaymentMethodChoice";
 import { Card } from "@/components/ui/Card";
 import { apiPost } from "@/lib/api";
 import { getLocationDisplayName, type Session } from "@/lib/sessions";
@@ -32,6 +36,7 @@ export function AlreadyBooked({
   unpaidBooking,
 }: AlreadyBookedProps) {
   const [paying, setPaying] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("paystack");
 
   const handlePayOutstanding = async () => {
     if (!unpaidBooking) return;
@@ -42,12 +47,12 @@ export function AlreadyBooked({
         {
           purpose: "session_booking",
           currency: "NGN",
-          payment_method: "paystack",
+          payment_method: paymentMethod,
           session_id: session.id,
           direct_amount: unpaidBooking.fee_amount_kobo / 100,
           payment_metadata: { booking_id: unpaidBooking.id },
         },
-        { auth: true },
+        { auth: true }
       );
       if (intent.checkout_url) {
         window.location.href = intent.checkout_url;
@@ -166,16 +171,16 @@ export function AlreadyBooked({
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-rose-900">Pool fee outstanding</p>
                 <p className="text-sm text-rose-700">
-                  Your booking is confirmed but the pool fee for this session
-                  hasn't been paid yet.
+                  Your booking is confirmed but the pool fee for this session hasn't been paid yet.
                 </p>
               </div>
             </div>
-            <Button
-              className="w-full"
-              onClick={handlePayOutstanding}
+            <PaymentMethodChoice
+              value={paymentMethod}
+              onChange={setPaymentMethod}
               disabled={paying}
-            >
+            />
+            <Button className="w-full" onClick={handlePayOutstanding} disabled={paying}>
               {paying
                 ? "Starting payment…"
                 : `Pay ${formatNgn(unpaidBooking.fee_amount_kobo / 100)}`}

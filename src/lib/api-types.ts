@@ -8091,7 +8091,7 @@ export interface paths {
         put?: never;
         /**
          * Internal Initialize Payment
-         * @description Initialize a Paystack transaction on behalf of another service.
+         * @description Initialize an online or manual-transfer checkout for another service.
          *
          *     Called by wallet_service for topups, or any service needing Paystack.
          *     If purpose maps to PaymentPurpose, a Payment intent record is persisted
@@ -8405,6 +8405,108 @@ export interface paths {
          *     the timestamp.
          */
         post: operations["mark_refund_disbursed_payments_admin_refunds_owed__reference__mark_disbursed_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/manual-transfer/{reference}/view": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** View Transfer */
+        post: operations["view_transfer_payments_manual_transfer__reference__view_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/manual-transfer/{reference}/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Transfer Receipt */
+        post: operations["upload_transfer_receipt_payments_manual_transfer__reference__upload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/manual-transfer/{reference}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit Transfer */
+        post: operations["submit_transfer_payments_manual_transfer__reference__submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/recording": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search Recordable Payments */
+        get: operations["search_recordable_payments_payments_admin_recording_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/{reference}/offline-payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record Offline Payment */
+        post: operations["record_offline_payment_payments_admin__reference__offline_payment_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/{reference}/receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Attach Receipt */
+        post: operations["attach_receipt_payments_admin__reference__receipt_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -16082,6 +16184,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/media/internal/payment-proof/{media_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Payment Proof Metadata
+         * @description Validate receipt ownership without issuing a private file URL.
+         */
+        get: operations["payment_proof_metadata_media_internal_payment_proof__media_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/internal/payment-proof": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Payment Proof */
+        post: operations["upload_payment_proof_media_internal_payment_proof_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/media/health": {
         parameters: {
             query?: never;
@@ -21639,6 +21778,12 @@ export interface components {
         ExperienceOrderCheckout: {
             /** Access Token */
             access_token: string;
+            /**
+             * Payment Method
+             * @default paystack
+             * @enum {string}
+             */
+            payment_method: "paystack" | "manual_transfer";
             /** Discount Code */
             discount_code?: string | null;
             /**
@@ -24292,6 +24437,12 @@ export interface components {
         };
         /** GuestPassCreate */
         GuestPassCreate: {
+            /**
+             * Payment Method
+             * @default paystack
+             * @enum {string}
+             */
+            payment_method: "paystack" | "manual_transfer";
             /** Full Name */
             full_name: string;
             /**
@@ -28440,6 +28591,8 @@ export interface components {
             external_reference?: string | null;
             /** Note */
             note?: string | null;
+            /** Proof Media Id */
+            proof_media_id?: string | null;
         };
         /**
          * AdminBookingPayLinkRequest
@@ -28491,6 +28644,24 @@ export interface components {
             window: string;
             /** Reason */
             reason?: string | null;
+        };
+        /** AttachPaymentReceipt */
+        AttachPaymentReceipt: {
+            /**
+             * Proof Media Id
+             * Format: uuid
+             */
+            proof_media_id: string;
+        };
+        /** Body_upload_transfer_receipt_payments_manual_transfer__reference__upload_post */
+        Body_upload_transfer_receipt_payments_manual_transfer__reference__upload_post: {
+            /** Access Token */
+            access_token: string;
+            /**
+             * File
+             * Format: binary
+             */
+            file: string;
         };
         /** ChargePolicyCreate */
         ChargePolicyCreate: {
@@ -28883,8 +29054,9 @@ export interface components {
             /**
              * Payment Method
              * @default paystack
+             * @enum {string}
              */
-            payment_method: string;
+            payment_method: "paystack" | "manual_transfer";
             /**
              * Years
              * @default 1
@@ -29122,6 +29294,12 @@ export interface components {
         InternalInitializeRequest: {
             /** Purpose */
             purpose: string;
+            /**
+             * Payment Method
+             * @default paystack
+             * @enum {string}
+             */
+            payment_method: "paystack" | "manual_transfer";
             /** Amount */
             amount: number;
             /**
@@ -29405,6 +29583,28 @@ export interface components {
              * @default 0
              */
             payment_count: number;
+        };
+        /** OfflinePaymentRecord */
+        OfflinePaymentRecord: {
+            /** Amount Kobo */
+            amount_kobo: number;
+            /**
+             * Payment Method
+             * @default bank_transfer
+             * @enum {string}
+             */
+            payment_method: "bank_transfer" | "cash" | "pos" | "other";
+            /**
+             * Received At
+             * Format: date-time
+             */
+            received_at: string;
+            /** External Reference */
+            external_reference?: string | null;
+            /** Proof Media Id */
+            proof_media_id?: string | null;
+            /** Note */
+            note: string;
         };
         /** PaymentIntentResponse */
         PaymentIntentResponse: {
@@ -30011,6 +30211,47 @@ export interface components {
              * Format: uuid
              */
             proof_media_id: string;
+        };
+        /** TransferAccess */
+        TransferAccess: {
+            /** Access Token */
+            access_token: string;
+        };
+        /** TransferReceipt */
+        TransferReceipt: {
+            /** Access Token */
+            access_token: string;
+            /** External Reference */
+            external_reference: string;
+            /**
+             * Received Date
+             * Format: date
+             */
+            received_date: string;
+            /** Note */
+            note?: string | null;
+        };
+        /** TransferSummary */
+        TransferSummary: {
+            /** Reference */
+            reference: string;
+            /** Purpose */
+            purpose: string;
+            /** Amount Kobo */
+            amount_kobo: number;
+            /** Currency */
+            currency: string;
+            /** Status */
+            status: string;
+            /** Fulfilled */
+            fulfilled: boolean;
+            /**
+             * Receipt Attached
+             * @default false
+             */
+            receipt_attached: boolean;
+            /** Reservation Expires At */
+            reservation_expires_at?: string | null;
         };
         /** _BankItem */
         _BankItem: {
@@ -33265,8 +33506,12 @@ export interface components {
              * @description Bubbles to purchase (25–5,000)
              */
             bubbles_amount: number;
-            /** @default paystack */
-            payment_method: components["schemas"]["PaymentMethod"];
+            /**
+             * Payment Method
+             * @default paystack
+             * @enum {string}
+             */
+            payment_method: "paystack" | "bank_transfer";
             /**
              * Callback Url
              * @description Frontend path to redirect to after payment (e.g. /coach/wallet). Defaults to /account/wallet.
@@ -34719,6 +34964,15 @@ export interface components {
             recorded: boolean;
             /** Seat Number */
             seat_number: number;
+        };
+        /** FoundingInitializeRequest */
+        FoundingInitializeRequest: {
+            /**
+             * Payment Method
+             * @default paystack
+             * @enum {string}
+             */
+            payment_method: "paystack" | "manual_transfer";
         };
         /** FoundingInitializeResponse */
         FoundingInitializeResponse: {
@@ -38539,6 +38793,12 @@ export interface components {
              * Format: uuid
              */
             order_id: string;
+            /**
+             * Payment Method
+             * @default paystack
+             * @enum {string}
+             */
+            payment_method: "paystack" | "manual_transfer";
         };
         /**
          * PaymentInitResponse
@@ -40989,6 +41249,21 @@ export interface components {
             media_type: string;
             /** Album Id */
             album_id?: string | null;
+        };
+        /** Body_upload_payment_proof_media_internal_payment_proof_post */
+        Body_upload_payment_proof_media_internal_payment_proof_post: {
+            /**
+             * Payment Id
+             * Format: uuid
+             */
+            payment_id: string;
+            /** Reference */
+            reference: string;
+            /**
+             * File
+             * Format: binary
+             */
+            file: string;
         };
         /** BulkReviewRequest */
         BulkReviewRequest: {
@@ -58084,6 +58359,212 @@ export interface operations {
             };
         };
     };
+    view_transfer_payments_manual_transfer__reference__view_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferAccess"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_transfer_receipt_payments_manual_transfer__reference__upload_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_transfer_receipt_payments_manual_transfer__reference__upload_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_transfer_payments_manual_transfer__reference__submit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferReceipt"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_recordable_payments_payments_admin_recording_get: {
+        parameters: {
+            query: {
+                search: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_offline_payment_payments_admin__reference__offline_payment_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OfflinePaymentRecord"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attach_receipt_payments_admin__reference__receipt_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttachPaymentReceipt"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_payouts_payments_admin_payouts__get: {
         parameters: {
             query?: {
@@ -65384,7 +65865,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["FoundingInitializeRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -65393,6 +65878,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FoundingInitializeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -72505,6 +72999,70 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    payment_proof_metadata_media_internal_payment_proof__media_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_payment_proof_media_internal_payment_proof_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_payment_proof_media_internal_payment_proof_post"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

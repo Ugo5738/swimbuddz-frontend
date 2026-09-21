@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  PaymentMethodChoice,
+  type CheckoutPaymentMethod,
+} from "@/components/checkout/PaymentMethodChoice";
+
 import { BubblesSlider } from "@/components/checkout/BubblesSlider";
 import { ClubStandardsAcknowledgement } from "@/components/club/ClubStandardsAcknowledgement";
 import { Alert } from "@/components/ui/Alert";
@@ -109,6 +114,7 @@ interface MemberProfile {
 // ---------------------------------------------------------------------------
 
 export default function SessionBookPage({ params }: { params: { id: string } }) {
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("paystack");
   const searchParams = useSearchParams();
   const bookingAttribution = {
     booking_source: searchParams.get("source") || undefined,
@@ -181,7 +187,10 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
   const bubblesNeeded = Math.floor(total / 100);
   const hasRideShareAreas = session?.rideShareAreas && session.rideShareAreas.length > 0;
 
-  const effectiveBubbles = Math.min(bubblesToApply, walletBalance ?? 0, Math.floor(total / 100));
+  const effectiveBubbles =
+    paymentMethod === "manual_transfer"
+      ? 0
+      : Math.min(bubblesToApply, walletBalance ?? 0, Math.floor(total / 100));
   const paystackAmount = Math.max(0, total - effectiveBubbles * 100);
   const payWithBubbles = effectiveBubbles > 0;
   const requiresClubStandardsAcknowledgement =
@@ -548,7 +557,7 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
         {
           purpose: isRideOnlyFlow ? "ride_share" : "session_booking",
           currency: "NGN",
-          payment_method: "paystack",
+          payment_method: paymentMethod,
           session_id: session!.id,
           direct_amount: subtotal,
           ride_config_id: selectedRideAreaId || undefined,
@@ -744,7 +753,11 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
               <div>
                 <h2 className="text-base font-semibold text-slate-900">Payment</h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  {paystackAmount > 0 ? "Card payment via Paystack" : "Fully covered by Bubbles"}
+                  {paystackAmount > 0
+                    ? paymentMethod === "manual_transfer"
+                      ? "Bank transfer · Admin verification required"
+                      : "Card payment via Paystack"
+                    : "Fully covered by Bubbles"}
                 </p>
               </div>
 
@@ -768,7 +781,7 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-900">
                     {paystackAmount > 0
-                      ? `${formatCurrency(paystackAmount)} via Paystack`
+                      ? `${formatCurrency(paystackAmount)} via ${paymentMethod === "manual_transfer" ? "bank transfer" : "Paystack"}`
                       : "No card payment needed"}
                   </p>
                   <p className="text-xs text-slate-500 mt-0.5">
@@ -779,7 +792,12 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
                 </div>
               </div>
 
-              {walletBalance !== null && walletBalance > 0 && (
+              <PaymentMethodChoice
+                value={paymentMethod}
+                onChange={setPaymentMethod}
+                disabled={processing}
+              />
+              {paymentMethod === "paystack" && walletBalance !== null && walletBalance > 0 && (
                 <BubblesSlider
                   amountDueNgn={total}
                   walletBalance={walletBalance}

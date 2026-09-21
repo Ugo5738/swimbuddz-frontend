@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  PaymentMethodChoice,
+  type CheckoutPaymentMethod,
+} from "@/components/checkout/PaymentMethodChoice";
+
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -23,14 +28,14 @@ export default function FoundingMembersClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   // Paystack appends ?reference=&trxref= when it redirects the user back.
-  const returnedReference =
-    searchParams.get("reference") || searchParams.get("trxref");
+  const returnedReference = searchParams.get("reference") || searchParams.get("trxref");
 
   const [stats, setStats] = useState<FoundingStats | null>(null);
   const [status, setStatus] = useState<FoundingStatus | null>(null);
   const [authEmail, setAuthEmail] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("paystack");
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,7 +71,7 @@ export default function FoundingMembersClient() {
             toast.success(
               result.seat_number > 0
                 ? `You're in — seat #${result.seat_number} of 100.`
-                : "You're a founding member.",
+                : "You're a founding member."
             );
             await loadStats();
             setStatus(await getMyFoundingStatus());
@@ -76,7 +81,7 @@ export default function FoundingMembersClient() {
             setError(
               err instanceof Error
                 ? err.message
-                : "We couldn't confirm that payment. If you were charged, contact support.",
+                : "We couldn't confirm that payment. If you were charged, contact support."
             );
           } finally {
             setVerifying(false);
@@ -100,13 +105,12 @@ export default function FoundingMembersClient() {
     setBusy(true);
     setError(null);
     try {
-      const { authorization_url } = await initializeFoundingPayment();
+      const { authorization_url } = await initializeFoundingPayment(paymentMethod);
       // Hand off to Paystack's hosted checkout. On completion Paystack
       // redirects back to /founding-members?reference=…
       window.location.href = authorization_url;
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Could not start payment";
+      const message = err instanceof Error ? err.message : "Could not start payment";
       setError(message);
       toast.error(message);
       setBusy(false);
@@ -129,9 +133,9 @@ export default function FoundingMembersClient() {
           Stroke Lab
         </h1>
         <p className="mt-3 text-base text-slate-600">
-          Upload a freestyle clip. We measure your stroke rate, body roll,
-          and breath balance — in under two minutes, from your phone, no
-          coach in the loop. Lifetime access for the first 100 swimmers.
+          Upload a freestyle clip. We measure your stroke rate, body roll, and breath balance — in
+          under two minutes, from your phone, no coach in the loop. Lifetime access for the first
+          100 swimmers.
         </p>
       </header>
 
@@ -150,12 +154,8 @@ export default function FoundingMembersClient() {
       <Card className="mb-6 text-center">
         {stats ? (
           <>
-            <p className="text-sm uppercase tracking-wide text-slate-500">
-              Seats remaining
-            </p>
-            <p className="mt-1 text-5xl font-bold text-slate-900">
-              {stats.seats_remaining}
-            </p>
+            <p className="text-sm uppercase tracking-wide text-slate-500">Seats remaining</p>
+            <p className="mt-1 text-5xl font-bold text-slate-900">{stats.seats_remaining}</p>
             <p className="mt-1 text-xs text-slate-500">
               of {stats.seats_total} ·{" "}
               <span className="font-medium text-slate-700">
@@ -171,34 +171,38 @@ export default function FoundingMembersClient() {
             <Alert variant="success">
               <Check className="-mt-0.5 mr-1 inline h-4 w-4" />
               You&apos;re a founding member.{" "}
-              <Link
-                href="/account/strokelab"
-                className="font-semibold underline"
-              >
+              <Link href="/account/strokelab" className="font-semibold underline">
                 Open Stroke Lab →
               </Link>
             </Alert>
           ) : soldOut ? (
             <Alert variant="info">
-              <Lock className="-mt-0.5 mr-1 inline h-4 w-4" /> All founding
-              spots are taken — a regular tier is coming soon.
+              <Lock className="-mt-0.5 mr-1 inline h-4 w-4" /> All founding spots are taken — a
+              regular tier is coming soon.
             </Alert>
           ) : (
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={handleStartCheckout}
-              disabled={busy || verifying || !authChecked}
-            >
-              {busy
-                ? "Redirecting to Paystack…"
-                : authEmail
-                  ? "Claim my spot · ₦20,000"
-                  : "Sign in to claim"}
-            </Button>
+            <div className="space-y-3">
+              <PaymentMethodChoice
+                value={paymentMethod}
+                onChange={setPaymentMethod}
+                disabled={busy || verifying}
+              />
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={handleStartCheckout}
+                disabled={busy || verifying || !authChecked}
+              >
+                {busy
+                  ? "Opening payment…"
+                  : authEmail
+                    ? "Claim my spot · ₦20,000"
+                    : "Sign in to claim"}
+              </Button>
+            </div>
           )}
           <p className="mt-3 text-xs text-slate-500">
-            Paystack-secured payment. One spot per account. Not a coach
+            Online payment or Admin-verified bank transfer. One spot per account. Not a coach
             replacement — share clips with a coach for personal guidance.
           </p>
         </div>
