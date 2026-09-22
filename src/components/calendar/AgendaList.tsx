@@ -2,10 +2,11 @@
 
 import type { CalendarItem } from "@/lib/calendar";
 import {
-  CALENDAR_ACTIVITY_LABELS,
   CALENDAR_AUDIENCE_COLORS,
   CALENDAR_AUDIENCE_LABELS,
   CALENDAR_VISIBILITY_LABELS,
+  calendarActivityLabel,
+  calendarPrimaryAudience,
 } from "@/lib/calendar";
 import { format } from "date-fns";
 import { Clock3, MapPin } from "lucide-react";
@@ -51,7 +52,8 @@ export function AgendaList({ items, selectedId, onSelect }: AgendaListProps) {
             </div>
             <div className="divide-y divide-slate-100">
               {dayItems.map((item) => {
-                const color = CALENDAR_AUDIENCE_COLORS[item.audience];
+                const primaryAudience = calendarPrimaryAudience(item);
+                const color = CALENDAR_AUDIENCE_COLORS[primaryAudience];
                 const selected = selectedId === `${item.source}:${item.id}`;
                 return (
                   <button
@@ -67,10 +69,10 @@ export function AgendaList({ items, selectedId, onSelect }: AgendaListProps) {
                       <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
                         <span className="font-semibold text-slate-900">{item.title}</span>
                         <span className="text-xs font-medium text-slate-500">
-                          {CALENDAR_AUDIENCE_LABELS[item.audience]}
+                          {CALENDAR_AUDIENCE_LABELS[primaryAudience]}
                         </span>
                         <span className="text-xs text-slate-400">
-                          {CALENDAR_ACTIVITY_LABELS[item.kind] ?? item.kind.replaceAll("_", " ")}
+                          {calendarActivityLabel(item.kind)}
                         </span>
                         <span className="text-xs text-slate-400">
                           {CALENDAR_VISIBILITY_LABELS[item.visibility]}

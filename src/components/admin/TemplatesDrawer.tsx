@@ -43,6 +43,13 @@ export type TemplateFormPayload = {
   club_id: string | null;
   pod_id: string | null;
   day_of_week: number;
+  frequency: Template["frequency"];
+  interval: number;
+  week_of_month: number | null;
+  day_of_month: number | null;
+  month_of_year: number | null;
+  starts_on: string;
+  ends_on: string | null;
   start_time: string;
   duration_minutes: number;
   pool_fee: number;
@@ -56,6 +63,38 @@ function addMinutesToClock(value: string, minutes: number): string {
   if (!Number.isFinite(hours) || !Number.isFinite(mins)) return "";
   const total = (hours * 60 + mins + minutes) % (24 * 60);
   return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+function describeRecurrence(template: Template): string {
+  const frequency = template.frequency ?? "weekly";
+  const interval = template.interval ?? 1;
+  const every = interval === 1 ? "Every" : `Every ${interval}`;
+  if (frequency === "weekly") {
+    return `${every} ${interval === 1 ? "week" : "weeks"} on ${DAY_NAMES[template.day_of_week]}`;
+  }
+  const occurrence =
+    template.week_of_month === -1
+      ? "last"
+      : ["first", "second", "third", "fourth", "fifth"][(template.week_of_month ?? 1) - 1];
+  const unit = frequency === "quarterly" ? "quarter" : frequency === "annual" ? "year" : "month";
+  const month =
+    frequency === "annual" ? ` in ${MONTH_NAMES[(template.month_of_year ?? 1) - 1]}` : "";
+  return `${every} ${interval === 1 ? unit : `${unit}s`}, ${occurrence} ${DAY_NAMES[template.day_of_week]}${month}`;
 }
 
 export function TemplatesDrawer({
@@ -147,7 +186,7 @@ export function TemplatesDrawer({
                             <span className="text-xs font-medium text-amber-700">Archived</span>
                           )}
                           <p className="mt-0.5 text-xs text-slate-500">
-                            {DAY_NAMES[t.day_of_week]} at {t.start_time} &middot;{" "}
+                            {describeRecurrence(t)} at {t.start_time} &middot;{" "}
                             {t.duration_minutes}min
                           </p>
                           <p className="text-xs text-slate-500">
@@ -252,6 +291,13 @@ function TemplateFormInline({
     club_id: template?.club_id ?? null,
     pod_id: template?.pod_id ?? null,
     day_of_week: template?.day_of_week ?? 5,
+    frequency: template?.frequency ?? ("weekly" as Template["frequency"]),
+    interval: template?.interval ?? 1,
+    week_of_month: template?.week_of_month ?? 1,
+    day_of_month: template?.day_of_month ?? null,
+    month_of_year: template?.month_of_year ?? new Date().getMonth() + 1,
+    starts_on: template?.starts_on ?? new Date().toISOString().slice(0, 10),
+    ends_on: template?.ends_on ?? "",
     start_time: template?.start_time || "09:00",
     duration_minutes: template?.duration_minutes || 180,
     pool_fee: template?.pool_fee || 2000,
@@ -309,6 +355,10 @@ function TemplateFormInline({
     }
     const data: TemplateFormPayload = {
       ...form,
+      week_of_month: form.frequency === "weekly" ? null : form.week_of_month,
+      day_of_month: null,
+      month_of_year: form.frequency === "annual" ? form.month_of_year : null,
+      ends_on: form.ends_on || null,
       club_access_mode: form.session_type === "club" ? form.club_access_mode : "plan_included",
       pricing_settings: form.session_type === "club" && form.club_id ? pricing : null,
       club_id: form.session_type === "club" ? form.club_id : null,
@@ -361,8 +411,11 @@ function TemplateFormInline({
         <option value="club">Club</option>
         <option value="cohort_class">Academy / Cohort Class</option>
         <option value="community">Community</option>
-        <option value="event">Event</option>
       </Select>
+      <p className="text-xs text-slate-500">
+        Event-linked swim sessions start from the Event admin page so each generated Event keeps
+        its own required link.
+      </p>
       {form.session_type === "club" && (
         <>
           <ClubSessionScopeFields
@@ -390,17 +443,88 @@ function TemplateFormInline({
           <ClubAccessModeHint mode={form.club_access_mode} />
         </>
       )}
-      <Select
-        label="Day of Week"
-        value={form.day_of_week.toString()}
-        onChange={(e) => setForm({ ...form, day_of_week: parseInt(e.target.value) })}
-      >
-        {DAY_NAMES.map((d, i) => (
-          <option key={i} value={i}>
-            {d}
-          </option>
-        ))}
-      </Select>
+      <fieldset className="space-y-3 rounded-lg border border-slate-200 p-4">
+        <legend className="px-1 text-sm font-semibold text-slate-900">Recurrence</legend>
+        <div className="grid grid-cols-2 gap-3">
+          <Select
+            label="Frequency"
+            value={form.frequency}
+            onChange={(e) =>
+              setForm({ ...form, frequency: e.target.value as Template["frequency"] })
+            }
+          >
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="quarterly">Quarterly</option>
+            <option value="annual">Annual</option>
+          </Select>
+          <Input
+            label="Repeat every"
+            type="number"
+            min={1}
+            max={12}
+            value={form.interval}
+            onChange={(e) => setForm({ ...form, interval: Number(e.target.value) || 1 })}
+            hint={`${form.frequency === "weekly" ? "week" : form.frequency === "monthly" ? "month" : form.frequency === "quarterly" ? "quarter" : "year"}${form.interval === 1 ? "" : "s"}`}
+          />
+        </div>
+        {form.frequency !== "weekly" ? (
+          <Select
+            label="Week of period"
+            value={String(form.week_of_month ?? 1)}
+            onChange={(e) => setForm({ ...form, week_of_month: Number(e.target.value) })}
+          >
+            <option value="1">First</option>
+            <option value="2">Second</option>
+            <option value="3">Third</option>
+            <option value="4">Fourth</option>
+            <option value="5">Fifth, when present</option>
+            <option value="-1">Last</option>
+          </Select>
+        ) : null}
+        <Select
+          label="Day of week"
+          value={form.day_of_week.toString()}
+          onChange={(e) => setForm({ ...form, day_of_week: parseInt(e.target.value) })}
+        >
+          {DAY_NAMES.map((d, i) => (
+            <option key={d} value={i}>
+              {d}
+            </option>
+          ))}
+        </Select>
+        {form.frequency === "annual" ? (
+          <Select
+            label="Month"
+            value={String(form.month_of_year ?? 1)}
+            onChange={(e) => setForm({ ...form, month_of_year: Number(e.target.value) })}
+          >
+            {MONTH_NAMES.map((month, index) => (
+              <option key={month} value={index + 1}>
+                {month}
+              </option>
+            ))}
+          </Select>
+        ) : null}
+        <div className="grid grid-cols-2 gap-3">
+          <Input
+            label="Rule starts"
+            type="date"
+            value={form.starts_on}
+            onChange={(e) => setForm({ ...form, starts_on: e.target.value })}
+            required
+          />
+          <Input
+            label="Rule ends (optional)"
+            type="date"
+            value={form.ends_on}
+            onChange={(e) => setForm({ ...form, ends_on: e.target.value })}
+          />
+        </div>
+        <p className="text-xs text-slate-500">
+          {describeRecurrence(form as unknown as Template)}
+        </p>
+      </fieldset>
       <Input
         label="Start Time"
         type="time"

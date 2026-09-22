@@ -72,6 +72,10 @@ const MONTHS = [
 function templateToForm(template: EventTemplate): EventTemplateForm {
   return {
     ...template,
+    primary_audience: template.primary_audience ?? template.audience,
+    audiences: template.audiences?.length
+      ? template.audiences
+      : [template.primary_audience ?? template.audience],
     description: template.description ?? "",
     location_area: template.location_area ?? "",
     location: template.location ?? "",
@@ -419,19 +423,30 @@ export default function EventPlanningPage() {
                   onChange={(event) => setForm({ ...form, title: event.target.value })}
                   required
                 />
-                <Select
+                <div>
+                  <Input
                   label="Activity type"
                   value={form.event_type}
                   onChange={(event) => setForm({ ...form, event_type: event.target.value })}
-                >
-                  <option value="online_talk">Online Talk</option>
-                  <option value="assessment">Assessment</option>
-                  <option value="open_swim">Open swim</option>
-                  <option value="quarter_meet">Quarter meet / Buddz Cup</option>
-                  <option value="social">Social</option>
-                  <option value="excursion">Excursion</option>
-                  <option value="town_hall">Town hall</option>
-                </Select>
+                    list="event-template-activity-types"
+                    hint="New activity keys are supported without a code change."
+                    required
+                  />
+                  <datalist id="event-template-activity-types">
+                    {[
+                      "community_swim",
+                      "online_talk",
+                      "assessment",
+                      "open_swim",
+                      "quarter_meet",
+                      "social",
+                      "excursion",
+                      "town_hall",
+                    ].map((value) => (
+                      <option key={value} value={value} />
+                    ))}
+                  </datalist>
+                </div>
               </div>
 
               <Textarea
@@ -443,12 +458,19 @@ export default function EventPlanningPage() {
 
               <div className="grid gap-4 md:grid-cols-2">
                 <Select
-                  label="Audience lane"
-                  value={form.audience}
+                  label="Primary audience lane"
+                  value={form.primary_audience}
                   onChange={(event) =>
                     setForm({
                       ...form,
+                      primary_audience: event.target.value as EventTemplateForm["primary_audience"],
                       audience: event.target.value as EventTemplateForm["audience"],
+                      audiences: Array.from(
+                        new Set([
+                          ...form.audiences,
+                          event.target.value as EventTemplateForm["primary_audience"],
+                        ])
+                      ),
                     })
                   }
                 >
@@ -488,6 +510,39 @@ export default function EventPlanningPage() {
                   <option value="invite_only">Invitees only</option>
                 </Select>
               </div>
+
+              <fieldset className="rounded-lg border border-slate-200 p-4">
+                <legend className="px-1 text-sm font-semibold text-slate-900">
+                  Relevant programme audiences
+                </legend>
+                <p className="mb-3 text-xs text-slate-500">
+                  Relevance controls calendar filtering. Attendance access remains separate.
+                </p>
+                <div className="flex flex-wrap gap-4">
+                  {(["community", "club", "academy"] as const).map((value) => {
+                    const primary = form.primary_audience === value;
+                    return (
+                      <label key={value} className="inline-flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={form.audiences.includes(value)}
+                          disabled={primary}
+                          onChange={(event) =>
+                            setForm({
+                              ...form,
+                              audiences: event.target.checked
+                                ? [...form.audiences, value]
+                                : form.audiences.filter((item) => item !== value),
+                            })
+                          }
+                        />
+                        {value[0].toUpperCase() + value.slice(1)}
+                        {primary ? " (primary)" : ""}
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
 
               <div className="grid gap-4 md:grid-cols-3">
                 <Select
@@ -805,7 +860,7 @@ export default function EventPlanningPage() {
                         <div className="flex flex-wrap items-center gap-2">
                           <h2 className="font-semibold text-slate-950">{template.title}</h2>
                           <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
-                            {template.audience}
+                            {template.primary_audience ?? template.audience}
                           </span>
                           <span
                             className={`rounded px-2 py-0.5 text-xs font-medium ${template.is_active ? "bg-green-100 text-green-800" : "bg-slate-100 text-slate-500"}`}
@@ -1020,7 +1075,7 @@ export default function EventPlanningPage() {
                             </p>
                           </td>
                           <td className="px-3 py-3 align-top text-slate-600">
-                            {row.event?.audience ?? "—"}
+                            {row.event?.audiences.join(", ") ?? "—"}
                           </td>
                           <td className="px-3 py-3 align-top text-slate-600">
                             {row.event?.visibility.replace("_", " ") ?? "—"}

@@ -4,14 +4,21 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { SessionVolunteerPanel } from "@/components/volunteer/SessionVolunteerPanel";
-import { apiGet, apiPost } from "@/lib/api";
-import { apiEndpoints } from "@/lib/config";
-import { MembersApi } from "@/lib/members";
+import { useApi } from "@/hooks/useApi";
+import { apiPost } from "@/lib/api";
 import { format } from "date-fns";
-import { ArrowLeft, Calendar, CheckCircle, CreditCard, MapPin, Pencil, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  CheckCircle,
+  CreditCard,
+  MapPin,
+  Pencil,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 interface Event {
@@ -30,18 +37,13 @@ interface Event {
   pool_id: string | null;
   created_by: string;
   created_at: string;
-}
-
-interface RSVP {
-  id: string;
-  member_id: string;
-  status: "going" | "maybe" | "not_going";
-  created_at: string;
+  rsvp_count?: Partial<Record<"going" | "maybe" | "not_going", number>>;
 }
 
 type WalletData = { balance: number; available_balance?: number };
 
 const eventTypeLabels: Record<string, string> = {
+  community_swim: "Official Community Swim",
   social: "Social Event",
   volunteer: "Volunteer Activity",
   beach_day: "Beach Day",
@@ -55,54 +57,27 @@ export default function EventDetailPage() {
   const router = useRouter();
   const eventId = params.id as string;
 
-  const [event, setEvent] = useState<Event | null>(null);
-  const [rsvps, setRsvps] = useState<RSVP[]>([]);
+  const { data: event, loading, refetch: refetchEvent } = useApi<Event>(
+    eventId ? `/api/v1/events/${eventId}` : null,
+  );
+  const linkedSessionPath =
+    event && event.event_type !== "open_swim"
+      ? `/api/v1/sessions/?types=event&event_id=${encodeURIComponent(event.id)}&limit=1`
+      : null;
+  const { data: linkedSessions } = useApi<
+    Array<{ id: string; title: string; starts_at: string }>
+  >(linkedSessionPath);
+  const { data: wallet } = useApi<WalletData>("/api/v1/wallet/me");
+  const { data: me } = useApi<{ id: string }>("/api/v1/members/me");
+  const linkedSession = linkedSessions?.[0] ?? null;
+  const walletBalance = wallet
+    ? (wallet.available_balance ?? wallet.balance)
+    : null;
+  const meId = me?.id ?? null;
   const [userRsvp, setUserRsvp] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [payWithBubbles, setPayWithBubbles] = useState(false);
   const [waiverAccepted, setWaiverAccepted] = useState(false);
-  const [meId, setMeId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (eventId) {
-      fetchEvent();
-      fetchRsvps();
-    }
-    apiGet<WalletData>("/api/v1/wallet/me", { auth: true })
-      .then((data) => setWalletBalance(data.available_balance ?? data.balance))
-      .catch(() => {});
-    MembersApi.getMe()
-      .then((m) => setMeId(m.id as string))
-      .catch(() => {});
-  }, [eventId]);
-
-  const fetchEvent = async () => {
-    try {
-      const response = await fetch(`${apiEndpoints.events}/${eventId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setEvent(data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch event:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchRsvps = async () => {
-    try {
-      const response = await fetch(`${apiEndpoints.events}/${eventId}/rsvps`);
-      if (response.ok) {
-        const data = await response.json();
-        setRsvps(data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch RSVPs:", error);
-    }
-  };
 
   const handleRsvp = async (status: "going" | "maybe" | "not_going") => {
     const cost = event?.total_cost_naira ?? event?.cost_naira ?? 0;
@@ -125,7 +100,7 @@ export default function EventDetailPage() {
       }
       await apiPost(`/api/v1/events/${eventId}/rsvp`, body, { auth: true });
       setUserRsvp(status);
-      await fetchRsvps();
+      refetchEvent();
       if (status === "going" && payWithBubbles && paid) {
         const bubblesUsed = cost / 100;
         toast.success(`RSVP confirmed! ${bubblesUsed} 🫧 Bubbles used.`);
@@ -138,9 +113,9 @@ export default function EventDetailPage() {
   };
 
   const rsvpCounts = {
-    going: rsvps.filter((r) => r.status === "going").length,
-    maybe: rsvps.filter((r) => r.status === "maybe").length,
-    not_going: rsvps.filter((r) => r.status === "not_going").length,
+    going: event?.rsvp_count?.going ?? 0,
+    maybe: event?.rsvp_count?.maybe ?? 0,
+    not_going: event?.rsvp_count?.not_going ?? 0,
   };
 
   const effectiveCost = event?.total_cost_naira ?? event?.cost_naira ?? null;
@@ -272,7 +247,19 @@ export default function EventDetailPage() {
 
       {/* RSVP Section */}
       {event.community_experience_offering_id && <Card className="p-6"><h3 className="font-semibold">Included in a Community Experience</h3><p className="my-3 text-slate-600">Review the package and named guest tickets. There is no separate Event entry payment.</p><Link className="text-cyan-700 underline" href={`/experiences/${event.community_experience_offering_id}`}>View Experience and my tickets</Link></Card>}
-      {!isPastEvent && !event.community_experience_offering_id && (
+      {linkedSession && !isPastEvent ? (
+        <Card className="border-cyan-200 bg-cyan-50 p-6">
+          <h3 className="font-semibold text-slate-950">Book the swimming session</h3>
+          <p className="my-3 text-sm leading-6 text-slate-700">
+            This Event introduces the Community Swim. Capacity, member and guest places, payment,
+            attendance, volunteer support, and ride-share are managed through its linked Session.
+          </p>
+          <Link href={`/sessions/${linkedSession.id}/book`}>
+            <Button>View and book session</Button>
+          </Link>
+        </Card>
+      ) : null}
+      {!isPastEvent && !event.community_experience_offering_id && !linkedSession && (
         <Card className="p-6">
           <h3 className="mb-4 text-lg font-semibold text-slate-900">Your RSVP</h3>
 

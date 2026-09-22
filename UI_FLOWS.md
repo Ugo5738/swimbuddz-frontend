@@ -354,7 +354,7 @@ The implementation of pages should follow these flows closely.
 
 ---
 
-## 10. Member → View & RSVP to Community Events
+## 10. Member → View or Book Community Activities
 
 ### Flow: Events → Event Detail → RSVP
 
@@ -370,13 +370,19 @@ The implementation of pages should follow these flows closely.
      - Description, organizer.
      - Date, time, location.
      - RSVP count and attendee list (if public).
-   - Clicks "RSVP" button.
+   - For a social Event or peer-organised `open_swim`, clicks "RSVP".
+   - For an official Community Swim with a linked operational Session, clicks
+     "View and book session". The Session flow owns capacity, guests, payment,
+     attendance, volunteer roles, ride-share, and media assignments; Event RSVP
+     is not duplicated.
 
-3. RSVP confirmation:
+3. Confirmation:
 
    - If authenticated:
-     - Calls `POST /api/v1/events/{id}/rsvp`.
-     - Shows "You're registered!" message.
+     - Social Event: calls `POST /api/v1/events/{id}/rsvp` and shows
+       "You're registered!".
+     - Official Community Swim: continues through the linked Session booking
+       flow and its booking/payment confirmation.
    - If not authenticated:
      - Redirect to login, then return to RSVP.
 

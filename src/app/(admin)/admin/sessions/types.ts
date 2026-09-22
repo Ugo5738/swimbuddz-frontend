@@ -115,6 +115,13 @@ export interface Template {
   id: string;
   title: string;
   day_of_week: number;
+  frequency: "weekly" | "monthly" | "quarterly" | "annual";
+  interval: number;
+  week_of_month?: number | null;
+  day_of_month?: number | null;
+  month_of_year?: number | null;
+  starts_on: string;
+  ends_on?: string | null;
   start_time: string;
   duration_minutes: number;
   pool_id?: string | null;
