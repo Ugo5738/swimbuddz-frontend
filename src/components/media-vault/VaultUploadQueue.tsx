@@ -6,6 +6,8 @@ export type UploadFile = {
   file: File;
   status: "queued" | "fingerprinting" | "uploading" | "done" | "failed";
   progress: number;
+  bytesUploaded?: number;
+  bytesPerSecond?: number;
   error?: string;
   duplicate?: boolean;
 };
@@ -88,6 +90,16 @@ export function VaultUploadQueue({
                         : "Selected — press Start full-quality upload below")}
                 {entry.duplicate && " · Possible duplicate"}
               </p>
+              {entry.status === "uploading" && Boolean(entry.bytesPerSecond) && (
+                <p className="mt-1 text-xs font-medium text-cyan-700">
+                  {formatBytes(entry.bytesPerSecond ?? 0)}/s
+                  {entry.bytesUploaded != null && entry.bytesPerSecond
+                    ? ` · about ${formatEta(
+                        (entry.file.size - entry.bytesUploaded) / entry.bytesPerSecond
+                      )} remaining`
+                    : ""}
+                </p>
+              )}
             </div>
             {entry.status === "done" ? (
               <CheckCircle2 className="h-5 w-5 text-emerald-600" />
@@ -107,4 +119,14 @@ export function VaultUploadQueue({
       </div>
     </div>
   );
+}
+
+function formatEta(seconds: number) {
+  if (!Number.isFinite(seconds) || seconds <= 1) return "a few seconds";
+  if (seconds < 60) return `${Math.ceil(seconds)} sec`;
+  const minutes = Math.ceil(seconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const remainder = minutes % 60;
+  return `${hours} hr${hours === 1 ? "" : "s"}${remainder ? ` ${remainder} min` : ""}`;
 }
