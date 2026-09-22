@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  PaymentMethodChoice,
+  type CheckoutPaymentMethod,
+} from "@/components/checkout/PaymentMethodChoice";
+
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -71,6 +76,7 @@ type Checkout = {
   additional_charges?: Array<{ label: string; amount_kobo: number }>;
 };
 type SavedOrder = {
+  payment_method?: CheckoutPaymentMethod;
   idempotency_key: string;
   access_token: string;
   order_id?: string;
@@ -97,6 +103,7 @@ export default function ExperienceTicketPage() {
   const [quoteError, setQuoteError] = useState("");
   const [saved, setSaved] = useState<SavedOrder | null>(null);
   const [busy, setBusy] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("paystack");
   const [error, setError] = useState("");
   const [completing, setCompleting] = useState<string | null>(null);
   const [safety, setSafety] = useState(blankParticipant);
@@ -151,6 +158,7 @@ export default function ExperienceTicketPage() {
         if (record.access_token && record.idempotency_key) {
           setSaved(record);
           setAdjustments(record.adjustments || {});
+          setPaymentMethod(record.payment_method || "paystack");
           if (record.order_id)
             apiPost<Order>(`/api/v1/clubs/community-experiences/orders/${record.order_id}/status`, {
               access_token: record.access_token,
@@ -178,7 +186,7 @@ export default function ExperienceTicketPage() {
     setQuotePending(true);
     apiPost<ChargePreview>(
       `/api/v1/clubs/community-experiences/orders/${order.id}/checkout-preview`,
-      { access_token: saved.access_token, ...adjustments },
+      { access_token: saved.access_token, ...adjustments, payment_method: paymentMethod },
       { auth: true }
     )
       .then((value) => {
@@ -196,7 +204,7 @@ export default function ExperienceTicketPage() {
     return () => {
       active = false;
     };
-  }, [order, saved, adjustments]);
+  }, [order, saved, adjustments, paymentMethod]);
   const reserve = async () => {
     let record = saved;
     if (!record) {
@@ -210,7 +218,8 @@ export default function ExperienceTicketPage() {
     const result = await apiPost<Order>(
       `/api/v1/clubs/community-experiences/${offeringId}/orders`,
       {
-        ...record,
+        idempotency_key: record.idempotency_key,
+        access_token: record.access_token,
         order_id: undefined,
         include_member: includeMember,
         participant: primary,
@@ -225,7 +234,7 @@ export default function ExperienceTicketPage() {
   };
   const initialize = async () => {
     if (!order || !saved) return;
-    const record = { ...saved, adjustments, checkout_started: true };
+    const record = { ...saved, adjustments, payment_method: paymentMethod, checkout_started: true };
     localStorage.setItem(storageKey, JSON.stringify(record));
     setSaved(record);
     const result = await apiPost<Checkout>(
@@ -233,6 +242,7 @@ export default function ExperienceTicketPage() {
       {
         access_token: saved.access_token,
         ...adjustments,
+        payment_method: paymentMethod,
         expected_total_kobo: paymentQuote?.total_kobo,
       },
       { auth: true }
@@ -396,7 +406,19 @@ export default function ExperienceTicketPage() {
             and reference to recover your ticket.
           </p>
           {order.amount_kobo > 0 && (
+            <PaymentMethodChoice
+              value={paymentMethod}
+              disabled={busy || !!saved?.checkout_started || !!paymentQuote?.selection_locked}
+              onChange={(method) => {
+                setPaymentMethod(method);
+                setAdjustments((value) => ({ ...value, bubbles_to_apply: 0 }));
+                setQuotePending(true);
+              }}
+            />
+          )}
+          {order.amount_kobo > 0 && (
             <ProductPaymentOptions
+              online={paymentMethod === "paystack"}
               quote={paymentQuote || { subtotal_kobo: order.amount_kobo }}
               value={adjustments}
               member={signedIn}

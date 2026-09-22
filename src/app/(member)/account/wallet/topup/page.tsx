@@ -1,9 +1,15 @@
 "use client";
 
+import {
+  PaymentMethodChoice,
+  type CheckoutPaymentMethod,
+} from "@/components/checkout/PaymentMethodChoice";
+
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiPost } from "@/lib/api";
+import { useApi } from "@/hooks/useApi";
 import { NAIRA_PER_BUBBLE, formatNaira } from "@/lib/format";
 import { ArrowLeft, Info } from "lucide-react";
 import Link from "next/link";
@@ -45,14 +51,14 @@ export default function TopupPage() {
   const returnTo = searchParams.get("return_to");
   const prefillAmount = prefillParam ? parseInt(prefillParam, 10) : null;
 
-  const [walletChecked, setWalletChecked] = useState(false);
+  const wallet = useApi<{ id: string }>("/api/v1/wallet/me");
+  const walletChecked = !wallet.loading;
   const [selectedPreset, setSelectedPreset] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState(
-    prefillAmount && !PRESET_AMOUNTS.includes(prefillAmount)
-      ? String(prefillAmount)
-      : "",
+    prefillAmount && !PRESET_AMOUNTS.includes(prefillAmount) ? String(prefillAmount) : ""
   );
   const [submitting, setSubmitting] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("paystack");
 
   // Initialise the preset selector when a prefill amount matches a preset
   useEffect(() => {
@@ -63,28 +69,21 @@ export default function TopupPage() {
 
   // Ensure user has a wallet before showing topup form
   useEffect(() => {
-    apiGet("/api/v1/wallet/me", { auth: true })
-      .then(() => setWalletChecked(true))
-      .catch((e: unknown) => {
-        const msg = e instanceof Error ? e.message : "";
-        if (msg.includes("not found") || msg.includes("404")) {
-          toast.error("Please create a wallet first");
-          router.replace("/account/wallet");
-        } else {
-          // Auth error, network issue, etc. — show form anyway
-          toast.error("Could not verify wallet. Please try again.");
-          setWalletChecked(true);
-        }
-      });
-  }, [router]);
+    if (wallet.error) {
+      if (wallet.error.includes("not found") || wallet.error.includes("404")) {
+        toast.error("Please create a wallet first");
+        router.replace("/account/wallet");
+      } else {
+        // Auth error, network issue, etc. — show form anyway
+        toast.error("Could not verify wallet. Please try again.");
+      }
+    }
+  }, [router, wallet.error]);
 
-  const bubbleAmount =
-    selectedPreset ?? (customAmount ? parseInt(customAmount, 10) : 0);
+  const bubbleAmount = selectedPreset ?? (customAmount ? parseInt(customAmount, 10) : 0);
   const nairaAmount = bubbleAmount * NAIRA_PER_BUBBLE;
   const isValid =
-    Number.isFinite(bubbleAmount) &&
-    bubbleAmount >= MIN_BUBBLES &&
-    bubbleAmount <= MAX_BUBBLES;
+    Number.isFinite(bubbleAmount) && bubbleAmount >= MIN_BUBBLES && bubbleAmount <= MAX_BUBBLES;
 
   const handlePresetClick = (amount: number) => {
     setSelectedPreset(amount);
@@ -103,11 +102,18 @@ export default function TopupPage() {
     try {
       const result = await apiPost<TopupResponse>(
         "/api/v1/wallet/topup",
-        { bubbles_amount: bubbleAmount, payment_method: "paystack" },
-        { auth: true },
+        {
+          bubbles_amount: bubbleAmount,
+          payment_method: paymentMethod === "manual_transfer" ? "bank_transfer" : "paystack",
+        },
+        { auth: true }
       );
 
       if (result.paystack_authorization_url) {
+        if (paymentMethod === "manual_transfer") {
+          window.location.href = result.paystack_authorization_url;
+          return;
+        }
         // Persist state for recovery after Paystack redirect
         try {
           localStorage.setItem(
@@ -117,7 +123,7 @@ export default function TopupPage() {
               bubbles_amount: result.bubbles_amount,
               return_to: returnTo ?? null,
               saved_at: Date.now(),
-            }),
+            })
           );
         } catch {
           /* localStorage unavailable */
@@ -159,12 +165,11 @@ export default function TopupPage() {
           <Info className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
           <div>
             <p className="text-sm font-semibold text-amber-900">
-              You need {prefillAmount.toLocaleString()} 🫧 to cover your next
-              installment
+              You need {prefillAmount.toLocaleString()} 🫧 to cover your next installment
             </p>
             <p className="mt-0.5 text-xs text-amber-700">
-              Top up at least {prefillAmount.toLocaleString()} Bubbles, then
-              return to complete your payment.
+              Top up at least {prefillAmount.toLocaleString()} Bubbles, then return to complete your
+              payment.
             </p>
           </div>
         </div>
@@ -172,9 +177,7 @@ export default function TopupPage() {
 
       {/* Preset amounts */}
       <Card className="p-4 md:p-6">
-        <p className="text-sm font-medium text-slate-700 mb-3">
-          Choose an amount
-        </p>
+        <p className="text-sm font-medium text-slate-700 mb-3">Choose an amount</p>
         <div className="grid grid-cols-3 gap-2">
           {PRESET_AMOUNTS.map((amount) => (
             <button
@@ -196,9 +199,7 @@ export default function TopupPage() {
 
         {/* Custom amount */}
         <div className="mt-4">
-          <label className="text-sm font-medium text-slate-700">
-            Or enter a custom amount
-          </label>
+          <label className="text-sm font-medium text-slate-700">Or enter a custom amount</label>
           <div className="mt-1 flex items-center gap-2">
             <input
               type="number"
@@ -213,8 +214,7 @@ export default function TopupPage() {
           </div>
           {customAmount && !isValid && (
             <p className="text-xs text-red-500 mt-1">
-              Amount must be between {MIN_BUBBLES} and{" "}
-              {MAX_BUBBLES.toLocaleString()} Bubbles
+              Amount must be between {MIN_BUBBLES} and {MAX_BUBBLES.toLocaleString()} Bubbles
             </p>
           )}
         </div>
@@ -227,15 +227,11 @@ export default function TopupPage() {
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-slate-600">Bubbles</span>
-              <span className="font-medium text-slate-900">
-                {bubbleAmount.toLocaleString()} 🫧
-              </span>
+              <span className="font-medium text-slate-900">{bubbleAmount.toLocaleString()} 🫧</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-slate-600">Exchange rate</span>
-              <span className="text-slate-500">
-                1 🫧 = ₦{NAIRA_PER_BUBBLE}
-              </span>
+              <span className="text-slate-500">1 🫧 = ₦{NAIRA_PER_BUBBLE}</span>
             </div>
             <hr className="border-slate-200" />
             <div className="flex justify-between">
@@ -249,11 +245,12 @@ export default function TopupPage() {
       )}
 
       {/* Submit */}
-      <Button
-        className="w-full"
-        disabled={!isValid || submitting}
-        onClick={handleSubmit}
-      >
+      <PaymentMethodChoice
+        value={paymentMethod}
+        onChange={setPaymentMethod}
+        disabled={submitting}
+      />
+      <Button className="w-full" disabled={!isValid || submitting} onClick={handleSubmit}>
         {submitting
           ? "Redirecting to payment..."
           : isValid

@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  PaymentMethodChoice,
+  type CheckoutPaymentMethod,
+} from "@/components/checkout/PaymentMethodChoice";
+
 import { Alert } from "@/components/ui/Alert";
 import { BubblesSlider } from "@/components/checkout/BubblesSlider";
 import { Button } from "@/components/ui/Button";
@@ -72,6 +77,7 @@ type RideSelection = {
 };
 
 export function BundleBookingFlow({ ids }: { ids: string[] }) {
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("paystack");
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -192,7 +198,10 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
   const discountAmount = validatedDiscount?.amount ?? 0;
   const total = Math.max(0, subtotal - discountAmount);
   const bubblesNeeded = Math.floor(total / 100);
-  const effectiveBubbles = Math.min(bubblesToApply, walletBalance ?? 0, Math.floor(total / 100));
+  const effectiveBubbles =
+    paymentMethod === "manual_transfer"
+      ? 0
+      : Math.min(bubblesToApply, walletBalance ?? 0, Math.floor(total / 100));
   const paystackAmount = Math.max(0, total - effectiveBubbles * 100);
 
   useEffect(() => {
@@ -306,7 +315,7 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
         {
           purpose: "session_bundle",
           currency: "NGN",
-          payment_method: "paystack",
+          payment_method: paymentMethod,
           session_ids: sessions.map((s) => s.id),
           direct_amount: subtotal,
           discount_code: validatedDiscount?.code || undefined,
@@ -422,7 +431,11 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
               <div>
                 <h2 className="text-base font-semibold text-slate-900">Payment</h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  {paystackAmount > 0 ? "Card payment via Paystack" : "Fully covered by Bubbles"}
+                  {paystackAmount > 0
+                    ? paymentMethod === "manual_transfer"
+                      ? "Bank transfer · Admin verification required"
+                      : "Card payment via Paystack"
+                    : "Fully covered by Bubbles"}
                 </p>
               </div>
               <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4">
@@ -444,7 +457,7 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-900">
                     {paystackAmount > 0
-                      ? `${formatCurrency(paystackAmount)} via Paystack`
+                      ? `${formatCurrency(paystackAmount)} via ${paymentMethod === "manual_transfer" ? "bank transfer" : "Paystack"}`
                       : "No card payment needed"}
                   </p>
                   <p className="text-xs text-slate-500 mt-0.5">
@@ -454,7 +467,12 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
                   </p>
                 </div>
               </div>
-              {walletBalance !== null && walletBalance > 0 && (
+              <PaymentMethodChoice
+                value={paymentMethod}
+                onChange={setPaymentMethod}
+                disabled={processing}
+              />
+              {paymentMethod === "paystack" && walletBalance !== null && walletBalance > 0 && (
                 <BubblesSlider
                   amountDueNgn={total}
                   walletBalance={walletBalance}

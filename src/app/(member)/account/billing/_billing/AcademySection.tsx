@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  PaymentMethodChoice,
+  type CheckoutPaymentMethod,
+} from "@/components/checkout/PaymentMethodChoice";
+
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { apiPost } from "@/lib/api";
@@ -18,6 +23,7 @@ type Props = {
 };
 
 export function AcademySection({ myEnrollments, openCohorts, communityActive, member }: Props) {
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("paystack");
   const [payingEnrollmentId, setPayingEnrollmentId] = useState<string | null>(null);
   // How many of the next consecutive unpaid installments the member has
   // selected to pay, keyed by enrollment id. Defaults to 1 (the next one).
@@ -40,7 +46,7 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive, me
           purpose: "academy_cohort",
           enrollment_id: enrollmentId,
           currency: "NGN",
-          payment_method: "paystack",
+          payment_method: paymentMethod,
           ...(amountOverrideKobo ? { amount_override_kobo: amountOverrideKobo } : {}),
         },
         { auth: true }
@@ -231,6 +237,13 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive, me
                         );
                       })}
 
+                      {unpaid.length > 0 && (
+                        <PaymentMethodChoice
+                          value={paymentMethod}
+                          onChange={setPaymentMethod}
+                          disabled={isPaying}
+                        />
+                      )}
                       {unpaid.length > 0 && (
                         <div className="flex items-center justify-between gap-3 pt-0.5">
                           <span className="text-xs text-slate-500">

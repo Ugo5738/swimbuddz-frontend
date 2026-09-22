@@ -61,7 +61,7 @@ describe("annual Membership bank receipt", () => {
     expect(screen.getByText("6567710856")).toBeInTheDocument();
     expect(screen.getByText("Swimbuddz Limited")).toBeInTheDocument();
     expect(screen.queryByText("7033588400")).not.toBeInTheDocument();
-    const button = await screen.findByRole("button", { name: "Continue to upload receipt" });
+    const button = await screen.findByRole("button", { name: "Continue to transfer details" });
     await waitFor(() => expect(button).toBeEnabled());
     fireEvent.click(button);
     await waitFor(() =>

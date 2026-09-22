@@ -205,7 +205,7 @@ describe("Club checkout", () => {
     fireEvent.click(screen.getByRole("radio", { name: /Bank Transfer/ }));
     expect(screen.queryByRole("slider")).not.toBeInTheDocument();
     expect(screen.getByText(/Already transferred\? Do not pay again/)).toBeInTheDocument();
-    fireEvent.click(await screen.findByRole("button", { name: "Continue to upload receipt" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Continue to transfer details" }));
     await waitFor(() =>
       expect(mocks.post).toHaveBeenCalledWith(
         "/api/v1/payments/intents",

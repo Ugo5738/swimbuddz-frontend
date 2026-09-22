@@ -169,6 +169,7 @@ describe("Experience ticket checkout", () => {
         access_token: "secret",
         discount_code: "TRIP",
         bubbles_to_apply: 10,
+        payment_method: "paystack",
         expected_total_kobo: 5300000,
       },
       { auth: true }
@@ -194,12 +195,52 @@ describe("Experience ticket checkout", () => {
     await waitFor(() =>
       expect(mocks.post).toHaveBeenCalledWith(
         expect.stringContaining("/checkout-preview"),
-        { access_token: "secret", discount_code: "TRIP", bubbles_to_apply: 0 },
+        {
+          access_token: "secret",
+          discount_code: "TRIP",
+          bubbles_to_apply: 0,
+          payment_method: "paystack",
+        },
         { auth: true }
       )
     );
     expect(await screen.findByLabelText("Discount code")).toHaveValue("TRIP");
     expect(screen.getByLabelText("Discount code")).toBeDisabled();
     expect(screen.queryByRole("slider")).not.toBeInTheDocument();
+  });
+
+  it("offers bank transfer and sends that method with the reviewed amount", async () => {
+    localStorage.setItem(
+      "swimbuddz:experience:q4",
+      JSON.stringify({ idempotency_key: "key", access_token: "secret", order_id: "order" })
+    );
+    render(<ExperienceTicketPage />);
+    fireEvent.click(await screen.findByRole("radio", { name: "Bank transfer" }));
+    await waitFor(() =>
+      expect(mocks.post).toHaveBeenCalledWith(
+        expect.stringContaining("/checkout-preview"),
+        expect.objectContaining({ payment_method: "manual_transfer", bubbles_to_apply: 0 }),
+        { auth: true }
+      )
+    );
+    expect(screen.queryByRole("slider")).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Continue to payment" })).toBeEnabled()
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Continue to payment" }));
+    await screen.findByText("Network interrupted — retry this order");
+    expect(mocks.post).toHaveBeenCalledWith(
+      expect.stringContaining("/checkout"),
+      expect.objectContaining({
+        payment_method: "manual_transfer",
+        expected_total_kobo: 6000000,
+        bubbles_to_apply: 0,
+      }),
+      { auth: true }
+    );
+    expect(JSON.parse(localStorage.getItem("swimbuddz:experience:q4")!).payment_method).toBe(
+      "manual_transfer"
+    );
+    expect(screen.getByRole("radio", { name: "Pay online" })).toBeDisabled();
   });
 });

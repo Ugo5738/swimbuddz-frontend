@@ -10,11 +10,7 @@ import { API_BASE_URL } from "./config";
 // changes — the response_model decorators on the router are the source
 // of truth.
 
-export type AnalysisJobStatus =
-  | "pending"
-  | "processing"
-  | "completed"
-  | "failed";
+export type AnalysisJobStatus = "pending" | "processing" | "completed" | "failed";
 
 export type AnalysisJob = {
   id: string;
@@ -107,7 +103,7 @@ export async function createAnalysisJob({
     throw new Error(
       `Video is ${(file.size / 1024 / 1024).toFixed(1)} MB — limit is ${
         MAX_UPLOAD_BYTES / 1024 / 1024
-      } MB.`,
+      } MB.`
     );
   }
 
@@ -189,10 +185,9 @@ export type QueueSnapshot = {
 };
 
 export function getQueueSnapshot(recentLimit = 25) {
-  return apiGet<QueueSnapshot>(
-    `/api/v1/ai/admin/analyze/queue?recent_limit=${recentLimit}`,
-    { auth: true },
-  );
+  return apiGet<QueueSnapshot>(`/api/v1/ai/admin/analyze/queue?recent_limit=${recentLimit}`, {
+    auth: true,
+  });
 }
 
 export type ReanalyzeResponse = {
@@ -205,7 +200,7 @@ export function reanalyzeJob(jobId: string) {
   return apiPost<ReanalyzeResponse>(
     `/api/v1/ai/admin/analyze/reanalyze/${jobId}`,
     {},
-    { auth: true },
+    { auth: true }
   );
 }
 
@@ -254,11 +249,13 @@ export function getMyFoundingStatus() {
  * creates the Payment intent and returns a hosted authorization_url; the
  * caller redirects the browser there. Matches the wallet-topup flow.
  */
-export function initializeFoundingPayment() {
+export function initializeFoundingPayment(
+  paymentMethod: "paystack" | "manual_transfer" = "paystack"
+) {
   return apiPost<FoundingInitializeResult>(
     `/api/v1/ai/founding-members/initialize`,
-    {},
-    { auth: true },
+    { payment_method: paymentMethod },
+    { auth: true }
   );
 }
 
@@ -271,7 +268,7 @@ export function claimFoundingMember(paystackReference: string) {
   return apiPost<FoundingClaimResult>(
     `/api/v1/ai/founding-members/claim`,
     { paystack_reference: paystackReference },
-    { auth: true },
+    { auth: true }
   );
 }
 
@@ -290,9 +287,7 @@ export function statusLabel(status: AnalysisJobStatus): string {
   }
 }
 
-export function statusTone(
-  status: AnalysisJobStatus,
-): "slate" | "amber" | "emerald" | "rose" {
+export function statusTone(status: AnalysisJobStatus): "slate" | "amber" | "emerald" | "rose" {
   switch (status) {
     case "pending":
       return "slate";

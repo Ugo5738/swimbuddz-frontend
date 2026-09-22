@@ -41,6 +41,7 @@ export type GuestPassAdmin = GuestPassReceipt & {
 };
 
 export type GuestPassInput = {
+  payment_method?: "paystack" | "manual_transfer";
   full_name: string;
   email: string;
   phone: string;
@@ -59,35 +60,25 @@ export type AdminReferralCode = {
   expires_at: string | null;
 };
 
-export function buildGuestPassSharePath(
-  sessionId: string,
-  referralCode?: string | null,
-): string {
+export function buildGuestPassSharePath(sessionId: string, referralCode?: string | null): string {
   const path = `/guest-pass/session/${encodeURIComponent(sessionId)}`;
   const normalizedCode = referralCode?.trim().toUpperCase();
-  return normalizedCode
-    ? `${path}?ref=${encodeURIComponent(normalizedCode)}`
-    : path;
+  return normalizedCode ? `${path}?ref=${encodeURIComponent(normalizedCode)}` : path;
 }
 
-export function getOrCreateGuestReferrerCode(
-  memberAuthId: string,
-): Promise<AdminReferralCode> {
+export function getOrCreateGuestReferrerCode(memberAuthId: string): Promise<AdminReferralCode> {
   return apiPost<AdminReferralCode>(
     `/api/v1/admin/wallet/referrals/code/${encodeURIComponent(memberAuthId)}`,
     {},
-    { auth: true },
+    { auth: true }
   );
 }
 
 export function createGuestPass(
   sessionId: string,
-  input: GuestPassInput,
+  input: GuestPassInput
 ): Promise<GuestPassReceipt> {
-  return apiPost<GuestPassReceipt>(
-    `/api/v1/sessions/${sessionId}/guest-passes`,
-    input,
-  );
+  return apiPost<GuestPassReceipt>(`/api/v1/sessions/${sessionId}/guest-passes`, input);
 }
 
 export function listGuestPasses(): Promise<GuestPassAdmin[]> {
@@ -100,7 +91,7 @@ export function markGuestPassAttendance(
     actual_swim_minutes: number;
     assessment_result?: Record<string, unknown>;
     send_assessment_email: boolean;
-  },
+  }
 ): Promise<GuestPassAdmin> {
   return apiPost<GuestPassAdmin>(`/api/v1/admin/guest-passes/${id}/attendance`, input, {
     auth: true,
