@@ -51,6 +51,13 @@ type SessionFormProps = {
   mode: "create" | "edit";
   session?: Session | null;
   initialDate?: Date | null;
+  initialEvent?: {
+    id: string;
+    title: string;
+    endsAt?: Date | null;
+    poolId?: string | null;
+    locationName?: string | null;
+  } | null;
   initialRideConfigs?: SessionRideConfig[];
   presentation?: "modal" | "page";
   rideAreas: RideArea[];
@@ -74,6 +81,7 @@ export function SessionFormModal({
   mode,
   session,
   initialDate,
+  initialEvent,
   initialRideConfigs = [],
   presentation = "modal",
   rideAreas,
@@ -84,19 +92,20 @@ export function SessionFormModal({
 }: SessionFormProps) {
   const now = new Date();
   const defaultStart = initialDate || now;
-  const defaultEnd = new Date(defaultStart.getTime() + 3 * 60 * 60 * 1000);
+  const defaultEnd =
+    initialEvent?.endsAt ?? new Date(defaultStart.getTime() + 3 * 60 * 60 * 1000);
   const publishedClub =
     mode === "edit" && !!session?.published_at && session.session_type === "club";
 
   const [form, setForm] = useState({
     club_access_mode: session?.club_access_mode ?? "plan_included",
-    title: session?.title || "",
-    session_type: session?.session_type || "club",
+    title: session?.title || initialEvent?.title || "",
+    session_type: session?.session_type || (initialEvent ? "event" : "club"),
     // Preferred: pool_id from the registry. Keep location (legacy enum) and
     // location_name to avoid regressions on pre-registry sessions.
-    pool_id: session?.pool_id ?? null,
+    pool_id: session?.pool_id ?? initialEvent?.poolId ?? null,
     location: session?.location || null,
-    location_name: session?.location_name ?? null,
+    location_name: session?.location_name ?? initialEvent?.locationName ?? null,
     starts_at: session
       ? formatDateTimeLocal(new Date(session.starts_at))
       : formatDateTimeLocal(defaultStart),
@@ -125,7 +134,7 @@ export function SessionFormModal({
     //   cohort_class → cohort_id required;  event → event_id required;
     //   club → club_id required, pod_id optional;  community → none.
     cohort_id: session?.cohort_id ?? null,
-    event_id: session?.event_id ?? null,
+    event_id: session?.event_id ?? initialEvent?.id ?? null,
   });
   const [volunteerNeeds, setVolunteerNeeds] = useState<VolunteerNeedDraft[]>([]);
   const {

@@ -11,7 +11,13 @@ import type {
   CalendarResponse,
   CalendarVisibility,
 } from "@/lib/calendar";
-import { CALENDAR_AUDIENCE_COLORS, CALENDAR_AUDIENCE_LABELS } from "@/lib/calendar";
+import {
+  CALENDAR_AUDIENCE_COLORS,
+  CALENDAR_AUDIENCE_LABELS,
+  calendarActivityLabel,
+  calendarMatchesAudience,
+  calendarPrimaryAudience,
+} from "@/lib/calendar";
 import type { DatesSetArg, EventClickArg, EventContentArg, EventInput } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import FullCalendar from "@fullcalendar/react";
@@ -29,7 +35,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 
 type CalendarView = "month" | "list";
 type AudienceFilter = "all" | CalendarAudience;
-type ActivityFilter = "all" | "online" | "open_swim" | "social" | "assessment";
+type ActivityFilter = "all" | string;
 type VisibilityFilter = "all" | CalendarVisibility;
 
 type TierCalendarProps = {
@@ -81,6 +87,13 @@ export function TierCalendar({ authenticated, title, subtitle }: TierCalendarPro
   });
 
   const items = useMemo(() => data?.items ?? [], [data?.items]);
+  const activityTypes = useMemo(() => {
+    if (data?.available_activity_types?.length) return data.available_activity_types;
+    return Array.from(new Set(items.map((item) => item.kind))).map((key) => ({
+      key,
+      label: calendarActivityLabel(key),
+    }));
+  }, [data?.available_activity_types, items]);
   const locations = useMemo(
     () =>
       Array.from(
@@ -95,7 +108,7 @@ export function TierCalendar({ authenticated, title, subtitle }: TierCalendarPro
   const filteredItems = useMemo(
     () =>
       items.filter((item) => {
-        if (audience !== "all" && item.audience !== audience) return false;
+        if (audience !== "all" && !calendarMatchesAudience(item, audience)) return false;
         if (visibility !== "all" && item.visibility !== visibility) return false;
         if (
           location !== "all" &&
@@ -104,8 +117,7 @@ export function TierCalendar({ authenticated, title, subtitle }: TierCalendarPro
         ) {
           return false;
         }
-        if (activity === "online" && item.location_type !== "online") return false;
-        if (activity !== "all" && activity !== "online" && item.kind !== activity) {
+        if (activity !== "all" && item.kind !== activity) {
           return false;
         }
         return true;
@@ -115,7 +127,7 @@ export function TierCalendar({ authenticated, title, subtitle }: TierCalendarPro
   const calendarEvents = useMemo<EventInput[]>(
     () =>
       filteredItems.map((item) => {
-        const colors = CALENDAR_AUDIENCE_COLORS[item.audience];
+        const colors = CALENDAR_AUDIENCE_COLORS[calendarPrimaryAudience(item)];
         return {
           id: itemKey(item),
           title: item.title,
@@ -314,10 +326,11 @@ export function TierCalendar({ authenticated, title, subtitle }: TierCalendarPro
               className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-800"
             >
               <option value="all">All activities</option>
-              <option value="online">Online</option>
-              <option value="open_swim">Open Swim</option>
-              <option value="social">Social</option>
-              <option value="assessment">Assessment</option>
+              {activityTypes.map((option) => (
+                <option key={option.key} value={option.key}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </label>
           <label className="grid gap-1 text-xs font-medium text-slate-500">

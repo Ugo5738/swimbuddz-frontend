@@ -12,6 +12,10 @@ export interface EventResponse {
   title: string;
   description: string | null;
   event_type: string;
+  primary_audience: "community" | "club" | "academy";
+  audiences: Array<"community" | "club" | "academy">;
+  /** Deprecated compatibility alias. */
+  audience: "community" | "club" | "academy";
   location: string | null;
   start_time: string;
   end_time: string | null;

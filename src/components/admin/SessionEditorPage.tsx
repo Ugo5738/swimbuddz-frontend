@@ -23,9 +23,16 @@ import type { VolunteerNeedDraft } from "@/components/admin/VolunteerNeedsDraftS
 type Props = {
   sessionId?: string;
   initialStartsAt?: string | null;
+  initialEvent?: {
+    id: string;
+    title: string;
+    endsAt?: string | null;
+    poolId?: string | null;
+    locationName?: string | null;
+  } | null;
 };
 
-export function SessionEditorPage({ sessionId, initialStartsAt }: Props) {
+export function SessionEditorPage({ sessionId, initialStartsAt, initialEvent }: Props) {
   const router = useRouter();
   const savingRef = useRef(false);
   const [submitting, setSubmitting] = useState(false);
@@ -158,6 +165,8 @@ export function SessionEditorPage({ sessionId, initialStartsAt }: Props) {
 
   const parsedStart = initialStartsAt ? new Date(initialStartsAt) : null;
   const validInitialDate = parsedStart && !Number.isNaN(parsedStart.getTime()) ? parsedStart : null;
+  const parsedEnd = initialEvent?.endsAt ? new Date(initialEvent.endsAt) : null;
+  const validInitialEnd = parsedEnd && !Number.isNaN(parsedEnd.getTime()) ? parsedEnd : null;
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 pb-12">
@@ -209,6 +218,17 @@ export function SessionEditorPage({ sessionId, initialStartsAt }: Props) {
           presentation="page"
           session={sessionQuery.data}
           initialDate={validInitialDate}
+          initialEvent={
+            initialEvent
+              ? {
+                  id: initialEvent.id,
+                  title: initialEvent.title,
+                  endsAt: validInitialEnd,
+                  poolId: initialEvent.poolId,
+                  locationName: initialEvent.locationName,
+                }
+              : null
+          }
           initialRideConfigs={ridesQuery.data ?? []}
           rideAreas={areasQuery.data ?? []}
           submitting={submitting}

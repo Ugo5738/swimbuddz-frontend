@@ -13,6 +13,9 @@ export interface EventTemplate {
   title: string;
   description: string | null;
   event_type: string;
+  primary_audience: EventAudience;
+  audiences: EventAudience[];
+  /** Deprecated backend compatibility alias. */
   audience: EventAudience;
   visibility: EventVisibility;
   location_type: LocationType;
@@ -76,6 +79,8 @@ export interface CalendarImportEvent {
   title: string;
   description: string | null;
   event_type: string;
+  primary_audience: EventAudience;
+  audiences: EventAudience[];
   audience: EventAudience;
   visibility: EventVisibility;
   status: "draft";
@@ -120,6 +125,8 @@ export const EMPTY_EVENT_TEMPLATE: EventTemplateForm = {
   title: "",
   description: "",
   event_type: "assessment",
+  primary_audience: "academy",
+  audiences: ["academy"],
   audience: "academy",
   visibility: "public",
   location_type: "physical",

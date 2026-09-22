@@ -3639,7 +3639,7 @@ export interface paths {
         put?: never;
         /**
          * Generate Sessions
-         * @description Generate sessions from a template for the specified number of weeks.
+         * @description Generate template occurrences for a rolling window, range, or exact dates.
          */
         post: operations["generate_sessions_sessions_templates__template_id__generate_post"];
         delete?: never;
@@ -24302,9 +24302,15 @@ export interface components {
         GenerateSessionsRequest: {
             /**
              * Weeks
-             * @description Number of weeks to generate
+             * @description Legacy rolling window, measured in weeks.
              */
-            weeks: number;
+            weeks?: number | null;
+            /** From Date */
+            from_date?: string | null;
+            /** To Date */
+            to_date?: string | null;
+            /** Dates */
+            dates?: string[];
             /**
              * Skip Conflicts
              * @description Skip dates that already have sessions
@@ -25588,6 +25594,30 @@ export interface components {
              */
             day_of_week: number;
             /**
+             * Frequency
+             * @default weekly
+             * @enum {string}
+             */
+            frequency: "weekly" | "monthly" | "quarterly" | "annual";
+            /**
+             * Interval
+             * @default 1
+             */
+            interval: number;
+            /** Week Of Month */
+            week_of_month?: number | null;
+            /** Day Of Month */
+            day_of_month?: number | null;
+            /** Month Of Year */
+            month_of_year?: number | null;
+            /**
+             * Starts On
+             * Format: date
+             */
+            starts_on?: string;
+            /** Ends On */
+            ends_on?: string | null;
+            /**
              * Start Time
              * Format: time
              */
@@ -25658,6 +25688,30 @@ export interface components {
              */
             day_of_week: number;
             /**
+             * Frequency
+             * @default weekly
+             * @enum {string}
+             */
+            frequency: "weekly" | "monthly" | "quarterly" | "annual";
+            /**
+             * Interval
+             * @default 1
+             */
+            interval: number;
+            /** Week Of Month */
+            week_of_month?: number | null;
+            /** Day Of Month */
+            day_of_month?: number | null;
+            /** Month Of Year */
+            month_of_year?: number | null;
+            /**
+             * Starts On
+             * Format: date
+             */
+            starts_on?: string;
+            /** Ends On */
+            ends_on?: string | null;
+            /**
              * Start Time
              * Format: time
              */
@@ -25720,6 +25774,20 @@ export interface components {
             capacity?: number | null;
             /** Day Of Week */
             day_of_week?: number | null;
+            /** Frequency */
+            frequency?: ("weekly" | "monthly" | "quarterly" | "annual") | null;
+            /** Interval */
+            interval?: number | null;
+            /** Week Of Month */
+            week_of_month?: number | null;
+            /** Day Of Month */
+            day_of_month?: number | null;
+            /** Month Of Year */
+            month_of_year?: number | null;
+            /** Starts On */
+            starts_on?: string | null;
+            /** Ends On */
+            ends_on?: string | null;
             /** Start Time */
             start_time?: string | null;
             /** Duration Minutes */
@@ -39892,12 +39960,15 @@ export interface components {
             description?: string | null;
             /** Event Type */
             event_type: string;
+            /** Primary Audience */
+            primary_audience?: ("community" | "club" | "academy") | null;
+            /** Audiences */
+            audiences?: ("community" | "club" | "academy")[];
             /**
              * Audience
-             * @default community
-             * @enum {string}
+             * @description Deprecated compatibility alias for primary_audience.
              */
-            audience: "community" | "club" | "academy";
+            audience?: ("community" | "club" | "academy") | null;
             /**
              * Visibility
              * @default public
@@ -40030,12 +40101,15 @@ export interface components {
             description?: string | null;
             /** Event Type */
             event_type: string;
+            /** Primary Audience */
+            primary_audience?: ("community" | "club" | "academy") | null;
+            /** Audiences */
+            audiences?: ("community" | "club" | "academy")[];
             /**
              * Audience
-             * @default community
-             * @enum {string}
+             * @description Deprecated compatibility alias for primary_audience.
              */
-            audience: "community" | "club" | "academy";
+            audience?: ("community" | "club" | "academy") | null;
             /**
              * Visibility
              * @default public
@@ -40208,6 +40282,13 @@ export interface components {
             /** Event Type */
             event_type: string;
             /**
+             * Primary Audience
+             * @enum {string}
+             */
+            primary_audience: "community" | "club" | "academy";
+            /** Audiences */
+            audiences: ("community" | "club" | "academy")[];
+            /**
              * Audience
              * @enum {string}
              */
@@ -40335,12 +40416,15 @@ export interface components {
             description?: string | null;
             /** Event Type */
             event_type: string;
+            /** Primary Audience */
+            primary_audience?: ("community" | "club" | "academy") | null;
+            /** Audiences */
+            audiences?: ("community" | "club" | "academy")[];
             /**
              * Audience
-             * @default community
-             * @enum {string}
+             * @description Deprecated compatibility alias for primary_audience.
              */
-            audience: "community" | "club" | "academy";
+            audience?: ("community" | "club" | "academy") | null;
             /**
              * Visibility
              * @default public
@@ -40451,12 +40535,15 @@ export interface components {
             description?: string | null;
             /** Event Type */
             event_type: string;
+            /** Primary Audience */
+            primary_audience?: ("community" | "club" | "academy") | null;
+            /** Audiences */
+            audiences?: ("community" | "club" | "academy")[];
             /**
              * Audience
-             * @default community
-             * @enum {string}
+             * @description Deprecated compatibility alias for primary_audience.
              */
-            audience: "community" | "club" | "academy";
+            audience?: ("community" | "club" | "academy") | null;
             /**
              * Visibility
              * @default public
@@ -40587,6 +40674,10 @@ export interface components {
             description?: string | null;
             /** Event Type */
             event_type?: string | null;
+            /** Primary Audience */
+            primary_audience?: ("community" | "club" | "academy") | null;
+            /** Audiences */
+            audiences?: ("community" | "club" | "academy")[] | null;
             /** Audience */
             audience?: ("community" | "club" | "academy") | null;
             /** Visibility */
@@ -40655,6 +40746,10 @@ export interface components {
             description?: string | null;
             /** Event Type */
             event_type?: string | null;
+            /** Primary Audience */
+            primary_audience?: ("community" | "club" | "academy") | null;
+            /** Audiences */
+            audiences?: ("community" | "club" | "academy")[] | null;
             /** Audience */
             audience?: ("community" | "club" | "academy") | null;
             /** Visibility */
@@ -44721,17 +44816,31 @@ export interface components {
             credit_minor: number;
         };
         /**
+         * CalendarActivityType
+         * @description One activity type represented in the current calendar result.
+         */
+        CalendarActivityType: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+        };
+        /**
          * CalendarItemResponse
          * @description One visible item from a domain-owned session or event.
          */
         CalendarItemResponse: {
             /** Id */
             id: string;
+            /** Source */
+            source: string;
             /**
-             * Source
+             * Primary Audience
              * @enum {string}
              */
-            source: "session" | "event";
+            primary_audience: "community" | "club" | "academy";
+            /** Audiences */
+            audiences: ("community" | "club" | "academy")[];
             /**
              * Audience
              * @enum {string}
@@ -44815,6 +44924,8 @@ export interface components {
             range_end: string;
             /** Available Audiences */
             available_audiences?: ("community" | "club" | "academy")[];
+            /** Available Activity Types */
+            available_activity_types?: components["schemas"]["CalendarActivityType"][];
             /** Errors */
             errors?: {
                 [key: string]: string;
@@ -51969,6 +52080,7 @@ export interface operations {
             query?: {
                 types?: string | null;
                 cohort_id?: string | null;
+                event_id?: string | null;
                 /** @description Exact session status to return. */
                 status?: components["schemas"]["SessionStatus"] | null;
                 /** @description Inclusive session start boundary (ISO-8601). */

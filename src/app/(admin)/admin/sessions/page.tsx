@@ -1,6 +1,9 @@
 "use client";
 
-import { GenerateSessionsModal } from "@/components/admin/GenerateSessionsModal";
+import {
+  GenerateSessionsModal,
+  type GenerateSessionsResult,
+} from "@/components/admin/GenerateSessionsModal";
 import { SessionCalendar } from "@/components/admin/SessionCalendar";
 import { SessionDetailsModal } from "@/components/admin/SessionDetailsModal";
 import { TemplatesDrawer, type TemplateFormPayload } from "@/components/admin/TemplatesDrawer";
@@ -206,12 +209,21 @@ export default function AdminSessionsPage() {
   );
 
   const handleGenerateSessions = useCallback(
-    async (templateId: string, weeks: number, skipConflicts: boolean) => {
+    async (
+      templateId: string,
+      request: {
+        weeks?: number;
+        from_date?: string;
+        to_date?: string;
+        dates?: string[];
+        skip_conflicts: boolean;
+      }
+    ): Promise<GenerateSessionsResult> => {
       const res = await apiFetch(`/api/v1/sessions/templates/${templateId}/generate`, {
         method: "POST",
-        body: JSON.stringify({ weeks, skip_conflicts: skipConflicts }),
+        body: JSON.stringify(request),
       });
-      const result = await res.json();
+      const result = (await res.json()) as GenerateSessionsResult;
       await fetchData();
       return result;
     },

@@ -177,7 +177,7 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 | `/community/directory`                     | `src/app/(member)/community/directory/page.tsx`                     | Member directory                                        |
 | `/community/events`                        | `src/app/(member)/community/events/page.tsx`                        | Community events list                                   |
 | `/community/experiences`                   | `src/app/(member)/community/experiences/page.tsx`                   | Quote and buy the current optional Community Experience |
-| `/community/events/[id]`                   | `src/app/(member)/community/events/[id]/page.tsx`                   | Event detail and RSVP                                   |
+| `/community/events/[id]`                   | `src/app/(member)/community/events/[id]/page.tsx`                   | Event detail; RSVP or linked Session booking            |
 | `/community/tips`                          | `src/app/(member)/community/tips/page.tsx`                          | Swimming tips library                                   |
 | `/community/tips/[id]`                     | `src/app/(member)/community/tips/[id]/page.tsx`                     | Single tip detail                                       |
 | `/community/volunteers`                    | `src/app/(member)/community/volunteers/page.tsx`                    | Volunteer hub — profile, opportunities, roles, rewards  |

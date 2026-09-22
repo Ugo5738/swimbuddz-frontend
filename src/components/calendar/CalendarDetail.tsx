@@ -3,6 +3,9 @@ import {
   CALENDAR_AUDIENCE_COLORS,
   CALENDAR_AUDIENCE_LABELS,
   CALENDAR_VISIBILITY_LABELS,
+  calendarActionLabel,
+  calendarPrimaryAudience,
+  calendarSourceLabel,
   formatCalendarDateTime,
 } from "@/lib/calendar";
 import { CalendarClock, ExternalLink, MapPin, X } from "lucide-react";
@@ -15,7 +18,8 @@ type CalendarDetailProps = {
 };
 
 export function CalendarDetail({ item, authenticated, onClose }: CalendarDetailProps) {
-  const color = CALENDAR_AUDIENCE_COLORS[item.audience];
+  const primaryAudience = calendarPrimaryAudience(item);
+  const color = CALENDAR_AUDIENCE_COLORS[primaryAudience];
   const destination = authenticated
     ? item.href
     : `/login?redirect=${encodeURIComponent("/account/calendar")}`;
@@ -28,8 +32,8 @@ export function CalendarDetail({ item, authenticated, onClose }: CalendarDetailP
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase text-slate-500">
-                {CALENDAR_AUDIENCE_LABELS[item.audience]} ·{" "}
-                {item.source === "event" ? "Event" : "Swim session"} ·{" "}
+                {CALENDAR_AUDIENCE_LABELS[primaryAudience]} ·{" "}
+                {calendarSourceLabel(item.source)} ·{" "}
                 {CALENDAR_VISIBILITY_LABELS[item.visibility]}
               </p>
               <h2 className="mt-1 text-lg font-semibold text-slate-950">{item.title}</h2>
@@ -67,15 +71,7 @@ export function CalendarDetail({ item, authenticated, onClose }: CalendarDetailP
               href={destination}
               className="inline-flex h-9 items-center justify-center rounded-md bg-sky-700 px-3 text-sm font-semibold text-white transition-colors hover:bg-sky-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2"
             >
-              {authenticated
-                ? item.source === "event"
-                  ? item.viewer_can_attend
-                    ? "View event"
-                    : "View eligibility"
-                  : item.bookable
-                    ? "Book session"
-                    : "View session"
-                : "Sign in for details"}
+              {authenticated ? calendarActionLabel(item) : "Sign in for details"}
               <ExternalLink className="ml-2 h-4 w-4" />
             </Link>
           </div>

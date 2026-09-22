@@ -56,6 +56,9 @@ interface EventRecord {
   title: string;
   description: string | null;
   event_type: string;
+  primary_audience: EventAudience;
+  audiences: EventAudience[];
+  /** Deprecated backend compatibility alias. */
   audience: EventAudience;
   visibility: EventVisibility;
   status: EventStatus;
@@ -97,7 +100,8 @@ type EventForm = {
   title: string;
   description: string;
   event_type: string;
-  audience: EventAudience;
+  primary_audience: EventAudience;
+  audiences: EventAudience[];
   visibility: EventVisibility;
   status: EventStatus;
   location_type: LocationType;
@@ -123,7 +127,8 @@ const EMPTY_FORM: EventForm = {
   title: "",
   description: "",
   event_type: "social",
-  audience: "community",
+  primary_audience: "community",
+  audiences: ["community"],
   visibility: "public",
   status: "draft",
   location_type: "physical",
@@ -154,7 +159,8 @@ const PRESETS: Array<{
     values: {
       title: "Beyond the Pool",
       event_type: "online_talk",
-      audience: "community",
+      primary_audience: "community",
+      audiences: ["community"],
       visibility: "public",
       tier_access: "public",
       location_type: "online",
@@ -164,11 +170,12 @@ const PRESETS: Array<{
     },
   },
   {
-    label: "Open Swim",
+    label: "Community Swim",
     values: {
-      title: "Monthly Open Swim Meetup",
-      event_type: "open_swim",
-      audience: "community",
+      title: "Monthly SwimBuddz Community Swim",
+      event_type: "community_swim",
+      primary_audience: "community",
+      audiences: ["community", "club", "academy"],
       visibility: "public",
       tier_access: "public",
       pricing_mode: "fixed",
@@ -180,7 +187,8 @@ const PRESETS: Array<{
     values: {
       title: "Free Intro-to-Water Assessment",
       event_type: "assessment",
-      audience: "academy",
+      primary_audience: "academy",
+      audiences: ["academy"],
       visibility: "public",
       tier_access: "public",
       pricing_mode: "free",
@@ -192,7 +200,8 @@ const PRESETS: Array<{
     values: {
       title: "Club Location Training",
       event_type: "club_training",
-      audience: "club",
+      primary_audience: "club",
+      audiences: ["club"],
       visibility: "public",
       tier_access: "club",
       is_location_private: true,
@@ -205,7 +214,8 @@ const PRESETS: Array<{
     values: {
       title: "Buddz Cup and Community Meet",
       event_type: "quarter_meet",
-      audience: "community",
+      primary_audience: "community",
+      audiences: ["community", "club", "academy"],
       visibility: "public",
       tier_access: "community",
       pricing_mode: "fixed",
@@ -217,7 +227,8 @@ const PRESETS: Array<{
     values: {
       title: "SwimBuddz Wrapped",
       event_type: "wrapped",
-      audience: "community",
+      primary_audience: "community",
+      audiences: ["community"],
       visibility: "public",
       tier_access: "community",
       pricing_mode: "fixed",
@@ -238,7 +249,10 @@ function eventToForm(event: EventRecord): EventForm {
     title: event.title,
     description: event.description ?? "",
     event_type: event.event_type,
-    audience: event.audience,
+    primary_audience: event.primary_audience ?? event.audience,
+    audiences: event.audiences?.length
+      ? event.audiences
+      : [event.primary_audience ?? event.audience],
     visibility: event.visibility,
     status: event.status,
     location_type: event.location_type,
@@ -335,7 +349,7 @@ export default function AdminEventsPage() {
     try {
       const quote = await PoolPricingApi.quote({
         pool_id: form.pool_id,
-        activity_scope: form.audience,
+        activity_scope: form.primary_audience,
         starts_at: startsAt.toISOString(),
         ends_at: endsAt.toISOString(),
         timezone: form.timezone,
@@ -416,7 +430,8 @@ export default function AdminEventsPage() {
       title: form.title,
       description: form.description || null,
       event_type: form.event_type,
-      audience: form.audience,
+      primary_audience: form.primary_audience,
+      audiences: form.audiences,
       visibility: form.visibility,
       status: form.status,
       location_type: form.location_type,
@@ -558,24 +573,35 @@ export default function AdminEventsPage() {
               onChange={(event) => setForm({ ...form, title: event.target.value })}
               required
             />
-            <Select
+            <div>
+              <Input
               label="Activity type"
               value={form.event_type}
               onChange={(event) => setForm({ ...form, event_type: event.target.value })}
-            >
-              <option value="online_talk">Online Talk</option>
-              <option value="open_swim">Open swim</option>
-              <option value="social">Social</option>
-              <option value="assessment">Assessment</option>
-              <option value="bring_a_buddy">Bring-a-Buddy</option>
-              <option value="quarter_meet">Quarter meet / Buddz Cup</option>
-              <option value="graduation">Academy graduation</option>
-              <option value="volunteer">Volunteer</option>
-              <option value="wrapped">SwimBuddz Wrapped</option>
-              <option value="town_hall">Town hall</option>
-              <option value="excursion">Excursion</option>
-              <option value="club_training">Club location listing</option>
-            </Select>
+                list="event-activity-types"
+                hint="Use a short key such as community_swim. New keys work without a code change."
+                required
+              />
+              <datalist id="event-activity-types">
+                {[
+                  "community_swim",
+                  "online_talk",
+                  "open_swim",
+                  "social",
+                  "assessment",
+                  "bring_a_buddy",
+                  "quarter_meet",
+                  "graduation",
+                  "volunteer",
+                  "wrapped",
+                  "town_hall",
+                  "excursion",
+                  "club_training",
+                ].map((value) => (
+                  <option key={value} value={value} />
+                ))}
+              </datalist>
+            </div>
           </div>
 
           <Textarea
@@ -587,12 +613,15 @@ export default function AdminEventsPage() {
 
           <div className="grid gap-4 md:grid-cols-3">
             <Select
-              label="Calendar audience"
-              value={form.audience}
+              label="Primary calendar lane"
+              value={form.primary_audience}
               onChange={(event) =>
                 setForm({
                   ...form,
-                  audience: event.target.value as EventAudience,
+                  primary_audience: event.target.value as EventAudience,
+                  audiences: Array.from(
+                    new Set([...form.audiences, event.target.value as EventAudience])
+                  ),
                 })
               }
             >
@@ -631,6 +660,41 @@ export default function AdminEventsPage() {
               <option value="invite_only">Invitees only</option>
             </Select>
           </div>
+
+          <fieldset className="rounded-lg border border-slate-200 p-4">
+            <legend className="px-1 text-sm font-semibold text-slate-900">
+              Relevant programme audiences
+            </legend>
+            <p className="mb-3 text-xs text-slate-500">
+              The primary lane controls colour and grouping. These selections control where the
+              activity appears when members filter the calendar; they do not grant attendance.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              {(["community", "club", "academy"] as EventAudience[]).map((value) => {
+                const selected = form.audiences.includes(value);
+                const primary = form.primary_audience === value;
+                return (
+                  <label key={value} className="inline-flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={selected}
+                      disabled={primary}
+                      onChange={(event) =>
+                        setForm({
+                          ...form,
+                          audiences: event.target.checked
+                            ? [...form.audiences, value]
+                            : form.audiences.filter((item) => item !== value),
+                        })
+                      }
+                    />
+                    {value[0].toUpperCase() + value.slice(1)}
+                    {primary ? " (primary)" : ""}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
 
           <div className="grid gap-4 md:grid-cols-3">
             <Select
@@ -1035,7 +1099,7 @@ export default function AdminEventsPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="font-semibold text-slate-950">{event.title}</h2>
                     <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
-                      {event.audience}
+                      {event.primary_audience ?? event.audience}
                     </span>
                     <span
                       className={`rounded px-2 py-0.5 text-xs font-medium ${
@@ -1072,6 +1136,21 @@ export default function AdminEventsPage() {
                   </div>
                 </div>
                 <div className="flex shrink-0 gap-1">
+                  {event.event_type === "community_swim" ? (
+                    <Link
+                      href={`/admin/sessions/new?${new URLSearchParams({
+                        event_id: event.id,
+                        event_title: event.title,
+                        starts_at: event.start_time,
+                        ...(event.end_time ? { ends_at: event.end_time } : {}),
+                        ...(event.pool_id ? { pool_id: event.pool_id } : {}),
+                        ...(event.location ? { location_name: event.location } : {}),
+                      }).toString()}`}
+                      className="inline-flex h-10 items-center rounded-md px-3 text-sm font-medium text-cyan-700 hover:bg-cyan-50"
+                    >
+                      Add swim session
+                    </Link>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => void openEdit(event)}

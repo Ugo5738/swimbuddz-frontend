@@ -150,6 +150,8 @@ describe("TemplatesDrawer Club scope", () => {
       fireEvent.change(screen.getByLabelText("Booking price per student (₦)"), {
         target: { value: "15000" },
       });
+      fireEvent.change(screen.getByLabelText("Frequency"), { target: { value: "monthly" } });
+      fireEvent.change(screen.getByLabelText(/^Repeat every/), { target: { value: "2" } });
       fireEvent.click(screen.getByRole("button", { name: "Create Template" }));
       await waitFor(() => expect(onCreate).toHaveBeenCalledOnce());
       expect(onCreate.mock.calls[0][0]).toMatchObject({
@@ -157,6 +159,9 @@ describe("TemplatesDrawer Club scope", () => {
         cohort_id: "cohort-september",
         cohort_fee_mode: mode,
         pool_fee: 15000,
+        frequency: "monthly",
+        interval: 2,
+        week_of_month: 1,
         club_id: null,
         pod_id: null,
       });
@@ -263,6 +268,9 @@ describe("Template generation routes and pricing labels", () => {
     club_access_mode: "plan_included",
     club_id: "club-lagos",
     day_of_week: 5,
+    frequency: "weekly",
+    interval: 1,
+    starts_on: "2026-01-01",
     start_time: "09:00",
     duration_minutes: 90,
     location: "sunfit_pool",

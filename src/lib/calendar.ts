@@ -1,11 +1,14 @@
 export type CalendarAudience = "community" | "club" | "academy";
-export type CalendarSource = "session" | "event";
+export type CalendarSource = string;
 export type CalendarVisibility = "public" | "members_only" | "invite_only";
 export type CalendarLocationType = "physical" | "online" | "hybrid";
 
 export type CalendarItem = {
   id: string;
   source: CalendarSource;
+  primary_audience: CalendarAudience;
+  audiences: CalendarAudience[];
+  /** Deprecated compatibility alias for primary_audience. */
   audience: CalendarAudience;
   kind: string;
   visibility: CalendarVisibility;
@@ -30,6 +33,7 @@ export type CalendarResponse = {
   range_start: string;
   range_end: string;
   available_audiences: CalendarAudience[];
+  available_activity_types: Array<{ key: string; label: string }>;
   errors: Record<string, string>;
 };
 
@@ -51,6 +55,7 @@ export const CALENDAR_ACTIVITY_LABELS: Record<string, string> = {
   bring_a_buddy: "Bring-a-Buddy",
   cohort_class: "Academy class",
   community: "Community swim",
+  community_swim: "Community Swim",
   club: "Club training",
   open_swim: "Open swim",
   online_talk: "Online talk",
@@ -59,6 +64,54 @@ export const CALENDAR_ACTIVITY_LABELS: Record<string, string> = {
   volunteer: "Volunteer",
   wrapped: "SwimBuddz Wrapped",
 };
+
+export function calendarActivityLabel(kind: string): string {
+  const known = CALENDAR_ACTIVITY_LABELS[kind];
+  if (known) return known;
+  return kind
+    .replaceAll("-", "_")
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+export function calendarPrimaryAudience(item: CalendarItem): CalendarAudience {
+  return item.primary_audience ?? item.audience;
+}
+
+export function calendarAudiences(item: CalendarItem): CalendarAudience[] {
+  return item.audiences?.length ? item.audiences : [calendarPrimaryAudience(item)];
+}
+
+export function calendarMatchesAudience(
+  item: CalendarItem,
+  audience: CalendarAudience
+): boolean {
+  return calendarAudiences(item).includes(audience);
+}
+
+export function calendarSourceLabel(source: string): string {
+  const known: Record<string, string> = {
+    session: "Swim session",
+    event: "Event",
+    challenge: "Challenge",
+    experience: "Experience",
+    volunteer_opportunity: "Volunteer opportunity",
+  };
+  return known[source] ?? calendarActivityLabel(source);
+}
+
+export function calendarActionLabel(item: CalendarItem): string {
+  if (item.source === "session") return item.bookable ? "Book session" : "View session";
+  if (item.source === "event") return item.viewer_can_attend ? "View event" : "View eligibility";
+  const known: Record<string, string> = {
+    challenge: "View challenge",
+    experience: "View experience",
+    volunteer_opportunity: "View opportunity",
+  };
+  return known[item.source] ?? "View activity";
+}
 
 export const CALENDAR_AUDIENCE_COLORS: Record<
   CalendarAudience,
