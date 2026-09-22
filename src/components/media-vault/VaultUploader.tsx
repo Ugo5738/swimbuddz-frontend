@@ -21,12 +21,14 @@ import {
   type SavedUpload,
   type UploadScope,
 } from "@/lib/media-vault-upload";
-import { BookOpen, CloudUpload, Loader2, RefreshCcw, ShieldCheck, WifiOff } from "lucide-react";
+import { BookOpen, WifiOff } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 
 import { VaultUploadQueue, type UploadFile } from "./VaultUploadQueue";
+import { VaultUploadConfirmation } from "./VaultUploadConfirmation";
+import { VaultFilePicker } from "./VaultFilePicker";
 
 type Props = {
   vault: MediaVault | GuestVault;
@@ -39,12 +41,17 @@ function isGuestVault(vault: MediaVault | GuestVault): vault is GuestVault {
 
 export function VaultUploader({ vault, scope }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const nextStepRef = useRef<HTMLDivElement>(null);
+  const selectionReceivedRef = useRef(false);
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [consent, setConsent] = useState(false);
   const [checklist, setChecklist] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
   const [uploading, setUploading] = useState(false);
   const [online, setOnline] = useState(true);
+  const [choosingFiles, setChoosingFiles] = useState(false);
+  const [selectionHelp, setSelectionHelp] = useState(false);
+  const [isIPhone, setIsIPhone] = useState(false);
   const maxFileBytes = vault.max_file_bytes;
   const remainingBytes = isGuestVault(vault)
     ? vault.remaining_bytes
@@ -58,6 +65,7 @@ export function VaultUploader({ vault, scope }: Props) {
     const onlineHandler = () => setOnline(true);
     const offlineHandler = () => setOnline(false);
     setOnline(navigator.onLine);
+    setIsIPhone(/iPhone|iPad|iPod/i.test(navigator.userAgent));
     window.addEventListener("online", onlineHandler);
     window.addEventListener("offline", offlineHandler);
     return () => {
@@ -65,6 +73,27 @@ export function VaultUploader({ vault, scope }: Props) {
       window.removeEventListener("offline", offlineHandler);
     };
   }, []);
+
+  useEffect(() => {
+    if (!choosingFiles) return;
+    const returnedToPage = () => {
+      window.setTimeout(() => {
+        if (selectionReceivedRef.current) return;
+        setChoosingFiles(false);
+        setSelectionHelp(true);
+      }, 1200);
+    };
+    window.addEventListener("focus", returnedToPage, { once: true });
+    return () => window.removeEventListener("focus", returnedToPage);
+  }, [choosingFiles]);
+
+  const openFilePicker = () => {
+    selectionReceivedRef.current = false;
+    setSelectionHelp(false);
+    setChoosingFiles(true);
+    // Let React paint the preparation message before iOS opens Photos.
+    window.requestAnimationFrame(() => inputRef.current?.click());
+  };
 
   useEffect(() => {
     const preventLeave = (event: BeforeUnloadEvent) => {
@@ -97,13 +126,38 @@ export function VaultUploader({ vault, scope }: Props) {
         continue;
       }
       const key = `${file.name}:${file.size}:${file.lastModified}`;
-      if (files.some((entry) => entry.key === key)) continue;
+      if (
+        files.some((entry) => entry.key === key) ||
+        accepted.some((entry) => entry.key === key)
+      ) {
+        continue;
+      }
       accepted.push({ key, file, status: "queued", progress: 0 });
     }
-    setFiles((current) => [...current, ...accepted]);
+    setFiles((current) => {
+      const known = new Set(current.map((entry) => entry.key));
+      const unique = accepted.filter((entry) => {
+        if (known.has(entry.key)) return false;
+        known.add(entry.key);
+        return true;
+      });
+      return [...current, ...unique];
+    });
     if (accepted.length) {
       toast.success(
         `${accepted.length} file${accepted.length === 1 ? "" : "s"} selected. Confirm consent, then press Start full-quality upload.`
+      );
+      const largeVideos = accepted.filter(
+        (entry) => entry.file.type.startsWith("video/") && entry.file.size >= 500 * 1024 ** 2
+      );
+      if (isIPhone && largeVideos.length > 2) {
+        toast.info(
+          "For a more reliable iPhone upload, send two large videos at a time. The originals stay full quality."
+        );
+      }
+      window.setTimeout(
+        () => nextStepRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+        100
       );
     }
   };
@@ -170,7 +224,8 @@ export function VaultUploader({ vault, scope }: Props) {
       return;
     }
     const completedParts = new Map(resumed.parts.map((part) => [part.part_number, part.etag]));
-    let completedBytes = resumed.parts.reduce((sum, part) => sum + part.size, 0);
+    const resumedBytes = resumed.parts.reduce((sum, part) => sum + part.size, 0);
+    let completedBytes = resumedBytes;
     patchFile(entry.key, {
       progress: Math.min(99, (completedBytes / entry.file.size) * 100),
     });
@@ -179,6 +234,8 @@ export function VaultUploader({ vault, scope }: Props) {
       (partNumber) => !completedParts.has(partNumber)
     );
 
+    const startedAt = performance.now();
+    let lastUiUpdate = 0;
     for (let offset = 0; offset < pending.length; offset += PART_URL_BATCH) {
       if (!navigator.onLine) {
         throw new Error("You are offline. Reconnect and press Resume uploads.");
@@ -187,6 +244,8 @@ export function VaultUploader({ vault, scope }: Props) {
       const signed = await apiPost<{
         parts: { part_number: number; url: string }[];
       }>(`${itemBase}/parts`, { part_numbers: partNumbers }, { auth });
+      // Only the currently active URL batch belongs here. Keeping bytes from
+      // earlier batches would double count progress once completedBytes moves on.
       const liveProgress = new Map<number, number>();
       const results = await runConcurrent(
         signed.parts.map((part) => async () => {
@@ -200,9 +259,17 @@ export function VaultUploader({ vault, scope }: Props) {
                 (sum, value) => sum + value,
                 0
               );
-              patchFile(entry.key, {
-                progress: Math.min(99, ((completedBytes + currentBytes) / entry.file.size) * 100),
-              });
+              const now = performance.now();
+              const uploadedBytes = completedBytes + currentBytes;
+              if (now - lastUiUpdate >= 250 || uploadedBytes >= entry.file.size) {
+                const elapsedSeconds = Math.max(0.25, (now - startedAt) / 1000);
+                patchFile(entry.key, {
+                  progress: Math.min(99, (uploadedBytes / entry.file.size) * 100),
+                  bytesUploaded: uploadedBytes,
+                  bytesPerSecond: Math.max(0, (uploadedBytes - resumedBytes) / elapsedSeconds),
+                });
+                lastUiUpdate = now;
+              }
             })
           );
           return { partNumber: part.part_number, etag, size: blob.size };
@@ -225,7 +292,11 @@ export function VaultUploader({ vault, scope }: Props) {
       { auth }
     );
     localStorage.removeItem(persistenceKey);
-    patchFile(entry.key, { status: "done", progress: 100 });
+    patchFile(entry.key, {
+      status: "done",
+      progress: 100,
+      bytesUploaded: entry.file.size,
+    });
   };
 
   const startUploads = async () => {
@@ -320,6 +391,21 @@ export function VaultUploader({ vault, scope }: Props) {
         </div>
       )}
 
+      {!isGuestVault(vault) && (
+        <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
+          <span className="font-semibold capitalize">{vault.effective_role ?? "Member"} upload access.</span>{" "}
+          {vault.effective_role === "admin" ? (
+            <>Admins can upload outside the contributor window.</>
+          ) : (
+            <>
+              Curators and contributors can upload until{" "}
+              <strong>{new Date(vault.upload_closes_at).toLocaleString("en-NG")}</strong>. Admin access
+              working after this time does not mean the curator window is still open.
+            </>
+          )}
+        </div>
+      )}
+
       <section className="rounded-2xl border border-blue-200 bg-blue-50/70 p-5">
         <div className="flex items-start gap-3">
           <BookOpen className="mt-0.5 h-5 w-5 shrink-0 text-blue-700" />
@@ -362,59 +448,48 @@ export function VaultUploader({ vault, scope }: Props) {
         </div>
       </section>
 
-      <div
-        className="rounded-2xl border-2 border-dashed border-cyan-300 bg-cyan-50/50 p-8 text-center transition hover:border-cyan-500"
-        onDragOver={(event) => event.preventDefault()}
-        onDrop={(event) => {
-          event.preventDefault();
-          addFiles(event.dataTransfer.files);
+      <VaultFilePicker
+        inputRef={inputRef}
+        choosing={choosingFiles}
+        selectionHelp={selectionHelp}
+        maxFileBytes={maxFileBytes}
+        remainingBytes={remainingBytes}
+        onChoose={openFilePicker}
+        onFiles={(incoming) => {
+          selectionReceivedRef.current = true;
+          setChoosingFiles(false);
+          addFiles(incoming);
         }}
-      >
-        <CloudUpload className="mx-auto h-12 w-12 text-cyan-600" />
-        <h2 className="mt-3 text-lg font-semibold text-slate-900">
-          Add full-quality photos and videos
-        </h2>
-        <p className="mx-auto mt-2 max-w-xl text-sm text-slate-600">
-          Large iPhone HEIC, 4K, ProRes and MOV files are uploaded directly to private S3 in
-          resumable chunks. Originals are not compressed.
-        </p>
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="mt-5 rounded-xl bg-cyan-600 px-5 py-2.5 font-semibold text-white hover:bg-cyan-500"
-        >
-          Choose files
-        </button>
-        <input
-          ref={inputRef}
-          type="file"
-          multiple
-          accept="image/*,video/*,.heic,.heif,.mov"
-          className="hidden"
-          onChange={(event) => {
-            if (event.target.files) addFiles(event.target.files);
-            event.currentTarget.value = "";
-          }}
-        />
-        <p className="mt-3 text-xs text-slate-500">
-          Up to {formatBytes(maxFileBytes)} per file · {formatBytes(Math.max(0, remainingBytes))}{" "}
-          remaining
-        </p>
-        <p className="mx-auto mt-2 max-w-xl text-xs text-slate-500">
-          Selecting a file does not upload it yet. If a video is only in iCloud, let Photos download
-          it to the device first.
-        </p>
-      </div>
+        onEmptySelection={() => {
+          selectionReceivedRef.current = true;
+          setChoosingFiles(false);
+          setSelectionHelp(true);
+        }}
+      />
 
       {files.length > 0 && (
-        <VaultUploadQueue
-          files={files}
-          totalBytes={totalBytes}
-          completed={completed}
-          uploading={uploading}
-          onClear={() => setFiles([])}
-          onRemove={removeFile}
-        />
+        <div ref={nextStepRef} className="scroll-mt-4 space-y-4">
+          <VaultUploadQueue
+            files={files}
+            totalBytes={totalBytes}
+            completed={completed}
+            uploading={uploading}
+            onClear={() => setFiles([])}
+            onRemove={removeFile}
+          />
+          <VaultUploadConfirmation
+            vault={vault}
+            consent={consent}
+            notes={notes}
+            uploading={uploading}
+            online={online}
+            hasPending={files.some((entry) => entry.status !== "done")}
+            hasFailed={files.some((entry) => entry.status === "failed")}
+            onConsentChange={setConsent}
+            onNotesChange={setNotes}
+            onStart={() => void startUploads()}
+          />
+        </div>
       )}
 
       {checklistItems.length > 0 && (
@@ -442,56 +517,6 @@ export function VaultUploader({ vault, scope }: Props) {
         </fieldset>
       )}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-5">
-        <label className="flex items-start gap-3">
-          <input
-            type="checkbox"
-            checked={consent}
-            onChange={(event) => setConsent(event.target.checked)}
-            className="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-600"
-          />
-          <span>
-            <span className="flex items-center gap-2 font-semibold text-slate-900">
-              <ShieldCheck className="h-4 w-4 text-emerald-600" />
-              Consent and safeguarding confirmation
-            </span>
-            <span className="mt-1 block text-sm text-slate-600">
-              {vault.consent_notice ??
-                "I confirm these files were captured for SwimBuddz, respect participant opt-outs, and are appropriate for the social media team to review."}
-            </span>
-          </span>
-        </label>
-        <textarea
-          value={notes}
-          onChange={(event) => setNotes(event.target.value)}
-          placeholder="Optional handoff notes: standout moments, people to avoid, missing shots…"
-          className="mt-4 min-h-24 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-cyan-500"
-        />
-      </div>
-
-      <button
-        type="button"
-        disabled={!files.some((entry) => entry.status !== "done") || uploading}
-        onClick={startUploads}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3.5 font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {uploading ? (
-          <>
-            <Loader2 className="h-5 w-5 animate-spin" />
-            Keep this page open · uploading
-          </>
-        ) : files.some((entry) => entry.status === "failed") ? (
-          <>
-            <RefreshCcw className="h-5 w-5" />
-            Resume uploads
-          </>
-        ) : (
-          <>
-            <CloudUpload className="h-5 w-5" />
-            Start full-quality upload
-          </>
-        )}
-      </button>
     </div>
   );
 }

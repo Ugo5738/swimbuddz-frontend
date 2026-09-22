@@ -77,18 +77,30 @@ export function VaultVideoDialog({
           </button>
         </div>
         {item.preview_url && !error ? (
-          <video
-            key={item.preview_url}
-            controls
-            playsInline
-            preload="metadata"
-            poster={item.thumbnail_url ?? undefined}
-            onError={onError}
-            className="max-h-[70dvh] w-full bg-black object-contain"
-            aria-label={item.original_filename ?? "Video preview"}
-          >
-            <source src={item.preview_url} type="video/mp4" />
-          </video>
+          <>
+            <video
+              key={item.preview_url}
+              controls
+              playsInline
+              preload="metadata"
+              poster={item.thumbnail_url ?? undefined}
+              onError={onError}
+              className="max-h-[70dvh] w-full bg-black object-contain"
+              aria-label={item.original_filename ?? "Video preview"}
+            >
+              <source src={item.preview_url} type="video/mp4" />
+            </video>
+            {canRequest && (
+              <button
+                type="button"
+                onClick={() => onRequest(true)}
+                disabled={working}
+                className="mx-4 mt-3 text-xs font-semibold text-cyan-300 underline underline-offset-4 disabled:opacity-50"
+              >
+                Playback slow? Rebuild a lighter mobile preview
+              </button>
+            )}
+          </>
         ) : (
           <div className="flex min-h-64 flex-col items-center justify-center gap-3 px-6 text-center">
             {working || ["pending", "processing"].includes(item.preview_status) ? (
