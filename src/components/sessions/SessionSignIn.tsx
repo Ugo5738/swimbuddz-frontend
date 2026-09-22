@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiPost } from "@/lib/api";
+import { useApi } from "@/hooks/useApi";
 import type { Session } from "@/lib/sessions";
 import { signInToSession } from "@/lib/sessions";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 // Helper to format currency
 const formatCurrency = (amount: number) => {
@@ -61,9 +62,19 @@ export function SessionSignIn({ session }: SessionSignInProps) {
   const [error, setError] = useState<string | null>(null);
   const [isTierError, setIsTierError] = useState(false);
   const [confirmation, setConfirmation] = useState<boolean>(false);
-  const [member, setMember] = useState<{ name: string; email: string } | null>(null);
-  const [loadingMember, setLoadingMember] = useState(true);
-  const [authError, setAuthError] = useState<string | null>(null);
+  const profile = useApi<{ first_name?: string; last_name?: string; email: string }>(
+    "/api/v1/members/me"
+  );
+  const loadingMember = profile.loading;
+  const authError = profile.error ? "Please sign in to continue." : null;
+  const member = profile.data
+    ? {
+        name:
+          `${profile.data.first_name || ""} ${profile.data.last_name || ""}`.trim() ||
+          profile.data.email,
+        email: profile.data.email,
+      }
+    : null;
 
   // Parse session times from starts_at/ends_at
   const startsAt = new Date(session.starts_at);
@@ -83,26 +94,6 @@ export function SessionSignIn({ session }: SessionSignInProps) {
   const rideShareCost = selectedArea ? selectedArea.cost : 0;
   const poolFee = session.pool_fee ?? 0;
   const totalCost = poolFee + rideShareCost;
-
-  useEffect(() => {
-    apiGet<any>("/api/v1/members/me", { auth: true })
-      .then((profile) => {
-        if (!profile) {
-          setAuthError("Please sign in to continue.");
-          return;
-        }
-        const fullName =
-          `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || profile.email;
-        setMember({
-          name: fullName,
-          email: profile.email || "",
-        });
-      })
-      .catch(() => {
-        setAuthError("Please sign in to continue.");
-      })
-      .finally(() => setLoadingMember(false));
-  }, []);
 
   function nextStep() {
     if (step < steps.length - 1) {
@@ -156,7 +147,7 @@ export function SessionSignIn({ session }: SessionSignInProps) {
         {
           purpose: "session_fee",
           currency: "NGN",
-          payment_method: "paystack",
+          payment_method: showManualPayment ? "manual_transfer" : "paystack",
           session_id: session.id,
           direct_amount: totalCost,
           ride_config_id: selectedRideShareAreaId || undefined,

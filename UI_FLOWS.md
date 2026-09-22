@@ -157,6 +157,10 @@ The implementation of pages should follow these flows closely.
 - Session templates can be archived/restored. Archived templates cannot generate
   sessions. Permanent deletion remains available for unused templates; linked
   templates must be archived to preserve their sessions and bookings.
+- Academy templates require a cohort and an explicit class-payment setting.
+  Generation preserves both: tuition-included stays free, and paid extras use
+  the configured per-student price. Edit older Academy templates to choose the
+  cohort before generating; the system never guesses billing from a title.
 - Admin payment review loads the submitted receipt from its media UUID through
   authenticated access, and supports an allocation/reference review note.
 

@@ -25542,6 +25542,14 @@ export interface components {
         };
         /** SessionTemplateCreate */
         SessionTemplateCreate: {
+            /** Cohort Id */
+            cohort_id?: string | null;
+            /**
+             * Cohort Fee Mode
+             * @default included
+             * @enum {string}
+             */
+            cohort_fee_mode: "included" | "paid_extra";
             /** Club Id */
             club_id?: string | null;
             /**
@@ -25628,6 +25636,14 @@ export interface components {
         };
         /** SessionTemplateResponse */
         SessionTemplateResponse: {
+            /** Cohort Id */
+            cohort_id?: string | null;
+            /**
+             * Cohort Fee Mode
+             * @default included
+             * @enum {string}
+             */
+            cohort_fee_mode: "included" | "paid_extra";
             /** Club Id */
             club_id?: string | null;
             /**
@@ -25728,6 +25744,10 @@ export interface components {
         };
         /** SessionTemplateUpdate */
         SessionTemplateUpdate: {
+            /** Cohort Id */
+            cohort_id?: string | null;
+            /** Cohort Fee Mode */
+            cohort_fee_mode?: ("included" | "paid_extra") | null;
             /** Club Id */
             club_id?: string | null;
             /** Club Access Mode */

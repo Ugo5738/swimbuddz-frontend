@@ -1,16 +1,22 @@
 "use client";
 
+import {
+  PaymentMethodChoice,
+  type CheckoutPaymentMethod,
+} from "@/components/checkout/PaymentMethodChoice";
+
 import { BubblesSlider } from "@/components/checkout/BubblesSlider";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiPost } from "@/lib/api";
+import { useApi } from "@/hooks/useApi";
 import { useStoreCart } from "@/lib/storeCart";
 import { ArrowLeft, CreditCard, MapPin, Package, Truck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 interface PickupLocation {
@@ -52,11 +58,21 @@ export default function StoreCheckoutPage() {
   const router = useRouter();
   const { cart, loading: cartLoading, clearCart, isAuthenticated } = useStoreCart();
 
-  const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
-  const [storeCredit, setStoreCredit] = useState<StoreCredit | null>(null);
-  const [walletBalance, setWalletBalance] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
+  const locations = useApi<PickupLocation[]>("/api/v1/store/pickup-locations", {
+    auth: false,
+    enabled: isAuthenticated,
+  });
+  const credit = useApi<StoreCredit>("/api/v1/store/credits/me", { enabled: isAuthenticated });
+  const wallet = useApi<WalletData>("/api/v1/wallet/me", { enabled: isAuthenticated });
+  const pickupLocations = locations.data ?? [];
+  const storeCredit = credit.data;
+  const walletBalance =
+    wallet.data?.status === "active"
+      ? (wallet.data.available_balance ?? wallet.data.balance)
+      : null;
+  const loading = locations.loading || credit.loading || wallet.loading;
   const [processing, setProcessing] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("paystack");
 
   // Form state
   const [fulfillmentType, setFulfillmentType] = useState<"pickup" | "delivery">("pickup");
@@ -71,37 +87,10 @@ export default function StoreCheckoutPage() {
   const [useStoreCredit, setUseStoreCredit] = useState(false);
   const [bubblesToApply, setBubblesToApply] = useState<number>(0);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [locationsData, creditData, walletData] = await Promise.all([
-        apiGet<PickupLocation[]>("/api/v1/store/pickup-locations"),
-        apiGet<StoreCredit | null>("/api/v1/store/credits/me", {
-          auth: true,
-        }).catch(() => null),
-        apiGet<WalletData>("/api/v1/wallet/me", { auth: true }).catch(() => null),
-      ]);
-
-      setPickupLocations(locationsData);
-      if (locationsData.length > 0) {
-        setSelectedLocationId(locationsData[0].id);
-      }
-      setStoreCredit(creditData);
-      if (walletData?.status === "active") {
-        setWalletBalance(walletData.available_balance ?? walletData.balance);
-      }
-    } catch (e) {
-      console.error("Failed to load checkout data:", e);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    if (isAuthenticated) {
-      loadData();
-    }
-  }, [isAuthenticated, loadData]);
+    if (locations.data?.length)
+      setSelectedLocationId((current) => current || locations.data![0].id);
+  }, [locations.data]);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -160,7 +149,7 @@ export default function StoreCheckoutPage() {
       // Step 2: Initialize Paystack payment via store checkout endpoint
       const paymentResult = await apiPost<PaymentInitResponse>(
         "/api/v1/store/checkout/payment",
-        { order_id: orderResult.order_id },
+        { order_id: orderResult.order_id, payment_method: paymentMethod },
         { auth: true }
       );
 
@@ -210,7 +199,10 @@ export default function StoreCheckoutPage() {
   // Partial Bubbles calculations
   const maxBubbles = walletBalance ?? 0;
   const maxBubblesNeeded = Math.floor(afterCredit / 100); // ₦100 = exactly 1 Bubble
-  const effectiveBubbles = Math.min(bubblesToApply, maxBubbles, maxBubblesNeeded);
+  const effectiveBubbles =
+    paymentMethod === "manual_transfer"
+      ? 0
+      : Math.min(bubblesToApply, maxBubbles, maxBubblesNeeded);
   const bubblesValueNgn = effectiveBubbles * 100;
   const paystackAmount = Math.max(0, afterCredit - bubblesValueNgn);
 
@@ -412,7 +404,11 @@ export default function StoreCheckoutPage() {
               <div>
                 <h2 className="text-lg font-semibold text-slate-900">Payment</h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  {paystackAmount > 0 ? "Card payment via Paystack" : "Fully covered by Bubbles"}
+                  {paystackAmount > 0
+                    ? paymentMethod === "manual_transfer"
+                      ? "Bank transfer · Admin verification required"
+                      : "Card payment via Paystack"
+                    : "Fully covered by Bubbles"}
                 </p>
               </div>
 
@@ -424,19 +420,22 @@ export default function StoreCheckoutPage() {
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-900">
                     {paystackAmount > 0
-                      ? `₦${paystackAmount.toLocaleString()} via Paystack`
+                      ? `₦${paystackAmount.toLocaleString()} via ${paymentMethod === "manual_transfer" ? "bank transfer" : "Paystack"}`
                       : "No card payment needed"}
                   </p>
                   <p className="text-xs text-slate-500 mt-0.5">
                     {paystackAmount > 0
-                      ? "Card, bank transfer, or USSD"
+                      ? paymentMethod === "manual_transfer"
+                        ? "Submit your transfer details for review"
+                        : "Card, bank transfer, or USSD"
                       : "Bubbles cover the full amount"}
                   </p>
                 </div>
               </div>
 
               {/* Bubbles slider */}
-              {walletBalance !== null && maxBubbles > 0 ? (
+              {paymentMethod === "manual_transfer" ? null : walletBalance !== null &&
+                maxBubbles > 0 ? (
                 <BubblesSlider
                   amountDueNgn={afterCredit}
                   walletBalance={maxBubbles}
@@ -531,6 +530,11 @@ export default function StoreCheckoutPage() {
             </div>
 
             {/* Pay Button */}
+            <PaymentMethodChoice
+              value={paymentMethod}
+              onChange={setPaymentMethod}
+              disabled={processing}
+            />
             <Button
               onClick={handleCheckout}
               disabled={processing}
@@ -560,7 +564,9 @@ export default function StoreCheckoutPage() {
                 ? "🫧 Fully covered by your Bubbles wallet"
                 : effectiveBubbles > 0
                   ? "🫧 Bubbles applied · remaining paid via Paystack"
-                  : "🔒 Secure payment via Paystack"}
+                  : paymentMethod === "manual_transfer"
+                    ? "Transfer details and receipt submission on the next page"
+                    : "🔒 Secure payment via Paystack"}
             </p>
           </Card>
         </div>

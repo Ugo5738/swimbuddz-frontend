@@ -2,8 +2,13 @@
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { apiGet, apiPost } from "@/lib/api";
-import { useCallback, useEffect, useState } from "react";
+import { apiPost } from "@/lib/api";
+import { useState } from "react";
+import { useApi } from "@/hooks/useApi";
+import {
+  PaymentMethodChoice,
+  type CheckoutPaymentMethod,
+} from "@/components/checkout/PaymentMethodChoice";
 import { toast } from "sonner";
 
 import { formatCurrency } from "../utils";
@@ -41,26 +46,9 @@ function formatWhen(starts: string): string {
 }
 
 export function OutstandingSessionFeesCard() {
-  const [bookings, setBookings] = useState<UnpaidBooking[] | null>(null);
+  const { data: bookings, error } = useApi<UnpaidBooking[]>("/api/v1/sessions/bookings/me/unpaid");
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("paystack");
   const [paying, setPaying] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    try {
-      const data = await apiGet<UnpaidBooking[]>(
-        "/api/v1/sessions/bookings/me/unpaid",
-        { auth: true },
-      );
-      setBookings(data);
-    } catch (e) {
-      // Don't surface errors — this card is best-effort.
-      console.warn("Failed to load unpaid bookings:", e);
-      setBookings([]);
-    }
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
 
   const handlePay = async (booking: UnpaidBooking) => {
     setPaying(booking.id);
@@ -74,12 +62,12 @@ export function OutstandingSessionFeesCard() {
         {
           purpose: "session_booking",
           currency: "NGN",
-          payment_method: "paystack",
+          payment_method: paymentMethod,
           session_id: booking.session_id,
           direct_amount: booking.fee_amount_kobo / 100,
           payment_metadata: { booking_id: booking.id },
         },
-        { auth: true },
+        { auth: true }
       );
       if (intent.checkout_url) {
         window.location.href = intent.checkout_url;
@@ -94,6 +82,8 @@ export function OutstandingSessionFeesCard() {
     }
   };
 
+  if (error)
+    return <p className="text-sm text-rose-600">Could not load outstanding session fees.</p>;
   if (!bookings || bookings.length === 0) return null;
 
   return (
@@ -108,6 +98,11 @@ export function OutstandingSessionFeesCard() {
       </div>
 
       <div className="space-y-3">
+        <PaymentMethodChoice
+          value={paymentMethod}
+          onChange={setPaymentMethod}
+          disabled={!!paying}
+        />
         {bookings.map((booking) => (
           <div
             key={booking.id}
@@ -122,9 +117,7 @@ export function OutstandingSessionFeesCard() {
                   {formatWhen(booking.session_starts_at)}
                 </p>
                 {booking.channel === "admin" && (
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Recorded as walk-in by admin
-                  </p>
+                  <p className="text-[11px] text-slate-400 mt-1">Recorded as walk-in by admin</p>
                 )}
               </div>
               <div className="flex sm:flex-col items-center sm:items-end gap-2 sm:gap-1">
@@ -135,11 +128,7 @@ export function OutstandingSessionFeesCard() {
             </div>
 
             <div className="flex justify-end">
-              <Button
-                size="sm"
-                onClick={() => handlePay(booking)}
-                disabled={paying === booking.id}
-              >
+              <Button size="sm" onClick={() => handlePay(booking)} disabled={paying === booking.id}>
                 {paying === booking.id
                   ? "Starting payment…"
                   : `Pay ${formatCurrency(booking.fee_amount_kobo / 100)}`}

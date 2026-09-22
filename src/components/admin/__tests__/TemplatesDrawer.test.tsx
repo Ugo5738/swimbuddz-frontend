@@ -4,6 +4,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TemplatesDrawer } from "../TemplatesDrawer";
 import type { Template } from "@/app/(admin)/admin/sessions/types";
 
+vi.mock("@/hooks/useApi", () => ({
+  useApi: () => ({
+    data: [{ id: "cohort-september", name: "September beginners", status: "active" }],
+    loading: false,
+    error: null,
+    refetch: vi.fn(),
+  }),
+}));
+
 vi.mock("@/components/admin/PoolPicker", () => ({
   PoolPicker: () => <div data-testid="pool-picker" />,
   getPoolOption: vi.fn(async () => ({ id: "pool-rowe", name: "Rowe Park Pool" })),
@@ -127,6 +136,62 @@ describe("TemplatesDrawer Club scope", () => {
     vi.clearAllMocks();
   });
 
+  it.each(["included", "paid_extra"] as const)(
+    "saves Academy cohort and %s billing without Club context",
+    async (mode) => {
+      const onCreate = renderCreateDrawer();
+      fireEvent.change(screen.getByLabelText("Session Type"), {
+        target: { value: "cohort_class" },
+      });
+      fireEvent.change(screen.getByRole("combobox", { name: /^Cohort/ }), {
+        target: { value: "cohort-september" },
+      });
+      fireEvent.change(screen.getByLabelText("Class payment"), { target: { value: mode } });
+      fireEvent.change(screen.getByLabelText("Booking price per student (₦)"), {
+        target: { value: "15000" },
+      });
+      fireEvent.change(screen.getByLabelText("Frequency"), { target: { value: "monthly" } });
+      fireEvent.change(screen.getByLabelText(/^Repeat every/), { target: { value: "2" } });
+      fireEvent.click(screen.getByRole("button", { name: "Create Template" }));
+      await waitFor(() => expect(onCreate).toHaveBeenCalledOnce());
+      expect(onCreate.mock.calls[0][0]).toMatchObject({
+        session_type: "cohort_class",
+        cohort_id: "cohort-september",
+        cohort_fee_mode: mode,
+        pool_fee: 15000,
+        frequency: "monthly",
+        interval: 2,
+        week_of_month: 1,
+        club_id: null,
+        pod_id: null,
+      });
+    }
+  );
+
+  it("requires a cohort for an Academy template", async () => {
+    const onCreate = renderCreateDrawer();
+    fireEvent.change(screen.getByLabelText("Session Type"), { target: { value: "cohort_class" } });
+    expect(screen.getByRole("combobox", { name: /^Cohort/ })).toBeRequired();
+    fireEvent.click(screen.getByRole("button", { name: "Create Template" }));
+    await waitFor(() => expect(onCreate).not.toHaveBeenCalled());
+  });
+
+  it("clears cohort and paid-extra billing when switching to Community", async () => {
+    const onCreate = renderCreateDrawer();
+    fireEvent.change(screen.getByLabelText("Session Type"), { target: { value: "cohort_class" } });
+    fireEvent.change(screen.getByRole("combobox", { name: /^Cohort/ }), {
+      target: { value: "cohort-september" },
+    });
+    fireEvent.change(screen.getByLabelText("Class payment"), { target: { value: "paid_extra" } });
+    fireEvent.change(screen.getByLabelText("Session Type"), { target: { value: "community" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create Template" }));
+    await waitFor(() => expect(onCreate).toHaveBeenCalledOnce());
+    expect(onCreate.mock.calls[0][0]).toMatchObject({
+      cohort_id: null,
+      cohort_fee_mode: "included",
+    });
+  });
+
   it("saves inherited pricing inputs with the selected Club, not a fixed template fee", async () => {
     const onCreate = renderCreateDrawer();
     await screen.findByLabelText(/^Expected attendees/);
@@ -214,7 +279,7 @@ describe("Template generation routes and pricing labels", () => {
     auto_generate: false,
     is_active: true,
   };
-  function show(template: Template, archive = vi.fn(), remove = vi.fn()) {
+  function show(template: Template, archive = vi.fn(), remove = vi.fn(), openForm = vi.fn()) {
     const generate = vi.fn();
     render(
       <TemplatesDrawer
@@ -228,11 +293,34 @@ describe("Template generation routes and pricing labels", () => {
         onArchiveTemplate={archive}
         onDeleteTemplate={remove}
         onGenerate={generate}
-        onOpenForm={vi.fn()}
+        onOpenForm={openForm}
       />
     );
     return generate;
   }
+  it("routes an old Academy template to cohort configuration instead of a failing Generate request", () => {
+    const openForm = vi.fn();
+    const template = { ...saved, session_type: "cohort_class", club_id: null };
+    const generate = show(template, vi.fn(), vi.fn(), openForm);
+    fireEvent.click(screen.getByRole("button", { name: "Choose cohort before generating" }));
+    expect(openForm).toHaveBeenCalledWith("edit", template);
+    expect(generate).not.toHaveBeenCalled();
+  });
+  it.each(["included", "paid_extra"] as const)(
+    "allows a configured %s Academy template to generate",
+    (mode) => {
+      const template = {
+        ...saved,
+        session_type: "cohort_class",
+        club_id: null,
+        cohort_id: "cohort-september",
+        cohort_fee_mode: mode,
+      };
+      const generate = show(template);
+      fireEvent.click(screen.getByRole("button", { name: "Generate" }));
+      expect(generate).toHaveBeenCalledWith(template);
+    }
+  );
   it.each(["plan_included", undefined] as const)(
     "routes included templates (%s) to the quarter workflow",
     (mode) => {

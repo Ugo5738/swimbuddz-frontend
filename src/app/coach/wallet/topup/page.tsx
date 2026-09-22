@@ -1,9 +1,15 @@
 "use client";
 
+import {
+  PaymentMethodChoice,
+  type CheckoutPaymentMethod,
+} from "@/components/checkout/PaymentMethodChoice";
+
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiPost } from "@/lib/api";
+import { useApi } from "@/hooks/useApi";
 import { formatNaira } from "@/lib/format";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -39,30 +45,27 @@ const MAX_BUBBLES = 5000;
 
 export default function CoachTopupPage() {
   const router = useRouter();
-  const [walletChecked, setWalletChecked] = useState(false);
+  const wallet = useApi<{ id: string }>("/api/v1/wallet/me");
+  const walletChecked = !wallet.loading;
   const [selectedPreset, setSelectedPreset] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("paystack");
 
   // Ensure user has a wallet before showing topup form
   useEffect(() => {
-    apiGet("/api/v1/wallet/me", { auth: true })
-      .then(() => setWalletChecked(true))
-      .catch((e: unknown) => {
-        const msg = e instanceof Error ? e.message : "";
-        if (msg.includes("not found") || msg.includes("404")) {
-          toast.error("Please create a wallet first");
-          router.replace("/coach/wallet");
-        } else {
-          // Auth error, network issue, etc. — show form anyway
-          toast.error("Could not verify wallet. Please try again.");
-          setWalletChecked(true);
-        }
-      });
-  }, [router]);
+    if (wallet.error) {
+      if (wallet.error.includes("not found") || wallet.error.includes("404")) {
+        toast.error("Please create a wallet first");
+        router.replace("/coach/wallet");
+      } else {
+        // Auth error, network issue, etc. — show form anyway
+        toast.error("Could not verify wallet. Please try again.");
+      }
+    }
+  }, [router, wallet.error]);
 
-  const bubbleAmount =
-    selectedPreset ?? (customAmount ? parseInt(customAmount, 10) : 0);
+  const bubbleAmount = selectedPreset ?? (customAmount ? parseInt(customAmount, 10) : 0);
   const nairaAmount = bubbleAmount * NAIRA_PER_BUBBLE;
   const isValid = bubbleAmount >= MIN_BUBBLES && bubbleAmount <= MAX_BUBBLES;
 
@@ -83,11 +86,19 @@ export default function CoachTopupPage() {
     try {
       const result = await apiPost<TopupResponse>(
         "/api/v1/wallet/topup",
-        { bubbles_amount: bubbleAmount, payment_method: "paystack", callback_url: "/coach/wallet" },
-        { auth: true },
+        {
+          bubbles_amount: bubbleAmount,
+          payment_method: paymentMethod === "manual_transfer" ? "bank_transfer" : "paystack",
+          callback_url: "/coach/wallet",
+        },
+        { auth: true }
       );
 
       if (result.paystack_authorization_url) {
+        if (paymentMethod === "manual_transfer") {
+          window.location.href = result.paystack_authorization_url;
+          return;
+        }
         // Store reference for recovery — Paystack will return to /coach/wallet
         try {
           localStorage.setItem(
@@ -96,7 +107,7 @@ export default function CoachTopupPage() {
               reference: result.reference,
               bubbles_amount: result.bubbles_amount,
               saved_at: Date.now(),
-            }),
+            })
           );
         } catch {
           /* localStorage unavailable */
@@ -131,18 +142,17 @@ export default function CoachTopupPage() {
 
       {/* Preset amounts */}
       <Card className="p-4 md:p-6">
-        <p className="text-sm font-medium text-slate-700 mb-3">
-          Choose an amount
-        </p>
+        <p className="text-sm font-medium text-slate-700 mb-3">Choose an amount</p>
         <div className="grid grid-cols-3 gap-2">
           {PRESET_AMOUNTS.map((amount) => (
             <button
               key={amount}
               onClick={() => handlePresetClick(amount)}
-              className={`rounded-lg border-2 p-3 text-center transition-all ${selectedPreset === amount
+              className={`rounded-lg border-2 p-3 text-center transition-all ${
+                selectedPreset === amount
                   ? "border-cyan-500 bg-cyan-50 text-cyan-700"
                   : "border-slate-200 hover:border-cyan-300 text-slate-700"
-                }`}
+              }`}
             >
               <span className="block text-lg font-bold">{amount}</span>
               <span className="block text-xs text-slate-500">
@@ -154,9 +164,7 @@ export default function CoachTopupPage() {
 
         {/* Custom amount */}
         <div className="mt-4">
-          <label className="text-sm font-medium text-slate-700">
-            Or enter a custom amount
-          </label>
+          <label className="text-sm font-medium text-slate-700">Or enter a custom amount</label>
           <div className="mt-1 flex items-center gap-2">
             <input
               type="number"
@@ -171,8 +179,7 @@ export default function CoachTopupPage() {
           </div>
           {customAmount && !isValid && (
             <p className="text-xs text-red-500 mt-1">
-              Amount must be between {MIN_BUBBLES} and{" "}
-              {MAX_BUBBLES.toLocaleString()} Bubbles
+              Amount must be between {MIN_BUBBLES} and {MAX_BUBBLES.toLocaleString()} Bubbles
             </p>
           )}
         </div>
@@ -185,9 +192,7 @@ export default function CoachTopupPage() {
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-slate-600">Bubbles</span>
-              <span className="font-medium text-slate-900">
-                {bubbleAmount.toLocaleString()} 🫧
-              </span>
+              <span className="font-medium text-slate-900">{bubbleAmount.toLocaleString()} 🫧</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-slate-600">Exchange rate</span>
@@ -205,11 +210,12 @@ export default function CoachTopupPage() {
       )}
 
       {/* Submit */}
-      <Button
-        className="w-full"
-        disabled={!isValid || submitting}
-        onClick={handleSubmit}
-      >
+      <PaymentMethodChoice
+        value={paymentMethod}
+        onChange={setPaymentMethod}
+        disabled={submitting}
+      />
+      <Button className="w-full" disabled={!isValid || submitting} onClick={handleSubmit}>
         {submitting
           ? "Redirecting to payment..."
           : isValid
