@@ -13743,6 +13743,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/volunteer/sessions/{session_id}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Reconcile Session Schedule
+         * @description Move active volunteer shifts with a rescheduled Session.
+         *
+         *     Shift-specific offsets are preserved, inherited venues follow the Session,
+         *     and a reconciliation marker makes retries of the same transition a no-op.
+         *     Completed/cancelled opportunities and volunteer claims are never changed.
+         */
+        patch: operations["reconcile_session_schedule_internal_volunteer_sessions__session_id__schedule_patch"];
+        trace?: never;
+    };
     "/api/v1/internal/volunteer/opportunities/from-session-template": {
         parameters: {
             query?: never;
@@ -36018,6 +36042,45 @@ export interface components {
          * @enum {string}
          */
         RecognitionTier: "bronze" | "silver" | "gold";
+        /**
+         * ReconcileSessionScheduleRequest
+         * @description Old and new Session schedule snapshots supplied by Sessions service.
+         */
+        ReconcileSessionScheduleRequest: {
+            /**
+             * Old Starts At
+             * Format: date-time
+             */
+            old_starts_at: string;
+            /**
+             * Old Ends At
+             * Format: date-time
+             */
+            old_ends_at: string;
+            /**
+             * New Starts At
+             * Format: date-time
+             */
+            new_starts_at: string;
+            /**
+             * New Ends At
+             * Format: date-time
+             */
+            new_ends_at: string;
+            /** Old Timezone */
+            old_timezone: string;
+            /** New Timezone */
+            new_timezone: string;
+            /** Old Location Name */
+            old_location_name?: string | null;
+            /** New Location Name */
+            new_location_name?: string | null;
+        };
+        /** ReconcileSessionScheduleResponse */
+        ReconcileSessionScheduleResponse: {
+            /** Updated */
+            updated: number;
+        };
         /**
          * RewardType
          * @enum {string}
@@ -68180,6 +68243,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CancelByContextResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reconcile_session_schedule_internal_volunteer_sessions__session_id__schedule_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReconcileSessionScheduleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReconcileSessionScheduleResponse"];
                 };
             };
             /** @description Validation Error */

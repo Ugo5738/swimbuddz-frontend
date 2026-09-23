@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Calendar, MapPin, Users, Filter, Plus } from "lucide-react";
+import { Card } from "@/components/ui/Card";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
-import Link from "next/link";
-import { format } from "date-fns";
 import { useApi } from "@/hooks/useApi";
+import { format } from "date-fns";
+import { Calendar, Filter, MapPin, Plus, Users } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
 
 interface Event {
   id: string;
@@ -56,11 +56,9 @@ const eventTypeColors: Record<string, string> = {
 };
 
 export default function EventsPage() {
-  // Migrated to the canonical useApi hook (review findings F5–F7).
-  // Public events list — no auth header (matches the prior raw fetch).
-  const { data, loading } = useApi<Event[]>("/api/v1/events/", {
-    auth: false,
-  });
+  // Optional auth lets members discover members-only and invited Events while
+  // logged-out visitors continue to receive the public catalogue.
+  const { data, loading } = useApi<Event[]>("/api/v1/events/");
   const events = data ?? [];
   const { data: eventSessions, error: eventSessionsError } = useApi<LinkedEventSession[]>(
     "/api/v1/sessions/?types=event&limit=100"
