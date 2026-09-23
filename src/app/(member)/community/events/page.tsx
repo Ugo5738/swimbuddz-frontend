@@ -24,8 +24,9 @@ interface Event {
     maybe: number;
     not_going: number;
   };
-  participation_mode: "rsvp" | "session" | "experience";
+  participation_mode: "rsvp" | "session" | "experience" | "unavailable";
   linked_session_count: number;
+  participation_state_available: boolean;
 }
 
 interface LinkedEventSession {
@@ -61,7 +62,7 @@ export default function EventsPage() {
     auth: false,
   });
   const events = data ?? [];
-  const { data: eventSessions } = useApi<LinkedEventSession[]>(
+  const { data: eventSessions, error: eventSessionsError } = useApi<LinkedEventSession[]>(
     "/api/v1/sessions/?types=event&limit=100"
   );
   const [filterType, setFilterType] = useState<string>("all");
@@ -185,7 +186,13 @@ export default function EventsPage() {
                         <span>{event.location}</span>
                       </div>
 
-                      {event.participation_mode === "session" ? (
+                      {event.participation_mode === "unavailable" ||
+                      (event.participation_mode === "session" && eventSessionsError) ? (
+                        <div className="flex items-center gap-2 text-amber-700">
+                          <Users className="h-4 w-4" />
+                          <span>Participation details temporarily unavailable</span>
+                        </div>
+                      ) : event.participation_mode === "session" ? (
                         <div className="flex items-center gap-2 text-cyan-700">
                           <Users className="h-4 w-4" />
                           <span>

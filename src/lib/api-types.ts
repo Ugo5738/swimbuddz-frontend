@@ -12316,6 +12316,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/transport/sessions/{session_id}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Reconcile Session Schedule Internal
+         * @description Keep explicit ride departures at the same offset after a reschedule.
+         *
+         *     Route-derived departures already use the live Session start time. Only
+         *     explicit per-Session departure overrides need to be shifted here.
+         */
+        patch: operations["reconcile_session_schedule_internal_internal_transport_sessions__session_id__schedule_patch"];
+        trace?: never;
+    };
     "/api/v1/ai/score/cohort-complexity": {
         parameters: {
             query?: never;
@@ -34199,6 +34222,24 @@ export interface components {
             /** Departure Time */
             departure_time?: string | null;
         };
+        /** InternalSessionScheduleChange */
+        InternalSessionScheduleChange: {
+            /**
+             * Old Starts At
+             * Format: date-time
+             */
+            old_starts_at: string;
+            /**
+             * New Starts At
+             * Format: date-time
+             */
+            new_starts_at: string;
+        };
+        /** InternalSessionScheduleChangeResponse */
+        InternalSessionScheduleChangeResponse: {
+            /** Updated */
+            updated: number;
+        };
         /** MemberTransportSummary */
         MemberTransportSummary: {
             /**
@@ -40234,17 +40275,27 @@ export interface components {
             /** Rows */
             rows: components["schemas"]["CalendarImportPreviewItem"][];
         };
+        /** EventAttendanceCheck */
+        EventAttendanceCheck: {
+            /** Context Key */
+            context_key: string;
+            /**
+             * Event Id
+             * Format: uuid
+             */
+            event_id: string;
+            /** Paid Tiers */
+            paid_tiers?: ("community" | "club" | "academy")[];
+        };
         /** EventAttendanceChecksRequest */
         EventAttendanceChecksRequest: {
-            /** Event Ids */
-            event_ids?: string[];
+            /** Checks */
+            checks?: components["schemas"]["EventAttendanceCheck"][];
             /**
              * Member Id
              * Format: uuid
              */
             member_id: string;
-            /** Paid Tiers */
-            paid_tiers?: ("community" | "club" | "academy")[];
         };
         /** EventAttendanceDecision */
         EventAttendanceDecision: {
@@ -40596,12 +40647,17 @@ export interface components {
              * @default rsvp
              * @enum {string}
              */
-            participation_mode: "rsvp" | "session" | "experience";
+            participation_mode: "rsvp" | "session" | "experience" | "unavailable";
             /**
              * Linked Session Count
              * @default 0
              */
             linked_session_count: number;
+            /**
+             * Participation State Available
+             * @default true
+             */
+            participation_state_available: boolean;
         };
         /** EventSessionContract */
         EventSessionContract: {
@@ -65422,6 +65478,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InternalSessionRideConfigAttachResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reconcile_session_schedule_internal_internal_transport_sessions__session_id__schedule_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InternalSessionScheduleChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalSessionScheduleChangeResponse"];
                 };
             };
             /** @description Validation Error */

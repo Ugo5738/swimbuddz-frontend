@@ -30,8 +30,9 @@ interface Event {
   created_by: string;
   created_at: string;
   rsvp_count?: Partial<Record<"going" | "maybe" | "not_going", number>>;
-  participation_mode: "rsvp" | "session" | "experience";
+  participation_mode: "rsvp" | "session" | "experience" | "unavailable";
   linked_session_count: number;
+  participation_state_available: boolean;
 }
 
 type WalletData = { balance: number; available_balance?: number };
@@ -69,15 +70,20 @@ export default function EventDetailPage() {
     refetch: refetchEvent,
   } = useApi<Event>(eventId ? `/api/v1/events/${eventId}` : null);
   const linkedSessionPath =
-    event && event.event_type !== "open_swim"
+    event && event.event_type !== "open_swim" && event.participation_mode !== "unavailable"
       ? `/api/v1/sessions/?types=event&event_id=${encodeURIComponent(event.id)}&limit=100`
       : null;
-  const { data: linkedSessions, loading: linkedSessionsLoading } =
-    useApi<LinkedEventSession[]>(linkedSessionPath);
+  const {
+    data: linkedSessions,
+    error: linkedSessionsError,
+    loading: linkedSessionsLoading,
+  } = useApi<LinkedEventSession[]>(linkedSessionPath);
   const { data: wallet } = useApi<WalletData>("/api/v1/wallet/me");
   const { data: me } = useApi<{ id: string }>("/api/v1/members/me");
   const hasLinkedSessions =
     event?.participation_mode === "session" || (linkedSessions?.length ?? 0) > 0;
+  const participationUnavailable =
+    event?.participation_mode === "unavailable" || !!linkedSessionsError;
   const hasVisibleLinkedSessions = (linkedSessions?.length ?? 0) > 0;
   const walletBalance = wallet ? (wallet.available_balance ?? wallet.balance) : null;
   const meId = me?.id ?? null;
@@ -158,7 +164,8 @@ export default function EventDetailPage() {
   }
 
   const isPastEvent = new Date(event.start_time) < new Date();
-  const showEventAdmission = isOpenSwim || (!linkedSessionsLoading && !hasLinkedSessions);
+  const showEventAdmission =
+    isOpenSwim || (!participationUnavailable && !linkedSessionsLoading && !hasLinkedSessions);
   const isFullyBooked =
     showEventAdmission && event.max_capacity && rsvpCounts.going >= event.max_capacity;
 
@@ -315,9 +322,21 @@ export default function EventDetailPage() {
           </p>
         </Card>
       ) : null}
+      {participationUnavailable && !isPastEvent ? (
+        <Card className="border-amber-200 bg-amber-50 p-6">
+          <h3 className="font-semibold text-amber-950">
+            Participation details are temporarily unavailable
+          </h3>
+          <p className="mt-2 text-sm leading-6 text-amber-900">
+            The Event is still available to view, but booking status cannot be verified right now.
+            RSVP is disabled to prevent duplicate participation records. Please try again shortly.
+          </p>
+        </Card>
+      ) : null}
       {!isPastEvent &&
         !event.community_experience_offering_id &&
         !hasLinkedSessions &&
+        !participationUnavailable &&
         !linkedSessionsLoading && (
           <Card className="p-6">
             <h3 className="mb-4 text-lg font-semibold text-slate-900">Your RSVP</h3>
@@ -556,7 +575,9 @@ export default function EventDetailPage() {
 
       {/* Volunteer opportunities attached to this event — renders nothing
           if there are no open slots the viewer can claim. */}
-      {!isPastEvent && !hasLinkedSessions && <SessionVolunteerPanel eventId={event.id} />}
+      {!isPastEvent && !hasLinkedSessions && !participationUnavailable && (
+        <SessionVolunteerPanel eventId={event.id} />
+      )}
     </div>
   );
 }

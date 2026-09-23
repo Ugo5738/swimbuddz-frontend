@@ -83,8 +83,9 @@ interface EventRecord {
   margin_amount_per_attendee_naira: number;
   email_reminder_hours: number[];
   rsvp_count?: Record<string, number>;
-  participation_mode: "rsvp" | "session" | "experience";
+  participation_mode: "rsvp" | "session" | "experience" | "unavailable";
   linked_session_count: number;
+  participation_state_available: boolean;
 }
 
 interface EventInvite {
@@ -294,6 +295,7 @@ function eventToForm(event: EventRecord): EventForm {
 export default function AdminEventsPage() {
   const [events, setEvents] = useState<EventRecord[]>([]);
   const [eventSessions, setEventSessions] = useState<LinkedEventSession[]>([]);
+  const [sessionLinksAvailable, setSessionLinksAvailable] = useState(true);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<EventRecord | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -324,15 +326,22 @@ export default function AdminEventsPage() {
 
   const fetchEvents = useCallback(async () => {
     try {
-      const [rows, sessions] = await Promise.all([
-        apiGet<EventRecord[]>("/api/v1/events/?upcoming_only=false", { auth: true }),
-        apiGet<LinkedEventSession[]>(
+      const rows = await apiGet<EventRecord[]>("/api/v1/events/?upcoming_only=false", {
+        auth: true,
+      });
+      setEvents(rows);
+      try {
+        const sessions = await apiGet<LinkedEventSession[]>(
           "/api/v1/sessions/?types=event&include_drafts=true&limit=100",
           { auth: true }
-        ),
-      ]);
-      setEvents(rows);
-      setEventSessions(sessions);
+        );
+        setEventSessions(sessions);
+        setSessionLinksAvailable(true);
+      } catch {
+        setEventSessions([]);
+        setSessionLinksAvailable(false);
+        toast.warning("Events loaded, but linked Session management is temporarily unavailable");
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to load events");
     } finally {
@@ -504,7 +513,10 @@ export default function AdminEventsPage() {
   };
 
   const handleDelete = async (eventId: string) => {
-    const linked = eventSessions.some((session) => session.event_id === eventId);
+    const event = events.find((item) => item.id === eventId);
+    const linked =
+      event?.participation_mode === "session" ||
+      eventSessions.some((session) => session.event_id === eventId);
     if (
       !confirm(
         linked
@@ -1187,7 +1199,12 @@ export default function AdminEventsPage() {
                       </span>
                       <span>{event.event_type.replaceAll("_", " ")}</span>
                       <span>{event.tier_access.replace("_", " ")} access</span>
-                      {event.participation_mode === "session" ? (
+                      {event.participation_mode === "unavailable" || !sessionLinksAvailable ? (
+                        <span className="inline-flex items-center gap-1.5 font-medium text-amber-700">
+                          <Users className="h-3.5 w-3.5" />
+                          Participation status temporarily unavailable
+                        </span>
+                      ) : event.participation_mode === "session" ? (
                         <span className="inline-flex items-center gap-1.5 font-medium text-cyan-700">
                           <Users className="h-3.5 w-3.5" />
                           Session-owned booking ·{" "}
@@ -1204,7 +1221,10 @@ export default function AdminEventsPage() {
                     </div>
                   </div>
                   <div className="flex shrink-0 gap-1">
-                    {event.event_type === "community_swim" && activeSessions.length === 0 ? (
+                    {sessionLinksAvailable &&
+                    event.participation_mode !== "unavailable" &&
+                    event.event_type === "community_swim" &&
+                    activeSessions.length === 0 ? (
                       <Link
                         href={`/admin/sessions/new?${new URLSearchParams({
                           event_id: event.id,
