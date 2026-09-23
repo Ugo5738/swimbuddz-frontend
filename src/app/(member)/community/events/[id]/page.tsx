@@ -7,15 +7,7 @@ import { SessionVolunteerPanel } from "@/components/volunteer/SessionVolunteerPa
 import { useApi } from "@/hooks/useApi";
 import { apiPost } from "@/lib/api";
 import { format } from "date-fns";
-import {
-  ArrowLeft,
-  Calendar,
-  CheckCircle,
-  CreditCard,
-  MapPin,
-  Pencil,
-  Users,
-} from "lucide-react";
+import { ArrowLeft, Calendar, CheckCircle, CreditCard, MapPin, Pencil, Users } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
@@ -38,9 +30,23 @@ interface Event {
   created_by: string;
   created_at: string;
   rsvp_count?: Partial<Record<"going" | "maybe" | "not_going", number>>;
+  participation_mode: "rsvp" | "session" | "experience";
+  linked_session_count: number;
 }
 
 type WalletData = { balance: number; available_balance?: number };
+
+interface LinkedEventSession {
+  id: string;
+  title: string;
+  status: string;
+  starts_at: string;
+  ends_at: string;
+  location_name?: string | null;
+  capacity: number;
+  pool_fee: number;
+  allows_guests: boolean;
+}
 
 const eventTypeLabels: Record<string, string> = {
   community_swim: "Official Community Swim",
@@ -57,22 +63,23 @@ export default function EventDetailPage() {
   const router = useRouter();
   const eventId = params.id as string;
 
-  const { data: event, loading, refetch: refetchEvent } = useApi<Event>(
-    eventId ? `/api/v1/events/${eventId}` : null,
-  );
+  const {
+    data: event,
+    loading,
+    refetch: refetchEvent,
+  } = useApi<Event>(eventId ? `/api/v1/events/${eventId}` : null);
   const linkedSessionPath =
     event && event.event_type !== "open_swim"
-      ? `/api/v1/sessions/?types=event&event_id=${encodeURIComponent(event.id)}&limit=1`
+      ? `/api/v1/sessions/?types=event&event_id=${encodeURIComponent(event.id)}&limit=100`
       : null;
-  const { data: linkedSessions } = useApi<
-    Array<{ id: string; title: string; starts_at: string }>
-  >(linkedSessionPath);
+  const { data: linkedSessions, loading: linkedSessionsLoading } =
+    useApi<LinkedEventSession[]>(linkedSessionPath);
   const { data: wallet } = useApi<WalletData>("/api/v1/wallet/me");
   const { data: me } = useApi<{ id: string }>("/api/v1/members/me");
-  const linkedSession = linkedSessions?.[0] ?? null;
-  const walletBalance = wallet
-    ? (wallet.available_balance ?? wallet.balance)
-    : null;
+  const hasLinkedSessions =
+    event?.participation_mode === "session" || (linkedSessions?.length ?? 0) > 0;
+  const hasVisibleLinkedSessions = (linkedSessions?.length ?? 0) > 0;
+  const walletBalance = wallet ? (wallet.available_balance ?? wallet.balance) : null;
   const meId = me?.id ?? null;
   const [userRsvp, setUserRsvp] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -127,6 +134,13 @@ export default function EventDetailPage() {
   const isOpenSwim = event?.event_type === "open_swim";
   const requiresWaiver = hasCost && isOpenSwim;
   const isOwner = !!meId && !!event && meId === event.created_by;
+  const accessLabel: Record<string, string> = {
+    public: "Open to everyone",
+    community: "Community members",
+    club: "Club members",
+    academy: "Academy students",
+    invite_only: "Invitees only",
+  };
 
   if (loading) {
     return (
@@ -144,7 +158,9 @@ export default function EventDetailPage() {
   }
 
   const isPastEvent = new Date(event.start_time) < new Date();
-  const isFullyBooked = event.max_capacity && rsvpCounts.going >= event.max_capacity;
+  const showEventAdmission = isOpenSwim || (!linkedSessionsLoading && !hasLinkedSessions);
+  const isFullyBooked =
+    showEventAdmission && event.max_capacity && rsvpCounts.going >= event.max_capacity;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 py-8">
@@ -176,11 +192,9 @@ export default function EventDetailPage() {
             <span className="rounded-full bg-cyan-100 px-3 py-1 text-sm font-semibold text-cyan-700">
               {eventTypeLabels[event.event_type] || event.event_type}
             </span>
-            {event.tier_access !== "community" && (
-              <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-700">
-                {event.tier_access} members only
-              </span>
-            )}
+            <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-700">
+              {accessLabel[event.tier_access] ?? event.tier_access.replaceAll("_", " ")}
+            </span>
           </div>
 
           {/* Title */}
@@ -209,7 +223,7 @@ export default function EventDetailPage() {
               </div>
             </div>
 
-            {event.max_capacity && (
+            {showEventAdmission && event.max_capacity && (
               <div className="flex items-center gap-2 text-slate-700">
                 <Users className="h-5 w-5 text-slate-400" />
                 <div>
@@ -221,7 +235,7 @@ export default function EventDetailPage() {
               </div>
             )}
 
-            {hasCost && (
+            {showEventAdmission && hasCost && (
               <div className="flex items-center gap-2 text-slate-700">
                 <span className="text-base">🎟️</span>
                 <div>
@@ -246,246 +260,293 @@ export default function EventDetailPage() {
       </Card>
 
       {/* RSVP Section */}
-      {event.community_experience_offering_id && <Card className="p-6"><h3 className="font-semibold">Included in a Community Experience</h3><p className="my-3 text-slate-600">Review the package and named guest tickets. There is no separate Event entry payment.</p><Link className="text-cyan-700 underline" href={`/experiences/${event.community_experience_offering_id}`}>View Experience and my tickets</Link></Card>}
-      {linkedSession && !isPastEvent ? (
-        <Card className="border-cyan-200 bg-cyan-50 p-6">
-          <h3 className="font-semibold text-slate-950">Book the swimming session</h3>
-          <p className="my-3 text-sm leading-6 text-slate-700">
-            This Event introduces the Community Swim. Capacity, member and guest places, payment,
-            attendance, volunteer support, and ride-share are managed through its linked Session.
+      {event.community_experience_offering_id && (
+        <Card className="p-6">
+          <h3 className="font-semibold">Included in a Community Experience</h3>
+          <p className="my-3 text-slate-600">
+            Review the package and named guest tickets. There is no separate Event entry payment.
           </p>
-          <Link href={`/sessions/${linkedSession.id}/book`}>
-            <Button>View and book session</Button>
+          <Link
+            className="text-cyan-700 underline"
+            href={`/experiences/${event.community_experience_offering_id}`}
+          >
+            View Experience and my tickets
           </Link>
         </Card>
-      ) : null}
-      {!isPastEvent && !event.community_experience_offering_id && !linkedSession && (
-        <Card className="p-6">
-          <h3 className="mb-4 text-lg font-semibold text-slate-900">Your RSVP</h3>
-
-          {isFullyBooked && userRsvp !== "going" ? (
-            <div className="rounded-lg bg-amber-50 p-4 text-sm text-amber-900">
-              <strong>Event is fully booked.</strong> You can still mark yourself as
-              &quot;Maybe&quot; to be notified if spots open up.
-            </div>
-          ) : null}
-
-          {/* Payment Method — only for paid events, only when not fully booked */}
-          {hasCost && !(isFullyBooked && userRsvp !== "going") && (
-            <div className="mb-6 space-y-3">
-              <div>
-                <h4 className="text-sm font-semibold text-slate-800">Entry Fee Payment</h4>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Choose how to pay the ₦{effectiveCost!.toLocaleString()} entry fee
-                </p>
+      )}
+      {hasVisibleLinkedSessions && !isPastEvent ? (
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-950">Swimming sessions</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Capacity, prices, member and guest places, attendance, volunteer support, and
+              ride-share are managed by the Session{linkedSessions!.length === 1 ? "" : "s"} below.
+            </p>
+          </div>
+          {linkedSessions!.map((session) => (
+            <Card key={session.id} className="border-cyan-200 bg-cyan-50 p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="font-semibold text-slate-950">{session.title}</h3>
+                  <p className="mt-1 text-sm text-slate-700">
+                    {format(new Date(session.starts_at), "EEE, d MMM yyyy · h:mm a")} · capacity{" "}
+                    {session.capacity}
+                    {session.pool_fee > 0 ? ` · ₦${session.pool_fee.toLocaleString()}` : " · free"}
+                    {session.allows_guests ? " · guest places available" : ""}
+                  </p>
+                </div>
+                <Link href={`/sessions/${session.id}/book`}>
+                  <Button>View and book</Button>
+                </Link>
               </div>
+            </Card>
+          ))}
+        </section>
+      ) : null}
+      {event.participation_mode === "session" &&
+      !linkedSessionsLoading &&
+      !linkedSessions?.length &&
+      !isPastEvent ? (
+        <Card className="border-amber-200 bg-amber-50 p-6">
+          <h3 className="font-semibold text-amber-950">Booking is being prepared</h3>
+          <p className="mt-2 text-sm leading-6 text-amber-900">
+            This Event uses Session booking, but its Session is not published yet. Check back soon;
+            a separate Event RSVP is intentionally not available.
+          </p>
+        </Card>
+      ) : null}
+      {!isPastEvent &&
+        !event.community_experience_offering_id &&
+        !hasLinkedSessions &&
+        !linkedSessionsLoading && (
+          <Card className="p-6">
+            <h3 className="mb-4 text-lg font-semibold text-slate-900">Your RSVP</h3>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                {/* Card Payment */}
-                <div
-                  onClick={() => setPayWithBubbles(false)}
-                  className={`cursor-pointer rounded-xl border-2 p-4 transition-all ${
-                    !payWithBubbles
-                      ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-300"
-                      : "border-slate-200 bg-white hover:border-cyan-200 hover:bg-cyan-50/40"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`flex-shrink-0 rounded-lg p-2 ${!payWithBubbles ? "bg-cyan-100" : "bg-slate-100"}`}
-                    >
-                      <CreditCard
-                        className={`h-5 w-5 ${!payWithBubbles ? "text-cyan-600" : "text-slate-400"}`}
-                      />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-slate-900">Card Payment</p>
-                        {!payWithBubbles && (
-                          <span className="text-xs font-medium px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded-full">
-                            Selected
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-500 mt-0.5">Paystack · Card, bank, USSD</p>
-                    </div>
-                  </div>
-                  <p className="mt-3 text-xl font-bold text-slate-900">
-                    ₦{effectiveCost!.toLocaleString()}
+            {isFullyBooked && userRsvp !== "going" ? (
+              <div className="rounded-lg bg-amber-50 p-4 text-sm text-amber-900">
+                <strong>Event is fully booked.</strong> You can still mark yourself as
+                &quot;Maybe&quot; to be notified if spots open up.
+              </div>
+            ) : null}
+
+            {/* Payment Method — only for paid events, only when not fully booked */}
+            {hasCost && !(isFullyBooked && userRsvp !== "going") && (
+              <div className="mb-6 space-y-3">
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-800">Entry Fee Payment</h4>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Choose how to pay the ₦{effectiveCost!.toLocaleString()} entry fee
                   </p>
                 </div>
 
-                {/* Bubbles */}
-                <div
-                  onClick={() => {
-                    if (canPayWithBubbles) setPayWithBubbles(true);
-                  }}
-                  className={`rounded-xl border-2 p-4 transition-all ${
-                    payWithBubbles
-                      ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-300 cursor-pointer"
-                      : canPayWithBubbles
-                        ? "border-slate-200 bg-white hover:border-cyan-200 hover:bg-cyan-50/40 cursor-pointer"
-                        : "border-slate-200 bg-white cursor-default"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`flex-shrink-0 rounded-lg p-2 text-xl leading-none ${payWithBubbles ? "bg-cyan-100" : "bg-slate-100"}`}
-                    >
-                      🫧
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-slate-900">Pay with Bubbles</p>
-                        {payWithBubbles && (
-                          <span className="text-xs font-medium px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded-full">
-                            Selected
-                          </span>
-                        )}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {/* Card Payment */}
+                  <div
+                    onClick={() => setPayWithBubbles(false)}
+                    className={`cursor-pointer rounded-xl border-2 p-4 transition-all ${
+                      !payWithBubbles
+                        ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-300"
+                        : "border-slate-200 bg-white hover:border-cyan-200 hover:bg-cyan-50/40"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`flex-shrink-0 rounded-lg p-2 ${!payWithBubbles ? "bg-cyan-100" : "bg-slate-100"}`}
+                      >
+                        <CreditCard
+                          className={`h-5 w-5 ${!payWithBubbles ? "text-cyan-600" : "text-slate-400"}`}
+                        />
                       </div>
-                      <p className="text-xs text-slate-500 mt-0.5">SwimBuddz wallet</p>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-slate-900">Card Payment</p>
+                          {!payWithBubbles && (
+                            <span className="text-xs font-medium px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded-full">
+                              Selected
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">Paystack · Card, bank, USSD</p>
+                      </div>
                     </div>
+                    <p className="mt-3 text-xl font-bold text-slate-900">
+                      ₦{effectiveCost!.toLocaleString()}
+                    </p>
                   </div>
 
-                  <p className="mt-3 text-xl font-bold text-slate-900">
-                    {isExactBubbleAmount ? (
-                      <>
-                        {bubblesNeeded}{" "}
-                        <span className="text-sm font-normal text-slate-500">Bubbles</span>
-                      </>
-                    ) : (
-                      <span className="text-sm font-medium text-slate-500">Card only</span>
-                    )}
-                  </p>
-
-                  {walletBalance !== null ? (
-                    <div className="mt-2 space-y-1.5">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-500">Your balance</span>
-                        <span
-                          className={`font-semibold ${
-                            canPayWithBubbles
-                              ? "text-emerald-600"
-                              : isExactBubbleAmount
-                                ? "text-red-500"
-                                : "text-slate-500"
-                          }`}
-                        >
-                          {walletBalance} 🫧 {canPayWithBubbles ? "✓" : ""}
-                        </span>
+                  {/* Bubbles */}
+                  <div
+                    onClick={() => {
+                      if (canPayWithBubbles) setPayWithBubbles(true);
+                    }}
+                    className={`rounded-xl border-2 p-4 transition-all ${
+                      payWithBubbles
+                        ? "border-cyan-500 bg-cyan-50 ring-1 ring-cyan-300 cursor-pointer"
+                        : canPayWithBubbles
+                          ? "border-slate-200 bg-white hover:border-cyan-200 hover:bg-cyan-50/40 cursor-pointer"
+                          : "border-slate-200 bg-white cursor-default"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`flex-shrink-0 rounded-lg p-2 text-xl leading-none ${payWithBubbles ? "bg-cyan-100" : "bg-slate-100"}`}
+                      >
+                        🫧
                       </div>
-                      {!canPayWithBubbles && isExactBubbleAmount && (
-                        <Link
-                          href="/account/wallet/topup"
-                          className="mt-2 flex items-center justify-center gap-1 w-full text-xs font-semibold text-white bg-cyan-500 hover:bg-cyan-600 rounded-lg py-1.5 transition-colors"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          Top Up {bubblesNeeded - walletBalance} more Bubbles →
-                        </Link>
-                      )}
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-slate-900">Pay with Bubbles</p>
+                          {payWithBubbles && (
+                            <span className="text-xs font-medium px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded-full">
+                              Selected
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">SwimBuddz wallet</p>
+                      </div>
                     </div>
-                  ) : (
-                    <div className="mt-2">
-                      <p className="text-xs text-slate-500">
-                        <Link
-                          href="/account/wallet"
-                          className="text-cyan-600 font-medium underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          Set up your wallet
-                        </Link>{" "}
-                        to pay with Bubbles
-                      </p>
+
+                    <p className="mt-3 text-xl font-bold text-slate-900">
+                      {isExactBubbleAmount ? (
+                        <>
+                          {bubblesNeeded}{" "}
+                          <span className="text-sm font-normal text-slate-500">Bubbles</span>
+                        </>
+                      ) : (
+                        <span className="text-sm font-medium text-slate-500">Card only</span>
+                      )}
+                    </p>
+
+                    {walletBalance !== null ? (
+                      <div className="mt-2 space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-500">Your balance</span>
+                          <span
+                            className={`font-semibold ${
+                              canPayWithBubbles
+                                ? "text-emerald-600"
+                                : isExactBubbleAmount
+                                  ? "text-red-500"
+                                  : "text-slate-500"
+                            }`}
+                          >
+                            {walletBalance} 🫧 {canPayWithBubbles ? "✓" : ""}
+                          </span>
+                        </div>
+                        {!canPayWithBubbles && isExactBubbleAmount && (
+                          <Link
+                            href="/account/wallet/topup"
+                            className="mt-2 flex items-center justify-center gap-1 w-full text-xs font-semibold text-white bg-cyan-500 hover:bg-cyan-600 rounded-lg py-1.5 transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Top Up {bubblesNeeded - walletBalance} more Bubbles →
+                          </Link>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="mt-2">
+                        <p className="text-xs text-slate-500">
+                          <Link
+                            href="/account/wallet"
+                            className="text-cyan-600 font-medium underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Set up your wallet
+                          </Link>{" "}
+                          to pay with Bubbles
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {requiresWaiver && (
+              <label className="mb-4 flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <Checkbox
+                  checked={waiverAccepted}
+                  onChange={(e) => setWaiverAccepted(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span className="text-sm text-slate-700">
+                  I understand this is a peer-organized swim and I join at my own risk. I accept the{" "}
+                  <span className="font-medium">liability waiver</span>.
+                </span>
+              </label>
+            )}
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <button
+                onClick={() => handleRsvp("going")}
+                disabled={
+                  submitting ||
+                  !!(isFullyBooked && userRsvp !== "going") ||
+                  (requiresWaiver && !waiverAccepted)
+                }
+                className={`flex items-center justify-center gap-2 rounded-xl border-2 px-4 py-4 font-medium transition-all ${
+                  userRsvp === "going"
+                    ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                    : "border-slate-200 text-slate-700 hover:border-emerald-300 hover:bg-emerald-50"
+                } disabled:cursor-not-allowed disabled:opacity-50`}
+              >
+                {userRsvp === "going" && <CheckCircle className="h-5 w-5" />}
+                <div className="text-center">
+                  <div>Going</div>
+                  {hasCost && (
+                    <div className="text-xs font-normal opacity-75 mt-0.5">
+                      {payWithBubbles
+                        ? `${bubblesNeeded} 🫧`
+                        : `₦${effectiveCost!.toLocaleString()}`}
                     </div>
                   )}
                 </div>
+              </button>
+
+              <button
+                onClick={() => handleRsvp("maybe")}
+                disabled={!!submitting}
+                className={`flex items-center justify-center gap-2 rounded-xl border-2 px-4 py-4 font-medium transition-all ${
+                  userRsvp === "maybe"
+                    ? "border-amber-500 bg-amber-50 text-amber-700"
+                    : "border-slate-200 text-slate-700 hover:border-amber-300 hover:bg-amber-50"
+                } disabled:cursor-not-allowed disabled:opacity-50`}
+              >
+                {userRsvp === "maybe" && <CheckCircle className="h-5 w-5" />}
+                <span>Maybe</span>
+              </button>
+
+              <button
+                onClick={() => handleRsvp("not_going")}
+                disabled={!!submitting}
+                className={`flex items-center justify-center gap-2 rounded-xl border-2 px-4 py-4 font-medium transition-all ${
+                  userRsvp === "not_going"
+                    ? "border-slate-500 bg-slate-50 text-slate-700"
+                    : "border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                } disabled:cursor-not-allowed disabled:opacity-50`}
+              >
+                {userRsvp === "not_going" && <CheckCircle className="h-5 w-5" />}
+                <span>Can&apos;t Go</span>
+              </button>
+            </div>
+
+            {/* RSVP Stats */}
+            <div className="mt-6 flex gap-6 border-t border-slate-200 pt-4 text-sm">
+              <div>
+                <span className="font-semibold text-emerald-700">{rsvpCounts.going}</span>
+                <span className="ml-1 text-slate-600">going</span>
+              </div>
+              <div>
+                <span className="font-semibold text-amber-700">{rsvpCounts.maybe}</span>
+                <span className="ml-1 text-slate-600">maybe</span>
+              </div>
+              <div>
+                <span className="font-semibold text-slate-700">{rsvpCounts.not_going}</span>
+                <span className="ml-1 text-slate-600">can't go</span>
               </div>
             </div>
-          )}
-
-          {requiresWaiver && (
-            <label className="mb-4 flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <Checkbox
-                checked={waiverAccepted}
-                onChange={(e) => setWaiverAccepted(e.target.checked)}
-                className="mt-0.5"
-              />
-              <span className="text-sm text-slate-700">
-                I understand this is a peer-organized swim and I join at my own risk. I accept the{" "}
-                <span className="font-medium">liability waiver</span>.
-              </span>
-            </label>
-          )}
-
-          <div className="grid gap-3 sm:grid-cols-3">
-            <button
-              onClick={() => handleRsvp("going")}
-              disabled={
-                submitting ||
-                !!(isFullyBooked && userRsvp !== "going") ||
-                (requiresWaiver && !waiverAccepted)
-              }
-              className={`flex items-center justify-center gap-2 rounded-xl border-2 px-4 py-4 font-medium transition-all ${
-                userRsvp === "going"
-                  ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                  : "border-slate-200 text-slate-700 hover:border-emerald-300 hover:bg-emerald-50"
-              } disabled:cursor-not-allowed disabled:opacity-50`}
-            >
-              {userRsvp === "going" && <CheckCircle className="h-5 w-5" />}
-              <div className="text-center">
-                <div>Going</div>
-                {hasCost && (
-                  <div className="text-xs font-normal opacity-75 mt-0.5">
-                    {payWithBubbles ? `${bubblesNeeded} 🫧` : `₦${effectiveCost!.toLocaleString()}`}
-                  </div>
-                )}
-              </div>
-            </button>
-
-            <button
-              onClick={() => handleRsvp("maybe")}
-              disabled={!!submitting}
-              className={`flex items-center justify-center gap-2 rounded-xl border-2 px-4 py-4 font-medium transition-all ${
-                userRsvp === "maybe"
-                  ? "border-amber-500 bg-amber-50 text-amber-700"
-                  : "border-slate-200 text-slate-700 hover:border-amber-300 hover:bg-amber-50"
-              } disabled:cursor-not-allowed disabled:opacity-50`}
-            >
-              {userRsvp === "maybe" && <CheckCircle className="h-5 w-5" />}
-              <span>Maybe</span>
-            </button>
-
-            <button
-              onClick={() => handleRsvp("not_going")}
-              disabled={!!submitting}
-              className={`flex items-center justify-center gap-2 rounded-xl border-2 px-4 py-4 font-medium transition-all ${
-                userRsvp === "not_going"
-                  ? "border-slate-500 bg-slate-50 text-slate-700"
-                  : "border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50"
-              } disabled:cursor-not-allowed disabled:opacity-50`}
-            >
-              {userRsvp === "not_going" && <CheckCircle className="h-5 w-5" />}
-              <span>Can&apos;t Go</span>
-            </button>
-          </div>
-
-          {/* RSVP Stats */}
-          <div className="mt-6 flex gap-6 border-t border-slate-200 pt-4 text-sm">
-            <div>
-              <span className="font-semibold text-emerald-700">{rsvpCounts.going}</span>
-              <span className="ml-1 text-slate-600">going</span>
-            </div>
-            <div>
-              <span className="font-semibold text-amber-700">{rsvpCounts.maybe}</span>
-              <span className="ml-1 text-slate-600">maybe</span>
-            </div>
-            <div>
-              <span className="font-semibold text-slate-700">{rsvpCounts.not_going}</span>
-              <span className="ml-1 text-slate-600">can't go</span>
-            </div>
-          </div>
-        </Card>
-      )}
+          </Card>
+        )}
 
       {isPastEvent && (
         <Card className="p-6 text-center">
@@ -495,7 +556,7 @@ export default function EventDetailPage() {
 
       {/* Volunteer opportunities attached to this event — renders nothing
           if there are no open slots the viewer can claim. */}
-      {!isPastEvent && <SessionVolunteerPanel eventId={event.id} />}
+      {!isPastEvent && !hasLinkedSessions && <SessionVolunteerPanel eventId={event.id} />}
     </div>
   );
 }

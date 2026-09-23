@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { apiGet } from "@/lib/api";
 import { PoolPricingApi } from "@/lib/poolPricing";
 import { Calculator, Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -92,10 +93,10 @@ export function SessionFormModal({
 }: SessionFormProps) {
   const now = new Date();
   const defaultStart = initialDate || now;
-  const defaultEnd =
-    initialEvent?.endsAt ?? new Date(defaultStart.getTime() + 3 * 60 * 60 * 1000);
+  const defaultEnd = initialEvent?.endsAt ?? new Date(defaultStart.getTime() + 3 * 60 * 60 * 1000);
   const publishedClub =
     mode === "edit" && !!session?.published_at && session.session_type === "club";
+  const linkedEventSession = mode === "edit" && session?.session_type === "event";
 
   const [form, setForm] = useState({
     club_access_mode: session?.club_access_mode ?? "plan_included",
@@ -395,15 +396,32 @@ export function SessionFormModal({
 
   const formContent = (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {linkedEventSession ? (
+        <div className="rounded-xl border border-cyan-200 bg-cyan-50 p-4 text-sm text-cyan-950">
+          <p className="font-semibold">Shared Event details are synchronized</p>
+          <p className="mt-1 leading-6">
+            Change the title, description, date, venue, or capacity on the linked Event. This page
+            remains the source of truth for member and guest prices, bookings, attendance, volunteer
+            roles, and ride-share.
+          </p>
+          <Link
+            href="/admin/community/events"
+            className="mt-2 inline-flex font-semibold text-cyan-800 underline"
+          >
+            Manage the linked Event
+          </Link>
+        </div>
+      ) : null}
       <Input
         label="Title"
+        disabled={linkedEventSession}
         value={form.title}
         onChange={(e) => setForm({ ...form, title: e.target.value })}
         required
       />
       <Select
         label="Session Type"
-        disabled={publishedClub}
+        disabled={publishedClub || linkedEventSession}
         value={form.session_type}
         onChange={(event) => {
           const sessionType = event.target.value as SessionType;
@@ -466,6 +484,7 @@ export function SessionFormModal({
       {form.session_type === "event" && (
         <Select
           label="Event"
+          disabled={linkedEventSession}
           value={form.event_id ?? ""}
           onChange={(e) => setForm({ ...form, event_id: e.target.value || null })}
           required
@@ -508,7 +527,7 @@ export function SessionFormModal({
       )}
       <PoolPicker
         label="Pool"
-        disabled={publishedClub}
+        disabled={publishedClub || linkedEventSession}
         value={form.pool_id}
         onChange={(poolId, poolName) =>
           setForm({
@@ -545,7 +564,7 @@ export function SessionFormModal({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Input
           label="Start Time"
-          disabled={publishedClub}
+          disabled={publishedClub || linkedEventSession}
           type="datetime-local"
           value={form.starts_at}
           onChange={(e) => setForm({ ...form, starts_at: e.target.value })}
@@ -553,7 +572,7 @@ export function SessionFormModal({
         />
         <Input
           label="End Time"
-          disabled={publishedClub}
+          disabled={publishedClub || linkedEventSession}
           type="datetime-local"
           value={form.ends_at}
           onChange={(e) => setForm({ ...form, ends_at: e.target.value })}
@@ -601,6 +620,7 @@ export function SessionFormModal({
         />
         <Input
           label="Capacity"
+          disabled={linkedEventSession}
           type="number"
           min={1}
           value={form.capacity}
@@ -897,6 +917,7 @@ export function SessionFormModal({
       </fieldset>
       <Textarea
         label="Description (optional)"
+        disabled={linkedEventSession}
         value={form.description}
         onChange={(e) => setForm({ ...form, description: e.target.value })}
       />

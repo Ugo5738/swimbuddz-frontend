@@ -83,10 +83,22 @@ interface EventRecord {
   margin_amount_per_attendee_naira: number;
   email_reminder_hours: number[];
   rsvp_count?: Record<string, number>;
+  participation_mode: "rsvp" | "session" | "experience";
+  linked_session_count: number;
 }
 
 interface EventInvite {
   member_id: string;
+}
+
+interface LinkedEventSession {
+  id: string;
+  event_id: string | null;
+  title: string;
+  status: "draft" | "scheduled" | "in_progress" | "completed" | "cancelled";
+  starts_at: string;
+  capacity: number;
+  pool_fee: number;
 }
 
 interface MemberOption {
@@ -178,7 +190,9 @@ const PRESETS: Array<{
       audiences: ["community", "club", "academy"],
       visibility: "public",
       tier_access: "public",
-      pricing_mode: "fixed",
+      pricing_mode: "free",
+      cost_naira: "",
+      cost_lines: [],
       email_reminder_hours: REMINDER_PROFILES.standard,
     },
   },
@@ -279,6 +293,7 @@ function eventToForm(event: EventRecord): EventForm {
 
 export default function AdminEventsPage() {
   const [events, setEvents] = useState<EventRecord[]>([]);
+  const [eventSessions, setEventSessions] = useState<LinkedEventSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<EventRecord | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -309,10 +324,15 @@ export default function AdminEventsPage() {
 
   const fetchEvents = useCallback(async () => {
     try {
-      const rows = await apiGet<EventRecord[]>("/api/v1/events/?upcoming_only=false", {
-        auth: true,
-      });
+      const [rows, sessions] = await Promise.all([
+        apiGet<EventRecord[]>("/api/v1/events/?upcoming_only=false", { auth: true }),
+        apiGet<LinkedEventSession[]>(
+          "/api/v1/sessions/?types=event&include_drafts=true&limit=100",
+          { auth: true }
+        ),
+      ]);
       setEvents(rows);
+      setEventSessions(sessions);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to load events");
     } finally {
@@ -444,14 +464,19 @@ export default function AdminEventsPage() {
       end_time: form.end_time ? new Date(form.end_time).toISOString() : null,
       max_capacity: form.max_capacity ? Number(form.max_capacity) : null,
       tier_access: form.visibility === "invite_only" ? "invite_only" : form.tier_access,
-      cost_naira: form.cost_naira ? Number(form.cost_naira) : null,
-      pricing_mode: form.pricing_mode,
+      cost_naira:
+        form.event_type === "community_swim"
+          ? null
+          : form.cost_naira
+            ? Number(form.cost_naira)
+            : null,
+      pricing_mode: form.event_type === "community_swim" ? "free" : form.pricing_mode,
       pricing_expected_attendees: form.pricing_expected_attendees
         ? Number(form.pricing_expected_attendees)
         : form.max_capacity
           ? Number(form.max_capacity)
           : null,
-      cost_lines: form.cost_lines,
+      cost_lines: form.event_type === "community_swim" ? [] : form.cost_lines,
       margin_type: form.margin_type,
       margin_value: Number(form.margin_value) || 0,
       email_reminder_hours: form.email_reminder_hours,
@@ -479,10 +504,18 @@ export default function AdminEventsPage() {
   };
 
   const handleDelete = async (eventId: string) => {
-    if (!confirm("Delete this event and its RSVPs?")) return;
+    const linked = eventSessions.some((session) => session.event_id === eventId);
+    if (
+      !confirm(
+        linked
+          ? "Cancel this Event and all of its linked Sessions? Completed Session history will be kept."
+          : "Delete this event and its RSVPs?"
+      )
+    )
+      return;
     try {
       await apiDelete(`/api/v1/events/${eventId}`, { auth: true });
-      toast.success("Event deleted");
+      toast.success(linked ? "Event and linked Sessions cancelled" : "Event deleted");
       await fetchEvents();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to delete event");
@@ -575,9 +608,9 @@ export default function AdminEventsPage() {
             />
             <div>
               <Input
-              label="Activity type"
-              value={form.event_type}
-              onChange={(event) => setForm({ ...form, event_type: event.target.value })}
+                label="Activity type"
+                value={form.event_type}
+                onChange={(event) => setForm({ ...form, event_type: event.target.value })}
                 list="event-activity-types"
                 hint="Use a short key such as community_swim. New keys work without a code change."
                 required
@@ -674,7 +707,10 @@ export default function AdminEventsPage() {
                 const selected = form.audiences.includes(value);
                 const primary = form.primary_audience === value;
                 return (
-                  <label key={value} className="inline-flex items-center gap-2 text-sm text-slate-700">
+                  <label
+                    key={value}
+                    className="inline-flex items-center gap-2 text-sm text-slate-700"
+                  >
                     <input
                       type="checkbox"
                       checked={selected}
@@ -832,200 +868,218 @@ export default function AdminEventsPage() {
             </Select>
           </div>
 
-          <fieldset className="space-y-4 border-y border-slate-200 py-4">
-            <legend className="text-sm font-semibold text-slate-900">Attendee pricing</legend>
-            <Select
-              label="Pricing treatment"
-              value={form.pricing_mode}
-              onChange={(event) =>
-                setForm({ ...form, pricing_mode: event.target.value as PricingMode })
-              }
-            >
-              <option value="free">Free</option>
-              <option value="included">Included in membership or programme</option>
-              <option value="fixed">Fixed attendee price</option>
-              <option value="cost_plus">Calculate from costs + margin</option>
-            </Select>
+          {form.event_type === "community_swim" ? (
+            <div className="rounded-xl border border-cyan-200 bg-cyan-50 p-4">
+              <p className="text-sm font-semibold text-cyan-950">
+                Admission is configured on the swim Session
+              </p>
+              <p className="mt-1 text-sm leading-6 text-cyan-900">
+                This Event controls discovery, access, date, venue, and capacity. Set member and
+                guest prices when you add its Session so checkout has one source of truth.
+              </p>
+            </div>
+          ) : (
+            <fieldset className="space-y-4 border-y border-slate-200 py-4">
+              <legend className="text-sm font-semibold text-slate-900">Attendee pricing</legend>
+              <Select
+                label="Pricing treatment"
+                value={form.pricing_mode}
+                onChange={(event) =>
+                  setForm({ ...form, pricing_mode: event.target.value as PricingMode })
+                }
+              >
+                <option value="free">Free</option>
+                <option value="included">Included in membership or programme</option>
+                <option value="fixed">Fixed attendee price</option>
+                <option value="cost_plus">Calculate from costs + margin</option>
+              </Select>
 
-            {form.pricing_mode === "fixed" ? (
-              <Input
-                label="Attendee price (₦)"
-                type="number"
-                min={0}
-                value={form.cost_naira}
-                onChange={(event) => setForm({ ...form, cost_naira: event.target.value })}
-              />
-            ) : null}
+              {form.pricing_mode === "fixed" ? (
+                <Input
+                  label="Attendee price (₦)"
+                  type="number"
+                  min={0}
+                  value={form.cost_naira}
+                  onChange={(event) => setForm({ ...form, cost_naira: event.target.value })}
+                />
+              ) : null}
 
-            {form.pricing_mode === "cost_plus" ? (
-              <div className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-4">
-                  <Input
-                    label="Expected attendees"
-                    type="number"
-                    min={1}
-                    value={form.pricing_expected_attendees}
-                    onChange={(event) =>
-                      setForm({ ...form, pricing_expected_attendees: event.target.value })
-                    }
-                  />
-                  <Input
-                    label="Expected staff"
-                    type="number"
-                    min={0}
-                    value={quoteStaff}
-                    onChange={(event) => setQuoteStaff(Number(event.target.value) || 0)}
-                  />
-                  <Input
-                    label="Lanes"
-                    type="number"
-                    min={1}
-                    value={quoteLanes}
-                    onChange={(event) => setQuoteLanes(Number(event.target.value) || 1)}
-                  />
-                  <div className="flex items-end">
+              {form.pricing_mode === "cost_plus" ? (
+                <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <Input
+                      label="Expected attendees"
+                      type="number"
+                      min={1}
+                      value={form.pricing_expected_attendees}
+                      onChange={(event) =>
+                        setForm({ ...form, pricing_expected_attendees: event.target.value })
+                      }
+                    />
+                    <Input
+                      label="Expected staff"
+                      type="number"
+                      min={0}
+                      value={quoteStaff}
+                      onChange={(event) => setQuoteStaff(Number(event.target.value) || 0)}
+                    />
+                    <Input
+                      label="Lanes"
+                      type="number"
+                      min={1}
+                      value={quoteLanes}
+                      onChange={(event) => setQuoteLanes(Number(event.target.value) || 1)}
+                    />
+                    <div className="flex items-end">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => void loadCostQuote()}
+                        disabled={quoting}
+                      >
+                        {quoting ? "Loading..." : "Load pool costs"}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {form.cost_lines.map((line, index) => (
+                      <div
+                        key={`${line.category}-${index}`}
+                        className="grid gap-2 border-b border-slate-100 pb-3 md:grid-cols-[1.5fr_1fr_1fr_auto]"
+                      >
+                        <Input
+                          label={index === 0 ? "Cost item" : undefined}
+                          value={line.description}
+                          onChange={(event) =>
+                            setForm((current) => ({
+                              ...current,
+                              cost_lines: current.cost_lines.map((item, itemIndex) =>
+                                itemIndex === index
+                                  ? { ...item, description: event.target.value }
+                                  : item
+                              ),
+                            }))
+                          }
+                        />
+                        <Input
+                          label={index === 0 ? "Unit cost (₦)" : undefined}
+                          type="number"
+                          min={0}
+                          value={line.unit_cost_naira}
+                          onChange={(event) =>
+                            setForm((current) => ({
+                              ...current,
+                              cost_lines: current.cost_lines.map((item, itemIndex) =>
+                                itemIndex === index
+                                  ? {
+                                      ...item,
+                                      unit_cost_naira: Number(event.target.value) || 0,
+                                      source_rate_id: null,
+                                    }
+                                  : item
+                              ),
+                            }))
+                          }
+                        />
+                        <Input
+                          label={index === 0 ? "Quantity" : undefined}
+                          type="number"
+                          min={0}
+                          value={line.quantity}
+                          onChange={(event) =>
+                            setForm((current) => ({
+                              ...current,
+                              cost_lines: current.cost_lines.map((item, itemIndex) =>
+                                itemIndex === index
+                                  ? { ...item, quantity: Number(event.target.value) || 0 }
+                                  : item
+                              ),
+                            }))
+                          }
+                        />
+                        <button
+                          type="button"
+                          aria-label={`Remove ${line.description}`}
+                          onClick={() =>
+                            setForm((current) => ({
+                              ...current,
+                              cost_lines: current.cost_lines.filter(
+                                (_, itemIndex) => itemIndex !== index
+                              ),
+                            }))
+                          }
+                          className="mt-auto inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
                     <Button
                       type="button"
                       variant="secondary"
-                      onClick={() => void loadCostQuote()}
-                      disabled={quoting}
+                      onClick={() =>
+                        setForm((current) => ({
+                          ...current,
+                          cost_lines: [
+                            ...current.cost_lines,
+                            {
+                              category: "other",
+                              description: "Other cost",
+                              charge_basis: "flat_session",
+                              unit_cost_naira: 0,
+                              quantity: 1,
+                              total_cost_naira: 0,
+                              source_rate_type: null,
+                              source_rate_id: null,
+                            },
+                          ],
+                        }))
+                      }
                     >
-                      {quoting ? "Loading..." : "Load pool costs"}
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add cost item
                     </Button>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  {form.cost_lines.map((line, index) => (
-                    <div
-                      key={`${line.category}-${index}`}
-                      className="grid gap-2 border-b border-slate-100 pb-3 md:grid-cols-[1.5fr_1fr_1fr_auto]"
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Select
+                      label="Margin type"
+                      value={form.margin_type}
+                      onChange={(event) =>
+                        setForm({ ...form, margin_type: event.target.value as MarginType })
+                      }
                     >
-                      <Input
-                        label={index === 0 ? "Cost item" : undefined}
-                        value={line.description}
-                        onChange={(event) =>
-                          setForm((current) => ({
-                            ...current,
-                            cost_lines: current.cost_lines.map((item, itemIndex) =>
-                              itemIndex === index
-                                ? { ...item, description: event.target.value }
-                                : item
-                            ),
-                          }))
-                        }
-                      />
-                      <Input
-                        label={index === 0 ? "Unit cost (₦)" : undefined}
-                        type="number"
-                        min={0}
-                        value={line.unit_cost_naira}
-                        onChange={(event) =>
-                          setForm((current) => ({
-                            ...current,
-                            cost_lines: current.cost_lines.map((item, itemIndex) =>
-                              itemIndex === index
-                                ? {
-                                    ...item,
-                                    unit_cost_naira: Number(event.target.value) || 0,
-                                    source_rate_id: null,
-                                  }
-                                : item
-                            ),
-                          }))
-                        }
-                      />
-                      <Input
-                        label={index === 0 ? "Quantity" : undefined}
-                        type="number"
-                        min={0}
-                        value={line.quantity}
-                        onChange={(event) =>
-                          setForm((current) => ({
-                            ...current,
-                            cost_lines: current.cost_lines.map((item, itemIndex) =>
-                              itemIndex === index
-                                ? { ...item, quantity: Number(event.target.value) || 0 }
-                                : item
-                            ),
-                          }))
-                        }
-                      />
-                      <button
-                        type="button"
-                        aria-label={`Remove ${line.description}`}
-                        onClick={() =>
-                          setForm((current) => ({
-                            ...current,
-                            cost_lines: current.cost_lines.filter(
-                              (_, itemIndex) => itemIndex !== index
-                            ),
-                          }))
-                        }
-                        className="mt-auto inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() =>
-                      setForm((current) => ({
-                        ...current,
-                        cost_lines: [
-                          ...current.cost_lines,
-                          {
-                            category: "other",
-                            description: "Other cost",
-                            charge_basis: "flat_session",
-                            unit_cost_naira: 0,
-                            quantity: 1,
-                            total_cost_naira: 0,
-                            source_rate_type: null,
-                            source_rate_id: null,
-                          },
-                        ],
-                      }))
-                    }
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add cost item
-                  </Button>
-                </div>
+                      <option value="fixed_per_attendee">Fixed per attendee</option>
+                      <option value="percentage">Percentage of direct cost</option>
+                    </Select>
+                    <Input
+                      label={
+                        form.margin_type === "percentage" ? "Margin (%)" : "Margin per attendee (₦)"
+                      }
+                      type="number"
+                      min={0}
+                      value={form.margin_value}
+                      onChange={(event) => setForm({ ...form, margin_value: event.target.value })}
+                    />
+                  </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Select
-                    label="Margin type"
-                    value={form.margin_type}
-                    onChange={(event) =>
-                      setForm({ ...form, margin_type: event.target.value as MarginType })
-                    }
-                  >
-                    <option value="fixed_per_attendee">Fixed per attendee</option>
-                    <option value="percentage">Percentage of direct cost</option>
-                  </Select>
-                  <Input
-                    label={
-                      form.margin_type === "percentage" ? "Margin (%)" : "Margin per attendee (₦)"
-                    }
-                    type="number"
-                    min={0}
-                    value={form.margin_value}
-                    onChange={(event) => setForm({ ...form, margin_value: event.target.value })}
-                  />
+                  <div className="grid gap-3 bg-slate-50 p-4 text-sm sm:grid-cols-4">
+                    <PricingMetric label="Estimated total cost" value={estimatedTotalCost} />
+                    <PricingMetric
+                      label="Direct cost / attendee"
+                      value={estimatedCostPerAttendee}
+                    />
+                    <PricingMetric label="Margin / attendee" value={marginPerAttendee} />
+                    <PricingMetric
+                      label="Suggested attendee price"
+                      value={suggestedAttendeePrice}
+                    />
+                  </div>
                 </div>
-
-                <div className="grid gap-3 bg-slate-50 p-4 text-sm sm:grid-cols-4">
-                  <PricingMetric label="Estimated total cost" value={estimatedTotalCost} />
-                  <PricingMetric label="Direct cost / attendee" value={estimatedCostPerAttendee} />
-                  <PricingMetric label="Margin / attendee" value={marginPerAttendee} />
-                  <PricingMetric label="Suggested attendee price" value={suggestedAttendeePrice} />
-                </div>
-              </div>
-            ) : null}
-          </fieldset>
+              ) : null}
+            </fieldset>
+          )}
 
           {form.visibility === "invite_only" ? (
             <fieldset className="space-y-3 border-y border-slate-200 py-4">
@@ -1092,87 +1146,111 @@ export default function AdminEventsPage() {
         </div>
       ) : (
         <div className="grid gap-3">
-          {events.map((event) => (
-            <Card key={event.id} className="p-5">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="font-semibold text-slate-950">{event.title}</h2>
-                    <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
-                      {event.primary_audience ?? event.audience}
-                    </span>
-                    <span
-                      className={`rounded px-2 py-0.5 text-xs font-medium ${
-                        event.status === "published"
-                          ? "bg-green-100 text-green-800"
-                          : event.status === "draft"
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {event.status}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-sm text-slate-600">
-                    {format(new Date(event.start_time), "EEE, d MMM yyyy · h:mm a")}
-                    {event.location ? ` · ${event.location}` : ""}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-500">
-                    <span className="inline-flex items-center gap-1.5">
-                      {event.visibility === "public" ? (
-                        <Eye className="h-3.5 w-3.5" />
+          {events.map((event) => {
+            const linkedSessions = eventSessions.filter((session) => session.event_id === event.id);
+            const activeSessions = linkedSessions.filter(
+              (session) => session.status !== "cancelled"
+            );
+            return (
+              <Card key={event.id} className="p-5">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="font-semibold text-slate-950">{event.title}</h2>
+                      <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                        {event.primary_audience ?? event.audience}
+                      </span>
+                      <span
+                        className={`rounded px-2 py-0.5 text-xs font-medium ${
+                          event.status === "published"
+                            ? "bg-green-100 text-green-800"
+                            : event.status === "draft"
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {event.status}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {format(new Date(event.start_time), "EEE, d MMM yyyy · h:mm a")}
+                      {event.location ? ` · ${event.location}` : ""}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-500">
+                      <span className="inline-flex items-center gap-1.5">
+                        {event.visibility === "public" ? (
+                          <Eye className="h-3.5 w-3.5" />
+                        ) : (
+                          <EyeOff className="h-3.5 w-3.5" />
+                        )}
+                        {event.visibility.replace("_", " ")}
+                      </span>
+                      <span>{event.event_type.replaceAll("_", " ")}</span>
+                      <span>{event.tier_access.replace("_", " ")} access</span>
+                      {event.participation_mode === "session" ? (
+                        <span className="inline-flex items-center gap-1.5 font-medium text-cyan-700">
+                          <Users className="h-3.5 w-3.5" />
+                          Session-owned booking ·{" "}
+                          {activeSessions.length || event.linked_session_count} linked
+                          {activeSessions[0] ? ` · capacity ${activeSessions[0].capacity}` : ""}
+                        </span>
                       ) : (
-                        <EyeOff className="h-3.5 w-3.5" />
+                        <span className="inline-flex items-center gap-1.5">
+                          <Users className="h-3.5 w-3.5" />
+                          {event.rsvp_count?.going ?? 0}
+                          {event.max_capacity ? ` / ${event.max_capacity}` : ""} going
+                        </span>
                       )}
-                      {event.visibility.replace("_", " ")}
-                    </span>
-                    <span>{event.event_type.replaceAll("_", " ")}</span>
-                    <span>{event.tier_access.replace("_", " ")} access</span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <Users className="h-3.5 w-3.5" />
-                      {event.rsvp_count?.going ?? 0}
-                      {event.max_capacity ? ` / ${event.max_capacity}` : ""} going
-                    </span>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 gap-1">
+                    {event.event_type === "community_swim" && activeSessions.length === 0 ? (
+                      <Link
+                        href={`/admin/sessions/new?${new URLSearchParams({
+                          event_id: event.id,
+                          event_title: event.title,
+                          starts_at: event.start_time,
+                          ...(event.end_time ? { ends_at: event.end_time } : {}),
+                          ...(event.pool_id ? { pool_id: event.pool_id } : {}),
+                          ...(event.location ? { location_name: event.location } : {}),
+                        }).toString()}`}
+                        className="inline-flex h-10 items-center rounded-md px-3 text-sm font-medium text-cyan-700 hover:bg-cyan-50"
+                      >
+                        Add swim session
+                      </Link>
+                    ) : null}
+                    {linkedSessions.map((session, index) => (
+                      <Link
+                        key={session.id}
+                        href={`/admin/sessions/${session.id}/edit`}
+                        className="inline-flex h-10 items-center rounded-md px-3 text-sm font-medium text-cyan-700 hover:bg-cyan-50"
+                      >
+                        {linkedSessions.length === 1 ? "Manage session" : `Session ${index + 1}`}
+                      </Link>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => void openEdit(event)}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100"
+                      aria-label={`Edit ${event.title}`}
+                      title="Edit"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleDelete(event.id)}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-md text-red-600 hover:bg-red-50"
+                      aria-label={`Delete ${event.title}`}
+                      title="Delete"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
-                <div className="flex shrink-0 gap-1">
-                  {event.event_type === "community_swim" ? (
-                    <Link
-                      href={`/admin/sessions/new?${new URLSearchParams({
-                        event_id: event.id,
-                        event_title: event.title,
-                        starts_at: event.start_time,
-                        ...(event.end_time ? { ends_at: event.end_time } : {}),
-                        ...(event.pool_id ? { pool_id: event.pool_id } : {}),
-                        ...(event.location ? { location_name: event.location } : {}),
-                      }).toString()}`}
-                      className="inline-flex h-10 items-center rounded-md px-3 text-sm font-medium text-cyan-700 hover:bg-cyan-50"
-                    >
-                      Add swim session
-                    </Link>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={() => void openEdit(event)}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100"
-                    aria-label={`Edit ${event.title}`}
-                    title="Edit"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void handleDelete(event.id)}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-md text-red-600 hover:bg-red-50"
-                    aria-label={`Delete ${event.title}`}
-                    title="Delete"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

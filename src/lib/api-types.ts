@@ -4923,6 +4923,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/sessions/events/{event_id}/links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Event Session Links */
+        get: operations["get_event_session_links_internal_sessions_events__event_id__links_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/sessions/events/links/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Get Event Session Links Batch */
+        post: operations["get_event_session_links_batch_internal_sessions_events_links_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/sessions/events/{event_id}/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Sync Event Sessions
+         * @description Apply Event-owned shared fields atomically to linked Sessions.
+         *
+         *     Historical/in-progress Sessions cannot be silently rewritten. Event
+         *     cancellation is different: every non-completed linked Session is cancelled
+         *     while completed history remains intact.
+         */
+        patch: operations["sync_event_sessions_internal_sessions_events__event_id__sync_patch"];
+        trace?: never;
+    };
     "/api/v1/internal/sessions/durations": {
         parameters: {
             query?: never;
@@ -15932,6 +15990,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/events/{event_id}/session-contract": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Session Contract */
+        get: operations["get_session_contract_internal_events__event_id__session_contract_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/events/attendance/checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check Attendance */
+        post: operations["check_attendance_internal_events_attendance_checks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/media/albums": {
         parameters: {
             query?: never;
@@ -24206,6 +24298,75 @@ export interface components {
         CreateBundleCartRequest: {
             /** Session Ids */
             session_ids: string[];
+        };
+        /** EventSessionLink */
+        EventSessionLink: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Status */
+            status: string;
+        };
+        /** EventSessionLinks */
+        EventSessionLinks: {
+            /**
+             * Event Id
+             * Format: uuid
+             */
+            event_id: string;
+            /** Linked Count */
+            linked_count: number;
+            /** Active Count */
+            active_count: number;
+            /** Sessions */
+            sessions: components["schemas"]["EventSessionLink"][];
+        };
+        /** EventSessionLinksBatchRequest */
+        EventSessionLinksBatchRequest: {
+            /** Event Ids */
+            event_ids?: string[];
+        };
+        /** EventSessionSync */
+        EventSessionSync: {
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Starts At */
+            starts_at?: string | null;
+            /** Ends At */
+            ends_at?: string | null;
+            /** Timezone */
+            timezone?: string | null;
+            /** Pool Id */
+            pool_id?: string | null;
+            /** Location Name */
+            location_name?: string | null;
+            /** Capacity */
+            capacity?: number | null;
+            /**
+             * Cancel
+             * @default false
+             */
+            cancel: boolean;
+            /** Cancellation Reason */
+            cancellation_reason?: string | null;
+        };
+        /** EventSessionSyncResult */
+        EventSessionSyncResult: {
+            /**
+             * Event Id
+             * Format: uuid
+             */
+            event_id: string;
+            /** Linked Count */
+            linked_count: number;
+            /** Updated Count */
+            updated_count: number;
+            /** Cancelled Count */
+            cancelled_count: number;
         };
         /** ExtraPractice */
         ExtraPractice: {
@@ -40073,6 +40234,29 @@ export interface components {
             /** Rows */
             rows: components["schemas"]["CalendarImportPreviewItem"][];
         };
+        /** EventAttendanceChecksRequest */
+        EventAttendanceChecksRequest: {
+            /** Event Ids */
+            event_ids?: string[];
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Paid Tiers */
+            paid_tiers?: ("community" | "club" | "academy")[];
+        };
+        /** EventAttendanceDecision */
+        EventAttendanceDecision: {
+            /** Allowed */
+            allowed: boolean;
+            /** Tier Access */
+            tier_access: string;
+            /** Source */
+            source: string;
+            /** Reason */
+            reason?: string | null;
+        };
         /** EventCostLine */
         EventCostLine: {
             /** Category */
@@ -40407,6 +40591,49 @@ export interface components {
              * @default false
              */
             viewer_invited: boolean;
+            /**
+             * Participation Mode
+             * @default rsvp
+             * @enum {string}
+             */
+            participation_mode: "rsvp" | "session" | "experience";
+            /**
+             * Linked Session Count
+             * @default 0
+             */
+            linked_session_count: number;
+        };
+        /** EventSessionContract */
+        EventSessionContract: {
+            /**
+             * Event Id
+             * Format: uuid
+             */
+            event_id: string;
+            /** Event Type */
+            event_type: string;
+            /** Status */
+            status: string;
+            /** Tier Access */
+            tier_access: string;
+            /** Title */
+            title: string;
+            /** Description */
+            description?: string | null;
+            /** Starts At */
+            starts_at: string;
+            /** Ends At */
+            ends_at?: string | null;
+            /** Timezone */
+            timezone: string;
+            /** Pool Id */
+            pool_id?: string | null;
+            /** Location Name */
+            location_name?: string | null;
+            /** Capacity */
+            capacity?: number | null;
+            /** Expected Session Count */
+            expected_session_count?: number | null;
         };
         /** EventTemplateCreate */
         EventTemplateCreate: {
@@ -52780,6 +53007,107 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionListSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_event_session_links_internal_sessions_events__event_id__links_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventSessionLinks"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_event_session_links_batch_internal_sessions_events_links_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventSessionLinksBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: components["schemas"]["EventSessionLinks"];
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_event_sessions_internal_sessions_events__event_id__sync_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventSessionSync"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventSessionSyncResult"];
                 };
             };
             /** @description Validation Error */
@@ -72567,6 +72895,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_session_contract_internal_events__event_id__session_contract_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventSessionContract"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_attendance_internal_events_attendance_checks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventAttendanceChecksRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: components["schemas"]["EventAttendanceDecision"];
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

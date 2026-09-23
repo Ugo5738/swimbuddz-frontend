@@ -24,9 +24,18 @@ interface Event {
     maybe: number;
     not_going: number;
   };
+  participation_mode: "rsvp" | "session" | "experience";
+  linked_session_count: number;
+}
+
+interface LinkedEventSession {
+  id: string;
+  event_id: string | null;
+  capacity: number;
 }
 
 const eventTypeLabels: Record<string, string> = {
+  community_swim: "Community Swim",
   social: "Social",
   volunteer: "Volunteer",
   beach_day: "Beach Day",
@@ -36,6 +45,7 @@ const eventTypeLabels: Record<string, string> = {
 };
 
 const eventTypeColors: Record<string, string> = {
+  community_swim: "bg-cyan-100 text-cyan-700",
   social: "bg-purple-100 text-purple-700",
   volunteer: "bg-emerald-100 text-emerald-700",
   beach_day: "bg-cyan-100 text-cyan-700",
@@ -51,16 +61,15 @@ export default function EventsPage() {
     auth: false,
   });
   const events = data ?? [];
+  const { data: eventSessions } = useApi<LinkedEventSession[]>(
+    "/api/v1/sessions/?types=event&limit=100"
+  );
   const [filterType, setFilterType] = useState<string>("all");
 
   const filteredEvents =
-    filterType === "all"
-      ? events
-      : events.filter((event) => event.event_type === filterType);
+    filterType === "all" ? events : events.filter((event) => event.event_type === filterType);
 
-  const upcomingEvents = filteredEvents.filter(
-    (event) => new Date(event.start_time) > new Date(),
-  );
+  const upcomingEvents = filteredEvents.filter((event) => new Date(event.start_time) > new Date());
 
   const eventTypes = Array.from(new Set(events.map((e) => e.event_type)));
 
@@ -70,12 +79,9 @@ export default function EventsPage() {
       <header className="space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
-              Community Events
-            </h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Community Events</h1>
             <p className="text-sm md:text-base text-slate-600">
-              Join us for social gatherings, beach days, volunteer activities,
-              and more!
+              Join us for social gatherings, beach days, volunteer activities, and more!
             </p>
           </div>
           <Link href="/community/events/create">
@@ -126,9 +132,7 @@ export default function EventsPage() {
       ) : upcomingEvents.length === 0 ? (
         <Card className="p-12 text-center">
           <Calendar className="mx-auto h-12 w-12 text-slate-400" />
-          <h3 className="mt-4 text-lg font-semibold text-slate-900">
-            No upcoming events
-          </h3>
+          <h3 className="mt-4 text-lg font-semibold text-slate-900">No upcoming events</h3>
           <p className="mt-2 text-sm text-slate-600">
             {filterType === "all"
               ? "Check back soon for new events!"
@@ -137,68 +141,77 @@ export default function EventsPage() {
         </Card>
       ) : (
         <div className="grid gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {upcomingEvents.map((event) => (
-            <Link key={event.id} href={`/community/events/${event.id}`}>
-              <Card className="group h-full transition-all hover:shadow-lg">
-                <div className="space-y-4">
-                  {/* Event Type Badge */}
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        eventTypeColors[event.event_type] ||
-                        "bg-slate-100 text-slate-700"
-                      }`}
-                    >
-                      {eventTypeLabels[event.event_type] || event.event_type}
-                    </span>
-                    {event.tier_access !== "community" && (
-                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-                        {event.tier_access}
+          {upcomingEvents.map((event) => {
+            const linkedSessions = (eventSessions ?? []).filter(
+              (session) => session.event_id === event.id
+            );
+            return (
+              <Link key={event.id} href={`/community/events/${event.id}`}>
+                <Card className="group h-full transition-all hover:shadow-lg">
+                  <div className="space-y-4">
+                    {/* Event Type Badge */}
+                    <div className="flex items-center justify-between">
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                          eventTypeColors[event.event_type] || "bg-slate-100 text-slate-700"
+                        }`}
+                      >
+                        {eventTypeLabels[event.event_type] || event.event_type}
                       </span>
-                    )}
-                  </div>
-
-                  {/* Title */}
-                  <h3 className="text-lg font-semibold text-slate-900 group-hover:text-cyan-600">
-                    {event.title}
-                  </h3>
-
-                  {/* Description */}
-                  <p className="line-clamp-2 text-sm text-slate-600">
-                    {event.description}
-                  </p>
-
-                  {/* Meta Info */}
-                  <div className="space-y-2 border-t border-slate-100 pt-4 text-sm text-slate-600">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-slate-400" />
-                      <span>
-                        {format(
-                          new Date(event.start_time),
-                          "MMM d, yyyy • h:mm a",
-                        )}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-slate-400" />
-                      <span>{event.location}</span>
-                    </div>
-
-                    {event.max_capacity && (
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-slate-400" />
-                        <span>
-                          {event.rsvp_count?.going || 0} / {event.max_capacity}{" "}
-                          attending
+                      {event.tier_access !== "community" && (
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                          {event.tier_access}
                         </span>
+                      )}
+                    </div>
+
+                    {/* Title */}
+                    <h3 className="text-lg font-semibold text-slate-900 group-hover:text-cyan-600">
+                      {event.title}
+                    </h3>
+
+                    {/* Description */}
+                    <p className="line-clamp-2 text-sm text-slate-600">{event.description}</p>
+
+                    {/* Meta Info */}
+                    <div className="space-y-2 border-t border-slate-100 pt-4 text-sm text-slate-600">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-slate-400" />
+                        <span>{format(new Date(event.start_time), "MMM d, yyyy • h:mm a")}</span>
                       </div>
-                    )}
+
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-slate-400" />
+                        <span>{event.location}</span>
+                      </div>
+
+                      {event.participation_mode === "session" ? (
+                        <div className="flex items-center gap-2 text-cyan-700">
+                          <Users className="h-4 w-4" />
+                          <span>
+                            Session booking
+                            {linkedSessions[0]
+                              ? ` · ${linkedSessions[0].capacity} places`
+                              : " · opening soon"}
+                            {linkedSessions.length > 1
+                              ? ` · ${linkedSessions.length} sessions`
+                              : ""}
+                          </span>
+                        </div>
+                      ) : event.max_capacity ? (
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-slate-400" />
+                          <span>
+                            {event.rsvp_count?.going || 0} / {event.max_capacity} attending
+                          </span>
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-              </Card>
-            </Link>
-          ))}
+                </Card>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
