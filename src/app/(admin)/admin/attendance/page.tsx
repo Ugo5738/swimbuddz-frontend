@@ -1,12 +1,14 @@
 "use client";
 
+import { CorrectMissingCohortFee } from "@/components/admin/CorrectMissingCohortFee";
 import {
   OfflineSessionPaymentModal,
   type OfflineSessionPaymentInput,
 } from "@/components/admin/OfflineSessionPaymentModal";
-import { Alert } from "@/components/ui/Alert";
 import { RecordSessionWalkIn } from "@/components/admin/RecordSessionWalkIn";
-import { CorrectMissingCohortFee } from "@/components/admin/CorrectMissingCohortFee";
+import { GuestSessionAdminCard } from "@/components/guest-passes/GuestSessionAdminCard";
+import { SessionSwimmerRoster } from "@/components/guest-passes/SessionSwimmerRoster";
+import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { apiGet, apiPost } from "@/lib/api";
@@ -1223,6 +1225,18 @@ export default function AdminAttendancePage() {
           </select>
         </div>
 
+        {selectedSessionId && (
+          <>
+            <GuestSessionAdminCard
+              key={`guest-${selectedSessionId}`}
+              sessionId={selectedSessionId}
+            />
+            <SessionSwimmerRoster
+              key={`roster-${selectedSessionId}`}
+              sessionId={selectedSessionId}
+            />
+          </>
+        )}
         {!loadingAttendance && selectedSessionId ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 print:hidden">
             <ReconciliationStat label="Confirmed bookings" value={confirmedBookings.length} />

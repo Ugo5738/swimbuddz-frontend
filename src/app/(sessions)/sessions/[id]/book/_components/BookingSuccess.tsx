@@ -1,3 +1,4 @@
+import { GuestShareCard } from "@/components/guest-passes/GuestShareCard";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import type { Session } from "@/lib/sessions";
@@ -95,17 +96,14 @@ export function BookingSuccess({ session, breakdown }: BookingSuccessProps) {
                 <div className="flex justify-between text-cyan-700">
                   <span>🫧 Bubbles applied</span>
                   <span>
-                    {breakdown.bubblesApplied} · -
-                    {formatCurrency(breakdown.bubblesApplied * 100)}
+                    {breakdown.bubblesApplied} · -{formatCurrency(breakdown.bubblesApplied * 100)}
                   </span>
                 </div>
               )}
               {typeof breakdown.paystackAmount === "number" && breakdown.paystackAmount > 0 && (
                 <div className="flex justify-between">
                   <span className="text-slate-600">Paid via card/bank</span>
-                  <span className="text-slate-900">
-                    {formatCurrency(breakdown.paystackAmount)}
-                  </span>
+                  <span className="text-slate-900">{formatCurrency(breakdown.paystackAmount)}</span>
                 </div>
               )}
               <div className="flex justify-between border-t border-slate-200 pt-2 font-semibold">
@@ -114,13 +112,14 @@ export function BookingSuccess({ session, breakdown }: BookingSuccessProps) {
               </div>
               {breakdown.reference && (
                 <div className="pt-2 text-xs text-slate-500">
-                  Ref:{" "}
-                  <span className="font-mono">{breakdown.reference}</span>
+                  Ref: <span className="font-mono">{breakdown.reference}</span>
                 </div>
               )}
             </div>
           </div>
         )}
+
+        <GuestShareCard sessionId={session.id} />
 
         <div className="flex flex-col gap-3">
           <Link href="/account">

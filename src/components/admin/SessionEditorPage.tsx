@@ -1,6 +1,8 @@
 "use client";
 
 import { SessionFormModal } from "@/components/admin/SessionFormModal";
+import { GuestSessionAdminCard } from "@/components/guest-passes/GuestSessionAdminCard";
+import { SessionSwimmerRoster } from "@/components/guest-passes/SessionSwimmerRoster";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { useApi } from "@/hooks/useApi";
@@ -42,9 +44,7 @@ export function SessionEditorPage({ sessionId, initialStartsAt, initialEvent }: 
   );
   const areasQuery = useApi<RideArea[]>("/api/v1/transport/areas");
   const ridesQuery = useApi<SessionRideConfig[]>(
-    sessionId
-      ? `/api/v1/transport/sessions/${encodeURIComponent(sessionId)}/ride-configs`
-      : null
+    sessionId ? `/api/v1/transport/sessions/${encodeURIComponent(sessionId)}/ride-configs` : null
   );
 
   const goBack = () => router.push("/admin/sessions");
@@ -193,7 +193,9 @@ export function SessionEditorPage({ sessionId, initialStartsAt, initialEvent }: 
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <Info className="h-5 w-5 text-cyan-700" />
           <p className="mt-2 text-sm font-semibold text-slate-900">Core details</p>
-          <p className="mt-1 text-xs leading-5 text-slate-600">Title, audience, pool, time, and capacity.</p>
+          <p className="mt-1 text-xs leading-5 text-slate-600">
+            Title, audience, pool, time, and capacity.
+          </p>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <Calculator className="h-5 w-5 text-cyan-700" />
@@ -211,6 +213,12 @@ export function SessionEditorPage({ sessionId, initialStartsAt, initialEvent }: 
         </div>
       </div>
 
+      {sessionId && (
+        <>
+          <GuestSessionAdminCard sessionId={sessionId} />
+          <SessionSwimmerRoster sessionId={sessionId} />
+        </>
+      )}
       <Card className="p-4 sm:p-6 lg:p-8">
         <SessionFormModal
           key={sessionQuery.data?.id ?? "new-session"}

@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
 import { apiGet } from "@/lib/api";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type UseApiOptions = {
   /** Send the Supabase bearer token (default true for member/admin data). */
   auth?: boolean;
+  /** Capability headers (never put private tokens into a URL query). */
+  headers?: Record<string, string>;
   /** When false, the request is skipped (e.g. waiting on a param). */
   enabled?: boolean;
 };
@@ -38,16 +40,12 @@ type UseApiResult<T> = {
  *   const { data, loading, error, refetch } =
  *     useApi<Member>("/api/v1/members/me");
  */
-export function useApi<T>(
-  path: string | null,
-  options: UseApiOptions = {},
-): UseApiResult<T> {
+export function useApi<T>(path: string | null, options: UseApiOptions = {}): UseApiResult<T> {
   const { auth = true, enabled = true } = options;
+  const headersKey = JSON.stringify(options.headers ?? {});
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(
-    enabled && path !== null,
-  );
+  const [loading, setLoading] = useState<boolean>(enabled && path !== null);
   // Bumped by refetch() to re-trigger the effect without changing path.
   const [nonce, setNonce] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
@@ -68,7 +66,11 @@ export function useApi<T>(
     setLoading(true);
     setError(null);
 
-    apiGet<T>(path, { auth, signal: controller.signal })
+    apiGet<T>(path, {
+      auth,
+      signal: controller.signal,
+      headers: JSON.parse(headersKey) as Record<string, string>,
+    })
       .then((result) => {
         if (!active || controller.signal.aborted) return;
         setData(result);
@@ -77,11 +79,7 @@ export function useApi<T>(
         if (!active || controller.signal.aborted) return;
         // AbortError is expected on unmount / path change — not a real error.
         if (err instanceof DOMException && err.name === "AbortError") return;
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Something went wrong. Please try again.",
-        );
+        setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
       })
       .finally(() => {
         if (active && !controller.signal.aborted) setLoading(false);
@@ -91,7 +89,7 @@ export function useApi<T>(
       active = false;
       controller.abort();
     };
-  }, [path, auth, enabled, nonce]);
+  }, [path, auth, enabled, nonce, headersKey]);
 
   return { data, error, loading, refetch };
 }

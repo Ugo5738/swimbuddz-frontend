@@ -1,289 +1,323 @@
 "use client";
 
+import { GuestSessionAdminCard } from "@/components/guest-passes/GuestSessionAdminCard";
+import { GuestLinkActions } from "@/components/guest-passes/GuestShareCard";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { LoadingCard } from "@/components/ui/LoadingCard";
 import { useApi } from "@/hooks/useApi";
-import {
-  buildGuestPassSharePath,
-  getOrCreateGuestReferrerCode,
-  GuestPassAdmin,
-  markGuestPassAttendance,
-} from "@/lib/guestPasses";
-import { MemberListItem, MembersApi } from "@/lib/members";
-import { Session, SessionsApi, SessionStatus, SessionType } from "@/lib/sessions";
+import { apiGet, apiPost } from "@/lib/api";
+import { GuestFunnel, GuestPassAdmin, markGuestPassAttendance } from "@/lib/guestPasses";
+import type { MemberListItem } from "@/lib/members";
+import type { Session } from "@/lib/sessions";
 import { formatCurrency } from "@/lib/upgradeContext";
-import { Clock, Copy, Gift, Link2, Mail, UserCheck } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-export default function GuestPassesAdminPage() {
-  const passes = useApi<GuestPassAdmin[]>("/api/v1/admin/guest-passes");
-  const [minutes, setMinutes] = useState<Record<string, string>>({});
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [members, setMembers] = useState<MemberListItem[]>([]);
-  const [selectedSessionId, setSelectedSessionId] = useState("");
-  const [selectedReferrerAuthId, setSelectedReferrerAuthId] = useState("");
-  const [generatedLink, setGeneratedLink] = useState("");
-  const [builderLoading, setBuilderLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    Promise.all([
-      SessionsApi.listAllSessions({
-        types: SessionType.CLUB,
-        status: SessionStatus.SCHEDULED,
-        from: new Date().toISOString(),
-        auth: true,
-      }),
-      MembersApi.listMembers(0, 500),
-    ])
-      .then(([sessionRows, memberRows]) => {
-        if (!active) return;
-        const guestSessions = sessionRows
-          .filter((session) => session.allows_guests)
-          .sort(
-            (left, right) =>
-              new Date(left.starts_at).getTime() - new Date(right.starts_at).getTime(),
-          );
-        const activeMembers = memberRows
-          .filter(
-            (member) => member.is_active && member.approval_status === "approved",
-          )
-          .sort((left, right) =>
-            `${left.first_name} ${left.last_name}`.localeCompare(
-              `${right.first_name} ${right.last_name}`,
-            ),
-          );
-        setSessions(guestSessions);
-        setMembers(activeMembers);
-        setSelectedSessionId((current) => current || guestSessions[0]?.id || "");
-      })
-      .catch((error: unknown) => {
-        if (!active) return;
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : "Guest-link options could not be loaded",
-        );
-      })
-      .finally(() => {
-        if (active) setBuilderLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const selectedSession = useMemo(
-    () => sessions.find((session) => session.id === selectedSessionId) ?? null,
-    [selectedSessionId, sessions],
-  );
-
-  const clearGeneratedLink = () => setGeneratedLink("");
-
-  const generateLink = async () => {
-    if (!selectedSessionId) {
-      toast.error("Choose a guest-enabled Club session first");
-      return;
+function PassCard({ pass, onSaved }: { pass: GuestPassAdmin; onSaved: () => void }) {
+  const [minutes, setMinutes] = useState(String(pass.actual_swim_minutes ?? 120));
+  const [assessment, setAssessment] = useState(String(pass.assessment_result?.summary ?? ""));
+  const [sendEmail, setSendEmail] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [paymentLink, setPaymentLink] = useState("");
+  const restore = async () => {
+    setSaving(true);
+    try {
+      const result = await apiPost<{ url: string }>(
+        `/api/v1/admin/guest-passes/${pass.id}/payment-link`,
+        {},
+        { auth: true }
+      );
+      setPaymentLink(result.url);
+      onSaved();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not restore payment");
+    } finally {
+      setSaving(false);
     }
+  };
+  const save = async () => {
+    setSaving(true);
+    try {
+      await markGuestPassAttendance(pass.id, {
+        actual_swim_minutes: Number(minutes),
+        assessment_result: assessment.trim() ? { summary: assessment.trim() } : undefined,
+        send_assessment_email: sendEmail,
+      });
+      onSaved();
+      toast.success("Guest attendance saved");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not record attendance");
+    } finally {
+      setSaving(false);
+    }
+  };
+  return (
+    <Card className="space-y-4">
+      <div className="flex flex-wrap justify-between gap-3">
+        <div>
+          <h2 className="font-semibold">{pass.full_name}</h2>
+          <p className="text-sm text-slate-600">
+            {pass.email} · {pass.phone}
+          </p>
+          <p className="break-all text-xs text-slate-500">
+            {pass.payment_reference} · {pass.status.replaceAll("_", " ")} ·{" "}
+            {formatCurrency(pass.total_kobo / 100)}
+          </p>
+        </div>
+        <div className="text-xs text-slate-500">
+          <p>
+            {pass.booking_mode === "settlement" ? "Post-start settlement" : "Advance reservation"}
+          </p>
+          <p>{pass.marketing_consent ? "Updates opted in" : "Transactional email only"}</p>
+        </div>
+      </div>
+      <div className="text-xs text-slate-600">
+        <p>
+          Source: {pass.booking_source || "direct"}
+          {pass.campaign_key ? ` · Campaign: ${pass.campaign_key}` : ""}
+        </p>
+        <p>
+          {pass.referral_code
+            ? `Referrer code: ${pass.referral_code} · ${pass.referral_reward_bubbles} Bubbles · ${pass.referral_reward_status}`
+            : "No member referral"}
+        </p>
+        {pass.confirmation_email_sent_at && (
+          <p>
+            Confirmation sent {new Date(pass.confirmation_email_sent_at).toLocaleString("en-NG")}
+          </p>
+        )}
+      </div>
+      {["pending_payment", "payment_failed"].includes(pass.status) && (
+        <div className="space-y-3 border-t pt-3">
+          <p className="text-sm text-slate-600">
+            Restore payment on this existing guest booking. Before the swim this holds an available
+            space for 30 minutes; afterward it settles payment without recording attendance.
+          </p>
+          <Button size="sm" disabled={saving} onClick={() => void restore()}>
+            {saving ? "Restoring..." : "Restore guest payment link"}
+          </Button>
+          {paymentLink && <GuestLinkActions url={paymentLink} sessionId={pass.session_id} />}
+        </div>
+      )}
+      {["confirmed", "attended"].includes(pass.status) && (
+        <div className="space-y-3 border-t pt-3">
+          <p className="text-sm font-medium">
+            {pass.attended_at
+              ? "Attendance recorded — update assessment or minutes"
+              : "Confirm actual attendance"}
+          </p>
+          <label className="block text-sm">
+            Swim minutes
+            <input
+              aria-label={`Swim minutes for ${pass.full_name}`}
+              type="number"
+              min={0}
+              max={1440}
+              value={minutes}
+              onChange={(e) => setMinutes(e.target.value)}
+              className="ml-3 w-24 rounded border p-2"
+            />
+          </label>
+          <label className="block text-sm">
+            Assessment / next steps (optional)
+            <textarea
+              value={assessment}
+              onChange={(e) => setAssessment(e.target.value)}
+              maxLength={3000}
+              rows={2}
+              className="mt-1 w-full rounded border p-2"
+            />
+          </label>
+          <label className="flex gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={sendEmail}
+              onChange={(e) => setSendEmail(e.target.checked)}
+            />
+            Email this assessment to the guest
+          </label>
+          <Button
+            size="sm"
+            onClick={() => void save()}
+            disabled={saving || minutes === "" || Number(minutes) < 0 || Number(minutes) > 1440}
+          >
+            {saving
+              ? "Saving..."
+              : pass.attended_at
+                ? "Save attendance and assessment"
+                : "Mark attended"}
+          </Button>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+export default function GuestPassesAdminPage() {
+  const query = useSearchParams();
+  const [selected, setSelected] = useState(query.get("session_id") || "");
+  const [offset, setOffset] = useState(0);
+  const sessions = useApi<Session[]>(
+    `/api/v1/admin/sessions/guest-booking-options?offset=${offset}`
+  );
+  const members = useApi<MemberListItem[]>("/api/v1/members/?skip=0&limit=500");
+  const passes = useApi<GuestPassAdmin[]>(
+    `/api/v1/admin/guest-passes${selected ? `?session_id=${selected}` : ""}`
+  );
+  const funnel = useApi<GuestFunnel>(
+    `/api/v1/admin/guest-passes/funnel${selected ? `?session_id=${selected}` : ""}`
+  );
+  const [referrer, setReferrer] = useState("");
+  const [attributedLink, setAttributedLink] = useState("");
+  const [generating, setGenerating] = useState(false);
+  useEffect(() => {
+    setAttributedLink("");
+  }, [selected, referrer]);
+  const generate = async () => {
     setGenerating(true);
     try {
-      const referralCode = selectedReferrerAuthId
-        ? (await getOrCreateGuestReferrerCode(selectedReferrerAuthId)).code
-        : null;
-      const path = buildGuestPassSharePath(selectedSessionId, referralCode);
-      setGeneratedLink(new URL(path, window.location.origin).toString());
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Could not create guest link",
+      const result = await apiGet<{ url: string | null }>(
+        `/api/v1/admin/sessions/${selected}/guest-share-link?referrer_auth_id=${encodeURIComponent(referrer)}`,
+        { auth: true }
       );
+      if (!result.url)
+        throw new Error(
+          "This swim needs an individual approval link or is closed to member invitations."
+        );
+      setAttributedLink(result.url);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not create invitation");
     } finally {
       setGenerating(false);
     }
   };
-
-  const copyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(generatedLink);
-      toast.success("Guest self-payment link copied");
-    } catch {
-      toast.error("Could not copy the link. Select and copy it manually.");
-    }
-  };
-
-  const attend = async (pass: GuestPassAdmin) => {
-    try {
-      await markGuestPassAttendance(pass.id, {
-        actual_swim_minutes: Number(minutes[pass.id] || 120),
-        send_assessment_email: false,
-      });
-      passes.refetch();
-      toast.success("Guest attendance and swimmer-hours recorded");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not record attendance");
-    }
-  };
-
-  if (passes.loading) return <LoadingCard text="Loading guest passes..." />;
-
   return (
     <div className="mx-auto max-w-6xl space-y-6 py-8">
       <header>
         <h1 className="text-3xl font-bold text-slate-900">Guest passes</h1>
         <p className="mt-2 text-slate-600">
-          Track self-paying guests, swimmer-hours, marketing consent, assessments, and first-attendance referral thank-yous.
+          Guest links, payments, attendance and follow-up for Community, Club and Academy swims.
         </p>
       </header>
-      {passes.error ? <Alert variant="error">{passes.error}</Alert> : null}
       <Alert>
-        The first paid attendance automatically grants the referrer 10 Bubbles. Repeated swims do not create repeated acquisition rewards.
+        Payment records a booking. Confirm actual attendance separately. The first qualifying paid
+        attendance can grant the inviter a referral thank-you.
       </Alert>
-
-      <Card className="border-cyan-100 bg-cyan-50/30">
-        <div className="flex items-start gap-3">
-          <div className="rounded-full bg-cyan-100 p-2 text-cyan-700">
-            <Link2 className="h-5 w-5" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-slate-900">Create a guest self-payment link</h2>
-            <p className="mt-1 text-sm text-slate-600">
-              The guest books and pays in their own name. Choose a referrer only when a member made the introduction; that member can receive the one-time 10-Bubble thank-you after attendance.
-            </p>
-          </div>
+      <Card className="space-y-4">
+        <h2 className="font-semibold">Choose a swim</h2>
+        <label className="block text-sm">
+          Session
+          <select
+            value={selected}
+            onChange={(e) => setSelected(e.target.value)}
+            className="mt-1 block w-full rounded-lg border p-2.5"
+          >
+            <option value="">All guest bookings</option>
+            {selected && !sessions.data?.some((s) => s.id === selected) && (
+              <option value={selected}>Selected session</option>
+            )}
+            {sessions.data?.map((session) => (
+              <option key={session.id} value={session.id}>
+                {session.title} · {session.session_type.replaceAll("_", " ")} ·{" "}
+                {new Date(session.starts_at).toLocaleDateString("en-NG")}
+              </option>
+            ))}
+          </select>
+        </label>
+        <p className="text-xs text-slate-500">
+          All eligible session types, including historical swims. Enable guest self-booking and an
+          explicit guest price in the Session editor.
+        </p>
+        {sessions.loading && <p className="text-sm">Loading sessions...</p>}
+        {sessions.error && <Alert variant="error">{sessions.error}</Alert>}
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={!offset}
+            onClick={() => setOffset(Math.max(0, offset - 100))}
+          >
+            Newer sessions
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={(sessions.data?.length ?? 0) < 100}
+            onClick={() => setOffset(offset + 100)}
+          >
+            Older sessions
+          </Button>
         </div>
-
-        {builderLoading ? (
-          <p className="mt-5 text-sm text-slate-500">Loading upcoming sessions and members...</p>
-        ) : sessions.length === 0 ? (
-          <Alert className="mt-5">
-            There are no upcoming scheduled Club sessions accepting guests. Enable guests and set a guest price on the session first.
-          </Alert>
-        ) : (
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <label className="text-sm font-medium text-slate-700">
-              Club session
-              <select
-                value={selectedSessionId}
-                onChange={(event) => {
-                  setSelectedSessionId(event.target.value);
-                  clearGeneratedLink();
-                }}
-                className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900"
-              >
-                {sessions.map((session) => (
-                  <option key={session.id} value={session.id}>
-                    {session.title} · {new Date(session.starts_at).toLocaleString("en-NG", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="text-sm font-medium text-slate-700">
-              Referrer (optional)
-              <select
-                value={selectedReferrerAuthId}
-                onChange={(event) => {
-                  setSelectedReferrerAuthId(event.target.value);
-                  clearGeneratedLink();
-                }}
-                className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900"
-              >
-                <option value="">No member referral</option>
-                {members.map((member) => (
-                  <option key={member.id} value={member.auth_id}>
-                    {member.first_name} {member.last_name} · {member.email}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            {selectedSession ? (
-              <div className="rounded-xl border border-cyan-100 bg-white p-4 text-sm text-slate-600 md:col-span-2">
-                <p className="font-medium text-slate-900">{selectedSession.location_name || "Location to be confirmed"}</p>
-                <p className="mt-1">
-                  Guest price: {formatCurrency(selectedSession.guest_fee ?? selectedSession.pool_fee)}
-                  {selectedSession.community_dropin_fee != null
-                    ? ` · Community drop-in: ${formatCurrency(selectedSession.community_dropin_fee)}`
-                    : ""}
-                </p>
-              </div>
-            ) : null}
-
-            <div className="flex flex-wrap items-center gap-3 md:col-span-2">
-              <Button onClick={() => void generateLink()} disabled={generating}>
-                <Link2 className="mr-2 h-4 w-4" />
-                {generating ? "Creating link..." : "Create link"}
-              </Button>
-              {generatedLink ? (
-                <Button variant="secondary" onClick={() => void copyLink()}>
-                  <Copy className="mr-2 h-4 w-4" />Copy link
-                </Button>
-              ) : null}
-            </div>
-
-            {generatedLink ? (
-              <div className="md:col-span-2">
-                <label htmlFor="generated-guest-link" className="text-sm font-medium text-slate-700">
-                  Share this link with the guest
-                </label>
-                <input
-                  id="generated-guest-link"
-                  readOnly
-                  value={generatedLink}
-                  onFocus={(event) => event.currentTarget.select()}
-                  className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700"
-                />
-              </div>
-            ) : null}
-          </div>
-        )}
       </Card>
-
-      <div className="space-y-4">
-        {(passes.data ?? []).map((pass) => (
-          <Card key={pass.id}>
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <h2 className="font-semibold text-slate-900">{pass.full_name}</h2>
-                <p className="mt-1 flex items-center gap-2 text-sm text-slate-600"><Mail className="h-4 w-4" />{pass.email} · {pass.phone}</p>
-                <p className="mt-1 text-xs text-slate-500">{pass.payment_reference} · {pass.status.replaceAll("_", " ")} · {formatCurrency(pass.total_kobo / 100)}</p>
-              </div>
-              <span className={`rounded-full px-2 py-1 text-xs font-medium ${pass.marketing_consent ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
-                {pass.marketing_consent ? "Updates opted in" : "Transactional email only"}
-              </span>
-            </div>
-
-            <div className="mt-4 grid gap-4 border-t border-slate-100 pt-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <p className="flex items-center gap-2 text-sm font-medium text-slate-800"><Clock className="h-4 w-4" />Swimmer-hours</p>
-                {pass.attended_at ? (
-                  <p className="text-sm text-slate-600">Recorded: {pass.actual_swim_minutes || 0} minutes ({((pass.actual_swim_minutes || 0) / 60).toFixed(1)} hours)</p>
-                ) : (
-                  <div className="flex gap-2"><input type="number" min="0" value={minutes[pass.id] || "120"} onChange={(event) => setMinutes((current) => ({ ...current, [pass.id]: event.target.value }))} className="w-28 rounded-lg border border-slate-200 px-3 py-2 text-sm" /><Button size="sm" onClick={() => void attend(pass)} disabled={pass.status !== "confirmed"}><UserCheck className="mr-1 h-4 w-4" />Mark attended</Button></div>
-                )}
-              </div>
-              <div className="space-y-2">
-                <p className="flex items-center gap-2 text-sm font-medium text-slate-800"><Gift className="h-4 w-4" />Referral thank-you</p>
-                {pass.referral_code ? (
-                  <p className="text-sm text-slate-600" title={pass.referrer_auth_id || undefined}>
-                    Code {pass.referral_code} · {pass.referral_reward_bubbles} Bubbles ·{" "}
-                    {pass.referral_reward_status.replaceAll("_", " ")}
-                  </p>
-                ) : (
-                  <p className="text-sm text-slate-500">No referral attribution</p>
-                )}
-                {pass.referral_reward_status === "pending" ? <p className="text-xs text-amber-700">Wallet delivery will retry when attendance is saved again.</p> : null}
-              </div>
-            </div>
+      {selected && (
+        <>
+          <GuestSessionAdminCard key={selected} sessionId={selected} />
+          <Card className="space-y-3">
+            <h2 className="font-semibold">Attribute a member invitation</h2>
+            <p className="text-sm text-slate-600">
+              Choose a referrer only when this member made the introduction. Public, Instagram and
+              admin links can have no inviter.
+            </p>
+            <label className="block text-sm">
+              Inviting member
+              <select
+                value={referrer}
+                onChange={(e) => setReferrer(e.target.value)}
+                className="mt-1 block w-full rounded border p-2"
+              >
+                <option value="">Select a member</option>
+                {members.data
+                  ?.filter((m) => m.is_active && m.approval_status === "approved")
+                  .map((m) => (
+                    <option key={m.id} value={m.auth_id}>
+                      {m.first_name} {m.last_name} · {m.email}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            {members.error && <Alert variant="error">{members.error}</Alert>}
+            <Button size="sm" disabled={!referrer || generating} onClick={() => void generate()}>
+              {generating ? "Creating..." : "Create member invitation"}
+            </Button>
+            {attributedLink && (
+              <GuestLinkActions url={attributedLink} sessionId={selected} source="member_share" />
+            )}
           </Card>
+        </>
+      )}
+      {funnel.data && (
+        <Card className="space-y-3">
+          <h2 className="font-semibold">Guest journey</h2>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">
+            {Object.entries(funnel.data).map(([key, value]) => (
+              <div key={key}>
+                <p className="text-2xl font-bold text-slate-900">{value}</p>
+                <p className="text-xs text-slate-500">{key.replaceAll("_", " ")}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-slate-500">
+            Views and shares count link interactions, not unique people. Checkout onward counts
+            guest bookings.
+          </p>
+        </Card>
+      )}
+      {passes.error && <Alert variant="error">{passes.error}</Alert>}
+      {passes.loading && <p>Loading guest bookings...</p>}
+      <div className="space-y-4">
+        {passes.data?.map((pass) => (
+          <PassCard
+            key={pass.id}
+            pass={pass}
+            onSaved={() => {
+              passes.refetch();
+              funnel.refetch();
+            }}
+          />
         ))}
-        {!passes.data?.length ? <Card className="text-center text-slate-500">No guest passes yet.</Card> : null}
+        {!passes.loading && !passes.data?.length && <Card>No guest bookings yet.</Card>}
       </div>
     </div>
   );

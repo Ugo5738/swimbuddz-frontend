@@ -17,15 +17,15 @@
  * apiGet is mocked so we never hit the network and can drive each path
  * deterministically.
  */
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/api", () => ({
   apiGet: vi.fn(),
 }));
 
-import { useApi } from "../useApi";
 import { apiGet } from "@/lib/api";
+import { useApi } from "../useApi";
 
 const mockedApiGet = vi.mocked(apiGet);
 
@@ -61,9 +61,7 @@ describe("useApi", () => {
   });
 
   it("skips the request when enabled is false", async () => {
-    const { result } = renderHook(() =>
-      useApi("/members/me", { enabled: false }),
-    );
+    const { result } = renderHook(() => useApi("/members/me", { enabled: false }));
 
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(mockedApiGet).not.toHaveBeenCalled();
@@ -85,9 +83,7 @@ describe("useApi", () => {
     const { result } = renderHook(() => useApi("/members/me"));
 
     await waitFor(() =>
-      expect(result.current.error).toBe(
-        "Something went wrong. Please try again.",
-      ),
+      expect(result.current.error).toBe("Something went wrong. Please try again.")
     );
   });
 
@@ -116,7 +112,7 @@ describe("useApi", () => {
       expect.objectContaining({
         auth: false,
         signal: expect.any(AbortSignal),
-      }),
+      })
     );
   });
 
@@ -128,7 +124,7 @@ describe("useApi", () => {
     await waitFor(() => expect(mockedApiGet).toHaveBeenCalled());
     expect(mockedApiGet).toHaveBeenCalledWith(
       "/members/me",
-      expect.objectContaining({ auth: true }),
+      expect.objectContaining({ auth: true })
     );
   });
 
@@ -153,17 +149,11 @@ describe("useApi", () => {
       initialProps: { path: "/a" as string | null },
     });
     await waitFor(() => expect(mockedApiGet).toHaveBeenCalledTimes(1));
-    expect(mockedApiGet).toHaveBeenLastCalledWith(
-      "/a",
-      expect.any(Object),
-    );
+    expect(mockedApiGet).toHaveBeenLastCalledWith("/a", expect.any(Object));
 
     rerender({ path: "/b" });
     await waitFor(() => expect(mockedApiGet).toHaveBeenCalledTimes(2));
-    expect(mockedApiGet).toHaveBeenLastCalledWith(
-      "/b",
-      expect.any(Object),
-    );
+    expect(mockedApiGet).toHaveBeenLastCalledWith("/b", expect.any(Object));
   });
 
   it("aborts the in-flight request on unmount", async () => {
@@ -182,4 +172,22 @@ describe("useApi", () => {
     unmount();
     expect(capturedSignal?.aborted).toBe(true);
   });
+});
+
+it("sends capability headers and re-fetches only when their value changes", async () => {
+  mockedApiGet.mockResolvedValue({ ok: true });
+  const { rerender } = renderHook(
+    ({ token }) =>
+      useApi("/guest-passes/pass", { auth: false, headers: { "X-Guest-Pass-Token": token } }),
+    { initialProps: { token: "first" } }
+  );
+  await waitFor(() => expect(mockedApiGet).toHaveBeenCalledTimes(1));
+  rerender({ token: "first" });
+  expect(mockedApiGet).toHaveBeenCalledTimes(1);
+  rerender({ token: "second" });
+  await waitFor(() => expect(mockedApiGet).toHaveBeenCalledTimes(2));
+  expect(mockedApiGet).toHaveBeenLastCalledWith(
+    "/guest-passes/pass",
+    expect.objectContaining({ auth: false, headers: { "X-Guest-Pass-Token": "second" } })
+  );
 });

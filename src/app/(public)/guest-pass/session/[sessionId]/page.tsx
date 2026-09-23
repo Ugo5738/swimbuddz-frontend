@@ -10,18 +10,22 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { useApi } from "@/hooks/useApi";
-import { createGuestPass, GuestPassOffer } from "@/lib/guestPasses";
+import { useGuestCapability } from "@/hooks/useGuestCapability";
+import { createGuestPass, GuestPassOffer, trackGuestLink } from "@/lib/guestPasses";
 import { formatCurrency } from "@/lib/upgradeContext";
 import { Calendar, MapPin, ShieldCheck, Waves } from "lucide-react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function GuestPassBookingPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const searchParams = useSearchParams();
+  const capability = useGuestCapability(`guest-booking:${sessionId}`);
   const offer = useApi<GuestPassOffer>(`/api/v1/sessions/${sessionId}/guest-pass`, {
     auth: false,
+    enabled: capability.ready,
+    headers: { "X-Guest-Booking-Token": capability.token },
   });
   const [form, setForm] = useState({
     full_name: "",
@@ -34,6 +38,22 @@ export default function GuestPassBookingPage() {
     marketing_consent: false,
     referral_code: searchParams.get("ref") || "",
   });
+  useEffect(() => {
+    if (!offer.data) return;
+    const key = `guest-view:${sessionId}:${searchParams.get("source") || "direct"}:${searchParams.get("campaign") || ""}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, "1");
+    } catch {
+      /* Analytics must never block a booking. */
+    }
+    void trackGuestLink(
+      sessionId,
+      "view",
+      searchParams.get("source") || "direct",
+      searchParams.get("campaign") || undefined
+    );
+  }, [sessionId, searchParams, offer.data]);
   const [submitting, setSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("paystack");
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -48,16 +68,31 @@ export default function GuestPassBookingPage() {
     try {
       const receipt = await createGuestPass(sessionId, {
         payment_method: paymentMethod,
+        booking_source:
+          searchParams.get("source") || (form.referral_code ? "member_share" : "direct"),
+        campaign_key: searchParams.get("campaign") || undefined,
+        access_token: capability.token || undefined,
         ...form,
         date_of_birth: form.date_of_birth || undefined,
         guardian_name: form.guardian_name || undefined,
         guardian_phone: form.guardian_phone || undefined,
         referral_code: form.referral_code || undefined,
       });
+      if (receipt.receipt_url) {
+        const token = new URL(receipt.receipt_url, window.location.origin).hash.slice(1);
+        try {
+          sessionStorage.setItem(
+            `guest-receipt:${receipt.id}`,
+            new URLSearchParams(token).get("token") || ""
+          );
+        } catch {
+          /* The return URL also carries this capability. */
+        }
+      }
       if (receipt.checkout_url) {
         window.location.assign(receipt.checkout_url);
       } else {
-        window.location.assign(`/guest-pass/${receipt.id}`);
+        window.location.assign(receipt.receipt_url || `/guest-pass/${receipt.id}`);
       }
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "Could not create your guest pass");
@@ -66,7 +101,7 @@ export default function GuestPassBookingPage() {
     }
   };
 
-  if (offer.loading) return <LoadingCard text="Loading guest pass..." />;
+  if (!capability.ready || offer.loading) return <LoadingCard text="Loading guest pass..." />;
   if (offer.error || !offer.data) {
     return (
       <Alert variant="error" title="Guest pass unavailable">
@@ -76,7 +111,18 @@ export default function GuestPassBookingPage() {
   }
 
   const session = offer.data;
-  const unavailable = !session.allows_guests || session.spaces_remaining < 1;
+  const settlement = session.booking_mode === "settlement";
+  const requiresApproval =
+    session.guest_booking_mode === "approval_required" && !session.approval_granted;
+  const requiresInvite =
+    session.guest_booking_mode === "member_invite" &&
+    !form.referral_code &&
+    !session.approval_granted;
+  const unavailable =
+    session.booking_mode === "closed" ||
+    requiresApproval ||
+    requiresInvite ||
+    (session.booking_mode === "reservation" && (session.spaces_remaining ?? 0) < 1);
 
   return (
     <main className="mx-auto max-w-xl space-y-6 py-8">
@@ -84,9 +130,13 @@ export default function GuestPassBookingPage() {
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-600 text-white">
           <Waves className="h-7 w-7" />
         </div>
-        <h1 className="text-2xl font-bold text-slate-900">SwimBuddz Guest Pass</h1>
+        <h1 className="text-2xl font-bold text-slate-900">
+          {settlement ? "Complete your guest booking" : "Book your guest spot"}
+        </h1>
         <p className="text-slate-600">
-          Book and pay for your own swim. You do not need a member account.
+          {settlement
+            ? "Already attended this swim? Register and settle your guest booking here. Our team confirms attendance separately."
+            : "Book and pay for your own swim. You do not need a member account."}
         </p>
       </div>
 
@@ -101,12 +151,15 @@ export default function GuestPassBookingPage() {
           {new Date(session.starts_at).toLocaleString("en-NG", {
             dateStyle: "medium",
             timeStyle: "short",
+            timeZone: session.timezone,
           })}
         </p>
         <div className="flex items-end justify-between border-t border-slate-100 pt-3">
           <span className="text-sm text-slate-600">Guest rate</span>
           <span className="text-2xl font-bold text-slate-900">
-            {formatCurrency(session.guest_fee_kobo / 100)}
+            {session.guest_fee_kobo == null
+              ? "Not configured"
+              : formatCurrency(session.guest_fee_kobo / 100)}
           </span>
         </div>
         <p className="text-xs text-slate-500">
@@ -116,16 +169,29 @@ export default function GuestPassBookingPage() {
       </Card>
 
       {unavailable ? (
-        <Alert variant="error" title="No guest spaces available">
-          Please choose another session or contact SwimBuddz.
+        <Alert title="Guest booking unavailable">
+          {requiresApproval
+            ? "This swim requires approval. Contact SwimBuddz for an individual guest booking link."
+            : requiresInvite
+              ? "Ask the member who invited you for their guest booking link."
+              : session.booking_mode === "closed"
+                ? "Online guest booking is closed. If you already attended, contact SwimBuddz for a reconciliation link."
+                : "This swim is full. Please choose another session or contact SwimBuddz."}
         </Alert>
       ) : (
         <form onSubmit={submit} className="space-y-5">
-          <PaymentMethodChoice
-            value={paymentMethod}
-            onChange={setPaymentMethod}
-            disabled={submitting}
-          />
+          {session.guest_fee_kobo !== 0 && (
+            <PaymentMethodChoice
+              value={paymentMethod}
+              onChange={setPaymentMethod}
+              disabled={submitting}
+            />
+          )}
+          <Alert>
+            {settlement
+              ? "This completes payment and registration for a swim that has started. It does not reserve a future space or mark you attended."
+              : "Your space is held for 30 minutes during checkout. A bank-transfer receipt must be verified; uploading it does not extend the hold."}
+          </Alert>
           <Card className="space-y-4">
             <h2 className="font-semibold text-slate-900">Your details</h2>
             {(
@@ -161,8 +227,8 @@ export default function GuestPassBookingPage() {
                 className="mt-1 h-4 w-4"
               />
               <span>
-                <strong>Required:</strong> I confirm the details are accurate and agree to follow
-                pool safety instructions and the{" "}
+                <strong>Safety acknowledgement:</strong> I confirm my details are accurate and agree
+                to follow pool safety instructions and the{" "}
                 <Link
                   href="/club/standards"
                   target="_blank"
@@ -195,7 +261,9 @@ export default function GuestPassBookingPage() {
             <ShieldCheck className="mr-2 h-5 w-5" />
             {submitting
               ? "Starting payment..."
-              : `Continue to pay ${formatCurrency(session.guest_fee_kobo / 100)}`}
+              : session.guest_fee_kobo === 0
+                ? "Confirm free guest booking"
+                : `Continue to pay ${formatCurrency((session.guest_fee_kobo ?? 0) / 100)}`}
           </Button>
         </form>
       )}

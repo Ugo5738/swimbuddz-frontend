@@ -5,17 +5,20 @@
 
 "use client";
 
-import { ClubSessionScopeFields } from "@/components/admin/ClubSessionScopeFields";
 import { ClubAccessModeHint } from "@/components/admin/ClubAccessModeHint";
-import { withExpectedAttendance, withSessionCapacity } from "@/lib/sessionPricingForm";
+import { ClubSessionScopeFields } from "@/components/admin/ClubSessionScopeFields";
 import { PoolPicker } from "@/components/admin/PoolPicker";
-import { RescheduleClubPractice } from "@/components/club/RescheduleClubPractice";
 import { SessionVolunteerOpportunitiesSection } from "@/components/admin/SessionVolunteerOpportunitiesSection";
 import { useClubSessionScope } from "@/components/admin/useClubSessionScope";
 import {
   VolunteerNeedsDraftSection,
   type VolunteerNeedDraft,
 } from "@/components/admin/VolunteerNeedsDraftSection";
+import { RescheduleClubPractice } from "@/components/club/RescheduleClubPractice";
+import {
+  GuestSessionSettingsFields,
+  type GuestSettingsDraft,
+} from "@/components/guest-passes/GuestSessionSettingsFields";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
@@ -23,6 +26,7 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { apiGet } from "@/lib/api";
 import { PoolPricingApi } from "@/lib/poolPricing";
+import { withExpectedAttendance, withSessionCapacity } from "@/lib/sessionPricingForm";
 import { Calculator, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -115,7 +119,7 @@ export function SessionFormModal({
       : formatDateTimeLocal(defaultEnd),
     pool_fee: session?.pool_fee ?? 2000,
     cohort_fee_mode: session?.cohort_fee_mode ?? "included",
-    guest_fee: session?.guest_fee ?? 0,
+    guest_fee: session?.guest_fee == null ? "" : String(session.guest_fee),
     community_dropin_fee: session?.community_dropin_fee ?? 0,
     allows_community_dropins: session?.allows_community_dropins ?? false,
     capacity: session?.capacity ?? 20,
@@ -136,6 +140,15 @@ export function SessionFormModal({
     //   club → club_id required, pod_id optional;  community → none.
     cohort_id: session?.cohort_id ?? null,
     event_id: session?.event_id ?? initialEvent?.id ?? null,
+  });
+  const [guestSettings, setGuestSettings] = useState<GuestSettingsDraft>({
+    allows_guests: session?.allows_guests ?? true,
+    guest_booking_mode: session?.guest_booking_mode ?? "disabled",
+    guest_booking_closes_at: session?.guest_booking_closes_at
+      ? formatDateTimeLocal(new Date(session.guest_booking_closes_at))
+      : "",
+    guest_reconciliation_days: session?.guest_reconciliation_days ?? 3,
+    guest_location_private: session?.guest_location_private ?? false,
   });
   const [volunteerNeeds, setVolunteerNeeds] = useState<VolunteerNeedDraft[]>([]);
   const {
@@ -339,7 +352,15 @@ export function SessionFormModal({
       return;
     }
 
+    if (guestSettings.guest_booking_mode !== "disabled" && form.guest_fee === "") {
+      toast.error("Enter a guest rate, including 0 for a free guest swim.");
+      return;
+    }
     const sessionData: SessionPayload = {
+      ...guestSettings,
+      guest_booking_closes_at: guestSettings.guest_booking_closes_at
+        ? new Date(guestSettings.guest_booking_closes_at).toISOString()
+        : null,
       club_access_mode: form.session_type === "club" ? form.club_access_mode : "plan_included",
       title: form.title,
       session_type: form.session_type,
@@ -358,7 +379,7 @@ export function SessionFormModal({
       starts_at: new Date(form.starts_at).toISOString(),
       ends_at: new Date(form.ends_at).toISOString(),
       pool_fee: form.pool_fee,
-      guest_fee: form.guest_fee || null,
+      guest_fee: form.guest_fee === "" ? null : Number(form.guest_fee),
       community_dropin_fee:
         form.session_type === "club" && form.allows_community_dropins
           ? form.community_dropin_fee
@@ -636,8 +657,8 @@ export function SessionFormModal({
           type="number"
           min={0}
           value={form.guest_fee}
-          onChange={(e) => setForm({ ...form, guest_fee: parseInt(e.target.value) || 0 })}
-          hint="Independent trial/guest rate. Zero uses the normal booking price."
+          onChange={(e) => setForm({ ...form, guest_fee: e.target.value })}
+          hint="Explicit guest rate. Enter 0 for free; blank disables self-paying guest checkout."
         />
         <Input
           label="Community drop-in (₦)"
@@ -650,6 +671,7 @@ export function SessionFormModal({
           hint="Independent from the guest rate, even when both currently match."
         />
       </div>
+      <GuestSessionSettingsFields value={guestSettings} onChange={setGuestSettings} />
       {form.session_type === "club" ? (
         <label className="flex items-start gap-3 rounded-xl border border-cyan-100 bg-cyan-50 p-4 text-sm text-cyan-950">
           <input

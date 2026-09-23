@@ -1,8 +1,9 @@
-import { Button } from "@/components/ui/Button";
 import {
   PaymentMethodChoice,
   type CheckoutPaymentMethod,
 } from "@/components/checkout/PaymentMethodChoice";
+import { GuestShareCard } from "@/components/guest-passes/GuestShareCard";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { apiPost } from "@/lib/api";
 import { getLocationDisplayName, type Session } from "@/lib/sessions";
@@ -13,7 +14,12 @@ import { toast } from "sonner";
 type AlreadyBookedProps = {
   session: Session;
   existingBookingStatus: string;
-  existingRideBooking: any;
+  existingRideBooking: {
+    ride_area_name?: string | null;
+    pickup_location_name?: string | null;
+    ride_number?: number | string | null;
+    num_seats?: number | null;
+  } | null;
   hasRideShareAreas: boolean;
   onAddRideShare?: () => void;
   /** If present, the existing booking has an outstanding pool fee that the
@@ -187,6 +193,8 @@ export function AlreadyBooked({
             </Button>
           </div>
         )}
+
+        <GuestShareCard sessionId={session.id} />
 
         <div className="flex flex-col gap-3">
           <Link href="/account/attendance/history">

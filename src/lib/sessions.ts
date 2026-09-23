@@ -1,3 +1,4 @@
+import type { GuestSessionSettings } from "@/lib/guestPasses";
 import { apiDelete, apiGet, apiPatch, apiPost } from "./api";
 import type { SessionAccessDecision } from "./sessionAccess";
 
@@ -52,7 +53,7 @@ export function getCohortColor(cohortId: string): string {
 
 // --- Types ---
 
-export interface Session {
+export interface Session extends GuestSessionSettings {
   cohort_fee_mode?: "included" | "paid_extra";
   id: string;
   title: string;
@@ -159,7 +160,7 @@ export interface SessionCoach {
   created_at: string;
 }
 
-export interface SessionCreate {
+export interface SessionCreate extends GuestSessionSettings {
   cohort_fee_mode?: "included" | "paid_extra";
   title: string;
   description?: string;
@@ -190,7 +191,7 @@ export interface SessionCreate {
   lesson_title?: string;
 }
 
-export interface SessionUpdate {
+export interface SessionUpdate extends GuestSessionSettings {
   cohort_fee_mode?: "included" | "paid_extra";
   title?: string;
   description?: string;

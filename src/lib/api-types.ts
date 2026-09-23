@@ -3911,10 +3911,7 @@ export interface paths {
         put?: never;
         /**
          * Confirm Booking
-         * @description Flip a PENDING booking to CONFIRMED.
-         *
-         *     Member can only confirm their own bookings. PENDING and not-yet-expired
-         *     only — EXPIRED/CANCELLED/already-CONFIRMED are rejected.
+         * @description Return authoritative confirmation after server-side payment fulfillment.
          */
         post: operations["confirm_booking_sessions_bookings__booking_id__confirm_post"];
         delete?: never;
@@ -4211,6 +4208,165 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/sessions/{session_id}/roster": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Session Roster */
+        get: operations["session_roster_admin_sessions__session_id__roster_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/{session_id}/guest-share-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Guest Share Link */
+        get: operations["guest_share_link_sessions__session_id__guest_share_link_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/sessions/{session_id}/guest-booking-links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Issue Guest Link */
+        post: operations["issue_guest_link_admin_sessions__session_id__guest_booking_links_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/sessions/{session_id}/guest-share-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin Guest Share Link */
+        get: operations["admin_guest_share_link_admin_sessions__session_id__guest_share_link_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/guest-booking-links/{grant_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke Guest Link */
+        delete: operations["revoke_guest_link_admin_guest_booking_links__grant_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/guest-passes/{guest_pass_id}/payment-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore Guest Payment Link
+         * @description Restore the same pass/reference without creating duplicate guest identities.
+         */
+        post: operations["restore_guest_payment_link_admin_guest_passes__guest_pass_id__payment_link_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/{session_id}/guest-link-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record Guest Link Event */
+        post: operations["record_guest_link_event_sessions__session_id__guest_link_events_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/guest-passes/funnel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Guest Funnel */
+        get: operations["guest_funnel_admin_guest_passes_funnel_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/sessions/guest-booking-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Guest Booking Options
+         * @description All session types, including history for individual reconciliation.
+         */
+        get: operations["guest_booking_options_admin_sessions_guest_booking_options_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sessions/{session_id}/guest-pass": {
         parameters: {
             query?: never;
@@ -4254,11 +4410,28 @@ export interface paths {
         };
         /**
          * Get Guest Pass Status
-         * @description Redacted public receipt; identity and assessment data are never returned.
+         * @description Redacted receipt; a private capability additionally unlocks venue details.
          */
         get: operations["get_guest_pass_status_guest_passes__guest_pass_id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/guest-passes/{guest_pass_id}/checkout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry Guest Checkout */
+        post: operations["retry_guest_checkout_guest_passes__guest_pass_id__checkout_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -24048,11 +24221,9 @@ export interface components {
          * @enum {string}
          */
         BookingChannel: "member_self" | "admin" | "corporate_bulk" | "bundle_cart";
-        /**
-         * BookingConfirmRequest
-         * @description Transition a PENDING booking to CONFIRMED after payment cleared.
-         */
+        /** BookingConfirmRequest */
         BookingConfirmRequest: {
+            confirmation_details?: components["schemas"]["BookingConfirmationDetails"] | null;
             /** Member Auth Id */
             member_auth_id?: string | null;
             /** Payment Intent Id */
@@ -24063,6 +24234,27 @@ export interface components {
             booking_source?: string | null;
             /** Campaign Key */
             campaign_key?: string | null;
+        };
+        /**
+         * BookingConfirmationDetails
+         * @description Payment-owned totals supplied only by service-role fulfillment.
+         */
+        BookingConfirmationDetails: {
+            /** Amount Paid */
+            amount_paid: number;
+            /**
+             * Currency
+             * @default NGN
+             */
+            currency: string;
+            /** Bubbles Applied */
+            bubbles_applied?: number | null;
+            /** Bubbles Amount Ngn */
+            bubbles_amount_ngn?: number | null;
+            /** Payment Reference */
+            payment_reference?: string | null;
+            /** Bundle Info */
+            bundle_info?: string | null;
         };
         /**
          * BookingGuestCreate
@@ -24166,11 +24358,9 @@ export interface components {
             /** Bookings */
             bookings: components["schemas"]["SessionBookingResponse"][];
         };
-        /**
-         * BundleBookingConfirmRequest
-         * @description Atomically confirm every reservation owned by one bundle payment.
-         */
+        /** BundleBookingConfirmRequest */
         BundleBookingConfirmRequest: {
+            confirmation_details?: components["schemas"]["BookingConfirmationDetails"] | null;
             /** Member Auth Id */
             member_auth_id: string;
             /**
@@ -24526,6 +24716,34 @@ export interface components {
              */
             skip_conflicts: boolean;
         };
+        /** GuestBookingGrantCreate */
+        GuestBookingGrantCreate: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /**
+             * Expires In Hours
+             * @default 72
+             */
+            expires_in_hours: number;
+        };
+        /** GuestBookingGrantResponse */
+        GuestBookingGrantResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Url */
+            url: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+        };
         /**
          * GuestConvertRequest
          * @description Link a guest's prior appearances (by phone) to a new member account.
@@ -24548,6 +24766,23 @@ export interface components {
              * Format: uuid
              */
             member_id: string;
+            /** Converted */
+            converted: number;
+        };
+        /** GuestFunnelResponse */
+        GuestFunnelResponse: {
+            /** Link Views */
+            link_views: number;
+            /** Link Shares */
+            link_shares: number;
+            /** Checkout Started */
+            checkout_started: number;
+            /** Paid */
+            paid: number;
+            /** Attended */
+            attended: number;
+            /** Assessed */
+            assessed: number;
             /** Converted */
             converted: number;
         };
@@ -24574,6 +24809,23 @@ export interface components {
              */
             last_seen: string;
         };
+        /** GuestLinkEventCreate */
+        GuestLinkEventCreate: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Event Type
+             * @enum {string}
+             */
+            event_type: "view" | "share";
+            /** Booking Source */
+            booking_source?: string | null;
+            /** Campaign Key */
+            campaign_key?: string | null;
+        };
         /** GuestPassAdminResponse */
         GuestPassAdminResponse: {
             /**
@@ -24594,6 +24846,11 @@ export interface components {
             }[];
             /** Total Kobo */
             total_kobo: number;
+            /**
+             * Payment Method
+             * @default paystack
+             */
+            payment_method: string;
             /** Payment Reference */
             payment_reference: string;
             /** Status */
@@ -24602,11 +24859,45 @@ export interface components {
             reservation_expires_at?: string | null;
             /** Checkout Url */
             checkout_url?: string | null;
+            /** Receipt Url */
+            receipt_url?: string | null;
+            /**
+             * Booking Mode
+             * @default reservation
+             * @enum {string}
+             */
+            booking_mode: "reservation" | "settlement";
+            /** Session Title */
+            session_title?: string | null;
+            /** Starts At */
+            starts_at?: string | null;
+            /** Ends At */
+            ends_at?: string | null;
+            /**
+             * Timezone
+             * @default Africa/Lagos
+             */
+            timezone: string;
+            /** Location Name */
+            location_name?: string | null;
+            /** Location Address */
+            location_address?: string | null;
+            /**
+             * Attendance Recorded
+             * @default false
+             */
+            attendance_recorded: boolean;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
+            /** Booking Source */
+            booking_source?: string | null;
+            /** Campaign Key */
+            campaign_key?: string | null;
+            /** Confirmation Email Sent At */
+            confirmation_email_sent_at?: string | null;
             /** Full Name */
             full_name: string;
             /**
@@ -24688,6 +24979,12 @@ export interface components {
             marketing_consent: boolean;
             /** Referral Code */
             referral_code?: string | null;
+            /** Booking Source */
+            booking_source?: string | null;
+            /** Campaign Key */
+            campaign_key?: string | null;
+            /** Access Token */
+            access_token?: string | null;
         };
         /** GuestPassOffer */
         GuestPassOffer: {
@@ -24716,13 +25013,44 @@ export interface components {
              */
             currency: string;
             /** Guest Fee Kobo */
-            guest_fee_kobo: number;
+            guest_fee_kobo?: number | null;
             /** Community Dropin Fee Kobo */
             community_dropin_fee_kobo?: number | null;
             /** Allows Guests */
             allows_guests: boolean;
             /** Spaces Remaining */
-            spaces_remaining: number;
+            spaces_remaining?: number | null;
+            /**
+             * Timezone
+             * @default Africa/Lagos
+             */
+            timezone: string;
+            /**
+             * Booking Mode
+             * @default closed
+             * @enum {string}
+             */
+            booking_mode: "reservation" | "settlement" | "closed";
+            /**
+             * Guest Booking Mode
+             * @default disabled
+             * @enum {string}
+             */
+            guest_booking_mode: "disabled" | "public" | "member_invite" | "approval_required";
+            /** Booking Closes At */
+            booking_closes_at?: string | null;
+            /** Reconciliation Closes At */
+            reconciliation_closes_at?: string | null;
+            /**
+             * Approval Granted
+             * @default false
+             */
+            approval_granted: boolean;
+            /**
+             * Safety Acknowledgement Version
+             * @default pool-safety-2026-09
+             */
+            safety_acknowledgement_version: string;
         };
         /** GuestPassPublicResponse */
         GuestPassPublicResponse: {
@@ -24744,6 +25072,11 @@ export interface components {
             }[];
             /** Total Kobo */
             total_kobo: number;
+            /**
+             * Payment Method
+             * @default paystack
+             */
+            payment_method: string;
             /** Payment Reference */
             payment_reference: string;
             /** Status */
@@ -24752,6 +25085,34 @@ export interface components {
             reservation_expires_at?: string | null;
             /** Checkout Url */
             checkout_url?: string | null;
+            /** Receipt Url */
+            receipt_url?: string | null;
+            /**
+             * Booking Mode
+             * @default reservation
+             * @enum {string}
+             */
+            booking_mode: "reservation" | "settlement";
+            /** Session Title */
+            session_title?: string | null;
+            /** Starts At */
+            starts_at?: string | null;
+            /** Ends At */
+            ends_at?: string | null;
+            /**
+             * Timezone
+             * @default Africa/Lagos
+             */
+            timezone: string;
+            /** Location Name */
+            location_name?: string | null;
+            /** Location Address */
+            location_address?: string | null;
+            /**
+             * Attendance Recorded
+             * @default false
+             */
+            attendance_recorded: boolean;
             /**
              * Created At
              * Format: date-time
@@ -25488,6 +25849,24 @@ export interface components {
              * @default 4
              */
             max_guests_per_booking: number;
+            /**
+             * Guest Booking Mode
+             * @default disabled
+             * @enum {string}
+             */
+            guest_booking_mode: "disabled" | "public" | "member_invite" | "approval_required";
+            /** Guest Booking Closes At */
+            guest_booking_closes_at?: string | null;
+            /**
+             * Guest Reconciliation Days
+             * @default 3
+             */
+            guest_reconciliation_days: number;
+            /**
+             * Guest Location Private
+             * @default false
+             */
+            guest_location_private: boolean;
             /** Cohort Id */
             cohort_id?: string | null;
             /** Event Id */
@@ -25687,6 +26066,24 @@ export interface components {
              * @default 4
              */
             max_guests_per_booking: number;
+            /**
+             * Guest Booking Mode
+             * @default disabled
+             * @enum {string}
+             */
+            guest_booking_mode: "disabled" | "public" | "member_invite" | "approval_required";
+            /** Guest Booking Closes At */
+            guest_booking_closes_at?: string | null;
+            /**
+             * Guest Reconciliation Days
+             * @default 3
+             */
+            guest_reconciliation_days: number;
+            /**
+             * Guest Location Private
+             * @default false
+             */
+            guest_location_private: boolean;
             /** Cohort Id */
             cohort_id?: string | null;
             /** Event Id */
@@ -25737,6 +26134,40 @@ export interface components {
              * @default 0
              */
             margin_amount_per_attendee: number;
+        };
+        /** SessionRosterEntry */
+        SessionRosterEntry: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "member" | "booking_guest" | "guest_pass";
+            /** Full Name */
+            full_name: string;
+            /** Booking Status */
+            booking_status: string;
+            /** Attendance Status */
+            attendance_status?: string | null;
+            /** Inviter */
+            inviter?: string | null;
+            /** Booking Mode */
+            booking_mode?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Actual Swim Minutes */
+            actual_swim_minutes?: number | null;
+        };
+        /** SessionRosterResponse */
+        SessionRosterResponse: {
+            /** Entries */
+            entries: components["schemas"]["SessionRosterEntry"][];
+            /** Attendance Available */
+            attendance_available: boolean;
         };
         /**
          * SessionStatus
@@ -26016,6 +26447,18 @@ export interface components {
         SessionType: "cohort_class" | "club" | "community" | "event";
         /** SessionUpdate */
         SessionUpdate: {
+            /** Allows Guests */
+            allows_guests?: boolean | null;
+            /** Max Guests Per Booking */
+            max_guests_per_booking?: number | null;
+            /** Guest Booking Mode */
+            guest_booking_mode?: ("disabled" | "public" | "member_invite" | "approval_required") | null;
+            /** Guest Booking Closes At */
+            guest_booking_closes_at?: string | null;
+            /** Guest Reconciliation Days */
+            guest_reconciliation_days?: number | null;
+            /** Guest Location Private */
+            guest_location_private?: boolean | null;
             /** Club Id */
             club_id?: string | null;
             /** Club Access Mode */
@@ -40749,6 +41192,18 @@ export interface components {
             pool_id?: string | null;
             /** Location Name */
             location_name?: string | null;
+            /**
+             * Visibility
+             * @default public
+             */
+            visibility: string;
+            /**
+             * Is Location Private
+             * @default false
+             */
+            is_location_private: boolean;
+            /** Location Area */
+            location_area?: string | null;
             /** Capacity */
             capacity?: number | null;
             /** Expected Session Count */
@@ -51903,10 +52358,305 @@ export interface operations {
             };
         };
     };
-    guest_pass_offer_sessions__session_id__guest_pass_get: {
+    session_roster_admin_sessions__session_id__roster_get: {
         parameters: {
             query?: never;
             header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionRosterResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    guest_share_link_sessions__session_id__guest_share_link_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string | null;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    issue_guest_link_admin_sessions__session_id__guest_booking_links_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuestBookingGrantCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestBookingGrantResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_guest_share_link_admin_sessions__session_id__guest_share_link_get: {
+        parameters: {
+            query: {
+                referrer_auth_id: string;
+            };
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string | null;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revoke_guest_link_admin_guest_booking_links__grant_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                grant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_guest_payment_link_admin_guest_passes__guest_pass_id__payment_link_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                guest_pass_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_guest_link_event_sessions__session_id__guest_link_events_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuestLinkEventCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    guest_funnel_admin_guest_passes_funnel_get: {
+        parameters: {
+            query?: {
+                session_id?: string | null;
+                booking_source?: string | null;
+                campaign_key?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestFunnelResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    guest_booking_options_admin_sessions_guest_booking_options_get: {
+        parameters: {
+            query?: {
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    guest_pass_offer_sessions__session_id__guest_pass_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-guest-booking-token"?: string | null;
+            };
             path: {
                 session_id: string;
             };
@@ -51972,7 +52722,42 @@ export interface operations {
     get_guest_pass_status_guest_passes__guest_pass_id__get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "x-guest-pass-token"?: string | null;
+            };
+            path: {
+                guest_pass_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestPassPublicResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_guest_checkout_guest_passes__guest_pass_id__checkout_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-guest-pass-token"?: string | null;
+            };
             path: {
                 guest_pass_id: string;
             };

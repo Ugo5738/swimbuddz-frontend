@@ -1,6 +1,7 @@
 "use client";
 
 import { PoolPicker } from "@/components/admin/PoolPicker";
+import { GuestSessionAdminCard } from "@/components/guest-passes/GuestSessionAdminCard";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -1239,6 +1240,11 @@ export default function AdminEventsPage() {
                         Add swim session
                       </Link>
                     ) : null}
+                    {linkedSessions.map((session) => (
+                      <div key={`guest-${session.id}`} className="w-full">
+                        <GuestSessionAdminCard sessionId={session.id} />
+                      </div>
+                    ))}
                     {linkedSessions.map((session, index) => (
                       <Link
                         key={session.id}

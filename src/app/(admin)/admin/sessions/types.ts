@@ -1,3 +1,4 @@
+import type { GuestSessionSettings } from "@/lib/guestPasses";
 // Types extracted from page.tsx during the file-size sweep.
 // Kept local to this route since these shapes are only used by the
 // admin sessions page; if another route ends up needing them, promote
@@ -20,7 +21,7 @@ export interface SessionCostLine {
   source_rate_id?: string | null;
 }
 
-export interface Session {
+export interface Session extends GuestSessionSettings {
   cohort_fee_mode?: "included" | "paid_extra";
   club_access_mode?: "plan_included" | "active_club" | "paid_addon";
   id: string;
@@ -82,7 +83,7 @@ export interface SessionRideConfig {
  * Mirrors what the form actually sends (the keys it spreads from form
  * state). Optional fields default to `null` server-side.
  */
-export interface SessionPayload {
+export interface SessionPayload extends GuestSessionSettings {
   cohort_fee_mode?: "included" | "paid_extra";
   club_access_mode?: "plan_included" | "active_club" | "paid_addon";
   title: string;
