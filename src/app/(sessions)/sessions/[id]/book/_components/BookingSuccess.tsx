@@ -62,7 +62,7 @@ export function BookingSuccess({ session, breakdown }: BookingSuccessProps) {
             <span className="text-emerald-500">✓</span>
             <div>
               <p className="font-semibold text-emerald-900">Booking confirmed</p>
-              <p className="text-sm text-emerald-700">Your attendance has been recorded.</p>
+              <p className="text-sm text-emerald-700">Your spot is confirmed.</p>
             </div>
           </div>
         </div>
