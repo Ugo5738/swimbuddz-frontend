@@ -628,23 +628,42 @@ this flow.
 
 ## 16. Referrer → Self-paying Guest → Follow-up
 
-1. A member/admin shares `/guest-pass/session/{sessionId}?ref={code}`. The
-   referrer does not need to book or attend.
-2. The guest enters name, email, and phone, accepts the safety waiver, separately
-   chooses marketing consent, and pays the session's guest price.
-3. An unpaid guest pass reserves one place for 30 minutes. Expired holds stop
-   reducing availability; the public status page shows a redacted receipt. Guest identity, safeguarding
-   data, assessment, and referral data remain admin-only.
-4. Admin records attendance and actual swim minutes, then optionally emails the
-   guest assessment result.
-5. A first paid, attended guest pass with a referrer emits one idempotent reward
-   event. The existing wallet reward engine grants the referrer 10 Bubbles; it is
-   not a cash payment and repeat visits do not repeat the acquisition reward.
-6. Guest, Community drop-in, and Club/member prices remain independently
-   configurable per session/location.
-7. Guest swim minutes contribute to aggregate swimmer-hours. If the guest later
-   becomes a member, matched historical guest hours follow their lifetime total
-   and leave the guest bucket so the same minutes are never counted twice.
+1. Eligible sessions expose guest sharing on booking success, the existing-booking view,
+   branded confirmation emails, admin Session/attendance pages and linked Event sessions.
+   Guests paying for themselves remain separate from guests attached to a member booking.
+2. Public links can carry `ref`, `source` and `campaign` independently. `member_invite`
+   links also carry a signed, session-specific `#invite=...` capability tied to the
+   inviter's confirmed booking. A reusable referral code never authorizes access.
+   Cancelling that member booking invalidates its invitations for new guest checkouts.
+3. Session settings explicitly select disabled, public, member invitation, or individual
+   admin approval. Self-booking requires an explicit guest rate (including 0); Academy
+   and Event sessions start disabled. Private Event policy is also enforced.
+4. Before the reservation cutoff, an unpaid reservation holds one place for 30 minutes.
+   After the swim starts, the same URL becomes settlement with no seat hold, through
+   the configured window (default 3 days after the end). Older swims require an admin
+   link. Neither payment nor settlement marks the guest attended.
+5. Guests enter their own details and accept a versioned safety acknowledgement.
+   Marketing consent stays optional and separate. Paid bookings offer Paystack or bank
+   transfer with the existing transaction details and receipt-upload workflow. Explicit
+   free rates confirm without a payment provider.
+6. The private receipt shows session details, payment totals and follow-up choices.
+   A fragment capability authorizes payment retry and unlocks a private venue after
+   confirmation; public receipt IDs expose no guest identity or private venue.
+7. Admin → Guest Passes covers every eligible session type and historical swims, with
+   individual email-bound approval/reconciliation links, revocation, payment recovery,
+   attribution, assessments and funnel counts. Recovery reuses the existing guest pass
+   and payment reference, checking available capacity only before the swim.
+8. The All swimmers roster combines members, attached guests and standalone guests.
+   It includes confirmed/attended guests and active pending reservations; failed and
+   expired attempts stay on Guest Passes. Admin records actual attendance and minutes,
+   and optionally sends a branded assessment. Only qualifying paid attendance triggers
+   the existing first-attendance referral reward.
+9. Member and guest confirmations share a durable, retryable email outbox. Optional
+   invitation lookup failures do not block the booking confirmation. Historical emails
+   use settlement copy. A frontend receiving an older offer without admission policy
+   blocks checkout until the compatible backend is deployed.
+10. Converted guests' historical swim minutes continue to move into their member
+    lifetime totals without double counting, using the existing conversion workflow.
 
 ## 17. Member → Community Experience
 

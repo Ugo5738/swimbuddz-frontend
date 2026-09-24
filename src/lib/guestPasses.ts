@@ -27,6 +27,7 @@ export type GuestPassOffer = {
   booking_closes_at: string | null;
   reconciliation_closes_at: string | null;
   approval_granted: boolean;
+  member_invitation_valid: boolean;
   safety_acknowledgement_version: string;
 };
 
@@ -85,6 +86,7 @@ export type GuestPassInput = {
   booking_source?: string;
   campaign_key?: string;
   access_token?: string;
+  invite_token?: string;
 };
 
 export type AdminReferralCode = {

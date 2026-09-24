@@ -24985,6 +24985,8 @@ export interface components {
             campaign_key?: string | null;
             /** Access Token */
             access_token?: string | null;
+            /** Invite Token */
+            invite_token?: string | null;
         };
         /** GuestPassOffer */
         GuestPassOffer: {
@@ -25046,6 +25048,11 @@ export interface components {
              * @default false
              */
             approval_granted: boolean;
+            /**
+             * Member Invitation Valid
+             * @default false
+             */
+            member_invitation_valid: boolean;
             /**
              * Safety Acknowledgement Version
              * @default pool-safety-2026-09
@@ -52656,6 +52663,7 @@ export interface operations {
             query?: never;
             header?: {
                 "x-guest-booking-token"?: string | null;
+                "x-guest-invite-token"?: string | null;
             };
             path: {
                 session_id: string;

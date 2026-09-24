@@ -42,6 +42,7 @@ beforeEach(() => {
     guest_booking_mode: "public",
     spaces_remaining: 5,
     approval_granted: false,
+    member_invitation_valid: false,
     booking_closes_at: null,
     reconciliation_closes_at: null,
     safety_acknowledgement_version: "pool-safety-2026-09",
@@ -104,6 +105,26 @@ describe("guest checkout lifecycle", () => {
     mocks.offer.spaces_remaining = 0;
     render(<GuestBooking />);
     expect(screen.getByText(/This swim is full/)).toBeInTheDocument();
+    expect(screen.queryByLabelText("Full name")).not.toBeInTheDocument();
+  });
+  it("does not treat a reusable referral code as a member invitation", () => {
+    mocks.query = new URLSearchParams("ref=UGO123");
+    mocks.offer.guest_booking_mode = "member_invite";
+    render(<GuestBooking />);
+    expect(screen.getByText(/Ask the member who invited you/)).toBeInTheDocument();
+    expect(screen.queryByLabelText("Full name")).not.toBeInTheDocument();
+  });
+  it("accepts a verified session invitation independently of attribution", () => {
+    mocks.offer.guest_booking_mode = "member_invite";
+    mocks.offer.member_invitation_valid = true;
+    render(<GuestBooking />);
+    expect(screen.getByLabelText("Full name")).toBeInTheDocument();
+  });
+
+  it("fails closed when an older backend does not return guest admission policy", () => {
+    mocks.offer.booking_mode = undefined as unknown as GuestPassOffer["booking_mode"];
+    render(<GuestBooking />);
+    expect(screen.getByText("Guest booking temporarily unavailable")).toBeInTheDocument();
     expect(screen.queryByLabelText("Full name")).not.toBeInTheDocument();
   });
 });

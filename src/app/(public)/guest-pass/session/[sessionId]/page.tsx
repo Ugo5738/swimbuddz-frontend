@@ -22,10 +22,14 @@ export default function GuestPassBookingPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const searchParams = useSearchParams();
   const capability = useGuestCapability(`guest-booking:${sessionId}`);
+  const invitation = useGuestCapability(`guest-invite:${sessionId}`, "invite");
   const offer = useApi<GuestPassOffer>(`/api/v1/sessions/${sessionId}/guest-pass`, {
     auth: false,
-    enabled: capability.ready,
-    headers: { "X-Guest-Booking-Token": capability.token },
+    enabled: capability.ready && invitation.ready,
+    headers: {
+      "X-Guest-Booking-Token": capability.token,
+      "X-Guest-Invite-Token": invitation.token,
+    },
   });
   const [form, setForm] = useState({
     full_name: "",
@@ -72,6 +76,7 @@ export default function GuestPassBookingPage() {
           searchParams.get("source") || (form.referral_code ? "member_share" : "direct"),
         campaign_key: searchParams.get("campaign") || undefined,
         access_token: capability.token || undefined,
+        invite_token: invitation.token || undefined,
         ...form,
         date_of_birth: form.date_of_birth || undefined,
         guardian_name: form.guardian_name || undefined,
@@ -101,7 +106,8 @@ export default function GuestPassBookingPage() {
     }
   };
 
-  if (!capability.ready || offer.loading) return <LoadingCard text="Loading guest pass..." />;
+  if (!capability.ready || !invitation.ready || offer.loading)
+    return <LoadingCard text="Loading guest pass..." />;
   if (offer.error || !offer.data) {
     return (
       <Alert variant="error" title="Guest pass unavailable">
@@ -111,12 +117,24 @@ export default function GuestPassBookingPage() {
   }
 
   const session = offer.data;
+  if (
+    !["reservation", "settlement", "closed"].includes(session.booking_mode) ||
+    !["disabled", "public", "member_invite", "approval_required"].includes(
+      session.guest_booking_mode
+    )
+  ) {
+    return (
+      <Alert title="Guest booking temporarily unavailable">
+        Please try again shortly or contact SwimBuddz for help completing your booking.
+      </Alert>
+    );
+  }
   const settlement = session.booking_mode === "settlement";
   const requiresApproval =
     session.guest_booking_mode === "approval_required" && !session.approval_granted;
   const requiresInvite =
     session.guest_booking_mode === "member_invite" &&
-    !form.referral_code &&
+    !session.member_invitation_valid &&
     !session.approval_granted;
   const unavailable =
     session.booking_mode === "closed" ||
@@ -163,8 +181,9 @@ export default function GuestPassBookingPage() {
           </span>
         </div>
         <p className="text-xs text-slate-500">
-          Guest and Community drop-in prices are configured separately and may differ by pool
-          location. Any enabled online processing charge is shown separately at checkout.
+          {session.guest_fee_kobo === 0
+            ? "This guest swim is free."
+            : "Any processing charge is shown separately at checkout."}
         </p>
       </Card>
 
@@ -190,7 +209,9 @@ export default function GuestPassBookingPage() {
           <Alert>
             {settlement
               ? "This completes payment and registration for a swim that has started. It does not reserve a future space or mark you attended."
-              : "Your space is held for 30 minutes during checkout. A bank-transfer receipt must be verified; uploading it does not extend the hold."}
+              : session.guest_fee_kobo === 0
+                ? "No payment is needed. Confirm your details to book your guest spot."
+                : "Your space is held for 30 minutes during checkout. A bank-transfer receipt must be verified; uploading it does not extend the hold."}
           </Alert>
           <Card className="space-y-4">
             <h2 className="font-semibold text-slate-900">Your details</h2>
