@@ -31,6 +31,7 @@ import {
   formatCurrency,
   getClubCycleLabel,
   UpgradeProvider,
+  type UpgradeState,
   useUpgrade,
 } from "@/lib/upgradeContext";
 import { ArrowLeft, CreditCard, Tag } from "lucide-react";
@@ -141,6 +142,7 @@ function CheckoutContent() {
   // Get cohort_id from URL (for resuming pending payments)
   const urlCohortId = searchParams.get("cohort_id");
   const urlEnrollmentId = searchParams.get("enrollment_id");
+  const checkoutCohortId = urlCohortId || state.selectedCohortId;
   // Optional override (kobo) for member-initiated mid-cohort custom-amount pay.
   // Backend validates: >= next installment amount, <= remaining balance.
   const urlAmountOverrideKobo = (() => {
@@ -150,25 +152,25 @@ function CheckoutContent() {
     return Number.isFinite(n) && n > 0 ? Math.floor(n) : undefined;
   })();
   const { setSelectedCohort } = useUpgrade();
-  const enrollmentStarted = useRef(false);
+  const enrollmentStarted = useRef<string | null>(null);
 
   useEffect(() => {
     if (
       purpose !== "academy_cohort" ||
       urlEnrollmentId ||
-      !state.selectedCohortId ||
-      enrollmentStarted.current
+      !checkoutCohortId ||
+      enrollmentStarted.current === checkoutCohortId
     ) {
       return;
     }
-    enrollmentStarted.current = true;
+    enrollmentStarted.current = checkoutCohortId;
     void (async () => {
       try {
         const enrollmentBody: {
           cohort_id: string;
-          preferences?: { late_join: typeof state.lateJoinPreferences };
-        } = { cohort_id: state.selectedCohortId! };
-        if (state.lateJoinPreferences) {
+          preferences?: { late_join: NonNullable<UpgradeState["lateJoinPreferences"]> };
+        } = { cohort_id: checkoutCohortId };
+        if (state.selectedCohortId === checkoutCohortId && state.lateJoinPreferences) {
           enrollmentBody.preferences = { late_join: state.lateJoinPreferences };
         }
         let enrollmentId: string;
@@ -190,10 +192,17 @@ function CheckoutContent() {
             { id: string; cohort_id: string; payment_status: string; status: string }[]
           >("/api/v1/academy/my-enrollments", { auth: true });
           const enrollment = existing.find(
-            (item) => item.cohort_id === state.selectedCohortId && item.payment_status !== "paid"
+            (item) =>
+              item.cohort_id === checkoutCohortId &&
+              (canPayAcademyEnrollment(item.status) || item.status === "waitlist")
           );
-          if (!enrollment) throw new Error("No unpaid Academy enrollment is available");
-          if (!canPayAcademyEnrollment(enrollment.status)) {
+          // A conflict may refer to another cohort in the same program.
+          // Preserve the server's explanation and recovery instructions.
+          if (!enrollment) throw error;
+          if (
+            enrollment.payment_status === "paid" ||
+            !canPayAcademyEnrollment(enrollment.status)
+          ) {
             router.replace(`/account/academy/enrollments/${enrollment.id}`);
             return;
           }
@@ -209,6 +218,7 @@ function CheckoutContent() {
       }
     })();
   }, [
+    checkoutCohortId,
     purpose,
     router,
     searchParams,
@@ -296,13 +306,13 @@ function CheckoutContent() {
       }
       if (purpose === "academy_cohort" && urlEnrollmentId) {
         try {
-          const enrollments = await apiGet<{ id: string; status: string }[]>(
+          const enrollments = await apiGet<{ id: string; status: string; payment_status: string }[]>(
             "/api/v1/academy/my-enrollments",
             { auth: true }
           );
           const enrollment = enrollments.find((item) => item.id === urlEnrollmentId);
           if (!enrollment) throw new Error("Academy enrollment not found");
-          if (!canPayAcademyEnrollment(enrollment.status)) {
+          if (enrollment.payment_status === "paid" || !canPayAcademyEnrollment(enrollment.status)) {
             setAcademyQuote(null);
             router.replace(`/account/academy/enrollments/${enrollment.id}`);
             return;
@@ -336,9 +346,8 @@ function CheckoutContent() {
         }
       }
 
-      // If we have cohort_id in URL but no selectedCohort in context, fetch it
-      // This allows resuming pending payments from billing page or deep link
-      if (urlCohortId && !state.selectedCohort) {
+      // The URL cohort takes precedence over a previous selection in storage.
+      if (urlCohortId && state.selectedCohort?.id !== urlCohortId) {
         try {
           // Prefer enrollment lookup if provided
           if (urlEnrollmentId) {
@@ -347,15 +356,15 @@ function CheckoutContent() {
               cohort_id: string;
               cohort?: Cohort;
               program?: Cohort["program"];
-            }>(`/api/v1/academy/enrollments/${urlEnrollmentId}`, {
+            }>(`/api/v1/academy/my-enrollments/${urlEnrollmentId}`, {
               auth: true,
             }).catch(() => null);
-            if (enrollment?.cohort) {
+            if (enrollment?.cohort?.id === urlCohortId) {
               setSelectedCohort(enrollment.cohort);
             }
           }
 
-          if (!state.selectedCohort) {
+          if (state.selectedCohort?.id !== urlCohortId) {
             const cohortResponse = await apiGet<Cohort>(`/api/v1/academy/cohorts/${urlCohortId}`, {
               auth: true,
             }).catch(() => null);
