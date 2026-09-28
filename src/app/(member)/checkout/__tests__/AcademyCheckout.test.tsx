@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import CheckoutPage from "../page";
 
@@ -88,7 +88,8 @@ describe("Academy checkout enrollment preparation", () => {
     expect(mocks.post).toHaveBeenCalledWith(
       "/api/v1/academy/enrollments/me", { cohort_id: "september" }, { auth: true }
     );
-    expect(mocks.get).toHaveBeenCalledWith("/api/v1/academy/cohorts/september", { auth: true });
+    // Cohort data is fetched after the stable enrollment URL is ready.
+    expect(mocks.preview).not.toHaveBeenCalled();
   });
 
   it("resumes the unpaid enrollment, ignoring an older dropped enrollment", async () => {
@@ -137,4 +138,28 @@ describe("Academy checkout enrollment preparation", () => {
     expect(mocks.post).not.toHaveBeenCalled();
     expect(mocks.preview).not.toHaveBeenCalled();
   });
+  it("preloads both authoritative prices and switches instantly without another quote", async () => {
+    mocks.params += "&enrollment_id=pending";
+    mocks.enrollments = [{ id: "pending", cohort_id: "september", status: "pending_approval", payment_status: "pending" }];
+    mocks.get.mockImplementation(async (path: string) => {
+      if (path.endsWith("/my-enrollments")) return mocks.enrollments;
+      if (path.endsWith("/pricing")) return { community_annual: 20000 };
+      if (path.includes("/cohorts/")) return { id: "september", name: "September", installment_plan_enabled: true };
+      return { id: "member" };
+    });
+    mocks.preview.mockImplementation(async (_id: string, installment: boolean) => ({
+      currency: "NGN", total_kobo: installment ? 5500000 : 16500000,
+      subtotal_kobo: installment ? 5500000 : 16500000, additional_charges: [],
+      components: { academy: installment ? 5500000 : 16500000, total_installments: 3, ...(installment ? { installment_number: 1 } : {}) },
+    }));
+    render(<CheckoutPage />);
+    const choice = await screen.findByRole("button", { name: /Pay in 3 installments.*55,000 now/ });
+    expect(mocks.preview).toHaveBeenCalledTimes(2);
+    fireEvent.click(choice);
+    expect(screen.getByRole("button", { name: /Pay in full.*165,000/ })).toBeInTheDocument();
+    expect(screen.getAllByText("₦55,000").length).toBeGreaterThan(0);
+    expect(mocks.router.replace).toHaveBeenCalledWith(expect.stringContaining("billing=installments"), { scroll: false });
+    expect(mocks.preview).toHaveBeenCalledTimes(2);
+  });
+
 });

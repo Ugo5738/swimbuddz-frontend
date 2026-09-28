@@ -1642,6 +1642,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/clubs/admin/plans/{plan_id}/sync-prepaid-reservations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync Prepaid Reservations
+         * @description Repair historical purchases and interrupted fulfillment, safely on replay.
+         */
+        post: operations["sync_prepaid_reservations_clubs_admin_plans__plan_id__sync_prepaid_reservations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/clubs/admin/plans/{plan_id}/community-experience": {
         parameters: {
             query?: never;
@@ -3648,6 +3668,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sessions/templates/{template_id}/sync-operations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sync Template Operations */
+        post: operations["sync_template_operations_sessions_templates__template_id__sync_operations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sessions/club-operations/pods/{pod_id}": {
         parameters: {
             query?: never;
@@ -3765,6 +3802,40 @@ export interface paths {
          * @description Fetch a bundle cart by id. Must belong to the authenticated member.
          */
         get: operations["get_bundle_cart_sessions_bundles__bundle_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/bookings/me/club-quarter": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My Quarter Bookings */
+        get: operations["my_quarter_bookings_sessions_bookings_me_club_quarter_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/bookings/{booking_id}/settlement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My Booking Settlement */
+        get: operations["my_booking_settlement_sessions_bookings__booking_id__settlement_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4941,6 +5012,23 @@ export interface paths {
         put?: never;
         /** Publish Sessions */
         post: operations["publish_sessions_internal_sessions_club_schedule_publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/sessions/club-reservations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reserve Prepaid Swims */
+        post: operations["reserve_prepaid_swims_internal_sessions_club_reservations_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7221,6 +7309,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/academy/enrollments/{enrollment_id}/payment-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview Enrollment Payment
+         * @description Read-only payment context: viewing a quote never opts a learner in.
+         */
+        get: operations["preview_enrollment_payment_internal_academy_enrollments__enrollment_id__payment_preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/academy/cohorts": {
         parameters: {
             query?: never;
@@ -8034,20 +8142,7 @@ export interface paths {
         put?: never;
         /**
          * Admin Generate Booking Pay Link
-         * @description Generate a Paystack checkout link for an outstanding-fee booking.
-         *
-         *     Looks up the booking + member via the sessions/members services,
-         *     inserts a PENDING SESSION_BOOKING payment row tied to the booking,
-         *     initializes Paystack, and returns the authorization URL for the
-         *     admin to forward to the member (WhatsApp / email / SMS).
-         *
-         *     Validation:
-         *       - booking exists, status=confirmed, fee_amount_kobo > 0
-         *       - no existing PAID payment already references the booking_id
-         *
-         *     Once the member pays, the standard webhook flow flips the payment to
-         *     PAID and the session_booking entitlement handler backfills the
-         *     booking's payment_intent_id (already-confirmed case).
+         * @description Return a member-authenticated settlement URL without creating a payment.
          */
         post: operations["admin_generate_booking_pay_link_payments_admin_bookings__booking_id__payment_link_post"];
         delete?: never;
@@ -23168,6 +23263,8 @@ export interface components {
         NextQuarterRequest: {
             /** Template Id */
             template_id?: string | null;
+            /** Template Ids */
+            template_ids?: string[];
             /** Pricing Settings */
             pricing_settings?: {
                 [key: string]: unknown;
@@ -23718,6 +23815,10 @@ export interface components {
         };
         /** QuarterRecommendationRequest */
         QuarterRecommendationRequest: {
+            /** Template Id */
+            template_id?: string | null;
+            /** Template Ids */
+            template_ids?: string[];
             /**
              * Club Id
              * Format: uuid
@@ -23727,8 +23828,6 @@ export interface components {
             year: number;
             /** Quarter */
             quarter: number;
-            /** Template Id */
-            template_id?: string | null;
             /** Pricing Settings */
             pricing_settings?: {
                 [key: string]: unknown;
@@ -24663,6 +24762,8 @@ export interface components {
             pool_id: string;
             /** Template Id */
             template_id?: string | null;
+            /** Template Ids */
+            template_ids?: string[];
             /**
              * Title
              * @default Club practice
@@ -25419,6 +25520,38 @@ export interface components {
             title: string;
             /** Location Name */
             location_name?: string | null;
+        };
+        /** PrepaidReservationsRequest */
+        PrepaidReservationsRequest: {
+            /**
+             * Enrollment Id
+             * Format: uuid
+             */
+            enrollment_id: string;
+            /**
+             * Club Id
+             * Format: uuid
+             */
+            club_id: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Member Auth Id */
+            member_auth_id: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Session Ids */
+            session_ids: string[];
         };
         /** PublishSessionInput */
         PublishSessionInput: {
@@ -26188,6 +26321,7 @@ export interface components {
         };
         /** SessionTemplateCreate */
         SessionTemplateCreate: {
+            admission_settings?: components["schemas"]["TemplateAdmissionSettings"];
             /** Cohort Id */
             cohort_id?: string | null;
             /**
@@ -26282,6 +26416,7 @@ export interface components {
         };
         /** SessionTemplateResponse */
         SessionTemplateResponse: {
+            admission_settings?: components["schemas"]["TemplateAdmissionSettings"];
             /** Cohort Id */
             cohort_id?: string | null;
             /**
@@ -26390,6 +26525,7 @@ export interface components {
         };
         /** SessionTemplateUpdate */
         SessionTemplateUpdate: {
+            admission_settings?: components["schemas"]["TemplateAdmissionSettings"] | null;
             /** Cohort Id */
             cohort_id?: string | null;
             /** Cohort Fee Mode */
@@ -26525,6 +26661,64 @@ export interface components {
             week_number?: number | null;
             /** Lesson Title */
             lesson_title?: string | null;
+        };
+        /** TemplateAdmissionSettings */
+        TemplateAdmissionSettings: {
+            /** Guest Fee */
+            guest_fee?: number | null;
+            /** Community Dropin Fee */
+            community_dropin_fee?: number | null;
+            /**
+             * Allows Community Dropins
+             * @default false
+             */
+            allows_community_dropins: boolean;
+            /**
+             * Allows Guests
+             * @default true
+             */
+            allows_guests: boolean;
+            /**
+             * Max Guests Per Booking
+             * @default 4
+             */
+            max_guests_per_booking: number;
+            /**
+             * Guest Booking Mode
+             * @default disabled
+             * @enum {string}
+             */
+            guest_booking_mode: "disabled" | "public" | "member_invite" | "approval_required";
+            /**
+             * Guest Booking Cutoff Hours
+             * @default 0
+             */
+            guest_booking_cutoff_hours: number;
+            /**
+             * Guest Reconciliation Days
+             * @default 3
+             */
+            guest_reconciliation_days: number;
+            /**
+             * Guest Location Private
+             * @default false
+             */
+            guest_location_private: boolean;
+        };
+        /** TemplateSyncRequest */
+        TemplateSyncRequest: {
+            /**
+             * From Date
+             * Format: date
+             */
+            from_date: string;
+            /**
+             * To Date
+             * Format: date
+             */
+            to_date: string;
+            /** Preview Token */
+            preview_token?: string | null;
         };
         /**
          * TrialGuestCreate
@@ -29360,7 +29554,7 @@ export interface components {
         /** AdminBookingPayLinkResponse */
         AdminBookingPayLinkResponse: {
             /** Reference */
-            reference: string;
+            reference?: string | null;
             /** Authorization Url */
             authorization_url: string;
             /** Payer Email */
@@ -48333,6 +48527,37 @@ export interface operations {
             };
         };
     };
+    sync_prepaid_reservations_clubs_admin_plans__plan_id__sync_prepaid_reservations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     attach_plan_experience_clubs_admin_plans__plan_id__community_experience_put: {
         parameters: {
             query?: never;
@@ -51648,6 +51873,41 @@ export interface operations {
             };
         };
     };
+    sync_template_operations_sessions_templates__template_id__sync_operations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateSyncRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     pod_sessions_sessions_club_operations_pods__pod_id__get: {
         parameters: {
             query?: never;
@@ -51861,6 +52121,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BundleCartResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_quarter_bookings_sessions_bookings_me_club_quarter_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    my_booking_settlement_sessions_bookings__booking_id__settlement_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -53680,6 +53991,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["PublishSessions"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reserve_prepaid_swims_internal_sessions_club_reservations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrepaidReservationsRequest"];
             };
         };
         responses: {
@@ -57341,6 +57685,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EnrollmentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_enrollment_payment_internal_academy_enrollments__enrollment_id__payment_preview_get: {
+        parameters: {
+            query?: {
+                use_installments?: boolean;
+            };
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -66314,7 +66691,9 @@ export interface operations {
     };
     attach_ride_configs_internal_internal_transport_sessions__session_id__ride_configs_post: {
         parameters: {
-            query?: never;
+            query?: {
+                preserve_existing?: boolean;
+            };
             header?: never;
             path: {
                 session_id: string;

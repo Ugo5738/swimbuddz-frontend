@@ -150,6 +150,8 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 | Route                  | File                                            | Purpose                          |
 | ---------------------- | ----------------------------------------------- | -------------------------------- |
 | `/account/billing`     | `src/app/(member)/account/billing/page.tsx`     | Payment history and billing info |
+| `/account/billing/sessions/[bookingId]` | `src/app/(member)/account/billing/sessions/[bookingId]/page.tsx` | Authenticated booking-owner settlement: Bubbles plus online payment, or cash-only bank transfer |
+| `/account/club` | `src/app/(member)/account/club/page.tsx` | Upcoming prepaid quarter reservations, attendance cancellation, and rebooking links |
 | `/account/orders`      | `src/app/(member)/account/orders/page.tsx`      | Store orders list                |
 | `/account/orders/[id]` | `src/app/(member)/account/orders/[id]/page.tsx` | Order detail page                |
 | `/checkout`            | `src/app/(member)/checkout/page.tsx`            | General checkout flow            |

@@ -16,6 +16,13 @@ type RequestOptions = {
   signal?: AbortSignal;
 };
 
+export class ApiError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 async function buildHeaders(auth?: boolean, headers?: HeadersInit): Promise<HeadersInit> {
   const result = new Headers(headers);
 
@@ -47,7 +54,7 @@ async function request<T>(method: string, path: string, options: RequestOptions 
     // Prefer structured API errors: FastAPI typically returns { detail: "..." }.
     if (responseText) {
       if (contentType.includes("application/json")) {
-        let parsed: any = null;
+        let parsed: { detail?: unknown } | null = null;
         try {
           parsed = JSON.parse(responseText);
         } catch {
@@ -56,12 +63,12 @@ async function request<T>(method: string, path: string, options: RequestOptions 
         if (parsed) {
           const detail =
             typeof parsed?.detail === "string" ? parsed.detail : JSON.stringify(parsed);
-          throw new Error(detail || `Request failed with status ${response.status}`);
+          throw new ApiError(detail || `Request failed with status ${response.status}`, response.status);
         }
       }
-      throw new Error(responseText);
+      throw new ApiError(responseText, response.status);
     }
-    throw new Error(`Request failed with status ${response.status}`);
+    throw new ApiError(`Request failed with status ${response.status}`, response.status);
   }
 
   if (response.status === 204) {
@@ -125,7 +132,7 @@ export async function apiUpload<T>(
     } catch {
       // Use the response text when the server did not return JSON.
     }
-    throw new Error(detail || `Request failed with status ${response.status}`);
+    throw new ApiError(detail || `Request failed with status ${response.status}`, response.status);
   }
   return responseText ? (JSON.parse(responseText) as T) : (null as T);
 }

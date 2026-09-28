@@ -262,7 +262,7 @@ export default function AdminAttendancePage() {
       | { kind: "loading" }
       | {
           kind: "ready";
-          reference: string;
+          reference: string | null;
           authorization_url: string;
           payer_email: string;
           amount: number;
@@ -1393,7 +1393,7 @@ export default function AdminAttendancePage() {
 }
 
 // =========================================================================
-// PayLinkModal — admin-issued Paystack link surface. Shows the generated
+// PayLinkModal — member-authenticated settlement link. Shows the generated
 // authorization URL with copy / WhatsApp share / email actions. The link
 // itself is hot from the moment it returns; admin forwards it through any
 // channel and the member clicks to pay (entitlement flow handles the rest).
@@ -1461,12 +1461,12 @@ function PayLinkModal({
                 ✓ Link ready — ₦{modal.state.amount.toLocaleString("en-NG")}
               </div>
               <div className="mt-0.5 text-xs text-emerald-700">
-                Reference: {modal.state.reference} · Payer: {modal.state.payer_email}
+                Sign in as: {modal.state.payer_email}
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-medium text-slate-600">Paystack URL</label>
+              <label className="text-xs font-medium text-slate-600">SwimBuddz settlement URL</label>
               <div className="mt-1 flex gap-2">
                 <input
                   type="text"
@@ -1511,7 +1511,7 @@ function PayLinkModal({
             </div>
 
             <p className="text-xs text-slate-500">
-              The link stays valid until paid. Once the member pays, the row's "Owes ₦X" badge flips
+              The member signs in and chooses Bubbles, online payment, or bank transfer. Once paid, the row's "Owes ₦X" badge flips
               to "Paid" on the next refresh.
             </p>
           </div>
@@ -1531,7 +1531,7 @@ function usePayLinkModalState() {
       | { kind: "loading" }
       | {
           kind: "ready";
-          reference: string;
+          reference: string | null;
           authorization_url: string;
           payer_email: string;
           amount: number;

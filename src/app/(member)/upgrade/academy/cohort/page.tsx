@@ -3,11 +3,13 @@
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
-import { apiGet } from "@/lib/api";
+import { useApi } from "@/hooks/useApi";
+import { prepareAcademyEnrollment } from "@/lib/checkoutPreparation";
+import { Alert } from "@/components/ui/Alert";
 import { Cohort, formatCurrency, useUpgrade } from "@/lib/upgradeContext";
 import { AlertCircle, Calendar, GraduationCap, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   LateJoinDisclosureModal,
   LateJoinPreferences,
@@ -37,8 +39,10 @@ export default function AcademyCohortSelectionPage() {
   const router = useRouter();
   const { state, setSelectedCohort, setTargetTier, setLateJoinPreferences } = useUpgrade();
 
-  const [cohorts, setCohorts] = useState<Cohort[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, loading, error } = useApi<Cohort[]>("/api/v1/academy/cohorts/enrollable");
+  const cohorts = data ?? [];
+  const [preparing, setPreparing] = useState(false);
+  const [prepareError, setPrepareError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(state.selectedCohortId);
   // Cohort that triggered the late-join modal; null when modal is closed.
   const [lateJoinFor, setLateJoinFor] = useState<Cohort | null>(null);
@@ -48,42 +52,21 @@ export default function AcademyCohortSelectionPage() {
     setTargetTier("academy");
   }, [setTargetTier]);
 
-  // Load available cohorts
-  const loadCohorts = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await apiGet<Cohort[]>("/api/v1/academy/cohorts/enrollable", {
-        auth: true,
-      });
-      setCohorts(data);
-
-      // If we had a previously selected cohort, verify it's still available
-      if (state.selectedCohortId) {
-        const stillAvailable = data.find((c) => c.id === state.selectedCohortId);
-        if (!stillAvailable) {
-          setSelectedId(null);
-        }
-      }
-    } catch (e) {
-      console.error("Failed to load cohorts:", e);
-      setCohorts([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [state.selectedCohortId]);
-
-  useEffect(() => {
-    loadCohorts();
-  }, [loadCohorts]);
-
   const handleSelectCohort = (cohort: Cohort) => {
     setSelectedId(cohort.id);
   };
 
-  const proceedToCheckout = (cohort: Cohort) => {
+  const proceedToCheckout = async (cohort: Cohort, prefs?: LateJoinPreferences) => {
+    if (preparing) return;
+    setPreparing(true); setPrepareError(null);
     setSelectedCohort(cohort);
-    // Navigate to checkout (Details → Cohort → Checkout)
-    router.push(`/checkout?purpose=academy_cohort&cohort_id=${cohort.id}`);
+    try {
+      const prepared = await prepareAcademyEnrollment(cohort.id, prefs);
+      router.push(prepared.path);
+    } catch (e) {
+      setPrepareError(e instanceof Error ? e.message : "Could not prepare checkout");
+      setPreparing(false);
+    }
   };
 
   const handleContinue = () => {
@@ -111,12 +94,14 @@ export default function AcademyCohortSelectionPage() {
     setLateJoinPreferences(prefs);
     const cohort = lateJoinFor;
     setLateJoinFor(null);
-    proceedToCheckout(cohort);
+    void proceedToCheckout(cohort, prefs);
   };
 
   if (loading) {
     return <LoadingCard text="Loading available cohorts..." />;
   }
+
+  if (error) return <Alert variant="error">{error}</Alert>;
 
   if (cohorts.length === 0) {
     return (
@@ -243,10 +228,11 @@ export default function AcademyCohortSelectionPage() {
         </Card>
       )}
 
+      {prepareError && <Alert variant="error">{prepareError}</Alert>}
       {/* Continue button */}
       <div className="flex justify-end">
-        <Button onClick={handleContinue} disabled={!selectedId} size="lg">
-          Continue to Checkout
+        <Button onClick={handleContinue} disabled={!selectedId || preparing} size="lg">
+          {preparing ? "Preparing checkout…" : "Continue to Checkout"}
         </Button>
       </div>
 

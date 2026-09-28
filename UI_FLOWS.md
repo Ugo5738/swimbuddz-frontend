@@ -692,3 +692,12 @@ this flow.
    cohort. Graduation calls the existing bridge idempotently when positive;
    zero or unset grants nothing. This bridge is eligibility, not prepaid Club,
    and Academy enrollment by itself still never implies Club access.
+
+
+## September 2026 Club, checkout, and preorder stabilization
+
+- Admin Session Templates stores independent guest and Community admission settings. Club Pricing can select multiple recurring templates for one quarter. Save template settings, then use **Repair generated sessions** to preview and apply defaults to an existing date range; sold prices and dates are preserved.
+- Activated prepaid quarters reserve future included swims automatically. **Account → My Club swims** lists attendance and offers individual cancellation without a quarter refund. Admin Club Pricing offers **Sync prepaid reservations** for older purchases or interrupted fulfillment. Transition members continue booking and paying per swim.
+- Academy **Continue to Checkout** prepares or recovers the enrollment before navigation. Checkout uses URL/backend identity, retries transient preparation failures, preloads full/installment server quotes, and preserves `billing=installments` in the URL. Payment is disabled while repricing.
+- Admin session payment links and Billing outstanding fees open **Account → Billing → Sessions → booking ID**. The owner may use full Bubbles, partial Bubbles plus Paystack, online cash, or cash-only bank transfer. Link generation creates no payment. A paid response with pending fulfillment tells the member not to pay again.
+- Store preorder buttons use an active SKU and the public `quantity_available` field. Simple preorders can be purchased with zero physical stock. Missing SKUs show unavailability instead of an empty “Please select” error. Options are derived from SKU data when catalog option metadata is missing; incomplete or invalid combinations cannot retain a previous SKU. Desktop and mobile sticky controls share these safeguards.

@@ -3,6 +3,7 @@
 import { ProductCard } from "@/components/store/ProductCard";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet } from "@/lib/api";
+import { productOptionChoices, selectedProductVariant } from "@/lib/storeVariants";
 import { useStoreCart } from "@/lib/storeCart";
 import {
   ChevronDown,
@@ -36,9 +37,7 @@ interface ProductVariant {
   options: Record<string, string>;
   price_override_ngn: number | null;
   is_active: boolean;
-  inventory?: {
-    quantity_available: number;
-  };
+  quantity_available: number;
 }
 
 interface ProductImage {
@@ -123,7 +122,7 @@ export default function ProductDetailPage() {
   /* ---- state ---- */
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
+  const [explicitVariantId, setExplicitVariantId] = useState("");
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -141,16 +140,12 @@ export default function ProductDetailPage() {
       const data = await apiGet<ProductDetail>(`/api/v1/store/products/${slug}`);
       setProduct(data);
 
-      // Auto-select only if exactly one variant (no choice needed)
-      if (data.variants.length === 1) {
-        const onlyVariant = data.variants[0];
-        setSelectedVariant(onlyVariant);
-        setSelectedOptions(onlyVariant.options);
-      } else if (data.variants.length > 1) {
-        // Don't auto-select — user must choose options
-        setSelectedVariant(null);
-        setSelectedOptions({});
-      }
+      const active = data.variants.filter((variant) => variant.is_active);
+      setSelectedOptions(active.length === 1 ? active[0].options ?? {} : {});
+      setExplicitVariantId("");
+      setQuantity(1);
+      setSizeChartAcked(false);
+      setSelectedImage(0);
 
       // Load related products from same category
       if (data.category) {
@@ -239,47 +234,37 @@ export default function ProductDetailPage() {
     return [...primary, ...details, ...variants, ...videos];
   }, [product]);
 
-  // Update selected variant when options change + jump gallery to variant image
-  useEffect(() => {
-    if (!product) return;
-    const matchingVariant = product.variants.find((v) =>
-      Object.entries(selectedOptions).every(([key, value]) => v.options[key] === value)
-    );
-    if (matchingVariant) {
-      setSelectedVariant(matchingVariant);
+  const activeVariants = product?.variants.filter((variant) => variant.is_active) ?? [];
+  const optionChoices = productOptionChoices(product?.variant_options, activeVariants);
+  const requiredOptions = Object.keys(optionChoices);
+  const missingOptions = requiredOptions.filter((key) => !selectedOptions[key]);
+  const allOptionsSelected = missingOptions.length === 0;
+  const selectedVariant = selectedProductVariant(activeVariants, optionChoices, selectedOptions, explicitVariantId);
+  const matchingVariants = activeVariants.filter((variant) => requiredOptions.every((key) => variant.options?.[key] === selectedOptions[key]));
+  const needsExplicitVariant = allOptionsSelected && matchingVariants.length > 1;
 
-      // Jump gallery to the first image linked to this variant
-      const variantImageIdx = galleryItems.findIndex(
-        (item) => item.variant_id === matchingVariant.id
-      );
-      if (variantImageIdx >= 0) {
-        setSelectedImage(variantImageIdx);
-      }
-    }
-  }, [selectedOptions, product, galleryItems]);
+  useEffect(() => {
+    if (!selectedVariant) return;
+    const index = galleryItems.findIndex((item) => item.variant_id === selectedVariant.id);
+    if (index >= 0) setSelectedImage(index);
+  }, [selectedVariant, galleryItems]);
 
   const handleOptionChange = (optionName: string, value: string) => {
     setSelectedOptions((prev) => ({ ...prev, [optionName]: value }));
+    setExplicitVariantId("");
+    setQuantity(1);
   };
-
-  // Check if all variant options have been selected
-  const requiredOptions = product
-    ? Object.keys(product.variant_options || {}).filter((k) => !k.startsWith("_"))
-    : [];
-  const allOptionsSelected =
-    requiredOptions.length === 0 || requiredOptions.every((key) => selectedOptions[key]);
-  const missingOptions = requiredOptions.filter((key) => !selectedOptions[key]);
 
   const handleAddToCart = async () => {
     if (!selectedVariant || !allOptionsSelected) {
-      toast.error(`Please select ${missingOptions.join(" and ")}`);
+      toast.error(missingOptions.length ? `Please select ${missingOptions.join(" and ")}` : activeVariants.length ? "Choose an available product option" : "This item is temporarily unavailable for ordering");
       return;
     }
     if (product?.requires_size_chart_ack && !sizeChartAcked) {
       toast.error("Please acknowledge the size chart");
       return;
     }
-    const stock = selectedVariant.inventory?.quantity_available ?? 999;
+    const stock = selectedVariant.quantity_available ?? 0;
     if (stock <= 0 && product?.sourcing_type !== "preorder") {
       toast.error("Out of stock");
       return;
@@ -306,8 +291,8 @@ export default function ProductDetailPage() {
   const finalPrice = memberDiscount > 0 ? basePrice * (1 - memberDiscount / 100) : basePrice;
   const hasDiscount = product.compare_at_price_ngn && product.compare_at_price_ngn > basePrice;
   const isPreorder = product.sourcing_type === "preorder";
-  const stock = selectedVariant?.inventory?.quantity_available ?? 999;
-  const inStock = stock > 0 || isPreorder;
+  const stock = selectedVariant?.quantity_available ?? Math.max(0, ...activeVariants.map((variant) => variant.quantity_available ?? 0));
+  const inStock = activeVariants.length > 0 && (stock > 0 || isPreorder);
 
   const discountPercent = hasDiscount
     ? Math.round(
@@ -588,10 +573,9 @@ export default function ProductDetailPage() {
           )}
 
           {/* Variant Options */}
-          {product.variant_options && Object.keys(product.variant_options).length > 0 && (
+          {requiredOptions.length > 0 && (
             <div className="space-y-4 mb-5">
-              {Object.entries(product.variant_options)
-                .filter(([key]) => !key.startsWith("_"))
+              {Object.entries(optionChoices)
                 .map(([optionName, values]) => {
                   const isColorOption = optionName.toLowerCase() === "color";
                   const swatches =
@@ -707,6 +691,16 @@ export default function ProductDetailPage() {
             </div>
           )}
 
+          {needsExplicitVariant && <label className="block mb-5 text-sm font-medium">
+            Product option
+            <select aria-label="Product option" className="mt-2 block w-full rounded-lg border p-3" value={explicitVariantId} onChange={(event) => { setExplicitVariantId(event.target.value); setQuantity(1); }}>
+              <option value="">Choose an option</option>
+              {matchingVariants.map((variant) => <option key={variant.id} value={variant.id}>{variant.name || variant.sku}</option>)}
+            </select>
+          </label>}
+          {!activeVariants.length && <p role="status" className="mb-5 text-sm text-amber-700">This item is temporarily unavailable for ordering. Please check back soon.</p>}
+          {activeVariants.length > 0 && allOptionsSelected && !selectedVariant && !needsExplicitVariant && <p role="status" className="mb-5 text-sm text-amber-700">This option combination is unavailable. Please choose another combination.</p>}
+
           {/* Size Chart Acknowledgment */}
           {product.requires_size_chart_ack && (
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl mb-5">
@@ -751,7 +745,7 @@ export default function ProductDetailPage() {
                 {quantity}
               </span>
               <button
-                onClick={() => setQuantity((q) => Math.min(stock, q + 1))}
+                onClick={() => setQuantity((q) => isPreorder ? q + 1 : Math.max(1, Math.min(stock, q + 1)))}
                 className="p-3 hover:bg-slate-50 transition-colors active:bg-slate-100"
                 aria-label="Increase quantity"
               >
@@ -761,7 +755,7 @@ export default function ProductDetailPage() {
 
             <button
               onClick={handleAddToCart}
-              disabled={adding || !inStock || !allOptionsSelected}
+              disabled={adding || !inStock || !allOptionsSelected || !selectedVariant}
               className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-cyan-600 text-white rounded-xl font-semibold text-sm hover:bg-cyan-700 active:bg-cyan-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
               {adding ? (
@@ -783,6 +777,8 @@ export default function ProductDetailPage() {
                   </svg>
                   Adding...
                 </span>
+              ) : !activeVariants.length ? (
+                <>Temporarily unavailable</>
               ) : !allOptionsSelected ? (
                 <>Select {missingOptions.join(" & ")}</>
               ) : (
@@ -960,11 +956,11 @@ export default function ProductDetailPage() {
         </div>
         <button
           onClick={handleAddToCart}
-          disabled={adding || !inStock}
+          disabled={adding || !inStock || !allOptionsSelected || !selectedVariant}
           className="ml-auto flex items-center gap-2 px-5 py-2.5 bg-cyan-600 text-white rounded-xl font-semibold text-sm hover:bg-cyan-700 transition-colors disabled:opacity-50 whitespace-nowrap shadow-sm"
         >
           <ShoppingCart className="w-4 h-4" />
-          {adding ? "Adding..." : isPreorder ? "Pre-order" : "Add to Cart"}
+          {adding ? "Adding..." : !activeVariants.length ? "Unavailable" : !allOptionsSelected ? `Select ${missingOptions.join(" & ")}` : !selectedVariant ? "Choose an option" : isPreorder ? "Pre-order" : "Add to Cart"}
         </button>
       </div>
 
