@@ -27,7 +27,7 @@ export function ClubQuarterRecommendation({
 }) {
   const templates = useApi<Template[]>("/api/v1/sessions/templates");
   const [club, setClub] = useState("");
-  const [template, setTemplate] = useState("");
+  const [template, setTemplate] = useState<string[]>([]);
   const [year, setYear] = useState(new Date().getFullYear());
   const [quarter, setQuarter] = useState(Math.floor(new Date().getMonth() / 3) + 1);
   const [configure, setConfigure] = useState(true);
@@ -63,7 +63,8 @@ export function ClubQuarterRecommendation({
                 club_id: club,
                 year,
                 quarter,
-                template_id: template || null,
+                template_id: null,
+                template_ids: template,
                 capacity,
                 excluded_dates: excluded
                   .split(",")
@@ -98,7 +99,7 @@ export function ClubQuarterRecommendation({
               value={club}
               onChange={(e) => {
                 setClub(e.target.value);
-                setTemplate("");
+                setTemplate([]);
               }}
             >
               <option value="">Choose a Club location</option>
@@ -110,16 +111,18 @@ export function ClubQuarterRecommendation({
             </select>
           </label>
           <label>
-            Session template
+            Included session templates (select all series sold in this quarter)
             <select
               className={css}
+              multiple
               value={template}
               onChange={(e) => {
-                setTemplate(e.target.value);
-                setConfigure(!e.target.value);
+                const ids = Array.from(e.target.selectedOptions, (option) => option.value).filter(Boolean);
+                setTemplate(ids);
+                setConfigure(!ids.length);
               }}
             >
-              <option value="">Primary Club template (create if needed)</option>
+              <option value="">Default schedule (create template if needed)</option>
               {templates.data
                 ?.filter(
                   (t) => t.club_id === club && !t.pod_id && t.club_access_mode === "plan_included"

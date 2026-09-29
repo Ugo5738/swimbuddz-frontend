@@ -174,6 +174,14 @@ export default function ClubPlansAdminPage() {
               {plan.sessions_included} sessions · {money(plan.club_fee_kobo)}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
+              {plan.published_at && <Button variant="outline" disabled={busy} onClick={() => run(async () => {
+                const result = await apiPost<{ synced_enrollment_ids: string[]; failed_enrollment_ids: string[] }>(
+                  `/api/v1/clubs/admin/plans/${plan.id}/sync-prepaid-reservations`, {}, { auth: true }
+                );
+                if (result.failed_enrollment_ids.length) {
+                  setError(`Some reservations need reconciliation. Enrollment IDs: ${result.failed_enrollment_ids.join(", ")}`);
+                } else toast.success(`Reservations synced for ${result.synced_enrollment_ids.length} prepaid members.`);
+              })}>Sync prepaid reservations</Button>}
               <Button variant="outline" disabled={busy} onClick={() => run(() => open(plan))}>
                 {plan.published_at ? "View schedule" : "Review draft"}
               </Button>

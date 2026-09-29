@@ -6,6 +6,7 @@
 
 "use client";
 
+import { defaultAdmission, TemplateAdmissionFields, TemplateOperationsSync, type TemplateAdmission } from "@/components/admin/TemplateAdmissionFields";
 import { ClubSessionScopeFields } from "@/components/admin/ClubSessionScopeFields";
 import { AcademyTemplateFields } from "@/components/admin/AcademyTemplateFields";
 import { ClubAccessModeHint } from "@/components/admin/ClubAccessModeHint";
@@ -34,6 +35,7 @@ import { DAY_NAMES, locationLabel } from "@/app/(admin)/admin/sessions/utils";
  * the persisted Template record.
  */
 export type TemplateFormPayload = {
+  admission_settings: TemplateAdmission;
   cohort_id: string | null;
   cohort_fee_mode: "included" | "paid_extra";
   club_access_mode?: Template["club_access_mode"];
@@ -288,6 +290,7 @@ function TemplateFormInline({
   onUpdate: (id: string, data: TemplateFormPayload) => void;
 }) {
   const [form, setForm] = useState({
+    admission_settings: { ...defaultAdmission, ...template?.admission_settings },
     cohort_id: template?.cohort_id ?? null,
     cohort_fee_mode: template?.cohort_fee_mode ?? "included",
     club_access_mode: template?.club_access_mode ?? "plan_included",
@@ -401,6 +404,8 @@ function TemplateFormInline({
       <h3 className="font-semibold text-slate-900">
         {mode === "create" ? "New Template" : "Edit Template"}
       </h3>
+      <TemplateAdmissionFields value={form.admission_settings} onChange={(admission_settings) => setForm({ ...form, admission_settings })} />
+      {template && <TemplateOperationsSync templateId={template.id} />}
       <Input
         label="Title"
         value={form.title}

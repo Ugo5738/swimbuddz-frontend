@@ -251,7 +251,7 @@ export default function AdminAttendancePage() {
   const [rosterStatusFilter, setRosterStatusFilter] = useState("all");
   const [rosterBookingFilter, setRosterBookingFilter] = useState("all");
 
-  // Admin-issued Paystack pay-link for an outstanding-fee booking. Modal
+  // Admin-issued authenticated settlement link for an outstanding-fee booking. Modal
   // surface: { booking_id (which row), result | "loading" }. Closed = null.
   // The actual API call is fired on button click; result holds the URL +
   // metadata so the admin can copy / share to the member.
@@ -262,9 +262,9 @@ export default function AdminAttendancePage() {
       | { kind: "loading" }
       | {
           kind: "ready";
-          reference: string;
+          reference: string | null;
           authorization_url: string;
-          payer_email: string;
+          payer_email: string | null;
           amount: number;
         }
       | { kind: "error"; message: string };
@@ -281,9 +281,9 @@ export default function AdminAttendancePage() {
     setPayLinkModal({ bookingId, memberName, state: { kind: "loading" } });
     try {
       const resp = await apiPost<{
-        reference: string;
+        reference: string | null;
         authorization_url: string;
-        payer_email: string;
+        payer_email: string | null;
         amount: number;
         booking_id: string;
         session_id: string;
@@ -1393,7 +1393,7 @@ export default function AdminAttendancePage() {
 }
 
 // =========================================================================
-// PayLinkModal — admin-issued Paystack link surface. Shows the generated
+// PayLinkModal — member-authenticated settlement link. Shows the generated
 // authorization URL with copy / WhatsApp share / email actions. The link
 // itself is hot from the moment it returns; admin forwards it through any
 // channel and the member clicks to pay (entitlement flow handles the rest).
@@ -1461,12 +1461,12 @@ function PayLinkModal({
                 ✓ Link ready — ₦{modal.state.amount.toLocaleString("en-NG")}
               </div>
               <div className="mt-0.5 text-xs text-emerald-700">
-                Reference: {modal.state.reference} · Payer: {modal.state.payer_email}
+                Sign in with the member account{modal.state.payer_email ? `: ${modal.state.payer_email}` : " linked to this booking"}
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-medium text-slate-600">Paystack URL</label>
+              <label className="text-xs font-medium text-slate-600">SwimBuddz settlement URL</label>
               <div className="mt-1 flex gap-2">
                 <input
                   type="text"
@@ -1500,18 +1500,18 @@ function PayLinkModal({
               >
                 💬 Share via WhatsApp
               </a>
-              <a
+              {modal.state.payer_email && <a
                 href={`mailto:${modal.state.payer_email}?subject=${encodeURIComponent("Your SwimBuddz payment link")}&body=${encodeURIComponent(
                   `Hi ${modal.memberName},\n\nHere's your payment link for ₦${modal.state.amount.toLocaleString("en-NG")}:\n${modal.state.authorization_url}\n\nThanks,\nSwimBuddz`
                 )}`}
                 className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
               >
                 ✉️ Email
-              </a>
+              </a>}
             </div>
 
             <p className="text-xs text-slate-500">
-              The link stays valid until paid. Once the member pays, the row's "Owes ₦X" badge flips
+              The member signs in and chooses Bubbles, online payment, or bank transfer. Once paid, the row's "Owes ₦X" badge flips
               to "Paid" on the next refresh.
             </p>
           </div>
@@ -1531,9 +1531,9 @@ function usePayLinkModalState() {
       | { kind: "loading" }
       | {
           kind: "ready";
-          reference: string;
+          reference: string | null;
           authorization_url: string;
-          payer_email: string;
+          payer_email: string | null;
           amount: number;
         }
       | { kind: "error"; message: string };
@@ -1882,7 +1882,7 @@ function RosterTableRow({
                 disabled={disabled}
                 onClick={() => onGeneratePayLink(row.booking!.id, row.name)}
                 className="inline-flex w-fit rounded-md border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[11px] font-medium text-cyan-700 hover:bg-cyan-100 disabled:opacity-50"
-                title={`Generate a Paystack pay link for ${row.name} to settle the ₦${(row.booking.fee_amount_kobo / 100).toLocaleString("en-NG")} fee`}
+                title={`Generate a settlement link for ${row.name} to settle the ₦${(row.booking.fee_amount_kobo / 100).toLocaleString("en-NG")} fee`}
               >
                 Generate pay link
               </button>

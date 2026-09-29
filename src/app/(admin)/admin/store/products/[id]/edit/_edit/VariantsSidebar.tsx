@@ -179,7 +179,7 @@ export function VariantsSidebar({
       {/* Existing Variants List */}
       {variants.length === 0 ? (
         <p className="text-sm text-slate-500">
-          No variants yet. Add one to enable inventory tracking.
+          No purchasable options yet. Add an active variant before customers can order this product.
         </p>
       ) : (
         <div className="space-y-2">

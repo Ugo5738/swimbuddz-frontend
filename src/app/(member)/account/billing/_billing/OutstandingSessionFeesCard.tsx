@@ -1,15 +1,8 @@
 "use client";
 
-import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { apiPost } from "@/lib/api";
-import { useState } from "react";
+import Link from "next/link";
 import { useApi } from "@/hooks/useApi";
-import {
-  PaymentMethodChoice,
-  type CheckoutPaymentMethod,
-} from "@/components/checkout/PaymentMethodChoice";
-import { toast } from "sonner";
 
 import { formatCurrency } from "../utils";
 
@@ -27,12 +20,6 @@ type UnpaidBooking = {
   notes?: string | null;
 };
 
-type PaymentIntentResponse = {
-  reference: string;
-  amount: number;
-  checkout_url: string | null;
-};
-
 function formatWhen(starts: string): string {
   const d = new Date(starts);
   if (Number.isNaN(d.getTime())) return "—";
@@ -47,41 +34,6 @@ function formatWhen(starts: string): string {
 
 export function OutstandingSessionFeesCard() {
   const { data: bookings, error } = useApi<UnpaidBooking[]>("/api/v1/sessions/bookings/me/unpaid");
-  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("paystack");
-  const [paying, setPaying] = useState<string | null>(null);
-
-  const handlePay = async (booking: UnpaidBooking) => {
-    setPaying(booking.id);
-    try {
-      // Reuse the existing session_booking payment intent flow. Same
-      // Paystack + entitlement path used by the regular /sessions/[id]/book
-      // page, so the webhook will mark the payment paid AND backfill the
-      // booking's payment_intent_id (internal confirm endpoint update).
-      const intent = await apiPost<PaymentIntentResponse>(
-        "/api/v1/payments/intents",
-        {
-          purpose: "session_booking",
-          currency: "NGN",
-          payment_method: paymentMethod,
-          session_id: booking.session_id,
-          direct_amount: booking.fee_amount_kobo / 100,
-          payment_metadata: { booking_id: booking.id },
-        },
-        { auth: true }
-      );
-      if (intent.checkout_url) {
-        window.location.href = intent.checkout_url;
-      } else {
-        toast.error("Unable to start payment. Please try again.");
-        setPaying(null);
-      }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Unable to start payment.";
-      toast.error(msg);
-      setPaying(null);
-    }
-  };
-
   if (error)
     return <p className="text-sm text-rose-600">Could not load outstanding session fees.</p>;
   if (!bookings || bookings.length === 0) return null;
@@ -98,11 +50,6 @@ export function OutstandingSessionFeesCard() {
       </div>
 
       <div className="space-y-3">
-        <PaymentMethodChoice
-          value={paymentMethod}
-          onChange={setPaymentMethod}
-          disabled={!!paying}
-        />
         {bookings.map((booking) => (
           <div
             key={booking.id}
@@ -128,11 +75,9 @@ export function OutstandingSessionFeesCard() {
             </div>
 
             <div className="flex justify-end">
-              <Button size="sm" onClick={() => handlePay(booking)} disabled={paying === booking.id}>
-                {paying === booking.id
-                  ? "Starting payment…"
-                  : `Pay ${formatCurrency(booking.fee_amount_kobo / 100)}`}
-              </Button>
+              <Link href={`/account/billing/sessions/${booking.id}`} className="rounded-lg bg-cyan-700 px-4 py-2 text-sm font-medium text-white">
+                Pay {formatCurrency(booking.fee_amount_kobo / 100)} · Bubbles or cash
+              </Link>
             </div>
           </div>
         ))}

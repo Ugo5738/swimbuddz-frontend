@@ -150,6 +150,8 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 | Route                  | File                                            | Purpose                          |
 | ---------------------- | ----------------------------------------------- | -------------------------------- |
 | `/account/billing`     | `src/app/(member)/account/billing/page.tsx`     | Payment history and billing info |
+| `/account/billing/sessions/[bookingId]` | `src/app/(member)/account/billing/sessions/[bookingId]/page.tsx` | Authenticated booking-owner settlement: Bubbles plus online payment, or cash-only bank transfer |
+| `/account/club` | `src/app/(member)/account/club/page.tsx` | Upcoming prepaid quarter reservations, attendance cancellation, and rebooking links |
 | `/account/orders`      | `src/app/(member)/account/orders/page.tsx`      | Store orders list                |
 | `/account/orders/[id]` | `src/app/(member)/account/orders/[id]/page.tsx` | Order detail page                |
 | `/checkout`            | `src/app/(member)/checkout/page.tsx`            | General checkout flow            |
@@ -470,6 +472,8 @@ prorated by remaining sessions and cannot be entered as a new Club member once
 four or fewer sessions remain; those swimmers use Community/drop-in booking
 until the next quarter. When current-quarter entry is available it is required,
 while future quarters are optional. Annual SwimBuddz membership is shown as a
-separate line only when due. Checkout holds plan/pod capacity for 30 minutes.
+separate line only when due. Checkout holds plan/pod capacity and each included
+future swim for 30 minutes before payment exposure. Issued payment links and
+bank instructions protect those seats until settlement or verified closure.
 
 _Last updated: September 2026_

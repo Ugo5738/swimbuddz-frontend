@@ -3,7 +3,7 @@ type Mode = "plan_included" | "active_club" | "paid_addon";
 export function ClubAccessModeHint({ mode }: { mode: Mode }) {
   const descriptions: Record<Mode, string> = {
     plan_included:
-      "A scheduled swim sold as part of a Club quarter. Use Generate Club quarter to include it in the plan. Members who prepaid that inclusion pay ₦0 when booking; transition members pay the session price.",
+      "A scheduled swim sold as part of a Club quarter. Use Generate Club quarter to include it in the plan. Prepaid members are automatically reserved into future included swims and can cancel individual attendance without a quarter refund; transition members pay the session price.",
     active_club:
       "Extra practice outside the quarter’s scheduled inclusions. Active prepaid Club members at this location pay ₦0; transition members pay the session price. This does not add a session to the purchased quarter.",
     paid_addon:

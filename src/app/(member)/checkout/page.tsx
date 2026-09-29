@@ -1,5 +1,7 @@
 "use client";
 
+import { prepareCheckout, prepareAcademyEnrollment } from "@/lib/checkoutPreparation";
+import { loadAcademyBillingQuotes, type AcademyBillingQuotes } from "@/lib/academyBillingQuotes";
 import { BANK_TRANSFER_ACCOUNT } from "@/lib/bank-transfer";
 
 import { canPayAcademyEnrollment } from "@/lib/academy/paymentEligibility";
@@ -31,7 +33,6 @@ import {
   formatCurrency,
   getClubCycleLabel,
   UpgradeProvider,
-  type UpgradeState,
   useUpgrade,
 } from "@/lib/upgradeContext";
 import { ArrowLeft, CreditCard, Tag } from "lucide-react";
@@ -83,7 +84,8 @@ function CheckoutContent() {
   const [clubQuote, setClubQuote] = useState<ChargePreview | null>(null);
   const [clubExperienceSelected, setClubExperienceSelected] = useState<boolean | undefined>();
   const quoteRequest = useRef(0);
-  const [academyQuote, setAcademyQuote] = useState<ChargePreview | null>(null);
+  const [academyQuotes, setAcademyQuotes] = useState<(AcademyBillingQuotes & { key: string }) | null>(null);
+  const [checkoutCohort, setCheckoutCohort] = useState<Cohort | null>(null);
   const [experienceQuote, setExperienceQuote] = useState<ChargePreview | null>(null);
   const [membershipQuote, setMembershipQuote] = useState<ChargePreview | null>(null);
   const [adjustments, setAdjustments] = useState<PaymentAdjustments>({});
@@ -111,7 +113,7 @@ function CheckoutContent() {
 
   // Installment billing mode — "full" or "installments"
   // Only relevant when purpose === "academy_cohort" and cohort.installment_plan_enabled
-  const [billingMode, setBillingMode] = useState<"full" | "installments">("full");
+  const [billingMode, setBillingMode] = useState<"full" | "installments">(searchParams.get("billing") === "installments" ? "installments" : "full");
 
   // Determine purpose from URL ONLY — do not fall back to context.targetTier.
   // The context-based fallback was a money-leak: a member arriving with stale
@@ -142,7 +144,7 @@ function CheckoutContent() {
   // Get cohort_id from URL (for resuming pending payments)
   const urlCohortId = searchParams.get("cohort_id");
   const urlEnrollmentId = searchParams.get("enrollment_id");
-  const checkoutCohortId = urlCohortId || state.selectedCohortId;
+  const checkoutCohortId = urlCohortId;
   // Optional override (kobo) for member-initiated mid-cohort custom-amount pay.
   // Backend validates: >= next installment amount, <= remaining balance.
   const urlAmountOverrideKobo = (() => {
@@ -151,8 +153,35 @@ function CheckoutContent() {
     const n = Number(raw);
     return Number.isFinite(n) && n > 0 ? Math.floor(n) : undefined;
   })();
-  const { setSelectedCohort } = useUpgrade();
+  const academyQuoteKey = JSON.stringify([urlEnrollmentId, urlCohortId, paymentMethod, urlAmountOverrideKobo, adjustments]);
+  const [academyBubbleResetKey, setAcademyBubbleResetKey] = useState<string | null>(null);
+  const bubblesWereReset = academyBubbleResetKey === academyQuoteKey;
+  const academyQuote = academyQuotes?.key === academyQuoteKey
+    ? bubblesWereReset ? academyQuotes.withoutBubbles[billingMode] : academyQuotes[billingMode]
+    : null;
+  const academyQuoteError = academyQuotes?.key === academyQuoteKey ? academyQuotes.errors[billingMode] : undefined;
+  const switchBilling = (mode: "full" | "installments") => {
+    setBillingMode(mode);
+    if (adjustments.bubbles_to_apply && academyQuotes?.key === academyQuoteKey &&
+        academyQuotes[mode] && !academyQuotes[mode]?.bubbles_to_apply) {
+      setAcademyBubbleResetKey(academyQuoteKey);
+    }
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("billing", mode);
+    router.replace(`/checkout?${params.toString()}`, { scroll: false });
+  };
+  const billingParam = searchParams.get("billing");
+  useEffect(() => {
+    setBillingMode(billingParam === "installments" ? "installments" : "full");
+  }, [billingParam]);
+  useEffect(() => {
+    if (adjustments.bubbles_to_apply && academyQuotes?.key === academyQuoteKey &&
+        academyQuotes[billingMode] && !academyQuotes[billingMode]?.bubbles_to_apply) {
+      setAcademyBubbleResetKey(academyQuoteKey);
+    }
+  }, [billingMode, academyQuoteKey, academyQuotes, adjustments.bubbles_to_apply]);
   const enrollmentStarted = useRef<string | null>(null);
+  const [preparationRetry, setPreparationRetry] = useState(0);
 
   useEffect(() => {
     if (
@@ -164,68 +193,14 @@ function CheckoutContent() {
       return;
     }
     enrollmentStarted.current = checkoutCohortId;
-    void (async () => {
-      try {
-        const enrollmentBody: {
-          cohort_id: string;
-          preferences?: { late_join: NonNullable<UpgradeState["lateJoinPreferences"]> };
-        } = { cohort_id: checkoutCohortId };
-        if (state.selectedCohortId === checkoutCohortId && state.lateJoinPreferences) {
-          enrollmentBody.preferences = { late_join: state.lateJoinPreferences };
-        }
-        let enrollmentId: string;
-        try {
-          const enrollment = await apiPost<{ id: string; status: string }>(
-            "/api/v1/academy/enrollments/me",
-            enrollmentBody,
-            { auth: true }
-          );
-          if (!canPayAcademyEnrollment(enrollment.status)) {
-            router.replace(`/account/academy/enrollments/${enrollment.id}`);
-            return;
-          }
-          enrollmentId = enrollment.id;
-        } catch (error) {
-          const message = error instanceof Error ? error.message : "";
-          if (!message.toLowerCase().includes("already")) throw error;
-          const existing = await apiGet<
-            { id: string; cohort_id: string; payment_status: string; status: string }[]
-          >("/api/v1/academy/my-enrollments", { auth: true });
-          const enrollment = existing.find(
-            (item) =>
-              item.cohort_id === checkoutCohortId &&
-              (canPayAcademyEnrollment(item.status) || item.status === "waitlist")
-          );
-          // A conflict may refer to another cohort in the same program.
-          // Preserve the server's explanation and recovery instructions.
-          if (!enrollment) throw error;
-          if (
-            enrollment.payment_status === "paid" ||
-            !canPayAcademyEnrollment(enrollment.status)
-          ) {
-            router.replace(`/account/academy/enrollments/${enrollment.id}`);
-            return;
-          }
-          enrollmentId = enrollment.id;
-        }
-        const params = new URLSearchParams(searchParams.toString());
-        params.set("enrollment_id", enrollmentId);
-        router.replace(`/checkout?${params.toString()}`);
-      } catch (error) {
-        setQuoteError(
-          error instanceof Error ? error.message : "Could not prepare Academy checkout"
-        );
-      }
-    })();
-  }, [
-    checkoutCohortId,
-    purpose,
-    router,
-    searchParams,
-    state.lateJoinPreferences,
-    state.selectedCohortId,
-    urlEnrollmentId,
-  ]);
+    let active = true;
+    void prepareAcademyEnrollment(checkoutCohortId).then(({ path }) => {
+      if (active) router.replace(path);
+    }).catch((error) => {
+      if (active) setQuoteError(error instanceof Error ? error.message : "Could not prepare Academy checkout");
+    });
+    return () => { active = false; enrollmentStarted.current = null; };
+  }, [checkoutCohortId, purpose, router, urlEnrollmentId, preparationRetry]);
 
   // Load member data and pricing (and cohort if needed)
   const loadData = useCallback(async () => {
@@ -234,21 +209,22 @@ function CheckoutContent() {
     setQuotePending(true);
     try {
       const [memberData, pricingData] = await Promise.all([
-        apiGet<Member>("/api/v1/members/me", { auth: true }),
-        apiGet<PricingConfig>("/api/v1/payments/pricing"),
+        prepareCheckout("member", () => apiGet<Member>("/api/v1/members/me", { auth: true })),
+        prepareCheckout("pricing", () => apiGet<PricingConfig>("/api/v1/payments/pricing")),
       ]);
+      if (request !== quoteRequest.current) return;
       setMember(memberData);
       setPricing(pricingData);
 
       if (purpose === "club" && clubApplicationId) {
         try {
-          const quote = await previewClubCheckout(
+          const quote = await prepareCheckout("club-quote", () => previewClubCheckout(
             clubApplicationId,
             paymentMethod,
             clubPaymentModeWasChosen ? clubPaymentMode : undefined,
             clubExperienceSelected,
             adjustments
-          );
+          ));
           if (request !== quoteRequest.current) return;
           setClubQuote(quote);
           if (quote.components.club_payment_mode) {
@@ -306,79 +282,46 @@ function CheckoutContent() {
       }
       if (purpose === "academy_cohort" && urlEnrollmentId) {
         try {
-          const enrollments = await apiGet<{ id: string; status: string; payment_status: string }[]>(
-            "/api/v1/academy/my-enrollments",
-            { auth: true }
-          );
+          const enrollments = await prepareCheckout("academy-enrollment-status", () => apiGet<{
+            id: string; cohort_id?: string; status: string; payment_status: string;
+          }[]>("/api/v1/academy/my-enrollments", { auth: true }));
+          if (request !== quoteRequest.current) return;
           const enrollment = enrollments.find((item) => item.id === urlEnrollmentId);
           if (!enrollment) throw new Error("Academy enrollment not found");
+          if (enrollment.cohort_id && urlCohortId && enrollment.cohort_id !== urlCohortId) {
+            throw new Error("This enrollment belongs to another cohort. Open it from My Academy.");
+          }
           if (enrollment.payment_status === "paid" || !canPayAcademyEnrollment(enrollment.status)) {
-            setAcademyQuote(null);
+            setAcademyQuotes(null);
             router.replace(`/account/academy/enrollments/${enrollment.id}`);
             return;
           }
-          const quote = await previewAcademyCheckout(
-            urlEnrollmentId,
-            billingMode === "installments",
-            paymentMethod,
-            urlAmountOverrideKobo,
-            adjustments
+          const cohortId = enrollment.cohort_id || urlCohortId;
+          const cohort = cohortId ? await prepareCheckout("academy-cohort", () => apiGet<Cohort>(
+            `/api/v1/academy/cohorts/${cohortId}`, { auth: true }
+          )) : null;
+          const options = await loadAcademyBillingQuotes(
+            !!cohort?.installment_plan_enabled, adjustments.bubbles_to_apply || 0,
+            (mode, bubbles) => prepareCheckout(`academy-${mode}-quote`, () => previewAcademyCheckout(
+              urlEnrollmentId, mode === "installments", paymentMethod, urlAmountOverrideKobo,
+              adjustments.bubbles_to_apply ? { ...adjustments, bubbles_to_apply: bubbles } : adjustments
+            ))
           );
           if (request !== quoteRequest.current) return;
-          setAcademyQuote(quote);
+          setCheckoutCohort(cohort);
+          setAcademyQuotes({ key: academyQuoteKey, ...options });
           setQuoteError(null);
           setAdjustmentError(null);
-        } catch (quoteFailure) {
+        } catch (error) {
           if (request !== quoteRequest.current) return;
-          if (dataLoaded.current && (adjustments.discount_code || adjustments.bubbles_to_apply)) {
-            setAdjustmentError(
-              quoteFailure instanceof Error
-                ? quoteFailure.message
-                : "Could not apply payment options"
-            );
-            return;
-          }
-          setQuoteError(
-            quoteFailure instanceof Error
-              ? quoteFailure.message
-              : "Could not load the Academy price"
-          );
+          setAcademyQuotes(null);
+          setQuoteError(error instanceof Error ? error.message : "Could not load the Academy price");
         }
       }
 
-      // The URL cohort takes precedence over a previous selection in storage.
-      if (urlCohortId && state.selectedCohort?.id !== urlCohortId) {
-        try {
-          // Prefer enrollment lookup if provided
-          if (urlEnrollmentId) {
-            const enrollment = await apiGet<{
-              id: string;
-              cohort_id: string;
-              cohort?: Cohort;
-              program?: Cohort["program"];
-            }>(`/api/v1/academy/my-enrollments/${urlEnrollmentId}`, {
-              auth: true,
-            }).catch(() => null);
-            if (enrollment?.cohort?.id === urlCohortId) {
-              setSelectedCohort(enrollment.cohort);
-            }
-          }
-
-          if (state.selectedCohort?.id !== urlCohortId) {
-            const cohortResponse = await apiGet<Cohort>(`/api/v1/academy/cohorts/${urlCohortId}`, {
-              auth: true,
-            }).catch(() => null);
-            if (cohortResponse) {
-              setSelectedCohort(cohortResponse);
-            }
-          }
-        } catch (e) {
-          console.error("Failed to load cohort:", e);
-        }
-      }
     } catch (e) {
-      console.error("Failed to load data:", e);
-      setAdjustmentError("Could not refresh checkout. Reload the page before paying.");
+      if (request !== quoteRequest.current) return;
+      setQuoteError(e instanceof Error ? e.message : "Could not prepare checkout. Please try again.");
     } finally {
       if (request === quoteRequest.current) {
         setLoading(false);
@@ -390,8 +333,7 @@ function CheckoutContent() {
     router,
     urlCohortId,
     urlEnrollmentId,
-    state.selectedCohort,
-    setSelectedCohort,
+    academyQuoteKey,
     purpose,
     clubApplicationId,
     clubPaymentMode,
@@ -400,13 +342,14 @@ function CheckoutContent() {
     adjustments,
     paymentMethod,
     communityExperienceOfferingId,
-    billingMode,
     urlAmountOverrideKobo,
   ]);
 
+  const invalidateQuotes = useCallback(() => { quoteRequest.current++; }, []);
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    void loadData();
+    return invalidateQuotes;
+  }, [loadData, invalidateQuotes]);
 
   // Check if community is active
   const communityActive = isTierPaid(member, "community");
@@ -487,7 +430,7 @@ function CheckoutContent() {
     const annualMembership = (academyQuote.components.annual_swimbuddz_membership || 0) / 100;
     const installmentNumber = academyQuote.components.installment_number;
     lineItems.push({
-      label: `Academy: ${state.selectedCohort?.name || "cohort"}${installmentNumber ? ` · installment ${installmentNumber}` : ""}`,
+      label: `Academy: ${checkoutCohort?.name || "cohort"}${installmentNumber ? ` · installment ${installmentNumber}` : ""}`,
       amount: academyAmount,
     });
     if (annualMembership > 0) {
@@ -548,48 +491,12 @@ function CheckoutContent() {
     clubQuote?.components.club_payment_mode === "transition_per_session";
   const nothingDue = isTransition && total === 0 && appliedBubbles === 0;
 
-  // ── Installment plan preview (mirrors installments.py logic) ─────────────
-  const cohortForInstallments = purpose === "academy_cohort" ? state.selectedCohort : null;
-  const installmentsEnabled = cohortForInstallments?.installment_plan_enabled === true;
-
-  const installmentPreview = (() => {
-    if (!installmentsEnabled || !cohortForInstallments) return null;
-    if (billingMode === "installments" && academyQuote) {
-      return {
-        count:
-          academyQuote.components.total_installments ??
-          cohortForInstallments.installment_count ??
-          2,
-        deposit: total,
-        subsequentAmount: null,
-        totalFee:
-          cohortForInstallments.price_override ??
-          cohortForInstallments.program?.price_amount ??
-          total,
-      };
-    }
-    const totalFee = total; // after any discount
-    const durationWeeks =
-      cohortForInstallments.duration_weeks ?? cohortForInstallments.program?.duration_weeks ?? 8;
-
-    // Auto-compute count: one per 4-week block, capped at 3 if fee > ₦150,000
-    let count =
-      cohortForInstallments.installment_count ?? Math.max(1, Math.floor(durationWeeks / 4));
-    if (totalFee > 150_000 && count > 3) count = 3;
-    if (count < 2) count = 2; // minimum 2 installments to be meaningful
-
-    // Deposit (first installment)
-    const depositOverride = cohortForInstallments.installment_deposit_amount;
-    const evenSplit = Math.floor(totalFee / count);
-    const remainder = totalFee - evenSplit * count;
-    const deposit = depositOverride ?? evenSplit + remainder; // remainder on first
-
-    const subsequentAmount = depositOverride
-      ? Math.floor((totalFee - depositOverride) / (count - 1))
-      : evenSplit;
-
-    return { count, deposit, subsequentAmount: subsequentAmount as number | null, totalFee };
-  })();
+  const installmentsEnabled = !!academyQuotes?.installments;
+  const installmentPreview = academyQuotes?.key === academyQuoteKey && academyQuotes.installments ? {
+    count: academyQuotes.installments.components.total_installments ?? 2,
+    deposit: (bubblesWereReset ? academyQuotes.withoutBubbles.installments! : academyQuotes.installments).total_kobo / 100,
+    subsequentAmount: null,
+  } : null;
 
   // Validate discount code against backend
   const handleApplyDiscount = async () => {
@@ -715,7 +622,7 @@ function CheckoutContent() {
           ...intentPayload,
           purpose: "academy_cohort",
           enrollment_id: urlEnrollmentId,
-          use_installments: installmentsEnabled && billingMode === "installments",
+          use_installments: billingMode === "installments",
           ...(urlAmountOverrideKobo ? { amount_override_kobo: urlAmountOverrideKobo } : {}),
         };
       } else if (purpose === "community") {
@@ -797,8 +704,11 @@ function CheckoutContent() {
     return "/account/billing";
   };
 
-  if (loading) {
-    return <LoadingCard text="Loading checkout..." />;
+  const unavailableInstallments = purpose === "academy_cohort" && billingMode === "installments" && academyQuotes?.key === academyQuoteKey && !academyQuotes.installments && !academyQuoteError;
+  if (unavailableInstallments) return <Alert variant="error">Installments are unavailable for this enrollment. <Button onClick={() => switchBilling("full")}>Pay in full</Button></Alert>;
+
+  if (loading || (purpose === "academy_cohort" && urlEnrollmentId && !academyQuote && !quoteError && !academyQuoteError)) {
+    return <LoadingCard text={dataLoaded.current ? "Updating price…" : "Preparing checkout…"} />;
   }
 
   if (purpose === "academy_cohort" && !urlEnrollmentId && !quoteError) {
@@ -808,12 +718,12 @@ function CheckoutContent() {
   // Validate we have required data. Route the user back to a useful place
   // based on what they were trying to do — back to cohort selection for
   // academy, back to billing for anything else.
-  if (!purpose || lineItems.length === 0) {
+  if (!purpose || quoteError || academyQuoteError || lineItems.length === 0) {
     const isAcademyFlow = purpose === "academy_cohort";
     const backLabel = isAcademyFlow ? "Back to Cohort Selection" : "Back to Billing";
     const backPath = isAcademyFlow ? "/upgrade/academy/cohort" : "/account/billing";
     const message =
-      quoteError ||
+      quoteError || academyQuoteError ||
       (isAcademyFlow
         ? "We couldn't load the cohort details. Please pick a cohort again."
         : "Missing checkout information. Please start the upgrade process again.");
@@ -822,6 +732,11 @@ function CheckoutContent() {
         <Alert variant="error" title="Checkout Error">
           {message}
         </Alert>
+        {(quoteError || academyQuoteError) && <Button onClick={() => { setQuoteError(null); if (purpose === "academy_cohort" && !urlEnrollmentId) { enrollmentStarted.current = null; setPreparationRetry((n) => n + 1); } else void loadData(); }}>Try again</Button>}
+        {isAcademyFlow && checkoutCohort?.installment_plan_enabled && <Button variant="outline" onClick={() => switchBilling(billingMode === "full" ? "installments" : "full")}>
+          {billingMode === "full" ? "Choose installments" : "Choose full payment"}
+        </Button>}
+        {(adjustments.bubbles_to_apply || adjustments.discount_code) && <Button variant="outline" onClick={() => setAdjustments({})}>Reset payment options</Button>}
         <Button onClick={() => router.push(backPath)}>{backLabel}</Button>
       </div>
     );
@@ -829,6 +744,7 @@ function CheckoutContent() {
 
   return (
     <div className="space-y-6">
+      {quotePending && <p role="status" className="text-center text-slate-600">Updating price…</p>}
       {/* Header */}
       <div className="text-center space-y-3">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 text-white">
@@ -1010,14 +926,18 @@ function CheckoutContent() {
           ) : null}
 
           {adjustmentError && !productQuote && <Alert variant="error">{adjustmentError}</Alert>}
+          {purpose === "academy_cohort" && bubblesWereReset && (
+            <p role="status" className="text-sm text-cyan-800">Bubbles were reset because the selected amount exceeded this installment. You can choose a new amount below.</p>
+          )}
           {productQuote && (
             <ProductPaymentOptions
               quote={productQuote}
-              value={adjustments}
+              value={purpose === "academy_cohort" ? { ...adjustments, bubbles_to_apply: appliedBubbles } : adjustments}
               error={adjustmentError}
               disabled={processing || quotePending}
               online={paymentMethod === "paystack"}
               onChange={(value) => {
+                setAcademyBubbleResetKey(null);
                 quoteRequest.current++;
                 setQuotePending(true);
                 setAdjustments(value);
@@ -1063,7 +983,8 @@ function CheckoutContent() {
           Need more time?{" "}
           <button
             type="button"
-            onClick={() => setBillingMode("installments")}
+            disabled={quotePending || processing}
+            onClick={() => switchBilling("installments")}
             className="text-cyan-600 underline underline-offset-2 hover:text-cyan-700 font-medium"
           >
             Pay in {installmentPreview.count} installments —{" "}
@@ -1081,10 +1002,11 @@ function CheckoutContent() {
           —{" "}
           <button
             type="button"
-            onClick={() => setBillingMode("full")}
+            disabled={quotePending || processing}
+            onClick={() => switchBilling("full")}
             className="text-cyan-600 underline underline-offset-2 hover:text-cyan-700 font-medium"
           >
-            pay in full instead
+            Pay in full{academyQuotes?.full ? ` — ${formatCurrency((bubblesWereReset ? academyQuotes.withoutBubbles.full! : academyQuotes.full).total_kobo / 100)}` : ""}
           </button>
         </p>
       )}
@@ -1194,7 +1116,7 @@ function CheckoutContent() {
                   ? `Pay ${formatCurrency(total)} & activate Club access`
                   : paymentMethod === "manual_transfer"
                     ? "Continue to transfer details"
-                    : installmentsEnabled && billingMode === "installments"
+                    : billingMode === "installments"
                       ? `Pay ${formatCurrency(productQuote ? total : (installmentPreview?.deposit ?? 0))} — Start Installment Plan`
                       : paymentMethod === "paystack"
                         ? `Pay ${formatCurrency(total)}`
