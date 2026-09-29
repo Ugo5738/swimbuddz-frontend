@@ -162,4 +162,67 @@ describe("Academy checkout enrollment preparation", () => {
     expect(mocks.preview).toHaveBeenCalledTimes(2);
   });
 
+  function setupBubblesQuotes() {
+    mocks.params += "&enrollment_id=pending";
+    mocks.enrollments = [{ id: "pending", cohort_id: "september", status: "pending_approval", payment_status: "pending" }];
+    mocks.get.mockImplementation(async (path: string) => {
+      if (path.endsWith("/my-enrollments")) return mocks.enrollments;
+      if (path.endsWith("/pricing")) return { community_annual: 20000 };
+      if (path.endsWith("/wallet/me")) return { balance: 2000 };
+      if (path.includes("/cohorts/")) return { id: "september", name: "September", installment_plan_enabled: true };
+      return { id: "member" };
+    });
+    mocks.preview.mockImplementation(async (_id: string, installment: boolean, _method: string, _override: unknown, adjustments: { bubbles_to_apply?: number }) => {
+      const base = installment ? 5500000 : 16500000;
+      const bubbles = adjustments.bubbles_to_apply || 0;
+      if (bubbles * 10000 > base) throw new Error("Too many Bubbles for this amount");
+      return { currency: "NGN", total_kobo: base - bubbles * 10000, subtotal_kobo: base,
+        net_subtotal_kobo: base, bubbles_to_apply: bubbles, bubbles_value_kobo: bubbles * 10000,
+        additional_charges: [], components: { academy: base, total_installments: 3, ...(installment ? { installment_number: 1 } : {}) } };
+    });
+  }
+
+  it("resets oversized full-payment Bubbles instantly on installment switch and keeps the reset on return", async () => {
+    setupBubblesQuotes(); render(<CheckoutPage />);
+    const slider = await screen.findByRole("slider", { name: "Bubbles to apply" });
+    fireEvent.change(slider, { target: { value: "1000" } });
+    await waitFor(() => expect(screen.getAllByText("₦65,000").length).toBeGreaterThan(0));
+    const count = mocks.preview.mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: /Pay in 3 installments/ }));
+    expect(screen.getByRole("slider")).toHaveValue("0");
+    expect(screen.getAllByText("₦55,000").length).toBeGreaterThan(0);
+    expect(screen.getByRole("status")).toHaveTextContent("Bubbles were reset");
+    fireEvent.click(screen.getByRole("button", { name: /Pay in full/ }));
+    expect(screen.getByRole("slider")).toHaveValue("0");
+    expect(screen.getAllByText("₦165,000").length).toBeGreaterThan(0);
+    expect(mocks.preview).toHaveBeenCalledTimes(count);
+    expect(mocks.preview.mock.calls.some((call) => call[1] && call[4].bubbles_to_apply > 550)).toBe(false);
+  });
+
+  it("preserves valid Bubbles in both billing directions without requoting on toggles", async () => {
+    setupBubblesQuotes(); render(<CheckoutPage />);
+    fireEvent.change(await screen.findByRole("slider"), { target: { value: "200" } });
+    await waitFor(() => expect(screen.getAllByText("₦145,000").length).toBeGreaterThan(0));
+    const count = mocks.preview.mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: /Pay in 3 installments/ }));
+    expect(screen.getByRole("slider")).toHaveValue("200");
+    expect(screen.getAllByText("₦35,000").length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: /Pay in full/ }));
+    expect(screen.getByRole("slider")).toHaveValue("200");
+    expect(screen.getAllByText("₦145,000").length).toBeGreaterThan(0);
+    expect(mocks.preview).toHaveBeenCalledTimes(count);
+  });
+
+  it("supports full Bubbles coverage of an installment, retaining that valid amount on full payment", async () => {
+    setupBubblesQuotes(); render(<CheckoutPage />);
+    fireEvent.click(await screen.findByRole("button", { name: /Pay in 3 installments/ }));
+    fireEvent.change(await screen.findByRole("slider"), { target: { value: "550" } });
+    await waitFor(() => expect(screen.getAllByText("₦0").length).toBeGreaterThan(0));
+    const count = mocks.preview.mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: /Pay in full/ }));
+    expect(screen.getByRole("slider")).toHaveValue("550");
+    expect(screen.getAllByText("₦110,000").length).toBeGreaterThan(0);
+    expect(mocks.preview).toHaveBeenCalledTimes(count);
+  });
+
 });

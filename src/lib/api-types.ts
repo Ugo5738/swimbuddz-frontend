@@ -1969,6 +1969,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/clubs/internal/applications/{application_id}/reservation/protect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Protect Club Application Capacity
+         * @description Pin all capacity before a provider link or bank instructions can escape.
+         */
+        post: operations["protect_club_application_capacity_clubs_internal_applications__application_id__reservation_protect_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/clubs/internal/applications/{application_id}/reservation/release": {
         parameters: {
             query?: never;
@@ -5029,6 +5049,57 @@ export interface paths {
         put?: never;
         /** Reserve Prepaid Swims */
         post: operations["reserve_prepaid_swims_internal_sessions_club_reservations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/sessions/club-holds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reserve Holds */
+        post: operations["reserve_holds_internal_sessions_club_holds_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/sessions/club-holds/protect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Protect Holds */
+        post: operations["protect_holds_internal_sessions_club_holds_protect_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/sessions/club-holds/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Release Holds */
+        post: operations["release_holds_internal_sessions_club_holds_release_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8145,6 +8216,64 @@ export interface paths {
          * @description Return a member-authenticated settlement URL without creating a payment.
          */
         post: operations["admin_generate_booking_pay_link_payments_admin_bookings__booking_id__payment_link_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/checkout-reconciliation/bookings/{booking_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Preview Booking Attempts */
+        get: operations["preview_booking_attempts_payments_admin_checkout_reconciliation_bookings__booking_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/checkout-reconciliation/{reference}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Preview Checkout */
+        get: operations["preview_checkout_payments_admin_checkout_reconciliation__reference__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/checkout-reconciliation/{reference}/close-unpaid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Close Unpaid Checkout
+         * @description Audited manual closure only after an operator verifies non-payability.
+         *
+         *     This endpoint does not cancel Paystack. It records evidence that an
+         *     operator obtained from the provider (or verified for a manual transfer).
+         *     It never marks a payment paid, refunds money, or changes a paid receipt.
+         */
+        post: operations["close_unpaid_checkout_payments_admin_checkout_reconciliation__reference__close_unpaid_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -19265,6 +19394,11 @@ export interface components {
         };
         /** ActivateClubApplicationRequest */
         ActivateClubApplicationRequest: {
+            /**
+             * Require Session Holds
+             * @default false
+             */
+            require_session_holds: boolean;
             /** Payment Reference */
             payment_reference: string;
             /** Starts At */
@@ -20314,6 +20448,8 @@ export interface components {
         };
         /** ClubApplicationReservationRequest */
         ClubApplicationReservationRequest: {
+            /** Closure Evidence */
+            closure_evidence?: string | null;
             /** Payment Reference */
             payment_reference: string;
             /**
@@ -20346,7 +20482,12 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "active" | "released" | "consumed";
+            status: "active" | "protected" | "released" | "consumed";
+            /**
+             * Session Holds
+             * @default false
+             */
+            session_holds: boolean;
             /**
              * Expires At
              * Format: date-time
@@ -25227,6 +25368,38 @@ export interface components {
              */
             created_at: string;
         };
+        /** HoldAction */
+        HoldAction: {
+            /**
+             * Application Id
+             * Format: uuid
+             */
+            application_id: string;
+            /** Payment Reference */
+            payment_reference: string;
+            /** Closure Evidence */
+            closure_evidence?: string | null;
+        };
+        /** HoldPlan */
+        HoldPlan: {
+            /**
+             * Plan Version Id
+             * Format: uuid
+             */
+            plan_version_id: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Session Ids */
+            session_ids: string[];
+        };
         /**
          * MakeupBlockKind
          * @description What the make-up's grace/window 'block' is anchored to.
@@ -25523,6 +25696,13 @@ export interface components {
         };
         /** PrepaidReservationsRequest */
         PrepaidReservationsRequest: {
+            /** Payment Reference */
+            payment_reference?: string | null;
+            /**
+             * Require Holds
+             * @default false
+             */
+            require_holds: boolean;
             /**
              * Enrollment Id
              * Format: uuid
@@ -25604,6 +25784,33 @@ export interface components {
             reason: string;
             /** Pool Time Confirmed */
             pool_time_confirmed: boolean;
+        };
+        /** ReserveClubHolds */
+        ReserveClubHolds: {
+            /**
+             * Application Id
+             * Format: uuid
+             */
+            application_id: string;
+            /**
+             * Club Id
+             * Format: uuid
+             */
+            club_id: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Payment Reference */
+            payment_reference: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Plans */
+            plans: components["schemas"]["HoldPlan"][];
         };
         /**
          * RunningLateRequest
@@ -29543,7 +29750,7 @@ export interface components {
         };
         /**
          * AdminBookingPayLinkRequest
-         * @description Optional overrides when generating an admin pay-link for a booking.
+         * @description Legacy fields accepted while generating a settlement URL; no Payment is created.
          */
         AdminBookingPayLinkRequest: {
             /** Amount Naira */
@@ -29558,7 +29765,7 @@ export interface components {
             /** Authorization Url */
             authorization_url: string;
             /** Payer Email */
-            payer_email: string;
+            payer_email?: string | null;
             /** Amount */
             amount: number;
             /** Booking Id */
@@ -29789,6 +29996,20 @@ export interface components {
              * @default 0
              */
             maximum_bubbles: number;
+        };
+        /** CloseUnpaidCheckout */
+        CloseUnpaidCheckout: {
+            /** Preview Token */
+            preview_token: string;
+            /** Provider Closure Evidence */
+            provider_closure_evidence: string;
+            /** Note */
+            note: string;
+            /**
+             * Apply
+             * @default false
+             */
+            apply: boolean;
         };
         /**
          * ClubBillingCycle
@@ -48529,7 +48750,9 @@ export interface operations {
     };
     sync_prepaid_reservations_clubs_admin_plans__plan_id__sync_prepaid_reservations_post: {
         parameters: {
-            query?: never;
+            query?: {
+                dry_run?: boolean;
+            };
             header?: never;
             path: {
                 plan_id: string;
@@ -49113,6 +49336,41 @@ export interface operations {
         };
     };
     reserve_club_application_capacity_clubs_internal_applications__application_id__reservation_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClubApplicationReservationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubApplicationReservationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    protect_club_application_capacity_clubs_internal_applications__application_id__reservation_protect_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -54024,6 +54282,105 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["PrepaidReservationsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reserve_holds_internal_sessions_club_holds_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReserveClubHolds"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    protect_holds_internal_sessions_club_holds_protect_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HoldAction"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    release_holds_internal_sessions_club_holds_release_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HoldAction"];
             };
         };
         responses: {
@@ -59161,6 +59518,103 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminBookingPayLinkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_booking_attempts_payments_admin_checkout_reconciliation_bookings__booking_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_checkout_payments_admin_checkout_reconciliation__reference__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    close_unpaid_checkout_payments_admin_checkout_reconciliation__reference__close_unpaid_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloseUnpaidCheckout"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

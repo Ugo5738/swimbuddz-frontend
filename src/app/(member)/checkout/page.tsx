@@ -1,6 +1,7 @@
 "use client";
 
 import { prepareCheckout, prepareAcademyEnrollment } from "@/lib/checkoutPreparation";
+import { loadAcademyBillingQuotes, type AcademyBillingQuotes } from "@/lib/academyBillingQuotes";
 import { BANK_TRANSFER_ACCOUNT } from "@/lib/bank-transfer";
 
 import { canPayAcademyEnrollment } from "@/lib/academy/paymentEligibility";
@@ -83,7 +84,7 @@ function CheckoutContent() {
   const [clubQuote, setClubQuote] = useState<ChargePreview | null>(null);
   const [clubExperienceSelected, setClubExperienceSelected] = useState<boolean | undefined>();
   const quoteRequest = useRef(0);
-  const [academyQuotes, setAcademyQuotes] = useState<{ key: string; full: ChargePreview | null; installments: ChargePreview | null; errors: { full?: string; installments?: string } } | null>(null);
+  const [academyQuotes, setAcademyQuotes] = useState<(AcademyBillingQuotes & { key: string }) | null>(null);
   const [checkoutCohort, setCheckoutCohort] = useState<Cohort | null>(null);
   const [experienceQuote, setExperienceQuote] = useState<ChargePreview | null>(null);
   const [membershipQuote, setMembershipQuote] = useState<ChargePreview | null>(null);
@@ -153,11 +154,18 @@ function CheckoutContent() {
     return Number.isFinite(n) && n > 0 ? Math.floor(n) : undefined;
   })();
   const academyQuoteKey = JSON.stringify([urlEnrollmentId, urlCohortId, paymentMethod, urlAmountOverrideKobo, adjustments]);
-  const academyQuote = academyQuotes?.key === academyQuoteKey ? academyQuotes[billingMode] : null;
+  const [academyBubbleResetKey, setAcademyBubbleResetKey] = useState<string | null>(null);
+  const bubblesWereReset = academyBubbleResetKey === academyQuoteKey;
+  const academyQuote = academyQuotes?.key === academyQuoteKey
+    ? bubblesWereReset ? academyQuotes.withoutBubbles[billingMode] : academyQuotes[billingMode]
+    : null;
   const academyQuoteError = academyQuotes?.key === academyQuoteKey ? academyQuotes.errors[billingMode] : undefined;
   const switchBilling = (mode: "full" | "installments") => {
     setBillingMode(mode);
-    if (adjustments.bubbles_to_apply) setAdjustments((old) => ({ ...old, bubbles_to_apply: 0 }));
+    if (adjustments.bubbles_to_apply && academyQuotes?.key === academyQuoteKey &&
+        academyQuotes[mode] && !academyQuotes[mode]?.bubbles_to_apply) {
+      setAcademyBubbleResetKey(academyQuoteKey);
+    }
     const params = new URLSearchParams(searchParams.toString());
     params.set("billing", mode);
     router.replace(`/checkout?${params.toString()}`, { scroll: false });
@@ -166,6 +174,12 @@ function CheckoutContent() {
   useEffect(() => {
     setBillingMode(billingParam === "installments" ? "installments" : "full");
   }, [billingParam]);
+  useEffect(() => {
+    if (adjustments.bubbles_to_apply && academyQuotes?.key === academyQuoteKey &&
+        academyQuotes[billingMode] && !academyQuotes[billingMode]?.bubbles_to_apply) {
+      setAcademyBubbleResetKey(academyQuoteKey);
+    }
+  }, [billingMode, academyQuoteKey, academyQuotes, adjustments.bubbles_to_apply]);
   const enrollmentStarted = useRef<string | null>(null);
   const [preparationRetry, setPreparationRetry] = useState(0);
 
@@ -286,23 +300,16 @@ function CheckoutContent() {
           const cohort = cohortId ? await prepareCheckout("academy-cohort", () => apiGet<Cohort>(
             `/api/v1/academy/cohorts/${cohortId}`, { auth: true }
           )) : null;
-          const [full, installments] = await Promise.allSettled([
-            prepareCheckout("academy-full-quote", () => previewAcademyCheckout(
-              urlEnrollmentId, false, paymentMethod, urlAmountOverrideKobo, adjustments)),
-            cohort?.installment_plan_enabled ? prepareCheckout("academy-installment-quote", () => previewAcademyCheckout(
-              urlEnrollmentId, true, paymentMethod, urlAmountOverrideKobo, adjustments)) : Promise.resolve(null),
-          ]);
+          const options = await loadAcademyBillingQuotes(
+            !!cohort?.installment_plan_enabled, adjustments.bubbles_to_apply || 0,
+            (mode, bubbles) => prepareCheckout(`academy-${mode}-quote`, () => previewAcademyCheckout(
+              urlEnrollmentId, mode === "installments", paymentMethod, urlAmountOverrideKobo,
+              adjustments.bubbles_to_apply ? { ...adjustments, bubbles_to_apply: bubbles } : adjustments
+            ))
+          );
           if (request !== quoteRequest.current) return;
           setCheckoutCohort(cohort);
-          setAcademyQuotes({
-            key: academyQuoteKey,
-            full: full.status === "fulfilled" ? full.value : null,
-            installments: installments.status === "fulfilled" ? installments.value : null,
-            errors: {
-              full: full.status === "rejected" ? (full.reason instanceof Error ? full.reason.message : "Could not load full payment") : undefined,
-              installments: installments.status === "rejected" ? (installments.reason instanceof Error ? installments.reason.message : "Could not load installments") : undefined,
-            },
-          });
+          setAcademyQuotes({ key: academyQuoteKey, ...options });
           setQuoteError(null);
           setAdjustmentError(null);
         } catch (error) {
@@ -487,7 +494,7 @@ function CheckoutContent() {
   const installmentsEnabled = !!academyQuotes?.installments;
   const installmentPreview = academyQuotes?.key === academyQuoteKey && academyQuotes.installments ? {
     count: academyQuotes.installments.components.total_installments ?? 2,
-    deposit: academyQuotes.installments.total_kobo / 100,
+    deposit: (bubblesWereReset ? academyQuotes.withoutBubbles.installments! : academyQuotes.installments).total_kobo / 100,
     subsequentAmount: null,
   } : null;
 
@@ -919,14 +926,18 @@ function CheckoutContent() {
           ) : null}
 
           {adjustmentError && !productQuote && <Alert variant="error">{adjustmentError}</Alert>}
+          {purpose === "academy_cohort" && bubblesWereReset && (
+            <p role="status" className="text-sm text-cyan-800">Bubbles were reset because the selected amount exceeded this installment. You can choose a new amount below.</p>
+          )}
           {productQuote && (
             <ProductPaymentOptions
               quote={productQuote}
-              value={adjustments}
+              value={purpose === "academy_cohort" ? { ...adjustments, bubbles_to_apply: appliedBubbles } : adjustments}
               error={adjustmentError}
               disabled={processing || quotePending}
               online={paymentMethod === "paystack"}
               onChange={(value) => {
+                setAcademyBubbleResetKey(null);
                 quoteRequest.current++;
                 setQuotePending(true);
                 setAdjustments(value);
@@ -995,7 +1006,7 @@ function CheckoutContent() {
             onClick={() => switchBilling("full")}
             className="text-cyan-600 underline underline-offset-2 hover:text-cyan-700 font-medium"
           >
-            Pay in full{academyQuotes?.full ? ` — ${formatCurrency(academyQuotes.full.total_kobo / 100)}` : ""}
+            Pay in full{academyQuotes?.full ? ` — ${formatCurrency((bubblesWereReset ? academyQuotes.withoutBubbles.full! : academyQuotes.full).total_kobo / 100)}` : ""}
           </button>
         </p>
       )}

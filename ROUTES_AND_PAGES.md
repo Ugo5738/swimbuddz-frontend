@@ -472,6 +472,8 @@ prorated by remaining sessions and cannot be entered as a new Club member once
 four or fewer sessions remain; those swimmers use Community/drop-in booking
 until the next quarter. When current-quarter entry is available it is required,
 while future quarters are optional. Annual SwimBuddz membership is shown as a
-separate line only when due. Checkout holds plan/pod capacity for 30 minutes.
+separate line only when due. Checkout holds plan/pod capacity and each included
+future swim for 30 minutes before payment exposure. Issued payment links and
+bank instructions protect those seats until settlement or verified closure.
 
 _Last updated: September 2026_
