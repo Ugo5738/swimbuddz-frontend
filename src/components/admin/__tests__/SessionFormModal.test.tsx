@@ -148,8 +148,8 @@ describe("SessionFormModal Club scope", () => {
     const props = { mode: "edit" as const, rideAreas: [], submitting: false,
       onClose: vi.fn(), onCreate: vi.fn(), onUpdate: update };
     const view = render(<SessionFormModal {...props} session={session} />);
-    expect(screen.getByLabelText(/Community drop-in/)).toHaveValue(null);
-    fireEvent.change(screen.getByLabelText(/Community drop-in/), { target: { value: rate } });
+    expect(screen.getByLabelText(/Community member rate/)).toHaveValue(null);
+    fireEvent.change(screen.getByLabelText(/Community member rate/), { target: { value: rate } });
     fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
     await waitFor(() => expect(update).toHaveBeenCalledOnce());
     const savedRate = rate === "" ? null : Number(rate);
@@ -161,7 +161,7 @@ describe("SessionFormModal Club scope", () => {
     await act(async () => {
       render(<SessionFormModal {...props} session={{ ...session, community_dropin_fee: savedRate }} />);
     });
-    expect(screen.getByLabelText(/Community drop-in/)).toHaveValue(savedRate);
+    expect(screen.getByLabelText(/Community member rate/)).toHaveValue(savedRate);
   });
 
   it("updates stale attendance when capacity changes and keeps manual per-person pricing", async () => {
@@ -281,7 +281,7 @@ describe("SessionFormModal Club scope", () => {
   it("submits the explicit Community drop-in toggle and rate", async () => {
     const onCreate = renderModal();
     fireEvent.click(screen.getByLabelText(/Allow Community drop-ins/i));
-    fireEvent.change(screen.getAllByLabelText(/Community drop-in/i)[0], {
+    fireEvent.change(screen.getAllByLabelText(/Community member rate/i)[0], {
       target: { value: "6500" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Create Session" }));
