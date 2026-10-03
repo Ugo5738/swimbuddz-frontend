@@ -1,9 +1,18 @@
 import "@testing-library/jest-dom/vitest";
 
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SessionFormModal } from "../SessionFormModal";
+import type { Session } from "@/app/(admin)/admin/sessions/types";
+
+vi.mock("@/components/admin/SessionVolunteerOpportunitiesSection", () => ({
+  SessionVolunteerOpportunitiesSection: () => null,
+}));
+
+vi.mock("@/lib/api", () => ({
+  apiGet: vi.fn(async () => []),
+}));
 
 vi.mock("@/components/admin/PoolPicker", () => ({
   PoolPicker: () => <div data-testid="pool-picker" />,
@@ -126,6 +135,33 @@ function renderModal(onCreate = vi.fn()) {
 describe("SessionFormModal Club scope", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it.each(["12500", "0", ""])("saves and reloads an event Community rate of %s", async (rate) => {
+    const update = vi.fn();
+    const session: Session = {
+      id: "event-session", title: "Community Swim", session_type: "event", event_id: "event-1",
+      location: null, starts_at: "2026-10-03T11:00:00Z", ends_at: "2026-10-03T14:00:00Z",
+      capacity: 50, pool_fee: 10000, guest_fee: 15000, community_dropin_fee: null,
+      allows_community_dropins: false,
+    };
+    const props = { mode: "edit" as const, rideAreas: [], submitting: false,
+      onClose: vi.fn(), onCreate: vi.fn(), onUpdate: update };
+    const view = render(<SessionFormModal {...props} session={session} />);
+    expect(screen.getByLabelText(/Community member rate/)).toHaveValue(null);
+    fireEvent.change(screen.getByLabelText(/Community member rate/), { target: { value: rate } });
+    fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+    await waitFor(() => expect(update).toHaveBeenCalledOnce());
+    const savedRate = rate === "" ? null : Number(rate);
+    expect(update.mock.calls[0][1]).toMatchObject({
+      community_dropin_fee: savedRate, pool_fee: 10000, guest_fee: 15000,
+      session_type: "event", event_id: "event-1",
+    });
+    view.unmount();
+    await act(async () => {
+      render(<SessionFormModal {...props} session={{ ...session, community_dropin_fee: savedRate }} />);
+    });
+    expect(screen.getByLabelText(/Community member rate/)).toHaveValue(savedRate);
   });
 
   it("updates stale attendance when capacity changes and keeps manual per-person pricing", async () => {
