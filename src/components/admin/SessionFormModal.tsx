@@ -628,7 +628,9 @@ export function SessionFormModal({
           label={
             form.session_type === "cohort_class" && form.cohort_fee_mode === "included"
               ? "Stored session rate (₦)"
-              : "Booking price per attendee (₦)"
+              : form.session_type === "event"
+                ? "Club / Academy rate (₦)"
+                : "Booking price per attendee (₦)"
           }
           type="number"
           min={0}
@@ -671,7 +673,7 @@ export function SessionFormModal({
           hint="Explicit guest rate. Enter 0 for free; blank disables self-paying guest checkout."
         />
         {(form.session_type === "club" || form.session_type === "event") && <Input
-          label="Community drop-in (₦)"
+          label={form.session_type === "event" ? "Community member rate (₦)" : "Community drop-in (₦)"}
           type="number"
           min={0}
           step="0.01"
@@ -680,7 +682,7 @@ export function SessionFormModal({
             setForm({ ...form, community_dropin_fee: e.target.value })
           }
           hint={form.session_type === "event"
-            ? "Active Community members without Club access pay this rate. Blank uses the regular booking price; 0 means free."
+            ? "Active Community members pay this rate. Club and Academy participants use the programme-member rate; guests use the guest rate."
             : "Independent from the guest rate. Enter 0 for free; required when Community drop-ins are enabled."}
         />}
       </div>
@@ -730,6 +732,11 @@ export function SessionFormModal({
           <div className="rounded-lg border border-cyan-100 bg-white p-3 text-sm text-slate-600">
             {form.session_type === "cohort_class" && form.cohort_fee_mode === "included" ? (
               "Enrolled students pay no additional fee. The stored session rate does not override tuition inclusion."
+            ) : form.session_type === "event" ? (
+              <>
+                For event-backed sessions, set the <strong>Club / Academy rate</strong> above, then
+                set the Community and guest rates separately.
+              </>
             ) : (
               <>
                 Enter the amount each member pays in <strong>Booking price per attendee </strong>{" "}
