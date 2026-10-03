@@ -281,7 +281,7 @@ describe("SessionFormModal Club scope", () => {
   it("submits the explicit Community drop-in toggle and rate", async () => {
     const onCreate = renderModal();
     fireEvent.click(screen.getByLabelText(/Allow Community drop-ins/i));
-    fireEvent.change(screen.getAllByLabelText(/Community member rate/i)[0], {
+    fireEvent.change(screen.getAllByLabelText(/Community drop-in/i)[0], {
       target: { value: "6500" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Create Session" }));
