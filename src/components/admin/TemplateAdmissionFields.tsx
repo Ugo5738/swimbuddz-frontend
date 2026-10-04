@@ -10,7 +10,9 @@ import { Alert } from "@/components/ui/Alert";
 export type TemplateAdmission = {
   guest_fee: number | null;
   community_dropin_fee: number | null;
+  visiting_club_fee: number | null;
   allows_community_dropins: boolean;
+  allows_visiting_club_members: boolean;
   allows_guests: boolean;
   max_guests_per_booking: number;
   guest_booking_mode: "disabled" | "public" | "member_invite" | "approval_required";
@@ -19,7 +21,8 @@ export type TemplateAdmission = {
   guest_location_private: boolean;
 };
 export const defaultAdmission: TemplateAdmission = {
-  guest_fee: null, community_dropin_fee: null, allows_community_dropins: false,
+  guest_fee: null, community_dropin_fee: null, visiting_club_fee: null,
+  allows_community_dropins: false, allows_visiting_club_members: false,
   allows_guests: true, max_guests_per_booking: 4, guest_booking_mode: "disabled",
   guest_booking_cutoff_hours: 0, guest_reconciliation_days: 3, guest_location_private: false,
 };
@@ -30,7 +33,7 @@ export function TemplateAdmissionFields({ value, onChange }: {
   const field = <K extends keyof TemplateAdmission>(key: K, next: TemplateAdmission[K]) =>
     onChange({ ...value, [key]: next });
   return <fieldset className="space-y-3 rounded-lg border p-3">
-    <legend className="font-semibold">Guest and Community admission</legend>
+    <legend className="font-semibold">Admission and visiting Club members</legend>
     <label className="block text-sm"><input type="checkbox" checked={value.allows_guests}
       onChange={(e) => onChange({ ...value, allows_guests: e.target.checked,
         guest_booking_mode: e.target.checked ? value.guest_booking_mode : "disabled" })} /> Allow guests</label>
@@ -57,11 +60,23 @@ export function TemplateAdmissionFields({ value, onChange }: {
     <Input label="Community drop-in rate (₦)" type="number" min="0" step="0.01"
       required={value.allows_community_dropins} value={value.community_dropin_fee ?? ""}
       onChange={(e) => field("community_dropin_fee", e.target.value === "" ? null : Number(e.target.value))} />
+    <label className="block text-sm"><input type="checkbox" checked={value.allows_visiting_club_members}
+      onChange={(e) => field("allows_visiting_club_members", e.target.checked)} /> Allow members from other SwimBuddz Club locations</label>
+    <Input label="Visiting Club member rate (₦)" type="number" min="0" step="0.01"
+      disabled={!value.allows_visiting_club_members} value={value.visiting_club_fee ?? ""}
+      hint="Optional. Leave blank to use the host session's normal Club rate. Paid add-ons always charge their full session price."
+      onChange={(e) => field("visiting_club_fee", e.target.value === "" ? null : Number(e.target.value))} />
   </fieldset>;
 }
 
 type RepairPreview = { preview_token: string; volunteer_slots: { id: string; is_active: boolean; slots_needed: number; title_override?: string; role_title?: string }[]; ride_share_config?: unknown[]; sessions: {
-  session_id: string; title: string; after: { location_name: string; guest_fee_kobo: number | null; community_dropin_fee_kobo: number | null };
+  session_id: string; title: string; after: {
+    location_name: string;
+    guest_fee_kobo: number | null;
+    community_dropin_fee_kobo: number | null;
+    visiting_club_fee_kobo: number | null;
+    allows_visiting_club_members: boolean;
+  };
 }[] };
 
 export function TemplateOperationsSync({ templateId }: { templateId: string }) {
@@ -90,7 +105,7 @@ export function TemplateOperationsSync({ templateId }: { templateId: string }) {
     <Button type="button" disabled={busy || !from || !to} onClick={() => run(false)}>Preview repair</Button>
     {preview && <div className="space-y-2 text-sm">
       <p>Volunteer needs per swim: {preview.volunteer_slots.filter((slot) => slot.is_active).map((slot) => `${slot.title_override || slot.role_title || "Volunteer"} × ${slot.slots_needed}`).join(", ") || "None configured"}. Transport routes: {preview.ride_share_config?.length ?? 0} (existing routes preserved).</p>
-      {preview.sessions.map((s) => <p key={s.session_id}>{s.title} · {s.after.location_name} · Guest {s.after.guest_fee_kobo === null ? "not set" : `₦${s.after.guest_fee_kobo / 100}`} · Community {s.after.community_dropin_fee_kobo === null ? "not set" : `₦${s.after.community_dropin_fee_kobo / 100}`}</p>)}
+      {preview.sessions.map((s) => <p key={s.session_id}>{s.title} · {s.after.location_name} · Guest {s.after.guest_fee_kobo === null ? "not set" : `₦${s.after.guest_fee_kobo / 100}`} · Community {s.after.community_dropin_fee_kobo === null ? "not set" : `₦${s.after.community_dropin_fee_kobo / 100}`} · Visitors {s.after.allows_visiting_club_members ? (s.after.visiting_club_fee_kobo === null ? "host Club rate" : `₦${s.after.visiting_club_fee_kobo / 100}`) : "closed"}</p>)}
       <Button type="button" disabled={busy || !preview.sessions.length} onClick={() => run(true)}>Apply to {preview.sessions.length} sessions</Button>
     </div>}
     {message && <Alert>{message}</Alert>}
