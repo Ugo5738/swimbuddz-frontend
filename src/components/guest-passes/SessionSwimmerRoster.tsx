@@ -10,19 +10,23 @@ import { toast } from "sonner";
 
 type RosterRow = {
   id: string;
-  kind: "member" | "booking_guest" | "guest_pass";
+  kind: "member" | "booking_guest" | "guest_pass" | "walk_in_guest";
   full_name: string;
   booking_status: string;
   attendance_status: string | null;
   inviter: string | null;
   booking_mode: string | null;
   actual_swim_minutes: number | null;
+  fee_amount_kobo?: number | null;
+  payment_status?: string | null;
+  waiver_status?: string | null;
 };
 type Roster = { entries: RosterRow[]; attendance_available: boolean };
 const labels = {
   member: "Member",
   booking_guest: "Guest on member booking",
   guest_pass: "Self-paying guest",
+  walk_in_guest: "Walk-in guest",
 };
 
 export function SessionSwimmerRoster({ sessionId }: { sessionId: string }) {
@@ -101,12 +105,21 @@ export function SessionSwimmerRoster({ sessionId }: { sessionId: string }) {
                 </td>
                 <td className="p-2">
                   {row.booking_status.replaceAll("_", " ")}
+                  {row.kind === "walk_in_guest" && row.fee_amount_kobo != null && (
+                    <p className="text-xs text-slate-500">
+                      ₦{(row.fee_amount_kobo / 100).toLocaleString("en-NG")} ·{" "}
+                      {(row.payment_status || "unreconciled").replaceAll("_", " ")}
+                    </p>
+                  )}
                   {row.booking_mode === "settlement" && (
                     <p className="text-xs text-slate-500">Post-start settlement</p>
                   )}
                 </td>
                 <td className="p-2">
                   <p>{row.attendance_status || "Not recorded"}</p>
+                  {row.kind === "walk_in_guest" && row.waiver_status === "missing" && (
+                    <p className="text-xs text-amber-700">Waiver follow-up required</p>
+                  )}
                   {row.kind === "guest_pass" &&
                     row.booking_status === "confirmed" &&
                     !row.attendance_status && (
