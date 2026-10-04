@@ -68,7 +68,7 @@ it("records an unregistered guest without inventing waiver acceptance", async ()
 
   fireEvent.click(screen.getByText("Add walk-in"));
   fireEvent.click(screen.getByRole("button", { name: "Guest / not registered" }));
-  fireEvent.change(screen.getByLabelText("Guest name"), { target: { value: "Tayo Guest" } });
+  fireEvent.change(screen.getByLabelText(/Guest name/), { target: { value: "Tayo Guest" } });
   fireEvent.change(screen.getByLabelText("Phone (recommended)"), {
     target: { value: "08012345678" },
   });
