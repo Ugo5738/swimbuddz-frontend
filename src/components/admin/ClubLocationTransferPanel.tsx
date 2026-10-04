@@ -7,8 +7,10 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { apiGet, apiPost } from "@/lib/api";
-import { ClubPlan, listAllClubPlans } from "@/lib/clubOnboarding";
-import { adminListPods, PodSummary } from "@/lib/pods";
+import { listAllClubPlans } from "@/lib/clubOnboarding";
+import type { ClubPlan } from "@/lib/clubOnboarding";
+import { adminListPods } from "@/lib/pods";
+import type { PodSummary } from "@/lib/pods";
 
 type Enrollment = {
   id: string;
