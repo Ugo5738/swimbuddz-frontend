@@ -97,7 +97,7 @@ it("requires an explanation when overriding the configured guest rate", async ()
 
   expect(screen.getByRole("button", { name: "Record guest walk-in" })).toBeDisabled();
 
-  fireEvent.change(screen.getByLabelText("Reason for price override"), {
+  fireEvent.change(screen.getByLabelText(/^Reason for price override/), {
     target: { value: "Promotional rate agreed at the pool" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Record guest walk-in" }));
