@@ -94,6 +94,8 @@ interface BusinessReview {
     sessions: number;
     scheduled_pool_hours: number;
     session_capacity: number;
+    attendance: number;
+    guest_attendance: number;
     session_types: Record<string, number>;
     academy_cohorts: number;
     academy_active_enrollments: number;
@@ -463,8 +465,25 @@ export default function AdminReportsPage() {
             <SectionHeading title="Community & delivery" subtitle="Participation, progress and session mix" />
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <MetricCard label="Active members" value={numberValue(review.community.active_members)} icon={<Users className="h-5 w-5" />} />
-              <MetricCard label="Average attendance" value={percent(review.community.average_attendance_rate)} icon={<BarChart3 className="h-5 w-5" />} />
+              <MetricCard label="Average member attendance" value={percent(review.community.average_attendance_rate)} icon={<BarChart3 className="h-5 w-5" />} />
+              <MetricCard label="All swimmer attendances" value={numberValue(review.community.attendance_records)} icon={<Users className="h-5 w-5" />} />
+              <MetricCard
+                label="Guest attendances"
+                value={numberValue(review.community.guest_attendance_records)}
+                detail={`${numberValue(review.community.walk_in_guest_attendance_records)} door walk-ins`}
+                icon={<Users className="h-5 w-5" />}
+              />
               <MetricCard label="Pool hours" value={`${numberValue(review.community.pool_hours).toFixed(1)}h`} icon={<Waves className="h-5 w-5" />} />
+              <MetricCard
+                label="Guest swimmer hours"
+                value={`${numberValue(review.community.guest_swimmer_hours).toFixed(1)}h`}
+                detail={
+                  numberValue(review.community.estimated_guest_swimmer_hours) > 0
+                    ? `${numberValue(review.community.estimated_guest_swimmer_hours).toFixed(1)}h estimated`
+                    : "Exact recorded minutes"
+                }
+                icon={<Waves className="h-5 w-5" />}
+              />
               <MetricCard label="Volunteer hours" value={`${numberValue(review.community.volunteer_hours).toFixed(1)}h`} icon={<BookOpen className="h-5 w-5" />} />
             </div>
             {Object.keys(review.session_mix).length > 0 && (
@@ -493,6 +512,8 @@ export default function AdminReportsPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <MiniStat label="Sessions" value={location.sessions} />
+                      <MiniStat label="Actual attendances" value={location.attendance} />
+                      <MiniStat label="Guest attendances" value={location.guest_attendance} />
                       <MiniStat label="Scheduled pool hrs" value={location.scheduled_pool_hours.toFixed(1)} />
                       <MiniStat label="Academy cohorts" value={location.academy_cohorts} />
                       <MiniStat label="Academy learners" value={location.academy_active_enrollments} />
