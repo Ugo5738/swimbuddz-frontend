@@ -251,6 +251,8 @@ export default function AdminAttendancePage() {
   const [rosterQuery, setRosterQuery] = useState("");
   const [rosterStatusFilter, setRosterStatusFilter] = useState("all");
   const [rosterBookingFilter, setRosterBookingFilter] = useState("all");
+  const [guestWalkInCount, setGuestWalkInCount] = useState(0);
+  const [rosterRefreshVersion, setRosterRefreshVersion] = useState(0);
 
   // Admin-issued authenticated settlement link for an outstanding-fee booking. Modal
   // surface: { booking_id (which row), result | "loading" }. Closed = null.
@@ -367,6 +369,21 @@ export default function AdminAttendancePage() {
     setRosterStatusFilter("all");
     setRosterBookingFilter("all");
   }, [selectedSessionId]);
+
+  useEffect(() => {
+    if (!selectedSessionId) {
+      setGuestWalkInCount(0);
+      return;
+    }
+    apiGet<{ entries: Array<{ kind: string }> }>(
+      `/api/v1/admin/sessions/${selectedSessionId}/roster`,
+      { auth: true }
+    )
+      .then((data) =>
+        setGuestWalkInCount(data.entries.filter((entry) => entry.kind === "walk_in_guest").length)
+      )
+      .catch(() => setGuestWalkInCount(0));
+  }, [selectedSessionId, rosterRefreshVersion]);
 
   useEffect(() => {
     if (sessionOptions.length === 0) return;
@@ -868,6 +885,7 @@ export default function AdminAttendancePage() {
           ? `Guest walk-in recorded for ${result.full_name}.`
           : `Guest saved for ${result.full_name}, but attendance sync needs retry.`
       );
+      setRosterRefreshVersion((version) => version + 1);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
       console.error("Failed to record guest walk-in", err);
@@ -1259,7 +1277,7 @@ export default function AdminAttendancePage() {
               sessionId={selectedSessionId}
             />
             <SessionSwimmerRoster
-              key={`roster-${selectedSessionId}`}
+              key={`roster-${selectedSessionId}-${rosterRefreshVersion}`}
               sessionId={selectedSessionId}
             />
           </>
@@ -1269,7 +1287,7 @@ export default function AdminAttendancePage() {
             <ReconciliationStat label="Confirmed bookings" value={confirmedBookings.length} />
             <ReconciliationStat
               label={isCohortSession ? "Recorded exceptions" : "Checked in"}
-              value={attendanceList.length}
+              value={attendanceList.length + guestWalkInCount}
             />
             <ReconciliationStat
               label={sessionStarted ? "No-shows" : "Pending arrivals"}
@@ -1285,7 +1303,7 @@ export default function AdminAttendancePage() {
                   ? cohortRoster.length
                   : isClubSession
                     ? clubRosterMembers.length
-                    : walkIns.length
+                    : walkIns.length + guestWalkInCount
               }
             />
           </div>
