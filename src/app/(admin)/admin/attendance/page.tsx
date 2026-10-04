@@ -627,6 +627,17 @@ export default function AdminAttendancePage() {
     );
   }, [attendanceList, confirmedBookings, isCohortSession]);
 
+  const guestWalkInCount = useMemo(
+    () =>
+      attendanceList.filter(
+        (attendance) =>
+          !attendance.member_id &&
+          attendance.status?.toLowerCase() !== "absent" &&
+          attendance.status?.toLowerCase() !== "excused"
+      ).length,
+    [attendanceList]
+  );
+
   const cohortRoster = useMemo(() => {
     if (!isCohortSession) return [] as EnrollmentResponse[];
     return enrollments.filter((e) => e.status === "enrolled");
@@ -738,11 +749,12 @@ export default function AdminAttendancePage() {
     }
 
     for (const a of walkIns) {
-      if (byMember.has(a.member_id)) continue;
-      byMember.set(a.member_id, {
-        member_id: a.member_id,
-        name: a.member_name || memberLookup.get(a.member_id)?.name || "(unknown)",
-        email: a.member_email || memberLookup.get(a.member_id)?.email || "",
+      if (!a.member_id || byMember.has(a.member_id)) continue;
+      const memberId = a.member_id;
+      byMember.set(memberId, {
+        member_id: memberId,
+        name: a.member_name || memberLookup.get(memberId)?.name || "(unknown)",
+        email: a.member_email || memberLookup.get(memberId)?.email || "",
         source: "walkin",
         attendance: a,
         ride_info: a.ride_info,
@@ -1301,7 +1313,7 @@ export default function AdminAttendancePage() {
                   ? cohortRoster.length
                   : isClubSession
                     ? clubRosterMembers.length
-                    : walkIns.length
+                    : walkIns.length + guestWalkInCount
               }
             />
           </div>
