@@ -3,6 +3,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useApi } from "@/hooks/useApi";
+import { apiPatch } from "@/lib/api";
 import { markGuestPassAttendance } from "@/lib/guestPasses";
 import Link from "next/link";
 import { useState } from "react";
@@ -34,6 +35,44 @@ export function SessionSwimmerRoster({ sessionId }: { sessionId: string }) {
   const [minutes, setMinutes] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const reconcileWalkInPayment = async (row: RosterRow) => {
+    const method = window.prompt(
+      `Payment method for ${row.full_name} (for example: bank_transfer, cash, paystack):`,
+      "bank_transfer"
+    );
+    if (!method?.trim()) return;
+    const reference = window.prompt(
+      "Payment reference (recommended; leave blank only if none exists):",
+      ""
+    );
+    const note = window.prompt(
+      "Reconciliation note (how was this payment verified?):",
+      ""
+    );
+    if (!note?.trim()) {
+      toast.error("A reconciliation note is required.");
+      return;
+    }
+    setSaving(row.id);
+    try {
+      await apiPatch(
+        `/api/v1/admin/session-participants/${row.id}/payment`,
+        {
+          payment_status: "paid",
+          payment_method: method.trim(),
+          ...(reference?.trim() ? { payment_reference: reference.trim() } : {}),
+          note: note.trim(),
+        },
+        { auth: true }
+      );
+      await roster.refetch();
+      toast.success("Walk-in payment reconciled");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not reconcile payment");
+    } finally {
+      setSaving(null);
+    }
+  };
   const attend = async (row: RosterRow) => {
     setSaving(row.id);
     try {
@@ -59,7 +98,7 @@ export function SessionSwimmerRoster({ sessionId }: { sessionId: string }) {
       <div>
         <h2 className="text-lg font-semibold">All swimmers</h2>
         <p className="text-sm text-slate-600">
-          Members, guests on member bookings and self-paying guests in one roster.
+          Members, guests on member bookings, self-paying guests and door walk-ins in one roster.
         </p>
       </div>
       {roster.loading && <p className="text-sm">Loading swimmer roster...</p>}
@@ -111,6 +150,22 @@ export function SessionSwimmerRoster({ sessionId }: { sessionId: string }) {
                       {(row.payment_status || "unreconciled").replaceAll("_", " ")}
                     </p>
                   )}
+                  {row.kind === "walk_in_guest" &&
+                    row.fee_amount_kobo != null &&
+                    row.fee_amount_kobo > 0 &&
+                    row.payment_status !== "paid" &&
+                    row.payment_status !== "waived" && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        className="mt-2"
+                        disabled={saving !== null}
+                        onClick={() => void reconcileWalkInPayment(row)}
+                      >
+                        Record verified payment
+                      </Button>
+                    )}
                   {row.booking_mode === "settlement" && (
                     <p className="text-xs text-slate-500">Post-start settlement</p>
                   )}
