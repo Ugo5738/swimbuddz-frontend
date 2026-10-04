@@ -82,12 +82,13 @@ function describeSession(session: Session, cohortNames: Map<string, string>): st
 
 type Attendance = {
   id: string;
-  member_name: string;
-  member_email: string;
+  member_name: string | null;
+  member_email: string | null;
   status: string;
   role: string;
-  notes: string;
-  member_id: string; // Needed for merging
+  notes: string | null;
+  member_id: string | null;
+  participant_id?: string | null;
   ride_share_option?: string;
   needs_ride?: boolean;
   can_offer_ride?: boolean;
@@ -875,14 +876,17 @@ export default function AdminAttendancePage() {
     setError(null);
     setMarkSuccess(null);
     try {
-      const result = await apiPost<{ attendance_recorded: boolean; full_name: string }>(
-        `/api/v1/admin/sessions/${selectedSessionId}/walk-in-guests`,
+      const result = await apiPost<{
+        attendance_recorded: boolean;
+        full_name_snapshot: string;
+      }>(
+        `/api/v1/admin/sessions/${selectedSessionId}/walk-ins`,
         input,
         { auth: true }
       );
       setMarkSuccess(
         result.attendance_recorded
-          ? `Guest walk-in recorded for ${result.full_name}.`
+          ? `Guest walk-in recorded for ${result.full_name_snapshot}.`
           : `Guest saved for ${result.full_name}, but attendance sync needs retry.`
       );
       setRosterRefreshVersion((version) => version + 1);
@@ -1287,7 +1291,7 @@ export default function AdminAttendancePage() {
             <ReconciliationStat label="Confirmed bookings" value={confirmedBookings.length} />
             <ReconciliationStat
               label={isCohortSession ? "Recorded exceptions" : "Checked in"}
-              value={attendanceList.length + guestWalkInCount}
+              value={attendanceList.length}
             />
             <ReconciliationStat
               label={sessionStarted ? "No-shows" : "Pending arrivals"}
