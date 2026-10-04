@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocationOptions } from "@/hooks/useLocationOptions";
+import { ClubLocationTransferPanel } from "@/components/admin/ClubLocationTransferPanel";
 
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
@@ -906,6 +907,8 @@ export default function AdminMemberDetailPage({ params }: PageProps) {
         <SwimProfileSection profile={member.profile} />
         <MembershipSection membership={member.membership} />
       </div>
+
+      <ClubLocationTransferPanel memberId={member.id} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <AvailabilitySection availability={member.availability} />
