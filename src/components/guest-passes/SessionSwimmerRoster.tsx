@@ -1,8 +1,10 @@
 "use client";
+
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useApi } from "@/hooks/useApi";
+import { apiPatch } from "@/lib/api";
 import { markGuestPassAttendance } from "@/lib/guestPasses";
 import Link from "next/link";
 import { useState } from "react";
@@ -10,19 +12,24 @@ import { toast } from "sonner";
 
 type RosterRow = {
   id: string;
-  kind: "member" | "booking_guest" | "guest_pass";
+  kind: "member" | "booking_guest" | "guest_pass" | "walk_in_guest";
   full_name: string;
   booking_status: string;
   attendance_status: string | null;
   inviter: string | null;
   booking_mode: string | null;
   actual_swim_minutes: number | null;
+  fee_amount_kobo?: number | null;
+  payment_status?: string | null;
+  waiver_status?: string | null;
 };
 type Roster = { entries: RosterRow[]; attendance_available: boolean };
-const labels = {
+
+const labels: Record<RosterRow["kind"], string> = {
   member: "Member",
   booking_guest: "Guest on member booking",
   guest_pass: "Self-paying guest",
+  walk_in_guest: "Walk-in guest",
 };
 
 export function SessionSwimmerRoster({ sessionId }: { sessionId: string }) {
@@ -30,6 +37,7 @@ export function SessionSwimmerRoster({ sessionId }: { sessionId: string }) {
   const [minutes, setMinutes] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+
   const attend = async (row: RosterRow) => {
     setSaving(row.id);
     try {
@@ -45,17 +53,48 @@ export function SessionSwimmerRoster({ sessionId }: { sessionId: string }) {
       setSaving(null);
     }
   };
+
+  const markWalkInPaid = async (row: RosterRow) => {
+    const method = window.prompt("Payment method (for example: bank_transfer or cash):");
+    if (method === null) return;
+    const reference = window.prompt(
+      "Payment reference (optional). Leave blank if there is no external reference:"
+    );
+    if (reference === null) return;
+
+    setSaving(row.id);
+    try {
+      await apiPatch(
+        `/api/v1/admin/session-participants/${row.id}/payment`,
+        {
+          payment_status: "paid",
+          payment_method: method.trim() || null,
+          payment_reference: reference.trim() || null,
+          note: "Walk-in payment reconciled from attendance roster",
+        },
+        { auth: true }
+      );
+      await roster.refetch();
+      toast.success("Walk-in payment marked paid");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not reconcile payment");
+    } finally {
+      setSaving(null);
+    }
+  };
+
   const rows = (roster.data?.entries ?? []).filter((row) =>
     `${row.full_name} ${labels[row.kind]} ${row.inviter || ""}`
       .toLowerCase()
       .includes(search.toLowerCase())
   );
+
   return (
     <Card className="space-y-4">
       <div>
         <h2 className="text-lg font-semibold">All swimmers</h2>
         <p className="text-sm text-slate-600">
-          Members, guests on member bookings and self-paying guests in one roster.
+          Members, booked guests, self-paying guests and door walk-ins in one roster.
         </p>
       </div>
       {roster.loading && <p className="text-sm">Loading swimmer roster...</p>}
@@ -69,8 +108,7 @@ export function SessionSwimmerRoster({ sessionId }: { sessionId: string }) {
       )}
       {roster.data && !roster.data.attendance_available && (
         <Alert>
-          Member attendance is temporarily unavailable. Booking and guest-pass details are still
-          shown.
+          Member attendance is temporarily unavailable. Booking and guest details are still shown.
         </Alert>
       )}
       <input
@@ -85,7 +123,7 @@ export function SessionSwimmerRoster({ sessionId }: { sessionId: string }) {
           <thead>
             <tr className="border-b text-slate-500">
               <th className="p-2">Swimmer</th>
-              <th className="p-2">Booking</th>
+              <th className="p-2">Booking / payment</th>
               <th className="p-2">Attendance</th>
             </tr>
           </thead>
@@ -98,11 +136,37 @@ export function SessionSwimmerRoster({ sessionId }: { sessionId: string }) {
                     {labels[row.kind]}
                     {row.inviter ? ` · ${row.inviter}` : ""}
                   </p>
+                  {row.kind === "walk_in_guest" && row.waiver_status === "missing" && (
+                    <p className="mt-1 text-xs font-medium text-amber-700">
+                      Waiver missing — follow up required
+                    </p>
+                  )}
                 </td>
                 <td className="p-2">
-                  {row.booking_status.replaceAll("_", " ")}
+                  <p>{row.booking_status.replaceAll("_", " ")}</p>
                   {row.booking_mode === "settlement" && (
                     <p className="text-xs text-slate-500">Post-start settlement</p>
+                  )}
+                  {row.kind === "walk_in_guest" && (
+                    <div className="mt-1 space-y-1">
+                      <p className="text-xs text-slate-600">
+                        {row.fee_amount_kobo != null
+                          ? `₦${(row.fee_amount_kobo / 100).toLocaleString("en-NG")}`
+                          : "Price not recorded"}{" "}
+                        · {(row.payment_status || "unknown").replaceAll("_", " ")}
+                      </p>
+                      {row.payment_status === "unpaid" && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          disabled={saving !== null}
+                          onClick={() => void markWalkInPaid(row)}
+                        >
+                          Mark payment received
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </td>
                 <td className="p-2">
