@@ -44,11 +44,11 @@ export function ClubQuarterRecommendation({
     <Card>
       <h2 className="text-xl font-semibold">Generate a quarter recommendation</h2>
       <p className="my-3 text-sm text-slate-600">
-        Works for your first quarter too. Uses the Club location’s home pool and weekly schedule to
-        create actual Session drafts. Inherited pool and operating costs are quoted separately for
-        every date. An empty unpublished draft for the selected quarter is filled in place; a draft
-        with Session inclusions must be edited instead. Published plans stay unchanged. Review the
-        price and dates before publishing.
+        Works for your first quarter too. The normal Club product should select one regular weekly
+        <strong> plan-included</strong> series; selecting multiple series means members are buying
+        and will be automatically reserved into every selected series. Optional extra practices
+        should use active-club or paid-add-on templates instead. Inherited pool and operating costs
+        are quoted separately for every date. Review the price and dates before publishing.
       </p>
       {(error || templates.error) && <Alert variant="error">{error || templates.error}</Alert>}
       <form
