@@ -13,7 +13,7 @@ export type GuestWalkInInput = {
   phone?: string;
   fee_amount_kobo?: number;
   fee_override_reason?: string;
-  payment_status: "unreconciled" | "pending" | "not_due";
+  payment_status?: "unknown" | "unpaid";
   notes?: string;
 };
 
@@ -43,7 +43,7 @@ export function RecordSessionWalkIn({
   const [guestFee, setGuestFee] = useState(defaultGuestFee);
   const [guestFeeReason, setGuestFeeReason] = useState("");
   const [guestPaymentStatus, setGuestPaymentStatus] =
-    useState<GuestWalkInInput["payment_status"]>("unreconciled");
+    useState<"unknown" | "unpaid">("unknown");
   const [guestNote, setGuestNote] = useState("");
 
   const { data, loading, error } = useApi<Member[]>(
@@ -167,7 +167,7 @@ export function RecordSessionWalkIn({
               ...(guestFeeChanged && guestFeeReason.trim()
                 ? { fee_override_reason: guestFeeReason.trim() }
                 : {}),
-              payment_status: guestPaymentStatus,
+              ...(guestFee > 0 ? { payment_status: guestPaymentStatus } : {}),
               ...(guestNote.trim() ? { notes: guestNote.trim() } : {}),
             }).then(() => {
               setGuestName("");
@@ -175,7 +175,7 @@ export function RecordSessionWalkIn({
               setGuestPhone("");
               setGuestFee(defaultGuestFee);
               setGuestFeeReason("");
-              setGuestPaymentStatus("unreconciled");
+              setGuestPaymentStatus("unknown");
               setGuestNote("");
             });
           }}
@@ -218,20 +218,23 @@ export function RecordSessionWalkIn({
               maxLength={500}
             />
           )}
-          <label className="block text-sm">
-            Payment status
-            <select
-              value={guestPaymentStatus}
-              onChange={(e) =>
-                setGuestPaymentStatus(e.target.value as GuestWalkInInput["payment_status"])
-              }
-              className="mt-1 w-full rounded border p-2"
-            >
-              <option value="unreconciled">Needs reconciliation</option>
-              <option value="pending">Payment pending</option>
-              <option value="not_due">No payment due</option>
-            </select>
-          </label>
+          {guestFee > 0 ? (
+            <label className="block text-sm">
+              Payment status
+              <select
+                value={guestPaymentStatus}
+                onChange={(e) => setGuestPaymentStatus(e.target.value as "unknown" | "unpaid")}
+                className="mt-1 w-full rounded border p-2"
+              >
+                <option value="unknown">Needs reconciliation</option>
+                <option value="unpaid">Payment outstanding</option>
+              </select>
+            </label>
+          ) : (
+            <p className="text-xs text-slate-600">
+              This walk-in has no amount due. The backend records the rate as included.
+            </p>
+          )}
           <Input
             label="Attendance note (optional)"
             value={guestNote}
