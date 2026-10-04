@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -81,7 +81,7 @@ export function ClubLocationTransferPanel({ memberId }: { memberId: string }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const [memberEnrollments, allPlans] = await Promise.all([
       apiGet<Enrollment[]>(`/api/v1/clubs/admin/members/${memberId}/enrollments`, {
         auth: true,
@@ -92,11 +92,11 @@ export function ClubLocationTransferPanel({ memberId }: { memberId: string }) {
     setPlans(allPlans);
     const current = memberEnrollments.find(activeNow);
     if (current) setSourceId((existing) => existing || current.id);
-  };
+  }, [memberId]);
 
   useEffect(() => {
     void load().catch((e: Error) => setError(e.message || "Could not load Club enrollment"));
-  }, [memberId]);
+  }, [load]);
 
   const source = enrollments.find((item) => item.id === sourceId) ?? null;
   const targetPlans = useMemo(
@@ -121,7 +121,7 @@ export function ClubLocationTransferPanel({ memberId }: { memberId: string }) {
     void adminListPods({ clubId: targetPlan.club_id, status: "active" })
       .then(setPods)
       .catch(() => setPods([]));
-  }, [targetPlanId, targetPlan?.club_id]);
+  }, [targetPlan]);
 
   const requestBody = {
     target_plan_version_id: targetPlanId,
