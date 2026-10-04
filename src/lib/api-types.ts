@@ -3473,6 +3473,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/members/club-quarter-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Club Quarter Summary
+         * @description Aggregate Club membership/retention for a reporting window.
+         *
+         *     Retention compares members with an overlapping Club entitlement in the
+         *     immediately preceding equal-length period against members overlapping the
+         *     requested period.
+         */
+        get: operations["get_club_quarter_summary_internal_members_club_quarter_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/members/club-access/checks": {
         parameters: {
             query?: never;
@@ -7578,6 +7602,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/academy/quarter-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Academy Quarter Summary Internal
+         * @description Aggregate Academy operating outcomes for a reporting window.
+         *
+         *     Cohorts are included when their scheduled dates overlap the window.
+         *     Completion uses issued certificates as the time-bounded graduation signal
+         *     and dropped_at for time-bounded exits; Enrollment has no graduated_at field.
+         */
+        get: operations["get_academy_quarter_summary_internal_internal_academy_quarter_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/academy/extension-requests/cohorts/{cohort_id}": {
         parameters: {
             query?: never;
@@ -10525,6 +10573,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/reports/quarterly/available": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin Available Quarters
+         * @description Completed/known quarterly snapshots, newest first, for the admin selector.
+         */
+        get: operations["admin_available_quarters_admin_reports_quarterly_available_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/reports/quarterly/business-review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin Business Review
+         * @description Decision-oriented quarter-end management review.
+         *
+         *     This composes the frozen quarterly engagement snapshot with source-of-truth
+         *     Academy, Club, session, and ledger summaries.
+         */
+        get: operations["admin_business_review_admin_reports_quarterly_business_review_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/reports/quarterly/overview": {
         parameters: {
             query?: never;
@@ -10596,7 +10687,7 @@ export interface paths {
         put?: never;
         /**
          * Admin Generate Report
-         * @description Trigger quarterly report generation for a specific quarter.
+         * @description Trigger quarterly report generation for a completed quarter.
          */
         post: operations["admin_generate_report_admin_reports_quarterly_generate_post"];
         delete?: never;
@@ -19347,6 +19438,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/ledger/reports/profit-loss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Internal Profit Loss */
+        get: operations["internal_profit_loss_internal_ledger_reports_profit_loss_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/ledger/reports/margin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Internal Margin */
+        get: operations["internal_margin_internal_ledger_reports_margin_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/ledger/reports/deferred-revenue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Internal Deferred Revenue */
+        get: operations["internal_deferred_revenue_internal_ledger_reports_deferred_revenue_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/ledger/reports/cash-position": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Internal Cash Position */
+        get: operations["internal_cash_position_internal_ledger_reports_cash_position_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/calendar": {
         parameters: {
             query?: never;
@@ -21200,6 +21359,50 @@ export interface components {
             injuries_or_accommodations?: string | null;
             /** Notes */
             notes?: string | null;
+        };
+        /** ClubQuarterSummary */
+        ClubQuarterSummary: {
+            /**
+             * Active Members
+             * @default 0
+             */
+            active_members: number;
+            /**
+             * New Enrollments
+             * @default 0
+             */
+            new_enrollments: number;
+            /**
+             * Prior Period Members
+             * @default 0
+             */
+            prior_period_members: number;
+            /**
+             * Retained Members
+             * @default 0
+             */
+            retained_members: number;
+            /**
+             * Retention Rate
+             * @default 0
+             */
+            retention_rate: number;
+            /**
+             * Prepaid Enrollments
+             * @default 0
+             */
+            prepaid_enrollments: number;
+            /**
+             * Transition Enrollments
+             * @default 0
+             */
+            transition_enrollments: number;
+            /** By Club */
+            by_club?: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            };
         };
         /** ClubResponse */
         ClubResponse: {
@@ -27428,6 +27631,85 @@ export interface components {
             /** Completion Rate */
             completion_rate: number | null;
         };
+        /** AcademyQuarterSummary */
+        AcademyQuarterSummary: {
+            /**
+             * Cohorts In Window
+             * @default 0
+             */
+            cohorts_in_window: number;
+            /**
+             * Cohorts Started
+             * @default 0
+             */
+            cohorts_started: number;
+            /**
+             * Cohorts Ended
+             * @default 0
+             */
+            cohorts_ended: number;
+            /**
+             * Total Capacity
+             * @default 0
+             */
+            total_capacity: number;
+            /**
+             * Active Enrollments
+             * @default 0
+             */
+            active_enrollments: number;
+            /**
+             * Pending Approvals
+             * @default 0
+             */
+            pending_approvals: number;
+            /**
+             * Waitlisted
+             * @default 0
+             */
+            waitlisted: number;
+            /**
+             * Dropped
+             * @default 0
+             */
+            dropped: number;
+            /**
+             * Dropouts In Period
+             * @default 0
+             */
+            dropouts_in_period: number;
+            /**
+             * Graduated
+             * @default 0
+             */
+            graduated: number;
+            /**
+             * New Enrollments
+             * @default 0
+             */
+            new_enrollments: number;
+            /**
+             * Certificates Issued
+             * @default 0
+             */
+            certificates_issued: number;
+            /**
+             * Fill Rate
+             * @default 0
+             */
+            fill_rate: number;
+            /**
+             * Completion Rate
+             * @default 0
+             */
+            completion_rate: number;
+            /** By Location */
+            by_location?: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            };
+        };
         /**
          * AdminDropoutActionRequest
          * @description Admin action on an enrollment that is in DROPOUT_PENDING state.
@@ -32659,6 +32941,114 @@ export interface components {
              */
             bookings_confirmed: number;
         };
+        /** BusinessReviewFinance */
+        BusinessReviewFinance: {
+            /**
+             * Revenue Ngn
+             * @default 0
+             */
+            revenue_ngn: number;
+            /**
+             * Expenses Ngn
+             * @default 0
+             */
+            expenses_ngn: number;
+            /**
+             * Net Income Ngn
+             * @default 0
+             */
+            net_income_ngn: number;
+            /**
+             * Cogs Ngn
+             * @default 0
+             */
+            cogs_ngn: number;
+            /**
+             * Gross Margin Ngn
+             * @default 0
+             */
+            gross_margin_ngn: number;
+            /**
+             * Gross Margin Pct
+             * @default 0
+             */
+            gross_margin_pct: number;
+            /**
+             * Deferred Revenue Ngn
+             * @default 0
+             */
+            deferred_revenue_ngn: number;
+            /**
+             * Cash Ngn
+             * @default 0
+             */
+            cash_ngn: number;
+            /** By Domain */
+            by_domain?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Available
+             * @default false
+             */
+            available: boolean;
+            /** Note */
+            note?: string | null;
+        };
+        /** BusinessReviewResponse */
+        BusinessReviewResponse: {
+            /** Year */
+            year: number;
+            /** Quarter */
+            quarter: number;
+            /** Label */
+            label: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Snapshot Status */
+            snapshot_status?: string | null;
+            /** Snapshot Generated At */
+            snapshot_generated_at?: string | null;
+            /** Executive Scorecard */
+            executive_scorecard: {
+                [key: string]: components["schemas"]["QuarterComparison"];
+            };
+            /** Community */
+            community: {
+                [key: string]: unknown;
+            };
+            /** Academy */
+            academy: {
+                [key: string]: unknown;
+            };
+            /** Club */
+            club: {
+                [key: string]: unknown;
+            };
+            finance: components["schemas"]["BusinessReviewFinance"];
+            /** Locations */
+            locations: {
+                [key: string]: unknown;
+            }[];
+            /** Session Mix */
+            session_mix: {
+                [key: string]: number;
+            };
+            /** Data Quality */
+            data_quality?: string[];
+            /** Decisions */
+            decisions?: {
+                [key: string]: unknown;
+            }[];
+        };
         /**
          * CohortFillSnapshotResponse
          * @description Per-cohort fill state snapshot.
@@ -33276,6 +33666,17 @@ export interface components {
             quarter: number;
             /** Leaderboard Opt Out */
             leaderboard_opt_out: boolean;
+        };
+        /** QuarterComparison */
+        QuarterComparison: {
+            /** Current */
+            current?: number | null;
+            /** Previous */
+            previous?: number | null;
+            /** Delta */
+            delta?: number | null;
+            /** Delta Pct */
+            delta_pct?: number | null;
         };
         /**
          * QuarterlyReportSummary
@@ -51747,6 +52148,38 @@ export interface operations {
             };
         };
     };
+    get_club_quarter_summary_internal_members_club_quarter_summary_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubQuarterSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     check_club_access_internal_members_club_access_checks_post: {
         parameters: {
             query?: never;
@@ -58346,6 +58779,38 @@ export interface operations {
             };
         };
     };
+    get_academy_quarter_summary_internal_internal_academy_quarter_summary_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcademyQuarterSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_extension_requests_for_cohort_academy_extension_requests_cohorts__cohort_id__get: {
         parameters: {
             query?: never;
@@ -63562,6 +64027,58 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LeaderboardResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_available_quarters_admin_reports_quarterly_available_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuarterlyReportSummary"][];
+                };
+            };
+        };
+    };
+    admin_business_review_admin_reports_quarterly_business_review_get: {
+        parameters: {
+            query: {
+                year: number;
+                quarter: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessReviewResponse"];
                 };
             };
             /** @description Validation Error */
@@ -80484,6 +81001,133 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InvoiceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    internal_profit_loss_internal_ledger_reports_profit_loss_get: {
+        parameters: {
+            query: {
+                from_date: string;
+                to_date: string;
+                group_by?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfitLossReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    internal_margin_internal_ledger_reports_margin_get: {
+        parameters: {
+            query: {
+                from_date: string;
+                to_date: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarginReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    internal_deferred_revenue_internal_ledger_reports_deferred_revenue_get: {
+        parameters: {
+            query: {
+                as_of: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeferredRevenueReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    internal_cash_position_internal_ledger_reports_cash_position_get: {
+        parameters: {
+            query: {
+                as_of: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashPositionReport"];
                 };
             };
             /** @description Validation Error */
