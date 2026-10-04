@@ -5,7 +5,7 @@ import {
   OfflineSessionPaymentModal,
   type OfflineSessionPaymentInput,
 } from "@/components/admin/OfflineSessionPaymentModal";
-import { RecordSessionWalkIn } from "@/components/admin/RecordSessionWalkIn";
+import { RecordSessionWalkIn, type GuestWalkInInput } from "@/components/admin/RecordSessionWalkIn";
 import { GuestSessionAdminCard } from "@/components/guest-passes/GuestSessionAdminCard";
 import { SessionSwimmerRoster } from "@/components/guest-passes/SessionSwimmerRoster";
 import { Alert } from "@/components/ui/Alert";
@@ -51,6 +51,7 @@ type Session = {
   // own stored fee, so we don't need to pass this through — but we display it
   // on rows that aren't yet booked so the admin sees the cost up front.
   pool_fee: number | null;
+  guest_fee?: number | null;
 };
 
 type Cohort = {
@@ -851,6 +852,32 @@ export default function AdminAttendancePage() {
     }
   };
 
+  const handleRecordGuestWalkIn = async (input: GuestWalkInInput) => {
+    if (!selectedSessionId) return;
+    setSubmittingMark(true);
+    setError(null);
+    setMarkSuccess(null);
+    try {
+      const result = await apiPost<{ attendance_recorded: boolean; full_name: string }>(
+        `/api/v1/admin/sessions/${selectedSessionId}/walk-in-guests`,
+        input,
+        { auth: true }
+      );
+      setMarkSuccess(
+        result.attendance_recorded
+          ? `Guest walk-in recorded for ${result.full_name}.`
+          : `Guest saved for ${result.full_name}, but attendance sync needs retry.`
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      console.error("Failed to record guest walk-in", err);
+      setError(`Failed to record guest walk-in: ${msg}`);
+      throw err;
+    } finally {
+      setSubmittingMark(false);
+    }
+  };
+
   // Refund a paid booking's pool fee to the member's Bubbles — the rain-out /
   // make-up case: they paid, were marked absent/excused, and are owed it back
   // to fund a make-up. Routes through the accounted session_booking refund path
@@ -1273,8 +1300,10 @@ export default function AdminAttendancePage() {
                 ? 0
                 : (selectedSession?.pool_fee ?? 0)
             }
+            defaultGuestFee={selectedSession?.guest_fee ?? selectedSession?.pool_fee ?? 0}
             disabled={submittingMark}
             onRecord={handleMarkWalkIn}
+            onRecordGuest={handleRecordGuestWalkIn}
           />
         )}
 
