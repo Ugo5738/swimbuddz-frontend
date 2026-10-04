@@ -60,7 +60,7 @@ it("records an unregistered guest without fabricating payment or waiver acceptan
 
   fireEvent.click(screen.getByText("Add walk-in"));
   fireEvent.click(screen.getByRole("button", { name: "Guest / not registered" }));
-  fireEvent.change(screen.getByLabelText("Guest name"), { target: { value: "Guest One" } });
+  fireEvent.change(screen.getByLabelText(/^Guest name/), { target: { value: "Guest One" } });
   fireEvent.change(screen.getByLabelText("Phone (recommended)"), {
     target: { value: "08012345678" },
   });
@@ -90,8 +90,8 @@ it("requires an explanation when overriding the configured guest rate", async ()
   );
   fireEvent.click(screen.getByText("Add walk-in"));
   fireEvent.click(screen.getByRole("button", { name: "Guest / not registered" }));
-  fireEvent.change(screen.getByLabelText("Guest name"), { target: { value: "Guest Two" } });
-  fireEvent.change(screen.getByLabelText("Guest rate for this swim (₦)"), {
+  fireEvent.change(screen.getByLabelText(/^Guest name/), { target: { value: "Guest Two" } });
+  fireEvent.change(screen.getByLabelText(/^Guest rate for this swim/), {
     target: { value: "12000" },
   });
 
