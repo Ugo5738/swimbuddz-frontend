@@ -283,7 +283,7 @@ export function ClubLocationTransferPanel({ memberId }: { memberId: string }) {
                       ({money(preview.target_remaining_value_kobo)})
                     </p>
                   </div>
-                  <Alert variant="warning">
+                  <Alert variant="info">
                     Estimated value difference: {money(preview.estimated_difference_kobo)}. This
                     preview does not move the prepaid entitlement or issue/collect money.
                   </Alert>
