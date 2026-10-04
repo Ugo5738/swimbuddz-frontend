@@ -887,7 +887,7 @@ export default function AdminAttendancePage() {
       setMarkSuccess(
         result.attendance_recorded
           ? `Guest walk-in recorded for ${result.full_name_snapshot}.`
-          : `Guest saved for ${result.full_name}, but attendance sync needs retry.`
+          : `Guest saved for ${result.full_name_snapshot}, but attendance sync needs retry.`
       );
       setRosterRefreshVersion((version) => version + 1);
     } catch (err) {
