@@ -37,7 +37,9 @@ export interface Session extends GuestSessionSettings {
   pool_fee: number;
   guest_fee?: number | null;
   community_dropin_fee?: number | null;
+  visiting_club_fee?: number | null;
   allows_community_dropins?: boolean;
+  allows_visiting_club_members?: boolean;
   ride_share_fee?: number;
   capacity: number;
   pricing_mode?: "manual" | "cost_plus";
@@ -99,7 +101,9 @@ export interface SessionPayload extends GuestSessionSettings {
   pool_fee: number;
   guest_fee: number | null;
   community_dropin_fee: number | null;
+  visiting_club_fee: number | null;
   allows_community_dropins: boolean;
+  allows_visiting_club_members: boolean;
   capacity: number;
   pricing_mode: "manual" | "cost_plus";
   pricing_expected_attendees: number;
