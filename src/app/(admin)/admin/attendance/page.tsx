@@ -51,6 +51,7 @@ type Session = {
   // own stored fee, so we don't need to pass this through — but we display it
   // on rows that aren't yet booked so the admin sees the cost up front.
   pool_fee: number | null;
+  guest_fee?: number | null;
 };
 
 type Cohort = {
@@ -81,12 +82,12 @@ function describeSession(session: Session, cohortNames: Map<string, string>): st
 
 type Attendance = {
   id: string;
-  member_name: string;
-  member_email: string;
+  member_name: string | null;
+  member_email: string | null;
   status: string;
   role: string;
   notes: string;
-  member_id: string; // Needed for merging
+  member_id: string | null; // Null for participant-only guest walk-ins
   ride_share_option?: string;
   needs_ride?: boolean;
   can_offer_ride?: boolean;
@@ -230,6 +231,7 @@ export default function AdminAttendancePage() {
   const [bookings, setBookings] = useState<SessionBookingResponse[]>([]);
   const [enrollments, setEnrollments] = useState<EnrollmentResponse[]>([]);
   const [clubRosterMembers, setClubRosterMembers] = useState<ClubRosterMember[]>([]);
+  const [rosterRevision, setRosterRevision] = useState(0);
   const [memberLookup, setMemberLookup] = useState<Map<string, { name: string; email: string }>>(
     () => new Map()
   );
@@ -851,6 +853,47 @@ export default function AdminAttendancePage() {
     }
   };
 
+  const handleGuestWalkIn = async (input: {
+    full_name: string;
+    email?: string | null;
+    phone?: string | null;
+    fee_amount_kobo?: number;
+    payment_status: "unpaid" | "paid" | "waived" | "included" | "unknown";
+    payment_method?: string | null;
+    payment_reference?: string | null;
+    waiver_status: "accepted" | "missing" | "not_required" | "unknown";
+    notes?: string | null;
+  }) => {
+    if (!selectedSessionId) return;
+    setSubmittingMark(true);
+    setError(null);
+    setMarkSuccess(null);
+    try {
+      const result = await apiPost<{ attendance_recorded: boolean }>(
+        `/api/v1/admin/sessions/${selectedSessionId}/walk-ins`,
+        input,
+        { auth: true }
+      );
+      const refreshedAttendance = await apiGet<Attendance[]>(
+        `/api/v1/attendance/sessions/${selectedSessionId}/attendance`,
+        { auth: true }
+      );
+      setAttendanceList(refreshedAttendance);
+      setRosterRevision((value) => value + 1);
+      setMarkSuccess(
+        result.attendance_recorded
+          ? "Guest walk-in and attendance recorded."
+          : "Guest walk-in saved. Attendance sync needs reconciliation."
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      console.error("Failed to record guest walk-in", err);
+      setError(`Failed to record guest walk-in: ${msg}`);
+    } finally {
+      setSubmittingMark(false);
+    }
+  };
+
   // Refund a paid booking's pool fee to the member's Bubbles — the rain-out /
   // make-up case: they paid, were marked absent/excused, and are owed it back
   // to fund a make-up. Routes through the accounted session_booking refund path
@@ -1232,7 +1275,7 @@ export default function AdminAttendancePage() {
               sessionId={selectedSessionId}
             />
             <SessionSwimmerRoster
-              key={`roster-${selectedSessionId}`}
+              key={`roster-${selectedSessionId}-${rosterRevision}`}
               sessionId={selectedSessionId}
             />
           </>
@@ -1273,8 +1316,10 @@ export default function AdminAttendancePage() {
                 ? 0
                 : (selectedSession?.pool_fee ?? 0)
             }
+            defaultGuestFee={selectedSession?.guest_fee ?? selectedSession?.pool_fee ?? 0}
             disabled={submittingMark}
             onRecord={handleMarkWalkIn}
+            onRecordGuest={handleGuestWalkIn}
           />
         )}
 
