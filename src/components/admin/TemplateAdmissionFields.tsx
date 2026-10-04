@@ -27,8 +27,14 @@ export const defaultAdmission: TemplateAdmission = {
   guest_booking_cutoff_hours: 0, guest_reconciliation_days: 3, guest_location_private: false,
 };
 
-export function TemplateAdmissionFields({ value, onChange }: {
-  value: TemplateAdmission; onChange: (value: TemplateAdmission) => void;
+export function TemplateAdmissionFields({
+  value,
+  onChange,
+  showClubVisitorFields = false,
+}: {
+  value: TemplateAdmission;
+  onChange: (value: TemplateAdmission) => void;
+  showClubVisitorFields?: boolean;
 }) {
   const field = <K extends keyof TemplateAdmission>(key: K, next: TemplateAdmission[K]) =>
     onChange({ ...value, [key]: next });
@@ -60,12 +66,16 @@ export function TemplateAdmissionFields({ value, onChange }: {
     <Input label="Community drop-in rate (₦)" type="number" min="0" step="0.01"
       required={value.allows_community_dropins} value={value.community_dropin_fee ?? ""}
       onChange={(e) => field("community_dropin_fee", e.target.value === "" ? null : Number(e.target.value))} />
-    <label className="block text-sm"><input type="checkbox" checked={value.allows_visiting_club_members}
-      onChange={(e) => field("allows_visiting_club_members", e.target.checked)} /> Allow members from other SwimBuddz Club locations</label>
-    <Input label="Visiting Club member rate (₦)" type="number" min="0" step="0.01"
-      disabled={!value.allows_visiting_club_members} value={value.visiting_club_fee ?? ""}
-      hint="Optional. Leave blank to use the host session's normal Club rate. Paid add-ons always charge their full session price."
-      onChange={(e) => field("visiting_club_fee", e.target.value === "" ? null : Number(e.target.value))} />
+    {showClubVisitorFields ? (
+      <>
+        <label className="block text-sm"><input type="checkbox" checked={value.allows_visiting_club_members}
+          onChange={(e) => field("allows_visiting_club_members", e.target.checked)} /> Allow members from other SwimBuddz Club locations</label>
+        <Input label="Visiting Club member rate (₦)" type="number" min="0" step="0.01"
+          disabled={!value.allows_visiting_club_members} value={value.visiting_club_fee ?? ""}
+          hint="Optional. Leave blank to use the host session's normal Club rate. Paid add-ons always charge their full session price."
+          onChange={(e) => field("visiting_club_fee", e.target.value === "" ? null : Number(e.target.value))} />
+      </>
+    ) : null}
   </fieldset>;
 }
 
