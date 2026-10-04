@@ -755,7 +755,7 @@ export default function AdminAttendancePage() {
     }
 
     for (const a of walkIns) {
-      if (byMember.has(a.member_id)) continue;
+      if (!a.member_id || byMember.has(a.member_id)) continue;
       byMember.set(a.member_id, {
         member_id: a.member_id,
         name: a.member_name || memberLookup.get(a.member_id)?.name || "(unknown)",
