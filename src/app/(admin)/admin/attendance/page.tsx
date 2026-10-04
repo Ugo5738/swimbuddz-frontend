@@ -5,7 +5,7 @@ import {
   OfflineSessionPaymentModal,
   type OfflineSessionPaymentInput,
 } from "@/components/admin/OfflineSessionPaymentModal";
-import { RecordSessionWalkIn } from "@/components/admin/RecordSessionWalkIn";
+import { RecordSessionWalkIn, type GuestWalkInInput } from "@/components/admin/RecordSessionWalkIn";
 import { GuestSessionAdminCard } from "@/components/guest-passes/GuestSessionAdminCard";
 import { SessionSwimmerRoster } from "@/components/guest-passes/SessionSwimmerRoster";
 import { Alert } from "@/components/ui/Alert";
@@ -51,6 +51,7 @@ type Session = {
   // own stored fee, so we don't need to pass this through — but we display it
   // on rows that aren't yet booked so the admin sees the cost up front.
   pool_fee: number | null;
+  guest_fee?: number | null;
 };
 
 type Cohort = {
@@ -81,12 +82,13 @@ function describeSession(session: Session, cohortNames: Map<string, string>): st
 
 type Attendance = {
   id: string;
-  member_name: string;
-  member_email: string;
+  member_name: string | null;
+  member_email: string | null;
   status: string;
   role: string;
-  notes: string;
-  member_id: string; // Needed for merging
+  notes: string | null;
+  member_id: string | null;
+  participant_id?: string | null;
   ride_share_option?: string;
   needs_ride?: boolean;
   can_offer_ride?: boolean;
@@ -250,6 +252,8 @@ export default function AdminAttendancePage() {
   const [rosterQuery, setRosterQuery] = useState("");
   const [rosterStatusFilter, setRosterStatusFilter] = useState("all");
   const [rosterBookingFilter, setRosterBookingFilter] = useState("all");
+  const [guestWalkInCount, setGuestWalkInCount] = useState(0);
+  const [rosterRefreshVersion, setRosterRefreshVersion] = useState(0);
 
   // Admin-issued authenticated settlement link for an outstanding-fee booking. Modal
   // surface: { booking_id (which row), result | "loading" }. Closed = null.
@@ -366,6 +370,21 @@ export default function AdminAttendancePage() {
     setRosterStatusFilter("all");
     setRosterBookingFilter("all");
   }, [selectedSessionId]);
+
+  useEffect(() => {
+    if (!selectedSessionId) {
+      setGuestWalkInCount(0);
+      return;
+    }
+    apiGet<{ entries: Array<{ kind: string }> }>(
+      `/api/v1/admin/sessions/${selectedSessionId}/roster`,
+      { auth: true }
+    )
+      .then((data) =>
+        setGuestWalkInCount(data.entries.filter((entry) => entry.kind === "walk_in_guest").length)
+      )
+      .catch(() => setGuestWalkInCount(0));
+  }, [selectedSessionId, rosterRefreshVersion]);
 
   useEffect(() => {
     if (sessionOptions.length === 0) return;
@@ -736,7 +755,7 @@ export default function AdminAttendancePage() {
     }
 
     for (const a of walkIns) {
-      if (byMember.has(a.member_id)) continue;
+      if (!a.member_id || byMember.has(a.member_id)) continue;
       byMember.set(a.member_id, {
         member_id: a.member_id,
         name: a.member_name || memberLookup.get(a.member_id)?.name || "(unknown)",
@@ -846,6 +865,36 @@ export default function AdminAttendancePage() {
       const msg = err instanceof Error ? err.message : "Unknown error";
       console.error("Failed to record walk-in", err);
       setError(`Failed to record walk-in: ${msg}`);
+    } finally {
+      setSubmittingMark(false);
+    }
+  };
+
+  const handleRecordGuestWalkIn = async (input: GuestWalkInInput) => {
+    if (!selectedSessionId) return;
+    setSubmittingMark(true);
+    setError(null);
+    setMarkSuccess(null);
+    try {
+      const result = await apiPost<{
+        attendance_recorded: boolean;
+        full_name_snapshot: string;
+      }>(
+        `/api/v1/admin/sessions/${selectedSessionId}/walk-ins`,
+        input,
+        { auth: true }
+      );
+      setMarkSuccess(
+        result.attendance_recorded
+          ? `Guest walk-in recorded for ${result.full_name_snapshot}.`
+          : `Guest saved for ${result.full_name_snapshot}, but attendance sync needs retry.`
+      );
+      setRosterRefreshVersion((version) => version + 1);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      console.error("Failed to record guest walk-in", err);
+      setError(`Failed to record guest walk-in: ${msg}`);
+      throw err;
     } finally {
       setSubmittingMark(false);
     }
@@ -1232,7 +1281,7 @@ export default function AdminAttendancePage() {
               sessionId={selectedSessionId}
             />
             <SessionSwimmerRoster
-              key={`roster-${selectedSessionId}`}
+              key={`roster-${selectedSessionId}-${rosterRefreshVersion}`}
               sessionId={selectedSessionId}
             />
           </>
@@ -1258,7 +1307,7 @@ export default function AdminAttendancePage() {
                   ? cohortRoster.length
                   : isClubSession
                     ? clubRosterMembers.length
-                    : walkIns.length
+                    : walkIns.length + guestWalkInCount
               }
             />
           </div>
@@ -1273,8 +1322,10 @@ export default function AdminAttendancePage() {
                 ? 0
                 : (selectedSession?.pool_fee ?? 0)
             }
+            defaultGuestFee={selectedSession?.guest_fee ?? selectedSession?.pool_fee ?? 0}
             disabled={submittingMark}
             onRecord={handleMarkWalkIn}
+            onRecordGuest={handleRecordGuestWalkIn}
           />
         )}
 
