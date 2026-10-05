@@ -4527,6 +4527,174 @@
         }
       }
     },
+    "/api/v1/clubs/admin/members/{member_id}/enrollments": {
+      "get": {
+        "tags": [
+          "clubs-admin-transfers"
+        ],
+        "summary": "List Member Club Enrollments",
+        "operationId": "list_member_club_enrollments_clubs_admin_members__member_id__enrollments_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "member_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Member Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AdminClubEnrollmentSummary"
+                  },
+                  "title": "Response List Member Club Enrollments Clubs Admin Members  Member Id  Enrollments Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clubs/admin/enrollments/{source_enrollment_id}/location-transfer/preview": {
+      "post": {
+        "tags": [
+          "clubs-admin-transfers"
+        ],
+        "summary": "Preview Club Location Transfer",
+        "operationId": "preview_club_location_transfer_clubs_admin_enrollments__source_enrollment_id__location_transfer_preview_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "source_enrollment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Source Enrollment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClubLocationTransferRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClubLocationTransferPreview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clubs/admin/enrollments/{source_enrollment_id}/location-transfer": {
+      "post": {
+        "tags": [
+          "clubs-admin-transfers"
+        ],
+        "summary": "Transfer Club Location",
+        "operationId": "transfer_club_location_clubs_admin_enrollments__source_enrollment_id__location_transfer_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "source_enrollment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Source Enrollment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClubLocationTransferRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClubLocationTransferResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/clubs/": {
       "get": {
         "tags": [
@@ -10519,7 +10687,7 @@
           "bookings"
         ],
         "summary": "Admin Walk In Booking",
-        "description": "Admin creates a CONFIRMED booking for a member who showed up without\npre-booking online. Used by the attendance UI's \"Mark walk-in\" action.\n\nBehavior:\n  - Tuition-included cohort classes have no additional fee. Other sessions\n    default to ``pool_fee`` unless Admin specifies the originally agreed fee.\n  - Idempotent: if a PENDING or CONFIRMED booking already exists for\n    ``(session_id, member_id)``, returns it instead of creating a new one.\n    Cancelled/expired bookings raise 409 (admin must investigate).\n  - Channel is hard-coded to ``ADMIN`` so the row is distinguishable from\n    member-self bookings in reporting.\n  - Coach payouts pick this up like any other booking \u2014 paying happens\n    when an attendance row records Present/Late for this booking.",
+        "description": "Admin creates a CONFIRMED booking for a member who showed up without\npre-booking online. Used by the attendance UI's \"Mark walk-in\" action.\n\nBehavior:\n  - Tuition-included cohort classes have no additional fee. Other sessions\n    use the same server-authoritative access/rate resolver as member booking\n    (including cross-location Club visitor rates) unless Admin explicitly\n    records an agreed override.\n  - Idempotent: if a PENDING or CONFIRMED booking already exists for\n    ``(session_id, member_id)``, returns it instead of creating a new one.\n    Cancelled/expired bookings raise 409 (admin must investigate).\n  - Channel is hard-coded to ``ADMIN`` so the row is distinguishable from\n    member-self bookings in reporting.\n  - Coach payouts pick this up like any other booking \u2014 paying happens\n    when an attendance row records Present/Late for this booking.",
         "operationId": "admin_walk_in_booking_sessions__session_id__admin_walk_in_post",
         "security": [
           {
@@ -11006,6 +11174,175 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SessionRosterResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/sessions/{session_id}/walk-ins": {
+      "post": {
+        "tags": [
+          "session-participants"
+        ],
+        "summary": "Add Guest Walk In",
+        "description": "Record an unregistered person who physically attended a Session.\n\nThis does not manufacture a Member account, pretend a waiver was accepted,\nor create a paid GuestPass. Attendance and payment remain separate facts.",
+        "operationId": "add_guest_walk_in_admin_sessions__session_id__walk_ins_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminGuestWalkInCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminGuestWalkInResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/sessions/{session_id}/participants": {
+      "get": {
+        "tags": [
+          "session-participants"
+        ],
+        "summary": "List Session Participants",
+        "operationId": "list_session_participants_admin_sessions__session_id__participants_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessionParticipantResponse"
+                  },
+                  "title": "Response List Session Participants Admin Sessions  Session Id  Participants Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/session-participants/{participant_id}/payment": {
+      "patch": {
+        "tags": [
+          "session-participants"
+        ],
+        "summary": "Reconcile Walk In Payment",
+        "operationId": "reconcile_walk_in_payment_admin_session_participants__participant_id__payment_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "participant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Participant Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WalkInPaymentReconcile"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionParticipantResponse"
                 }
               }
             }
@@ -15286,6 +15623,65 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PublicAttendanceCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttendanceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/attendance/sessions/{session_id}/attendance/participant": {
+      "post": {
+        "tags": [
+          "attendance"
+        ],
+        "summary": "Record Participant Attendance",
+        "description": "Record attendance for a canonical SessionParticipant.\n\nThis is the door-walk-in path for people who do not yet have a SwimBuddz\nmember account or an advance guest booking. The participant identity lives\nin sessions_service; attendance stores only the cross-service UUID.",
+        "operationId": "record_participant_attendance_attendance_sessions__session_id__attendance_participant_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParticipantAttendanceCreate"
               }
             }
           }
@@ -58289,6 +58685,82 @@
         "title": "AdminApproveCoach",
         "description": "Payload for approving a coach application."
       },
+      "AdminClubEnrollmentSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Member Id"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Club Id"
+          },
+          "club_name": {
+            "type": "string",
+            "title": "Club Name"
+          },
+          "plan_version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Plan Version Id"
+          },
+          "plan_name": {
+            "type": "string",
+            "title": "Plan Name"
+          },
+          "payment_mode": {
+            "type": "string",
+            "title": "Payment Mode"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Starts At"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ends At"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "assigned_pod_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned Pod Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "member_id",
+          "club_id",
+          "club_name",
+          "plan_version_id",
+          "plan_name",
+          "payment_mode",
+          "starts_at",
+          "ends_at",
+          "status"
+        ],
+        "title": "AdminClubEnrollmentSummary"
+      },
       "AdminCoachApplicationDetail": {
         "properties": {
           "id": {
@@ -60441,6 +60913,11 @@
               }
             ],
             "title": "Pod Id"
+          },
+          "allows_visiting_club_members": {
+            "type": "boolean",
+            "title": "Allows Visiting Club Members",
+            "default": false
           }
         },
         "type": "object",
@@ -62033,6 +62510,300 @@
           "slug"
         ],
         "title": "ClubCreate"
+      },
+      "ClubLocationTransferPreview": {
+        "properties": {
+          "source_enrollment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Source Enrollment Id"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Member Id"
+          },
+          "source_club_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Source Club Id"
+          },
+          "source_club_name": {
+            "type": "string",
+            "title": "Source Club Name"
+          },
+          "target_club_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Target Club Id"
+          },
+          "target_club_name": {
+            "type": "string",
+            "title": "Target Club Name"
+          },
+          "target_plan_version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Target Plan Version Id"
+          },
+          "target_plan_name": {
+            "type": "string",
+            "title": "Target Plan Name"
+          },
+          "target_pod_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Pod Id"
+          },
+          "payment_mode": {
+            "type": "string",
+            "title": "Payment Mode"
+          },
+          "effective_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Effective At"
+          },
+          "source_remaining_sessions": {
+            "type": "integer",
+            "title": "Source Remaining Sessions",
+            "default": 0
+          },
+          "source_remaining_value_kobo": {
+            "type": "integer",
+            "title": "Source Remaining Value Kobo",
+            "default": 0
+          },
+          "target_remaining_sessions": {
+            "type": "integer",
+            "title": "Target Remaining Sessions",
+            "default": 0
+          },
+          "target_remaining_value_kobo": {
+            "type": "integer",
+            "title": "Target Remaining Value Kobo",
+            "default": 0
+          },
+          "estimated_difference_kobo": {
+            "type": "integer",
+            "title": "Estimated Difference Kobo",
+            "default": 0
+          },
+          "can_execute_now": {
+            "type": "boolean",
+            "title": "Can Execute Now"
+          },
+          "requires_financial_reconciliation": {
+            "type": "boolean",
+            "title": "Requires Financial Reconciliation"
+          },
+          "guidance": {
+            "type": "string",
+            "title": "Guidance"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_enrollment_id",
+          "member_id",
+          "source_club_id",
+          "source_club_name",
+          "target_club_id",
+          "target_club_name",
+          "target_plan_version_id",
+          "target_plan_name",
+          "payment_mode",
+          "effective_at",
+          "can_execute_now",
+          "requires_financial_reconciliation",
+          "guidance"
+        ],
+        "title": "ClubLocationTransferPreview"
+      },
+      "ClubLocationTransferRequest": {
+        "properties": {
+          "target_plan_version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Target Plan Version Id"
+          },
+          "target_pod_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Pod Id"
+          },
+          "effective_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective At"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target_plan_version_id"
+        ],
+        "title": "ClubLocationTransferRequest"
+      },
+      "ClubLocationTransferResponse": {
+        "properties": {
+          "source_enrollment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Source Enrollment Id"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Member Id"
+          },
+          "source_club_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Source Club Id"
+          },
+          "source_club_name": {
+            "type": "string",
+            "title": "Source Club Name"
+          },
+          "target_club_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Target Club Id"
+          },
+          "target_club_name": {
+            "type": "string",
+            "title": "Target Club Name"
+          },
+          "target_plan_version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Target Plan Version Id"
+          },
+          "target_plan_name": {
+            "type": "string",
+            "title": "Target Plan Name"
+          },
+          "target_pod_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Pod Id"
+          },
+          "payment_mode": {
+            "type": "string",
+            "title": "Payment Mode"
+          },
+          "effective_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Effective At"
+          },
+          "source_remaining_sessions": {
+            "type": "integer",
+            "title": "Source Remaining Sessions",
+            "default": 0
+          },
+          "source_remaining_value_kobo": {
+            "type": "integer",
+            "title": "Source Remaining Value Kobo",
+            "default": 0
+          },
+          "target_remaining_sessions": {
+            "type": "integer",
+            "title": "Target Remaining Sessions",
+            "default": 0
+          },
+          "target_remaining_value_kobo": {
+            "type": "integer",
+            "title": "Target Remaining Value Kobo",
+            "default": 0
+          },
+          "estimated_difference_kobo": {
+            "type": "integer",
+            "title": "Estimated Difference Kobo",
+            "default": 0
+          },
+          "can_execute_now": {
+            "type": "boolean",
+            "title": "Can Execute Now"
+          },
+          "requires_financial_reconciliation": {
+            "type": "boolean",
+            "title": "Requires Financial Reconciliation"
+          },
+          "guidance": {
+            "type": "string",
+            "title": "Guidance"
+          },
+          "transfer_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Transfer Id"
+          },
+          "target_enrollment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Target Enrollment Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_enrollment_id",
+          "member_id",
+          "source_club_id",
+          "source_club_name",
+          "target_club_id",
+          "target_club_name",
+          "target_plan_version_id",
+          "target_plan_name",
+          "payment_mode",
+          "effective_at",
+          "can_execute_now",
+          "requires_financial_reconciliation",
+          "guidance",
+          "transfer_id",
+          "target_enrollment_id"
+        ],
+        "title": "ClubLocationTransferResponse"
       },
       "ClubObservedAssessmentUpdate": {
         "properties": {
@@ -72112,6 +72883,384 @@
         "title": "MemberMembershipResponse",
         "description": "Membership tiers, billing, and gamification."
       },
+      "AdminGuestWalkInCreate": {
+        "properties": {
+          "full_name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Full Name"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 320
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "fee_amount_kobo": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fee Amount Kobo"
+          },
+          "fee_override_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fee Override Reason"
+          },
+          "payment_status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "included",
+                  "unpaid",
+                  "paid",
+                  "waived",
+                  "unknown"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Status"
+          },
+          "payment_method": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Method"
+          },
+          "payment_reference": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Reference"
+          },
+          "waiver_status": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "missing",
+              "not_required",
+              "unknown"
+            ],
+            "title": "Waiver Status",
+            "default": "missing"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "full_name"
+        ],
+        "title": "AdminGuestWalkInCreate"
+      },
+      "AdminGuestWalkInResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id"
+          },
+          "participant_kind": {
+            "type": "string",
+            "title": "Participant Kind"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id"
+          },
+          "booking_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Booking Id"
+          },
+          "booking_guest_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Booking Guest Id"
+          },
+          "guest_pass_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guest Pass Id"
+          },
+          "converted_member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Converted Member Id"
+          },
+          "full_name_snapshot": {
+            "type": "string",
+            "title": "Full Name Snapshot"
+          },
+          "email_snapshot": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Snapshot"
+          },
+          "phone_snapshot": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone Snapshot"
+          },
+          "audience": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audience"
+          },
+          "access_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Access Source"
+          },
+          "rate_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate Id"
+          },
+          "rate_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate Code"
+          },
+          "fee_amount_kobo": {
+            "type": "integer",
+            "title": "Fee Amount Kobo"
+          },
+          "payment_status": {
+            "type": "string",
+            "title": "Payment Status"
+          },
+          "payment_method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Method"
+          },
+          "payment_reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Reference"
+          },
+          "paid_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid At"
+          },
+          "waiver_status": {
+            "type": "string",
+            "title": "Waiver Status"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "attendance_recorded": {
+            "type": "boolean",
+            "title": "Attendance Recorded",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "session_id",
+          "participant_kind",
+          "source",
+          "full_name_snapshot",
+          "fee_amount_kobo",
+          "payment_status",
+          "waiver_status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "AdminGuestWalkInResponse"
+      },
       "AdminPoolFeeRefundRequest": {
         "properties": {
           "reason": {
@@ -74037,6 +75186,51 @@
             ],
             "title": "Actual Swim Minutes"
           },
+          "participant_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Participant Id"
+          },
+          "fee_amount_kobo": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fee Amount Kobo"
+          },
+          "payment_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Status"
+          },
+          "waiver_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Waiver Status"
+          },
           "assessment_result": {
             "anyOf": [
               {
@@ -75271,6 +76465,51 @@
             ],
             "title": "Price Label"
           },
+          "pricing_audience": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pricing Audience"
+          },
+          "pricing_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pricing Source"
+          },
+          "rate_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate Code"
+          },
+          "rate_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate Id"
+          },
           "member_id": {
             "type": "string",
             "format": "uuid",
@@ -75867,6 +77106,51 @@
               }
             ],
             "title": "Price Label"
+          },
+          "pricing_audience": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pricing Audience"
+          },
+          "pricing_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pricing Source"
+          },
+          "rate_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate Code"
+          },
+          "rate_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate Id"
           }
         },
         "type": "object",
@@ -76048,9 +77332,25 @@
             ],
             "title": "Community Dropin Fee Kobo"
           },
+          "visiting_club_fee_kobo": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visiting Club Fee Kobo"
+          },
           "allows_community_dropins": {
             "type": "boolean",
             "title": "Allows Community Dropins",
+            "default": false
+          },
+          "allows_visiting_club_members": {
+            "type": "boolean",
+            "title": "Allows Visiting Club Members",
             "default": false
           },
           "ride_share_fee": {
@@ -76252,6 +77552,51 @@
               }
             ],
             "title": "Access Source"
+          },
+          "pricing_audience": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pricing Audience"
+          },
+          "pricing_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pricing Source"
+          },
+          "rate_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate Id"
+          },
+          "rate_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate Code"
           },
           "payment_intent_id": {
             "anyOf": [
@@ -76601,7 +77946,8 @@
           "community_dropin_fee": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "number",
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -76609,9 +77955,26 @@
             ],
             "title": "Community Dropin Fee"
           },
+          "visiting_club_fee": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visiting Club Fee"
+          },
           "allows_community_dropins": {
             "type": "boolean",
             "title": "Allows Community Dropins",
+            "default": false
+          },
+          "allows_visiting_club_members": {
+            "type": "boolean",
+            "title": "Allows Visiting Club Members",
             "default": false
           },
           "ride_share_fee": {
@@ -76957,6 +78320,251 @@
         ],
         "title": "SessionLocation"
       },
+      "SessionParticipantResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id"
+          },
+          "participant_kind": {
+            "type": "string",
+            "title": "Participant Kind"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id"
+          },
+          "booking_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Booking Id"
+          },
+          "booking_guest_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Booking Guest Id"
+          },
+          "guest_pass_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guest Pass Id"
+          },
+          "converted_member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Converted Member Id"
+          },
+          "full_name_snapshot": {
+            "type": "string",
+            "title": "Full Name Snapshot"
+          },
+          "email_snapshot": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Snapshot"
+          },
+          "phone_snapshot": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone Snapshot"
+          },
+          "audience": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audience"
+          },
+          "access_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Access Source"
+          },
+          "rate_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate Id"
+          },
+          "rate_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate Code"
+          },
+          "fee_amount_kobo": {
+            "type": "integer",
+            "title": "Fee Amount Kobo"
+          },
+          "payment_status": {
+            "type": "string",
+            "title": "Payment Status"
+          },
+          "payment_method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Method"
+          },
+          "payment_reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Reference"
+          },
+          "paid_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid At"
+          },
+          "waiver_status": {
+            "type": "string",
+            "title": "Waiver Status"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "session_id",
+          "participant_kind",
+          "source",
+          "full_name_snapshot",
+          "fee_amount_kobo",
+          "payment_status",
+          "waiver_status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "SessionParticipantResponse"
+      },
       "SessionRangeStats": {
         "properties": {
           "total_sessions": {
@@ -77136,7 +78744,8 @@
           "community_dropin_fee": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "number",
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -77144,9 +78753,26 @@
             ],
             "title": "Community Dropin Fee"
           },
+          "visiting_club_fee": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visiting Club Fee"
+          },
           "allows_community_dropins": {
             "type": "boolean",
             "title": "Allows Community Dropins",
+            "default": false
+          },
+          "allows_visiting_club_members": {
+            "type": "boolean",
+            "title": "Allows Visiting Club Members",
             "default": false
           },
           "ride_share_fee": {
@@ -77396,7 +79022,8 @@
             "enum": [
               "member",
               "booking_guest",
-              "guest_pass"
+              "guest_pass",
+              "walk_in_guest"
             ],
             "title": "Kind"
           },
@@ -77462,6 +79089,51 @@
               }
             ],
             "title": "Actual Swim Minutes"
+          },
+          "participant_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Participant Id"
+          },
+          "fee_amount_kobo": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fee Amount Kobo"
+          },
+          "payment_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Status"
+          },
+          "waiver_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Waiver Status"
           }
         },
         "type": "object",
@@ -78737,13 +80409,26 @@
           "community_dropin_fee": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "number",
+                "minimum": 0.0
               },
               {
                 "type": "null"
               }
             ],
             "title": "Community Dropin Fee"
+          },
+          "visiting_club_fee": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visiting Club Fee"
           },
           "allows_community_dropins": {
             "anyOf": [
@@ -78755,6 +80440,17 @@
               }
             ],
             "title": "Allows Community Dropins"
+          },
+          "allows_visiting_club_members": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allows Visiting Club Members"
           },
           "ride_share_fee": {
             "anyOf": [
@@ -78923,9 +80619,26 @@
             ],
             "title": "Community Dropin Fee"
           },
+          "visiting_club_fee": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visiting Club Fee"
+          },
           "allows_community_dropins": {
             "type": "boolean",
             "title": "Allows Community Dropins",
+            "default": false
+          },
+          "allows_visiting_club_members": {
+            "type": "boolean",
+            "title": "Allows Visiting Club Members",
             "default": false
           },
           "allows_guests": {
@@ -79138,6 +80851,60 @@
         "title": "UnpaidBookingResponse",
         "description": "A confirmed booking with an outstanding pool fee.\n\nReturned by GET /sessions/bookings/me/unpaid so the billing UI can\nsurface \"you owe \u20a6X,XXX for Session Y\" with a one-click Pay button.\n\nA booking lands here when fee_amount_kobo > 0 and neither a payment\nintent nor a wallet transaction is linked \u2014 typically admin-recorded\nwalk-ins where the member hadn't paid online at session time."
       },
+      "WalkInPaymentReconcile": {
+        "properties": {
+          "payment_status": {
+            "type": "string",
+            "enum": [
+              "unpaid",
+              "paid",
+              "waived"
+            ],
+            "title": "Payment Status"
+          },
+          "payment_method": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Method"
+          },
+          "payment_reference": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Reference"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "payment_status"
+        ],
+        "title": "WalkInPaymentReconcile"
+      },
       "AttendanceCreate": {
         "properties": {
           "status": {
@@ -79300,6 +81067,18 @@
               }
             ],
             "title": "Booking Guest Id"
+          },
+          "participant_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Participant Id"
           },
           "created_at": {
             "type": "string",
@@ -79637,6 +81416,36 @@
         "type": "object",
         "title": "MemberAttendanceStats",
         "description": "Aggregated attendance stats for a member over a date range."
+      },
+      "ParticipantAttendanceCreate": {
+        "properties": {
+          "participant_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Participant Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AttendanceStatus",
+            "default": "present"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "participant_id"
+        ],
+        "title": "ParticipantAttendanceCreate",
+        "description": "Admin/service attendance for a canonical SessionParticipant."
       },
       "PublicAttendanceCreate": {
         "properties": {

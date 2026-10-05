@@ -215,6 +215,24 @@ describe("TemplatesDrawer Club scope", () => {
     });
   });
 
+  it("persists visiting Club admission on the recurring Club template", async () => {
+    const onCreate = renderCreateDrawer();
+    fireEvent.click(screen.getByLabelText(/Allow members from other SwimBuddz Club locations/));
+    fireEvent.change(screen.getByLabelText(/Visiting Club member rate/), {
+      target: { value: "8500" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create Template" }));
+    await waitFor(() => expect(onCreate).toHaveBeenCalledOnce());
+    expect(onCreate.mock.calls[0][0]).toMatchObject({
+      session_type: "club",
+      club_id: "club-lagos",
+      admission_settings: expect.objectContaining({
+        allows_visiting_club_members: true,
+        visiting_club_fee: 8500,
+      }),
+    });
+  });
+
   it("creates a general Club template with no pod", async () => {
     const onCreate = renderCreateDrawer();
 

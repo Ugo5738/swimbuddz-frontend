@@ -404,7 +404,11 @@ function TemplateFormInline({
       <h3 className="font-semibold text-slate-900">
         {mode === "create" ? "New Template" : "Edit Template"}
       </h3>
-      <TemplateAdmissionFields value={form.admission_settings} onChange={(admission_settings) => setForm({ ...form, admission_settings })} />
+      <TemplateAdmissionFields
+        value={form.admission_settings}
+        showClubVisitorFields={form.session_type === "club"}
+        onChange={(admission_settings) => setForm({ ...form, admission_settings })}
+      />
       {template && <TemplateOperationsSync templateId={template.id} />}
       <Input
         label="Title"
@@ -427,6 +431,14 @@ function TemplateFormInline({
             cohort_fee_mode: "included",
             club_id: sessionType === "club" ? form.club_id : null,
             pod_id: sessionType === "club" ? form.pod_id : null,
+            admission_settings:
+              sessionType === "club"
+                ? form.admission_settings
+                : {
+                    ...form.admission_settings,
+                    allows_visiting_club_members: false,
+                    visiting_club_fee: null,
+                  },
           });
         }}
       >
