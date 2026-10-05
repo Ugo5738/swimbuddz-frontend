@@ -118,11 +118,11 @@ describe("MediaInput", () => {
     const file = new File(["video"], "attempt.mov", { type: "video/quicktime" });
     fireEvent.change(container.querySelector('input[type="file"]')!, { target: { files: [file] } });
     expect(screen.getByRole("progressbar")).toHaveAttribute("value", "42");
-    expect(screen.getByRole("button", { name: "Upload file" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Upload file drop zone" })).toBeDisabled();
     expect(onUploadingChange).toHaveBeenLastCalledWith(true);
     await act(async () => rejectUpload(new Error("Connection interrupted")));
     expect(screen.getByRole("alert")).toHaveTextContent("Connection interrupted");
-    expect(screen.getByRole("button", { name: "Upload file" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Upload file drop zone" })).toBeEnabled();
     expect(onUploadingChange).toHaveBeenLastCalledWith(false);
   });
 
