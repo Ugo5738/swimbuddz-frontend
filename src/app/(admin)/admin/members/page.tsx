@@ -17,7 +17,6 @@ import {
   Pencil,
   Search,
   Trash2,
-  TrendingUp,
   UserPlus,
   Users,
   XCircle,
@@ -32,14 +31,98 @@ import {
   KV,
   MemberForm,
   MobileBtn,
-  PayText,
   StatCard,
   StatusBadge,
-  TierBadge,
 } from "./components";
 import { EMPTY_FORM, PER_PAGE } from "./constants";
 import type { ApprovalAction, FilterTab, Member } from "./types";
-import { apiFetch, hasUpgrade, isPaid, tier, upgradeTiers } from "./utils";
+import {
+  apiFetch,
+  hasActiveClub,
+  hasProgrammeRequest,
+  membershipNeedsAction,
+  programmeLabel,
+  statusTone,
+} from "./utils";
+
+// ---------------------------------------------------------------------------
+// Canonical programme presentation
+// ---------------------------------------------------------------------------
+
+function formatAdminDate(value?: string) {
+  if (!value) return null;
+  return new Date(value).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function StatusPill({ label, status }: { label: string; status?: string }) {
+  const tone = statusTone(status);
+  const classes = {
+    success: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+    warning: "bg-amber-50 text-amber-700 ring-amber-200",
+    danger: "bg-rose-50 text-rose-700 ring-rose-200",
+    neutral: "bg-slate-50 text-slate-500 ring-slate-200",
+  }[tone];
+  return (
+    <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset ${classes}`}>
+      {label}
+    </span>
+  );
+}
+
+function MembershipSummary({ member }: { member: Member }) {
+  const status = member.annual_membership_status || "inactive";
+  const label = member.annual_membership_label || "Inactive";
+  const until = formatAdminDate(member.annual_membership_paid_until);
+  return (
+    <div className="space-y-1">
+      <StatusPill label={label} status={status} />
+      {until && <p className="text-xs text-slate-400">Until {until}</p>}
+    </div>
+  );
+}
+
+function ProgrammeSummary({ member }: { member: Member }) {
+  const programmes = [
+    ["club", member.club_programme_status, member.club_programme_label],
+    ["academy", member.academy_programme_status, member.academy_programme_label],
+  ] as const;
+  const visible = programmes.filter(([, status]) => status && status !== "inactive");
+  if (!visible.length) return <span className="text-xs text-slate-400">No active programme</span>;
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {visible.map(([programme, status, label]) => (
+        <StatusPill
+          key={programme}
+          label={`${programmeLabel(programme)} · ${label || status}`}
+          status={status}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ClubPlacement({ member }: { member: Member }) {
+  if (!member.current_club_name) {
+    return member.club_programme_status === "active" ? (
+      <div>
+        <p className="font-medium text-slate-700">Club access</p>
+        <p className="text-xs text-amber-600">No current home Club</p>
+      </div>
+    ) : (
+      <span className="text-slate-300">—</span>
+    );
+  }
+  return (
+    <div>
+      <p className="font-medium text-slate-700">{member.current_club_name}</p>
+      <p className="text-xs text-slate-400">{member.current_pod_name || "Pod not assigned"}</p>
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Main page component
@@ -86,13 +169,13 @@ export default function AdminMembersPage() {
 
   // ---- Derived data ----
   const counts = useMemo(() => {
-    const c = { all: 0, pending: 0, active: 0, unpaid: 0, upgrades: 0 };
+    const c = { all: 0, pending: 0, membership_due: 0, programme_requests: 0, club: 0 };
     for (const m of members) {
       c.all++;
       if (m.approval_status === "pending") c.pending++;
-      if (m.approval_status === "approved") c.active++;
-      if (!isPaid(m)) c.unpaid++;
-      if (hasUpgrade(m)) c.upgrades++;
+      if (membershipNeedsAction(m)) c.membership_due++;
+      if (hasProgrammeRequest(m)) c.programme_requests++;
+      if (hasActiveClub(m)) c.club++;
     }
     return c;
   }, [members]);
@@ -100,9 +183,9 @@ export default function AdminMembersPage() {
   const filtered = useMemo(() => {
     let list = members;
     if (filterTab === "pending") list = list.filter((m) => m.approval_status === "pending");
-    else if (filterTab === "active") list = list.filter((m) => m.approval_status === "approved");
-    else if (filterTab === "unpaid") list = list.filter((m) => !isPaid(m));
-    else if (filterTab === "upgrades") list = list.filter(hasUpgrade);
+    else if (filterTab === "membership_due") list = list.filter(membershipNeedsAction);
+    else if (filterTab === "programme_requests") list = list.filter(hasProgrammeRequest);
+    else if (filterTab === "club") list = list.filter(hasActiveClub);
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(
@@ -208,17 +291,12 @@ export default function AdminMembersPage() {
       const paths: Record<ApprovalAction, string> = {
         approve: `/api/v1/admin/members/${member.id}/approve`,
         reject: `/api/v1/admin/members/${member.id}/reject`,
-        upgrade: `/api/v1/admin/members/${member.id}/approve-upgrade`,
       };
       await apiFetch(paths[action], {
         method: "POST",
         body: JSON.stringify({ notes: approvalNotes }),
       });
-      toast.success(
-        { approve: "Member approved", reject: "Member rejected", upgrade: "Upgrade approved" }[
-          action
-        ]
-      );
+      toast.success({ approve: "Member approved", reject: "Member rejected" }[action]);
       setApprovalModal(null);
       await fetchMembers();
     } catch (err) {
@@ -256,10 +334,10 @@ export default function AdminMembersPage() {
   // ---- Tab config ----
   const tabs: { key: FilterTab; label: string }[] = [
     { key: "all", label: "All" },
-    { key: "pending", label: "Pending" },
-    { key: "active", label: "Active" },
-    { key: "unpaid", label: "Unpaid" },
-    { key: "upgrades", label: "Upgrades" },
+    { key: "pending", label: "Pending approval" },
+    { key: "membership_due", label: "Membership due" },
+    { key: "programme_requests", label: "Programme requests" },
+    { key: "club", label: "Club" },
   ];
 
   // ---- Render ----
@@ -271,7 +349,7 @@ export default function AdminMembersPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-600">Admin</p>
           <h1 className="text-2xl font-bold text-slate-900 sm:text-4xl">Members</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Manage registrations, approvals, and membership tiers.
+            Manage people, annual Membership, independent programmes, and Club placement.
           </p>
         </div>
         <Button onClick={openCreate} className="flex items-center gap-2">
@@ -293,15 +371,15 @@ export default function AdminMembersPage() {
           accent={counts.pending > 0}
         />
         <StatCard
-          label="Active Members"
-          value={counts.active}
-          icon={<CheckCircle className="h-5 w-5 text-green-500" />}
+          label="Membership Due"
+          value={counts.membership_due}
+          icon={<XCircle className="h-5 w-5 text-rose-500" />}
+          accent={counts.membership_due > 0}
         />
         <StatCard
-          label="Unpaid"
-          value={counts.unpaid}
-          icon={<XCircle className="h-5 w-5 text-red-400" />}
-          accent={counts.unpaid > 0}
+          label="Active Club"
+          value={counts.club}
+          icon={<CheckCircle className="h-5 w-5 text-emerald-500" />}
         />
       </div>
 
@@ -359,7 +437,7 @@ export default function AdminMembersPage() {
               {pageItems.map((m) => {
                 const del = deletingIds.has(m.id);
                 return (
-                  <div key={m.id} className={`p-4 ${del ? "opacity-50" : ""}`}>
+                  <div key={m.id} className={`space-y-3 p-4 ${del ? "opacity-50" : ""}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <Link
@@ -372,16 +450,21 @@ export default function AdminMembersPage() {
                       </div>
                       <StatusBadge s={m.approval_status} />
                     </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                      <TierBadge t={tier(m)} />
-                      <PayText m={m} />
-                      {hasUpgrade(m) && (
-                        <span className="font-medium text-purple-600">
-                          Upgrade: {upgradeTiers(m)}
-                        </span>
-                      )}
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <p className="mb-1 uppercase tracking-wide text-slate-400">Membership</p>
+                        <MembershipSummary member={m} />
+                      </div>
+                      <div>
+                        <p className="mb-1 uppercase tracking-wide text-slate-400">Club / Pod</p>
+                        <ClubPlacement member={m} />
+                      </div>
                     </div>
-                    <div className="mt-3 flex items-center gap-1 border-t border-slate-100 pt-3">
+                    <div>
+                      <p className="mb-1 uppercase tracking-wide text-slate-400">Programmes</p>
+                      <ProgrammeSummary member={m} />
+                    </div>
+                    <div className="flex items-center gap-1 border-t border-slate-100 pt-3">
                       <MobileBtn href={`/admin/members/${m.id}`}>
                         <Eye className="h-3.5 w-3.5" />
                         View
@@ -402,12 +485,6 @@ export default function AdminMembersPage() {
                           </MobileBtn>
                         </>
                       )}
-                      {m.approval_status === "approved" && hasUpgrade(m) && (
-                        <MobileBtn onClick={() => openApproval(m, "upgrade")} color="purple">
-                          <TrendingUp className="h-3.5 w-3.5" />
-                          Upgrade
-                        </MobileBtn>
-                      )}
                       <button
                         onClick={() => !del && setDeleteModal(m)}
                         disabled={del}
@@ -427,11 +504,11 @@ export default function AdminMembersPage() {
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
                   <tr>
-                    <th className="px-4 py-3 font-semibold">Name</th>
-                    <th className="px-4 py-3 font-semibold">Email</th>
-                    <th className="px-4 py-3 font-semibold">Tier</th>
-                    <th className="px-4 py-3 font-semibold">Status</th>
-                    <th className="px-4 py-3 font-semibold">Payment</th>
+                    <th className="px-4 py-3 font-semibold">Member</th>
+                    <th className="px-4 py-3 font-semibold">Membership</th>
+                    <th className="px-4 py-3 font-semibold">Programmes</th>
+                    <th className="px-4 py-3 font-semibold">Club / Pod</th>
+                    <th className="px-4 py-3 font-semibold">Account</th>
                     <th className="px-4 py-3 font-semibold text-right">Actions</th>
                   </tr>
                 </thead>
@@ -439,10 +516,7 @@ export default function AdminMembersPage() {
                   {pageItems.map((m) => {
                     const del = deletingIds.has(m.id);
                     return (
-                      <tr
-                        key={m.id}
-                        className={del ? "bg-slate-50 opacity-50" : "hover:bg-slate-50"}
-                      >
+                      <tr key={m.id} className={del ? "bg-slate-50 opacity-50" : "hover:bg-slate-50"}>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <Av m={m} />
@@ -453,24 +527,14 @@ export default function AdminMembersPage() {
                               >
                                 {m.first_name} {m.last_name}
                               </Link>
-                              {hasUpgrade(m) && (
-                                <span className="text-[10px] font-medium text-purple-600">
-                                  Upgrade requested
-                                </span>
-                              )}
+                              <p className="truncate text-xs text-slate-400">{m.email}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-slate-600">{m.email}</td>
-                        <td className="px-4 py-3">
-                          <TierBadge t={tier(m)} />
-                        </td>
-                        <td className="px-4 py-3">
-                          <StatusBadge s={m.approval_status} />
-                        </td>
-                        <td className="px-4 py-3">
-                          <PayText m={m} />
-                        </td>
+                        <td className="px-4 py-3"><MembershipSummary member={m} /></td>
+                        <td className="px-4 py-3"><ProgrammeSummary member={m} /></td>
+                        <td className="px-4 py-3"><ClubPlacement member={m} /></td>
+                        <td className="px-4 py-3"><StatusBadge s={m.approval_status} /></td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-1">
                             <IBtn href={`/admin/members/${m.id}`} title="View">
@@ -481,30 +545,13 @@ export default function AdminMembersPage() {
                             </IBtn>
                             {m.approval_status === "pending" && (
                               <>
-                                <IBtn
-                                  onClick={() => openApproval(m, "approve")}
-                                  title="Approve"
-                                  className="text-green-600 hover:bg-green-50"
-                                >
+                                <IBtn onClick={() => openApproval(m, "approve")} title="Approve" className="text-green-600 hover:bg-green-50">
                                   <CheckCircle className="h-4 w-4" />
                                 </IBtn>
-                                <IBtn
-                                  onClick={() => openApproval(m, "reject")}
-                                  title="Reject"
-                                  className="text-red-500 hover:bg-red-50"
-                                >
+                                <IBtn onClick={() => openApproval(m, "reject")} title="Reject" className="text-red-500 hover:bg-red-50">
                                   <XCircle className="h-4 w-4" />
                                 </IBtn>
                               </>
-                            )}
-                            {m.approval_status === "approved" && hasUpgrade(m) && (
-                              <IBtn
-                                onClick={() => openApproval(m, "upgrade")}
-                                title="Approve Upgrade"
-                                className="text-purple-600 hover:bg-purple-50"
-                              >
-                                <TrendingUp className="h-4 w-4" />
-                              </IBtn>
                             )}
                             <IBtn
                               onClick={() => !del && setDeleteModal(m)}
@@ -562,9 +609,7 @@ export default function AdminMembersPage() {
         isOpen={!!approvalModal}
         onClose={() => setApprovalModal(null)}
         title={
-          { approve: "Approve Member", reject: "Reject Member", upgrade: "Approve Upgrade" }[
-            approvalModal?.action || "approve"
-          ]
+          { approve: "Approve Member", reject: "Reject Member" }[approvalModal?.action || "approve"]
         }
       >
         {approvalModal &&
@@ -573,12 +618,10 @@ export default function AdminMembersPage() {
             const colors: Record<ApprovalAction, string> = {
               approve: "bg-green-600 hover:bg-green-700",
               reject: "bg-red-600 hover:bg-red-700",
-              upgrade: "bg-purple-600 hover:bg-purple-700",
             };
             const labels: Record<ApprovalAction, [string, string]> = {
               approve: ["Approving...", "Approve Member"],
               reject: ["Rejecting...", "Reject Member"],
-              upgrade: ["Approving...", "Approve Upgrade"],
             };
             return (
               <div className="space-y-4">
@@ -589,18 +632,15 @@ export default function AdminMembersPage() {
                       {am.first_name} {am.last_name}
                     </p>
                     <p className="text-xs text-slate-500">{am.email}</p>
-                    <p className="mt-0.5 text-xs capitalize text-cyan-700">{tier(am)} member</p>
+                    <p className="mt-0.5 text-xs text-slate-500">SwimBuddz member profile</p>
                   </div>
                 </div>
                 <p className="text-sm text-slate-600">
-                  {action === "upgrade"
-                    ? `Approve upgrade from ${tier(am)} to ${upgradeTiers(am) || "requested tier"}?`
-                    : action === "approve"
-                      ? `Approve ${am.first_name} ${am.last_name}?`
-                      : `Reject ${am.first_name} ${am.last_name}?`}
+                  {action === "approve"
+                    ? `Approve ${am.first_name} ${am.last_name}?`
+                    : `Reject ${am.first_name} ${am.last_name}?`}
                 </p>
-                {(action === "approve" || action === "reject") && (
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg bg-slate-50 p-3 text-xs">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg bg-slate-50 p-3 text-xs">
                     <KV k="Location" v={am.city || am.area_in_lagos} />
                     <KV k="Occupation" v={am.occupation} />
                     <KV k="How found us" v={am.how_found_us} />
@@ -610,7 +650,6 @@ export default function AdminMembersPage() {
                     )}
                     {am.medical_info && <KV k="Medical" v={am.medical_info} />}
                   </div>
-                )}
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700">
                     Notes (optional)

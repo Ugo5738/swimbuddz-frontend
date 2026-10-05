@@ -5,29 +5,33 @@ import { API_BASE_URL } from "@/lib/config";
 
 import type { Member } from "./types";
 
-export function tierPaid(d?: string) {
-  return d ? new Date(d) > new Date() : false;
-}
-
-export function isPaid(m: Member) {
-  return (
-    tierPaid(m.community_paid_until) ||
-    tierPaid(m.club_paid_until) ||
-    tierPaid(m.academy_paid_until)
+export function membershipNeedsAction(m: Member) {
+  return ["approved_unpaid", "payment_pending", "expired"].includes(
+    m.annual_membership_status || "inactive"
   );
 }
 
-export function hasUpgrade(m: Member) {
-  const t = m.requested_tiers || m.requested_membership_tiers;
-  return !!t && t.length > 0;
+export function hasProgrammeRequest(m: Member) {
+  return (m.pending_programmes?.length ?? 0) > 0;
 }
 
-export function tier(m: Member) {
-  return m.primary_tier || m.membership_tier || "community";
+export function hasActiveClub(m: Member) {
+  return m.club_programme_status === "active" && !!m.current_club_id;
 }
 
-export function upgradeTiers(m: Member) {
-  return (m.requested_tiers || m.requested_membership_tiers || []).join(", ");
+export function programmeLabel(programme: string) {
+  if (programme === "club") return "Club";
+  if (programme === "academy") return "Academy";
+  return programme.charAt(0).toUpperCase() + programme.slice(1);
+}
+
+export function statusTone(status?: string) {
+  if (status === "active") return "success";
+  if (status === "payment_pending" || status === "requested" || status === "approved_unpaid") {
+    return "warning";
+  }
+  if (status === "expired") return "danger";
+  return "neutral";
 }
 
 export async function apiFetch(path: string, opts: RequestInit = {}) {

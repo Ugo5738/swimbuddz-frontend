@@ -66,20 +66,49 @@ const navSections: NavSection[] = [
     items: [{ href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard }],
   },
   {
-    title: "Core Management",
+    title: "People",
     items: [
       { href: "/admin/members", label: "Members", icon: Users },
       { href: "/admin/coaches", label: "Coaches", icon: UserCheck },
-      { href: "/admin/sessions", label: "Sessions", icon: Calendar },
-      { href: "/admin/makeups", label: "Make-ups", icon: CalendarClock },
-      { href: "/admin/discounts", label: "Discounts", icon: Trophy },
-      { href: "/admin/attendance", label: "Attendance", icon: ClipboardCheck },
+    ],
+  },
+  {
+    title: "Programs",
+    items: [
+      { href: "/admin/academy", label: "Academy", icon: GraduationCap },
+      { href: "/admin/academy/extension-requests", label: "Academy Extensions", icon: CalendarClock },
       { href: "/admin/club-applications", label: "Club Assessments", icon: ClipboardCheck },
-      { href: "/admin/club-plans", label: "Club Pricing", icon: Waves },
+      { href: "/admin/club-plans", label: "Club Plans & Pricing", icon: Waves },
+      { href: "/admin/community/clubs", label: "Clubs & Pods", icon: Users },
       { href: "/admin/community/experiences", label: "Experience Offerings", icon: Calendar },
-      { href: "/admin/guest-passes", label: "Guest Passes", icon: UserCheck },
-      { href: "/admin/payment-charges", label: "Payment Charges", icon: Receipt },
+    ],
+  },
+  {
+    title: "Sessions & Attendance",
+    items: [
+      { href: "/admin/sessions", label: "Sessions", icon: Calendar },
+      { href: "/admin/attendance", label: "Attendance", icon: ClipboardCheck },
+      { href: "/admin/makeups", label: "Make-ups", icon: CalendarClock },
       { href: "/admin/ai/queue", label: "Stroke Lab Queue", icon: Activity },
+    ],
+  },
+  {
+    title: "Guests & Payments",
+    items: [
+      { href: "/admin/guest-passes", label: "Guest Passes", icon: UserCheck },
+      { href: "/admin/payments", label: "Payment Reviews", icon: Banknote },
+      { href: "/admin/payment-charges", label: "Payment Charges", icon: Receipt },
+      { href: "/admin/discounts", label: "Discounts", icon: Trophy },
+      { href: "/admin/refunds", label: "Refund Queue", icon: Banknote },
+    ],
+  },
+  {
+    title: "Community",
+    items: [
+      { href: "/admin/community/events", label: "Events", icon: CalendarDays },
+      { href: "/admin/community/volunteers", label: "Volunteers", icon: HandHeart },
+      { href: "/admin/community/content", label: "Tips & Content", icon: FileText },
+      { href: "/admin/community/challenges", label: "Challenges", icon: Trophy },
     ],
   },
   {
@@ -87,116 +116,39 @@ const navSections: NavSection[] = [
     items: [
       { href: "/admin/wallet", label: "Wallets", icon: Wallet },
       { href: "/admin/payouts", label: "Coach Payouts", icon: Banknote },
-      { href: "/admin/refunds", label: "Refund Queue", icon: Banknote },
-      {
-        href: "/admin/payouts/recurring",
-        label: "Recurring Payouts",
-        icon: Repeat,
-      },
+      { href: "/admin/payouts/recurring", label: "Recurring Payouts", icon: Repeat },
       { href: "/admin/wallet/rewards", label: "Reward Rules", icon: Award },
       { href: "/admin/wallet/referrals", label: "Referrals", icon: Users },
-      {
-        href: "/admin/wallet/rewards/alerts",
-        label: "Alerts",
-        icon: AlertTriangle,
-      },
-      {
-        href: "/admin/wallet/rewards/analytics",
-        label: "Analytics",
-        icon: BarChart3,
-      },
+      { href: "/admin/wallet/rewards/alerts", label: "Alerts", icon: AlertTriangle },
+      { href: "/admin/wallet/rewards/analytics", label: "Analytics", icon: BarChart3 },
     ],
-  },
-  {
-    title: "Academy",
-    items: [
-      {
-        href: "/admin/academy",
-        label: "Programs & Cohorts",
-        icon: GraduationCap,
-      },
-      {
-        href: "/admin/academy/extension-requests",
-        label: "Extension Requests",
-        icon: CalendarClock,
-      },
-    ],
-  },
-  {
-    title: "Community",
-    items: [
-      { href: "/admin/community/events", label: "Events", icon: CalendarDays },
-      {
-        href: "/admin/community/volunteers",
-        label: "Volunteers",
-        icon: HandHeart,
-      },
-      {
-        href: "/admin/community/content",
-        label: "Tips & Content",
-        icon: FileText,
-      },
-      {
-        href: "/admin/community/challenges",
-        label: "Challenges",
-        icon: Trophy,
-      },
-      {
-        href: "/admin/community/clubs",
-        label: "Clubs",
-        icon: Users,
-      },
-      // Pods are managed inside their parent Club — open a club from
-      // /admin/community/clubs to see and create its pods. The pod CRUD
-      // pages still exist at /admin/community/pods/* (deep-linkable from
-      // the club detail page) but aren't surfaced as a top-level nav item.
-    ],
-  },
-  {
-    title: "Sales",
-    items: [{ href: "/admin/corporate", label: "Corporate Wellness", icon: Briefcase }],
   },
   {
     title: "Finance",
     items: [
       { href: "/admin/finance/reports", label: "Reports", icon: Banknote },
-      {
-        href: "/admin/finance/deferred-revenue",
-        label: "Deferred Revenue",
-        icon: Hourglass,
-      },
-      {
-        href: "/admin/finance/journal-entries",
-        label: "Journal Entries",
-        icon: FileText,
-      },
+      { href: "/admin/finance/deferred-revenue", label: "Deferred Revenue", icon: Hourglass },
+      { href: "/admin/finance/journal-entries", label: "Journal Entries", icon: FileText },
       { href: "/admin/finance/invoices", label: "Invoices", icon: Receipt },
       { href: "/admin/finance/users", label: "Finance Team", icon: Users },
       { href: "/admin/finance/periods", label: "Periods", icon: CalendarClock },
-      {
-        href: "/admin/finance/reconciliation",
-        label: "Reconciliation",
-        icon: Scale,
-      },
+      { href: "/admin/finance/reconciliation", label: "Reconciliation", icon: Scale },
     ],
   },
   {
     title: "Operations",
     items: [
-      { href: "/admin/store", label: "Store", icon: ShoppingBag },
       { href: "/admin/pools", label: "Locations & Transport", icon: Waves },
+      { href: "/admin/store", label: "Store", icon: ShoppingBag },
       { href: "/admin/reports", label: "Quarterly Reports", icon: BarChart3 },
       { href: "/admin/flywheel", label: "Flywheel", icon: TrendingUp },
-      {
-        href: "/admin/reports/seasonality",
-        label: "Seasonality",
-        icon: CalendarDays,
-      },
+      { href: "/admin/reports/seasonality", label: "Seasonality", icon: CalendarDays },
     ],
   },
   {
-    title: "Content",
+    title: "Content & Growth",
     items: [
+      { href: "/admin/corporate", label: "Corporate Wellness", icon: Briefcase },
       { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
       { href: "/admin/testimonials", label: "Testimonials", icon: MessageSquareQuote },
       { href: "/admin/homepage-media", label: "Homepage Media", icon: Image },
@@ -204,7 +156,7 @@ const navSections: NavSection[] = [
       { href: "/admin/gallery", label: "Gallery", icon: Image },
     ],
   },
-];
+]
 
 export function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter();
@@ -215,6 +167,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const [adminMemberId, setAdminMemberId] = useState<string | undefined>();
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [newOrderCount, setNewOrderCount] = useState(0);
+  const [paymentReviewCount, setPaymentReviewCount] = useState(0);
   const prevCountRef = useRef(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -250,6 +203,17 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     }
   }, []);
 
+  const fetchPaymentReviewCount = useCallback(async () => {
+    try {
+      const data = await apiGet<Array<{ id: string }>>("/api/v1/payments/admin/pending-reviews", {
+        auth: true,
+      });
+      setPaymentReviewCount(data.length);
+    } catch {
+      // Keep navigation usable even if Payments is temporarily unavailable.
+    }
+  }, []);
+
   useEffect(() => {
     async function getUserInfo() {
       const {
@@ -277,19 +241,52 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     }
   }, []);
 
-  // Poll for new orders every 30 seconds
+  // Poll small operational queues so the sidebar surfaces work that needs attention.
   useEffect(() => {
     // -1 means "initial load" — fetchNewOrderCount skips sound when prevCountRef < 0
     prevCountRef.current = -1;
-    fetchNewOrderCount();
+    const refreshCounts = () => {
+      void fetchNewOrderCount();
+      void fetchPaymentReviewCount();
+    };
+    refreshCounts();
 
-    const interval = setInterval(fetchNewOrderCount, 30_000);
+    const interval = setInterval(refreshCounts, 30_000);
     return () => clearInterval(interval);
-  }, [fetchNewOrderCount]);
+  }, [fetchNewOrderCount, fetchPaymentReviewCount]);
 
-  // Close sidebar when route changes on mobile
+  // Restore the admin's sidebar preferences on this device.
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem("swimbuddz-admin-collapsed-sections");
+      if (saved) setCollapsedSections(new Set(JSON.parse(saved) as string[]));
+    } catch {
+      // Ignore malformed/blocked local storage.
+    }
+  }, []);
+
+  // Close the mobile drawer on navigation and always reveal the active group.
   useEffect(() => {
     setSidebarOpen(false);
+    const activeSection = navSections.find((section) =>
+      section.items.some(
+        (item) => pathname === item.href || pathname?.startsWith(item.href + "/")
+      )
+    );
+    if (activeSection) {
+      setCollapsedSections((current) => {
+        if (!current.has(activeSection.title)) return current;
+        const next = new Set(current);
+        next.delete(activeSection.title);
+        try {
+          window.localStorage.setItem(
+            "swimbuddz-admin-collapsed-sections",
+            JSON.stringify([...next])
+          );
+        } catch {}
+        return next;
+      });
+    }
   }, [pathname]);
 
   const handleLogout = async () => {
@@ -329,6 +326,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       } else {
         newSet.add(title);
       }
+      try {
+        window.localStorage.setItem(
+          "swimbuddz-admin-collapsed-sections",
+          JSON.stringify([...newSet])
+        );
+      } catch {}
       return newSet;
     });
   };
@@ -392,10 +395,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
               return (
                 <div key={section.title} className="space-y-1">
-                  {/* Collapsible section header for mobile */}
+                  {/* Collapsible section header */}
                   <button
                     onClick={() => toggleSection(section.title)}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors lg:pointer-events-none ${
+                    className={`w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors ${
                       hasActiveItem
                         ? "text-cyan-400 bg-slate-700/30"
                         : "text-slate-500 hover:text-slate-400 hover:bg-slate-700/20"
@@ -403,7 +406,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                     aria-expanded={!isCollapsed}
                   >
                     <span>{section.title}</span>
-                    <span className="lg:hidden">
+                    <span>
                       {isCollapsed ? (
                         <ChevronRight className="h-4 w-4" />
                       ) : (
@@ -415,7 +418,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                   {/* Navigation items */}
                   <ul
                     className={`space-y-0.5 overflow-hidden transition-all duration-200 ${
-                      isCollapsed ? "max-h-0 lg:max-h-none" : "max-h-[500px]"
+                      isCollapsed ? "max-h-0" : "max-h-[500px]"
                     }`}
                   >
                     {section.items.map((item) => {
@@ -436,6 +439,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                             {item.href === "/admin/store" && newOrderCount > 0 && (
                               <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
                                 {newOrderCount > 99 ? "99+" : newOrderCount}
+                              </span>
+                            )}
+                            {item.href === "/admin/payments" && paymentReviewCount > 0 && (
+                              <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-amber-500 px-1.5 text-[10px] font-bold text-slate-950">
+                                {paymentReviewCount > 99 ? "99+" : paymentReviewCount}
                               </span>
                             )}
                           </Link>
