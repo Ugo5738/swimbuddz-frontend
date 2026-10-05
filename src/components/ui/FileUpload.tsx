@@ -29,7 +29,7 @@ export function FileUpload({
       <button
         type="button"
         disabled={blocked}
-        aria-label={label}
+        aria-label={`${label} drop zone`}
         onClick={() => input.current?.click()}
         onDragOver={(event) => event.preventDefault()}
         onDrop={(event) => {
