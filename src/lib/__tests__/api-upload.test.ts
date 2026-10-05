@@ -29,7 +29,9 @@ describe("apiUpload", () => {
   it("reports measured progress but resolves only after the server saves the upload", async () => {
     const onProgress = vi.fn();
     const promise = apiUpload("/media/uploads", new FormData(), { auth: true, onProgress });
-    await Promise.resolve();
+    await vi.waitFor(() => {
+      expect(UploadRequest.current).toBeDefined();
+    });
     const request = UploadRequest.current;
     expect(request.setRequestHeader).toHaveBeenCalledWith("Authorization", "Bearer session-token");
     request.upload.onprogress?.({ loaded: 32, total: 100, lengthComputable: true });
