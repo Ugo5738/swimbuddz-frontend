@@ -1,5 +1,6 @@
 "use client";
 
+import { hasAcademyReadiness as isAcademyReadinessComplete } from "@/lib/academy-readiness";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { GreetingHero } from "@/components/dashboard/GreetingHero";
 import { MyPodCard } from "@/components/dashboard/MyPodCard";
@@ -259,18 +260,7 @@ export default function MemberDashboardPage() {
     !hasSwimBackground;
   const needsClubReadiness = clubContext && !hasClubAvailability;
 
-  const assessment = membership.academy_skill_assessment;
-  const hasAssessment =
-    assessment &&
-    ["canFloat", "headUnderwater", "deepWaterComfort", "canSwim25m"].some((k) =>
-      Object.prototype.hasOwnProperty.call(assessment, k)
-    );
-  const needsAcademyReadiness =
-    academyContext &&
-    (!hasAssessment ||
-      !membership.academy_goals ||
-      !membership.academy_preferred_coach_gender ||
-      !membership.academy_lesson_preference);
+  const needsAcademyReadiness = academyContext && !isAcademyReadinessComplete(membership);
   const hasAcademyReadiness = !academyContext || !needsAcademyReadiness;
 
   const hasCoreOnboarding = hasProfileBasics && hasCoreProfile;
@@ -514,7 +504,7 @@ export default function MemberDashboardPage() {
         </Card>
       )}
 
-      {(wantsClub || wantsAcademy) && (
+      {((wantsClub && needsClubReadiness) || (wantsAcademy && needsAcademyReadiness)) && (
         <Card className="p-5 border-blue-200 bg-blue-50">
           <div className="flex flex-col md:flex-row md:items-center gap-4">
             <div className="flex-shrink-0 rounded-xl bg-blue-100 p-3">
@@ -522,7 +512,7 @@ export default function MemberDashboardPage() {
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-slate-900">
-                Your {wantsAcademy ? "Academy" : "Club"} Request is Saved
+                Your {needsAcademyReadiness ? "Academy" : "Club"} Request is Saved
               </h3>
               <p className="text-sm text-slate-600 mt-1">
                 Complete your readiness to speed up review. Payments happen when you activate a
@@ -530,10 +520,10 @@ export default function MemberDashboardPage() {
               </p>
             </div>
             <Link
-              href={wantsAcademy ? "/account/onboarding?step=academy" : "/upgrade/club/readiness"}
+              href={needsAcademyReadiness ? "/account/onboarding?step=academy" : "/upgrade/club/readiness"}
             >
               <Button variant="outline">
-                {wantsAcademy ? "Continue Academy Setup" : "Continue Club Application"}
+                {needsAcademyReadiness ? "Continue Academy Setup" : "Continue Club Application"}
               </Button>
             </Link>
           </div>

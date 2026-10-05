@@ -1,5 +1,6 @@
 "use client";
 
+import { normalizeAcademyAssessment } from "@/lib/academy-readiness";
 import { AcademyDetailsStep } from "@/components/registration/AcademyDetailsStep";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -103,7 +104,7 @@ export default function AcademyDetailsPage() {
         "/api/v1/members/me",
         {
           membership: {
-            academy_skill_assessment: formData.academySkillAssessment,
+            academy_skill_assessment: normalizeAcademyAssessment(formData.academySkillAssessment),
             academy_goals: formData.academyGoals,
             academy_preferred_coach_gender:
               formData.academyPreferredCoachGender,

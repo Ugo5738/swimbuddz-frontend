@@ -1,5 +1,6 @@
 "use client";
 
+import { UploadProgress } from "./UploadProgress";
 import { Button } from "@/components/ui/Button";
 import {
   ImageEditorIconButton as IconButton,
@@ -44,6 +45,7 @@ type ImageCropDialogProps = {
   imageUrl: string;
   purpose: PresentationImagePurpose;
   isSaving?: boolean;
+  uploadProgress?: number;
   error?: string | null;
   onCancel: () => void;
   onConfirm: (recipe: ImageTransformRecipe) => Promise<void> | void;
@@ -58,6 +60,7 @@ export function ImageCropDialog({
   imageUrl,
   purpose,
   isSaving = false,
+  uploadProgress,
   error,
   onCancel,
   onConfirm,
@@ -482,6 +485,7 @@ export function ImageCropDialog({
         </p>
       ) : null}
 
+      {isSaving && <UploadProgress value={uploadProgress} />}
       <div className="flex justify-end gap-3">
         <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving}>
           Cancel

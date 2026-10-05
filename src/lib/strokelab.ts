@@ -1,6 +1,4 @@
 import { apiDelete, apiGet, apiPost } from "./api";
-import { getCurrentAccessToken } from "./auth";
-import { API_BASE_URL } from "./config";
 
 // ─── Types ────────────────────────────────────────────────────────────
 //
@@ -87,17 +85,17 @@ export type CreateAnalysisJobInput = {
   file: File;
   strokeType?: "freestyle";
   isPublic?: boolean;
+  onProgress?: (percent: number) => void;
 };
 
 /**
- * Multipart upload. Inlined fetch (not via apiPost) because the shared
- * client JSON-serialises bodies — FormData must go raw with browser-set
- * boundary headers.
+ * Multipart upload using the shared progress-aware transport.
  */
 export async function createAnalysisJob({
   file,
   strokeType = "freestyle",
   isPublic = false,
+  onProgress,
 }: CreateAnalysisJobInput): Promise<AnalysisJob> {
   if (file.size > MAX_UPLOAD_BYTES) {
     throw new Error(
@@ -112,32 +110,7 @@ export async function createAnalysisJob({
   formData.append("stroke_type", strokeType);
   formData.append("is_public", isPublic ? "true" : "false");
 
-  const headers: Record<string, string> = {};
-  const token = await getCurrentAccessToken();
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-
-  const response = await fetch(`${API_BASE_URL}/api/v1/ai/analyze`, {
-    method: "POST",
-    headers,
-    body: formData,
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    let detail = text || `${response.status} ${response.statusText}`;
-    if (response.headers.get("content-type")?.includes("application/json")) {
-      try {
-        const parsed = JSON.parse(text);
-        detail = parsed.detail ?? parsed.message ?? detail;
-      } catch {
-        // fall through with raw text
-      }
-    }
-    throw new Error(detail);
-  }
-
-  return (await response.json()) as AnalysisJob;
+  return apiUpload<AnalysisJob>("/api/v1/ai/analyze", formData, { auth: true, onProgress });
 }
 
 export function getAnalysisJob(jobId: string) {

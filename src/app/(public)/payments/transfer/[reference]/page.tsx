@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { apiPost, apiUpload } from "@/lib/api";
 import { BANK_TRANSFER_ACCOUNT } from "@/lib/bank-transfer";
+import { FileUpload } from "@/components/ui/FileUpload";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
@@ -28,6 +29,7 @@ export default function TransferPage() {
   const [busy, setBusy] = useState(false);
   const [bankReference, setBankReference] = useState("");
   const [date, setDate] = useState("");
+  const [progress, setProgress] = useState(0);
   const [file, setFile] = useState<File | null>(null);
   useEffect(() => {
     const capability = new URLSearchParams(window.location.hash.slice(1)).get("token") || "";
@@ -52,6 +54,8 @@ export default function TransferPage() {
   }, [reference]);
   async function submit(event: React.FormEvent) {
     event.preventDefault();
+    if (busy) return;
+    setProgress(0);
     setBusy(true);
     setError("");
     try {
@@ -62,7 +66,8 @@ export default function TransferPage() {
         setPayment(
           await apiUpload<Transfer>(
             `/api/v1/payments/manual-transfer/${encodeURIComponent(reference)}/upload`,
-            data
+            data,
+            { onProgress: setProgress }
           )
         );
       }

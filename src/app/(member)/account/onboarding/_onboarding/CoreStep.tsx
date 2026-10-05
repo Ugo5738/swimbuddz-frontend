@@ -40,6 +40,7 @@ export function CoreStep({ coreForm, setCoreForm, saving, setSaving }: Props) {
     file: File;
     objectUrl: string;
   } | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [photoError, setPhotoError] = useState<string | null>(null);
 
   useEffect(
@@ -57,10 +58,11 @@ export function CoreStep({ coreForm, setCoreForm, saving, setSaving }: Props) {
 
   const saveAdjustedPhoto = async (recipe: ImageTransformRecipe) => {
     if (!pendingPhoto) return;
+    setUploadProgress(0);
     setSaving(true);
     setPhotoError(null);
     try {
-      const mediaItem = await uploadAdjustedImage(pendingPhoto.file, "profile_photo", recipe);
+      const mediaItem = await uploadAdjustedImage(pendingPhoto.file, "profile_photo", recipe, undefined, undefined, { onProgress: setUploadProgress });
       setCoreForm((prev) => ({
         ...prev,
         profilePhotoMediaId: mediaItem.id,
@@ -189,6 +191,7 @@ export function CoreStep({ coreForm, setCoreForm, saving, setSaving }: Props) {
           imageUrl={pendingPhoto.objectUrl}
           purpose="profile_photo"
           isSaving={saving}
+          uploadProgress={uploadProgress}
           error={photoError}
           onCancel={closePhotoAdjustment}
           onConfirm={saveAdjustedPhoto}

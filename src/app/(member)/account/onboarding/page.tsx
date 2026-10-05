@@ -1,5 +1,6 @@
 "use client";
 
+import { hasAcademyReadiness as isAcademyReadinessComplete } from "@/lib/academy-readiness";
 import { CommunitySignalsStep } from "@/components/onboarding/CommunitySignalsStep";
 import {
   OTHER_GOAL_VALUE,
@@ -104,19 +105,7 @@ export default function DashboardOnboardingPage() {
   const needsAcademyReadiness = useMemo(() => {
     if (!member) return false;
     if (!academyContext) return false;
-    const membership = member.membership;
-    const assessment = membership?.academy_skill_assessment;
-    const hasAssessment =
-      assessment &&
-      ["canFloat", "headUnderwater", "deepWaterComfort", "canSwim25m"].some((k) =>
-        Object.prototype.hasOwnProperty.call(assessment, k)
-      );
-    return (
-      !hasAssessment ||
-      !membership?.academy_goals ||
-      !membership?.academy_preferred_coach_gender ||
-      !membership?.academy_lesson_preference
-    );
+    return !isAcademyReadinessComplete(member.membership);
   }, [member, academyContext]);
 
   // ── Form state ────────────────────────────────────────────────────

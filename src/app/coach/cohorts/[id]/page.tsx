@@ -191,9 +191,9 @@ export default function CoachCohortDetailPage() {
           ← Back to cohorts
         </Link>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mt-2">
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold text-slate-900">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-start gap-3">
+              <h1 className="min-w-0 [overflow-wrap:anywhere] text-2xl sm:text-3xl font-bold text-slate-900">
                 {cohort.name || "Unnamed Cohort"}
               </h1>
               <Badge variant={statusVariant}>{cohort.status.toUpperCase()}</Badge>

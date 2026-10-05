@@ -1,5 +1,6 @@
 "use client";
 
+import { FileUpload } from "@/components/ui/FileUpload";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -21,7 +22,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Activity, Upload, Video } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const STATUS_TONE_TO_BADGE: Record<
@@ -47,7 +48,7 @@ export default function StrokeLabPage() {
   );
   const [compressPct, setCompressPct] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const isBusy = phase !== "idle";
 
@@ -66,12 +67,6 @@ export default function StrokeLabPage() {
   useEffect(() => {
     loadJobs();
   }, [loadJobs]);
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const next = event.target.files?.[0] ?? null;
-    setFile(next);
-    setUploadError(null);
-  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -129,11 +124,13 @@ export default function StrokeLabPage() {
         return;
       }
 
+      setUploadProgress(0);
       setPhase("uploading");
       const job = await createAnalysisJob({
         file: result.file,
         strokeType: "freestyle",
         isPublic,
+        onProgress: setUploadProgress,
       });
       toast.success("Upload received — analysing now.");
       router.push(`/account/strokelab/${job.id}`);
@@ -174,13 +171,14 @@ export default function StrokeLabPage() {
               Freestyle video (mp4 / mov, ≤ {MAX_DURATION_SECONDS}s)
             </label>
             <div className="mt-2 flex items-center gap-3">
-              <input
-                ref={fileInputRef}
-                id="strokelab-video"
-                type="file"
+              <FileUpload
+                label="Freestyle video"
                 accept={ACCEPTED_VIDEO_MIME}
-                onChange={handleFileChange}
-                className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-cyan-600 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-cyan-500"
+                disabled={isBusy}
+                uploading={phase === "uploading"}
+                progress={uploadProgress}
+                filename={file?.name}
+                onFiles={([selected]) => { setFile(selected); setUploadError(null); }}
               />
             </div>
             {file ? (

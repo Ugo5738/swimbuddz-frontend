@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useApi } from "@/hooks/useApi";
 import { apiPost } from "@/lib/api";
-import { uploadMedia } from "@/lib/media";
+import { MediaInput } from "@/components/ui/MediaInput";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -100,41 +100,30 @@ export function AdminPaymentRecording() {
           )}
           <PaymentProofLink mediaId={payment.proof_of_payment_media_id} />
           {!payment.proof_of_payment_media_id && (
-            <label className="block text-sm">
-              Attach missing receipt
-              <input
-                className="mt-1 block"
-                type="file"
-                accept="image/*,.pdf"
-                disabled={busy}
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  setBusy(true);
-                  setError("");
-                  setMessage("");
-                  try {
-                    const media = await uploadMedia(
-                      file,
-                      "payment_proof",
-                      payment.reference,
-                      `Payment receipt ${payment.reference}`
-                    );
-                    await apiPost(
-                      `/api/v1/payments/admin/${encodeURIComponent(payment.reference)}/receipt`,
-                      { proof_media_id: media.id },
-                      { auth: true }
-                    );
-                    result.refetch();
-                    setMessage("Receipt attached. Payment status was not changed.");
-                  } catch (err) {
-                    setError(err instanceof Error ? err.message : "Upload failed");
-                  } finally {
-                    setBusy(false);
-                  }
-                }}
-              />
-            </label>
+            <MediaInput
+              purpose="payment_proof"
+              label="Attach missing receipt"
+              disabled={busy}
+              onUploadingChange={setBusy}
+              onError={(message) => setError(message || "")}
+              onChange={async (mediaId) => {
+                if (!mediaId) return;
+                setBusy(true);
+                setError("");
+                setMessage("");
+                try {
+                  await apiPost(
+                    `/api/v1/payments/admin/${encodeURIComponent(payment.reference)}/receipt`,
+                    { proof_media_id: mediaId },
+                    { auth: true }
+                  );
+                  result.refetch();
+                  setMessage("Receipt attached. Payment status was not changed.");
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : "Could not attach receipt");
+                } finally { setBusy(false); }
+              }}
+            />
           )}
           {["pending", "pending_review"].includes(payment.status) && (
             <Button
