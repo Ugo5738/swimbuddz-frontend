@@ -66,20 +66,49 @@ const navSections: NavSection[] = [
     items: [{ href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard }],
   },
   {
-    title: "Core Management",
+    title: "People",
     items: [
       { href: "/admin/members", label: "Members", icon: Users },
       { href: "/admin/coaches", label: "Coaches", icon: UserCheck },
-      { href: "/admin/sessions", label: "Sessions", icon: Calendar },
-      { href: "/admin/makeups", label: "Make-ups", icon: CalendarClock },
-      { href: "/admin/discounts", label: "Discounts", icon: Trophy },
-      { href: "/admin/attendance", label: "Attendance", icon: ClipboardCheck },
+    ],
+  },
+  {
+    title: "Programs",
+    items: [
+      { href: "/admin/academy", label: "Academy", icon: GraduationCap },
+      { href: "/admin/academy/extension-requests", label: "Academy Extensions", icon: CalendarClock },
       { href: "/admin/club-applications", label: "Club Assessments", icon: ClipboardCheck },
-      { href: "/admin/club-plans", label: "Club Pricing", icon: Waves },
+      { href: "/admin/club-plans", label: "Club Plans & Pricing", icon: Waves },
+      { href: "/admin/community/clubs", label: "Clubs & Pods", icon: Users },
       { href: "/admin/community/experiences", label: "Experience Offerings", icon: Calendar },
-      { href: "/admin/guest-passes", label: "Guest Passes", icon: UserCheck },
-      { href: "/admin/payment-charges", label: "Payment Charges", icon: Receipt },
+    ],
+  },
+  {
+    title: "Sessions & Attendance",
+    items: [
+      { href: "/admin/sessions", label: "Sessions", icon: Calendar },
+      { href: "/admin/attendance", label: "Attendance", icon: ClipboardCheck },
+      { href: "/admin/makeups", label: "Make-ups", icon: CalendarClock },
       { href: "/admin/ai/queue", label: "Stroke Lab Queue", icon: Activity },
+    ],
+  },
+  {
+    title: "Guests & Payments",
+    items: [
+      { href: "/admin/guest-passes", label: "Guest Passes", icon: UserCheck },
+      { href: "/admin/payments", label: "Payment Reviews", icon: Banknote },
+      { href: "/admin/payment-charges", label: "Payment Charges", icon: Receipt },
+      { href: "/admin/discounts", label: "Discounts", icon: Trophy },
+      { href: "/admin/refunds", label: "Refund Queue", icon: Banknote },
+    ],
+  },
+  {
+    title: "Community",
+    items: [
+      { href: "/admin/community/events", label: "Events", icon: CalendarDays },
+      { href: "/admin/community/volunteers", label: "Volunteers", icon: HandHeart },
+      { href: "/admin/community/content", label: "Tips & Content", icon: FileText },
+      { href: "/admin/community/challenges", label: "Challenges", icon: Trophy },
     ],
   },
   {
@@ -87,116 +116,39 @@ const navSections: NavSection[] = [
     items: [
       { href: "/admin/wallet", label: "Wallets", icon: Wallet },
       { href: "/admin/payouts", label: "Coach Payouts", icon: Banknote },
-      { href: "/admin/refunds", label: "Refund Queue", icon: Banknote },
-      {
-        href: "/admin/payouts/recurring",
-        label: "Recurring Payouts",
-        icon: Repeat,
-      },
+      { href: "/admin/payouts/recurring", label: "Recurring Payouts", icon: Repeat },
       { href: "/admin/wallet/rewards", label: "Reward Rules", icon: Award },
       { href: "/admin/wallet/referrals", label: "Referrals", icon: Users },
-      {
-        href: "/admin/wallet/rewards/alerts",
-        label: "Alerts",
-        icon: AlertTriangle,
-      },
-      {
-        href: "/admin/wallet/rewards/analytics",
-        label: "Analytics",
-        icon: BarChart3,
-      },
+      { href: "/admin/wallet/rewards/alerts", label: "Alerts", icon: AlertTriangle },
+      { href: "/admin/wallet/rewards/analytics", label: "Analytics", icon: BarChart3 },
     ],
-  },
-  {
-    title: "Academy",
-    items: [
-      {
-        href: "/admin/academy",
-        label: "Programs & Cohorts",
-        icon: GraduationCap,
-      },
-      {
-        href: "/admin/academy/extension-requests",
-        label: "Extension Requests",
-        icon: CalendarClock,
-      },
-    ],
-  },
-  {
-    title: "Community",
-    items: [
-      { href: "/admin/community/events", label: "Events", icon: CalendarDays },
-      {
-        href: "/admin/community/volunteers",
-        label: "Volunteers",
-        icon: HandHeart,
-      },
-      {
-        href: "/admin/community/content",
-        label: "Tips & Content",
-        icon: FileText,
-      },
-      {
-        href: "/admin/community/challenges",
-        label: "Challenges",
-        icon: Trophy,
-      },
-      {
-        href: "/admin/community/clubs",
-        label: "Clubs",
-        icon: Users,
-      },
-      // Pods are managed inside their parent Club — open a club from
-      // /admin/community/clubs to see and create its pods. The pod CRUD
-      // pages still exist at /admin/community/pods/* (deep-linkable from
-      // the club detail page) but aren't surfaced as a top-level nav item.
-    ],
-  },
-  {
-    title: "Sales",
-    items: [{ href: "/admin/corporate", label: "Corporate Wellness", icon: Briefcase }],
   },
   {
     title: "Finance",
     items: [
       { href: "/admin/finance/reports", label: "Reports", icon: Banknote },
-      {
-        href: "/admin/finance/deferred-revenue",
-        label: "Deferred Revenue",
-        icon: Hourglass,
-      },
-      {
-        href: "/admin/finance/journal-entries",
-        label: "Journal Entries",
-        icon: FileText,
-      },
+      { href: "/admin/finance/deferred-revenue", label: "Deferred Revenue", icon: Hourglass },
+      { href: "/admin/finance/journal-entries", label: "Journal Entries", icon: FileText },
       { href: "/admin/finance/invoices", label: "Invoices", icon: Receipt },
       { href: "/admin/finance/users", label: "Finance Team", icon: Users },
       { href: "/admin/finance/periods", label: "Periods", icon: CalendarClock },
-      {
-        href: "/admin/finance/reconciliation",
-        label: "Reconciliation",
-        icon: Scale,
-      },
+      { href: "/admin/finance/reconciliation", label: "Reconciliation", icon: Scale },
     ],
   },
   {
     title: "Operations",
     items: [
-      { href: "/admin/store", label: "Store", icon: ShoppingBag },
       { href: "/admin/pools", label: "Locations & Transport", icon: Waves },
+      { href: "/admin/store", label: "Store", icon: ShoppingBag },
       { href: "/admin/reports", label: "Quarterly Reports", icon: BarChart3 },
       { href: "/admin/flywheel", label: "Flywheel", icon: TrendingUp },
-      {
-        href: "/admin/reports/seasonality",
-        label: "Seasonality",
-        icon: CalendarDays,
-      },
+      { href: "/admin/reports/seasonality", label: "Seasonality", icon: CalendarDays },
     ],
   },
   {
-    title: "Content",
+    title: "Content & Growth",
     items: [
+      { href: "/admin/corporate", label: "Corporate Wellness", icon: Briefcase },
       { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
       { href: "/admin/testimonials", label: "Testimonials", icon: MessageSquareQuote },
       { href: "/admin/homepage-media", label: "Homepage Media", icon: Image },
@@ -204,7 +156,7 @@ const navSections: NavSection[] = [
       { href: "/admin/gallery", label: "Gallery", icon: Image },
     ],
   },
-];
+]
 
 export function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter();
