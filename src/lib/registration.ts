@@ -1,3 +1,4 @@
+import { hasAcademyReadiness as isAcademyReadinessComplete } from "@/lib/academy-readiness";
 import { apiGet, apiPost } from "./api";
 import { isAcademyDestination, safeReturnPath } from "./returnPath";
 import { getCurrentAccessToken } from "./auth";
@@ -228,19 +229,7 @@ export async function getPostAuthRedirectPath(destination?: string | null): Prom
       !clubContext ||
       Boolean(availability?.available_days && availability.available_days.length > 0);
 
-    const assessment = membership?.academy_skill_assessment;
-    const hasAssessment =
-      assessment &&
-      ["canFloat", "headUnderwater", "deepWaterComfort", "canSwim25m"].some((k) =>
-        Object.prototype.hasOwnProperty.call(assessment, k)
-      );
-
-    const hasAcademyReadiness = Boolean(
-      hasAssessment &&
-        membership?.academy_goals &&
-        membership?.academy_preferred_coach_gender &&
-        membership?.academy_lesson_preference
-    );
+    const hasAcademyReadiness = isAcademyReadinessComplete(membership);
 
     const onboardingComplete =
       hasCoreOnboarding &&

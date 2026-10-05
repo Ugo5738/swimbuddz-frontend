@@ -1,11 +1,10 @@
 "use client";
 
+import { UploadProgress } from "@/components/ui/UploadProgress";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ImageCropDialog } from "@/components/ui/ImageCropDialog";
-import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
-import { getCurrentAccessToken } from "@/lib/auth";
-import { API_BASE_URL } from "@/lib/config";
+import { apiDelete, apiGet, apiPost, apiPut, apiUpload } from "@/lib/api";
 import { uploadAdjustedImage, type MediaItem, type SiteAsset } from "@/lib/media";
 import type { ImageTransformRecipe, PresentationImagePurpose } from "@/lib/mediaCrop";
 import {
@@ -70,6 +69,7 @@ export default function AdminHomepageMediaPage() {
     { name: "", role: "" },
   ]);
   const [loading, setLoading] = useState(true);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [uploading, setUploading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [savingSlots, setSavingSlots] = useState<Set<number>>(new Set());
@@ -179,28 +179,15 @@ export default function AdminHomepageMediaPage() {
     isUpdate: boolean = false,
     mediaType: "IMAGE" | "VIDEO" = "IMAGE"
   ) => {
-    const token = await getCurrentAccessToken();
-
-    // Upload the media item. Raw fetch retained intentionally: apiPost
-    // serialises JSON, so it can't carry a multipart FormData payload.
+    setUploadProgress(0);
     const formData = new FormData();
     formData.append("file", file);
     formData.append("title", title);
     formData.append("media_type", mediaType);
 
-    const uploadResponse = await fetch(`${API_BASE_URL}/api/v1/media/media`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
+    const mediaItem = await apiUpload<MediaItem>("/api/v1/media/media", formData, {
+      auth: true, onProgress: setUploadProgress,
     });
-
-    if (!uploadResponse.ok) {
-      throw new Error(`Failed to upload ${mediaType.toLowerCase()}`);
-    }
-
-    const mediaItem = (await uploadResponse.json()) as MediaItem;
 
     await saveSiteAsset(mediaItem, assetKey, title, isUpdate);
   };
@@ -258,7 +245,9 @@ export default function AdminHomepageMediaPage() {
         pendingImage.file,
         pendingImage.purpose,
         recipe,
-        pendingImage.title
+        pendingImage.title,
+        undefined,
+        { onProgress: setUploadProgress }
       );
       await saveSiteAsset(
         mediaItem,
@@ -517,6 +506,8 @@ export default function AdminHomepageMediaPage() {
           {error}
         </div>
       )}
+
+      {uploading && <UploadProgress value={uploadProgress} />}
 
       {/* Banners Tab */}
       {activeTab === "banners" && (

@@ -194,7 +194,7 @@ function CohortDetailPageInner() {
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-r from-cyan-600 to-blue-600 p-6 text-white md:p-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div className="space-y-2">
+            <div className="min-w-0 flex-1 space-y-2">
               <div className="flex flex-wrap gap-2">
                 <Badge className="bg-white/20 text-white">{levelLabels[program.level]}</Badge>
                 {isEnrolledPaid && <Badge className="bg-green-500 text-white">✓ Enrolled</Badge>}
@@ -205,10 +205,10 @@ function CohortDetailPageInner() {
                   <Badge className="bg-orange-400 text-white">Closed</Badge>
                 )}
               </div>
-              <h1 className="text-2xl font-bold md:text-3xl">{program.name}</h1>
-              <p className="text-lg text-cyan-100">{cohort.name}</p>
+              <h1 className="[overflow-wrap:anywhere] text-2xl font-bold md:text-3xl">{program.name}</h1>
+              <p className="[overflow-wrap:anywhere] text-lg text-cyan-100">{cohort.name}</p>
             </div>
-            <div className="rounded-xl bg-white/10 px-6 py-4 text-center backdrop-blur-sm">
+            <div className="shrink-0 rounded-xl bg-white/10 px-6 py-4 text-center backdrop-blur-sm">
               <div className="text-3xl font-bold">{priceDisplay}</div>
               <div className="mt-1 text-sm text-cyan-100">{program.duration_weeks} weeks</div>
             </div>

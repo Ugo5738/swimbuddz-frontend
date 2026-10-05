@@ -252,10 +252,10 @@ export default function CohortDetailsPage() {
   }
 
   return (
-    <div className="space-y-6 min-w-0 overflow-hidden">
+    <div className="space-y-6 min-w-0">
       <header className="space-y-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-1 min-w-0">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="space-y-1 min-w-0 flex-1">
             <div className="flex items-center gap-2 text-sm text-slate-500">
               <button
                 onClick={() => router.push("/admin/academy")}
@@ -266,7 +266,7 @@ export default function CohortDetailsPage() {
               <span>/</span>
               <span>Cohorts</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 break-words">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 [overflow-wrap:anywhere]">
               {cohort.name}
             </h1>
             <p className="text-slate-600">
@@ -274,7 +274,7 @@ export default function CohortDetailsPage() {
               {new Date(cohort.end_date).toLocaleDateString()}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:max-w-[50%]">
             <Badge variant={cohort.status === "active" ? "success" : "default"}>
               {cohort.status}
             </Badge>

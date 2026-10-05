@@ -149,11 +149,11 @@ export function CohortPicker({
       {selected ? (
         <div className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-slate-900">
+            <p className="whitespace-normal [overflow-wrap:anywhere] text-sm font-medium text-slate-900">
               {selected.name}
             </p>
             {selected.program?.name && (
-              <p className="truncate text-xs text-slate-500">
+              <p className="whitespace-normal [overflow-wrap:anywhere] text-xs text-slate-500">
                 {selected.program.name} · {selected.status}
               </p>
             )}
@@ -224,7 +224,7 @@ export function CohortPicker({
                         c.id === value ? "bg-cyan-50" : ""
                       }`}
                     >
-                      <span className="text-sm font-medium text-slate-900">
+                      <span className="max-w-full [overflow-wrap:anywhere] text-sm font-medium text-slate-900">
                         {c.name}
                       </span>
                       <span className="text-xs text-slate-500">

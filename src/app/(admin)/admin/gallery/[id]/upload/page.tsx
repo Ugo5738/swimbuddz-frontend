@@ -1,6 +1,8 @@
 "use client";
 
 import { AudioOverlayPanel } from "@/components/media/AudioOverlayPanel";
+import { FileUpload } from "@/components/ui/FileUpload";
+import { apiUpload } from "@/lib/api";
 import { Card } from "@/components/ui/Card";
 import { supabase } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
@@ -8,7 +10,6 @@ import {
   ArrowLeft,
   Camera,
   Check,
-  CloudUpload,
   ExternalLink,
   Image,
   Images,
@@ -22,7 +23,7 @@ import {
 import NextImage from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 type Photo = {
   id: string;
@@ -52,7 +53,6 @@ export default function AlbumUploadPage() {
   const [settingCover, setSettingCover] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<FilePreview[]>([]);
   const [caption, setCaption] = useState("");
-  const [isDragOver, setIsDragOver] = useState(false);
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
   const [audioOverlayPhotoId, setAudioOverlayPhotoId] = useState<string | null>(null);
 
@@ -121,33 +121,6 @@ export default function AlbumUploadPage() {
     }
   };
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-
-    const files = Array.from(e.dataTransfer.files).filter(
-      (f) => f.type.startsWith("image/") || f.type.startsWith("video/")
-    );
-    addFiles(files);
-  }, []);
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const files = Array.from(e.target.files);
-      addFiles(files);
-    }
-  };
-
   const addFiles = (files: File[]) => {
     const newPreviews = files.map((file) => ({
       file,
@@ -208,23 +181,15 @@ export default function AlbumUploadPage() {
         if (caption) formData.append("description", caption);
 
         try {
-          const response = await fetch(`${API_BASE_URL}/api/v1/media/media`, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            body: formData,
+          await apiUpload("/api/v1/media/media", formData, {
+            auth: true,
+            onProgress: (progress) => setSelectedFiles((previous) =>
+              previous.map((file, index) => index === i ? { ...file, progress } : file)
+            ),
           });
-
-          if (response.ok) {
-            setSelectedFiles((prev) =>
-              prev.map((f, idx) => (idx === i ? { ...f, status: "success", progress: 100 } : f))
-            );
-          } else {
-            setSelectedFiles((prev) =>
-              prev.map((f, idx) => (idx === i ? { ...f, status: "error", progress: 0 } : f))
-            );
-          }
+          setSelectedFiles((previous) => previous.map((file, index) =>
+            index === i ? { ...file, status: "success", progress: 100 } : file
+          ));
         } catch {
           setSelectedFiles((prev) =>
             prev.map((f, idx) => (idx === i ? { ...f, status: "error", progress: 0 } : f))
@@ -317,45 +282,14 @@ export default function AlbumUploadPage() {
       {/* Upload Form */}
       <Card className="p-6 space-y-6">
         <form onSubmit={handleUpload} className="space-y-6">
-          {/* Drag and Drop Zone */}
-          <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            className={`relative border-2 border-dashed rounded-2xl p-8 transition-all duration-200 ${
-              isDragOver
-                ? "border-cyan-500 bg-cyan-50"
-                : "border-slate-300 hover:border-slate-400 bg-slate-50/50"
-            } `}
-          >
-            <input
-              type="file"
-              id="file-input"
-              multiple
-              accept="image/*,video/*"
-              onChange={handleFileSelect}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-
-            <div className="flex flex-col items-center gap-4 text-center pointer-events-none">
-              <div
-                className={`p-4 rounded-full transition-colors ${isDragOver ? "bg-cyan-100" : "bg-slate-100"} `}
-              >
-                <CloudUpload
-                  className={`h-10 w-10 ${isDragOver ? "text-cyan-600" : "text-slate-400"} `}
-                />
-              </div>
-              <div className="space-y-1">
-                <p className="text-lg font-semibold text-slate-900">
-                  {isDragOver ? "Drop files here" : "Drag and drop images or videos"}
-                </p>
-                <p className="text-sm text-slate-500">or click to browse from your device</p>
-              </div>
-              <p className="text-xs text-slate-400">
-                Supports JPEG, PNG, GIF, WebP, MP4, MOV, WebM
-              </p>
-            </div>
-          </div>
+          <FileUpload
+            label="Add gallery photos and videos"
+            multiple
+            accept="image/*,video/*"
+            disabled={uploading}
+            onFiles={addFiles}
+            helpText="JPEG, PNG, GIF, WebP, MP4, MOV or WebM"
+          />
 
           {/* File Previews */}
           {selectedFiles.length > 0 && (

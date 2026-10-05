@@ -1,3 +1,4 @@
+import { apiUpload, type UploadOptions } from "./api";
 import { getCurrentAccessToken } from "./auth";
 import { API_BASE_URL } from "./config";
 import type { ImageTransformRecipe, PresentationImagePurpose } from "./mediaCrop";
@@ -23,9 +24,9 @@ export async function uploadAdjustedImage(
   purpose: PresentationImagePurpose,
   recipe: ImageTransformRecipe,
   title?: string,
-  description?: string
+  description?: string,
+  options: UploadOptions = {}
 ): Promise<MediaItem> {
-  const token = await getCurrentAccessToken();
   const formData = new FormData();
   formData.append("file", file);
   formData.append("purpose", purpose);
@@ -39,18 +40,7 @@ export async function uploadAdjustedImage(
   if (title) formData.append("title", title);
   if (description) formData.append("description", description);
 
-  const response = await fetch(`${API_BASE_URL}/api/v1/media/uploads/adjusted-image`, {
-    method: "POST",
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    body: formData,
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || `Image adjustment failed with status ${response.status}`);
-  }
-
-  return response.json();
+  return apiUpload<MediaItem>("/api/v1/media/uploads/adjusted-image", formData, { ...options, auth: true });
 }
 
 export function isLikelyVideoUrl(url: string): boolean {
@@ -86,9 +76,9 @@ export async function uploadMedia(
   purpose: string,
   linkedId?: string,
   title?: string,
-  description?: string
+  description?: string,
+  options: UploadOptions = {}
 ): Promise<MediaItem> {
-  const token = await getCurrentAccessToken();
 
   const formData = new FormData();
   formData.append("file", file);
@@ -97,18 +87,7 @@ export async function uploadMedia(
   if (title) formData.append("title", title);
   if (description) formData.append("description", description);
 
-  const response = await fetch(`${API_BASE_URL}/api/v1/media/uploads`, {
-    method: "POST",
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    body: formData,
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || `Upload failed with status ${response.status}`);
-  }
-
-  return response.json();
+  return apiUpload<MediaItem>("/api/v1/media/uploads", formData, { ...options, auth: true });
 }
 
 /**

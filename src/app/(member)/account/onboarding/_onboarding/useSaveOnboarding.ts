@@ -1,5 +1,6 @@
 "use client";
 
+import { normalizeAcademyAssessment } from "@/lib/academy-readiness";
 import { buildGoalsNarrative } from "@/components/onboarding/SwimBackgroundStep";
 import { apiPatch } from "@/lib/api";
 import { VolunteersApi } from "@/lib/volunteers";
@@ -197,7 +198,7 @@ export function useSaveOnboarding({
         {
           membership: {
             requested_tiers: Array.from(new Set([...requestedTiers, "academy"])),
-            academy_skill_assessment: academyForm.academySkillAssessment,
+            academy_skill_assessment: normalizeAcademyAssessment(academyForm.academySkillAssessment),
             academy_goals: academyForm.academyGoals,
             academy_preferred_coach_gender: academyForm.academyPreferredCoachGender,
             academy_lesson_preference: academyForm.academyLessonPreference,

@@ -10,7 +10,7 @@ import { uploadAdjustedImage } from "@/lib/media";
 import type { ImageTransformRecipe } from "@/lib/mediaCrop";
 import { Camera, Loader2, X } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type CoreFormState = {
@@ -40,7 +40,9 @@ export function CoreStep({ coreForm, setCoreForm, saving, setSaving }: Props) {
     file: File;
     objectUrl: string;
   } | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(
     () => () => {
@@ -57,10 +59,11 @@ export function CoreStep({ coreForm, setCoreForm, saving, setSaving }: Props) {
 
   const saveAdjustedPhoto = async (recipe: ImageTransformRecipe) => {
     if (!pendingPhoto) return;
+    setUploadProgress(0);
     setSaving(true);
     setPhotoError(null);
     try {
-      const mediaItem = await uploadAdjustedImage(pendingPhoto.file, "profile_photo", recipe);
+      const mediaItem = await uploadAdjustedImage(pendingPhoto.file, "profile_photo", recipe, undefined, undefined, { onProgress: setUploadProgress });
       setCoreForm((prev) => ({
         ...prev,
         profilePhotoMediaId: mediaItem.id,
@@ -86,12 +89,24 @@ export function CoreStep({ coreForm, setCoreForm, saving, setSaving }: Props) {
         </p>
       </div>
 
-      <div className="space-y-3">
-        <label className="block text-sm font-medium text-slate-700">
-          Profile photo <span className="text-rose-500">*</span>
-        </label>
-        <div className="flex items-center gap-6">
-          <label className="relative group cursor-pointer">
+      <div className="rounded-xl border-2 border-cyan-200 bg-cyan-50/60 p-4 sm:p-5">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h3 className="font-semibold text-slate-900">
+              Add your profile photo <span className="text-rose-500">*</span>
+            </h3>
+            <p className="mt-1 text-sm text-slate-600">
+              Required to continue. It helps coaches and other SwimBuddz members recognise you.
+            </p>
+          </div>
+          {!coreForm.profilePhotoUrl ? (
+            <span className="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-700">
+              Required
+            </span>
+          ) : null}
+        </div>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <label className="relative group w-fit cursor-pointer">
             <div
               className={[
                 "relative h-24 w-24 overflow-hidden rounded-full transition-all",
@@ -122,6 +137,7 @@ export function CoreStep({ coreForm, setCoreForm, saving, setSaving }: Props) {
               )}
             </div>
             <input
+              ref={photoInputRef}
               type="file"
               accept="image/*"
               className="sr-only"
@@ -142,10 +158,18 @@ export function CoreStep({ coreForm, setCoreForm, saving, setSaving }: Props) {
             ) : null}
           </label>
           <div className="flex-1 space-y-2">
-            <p className="text-sm text-slate-700 font-medium">
-              {coreForm.profilePhotoUrl ? "Tap to change photo" : "Tap the circle to upload"}
-            </p>
-            <p className="text-xs text-slate-500">JPG/PNG/GIF. This helps members recognize you.</p>
+            <Button
+              type="button"
+              variant={coreForm.profilePhotoUrl ? "outline" : "primary"}
+              size="sm"
+              disabled={saving}
+              onClick={() => photoInputRef.current?.click()}
+              className="gap-2"
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+              {coreForm.profilePhotoUrl ? "Change profile photo" : "Upload profile photo"}
+            </Button>
+            <p className="text-xs text-slate-500">JPG, PNG or GIF. You can crop it before saving.</p>
             {coreForm.profilePhotoUrl ? (
               <Button
                 type="button"
@@ -189,6 +213,7 @@ export function CoreStep({ coreForm, setCoreForm, saving, setSaving }: Props) {
           imageUrl={pendingPhoto.objectUrl}
           purpose="profile_photo"
           isSaving={saving}
+          uploadProgress={uploadProgress}
           error={photoError}
           onCancel={closePhotoAdjustment}
           onConfirm={saveAdjustedPhoto}

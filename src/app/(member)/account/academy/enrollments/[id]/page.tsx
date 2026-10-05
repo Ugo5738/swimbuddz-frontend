@@ -242,7 +242,7 @@ export default function EnrollmentDetailPage() {
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-r from-cyan-600 to-blue-600 p-6 text-white">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
+            <div className="min-w-0 flex-1">
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <Badge
                   className={
@@ -273,10 +273,10 @@ export default function EnrollmentDetailPage() {
                   </Badge>
                 )}
               </div>
-              <h1 className="text-2xl font-bold">
+              <h1 className="[overflow-wrap:anywhere] text-2xl font-bold">
                 {program?.name || "Academy Program"}
               </h1>
-              <p className="text-cyan-100">
+              <p className="[overflow-wrap:anywhere] text-cyan-100">
                 {cohort?.name || "No cohort assigned"}
               </p>
             </div>

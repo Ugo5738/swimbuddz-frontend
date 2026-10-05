@@ -1,5 +1,6 @@
 "use client";
 
+import { FileUpload } from "@/components/ui/FileUpload";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -18,6 +19,7 @@ type Props = {
 };
 
 export function PendingTransfersCard({ pendingTransfers, onReload }: Props) {
+  const [progress, setProgress] = useState(0);
   const [uploadingProof, setUploadingProof] = useState<string | null>(null);
   const [proofFile, setProofFile] = useState<{ [ref: string]: File | null }>({});
 
@@ -27,13 +29,16 @@ export function PendingTransfersCard({ pendingTransfers, onReload }: Props) {
     const file = proofFile[payment.reference];
     if (!file) return;
 
+    setProgress(0);
     setUploadingProof(payment.reference);
     try {
       const mediaItem = await uploadMedia(
         file,
         "payment_proof",
         payment.reference,
-        `Payment proof ${payment.reference}`
+        `Payment proof ${payment.reference}`,
+        undefined,
+        { onProgress: setProgress }
       );
       const proofMediaId = mediaItem.id;
 
@@ -116,21 +121,19 @@ export function PendingTransfersCard({ pendingTransfers, onReload }: Props) {
                   📤 Upload proof of payment (screenshot or receipt)
                 </p>
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <input
-                    type="file"
+                  <FileUpload
+                    label="Payment receipt"
                     accept="image/*,.pdf"
-                    onChange={(e) =>
-                      setProofFile({
-                        ...proofFile,
-                        [payment.reference]: e.target.files?.[0] || null,
-                      })
-                    }
-                    className="flex-1 text-xs md:text-sm text-slate-500 file:mr-2 md:file:mr-3 file:py-1.5 md:file:py-2 file:px-3 md:file:px-4 file:rounded-lg file:border-0 file:text-xs md:file:text-sm file:font-medium file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100"
+                    filename={proofFile[payment.reference]?.name}
+                    disabled={uploadingProof !== null}
+                    uploading={uploadingProof === payment.reference}
+                    progress={progress}
+                    onFiles={([file]) => setProofFile((current) => ({ ...current, [payment.reference]: file }))}
                   />
                   <Button
                     size="sm"
                     className="w-full sm:w-auto flex-shrink-0"
-                    disabled={!proofFile[payment.reference] || uploadingProof === payment.reference}
+                    disabled={!proofFile[payment.reference] || uploadingProof !== null}
                     onClick={() => submitProof(payment)}
                   >
                     {uploadingProof === payment.reference ? "Uploading..." : "Submit"}

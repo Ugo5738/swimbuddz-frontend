@@ -1,5 +1,6 @@
 "use client";
 
+import { FileUpload } from "@/components/ui/FileUpload";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
@@ -50,6 +51,7 @@ export function OfflineSessionPaymentModal({
   const [externalReference, setExternalReference] = useState("");
   const [note, setNote] = useState("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [uploaded, setUploaded] = useState<string | null>(null);
@@ -57,6 +59,8 @@ export function OfflineSessionPaymentModal({
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
+    if (submitting || uploading) return;
+    setProgress(0);
     setUploading(true);
     setUploadError("");
     try {
@@ -67,7 +71,9 @@ export function OfflineSessionPaymentModal({
             receiptFile,
             "payment_proof",
             undefined,
-            "Admin-recorded payment receipt"
+            "Admin-recorded payment receipt",
+            undefined,
+            { onProgress: setProgress }
           )
         ).id;
         setUploaded(mediaId);
@@ -155,19 +161,15 @@ export function OfflineSessionPaymentModal({
           rows={3}
         />
 
-        <label className="block text-sm">
-          Receipt image or PDF (optional)
-          <input
-            type="file"
-            accept="image/*,.pdf"
-            className="mt-2 block w-full"
-            disabled={uploading || submitting}
-            onChange={(e) => {
-              setReceiptFile(e.target.files?.[0] ?? null);
-              setUploaded(null);
-            }}
-          />
-        </label>
+        <FileUpload
+          label="Receipt image or PDF (optional)"
+          accept="image/*,.pdf"
+          filename={receiptFile?.name}
+          disabled={submitting}
+          uploading={uploading}
+          progress={progress}
+          onFiles={([file]) => { setReceiptFile(file); setUploaded(null); }}
+        />
         {(error || uploadError) && <p className="text-sm text-rose-600">{error || uploadError}</p>}
 
         <div className="flex justify-end gap-2">
