@@ -40,8 +40,9 @@ interface SnapshotStatus {
 
 interface MemberReport {
   id: string;
+  member_id: string | null;
   member_name: string;
-  member_tier: string | null;
+  member_tier: string | null; // legacy API field; value is the quarter programme
   total_sessions_attended: number;
   attendance_rate: number;
   streak_longest: number;
@@ -49,6 +50,14 @@ interface MemberReport {
   total_spent_ngn: number;
   bubbles_earned: number;
   volunteer_hours: number;
+}
+
+interface MemberProgrammeProjection {
+  id: string;
+  club_programme_status?: string;
+  club_programme_label?: string;
+  academy_programme_status?: string;
+  academy_programme_label?: string;
 }
 
 interface Comparison {
@@ -150,6 +159,7 @@ export default function AdminReportsPage() {
   const [selected, setSelected] = useState(fallback);
   const [review, setReview] = useState<BusinessReview | null>(null);
   const [members, setMembers] = useState<MemberReport[]>([]);
+  const [programmeMembers, setProgrammeMembers] = useState<MemberProgrammeProjection[]>([]);
   const [snapshotStatus, setSnapshotStatus] = useState<SnapshotStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -162,9 +172,10 @@ export default function AdminReportsPage() {
     setError(null);
     setReview(null);
     setMembers([]);
+    setProgrammeMembers([]);
     setSnapshotStatus(null);
 
-    const [reviewData, membersData, statusData] = await Promise.allSettled([
+    const [reviewData, membersData, statusData, programmeData] = await Promise.allSettled([
       apiGet<BusinessReview>(
         `/api/v1/admin/reports/quarterly/business-review?year=${year}&quarter=${quarter}`,
         { auth: true }
@@ -177,11 +188,13 @@ export default function AdminReportsPage() {
         `/api/v1/admin/reports/quarterly/status?year=${year}&quarter=${quarter}`,
         { auth: true }
       ),
+      apiGet<MemberProgrammeProjection[]>("/api/v1/members/", { auth: true }),
     ]);
 
     if (reviewData.status === "fulfilled") setReview(reviewData.value);
     if (membersData.status === "fulfilled") setMembers(membersData.value);
     if (statusData.status === "fulfilled") setSnapshotStatus(statusData.value);
+    if (programmeData.status === "fulfilled") setProgrammeMembers(programmeData.value);
 
     if (
       reviewData.status === "rejected" &&
@@ -287,6 +300,10 @@ export default function AdminReportsPage() {
 
   const completedOptions = availableQuarters.filter(isCompletedQuarter);
   const score = review?.executive_scorecard ?? {};
+  const programmeMap = useMemo(
+    () => new Map(programmeMembers.map((member) => [member.id, member])),
+    [programmeMembers]
+  );
 
   return (
     <div className="space-y-6">
@@ -493,7 +510,7 @@ export default function AdminReportsPage() {
               icon={<Waves className="h-5 w-5 text-blue-600" />}
               metrics={[
                 ["Active members", numberValue(review.club.active_members)],
-                ["New enrollments", displayNumber(review.club.new_enrollments)],
+                ["New Club members", displayNumber(review.club.new_enrollments)],
                 ["Prior-period members", displayNumber(review.club.prior_period_members)],
                 ["Retained members", displayNumber(review.club.retained_members)],
                 ["Retention rate", percent(review.club.retention_rate)],
@@ -606,7 +623,7 @@ export default function AdminReportsPage() {
                   <thead className="bg-slate-50 text-slate-600">
                     <tr>
                       <th className="px-4 py-3 text-left">Member</th>
-                      <th className="px-4 py-3 text-left">Tier</th>
+                      <th className="px-4 py-3 text-left">Programme</th>
                       <th className="px-4 py-3 text-right">Sessions</th>
                       <th className="px-4 py-3 text-right">Attendance</th>
                       <th className="px-4 py-3 text-right">Streak</th>
@@ -617,7 +634,12 @@ export default function AdminReportsPage() {
                     {members.map((m) => (
                       <tr key={m.id}>
                         <td className="px-4 py-3 font-medium">{m.member_name}</td>
-                        <td className="px-4 py-3 capitalize">{m.member_tier || "community"}</td>
+                        <td className="px-4 py-3">
+                          <ProgrammeBadges
+                            member={m.member_id ? programmeMap.get(m.member_id) : undefined}
+                            quarterProgramme={m.member_tier}
+                          />
+                        </td>
                         <td className="px-4 py-3 text-right">{m.total_sessions_attended}</td>
                         <td className="px-4 py-3 text-right">{(m.attendance_rate * 100).toFixed(0)}%</td>
                         <td className="px-4 py-3 text-right">{m.streak_longest}w</td>
@@ -639,6 +661,46 @@ export default function AdminReportsPage() {
           </p>
         </Card>
       )}
+    </div>
+  );
+}
+
+
+function ProgrammeBadges({
+  member,
+  quarterProgramme,
+}: {
+  member?: MemberProgrammeProjection;
+  quarterProgramme?: string | null;
+}) {
+  const programmes = [
+    ["club", member?.club_programme_status, member?.club_programme_label],
+    ["academy", member?.academy_programme_status, member?.academy_programme_label],
+  ] as const;
+  const visible = programmes.filter(([, status]) => status && status !== "inactive");
+
+  if (!visible.length) {
+    return <span className="capitalize text-slate-600">{quarterProgramme || "community"}</span>;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {visible.map(([programme, status, label]) => {
+        const tone =
+          status === "active"
+            ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+            : status === "expired"
+              ? "bg-rose-50 text-rose-700 ring-rose-200"
+              : "bg-amber-50 text-amber-700 ring-amber-200";
+        return (
+          <span
+            key={programme}
+            className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset ${tone}`}
+          >
+            {programme === "club" ? "Club" : "Academy"} · {label || status}
+          </span>
+        );
+      })}
     </div>
   );
 }
