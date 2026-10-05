@@ -167,6 +167,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const [adminMemberId, setAdminMemberId] = useState<string | undefined>();
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [newOrderCount, setNewOrderCount] = useState(0);
+  const [paymentReviewCount, setPaymentReviewCount] = useState(0);
   const prevCountRef = useRef(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -202,6 +203,17 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     }
   }, []);
 
+  const fetchPaymentReviewCount = useCallback(async () => {
+    try {
+      const data = await apiGet<Array<{ id: string }>>("/api/v1/payments/admin/pending-reviews", {
+        auth: true,
+      });
+      setPaymentReviewCount(data.length);
+    } catch {
+      // Keep navigation usable even if Payments is temporarily unavailable.
+    }
+  }, []);
+
   useEffect(() => {
     async function getUserInfo() {
       const {
@@ -229,19 +241,52 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     }
   }, []);
 
-  // Poll for new orders every 30 seconds
+  // Poll small operational queues so the sidebar surfaces work that needs attention.
   useEffect(() => {
     // -1 means "initial load" — fetchNewOrderCount skips sound when prevCountRef < 0
     prevCountRef.current = -1;
-    fetchNewOrderCount();
+    const refreshCounts = () => {
+      void fetchNewOrderCount();
+      void fetchPaymentReviewCount();
+    };
+    refreshCounts();
 
-    const interval = setInterval(fetchNewOrderCount, 30_000);
+    const interval = setInterval(refreshCounts, 30_000);
     return () => clearInterval(interval);
-  }, [fetchNewOrderCount]);
+  }, [fetchNewOrderCount, fetchPaymentReviewCount]);
 
-  // Close sidebar when route changes on mobile
+  // Restore the admin's sidebar preferences on this device.
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem("swimbuddz-admin-collapsed-sections");
+      if (saved) setCollapsedSections(new Set(JSON.parse(saved) as string[]));
+    } catch {
+      // Ignore malformed/blocked local storage.
+    }
+  }, []);
+
+  // Close the mobile drawer on navigation and always reveal the active group.
   useEffect(() => {
     setSidebarOpen(false);
+    const activeSection = navSections.find((section) =>
+      section.items.some(
+        (item) => pathname === item.href || pathname?.startsWith(item.href + "/")
+      )
+    );
+    if (activeSection) {
+      setCollapsedSections((current) => {
+        if (!current.has(activeSection.title)) return current;
+        const next = new Set(current);
+        next.delete(activeSection.title);
+        try {
+          window.localStorage.setItem(
+            "swimbuddz-admin-collapsed-sections",
+            JSON.stringify([...next])
+          );
+        } catch {}
+        return next;
+      });
+    }
   }, [pathname]);
 
   const handleLogout = async () => {
@@ -281,6 +326,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       } else {
         newSet.add(title);
       }
+      try {
+        window.localStorage.setItem(
+          "swimbuddz-admin-collapsed-sections",
+          JSON.stringify([...newSet])
+        );
+      } catch {}
       return newSet;
     });
   };
@@ -344,10 +395,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
               return (
                 <div key={section.title} className="space-y-1">
-                  {/* Collapsible section header for mobile */}
+                  {/* Collapsible section header */}
                   <button
                     onClick={() => toggleSection(section.title)}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors lg:pointer-events-none ${
+                    className={`w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors ${
                       hasActiveItem
                         ? "text-cyan-400 bg-slate-700/30"
                         : "text-slate-500 hover:text-slate-400 hover:bg-slate-700/20"
@@ -355,7 +406,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                     aria-expanded={!isCollapsed}
                   >
                     <span>{section.title}</span>
-                    <span className="lg:hidden">
+                    <span>
                       {isCollapsed ? (
                         <ChevronRight className="h-4 w-4" />
                       ) : (
@@ -367,7 +418,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                   {/* Navigation items */}
                   <ul
                     className={`space-y-0.5 overflow-hidden transition-all duration-200 ${
-                      isCollapsed ? "max-h-0 lg:max-h-none" : "max-h-[500px]"
+                      isCollapsed ? "max-h-0" : "max-h-[500px]"
                     }`}
                   >
                     {section.items.map((item) => {
@@ -388,6 +439,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                             {item.href === "/admin/store" && newOrderCount > 0 && (
                               <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
                                 {newOrderCount > 99 ? "99+" : newOrderCount}
+                              </span>
+                            )}
+                            {item.href === "/admin/payments" && paymentReviewCount > 0 && (
+                              <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-amber-500 px-1.5 text-[10px] font-bold text-slate-950">
+                                {paymentReviewCount > 99 ? "99+" : paymentReviewCount}
                               </span>
                             )}
                           </Link>
