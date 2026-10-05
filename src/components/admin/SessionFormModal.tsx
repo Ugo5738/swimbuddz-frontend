@@ -122,7 +122,10 @@ export function SessionFormModal({
     guest_fee: session?.guest_fee == null ? "" : String(session.guest_fee),
     community_dropin_fee:
       session?.community_dropin_fee == null ? "" : String(session.community_dropin_fee),
+    visiting_club_fee:
+      session?.visiting_club_fee == null ? "" : String(session.visiting_club_fee),
     allows_community_dropins: session?.allows_community_dropins ?? false,
+    allows_visiting_club_members: session?.allows_visiting_club_members ?? false,
     capacity: session?.capacity ?? 20,
     pricing_mode: session?.pricing_mode ?? ("manual" as "manual" | "cost_plus"),
     pricing_expected_attendees: session?.pricing_expected_attendees ?? session?.capacity ?? 20,
@@ -394,7 +397,13 @@ export function SessionFormModal({
         form.community_dropin_fee !== ""
           ? Number(form.community_dropin_fee)
           : null,
+      visiting_club_fee:
+        form.session_type === "club" && form.visiting_club_fee !== ""
+          ? Number(form.visiting_club_fee)
+          : null,
       allows_community_dropins: form.session_type === "club" && form.allows_community_dropins,
+      allows_visiting_club_members:
+        form.session_type === "club" && form.allows_visiting_club_members,
       capacity: form.capacity,
       pricing_mode: form.pricing_mode,
       pricing_expected_attendees: form.pricing_expected_attendees,
@@ -688,21 +697,53 @@ export function SessionFormModal({
       </div>
       <GuestSessionSettingsFields value={guestSettings} onChange={setGuestSettings} />
       {form.session_type === "club" ? (
-        <label className="flex items-start gap-3 rounded-xl border border-cyan-100 bg-cyan-50 p-4 text-sm text-cyan-950">
-          <input
-            type="checkbox"
-            checked={form.allows_community_dropins}
-            onChange={(event) =>
-              setForm({ ...form, allows_community_dropins: event.target.checked })
-            }
-            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-cyan-700"
-          />
-          <span>
-            <span className="block font-semibold">Allow Community drop-ins</span>
-            Active annual SwimBuddz Membership is required. When enabled, the backend charges the
-            Community drop-in rate above and applies normal capacity limits.
-          </span>
-        </label>
+        <div className="space-y-3">
+          <label className="flex items-start gap-3 rounded-xl border border-cyan-100 bg-cyan-50 p-4 text-sm text-cyan-950">
+            <input
+              type="checkbox"
+              checked={form.allows_community_dropins}
+              onChange={(event) =>
+                setForm({ ...form, allows_community_dropins: event.target.checked })
+              }
+              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-cyan-700"
+            />
+            <span>
+              <span className="block font-semibold">Allow Community drop-ins</span>
+              Active annual SwimBuddz Membership is required. When enabled, the backend charges the
+              Community drop-in rate above and applies normal capacity limits.
+            </span>
+          </label>
+          <label className="flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-950">
+            <input
+              type="checkbox"
+              checked={form.allows_visiting_club_members}
+              onChange={(event) =>
+                setForm({ ...form, allows_visiting_club_members: event.target.checked })
+              }
+              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-700"
+            />
+            <span>
+              <span className="block font-semibold">Allow visiting Club members</span>
+              Members whose home Club is another SwimBuddz location can book this practice without
+              changing their home Club or pod. Host-session capacity still applies.
+            </span>
+          </label>
+          {form.allows_visiting_club_members ? (
+            <Input
+              label="Visiting Club member rate (₦)"
+              type="number"
+              min={0}
+              step="0.01"
+              value={form.visiting_club_fee}
+              onChange={(e) => setForm({ ...form, visiting_club_fee: e.target.value })}
+              hint={
+                form.club_access_mode === "paid_addon"
+                  ? "Paid add-ons always charge the full booking price above; this visitor rate is ignored for this session."
+                  : "Optional. Leave blank to use this host session's normal Club booking price."
+              }
+            />
+          ) : null}
+        </div>
       ) : null}
       <fieldset className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
         <div>

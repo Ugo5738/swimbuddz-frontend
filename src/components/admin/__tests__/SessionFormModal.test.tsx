@@ -164,6 +164,22 @@ describe("SessionFormModal Club scope", () => {
     expect(screen.getByLabelText(/Community member rate/)).toHaveValue(savedRate);
   });
 
+  it("persists visiting Club admission and an independent host visitor rate", async () => {
+    const create = renderModal();
+    fireEvent.click(screen.getByLabelText(/Allow visiting Club members/));
+    fireEvent.change(screen.getByLabelText(/Visiting Club member rate/), {
+      target: { value: "8500" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create Session" }));
+    await waitFor(() => expect(create).toHaveBeenCalledOnce());
+    expect(create.mock.calls[0][0]).toMatchObject({
+      session_type: "club",
+      club_id: "club-lagos",
+      allows_visiting_club_members: true,
+      visiting_club_fee: 8500,
+    });
+  });
+
   it("updates stale attendance when capacity changes and keeps manual per-person pricing", async () => {
     const create = renderModal();
     fireEvent.change(screen.getByLabelText(/^Capacity/), { target: { value: "2" } });

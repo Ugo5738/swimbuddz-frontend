@@ -1771,6 +1771,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/clubs/admin/members/{member_id}/enrollments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Member Club Enrollments */
+        get: operations["list_member_club_enrollments_clubs_admin_members__member_id__enrollments_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/admin/enrollments/{source_enrollment_id}/location-transfer/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Club Location Transfer */
+        post: operations["preview_club_location_transfer_clubs_admin_enrollments__source_enrollment_id__location_transfer_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/admin/enrollments/{source_enrollment_id}/location-transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Transfer Club Location */
+        post: operations["transfer_club_location_clubs_admin_enrollments__source_enrollment_id__location_transfer_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/clubs/": {
         parameters: {
             query?: never;
@@ -4083,7 +4134,9 @@ export interface paths {
          *
          *     Behavior:
          *       - Tuition-included cohort classes have no additional fee. Other sessions
-         *         default to ``pool_fee`` unless Admin specifies the originally agreed fee.
+         *         use the same server-authoritative access/rate resolver as member booking
+         *         (including cross-location Club visitor rates) unless Admin explicitly
+         *         records an agreed override.
          *       - Idempotent: if a PENDING or CONFIRMED booking already exists for
          *         ``(session_id, member_id)``, returns it instead of creating a new one.
          *         Cancelled/expired bookings raise 409 (admin must investigate).
@@ -4338,6 +4391,63 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/sessions/{session_id}/walk-ins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Guest Walk In
+         * @description Record an unregistered person who physically attended a Session.
+         *
+         *     This does not manufacture a Member account, pretend a waiver was accepted,
+         *     or create a paid GuestPass. Attendance and payment remain separate facts.
+         */
+        post: operations["add_guest_walk_in_admin_sessions__session_id__walk_ins_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/sessions/{session_id}/participants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Session Participants */
+        get: operations["list_session_participants_admin_sessions__session_id__participants_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/session-participants/{participant_id}/payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Reconcile Walk In Payment */
+        patch: operations["reconcile_walk_in_payment_admin_session_participants__participant_id__payment_patch"];
         trace?: never;
     };
     "/api/v1/sessions/{session_id}/guest-share-link": {
@@ -5764,6 +5874,30 @@ export interface paths {
          * @description Record attendance for another member as service, admin, or coach.
          */
         post: operations["public_sign_in_to_session_attendance_sessions__session_id__attendance_public_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/attendance/sessions/{session_id}/attendance/participant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record Participant Attendance
+         * @description Record attendance for a canonical SessionParticipant.
+         *
+         *     This is the door-walk-in path for people who do not yet have a SwimBuddz
+         *     member account or an advance guest booking. The participant identity lives
+         *     in sessions_service; attendance stores only the cross-service UUID.
+         */
+        post: operations["record_participant_attendance_attendance_sessions__session_id__attendance_participant_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -19648,6 +19782,49 @@ export interface components {
             /** Admin Notes */
             admin_notes?: string | null;
         };
+        /** AdminClubEnrollmentSummary */
+        AdminClubEnrollmentSummary: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /**
+             * Club Id
+             * Format: uuid
+             */
+            club_id: string;
+            /** Club Name */
+            club_name: string;
+            /**
+             * Plan Version Id
+             * Format: uuid
+             */
+            plan_version_id: string;
+            /** Plan Name */
+            plan_name: string;
+            /** Payment Mode */
+            payment_mode: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Status */
+            status: string;
+            /** Assigned Pod Id */
+            assigned_pod_id?: string | null;
+        };
         /**
          * AdminCoachApplicationDetail
          * @description Full coach application for admin review.
@@ -20558,6 +20735,11 @@ export interface components {
             pool_id?: string | null;
             /** Pod Id */
             pod_id?: string | null;
+            /**
+             * Allows Visiting Club Members
+             * @default false
+             */
+            allows_visiting_club_members: boolean;
         };
         /** ClubAccessCheckResult */
         ClubAccessCheckResult: {
@@ -21033,6 +21215,178 @@ export interface components {
              * @default true
              */
             is_active: boolean;
+        };
+        /** ClubLocationTransferPreview */
+        ClubLocationTransferPreview: {
+            /**
+             * Source Enrollment Id
+             * Format: uuid
+             */
+            source_enrollment_id: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /**
+             * Source Club Id
+             * Format: uuid
+             */
+            source_club_id: string;
+            /** Source Club Name */
+            source_club_name: string;
+            /**
+             * Target Club Id
+             * Format: uuid
+             */
+            target_club_id: string;
+            /** Target Club Name */
+            target_club_name: string;
+            /**
+             * Target Plan Version Id
+             * Format: uuid
+             */
+            target_plan_version_id: string;
+            /** Target Plan Name */
+            target_plan_name: string;
+            /** Target Pod Id */
+            target_pod_id?: string | null;
+            /** Payment Mode */
+            payment_mode: string;
+            /**
+             * Effective At
+             * Format: date-time
+             */
+            effective_at: string;
+            /**
+             * Source Remaining Sessions
+             * @default 0
+             */
+            source_remaining_sessions: number;
+            /**
+             * Source Remaining Value Kobo
+             * @default 0
+             */
+            source_remaining_value_kobo: number;
+            /**
+             * Target Remaining Sessions
+             * @default 0
+             */
+            target_remaining_sessions: number;
+            /**
+             * Target Remaining Value Kobo
+             * @default 0
+             */
+            target_remaining_value_kobo: number;
+            /**
+             * Estimated Difference Kobo
+             * @default 0
+             */
+            estimated_difference_kobo: number;
+            /** Can Execute Now */
+            can_execute_now: boolean;
+            /** Requires Financial Reconciliation */
+            requires_financial_reconciliation: boolean;
+            /** Guidance */
+            guidance: string;
+        };
+        /** ClubLocationTransferRequest */
+        ClubLocationTransferRequest: {
+            /**
+             * Target Plan Version Id
+             * Format: uuid
+             */
+            target_plan_version_id: string;
+            /** Target Pod Id */
+            target_pod_id?: string | null;
+            /** Effective At */
+            effective_at?: string | null;
+            /** Note */
+            note?: string | null;
+        };
+        /** ClubLocationTransferResponse */
+        ClubLocationTransferResponse: {
+            /**
+             * Source Enrollment Id
+             * Format: uuid
+             */
+            source_enrollment_id: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /**
+             * Source Club Id
+             * Format: uuid
+             */
+            source_club_id: string;
+            /** Source Club Name */
+            source_club_name: string;
+            /**
+             * Target Club Id
+             * Format: uuid
+             */
+            target_club_id: string;
+            /** Target Club Name */
+            target_club_name: string;
+            /**
+             * Target Plan Version Id
+             * Format: uuid
+             */
+            target_plan_version_id: string;
+            /** Target Plan Name */
+            target_plan_name: string;
+            /** Target Pod Id */
+            target_pod_id?: string | null;
+            /** Payment Mode */
+            payment_mode: string;
+            /**
+             * Effective At
+             * Format: date-time
+             */
+            effective_at: string;
+            /**
+             * Source Remaining Sessions
+             * @default 0
+             */
+            source_remaining_sessions: number;
+            /**
+             * Source Remaining Value Kobo
+             * @default 0
+             */
+            source_remaining_value_kobo: number;
+            /**
+             * Target Remaining Sessions
+             * @default 0
+             */
+            target_remaining_sessions: number;
+            /**
+             * Target Remaining Value Kobo
+             * @default 0
+             */
+            target_remaining_value_kobo: number;
+            /**
+             * Estimated Difference Kobo
+             * @default 0
+             */
+            estimated_difference_kobo: number;
+            /** Can Execute Now */
+            can_execute_now: boolean;
+            /** Requires Financial Reconciliation */
+            requires_financial_reconciliation: boolean;
+            /** Guidance */
+            guidance: string;
+            /**
+             * Transfer Id
+             * Format: uuid
+             */
+            transfer_id: string;
+            /**
+             * Target Enrollment Id
+             * Format: uuid
+             */
+            target_enrollment_id: string;
         };
         /** ClubObservedAssessmentUpdate */
         ClubObservedAssessmentUpdate: {
@@ -24552,6 +24906,105 @@ export interface components {
             /** Updated At */
             updated_at?: string | null;
         };
+        /** AdminGuestWalkInCreate */
+        AdminGuestWalkInCreate: {
+            /** Full Name */
+            full_name: string;
+            /** Email */
+            email?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Fee Amount Kobo */
+            fee_amount_kobo?: number | null;
+            /** Fee Override Reason */
+            fee_override_reason?: string | null;
+            /** Payment Status */
+            payment_status?: ("included" | "unpaid" | "paid" | "waived" | "unknown") | null;
+            /** Payment Method */
+            payment_method?: string | null;
+            /** Payment Reference */
+            payment_reference?: string | null;
+            /**
+             * Waiver Status
+             * @default missing
+             * @enum {string}
+             */
+            waiver_status: "accepted" | "missing" | "not_required" | "unknown";
+            /** Notes */
+            notes?: string | null;
+        };
+        /** AdminGuestWalkInResponse */
+        AdminGuestWalkInResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /** Participant Kind */
+            participant_kind: string;
+            /** Source */
+            source: string;
+            /** Member Id */
+            member_id?: string | null;
+            /** Booking Id */
+            booking_id?: string | null;
+            /** Booking Guest Id */
+            booking_guest_id?: string | null;
+            /** Guest Pass Id */
+            guest_pass_id?: string | null;
+            /** Converted Member Id */
+            converted_member_id?: string | null;
+            /** Full Name Snapshot */
+            full_name_snapshot: string;
+            /** Email Snapshot */
+            email_snapshot?: string | null;
+            /** Phone Snapshot */
+            phone_snapshot?: string | null;
+            /** Audience */
+            audience?: string | null;
+            /** Access Source */
+            access_source?: string | null;
+            /** Rate Id */
+            rate_id?: string | null;
+            /** Rate Code */
+            rate_code?: string | null;
+            /** Fee Amount Kobo */
+            fee_amount_kobo: number;
+            /** Payment Status */
+            payment_status: string;
+            /** Payment Method */
+            payment_method?: string | null;
+            /** Payment Reference */
+            payment_reference?: string | null;
+            /** Paid At */
+            paid_at?: string | null;
+            /** Waiver Status */
+            waiver_status: string;
+            /** Notes */
+            notes?: string | null;
+            /** Created By */
+            created_by?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Attendance Recorded
+             * @default false
+             */
+            attendance_recorded: boolean;
+        };
         /**
          * AdminPoolFeeRefundRequest
          * @description Admin refunds a booking's per-session pool fee to the member's Bubble
@@ -25366,6 +25819,14 @@ export interface components {
             attended_at?: string | null;
             /** Actual Swim Minutes */
             actual_swim_minutes?: number | null;
+            /** Participant Id */
+            participant_id?: string | null;
+            /** Fee Amount Kobo */
+            fee_amount_kobo?: number | null;
+            /** Payment Status */
+            payment_status?: string | null;
+            /** Waiver Status */
+            waiver_status?: string | null;
             /** Assessment Result */
             assessment_result?: {
                 [key: string]: unknown;
@@ -25842,6 +26303,14 @@ export interface components {
             fee_amount_kobo?: number | null;
             /** Price Label */
             price_label?: string | null;
+            /** Pricing Audience */
+            pricing_audience?: string | null;
+            /** Pricing Source */
+            pricing_source?: string | null;
+            /** Rate Code */
+            rate_code?: string | null;
+            /** Rate Id */
+            rate_id?: string | null;
             /**
              * Member Id
              * Format: uuid
@@ -26085,6 +26554,14 @@ export interface components {
             fee_amount_kobo?: number | null;
             /** Price Label */
             price_label?: string | null;
+            /** Pricing Audience */
+            pricing_audience?: string | null;
+            /** Pricing Source */
+            pricing_source?: string | null;
+            /** Rate Code */
+            rate_code?: string | null;
+            /** Rate Id */
+            rate_id?: string | null;
         };
         /** SessionBasic */
         SessionBasic: {
@@ -26131,11 +26608,18 @@ export interface components {
             guest_fee_kobo?: number | null;
             /** Community Dropin Fee Kobo */
             community_dropin_fee_kobo?: number | null;
+            /** Visiting Club Fee Kobo */
+            visiting_club_fee_kobo?: number | null;
             /**
              * Allows Community Dropins
              * @default false
              */
             allows_community_dropins: boolean;
+            /**
+             * Allows Visiting Club Members
+             * @default false
+             */
+            allows_visiting_club_members: boolean;
             /** Ride Share Fee */
             ride_share_fee?: number | null;
             /**
@@ -26236,6 +26720,14 @@ export interface components {
             member_fee_amount_kobo: number;
             /** Access Source */
             access_source?: string | null;
+            /** Pricing Audience */
+            pricing_audience?: string | null;
+            /** Pricing Source */
+            pricing_source?: string | null;
+            /** Rate Id */
+            rate_id?: string | null;
+            /** Rate Code */
+            rate_code?: string | null;
             /** Payment Intent Id */
             payment_intent_id?: string | null;
             /** Wallet Transaction Id */
@@ -26358,11 +26850,18 @@ export interface components {
             guest_fee?: number | null;
             /** Community Dropin Fee */
             community_dropin_fee?: number | null;
+            /** Visiting Club Fee */
+            visiting_club_fee?: number | null;
             /**
              * Allows Community Dropins
              * @default false
              */
             allows_community_dropins: boolean;
+            /**
+             * Allows Visiting Club Members
+             * @default false
+             */
+            allows_visiting_club_members: boolean;
             /**
              * Ride Share Fee
              * @default 0
@@ -26494,6 +26993,73 @@ export interface components {
          * @enum {string}
          */
         SessionLocation: "sunfit_pool" | "rowe_park_pool" | "federal_palace_pool" | "open_water" | "other";
+        /** SessionParticipantResponse */
+        SessionParticipantResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /** Participant Kind */
+            participant_kind: string;
+            /** Source */
+            source: string;
+            /** Member Id */
+            member_id?: string | null;
+            /** Booking Id */
+            booking_id?: string | null;
+            /** Booking Guest Id */
+            booking_guest_id?: string | null;
+            /** Guest Pass Id */
+            guest_pass_id?: string | null;
+            /** Converted Member Id */
+            converted_member_id?: string | null;
+            /** Full Name Snapshot */
+            full_name_snapshot: string;
+            /** Email Snapshot */
+            email_snapshot?: string | null;
+            /** Phone Snapshot */
+            phone_snapshot?: string | null;
+            /** Audience */
+            audience?: string | null;
+            /** Access Source */
+            access_source?: string | null;
+            /** Rate Id */
+            rate_id?: string | null;
+            /** Rate Code */
+            rate_code?: string | null;
+            /** Fee Amount Kobo */
+            fee_amount_kobo: number;
+            /** Payment Status */
+            payment_status: string;
+            /** Payment Method */
+            payment_method?: string | null;
+            /** Payment Reference */
+            payment_reference?: string | null;
+            /** Paid At */
+            paid_at?: string | null;
+            /** Waiver Status */
+            waiver_status: string;
+            /** Notes */
+            notes?: string | null;
+            /** Created By */
+            created_by?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
         /**
          * SessionRangeStats
          * @description Aggregated session stats for a date range.
@@ -26575,11 +27141,18 @@ export interface components {
             guest_fee?: number | null;
             /** Community Dropin Fee */
             community_dropin_fee?: number | null;
+            /** Visiting Club Fee */
+            visiting_club_fee?: number | null;
             /**
              * Allows Community Dropins
              * @default false
              */
             allows_community_dropins: boolean;
+            /**
+             * Allows Visiting Club Members
+             * @default false
+             */
+            allows_visiting_club_members: boolean;
             /**
              * Ride Share Fee
              * @default 0
@@ -26696,7 +27269,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "member" | "booking_guest" | "guest_pass";
+            kind: "member" | "booking_guest" | "guest_pass" | "walk_in_guest";
             /** Full Name */
             full_name: string;
             /** Booking Status */
@@ -26711,6 +27284,14 @@ export interface components {
             phone?: string | null;
             /** Actual Swim Minutes */
             actual_swim_minutes?: number | null;
+            /** Participant Id */
+            participant_id?: string | null;
+            /** Fee Amount Kobo */
+            fee_amount_kobo?: number | null;
+            /** Payment Status */
+            payment_status?: string | null;
+            /** Waiver Status */
+            waiver_status?: string | null;
         };
         /** SessionRosterResponse */
         SessionRosterResponse: {
@@ -27047,8 +27628,12 @@ export interface components {
             guest_fee?: number | null;
             /** Community Dropin Fee */
             community_dropin_fee?: number | null;
+            /** Visiting Club Fee */
+            visiting_club_fee?: number | null;
             /** Allows Community Dropins */
             allows_community_dropins?: boolean | null;
+            /** Allows Visiting Club Members */
+            allows_visiting_club_members?: boolean | null;
             /** Ride Share Fee */
             ride_share_fee?: number | null;
             /** Pricing Mode */
@@ -27078,11 +27663,18 @@ export interface components {
             guest_fee?: number | null;
             /** Community Dropin Fee */
             community_dropin_fee?: number | null;
+            /** Visiting Club Fee */
+            visiting_club_fee?: number | null;
             /**
              * Allows Community Dropins
              * @default false
              */
             allows_community_dropins: boolean;
+            /**
+             * Allows Visiting Club Members
+             * @default false
+             */
+            allows_visiting_club_members: boolean;
             /**
              * Allows Guests
              * @default true
@@ -27199,6 +27791,20 @@ export interface components {
             /** Notes */
             notes?: string | null;
         };
+        /** WalkInPaymentReconcile */
+        WalkInPaymentReconcile: {
+            /**
+             * Payment Status
+             * @enum {string}
+             */
+            payment_status: "unpaid" | "paid" | "waived";
+            /** Payment Method */
+            payment_method?: string | null;
+            /** Payment Reference */
+            payment_reference?: string | null;
+            /** Note */
+            note?: string | null;
+        };
         /** AttendanceCreate */
         AttendanceCreate: {
             /** @default present */
@@ -27274,6 +27880,8 @@ export interface components {
             member_id?: string | null;
             /** Booking Guest Id */
             booking_guest_id?: string | null;
+            /** Participant Id */
+            participant_id?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -27439,6 +28047,21 @@ export interface components {
              * @default 0
              */
             total_pool_hours: number;
+        };
+        /**
+         * ParticipantAttendanceCreate
+         * @description Admin/service attendance for a canonical SessionParticipant.
+         */
+        ParticipantAttendanceCreate: {
+            /**
+             * Participant Id
+             * Format: uuid
+             */
+            participant_id: string;
+            /** @default present */
+            status: components["schemas"]["AttendanceStatus"];
+            /** Notes */
+            notes?: string | null;
         };
         /** PublicAttendanceCreate */
         PublicAttendanceCreate: {
@@ -49384,6 +50007,107 @@ export interface operations {
             };
         };
     };
+    list_member_club_enrollments_clubs_admin_members__member_id__enrollments_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminClubEnrollmentSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_club_location_transfer_clubs_admin_enrollments__source_enrollment_id__location_transfer_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClubLocationTransferRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubLocationTransferPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    transfer_club_location_clubs_admin_enrollments__source_enrollment_id__location_transfer_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClubLocationTransferRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubLocationTransferResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_clubs_clubs__get: {
         parameters: {
             query?: {
@@ -53398,6 +54122,107 @@ export interface operations {
             };
         };
     };
+    add_guest_walk_in_admin_sessions__session_id__walk_ins_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminGuestWalkInCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminGuestWalkInResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_session_participants_admin_sessions__session_id__participants_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionParticipantResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reconcile_walk_in_payment_admin_session_participants__participant_id__payment_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                participant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WalkInPaymentReconcile"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionParticipantResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     guest_share_link_sessions__session_id__guest_share_link_get: {
         parameters: {
             query?: never;
@@ -55804,6 +56629,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["PublicAttendanceCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttendanceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_participant_attendance_attendance_sessions__session_id__attendance_participant_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ParticipantAttendanceCreate"];
             };
         };
         responses: {
