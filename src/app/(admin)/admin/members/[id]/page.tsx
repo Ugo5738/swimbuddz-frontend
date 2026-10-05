@@ -92,13 +92,29 @@ type MemberAvailabilityData = {
   equipment_needed?: string[] | null;
 };
 
+type MemberTierStatusData = {
+  tier: string;
+  status: string;
+  label: string;
+  paid_until?: string | null;
+  effective_until?: string | null;
+  requested?: boolean;
+  access_source?: string | null;
+};
+
 type MemberMembershipData = {
+  // Legacy fields remain in the API for compatibility, but admin display uses
+  // the normalized independent programme statuses below.
   primary_tier?: string;
   active_tiers?: string[] | null;
   requested_tiers?: string[] | null;
   community_paid_until?: string | null;
   club_paid_until?: string | null;
   academy_paid_until?: string | null;
+  club_enrollment_until?: string | null;
+  display_label?: string;
+  display_detail?: string | null;
+  tier_statuses?: Record<string, MemberTierStatusData>;
   club_badges_earned?: string[] | null;
   punctuality_score?: number;
   commitment_score?: number;
@@ -547,61 +563,85 @@ function MembershipSection({
 }: {
   membership: MemberMembershipData | null | undefined;
 }) {
-  const tiers = [
+  const statuses = membership?.tier_statuses ?? {};
+  const rows = [
     {
-      key: "community",
-      label: "Community",
-      until: membership?.community_paid_until,
+      key: "membership",
+      label: "Annual Membership",
+      status: statuses.community?.status ?? "inactive",
+      statusLabel: statuses.community?.label ?? "Inactive",
+      until: statuses.community?.effective_until ?? membership?.community_paid_until,
+      detail: null,
     },
     {
       key: "club",
-      label: "Club",
-      until: membership?.club_paid_until,
+      label: "Club programme",
+      status: statuses.club?.status ?? "inactive",
+      statusLabel: statuses.club?.label ?? "Inactive",
+      until:
+        statuses.club?.effective_until ??
+        membership?.club_enrollment_until ??
+        membership?.club_paid_until,
+      detail:
+        statuses.club?.access_source === "post_academy"
+          ? "Post-Academy access"
+          : null,
     },
     {
       key: "academy",
-      label: "Academy",
-      until: membership?.academy_paid_until,
+      label: "Academy programme",
+      status: statuses.academy?.status ?? "inactive",
+      statusLabel: statuses.academy?.label ?? "Inactive",
+      until: statuses.academy?.effective_until ?? membership?.academy_paid_until,
+      detail: null,
     },
   ];
 
-  const activeTiers = membership?.active_tiers ?? [];
+  const iconFor = (status: string) => {
+    if (status === "active") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
+    if (["requested", "payment_pending", "approved_unpaid"].includes(status)) {
+      return <Clock className="h-4 w-4 text-amber-500" />;
+    }
+    return <XCircle className={`h-4 w-4 ${status === "expired" ? "text-rose-400" : "text-slate-300"}`} />;
+  };
 
   return (
-    <CollapsiblePanel title="Membership" icon={<CreditCard className="h-5 w-5 text-blue-500" />}>
+    <CollapsiblePanel
+      title="Membership & Programmes"
+      icon={<CreditCard className="h-5 w-5 text-blue-500" />}
+    >
+      <p className="mb-3 text-xs text-slate-500">
+        Membership, Academy and Club are independent. This view does not imply a higher or lower tier.
+      </p>
       <div className="space-y-2">
-        {tiers.map((tier) => {
-          const active = activeTiers.includes(tier.key);
-          const expired = tier.until && new Date(tier.until) < new Date();
-          return (
-            <div
-              key={tier.key}
-              className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2.5"
-            >
-              <div className="flex items-center gap-2">
-                {active ? (
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                ) : (
-                  <XCircle className="h-4 w-4 text-slate-300" />
-                )}
-                <span
-                  className={`text-sm font-medium ${active ? "text-slate-700" : "text-slate-400"}`}
-                >
-                  {tier.label}
-                </span>
+        {rows.map((row) => (
+          <div
+            key={row.key}
+            className="flex items-center justify-between gap-4 rounded-lg bg-slate-50 px-3 py-2.5"
+          >
+            <div className="flex items-center gap-2">
+              {iconFor(row.status)}
+              <div>
+                <p className="text-sm font-medium text-slate-700">{row.label}</p>
+                {row.detail && <p className="text-xs text-slate-400">{row.detail}</p>}
               </div>
-              <span className="text-xs text-slate-400">
-                {active && tier.until
-                  ? expired
-                    ? `Expired ${formatDate(tier.until)}`
-                    : `Until ${formatDate(tier.until)}`
-                  : active
-                    ? "Active"
-                    : "—"}
-              </span>
             </div>
-          );
-        })}
+            <div className="text-right">
+              <p className={`text-xs font-medium ${
+                row.status === "active"
+                  ? "text-emerald-600"
+                  : row.status === "expired"
+                    ? "text-rose-500"
+                    : ["requested", "payment_pending", "approved_unpaid"].includes(row.status)
+                      ? "text-amber-600"
+                      : "text-slate-400"
+              }`}>
+                {row.statusLabel}
+              </p>
+              {row.until && <p className="text-xs text-slate-400">Until {formatDate(row.until)}</p>}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Gamification scores */}
@@ -632,7 +672,6 @@ function MembershipSection({
         </div>
       )}
 
-      {/* Academy focus areas */}
       {(membership?.academy_focus_areas?.length ?? 0) > 0 && (
         <div className="mt-4 border-t border-slate-100 pt-4">
           <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-slate-400">
