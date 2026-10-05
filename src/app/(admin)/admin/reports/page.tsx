@@ -510,7 +510,7 @@ export default function AdminReportsPage() {
               icon={<Waves className="h-5 w-5 text-blue-600" />}
               metrics={[
                 ["Active members", numberValue(review.club.active_members)],
-                ["New enrollments", displayNumber(review.club.new_enrollments)],
+                ["New Club members", displayNumber(review.club.new_enrollments)],
                 ["Prior-period members", displayNumber(review.club.prior_period_members)],
                 ["Retained members", displayNumber(review.club.retained_members)],
                 ["Retention rate", percent(review.club.retention_rate)],
