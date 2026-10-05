@@ -41,7 +41,8 @@ export function CoreStep({ coreForm, setCoreForm, saving, setSaving }: Props) {
     objectUrl: string;
   } | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [photoError, setPhotoError] = useState<string | null>(null);\n  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(
     () => () => {
