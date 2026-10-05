@@ -20244,8 +20244,19 @@ export interface components {
             first_name: string;
             /** Last Name */
             last_name: string;
+            /** Email */
+            email: string;
+            /**
+             * Roles
+             * @default []
+             */
+            roles: string[];
             /** Primary Tier */
             primary_tier?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Approved At */
+            approved_at?: string | null;
         };
         /**
          * AssessmentResponse
@@ -21824,26 +21835,26 @@ export interface components {
              * @default 0
              */
             active_members: number;
+            /** New Enrollments */
+            new_enrollments?: number | null;
             /**
-             * New Enrollments
-             * @default 0
+             * New Enrollments Available
+             * @default true
              */
-            new_enrollments: number;
+            new_enrollments_available: boolean;
+            /** Prior Period Members */
+            prior_period_members?: number | null;
+            /** Retained Members */
+            retained_members?: number | null;
+            /** Retention Rate */
+            retention_rate?: number | null;
             /**
-             * Prior Period Members
-             * @default 0
+             * Retention Available
+             * @default true
              */
-            prior_period_members: number;
-            /**
-             * Retained Members
-             * @default 0
-             */
-            retained_members: number;
-            /**
-             * Retention Rate
-             * @default 0
-             */
-            retention_rate: number;
+            retention_available: boolean;
+            /** Retention Note */
+            retention_note?: string | null;
             /**
              * Prepaid Enrollments
              * @default 0
@@ -28583,6 +28594,11 @@ export interface components {
              */
             certificates_issued: number;
             /**
+             * Progress Updates In Period
+             * @default 0
+             */
+            progress_updates_in_period: number;
+            /**
              * Fill Rate
              * @default 0
              */
@@ -33878,6 +33894,11 @@ export interface components {
              */
             gross_margin_pct: number;
             /**
+             * Profitability Reliable
+             * @default false
+             */
+            profitability_reliable: boolean;
+            /**
              * Deferred Revenue Ngn
              * @default 0
              */
@@ -33948,6 +33969,13 @@ export interface components {
             };
             /** Data Quality */
             data_quality?: string[];
+            /**
+             * Member Distribution Ready
+             * @default false
+             */
+            member_distribution_ready: boolean;
+            /** Member Distribution Blockers */
+            member_distribution_blockers?: string[];
             /** Decisions */
             decisions?: {
                 [key: string]: unknown;
