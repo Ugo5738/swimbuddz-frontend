@@ -190,22 +190,12 @@ export function MemberForm({
         hint={isEdit ? "Email cannot be changed" : undefined}
       />
       <Input label="Phone" type="tel" name="phone" value={data.phone} onChange={onChange} />
-      <div className="grid grid-cols-2 gap-3">
+      <div>
         <Select label="Swim Level" name="swim_level" value={data.swim_level} onChange={onChange}>
           <option value="Beginner">Beginner</option>
           <option value="Intermediate">Intermediate</option>
           <option value="Advanced">Advanced</option>
           <option value="Pro">Pro</option>
-        </Select>
-        <Select
-          label="Tier"
-          name="membership_tier"
-          value={data.membership_tier}
-          onChange={onChange}
-        >
-          <option value="community">Community</option>
-          <option value="club">Club</option>
-          <option value="academy">Academy</option>
         </Select>
       </div>
       {isEdit && (
