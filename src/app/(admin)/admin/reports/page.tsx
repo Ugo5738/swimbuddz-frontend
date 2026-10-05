@@ -41,7 +41,7 @@ interface SnapshotStatus {
 interface MemberReport {
   id: string;
   member_name: string;
-  member_tier: string | null;
+  member_tier: string | null; // legacy API field; value is the quarter programme
   total_sessions_attended: number;
   attendance_rate: number;
   streak_longest: number;
@@ -606,7 +606,7 @@ export default function AdminReportsPage() {
                   <thead className="bg-slate-50 text-slate-600">
                     <tr>
                       <th className="px-4 py-3 text-left">Member</th>
-                      <th className="px-4 py-3 text-left">Tier</th>
+                      <th className="px-4 py-3 text-left">Programme</th>
                       <th className="px-4 py-3 text-right">Sessions</th>
                       <th className="px-4 py-3 text-right">Attendance</th>
                       <th className="px-4 py-3 text-right">Streak</th>
