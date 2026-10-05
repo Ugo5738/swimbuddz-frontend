@@ -18,8 +18,12 @@ class UploadRequest {
   abort = vi.fn(() => { this.onabort?.(); this.onloadend?.(); });
   constructor() { UploadRequest.current = this; }
 }
-beforeEach(() => vi.stubGlobal("XMLHttpRequest", UploadRequest));
-afterEach(() => vi.unstubAllGlobals());
+beforeEach(() => {
+  vi.stubGlobal("XMLHttpRequest", UploadRequest);
+});
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe("apiUpload", () => {
   it("reports measured progress but resolves only after the server saves the upload", async () => {
