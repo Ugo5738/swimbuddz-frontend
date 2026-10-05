@@ -1,5 +1,6 @@
 "use client";
 
+import { hasAcademyReadiness as isAcademyReadinessComplete } from "@/lib/academy-readiness";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useApi } from "@/hooks/useApi";
 import { supabase } from "@/lib/auth";
@@ -381,18 +382,8 @@ export function MemberLayout({ children }: MemberLayoutProps) {
       ) ||
       !(member?.availability?.preferred_times && member.availability.preferred_times.length > 0));
 
-  const assessment = member?.membership?.academy_skill_assessment;
-  const hasAssessment =
-    assessment &&
-    ["canFloat", "headUnderwater", "deepWaterComfort", "canSwim25m"].some((k) =>
-      Object.prototype.hasOwnProperty.call(assessment, k)
-    );
   const needsAcademyReadiness =
-    (wantsAcademy || academyEntitled) &&
-    (!hasAssessment ||
-      !member?.membership?.academy_goals ||
-      !member?.membership?.academy_preferred_coach_gender ||
-      !member?.membership?.academy_lesson_preference);
+    (wantsAcademy || academyEntitled) && !isAcademyReadinessComplete(member?.membership);
 
   const needsOnboarding =
     !member || needsProfileCore || needsClubReadiness || needsAcademyReadiness;

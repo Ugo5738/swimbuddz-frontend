@@ -1,5 +1,6 @@
 "use client";
 
+import { normalizeAcademyAssessment } from "@/lib/academy-readiness";
 import { AcademyDetailsStep } from "@/components/registration/AcademyDetailsStep";
 import { Button } from "@/components/ui/Button";
 import { X } from "lucide-react";
@@ -82,7 +83,7 @@ export function AcademyReadinessModal({
     setSaving(true);
     try {
       await onSave({
-        academy_skill_assessment: formData.academySkillAssessment,
+        academy_skill_assessment: normalizeAcademyAssessment(formData.academySkillAssessment),
         academy_goals: formData.academyGoals,
         academy_preferred_coach_gender: formData.academyPreferredCoachGender,
         academy_lesson_preference: formData.academyLessonPreference,

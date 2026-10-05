@@ -1,10 +1,11 @@
 "use client";
 
+import { FileUpload } from "@/components/ui/FileUpload";
 import { ImageCropDialog } from "@/components/ui/ImageCropDialog";
 import { registerMediaUrl, uploadAdjustedImage, uploadMedia } from "@/lib/media";
 import { supportsImageAdjustment, type ImageTransformRecipe } from "@/lib/mediaCrop";
 import { Check, Link, Loader2, Upload, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export type MediaInputMode = "upload-only" | "url-only" | "both";
 
@@ -29,10 +30,11 @@ interface MediaInputProps {
     | "general";
   /** Display mode - upload-only shows just upload, both shows tabs */
   mode?: MediaInputMode;
+  multiple?: boolean;
   /** Current media_id value */
   value?: string | null;
   /** Callback when media is uploaded/registered, returns media_id */
-  onChange: (mediaId: string | null, fileUrl?: string) => void;
+  onChange: (mediaId: string | null, fileUrl?: string) => void | Promise<void>;
   /** Callback when upload fails, exposes error to parent */
   onError?: (error: string | null) => void;
   /** Callback when an upload starts or finishes. Lets the parent block submit
@@ -54,6 +56,7 @@ interface MediaInputProps {
 export function MediaInput({
   purpose,
   mode = "upload-only",
+  multiple = false,
   value,
   onChange,
   onError,
@@ -66,6 +69,9 @@ export function MediaInput({
 }: MediaInputProps) {
   const [activeTab, setActiveTab] = useState<"upload" | "url">("upload");
   const [isUploading, setIsUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [filename, setFilename] = useState("");
+  const [previewIsVideo, setPreviewIsVideo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [urlInput, setUrlInput] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -73,7 +79,6 @@ export function MediaInput({
     file: File;
     objectUrl: string;
   } | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(
     () => () => {
@@ -81,6 +86,10 @@ export function MediaInput({
     },
     [pendingImage]
   );
+
+  useEffect(() => () => {
+    if (previewUrl?.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
 
   // Determine accept types based on purpose if not provided
   const getAcceptTypes = () => {
@@ -127,18 +136,21 @@ export function MediaInput({
         return;
       }
 
+      setProgress(0);
+      setFilename(file.name);
       setIsUploading(true);
       onUploadingChange?.(true);
 
       try {
-        const mediaItem = await uploadMedia(file, purpose);
+        const mediaItem = await uploadMedia(file, purpose, undefined, undefined, undefined, { onProgress: setProgress });
 
         // Set preview for images and videos
         if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
+          setPreviewIsVideo(file.type.startsWith("video/"));
           setPreviewUrl(URL.createObjectURL(file));
         }
 
-        onChange(mediaItem.id, mediaItem.file_url);
+        await onChange(mediaItem.id, mediaItem.file_url);
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : "Upload failed";
         setError(errorMsg);
@@ -156,7 +168,6 @@ export function MediaInput({
       if (current) URL.revokeObjectURL(current.objectUrl);
       return null;
     });
-    if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
 
   const handleAdjustedImage = async (recipe: ImageTransformRecipe) => {
@@ -164,12 +175,14 @@ export function MediaInput({
 
     setError(null);
     onError?.(null);
+    setProgress(0);
+    setFilename(pendingImage.file.name);
     setIsUploading(true);
     onUploadingChange?.(true);
     try {
-      const mediaItem = await uploadAdjustedImage(pendingImage.file, purpose, recipe);
+      const mediaItem = await uploadAdjustedImage(pendingImage.file, purpose, recipe, undefined, undefined, { onProgress: setProgress });
       setPreviewUrl(mediaItem.file_url);
-      onChange(mediaItem.id, mediaItem.file_url);
+      await onChange(mediaItem.id, mediaItem.file_url);
       closeImageAdjustment();
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Image adjustment failed";
@@ -178,25 +191,6 @@ export function MediaInput({
     } finally {
       setIsUploading(false);
       onUploadingChange?.(false);
-    }
-  };
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      if (disabled || isUploading) return;
-
-      const file = e.dataTransfer.files[0];
-      if (file) handleFileSelect(file);
-    },
-    [disabled, isUploading, handleFileSelect]
-  );
-
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleFileSelect(file);
-    if (!file || !(file.type.startsWith("image/") && supportsImageAdjustment(purpose))) {
-      e.target.value = "";
     }
   };
 
@@ -218,7 +212,7 @@ export function MediaInput({
       const mediaItem = await registerMediaUrl(urlInput.trim(), purpose, mediaType);
 
       setPreviewUrl(urlInput);
-      onChange(mediaItem.id, mediaItem.file_url);
+      await onChange(mediaItem.id, mediaItem.file_url);
       setUrlInput("");
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Failed to register URL";
@@ -234,9 +228,6 @@ export function MediaInput({
     onChange(null);
     setPreviewUrl(null);
     setUrlInput("");
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
     closeImageAdjustment();
   };
 
@@ -288,7 +279,8 @@ export function MediaInput({
             type="button"
             onClick={handleClear}
             className="text-gray-400 hover:text-gray-600"
-            disabled={disabled}
+            disabled={disabled || isUploading}
+            aria-label="Remove upload"
           >
             <X className="w-4 h-4" />
           </button>
@@ -299,7 +291,7 @@ export function MediaInput({
       {showPreview && previewUrl && !value && (
         <div className="mb-3">
           {previewUrl.match(/\.(mp4|mov|webm|avi|mkv)$/i) ||
-          (previewUrl.startsWith("blob:") && purpose === "product_video") ? (
+          (previewUrl.startsWith("blob:") && previewIsVideo) ? (
             <video src={previewUrl} controls className="max-h-32 rounded-lg" />
           ) : previewUrl.startsWith("blob:") || previewUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
             // Intentional raw <img> (CONVENTIONS §5, G4 exception):
@@ -314,42 +306,19 @@ export function MediaInput({
 
       {/* Upload area */}
       {showUpload && (activeTab === "upload" || !showTabs) && !value && (
-        <div
-          onDrop={handleDrop}
-          onDragOver={(e) => e.preventDefault()}
-          onClick={() => fileInputRef.current?.click()}
-          className={`
-            border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors
-            ${disabled || isUploading ? "opacity-50 cursor-not-allowed bg-gray-50" : "hover:border-cyan-400 hover:bg-cyan-50/50"}
-            ${error ? "border-red-300 bg-red-50/50" : "border-gray-300"}
-          `}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={getAcceptTypes()}
-            onChange={handleFileInputChange}
-            className="hidden"
-            disabled={disabled || isUploading}
-          />
-
-          {isUploading ? (
-            <div className="flex flex-col items-center">
-              <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
-              <p className="mt-2 text-sm text-gray-500">Uploading...</p>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center">
-              <Upload className="w-8 h-8 text-gray-400" />
-              <p className="mt-2 text-sm text-gray-600">
-                Drop file here or <span className="text-cyan-600">browse</span>
-              </p>
-              <p className="mt-1 text-xs text-gray-400">
-                {getAcceptTypes().replace("*/*", "Any file type")}
-              </p>
-            </div>
-          )}
-        </div>
+        <FileUpload
+          label={label || "Upload file"}
+          accept={getAcceptTypes()}
+          multiple={multiple && !requiresAdjustedUpload}
+          disabled={disabled}
+          uploading={isUploading}
+          progress={progress}
+          filename={filename}
+          helpText={getAcceptTypes().replace("*/*", "Any file type")}
+          onFiles={async (files) => {
+            for (const file of files) await handleFileSelect(file);
+          }}
+        />
       )}
 
       {/* URL input area */}
@@ -385,6 +354,7 @@ export function MediaInput({
           imageUrl={pendingImage.objectUrl}
           purpose={purpose}
           isSaving={isUploading}
+          uploadProgress={progress}
           error={error}
           onCancel={closeImageAdjustment}
           onConfirm={handleAdjustedImage}
@@ -392,7 +362,7 @@ export function MediaInput({
       ) : null}
 
       {/* Error message */}
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && <p role="alert" className="mt-2 text-sm text-red-600">{error}</p>}
     </div>
   );
 }

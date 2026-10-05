@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MediaInput } from "../MediaInput";
@@ -77,7 +77,7 @@ describe("MediaInput", () => {
           shadows: 0,
         },
         filter: { name: "original", strength: 100 },
-      });
+      }, undefined, undefined, { onProgress: expect.any(Function) });
       expect(onChange).toHaveBeenCalledWith("variant-id", "https://cdn.example.com/variant.jpg");
     });
   });
@@ -102,9 +102,28 @@ describe("MediaInput", () => {
     fireEvent.change(input!, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(mediaMocks.uploadMedia).toHaveBeenCalledWith(file, "payment_proof");
+      expect(mediaMocks.uploadMedia).toHaveBeenCalledWith(file, "payment_proof", undefined, undefined, undefined, { onProgress: expect.any(Function) });
       expect(mediaMocks.uploadAdjustedImage).not.toHaveBeenCalled();
       expect(onChange).toHaveBeenCalledWith("evidence-id", "https://cdn.example.com/evidence.jpg");
     });
   });
+  it("shows progress, keeps submit blocked through completion, and supports retry", async () => {
+    let rejectUpload: (error: Error) => void = () => {};
+    mediaMocks.uploadMedia.mockImplementation((_file, _purpose, _linked, _title, _description, options) => {
+      options.onProgress(42);
+      return new Promise((_resolve, reject) => { rejectUpload = reject; });
+    });
+    const onUploadingChange = vi.fn();
+    const { container } = render(<MediaInput purpose="challenge_proof" onChange={vi.fn()} onUploadingChange={onUploadingChange} />);
+    const file = new File(["video"], "attempt.mov", { type: "video/quicktime" });
+    fireEvent.change(container.querySelector('input[type="file"]')!, { target: { files: [file] } });
+    expect(screen.getByRole("progressbar")).toHaveAttribute("value", "42");
+    expect(screen.getByRole("button", { name: "Upload file drop zone" })).toBeDisabled();
+    expect(onUploadingChange).toHaveBeenLastCalledWith(true);
+    await act(async () => rejectUpload(new Error("Connection interrupted")));
+    expect(screen.getByRole("alert")).toHaveTextContent("Connection interrupted");
+    expect(screen.getByRole("button", { name: "Upload file drop zone" })).toBeEnabled();
+    expect(onUploadingChange).toHaveBeenLastCalledWith(false);
+  });
+
 });

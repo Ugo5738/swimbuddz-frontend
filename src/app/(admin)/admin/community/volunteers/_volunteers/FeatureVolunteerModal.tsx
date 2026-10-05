@@ -45,6 +45,8 @@ export function FeatureVolunteerModal({
           </div>
         </div>
 
+        <p className="text-sm text-cyan-800">Volunteer of the Month receives 10 Bubbles, once per person each month.</p>
+
         <Textarea
           label="Spotlight Quote"
           value={featureForm.spotlight_quote}

@@ -4,7 +4,7 @@
  * SubmitForm — member-facing form for attempting a challenge.
  *
  * Handles solo and team submissions. Proof media is uploaded one file at a
- * time via uploadMedia(file, "challenge_proof"); the resulting media_ids
+ * time via the shared MediaInput; the resulting media_ids
  * are then sent in a single `POST /challenges/{id}/submissions` call.
  *
  * Team selection uses the public member directory (members who opted into
@@ -15,20 +15,19 @@
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
-import { apiGet } from "@/lib/api";
+import { MediaInput } from "@/components/ui/MediaInput";
+import { useApi } from "@/hooks/useApi";
 import {
   Challenge,
   ChallengeSubmissionPayload,
   isVideoUrl,
   submitChallenge,
 } from "@/lib/challenges";
-import { uploadMedia } from "@/lib/media";
 import NextImage from "next/image";
 import {
   Image as ImageIcon,
   Loader2,
   Trash2,
-  Upload,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -58,63 +57,11 @@ export function SubmitForm({ challenge, onSuccess }: SubmitFormProps) {
   const [note, setNote] = useState("");
   const [uploads, setUploads] = useState<UploadedProof[]>([]);
   const [uploadingCount, setUploadingCount] = useState(0);
-  const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const [me, setMe] = useState<{ id: string } | null>(null);
+  const { data: me } = useApi<{ id: string }>("/api/v1/members/me");
   const [teammates, setTeammates] = useState<DirectoryMember[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Resolve the current member's id so we can exclude self from teammate picker
-  useEffect(() => {
-    let cancelled = false;
-    apiGet<{ id: string }>("/api/v1/members/me", { auth: true })
-      .then((member) => {
-        if (!cancelled) setMe(member);
-      })
-      .catch(() => {
-        // Not fatal — backend will still verify auth on submit
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const handleFiles = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    setUploadError(null);
-    setUploadingCount((n) => n + files.length);
-    try {
-      const newUploads: UploadedProof[] = [];
-      for (const file of Array.from(files)) {
-        try {
-          const media = await uploadMedia(file, "challenge_proof");
-          newUploads.push({
-            media_id: media.id,
-            file_url: media.file_url,
-            is_video: file.type.startsWith("video/") || isVideoUrl(media.file_url),
-            filename: file.name,
-          });
-        } catch (err) {
-          setUploadError(
-            err instanceof Error ? err.message : `Upload failed: ${file.name}`,
-          );
-        } finally {
-          setUploadingCount((n) => Math.max(0, n - 1));
-        }
-      }
-      if (newUploads.length) {
-        setUploads((prev) => [...prev, ...newUploads]);
-      }
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : "Upload failed");
-      setUploadingCount(0);
-    } finally {
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
 
   const removeUpload = (mediaId: string) => {
     setUploads((prev) => prev.filter((u) => u.media_id !== mediaId));
@@ -181,38 +128,22 @@ export function SubmitForm({ challenge, onSuccess }: SubmitFormProps) {
           Proof — photos or videos of your attempt
           <span className="ml-1 text-rose-600">*</span>
         </label>
-        <div className="rounded-md border border-dashed border-slate-300 p-3">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*,video/*"
-            multiple
-            onChange={(e) => handleFiles(e.target.files)}
-            className="hidden"
-          />
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-2"
-            disabled={uploadingCount > 0}
-          >
-            {uploadingCount > 0 ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Uploading… ({uploadingCount} left)
-              </>
-            ) : (
-              <>
-                <Upload className="h-4 w-4" />
-                Add files
-              </>
-            )}
-          </Button>
-          {uploadError && (
-            <p className="mt-2 text-sm text-rose-600">{uploadError}</p>
-          )}
-        </div>
+        <MediaInput
+          purpose="challenge_proof"
+          multiple
+          label="Add proof photo or video"
+          showPreview={false}
+          disabled={submitting}
+          onUploadingChange={(uploading) => setUploadingCount(uploading ? 1 : 0)}
+          onChange={(mediaId, fileUrl) => {
+            if (mediaId && fileUrl) setUploads((previous) => [...previous, {
+              media_id: mediaId,
+              file_url: fileUrl,
+              is_video: isVideoUrl(fileUrl),
+              filename: "Challenge proof",
+            }]);
+          }}
+        />
 
         {uploads.length > 0 && (
           <div className="grid gap-2 sm:grid-cols-2">
@@ -241,6 +172,7 @@ export function SubmitForm({ challenge, onSuccess }: SubmitFormProps) {
                 <button
                   type="button"
                   onClick={() => removeUpload(u.media_id)}
+                  disabled={submitting}
                   className="absolute right-1 top-1 rounded-full bg-white/90 p-1 text-slate-700 shadow hover:text-rose-600"
                   aria-label="Remove"
                 >
@@ -309,30 +241,11 @@ function TeamPicker({
   onChange: (next: DirectoryMember[]) => void;
   excludeMemberId: string | null;
 }) {
-  const [members, setMembers] = useState<DirectoryMember[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, loading, error } = useApi<DirectoryMember[]>("/api/v1/members/directory", { auth: false });
+  const members = data ?? [];
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    apiGet<DirectoryMember[]>("/api/v1/members/directory")
-      .then((data) => {
-        if (!cancelled) setMembers(data);
-      })
-      .catch((err) => {
-        if (!cancelled)
-          setError(err instanceof Error ? err.message : "Failed to load");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     if (!open) return;

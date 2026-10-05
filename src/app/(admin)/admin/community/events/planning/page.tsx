@@ -1,5 +1,6 @@
 "use client";
 
+import { FileUpload } from "@/components/ui/FileUpload";
 import { PoolPicker } from "@/components/admin/PoolPicker";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -120,6 +121,7 @@ export default function EventPlanningPage() {
   const [workingTemplateId, setWorkingTemplateId] = useState<string | null>(null);
   const [importPreview, setImportPreview] = useState<CalendarImportPreview | null>(null);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{
@@ -295,6 +297,7 @@ export default function EventPlanningPage() {
 
   const handleWorkbook = async (file: File | null) => {
     if (!file) return;
+    setUploadProgress(0);
     setUploading(true);
     setImportResult(null);
     try {
@@ -303,7 +306,7 @@ export default function EventPlanningPage() {
       const preview = await apiUpload<CalendarImportPreview>(
         "/api/v1/events/planning/imports/xlsx/preview",
         body,
-        { auth: true }
+        { auth: true, onProgress: setUploadProgress }
       );
       setImportPreview(preview);
       setSelectedRows(
@@ -976,17 +979,13 @@ export default function EventPlanningPage() {
                   The workbook must include the controlled <strong>Calendar Import</strong> sheet.
                 </p>
               </div>
-              <label className="inline-flex min-h-[44px] w-fit cursor-pointer items-center justify-center gap-2 rounded-md bg-cyan-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-cyan-500">
-                <Upload className="h-4 w-4" />
-                {uploading ? "Reading workbook..." : "Choose .xlsx file"}
-                <input
-                  type="file"
-                  accept=".xlsx"
-                  className="sr-only"
-                  disabled={uploading}
-                  onChange={(event) => void handleWorkbook(event.target.files?.[0] ?? null)}
-                />
-              </label>
+              <FileUpload
+                label="Choose calendar workbook"
+                accept=".xlsx"
+                uploading={uploading}
+                progress={uploadProgress}
+                onFiles={([file]) => void handleWorkbook(file)}
+              />
             </div>
           </section>
 

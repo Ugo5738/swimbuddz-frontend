@@ -17,6 +17,7 @@ import {
   coachSpecialtyOptions,
   levelsTaughtOptions,
 } from "@/lib/coaches";
+import { FileUpload } from "@/components/ui/FileUpload";
 import { uploadMedia } from "@/lib/media";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -35,6 +36,8 @@ export default function CoachApplyPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [documentMethod, setDocumentMethod] = useState<DocumentMethod>("link");
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadingDocument, setUploadingDocument] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -99,35 +102,8 @@ export default function CoachApplyPage() {
   };
 
   const handleFileSelect = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        if (file.size > 10 * 1024 * 1024) {
-          setError("File size must be less than 10MB");
-          return;
-        }
-        const validTypes = [
-          "application/pdf",
-          "image/jpeg",
-          "image/png",
-          "image/jpg",
-        ];
-        if (!validTypes.includes(file.type)) {
-          setError("Only PDF, JPG, and PNG files are accepted");
-          return;
-        }
-        setUploadedFile(file);
-        setFormData({ ...formData, coaching_document_file_name: file.name });
-        setError(null);
-      }
-    },
-    [formData],
-  );
-
-  const handleFileDrop = useCallback(
-    (e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      const file = e.dataTransfer.files?.[0];
+    (files: File[]) => {
+      const file = files[0];
       if (file) {
         if (file.size > 10 * 1024 * 1024) {
           setError("File size must be less than 10MB");
@@ -152,6 +128,8 @@ export default function CoachApplyPage() {
   );
 
   const uploadCoachDocument = async (file: File): Promise<string> => {
+    setUploadProgress(0);
+    setUploadingDocument(true);
     try {
       const mediaItem = await uploadMedia(
         file,
@@ -159,6 +137,7 @@ export default function CoachApplyPage() {
         undefined,
         file.name,
         "Coach application document",
+        { onProgress: setUploadProgress },
       );
 
       if (!mediaItem?.file_url) {
@@ -170,7 +149,7 @@ export default function CoachApplyPage() {
       const message =
         error instanceof Error ? error.message : "Failed to upload document";
       throw new Error(message);
-    }
+    } finally { setUploadingDocument(false); }
   };
 
   const handleSubmit = async () => {
@@ -666,56 +645,16 @@ export default function CoachApplyPage() {
               </div>
             ) : (
               <div key="upload" className="space-y-3">
-                <div
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={handleFileDrop}
-                  className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-cyan-500 transition-colors cursor-pointer"
-                  onClick={() => document.getElementById("file-input")?.click()}
-                >
-                  {uploadedFile ? (
-                    <div className="space-y-2">
-                      <div className="text-3xl">📄</div>
-                      <p className="font-medium text-slate-900">
-                        {uploadedFile.name}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setUploadedFile(null);
-                          setFormData({
-                            ...formData,
-                            coaching_document_file_name: "",
-                          });
-                        }}
-                        className="text-sm text-red-600 hover:underline"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="text-3xl text-slate-400">📁</div>
-                      <p className="text-slate-600">
-                        Drag & drop your file here, or{" "}
-                        <span className="text-cyan-600">browse</span>
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        Accepted formats: PDF, JPG, PNG • Max size: 10MB
-                      </p>
-                    </div>
-                  )}
-                  <input
-                    id="file-input"
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                </div>
+                <FileUpload
+                  label="Coaching certificate or document"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  disabled={submitting}
+                  uploading={uploadingDocument}
+                  progress={uploadProgress}
+                  filename={uploadedFile?.name}
+                  helpText="PDF, JPG or PNG, up to 10 MB"
+                  onFiles={handleFileSelect}
+                />
 
                 {uploadedFile && (
                   <Input
