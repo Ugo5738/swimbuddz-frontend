@@ -77,6 +77,7 @@ interface BusinessReview {
     cogs_ngn: number;
     gross_margin_ngn: number;
     gross_margin_pct: number;
+    profitability_reliable: boolean;
     deferred_revenue_ngn: number;
     cash_ngn: number;
     by_domain: Array<{
@@ -103,6 +104,8 @@ interface BusinessReview {
   }>;
   session_mix: Record<string, number>;
   data_quality: string[];
+  member_distribution_ready: boolean;
+  member_distribution_blockers: string[];
   decisions: Array<{ key: string; title: string; prompt: string }>;
 }
 
@@ -130,7 +133,11 @@ function numberValue(value: unknown): number {
 }
 
 function percent(value: unknown): string {
-  return `${(numberValue(value) * 100).toFixed(0)}%`;
+  return typeof value === "number" ? `${(value * 100).toFixed(0)}%` : "N/A";
+}
+
+function displayNumber(value: unknown): string | number {
+  return typeof value === "number" ? value : "N/A";
 }
 
 function money(value: number): string {
@@ -329,7 +336,12 @@ export default function AdminReportsPage() {
             <>
               <button
                 onClick={handleSendEmails}
-                disabled={sendingEmails}
+                disabled={sendingEmails || !review?.member_distribution_ready}
+                title={
+                  review?.member_distribution_ready
+                    ? "Send member reports"
+                    : review?.member_distribution_blockers.join(" ")
+                }
                 className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
               >
                 <Mail className="h-4 w-4" />
@@ -349,6 +361,16 @@ export default function AdminReportsPage() {
 
       {error && <Card className="p-4 bg-red-50 text-red-700 text-sm">{error}</Card>}
       {success && <Card className="p-4 bg-green-50 text-green-700 text-sm">{success}</Card>}
+      {review && !review.member_distribution_ready && (
+        <Card className="p-4 bg-amber-50 border-amber-200 text-amber-800 text-sm">
+          <strong>Member report email is paused.</strong>
+          <ul className="mt-2 list-disc pl-5 space-y-1">
+            {review.member_distribution_blockers.map((blocker) => (
+              <li key={blocker}>{blocker}</li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {loading ? (
         <LoadingSpinner />
@@ -375,7 +397,7 @@ export default function AdminReportsPage() {
           <section className="space-y-3">
             <SectionHeading title="Executive scorecard" subtitle="Quarter-over-quarter operating signals" />
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-              <ComparisonCard label="Active members" value={score.active_members} />
+              <ComparisonCard label="Active swimmers" value={score.active_members} />
               <ComparisonCard label="Sessions held" value={score.sessions_held} />
               <ComparisonCard label="Attendance rate" value={score.attendance_rate} suffix="%" />
               <ComparisonCard label="New members" value={score.new_members} />
@@ -390,10 +412,25 @@ export default function AdminReportsPage() {
               <>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <MetricCard label="Revenue" value={money(review.finance.revenue_ngn)} icon={<FileSpreadsheet className="h-5 w-5" />} />
-                  <MetricCard label="Gross margin" value={money(review.finance.gross_margin_ngn)} detail={`${review.finance.gross_margin_pct.toFixed(1)}%`} icon={<TrendingUp className="h-5 w-5" />} />
-                  <MetricCard label="Net income" value={money(review.finance.net_income_ngn)} icon={review.finance.net_income_ngn >= 0 ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />} />
+                  <MetricCard
+                    label="Gross margin"
+                    value={review.finance.profitability_reliable ? money(review.finance.gross_margin_ngn) : "Not reliable"}
+                    detail={review.finance.profitability_reliable ? `${review.finance.gross_margin_pct.toFixed(1)}%` : "Direct costs/COGS incomplete"}
+                    icon={<TrendingUp className="h-5 w-5" />}
+                  />
+                  <MetricCard
+                    label="Net income"
+                    value={review.finance.profitability_reliable ? money(review.finance.net_income_ngn) : "Not reliable"}
+                    detail={review.finance.profitability_reliable ? undefined : "Expense classification incomplete"}
+                    icon={review.finance.net_income_ngn >= 0 ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
+                  />
                   <MetricCard label="Cash position" value={money(review.finance.cash_ngn)} detail={`Deferred: ${money(review.finance.deferred_revenue_ngn)}`} icon={<FileSpreadsheet className="h-5 w-5" />} />
                 </div>
+                {!review.finance.profitability_reliable && review.finance.note && (
+                  <Card className="p-4 bg-amber-50 border-amber-200 text-sm text-amber-800">
+                    {review.finance.note}
+                  </Card>
+                )}
                 {review.finance.by_domain.length > 0 && (
                   <Card className="overflow-hidden">
                     <div className="p-4 border-b border-slate-200 font-semibold">Margin by service/domain</div>
@@ -414,8 +451,12 @@ export default function AdminReportsPage() {
                               <td className="px-4 py-3 font-medium">{row.domain || "Unassigned"}</td>
                               <td className="px-4 py-3 text-right">{money(row.revenue_ngn)}</td>
                               <td className="px-4 py-3 text-right">{money(row.cogs_ngn)}</td>
-                              <td className="px-4 py-3 text-right">{money(row.gross_margin_ngn)}</td>
-                              <td className="px-4 py-3 text-right">{row.gross_margin_pct.toFixed(1)}%</td>
+                              <td className="px-4 py-3 text-right">
+                                {review.finance.profitability_reliable ? money(row.gross_margin_ngn) : "—"}
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                {review.finance.profitability_reliable ? `${row.gross_margin_pct.toFixed(1)}%` : "Incomplete"}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -451,9 +492,9 @@ export default function AdminReportsPage() {
               icon={<Waves className="h-5 w-5 text-blue-600" />}
               metrics={[
                 ["Active members", numberValue(review.club.active_members)],
-                ["New enrollments", numberValue(review.club.new_enrollments)],
-                ["Prior-period members", numberValue(review.club.prior_period_members)],
-                ["Retained members", numberValue(review.club.retained_members)],
+                ["New enrollments", displayNumber(review.club.new_enrollments)],
+                ["Prior-period members", displayNumber(review.club.prior_period_members)],
+                ["Retained members", displayNumber(review.club.retained_members)],
                 ["Retention rate", percent(review.club.retention_rate)],
                 ["Quarterly prepaid", numberValue(review.club.prepaid_enrollments)],
                 ["Transition plan", numberValue(review.club.transition_enrollments)],
@@ -464,8 +505,9 @@ export default function AdminReportsPage() {
           <section className="space-y-3">
             <SectionHeading title="Community & delivery" subtitle="Participation, progress and session mix" />
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <MetricCard label="Active members" value={numberValue(review.community.active_members)} icon={<Users className="h-5 w-5" />} />
-              <MetricCard label="Average member attendance" value={percent(review.community.average_attendance_rate)} icon={<BarChart3 className="h-5 w-5" />} />
+              <MetricCard label="Active swimmers" value={numberValue(review.community.active_members)} icon={<Users className="h-5 w-5" />} />
+              <MetricCard label="Registered swimmer profiles" value={numberValue(review.community.registered_swimmer_profiles)} icon={<Users className="h-5 w-5" />} />
+              <MetricCard label="Attendance rate (weighted)" value={percent(review.community.average_attendance_rate)} icon={<BarChart3 className="h-5 w-5" />} />
               <MetricCard label="All swimmer attendances" value={numberValue(review.community.attendance_records)} icon={<Users className="h-5 w-5" />} />
               <MetricCard
                 label="Guest attendances"
