@@ -36,7 +36,24 @@ export interface Member {
   medical_info?: string;
   membership_tier?: string;
   requested_membership_tiers?: string[];
+
+  // Canonical admin projection. Membership and programmes are independent;
+  // these fields supersede the legacy tier hierarchy for admin display.
+  annual_membership_status?: string;
+  annual_membership_label?: string;
+  annual_membership_paid_until?: string;
+  club_programme_status?: string;
+  club_programme_label?: string;
+  academy_programme_status?: string;
+  academy_programme_label?: string;
+  pending_programmes?: string[];
+  current_club_id?: string;
+  current_club_name?: string;
+  current_club_payment_mode?: string;
+  current_club_until?: string;
+  current_pod_id?: string;
+  current_pod_name?: string;
 }
 
-export type FilterTab = "all" | "pending" | "active" | "unpaid" | "upgrades";
-export type ApprovalAction = "approve" | "reject" | "upgrade";
+export type FilterTab = "all" | "pending" | "membership_due" | "programme_requests" | "club";
+export type ApprovalAction = "approve" | "reject";

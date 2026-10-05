@@ -5240,6 +5240,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/sessions/participants/{participant_id}/settlement-context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Participant Settlement Context */
+        get: operations["get_participant_settlement_context_internal_sessions_participants__participant_id__settlement_context_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/sessions/participants/{participant_id}/confirm-payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Participant Payment */
+        post: operations["confirm_participant_payment_internal_sessions_participants__participant_id__confirm_payment_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/sessions/scheduled": {
         parameters: {
             query?: never;
@@ -6130,6 +6164,31 @@ export interface paths {
          *     who should receive session-related notifications.
          */
         get: operations["get_session_attendee_member_ids_internal_attendance_session__session_id__member_ids_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/attendance/session-counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Session Attendance Counts
+         * @description Return actual PRESENT/LATE attendance by session and subject kind.
+         *
+         *     Sessions/reporting own the scheduled dates, so callers first select the
+         *     sessions in their reporting window and then ask Attendance for counts. This
+         *     avoids attributing a retrospectively-entered walk-in to the day the admin
+         *     happened to enter it.
+         */
+        get: operations["get_session_attendance_counts_internal_attendance_session_counts_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -8352,6 +8411,50 @@ export interface paths {
          * @description Replay entitlement fulfillment for a paid payment.
          */
         post: operations["replay_payment_entitlement_payments_admin__reference__replay_entitlement_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/session-participants/{participant_id}/payment-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin Generate Participant Payment Link
+         * @description Create/resume a Paystack checkout for an unregistered guest walk-in.
+         *
+         *     The attendee remains a SessionParticipant. PaymentPurpose.GUEST_PASS is
+         *     reused as the existing guest-session commercial/payment primitive; no fake
+         *     GuestPass booking or waiver is created.
+         */
+        post: operations["admin_generate_participant_payment_link_payments_admin_session_participants__participant_id__payment_link_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/session-participants/{participant_id}/offline-payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin Record Participant Offline Payment
+         * @description Record bank transfer, cash, POS or another verified guest walk-in payment.
+         */
+        post: operations["admin_record_participant_offline_payment_payments_admin_session_participants__participant_id__offline_payment_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -23521,6 +23624,52 @@ export interface components {
             academy_paid_until?: string | null;
             /** Post Academy Club Until */
             post_academy_club_until?: string | null;
+            /**
+             * Annual Membership Status
+             * @default inactive
+             */
+            annual_membership_status: string;
+            /**
+             * Annual Membership Label
+             * @default Inactive
+             */
+            annual_membership_label: string;
+            /** Annual Membership Paid Until */
+            annual_membership_paid_until?: string | null;
+            /**
+             * Club Programme Status
+             * @default inactive
+             */
+            club_programme_status: string;
+            /**
+             * Club Programme Label
+             * @default Inactive
+             */
+            club_programme_label: string;
+            /**
+             * Academy Programme Status
+             * @default inactive
+             */
+            academy_programme_status: string;
+            /**
+             * Academy Programme Label
+             * @default Inactive
+             */
+            academy_programme_label: string;
+            /** Pending Programmes */
+            pending_programmes?: string[];
+            /** Current Club Id */
+            current_club_id?: string | null;
+            /** Current Club Name */
+            current_club_name?: string | null;
+            /** Current Club Payment Mode */
+            current_club_payment_mode?: string | null;
+            /** Current Club Until */
+            current_club_until?: string | null;
+            /** Current Pod Id */
+            current_pod_id?: string | null;
+            /** Current Pod Name */
+            current_pod_name?: string | null;
             /** Emergency Contact Name */
             emergency_contact_name?: string | null;
             /** Emergency Contact Phone */
@@ -26947,6 +27096,51 @@ export interface components {
              * @default 0
              */
             guest_swimmer_hours: number;
+            /**
+             * Exact Guest Swimmer Hours
+             * @default 0
+             */
+            exact_guest_swimmer_hours: number;
+            /**
+             * Estimated Guest Swimmer Hours
+             * @default 0
+             */
+            estimated_guest_swimmer_hours: number;
+            /**
+             * Total Attendance Records
+             * @default 0
+             */
+            total_attendance_records: number;
+            /**
+             * Member Attendance Records
+             * @default 0
+             */
+            member_attendance_records: number;
+            /**
+             * Guest Attendance Records
+             * @default 0
+             */
+            guest_attendance_records: number;
+            /**
+             * Guest Pass Attendance Records
+             * @default 0
+             */
+            guest_pass_attendance_records: number;
+            /**
+             * Booking Guest Attendance Records
+             * @default 0
+             */
+            booking_guest_attendance_records: number;
+            /**
+             * Walk In Guest Attendance Records
+             * @default 0
+             */
+            walk_in_guest_attendance_records: number;
+            /**
+             * Attendance Available
+             * @default false
+             */
+            attendance_available: boolean;
             /** By Type */
             by_type?: {
                 [key: string]: unknown;
@@ -26993,6 +27187,20 @@ export interface components {
          * @enum {string}
          */
         SessionLocation: "sunfit_pool" | "rowe_park_pool" | "federal_palace_pool" | "open_water" | "other";
+        /** SessionParticipantPaymentConfirm */
+        SessionParticipantPaymentConfirm: {
+            /** Payment Reference */
+            payment_reference: string;
+            /** Payment Method */
+            payment_method: string;
+            /** Amount Kobo */
+            amount_kobo: number;
+            /**
+             * Paid At
+             * Format: date-time
+             */
+            paid_at: string;
+        };
         /** SessionParticipantResponse */
         SessionParticipantResponse: {
             /**
@@ -27059,6 +27267,39 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /** SessionParticipantSettlementContext */
+        SessionParticipantSettlementContext: {
+            /**
+             * Participant Id
+             * Format: uuid
+             */
+            participant_id: string;
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /** Session Type */
+            session_type: string;
+            /** Source */
+            source: string;
+            /** Participant Kind */
+            participant_kind: string;
+            /** Full Name */
+            full_name: string;
+            /** Email */
+            email?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Fee Amount Kobo */
+            fee_amount_kobo: number;
+            /** Payment Status */
+            payment_status: string;
+            /** Payment Method */
+            payment_method?: string | null;
+            /** Payment Reference */
+            payment_reference?: string | null;
         };
         /**
          * SessionRangeStats
@@ -28097,6 +28338,31 @@ export interface components {
          * @enum {string}
          */
         RideShareOption: "none" | "lead" | "join";
+        /** SessionAttendanceCount */
+        SessionAttendanceCount: {
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /**
+             * Attended
+             * @default 0
+             */
+            attended: number;
+            /**
+             * Member Attended
+             * @default 0
+             */
+            member_attended: number;
+            /**
+             * Booking Guest Attended
+             * @default 0
+             */
+            booking_guest_attended: number;
+            /** Participant Ids */
+            participant_ids?: string[];
+        };
         /**
          * SessionSummary
          * @description Lightweight session info embedded in attendance responses.
@@ -30675,6 +30941,21 @@ export interface components {
             amount: number;
             /** Booking Id */
             booking_id: string;
+            /** Session Id */
+            session_id: string;
+        };
+        /** AdminParticipantPayLinkResponse */
+        AdminParticipantPayLinkResponse: {
+            /** Reference */
+            reference: string;
+            /** Authorization Url */
+            authorization_url: string;
+            /** Payer Email */
+            payer_email?: string | null;
+            /** Amount */
+            amount: number;
+            /** Participant Id */
+            participant_id: string;
             /** Session Id */
             session_id: string;
         };
@@ -55662,6 +55943,72 @@ export interface operations {
             };
         };
     };
+    get_participant_settlement_context_internal_sessions_participants__participant_id__settlement_context_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                participant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionParticipantSettlementContext"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_participant_payment_internal_sessions_participants__participant_id__confirm_payment_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                participant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SessionParticipantPaymentConfirm"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionParticipantSettlementContext"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_scheduled_sessions_internal_sessions_scheduled_get: {
         parameters: {
             query?: {
@@ -56998,6 +57345,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": string[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_session_attendance_counts_internal_attendance_session_counts_get: {
+        parameters: {
+            query: {
+                /** @description Comma-separated session IDs */
+                ids: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionAttendanceCount"][];
                 };
             };
             /** @description Validation Error */
@@ -60768,6 +61147,72 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_generate_participant_payment_link_payments_admin_session_participants__participant_id__payment_link_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                participant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminParticipantPayLinkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_record_participant_offline_payment_payments_admin_session_participants__participant_id__offline_payment_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                participant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminBookingOfflinePaymentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };

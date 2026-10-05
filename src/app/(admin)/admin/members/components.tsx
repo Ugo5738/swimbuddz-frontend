@@ -11,19 +11,8 @@ import { CheckCircle, Clock, XCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-import { EMPTY_FORM, MOBILE_CLR, TIER_CLR } from "./constants";
+import { EMPTY_FORM, MOBILE_CLR } from "./constants";
 import type { Member } from "./types";
-import { isPaid } from "./utils";
-
-export function TierBadge({ t }: { t: string }) {
-  return (
-    <span
-      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium capitalize ${TIER_CLR[t] || "bg-slate-100 text-slate-600"}`}
-    >
-      {t}
-    </span>
-  );
-}
 
 export function StatusBadge({ s }: { s: string }) {
   if (s === "approved")
@@ -44,15 +33,6 @@ export function StatusBadge({ s }: { s: string }) {
     <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
       <Clock className="h-3 w-3" />
       Pending
-    </span>
-  );
-}
-
-export function PayText({ m }: { m: Member }) {
-  const p = isPaid(m);
-  return (
-    <span className={`text-xs font-medium ${p ? "text-green-600" : "text-red-500"}`}>
-      {p ? "Paid" : "Unpaid"}
     </span>
   );
 }
