@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPost } from "./api";
+import { apiDelete, apiGet, apiPost, apiUpload } from "./api";
 
 // ─── Types ────────────────────────────────────────────────────────────
 //
