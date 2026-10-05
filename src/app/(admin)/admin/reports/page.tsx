@@ -237,7 +237,7 @@ export default function AdminReportsPage() {
         loadAvailable(),
       ]);
       setSuccess(
-        `${selected.quarter === fallback.quarter && selected.year === fallback.year ? "Quarter" : `Q${selected.quarter} ${selected.year}`} regenerated — ${result.member_count} member reports computed.`
+        `${selected.quarter === fallback.quarter && selected.year === fallback.year ? "Quarter" : `Q${selected.quarter} ${selected.year}`} regenerated — ${result.member_count} swimmer reports computed.`
       );
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to generate report");
@@ -386,7 +386,7 @@ export default function AdminReportsPage() {
                   </span>
                 </div>
                 <span className="text-slate-500">
-                  {snapshotStatus.member_count} member reports
+                  {snapshotStatus.member_count} swimmer reports
                   {snapshotStatus.completed_at &&
                     ` · generated ${new Date(snapshotStatus.completed_at).toLocaleString()}`}
                 </span>
@@ -485,6 +485,7 @@ export default function AdminReportsPage() {
                 ["Fill rate", percent(review.academy.fill_rate)],
                 ["Completion rate", percent(review.academy.completion_rate)],
                 ["Certificates", numberValue(review.academy.certificates_issued)],
+                ["Progress updates", numberValue(review.academy.progress_updates_in_period)],
               ]}
             />
             <DomainCard
@@ -597,7 +598,7 @@ export default function AdminReportsPage() {
           {members.length > 0 && (
             <Card className="overflow-hidden">
               <div className="p-4 border-b border-slate-200">
-                <h2 className="font-semibold text-slate-900">Individual member reports ({members.length})</h2>
+                <h2 className="font-semibold text-slate-900">Individual swimmer reports ({members.length})</h2>
                 <p className="text-xs text-slate-500 mt-1">Member-facing engagement snapshot; separate from the management economics above.</p>
               </div>
               <div className="overflow-x-auto">
