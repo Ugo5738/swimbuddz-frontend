@@ -966,11 +966,18 @@ export default function AdminAttendancePage() {
         { entries },
         { auth: true }
       );
-      const refreshed = await apiGet<Attendance[]>(
-        `/api/v1/attendance/sessions/${selectedSessionId}/attendance`,
-        { auth: true }
-      );
+      const [refreshed, refreshedBookings] = await Promise.all([
+        apiGet<Attendance[]>(
+          `/api/v1/attendance/sessions/${selectedSessionId}/attendance`,
+          { auth: true }
+        ),
+        apiGet<SessionBookingResponse[]>(
+          `/api/v1/sessions/${selectedSessionId}/bookings`,
+          { auth: true }
+        ),
+      ]);
       setAttendanceList(refreshed);
+      setBookings(refreshedBookings);
       setDrafts(new Map());
       setMarkSuccess(`Saved ${entries.length} change${entries.length === 1 ? "" : "s"}.`);
     } catch (err) {
