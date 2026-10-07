@@ -179,20 +179,45 @@ export function BasicsStep({ selectedProgram, formData, rideAreas, onChange }: P
 
       <SessionDefaultsField formData={formData} rideAreas={rideAreas} onChange={onChange} />
 
-      <label className="flex items-center gap-2 mt-4">
-        <input
-          type="checkbox"
-          checked={formData.allow_mid_entry}
-          onChange={(e) =>
-            onChange({
-              ...formData,
-              allow_mid_entry: e.target.checked,
-            })
-          }
-          className="rounded border-slate-300"
-        />
-        <span className="text-sm text-slate-700">Allow mid-cohort enrollment</span>
-      </label>
+      <div className="border-t pt-4 mt-4">
+        <h3 className="font-semibold text-slate-900 mb-3">Enrollment rules</h3>
+        <label className="flex items-start gap-2">
+          <input
+            type="checkbox"
+            checked={formData.allow_mid_entry}
+            onChange={(e) =>
+              onChange({
+                ...formData,
+                allow_mid_entry: e.target.checked,
+              })
+            }
+            className="mt-1 rounded border-slate-300"
+          />
+          <div>
+            <span className="text-sm text-slate-700">Allow mid-cohort enrollment</span>
+            <p className="text-xs text-slate-500">
+              Lets learners join after the cohort has started, up to the cutoff week below.
+            </p>
+          </div>
+        </label>
+
+        {formData.allow_mid_entry ? (
+          <Input
+            label="Mid-entry cutoff week"
+            type="number"
+            min={1}
+            value={formData.mid_entry_cutoff_week}
+            onChange={(e) =>
+              onChange({
+                ...formData,
+                mid_entry_cutoff_week: Math.max(1, Number(e.target.value) || 1),
+              })
+            }
+            hint="Example: 4 means learners can join through Week 4."
+            className="mt-4"
+          />
+        ) : null}
+      </div>
 
       <label className="flex items-center gap-2 mt-2">
         <input
