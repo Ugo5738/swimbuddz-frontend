@@ -310,6 +310,7 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 | `/admin/academy/programs/[id]/curriculum` | `src/app/(admin)/admin/academy/programs/[id]/curriculum/page.tsx` | Curriculum builder/editor       |
 | `/admin/academy/cohorts/new`              | `src/app/(admin)/admin/academy/cohorts/new/page.tsx`              | Create new cohort               |
 | `/admin/academy/cohorts/[id]`             | `src/app/(admin)/admin/academy/cohorts/[id]/page.tsx`             | Cohort management               |
+| `/admin/academy/cohorts/[id]/edit`        | `src/app/(admin)/admin/academy/cohorts/[id]/edit/page.tsx`        | Full cohort settings editor     |
 | `/admin/academy/enrollments`              | `src/app/(admin)/admin/academy/enrollments/page.tsx`              | All enrollments list            |
 | `/admin/academy/enrollments/[id]`         | `src/app/(admin)/admin/academy/enrollments/[id]/page.tsx`         | Single enrollment management    |
 | `/admin/academy/extension-requests`       | `src/app/(admin)/admin/academy/extension-requests/page.tsx`       | Cohort extension approval queue |

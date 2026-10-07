@@ -28,6 +28,7 @@ export type CohortFormData = {
   type: CohortType;
   status: CohortStatus;
   allow_mid_entry: boolean;
+  mid_entry_cutoff_week: number;
   require_approval: boolean;
   admin_dropout_approval: boolean;
   lead_coach_id: string | null;
