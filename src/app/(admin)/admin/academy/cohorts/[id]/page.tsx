@@ -52,7 +52,7 @@ export default function CohortDetailsPage() {
   const [studentProgress, setStudentProgress] = useState<Record<string, StudentProgress[]>>({});
   const [memberLookup, setMemberLookup] = useState<Record<string, MemberBasicInfo>>({});
   const [loading, setLoading] = useState(true);
-  const [sessionsRefreshNonce, setSessionsRefreshNonce] = useState(0);
+  const sessionsRefreshNonce = 0;
   const [pricing, setPricing] = useState<CohortPricing | null>(null);
   const [pricingLines, setPricingLines] = useState([
     { label: "Tuition and coaching", amount_ngn: 0 },
