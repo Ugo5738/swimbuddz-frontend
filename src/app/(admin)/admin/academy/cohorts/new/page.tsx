@@ -43,6 +43,7 @@ export default function NewCohortPage() {
     type: CohortType.GROUP,
     status: CohortStatus.OPEN,
     allow_mid_entry: false,
+    mid_entry_cutoff_week: 2,
     require_approval: false,
     admin_dropout_approval: false,
     lead_coach_id: null,

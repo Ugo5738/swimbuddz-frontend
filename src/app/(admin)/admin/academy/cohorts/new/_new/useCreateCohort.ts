@@ -79,6 +79,7 @@ export function useCreateCohort({
         type: formData.type,
         status: formData.status,
         allow_mid_entry: formData.allow_mid_entry,
+        mid_entry_cutoff_week: formData.mid_entry_cutoff_week,
         // Send lead coach_id for backward compat + coach_assignments for new system
         coach_id: formData.lead_coach_id || undefined,
         coach_assignments: coachAssignments.length > 0 ? coachAssignments : undefined,
