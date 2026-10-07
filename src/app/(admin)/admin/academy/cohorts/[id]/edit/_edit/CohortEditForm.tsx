@@ -249,7 +249,7 @@ export function CohortEditForm({ cohort, onCancel, onSaved }: Props) {
           Cancel
         </Button>
         <Button type="submit" disabled={loading}>
-          {loading && submitPhase !== "idle" ? loadingLabel[submitPhase] : "Save cohort"}
+          {submitPhase === "idle" ? "Save cohort" : loadingLabel[submitPhase]}
         </Button>
       </div>
     </form>
