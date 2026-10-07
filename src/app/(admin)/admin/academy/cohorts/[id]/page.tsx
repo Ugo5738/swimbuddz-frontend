@@ -1,6 +1,5 @@
 "use client";
 
-import { EditCohortModal } from "@/components/academy/EditCohortModal";
 import { EnrollmentStatusBadge } from "@/components/academy/EnrollmentStatusBadge";
 import { MilestoneProgressModal } from "@/components/academy/MilestoneProgressModal";
 import { PaymentStatusBadge } from "@/components/academy/PaymentStatusBadge";
@@ -53,7 +52,6 @@ export default function CohortDetailsPage() {
   const [studentProgress, setStudentProgress] = useState<Record<string, StudentProgress[]>>({});
   const [memberLookup, setMemberLookup] = useState<Record<string, MemberBasicInfo>>({});
   const [loading, setLoading] = useState(true);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [sessionsRefreshNonce, setSessionsRefreshNonce] = useState(0);
   const [pricing, setPricing] = useState<CohortPricing | null>(null);
   const [pricingLines, setPricingLines] = useState([
@@ -291,7 +289,7 @@ export default function CohortDetailsPage() {
               Complexity Score
             </button>
             <button
-              onClick={() => setIsEditModalOpen(true)}
+              onClick={() => router.push(`/admin/academy/cohorts/${cohortId}/edit`)}
               className="rounded bg-white px-3 py-2 text-sm font-medium text-slate-700 border border-slate-300 hover:bg-slate-50"
             >
               Edit
@@ -599,19 +597,6 @@ export default function CohortDetailsPage() {
       </Card>
 
       {/* Modals */}
-      {cohort && (
-        <EditCohortModal
-          isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-          onSuccess={(updatedCohort) => {
-            setCohort(updatedCohort);
-            setSessionsRefreshNonce((value) => value + 1);
-            toast.success("Cohort updated successfully");
-          }}
-          cohort={cohort}
-        />
-      )}
-
       {selectedMilestone && (
         <MilestoneProgressModal
           isOpen={isMilestoneModalOpen}
