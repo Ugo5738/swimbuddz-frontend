@@ -162,15 +162,16 @@ export default function TransferPage() {
                 {payment.receipt_attached ? (
                   <p>Receipt file attached.</p>
                 ) : (
-                  <label className="block text-sm">
-                    Receipt image or PDF (optional, up to 10 MB)
-                    <input
-                      className="mt-2 block w-full"
-                      type="file"
-                      accept="image/*,.pdf"
-                      onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                    />
-                  </label>
+                  <FileUpload
+                    label="Receipt image or PDF"
+                    accept="image/*,.pdf"
+                    helpText="Receipt image or PDF (optional, up to 10 MB)"
+                    filename={file?.name}
+                    disabled={busy}
+                    uploading={busy && Boolean(file)}
+                    progress={progress}
+                    onFiles={(files) => setFile(files[0] ?? null)}
+                  />
                 )}
                 <Button type="submit" disabled={busy}>
                   {busy ? "Submitting…" : "Submit transfer for review"}

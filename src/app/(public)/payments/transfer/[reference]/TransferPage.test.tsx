@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import TransferPage from "./page";
 
@@ -33,7 +33,7 @@ describe("private bank transfer receipt", () => {
       target: { value: "BANK-ONE" },
     });
     fireEvent.change(screen.getByLabelText(/Transfer date/), { target: { value: "2026-09-13" } });
-    fireEvent.change(screen.getByLabelText(/Receipt image/), {
+    fireEvent.change(screen.getByLabelText("Receipt image or PDF"), {
       target: { files: [new File(["proof"], "receipt.pdf", { type: "application/pdf" })] },
     });
     fireEvent.click(screen.getByRole("button", { name: "Submit transfer for review" }));
@@ -58,7 +58,7 @@ describe("private bank transfer receipt", () => {
       target: { value: "BANK-ONE" },
     });
     fireEvent.change(screen.getByLabelText(/Transfer date/), { target: { value: "2026-09-13" } });
-    fireEvent.change(screen.getByLabelText(/Receipt image/), {
+    fireEvent.change(screen.getByLabelText("Receipt image or PDF"), {
       target: { files: [new File(["proof"], "receipt.pdf")] },
     });
     fireEvent.click(screen.getByRole("button", { name: "Submit transfer for review" }));
@@ -68,6 +68,48 @@ describe("private bank transfer receipt", () => {
       expect(mocks.post.mock.calls.filter((call) => call[0].endsWith("/submit"))).toHaveLength(2)
     );
     expect(mocks.upload).toHaveBeenCalledOnce();
+  });
+  it("shows upload progress, prevents replacing an active receipt, and permits retry after failure", async () => {
+    let reportProgress!: (value: number) => void;
+    let failUpload!: (reason: Error) => void;
+    mocks.upload.mockImplementationOnce(
+      (_path, _data, options) =>
+        new Promise((_resolve, reject) => {
+          reportProgress = options.onProgress;
+          failUpload = reject;
+        })
+    );
+    render(<TransferPage />);
+    await screen.findByText("6567710856");
+    fireEvent.change(screen.getByLabelText(/Bank transaction reference/), {
+      target: { value: "BANK-ONE" },
+    });
+    fireEvent.change(screen.getByLabelText(/Transfer date/), { target: { value: "2026-09-13" } });
+    const receipt = new File(["proof"], "receipt.pdf", { type: "application/pdf" });
+    fireEvent.change(screen.getByLabelText("Receipt image or PDF"), {
+      target: { files: [receipt] },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Submit transfer for review" }));
+    act(() => reportProgress(37));
+    expect(screen.getByRole("progressbar", { name: "Upload progress" })).toHaveAttribute("value", "37");
+    expect(screen.getByText("Uploading… 37%")).toBeInTheDocument();
+    expect(screen.getByText("receipt.pdf")).toBeInTheDocument();
+    expect(screen.getByLabelText("Receipt image or PDF")).toBeDisabled();
+    const dropZone = screen.getByRole("button", { name: "Receipt image or PDF drop zone" });
+    expect(dropZone).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Submitting…" })).toBeDisabled();
+    fireEvent.drop(dropZone, {
+      dataTransfer: { files: [new File(["other"], "replacement.pdf")] },
+    });
+    expect(screen.queryByText("replacement.pdf")).not.toBeInTheDocument();
+
+    await act(async () => failUpload(new Error("Upload interrupted")));
+    expect(await screen.findByText("Upload interrupted")).toBeInTheDocument();
+    expect(screen.getByLabelText("Receipt image or PDF")).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Submit transfer for review" }));
+    await screen.findByText(/Transfer submitted for Admin verification/);
+    expect(mocks.upload).toHaveBeenCalledTimes(2);
+    expect(mocks.upload.mock.calls[1][1].get("file")).toBe(receipt);
   });
   it("does not expose payment data without a private link", async () => {
     window.location.hash = "";
