@@ -43,6 +43,12 @@ export function ReviewStep({ selectedProgram, formData, schedule, sessionCount }
               <span className="text-slate-500">Status:</span> {formData.status}
             </div>
             <div>
+              <span className="text-slate-500">Mid-entry:</span>{" "}
+              {formData.allow_mid_entry
+                ? `Allowed through Week ${formData.mid_entry_cutoff_week}`
+                : "Disabled"}
+            </div>
+            <div>
               <span className="text-slate-500">Dropout flow:</span>{" "}
               {formData.admin_dropout_approval
                 ? "Admin approval required"
