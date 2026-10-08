@@ -45,6 +45,17 @@ export default function PoolAccessBookings(){
   catch(e){setError(e instanceof Error?e.message:"Booking must be reviewed before cancellation");}
   finally{setWorking(null);}
  }
+ async function requestCancellation(b:Booking){
+  const reason=window.prompt("Why do you need to cancel this visit? SwimBuddz will review the request before any refund or ticket change.");
+  if(!reason)return;
+  if(reason.trim().length<5){setError("Please provide a cancellation reason.");return;}
+  setWorking(b.id);setError("");
+  try{
+   await apiPost("/api/v1/pools/access/bookings/"+b.id+"/request-cancellation",{reason:reason.trim()},{auth:true});
+   setError("Cancellation review requested. Your booking remains valid until SwimBuddz confirms a decision.");
+  }catch(e){setError(e instanceof Error?e.message:"Could not request cancellation review");}
+  finally{setWorking(null);}
+ }
  async function showTickets(b:Booking){
   setError("");
   try{const rows=await apiGet<Ticket[]>("/api/v1/pools/access/bookings/"+b.id+"/tickets",{auth:true});
@@ -63,7 +74,7 @@ export default function PoolAccessBookings(){
     <p>Status: <strong>{b.status.replace("_"," ")}</strong> · {b.headcount} swimmer(s)</p>
     <p className="text-sm text-slate-600">Total: {new Intl.NumberFormat("en-NG",{style:"currency",currency:b.currency}).format(b.selling_total_kobo/100)}</p>
     {b.status==="confirmed"?
-      <button className="rounded-lg bg-cyan-700 px-4 py-2 text-white" onClick={()=>void showTickets(b)}>View admission QR codes</button>:
+      <div className="flex flex-wrap gap-2"><button className="rounded-lg bg-cyan-700 px-4 py-2 text-white" onClick={()=>void showTickets(b)}>View admission QR codes</button><button className="rounded-lg border px-4 py-2 text-slate-700 disabled:opacity-50" disabled={working===b.id} onClick={()=>void requestCancellation(b)}>Request cancellation review</button></div>:
       b.payment_reference?<button className="rounded-lg border px-4 py-2" disabled={verifying===b.id} onClick={()=>void verify(b)}>{verifying===b.id?"Verifying…":"Verify payment"}</button>:
       b.status==="pending_payment"?<div className="flex flex-wrap gap-2">
        <button className="rounded-lg bg-cyan-700 px-4 py-2 text-white disabled:opacity-50" disabled={working===b.id} onClick={()=>void resumeCheckout(b)}>{working===b.id?"Please wait…":"Resume checkout"}</button>
