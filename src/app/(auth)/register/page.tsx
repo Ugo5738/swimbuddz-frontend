@@ -386,9 +386,13 @@ function RegisterContent() {
           { auth: true }
         );
 
-        // Redirect to onboarding with the appropriate step
-        const step = formData.membershipTier === "academy" ? "academy" : "club";
-        router.push(`/account/onboarding?step=${step}`);
+        // Academy: choose a payable cohort first; finish swimming profile
+        // after checkout. Club still needs a readiness assessment before purchase.
+        router.push(
+          formData.membershipTier === "academy"
+            ? "/upgrade/academy/cohort"
+            : "/account/onboarding?step=club"
+        );
         return;
       }
 
