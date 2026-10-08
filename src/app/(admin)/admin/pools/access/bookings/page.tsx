@@ -2,7 +2,7 @@
 import {apiGet,apiPost} from "@/lib/api";
 import Link from "next/link";
 import {useCallback,useEffect,useState} from "react";
-type Booking={booking_id:string;pool_id:string;offer_title:string;buyer_email:string;headcount:number;status:string;revenue_kobo:number;currency:string;payment_reference:string|null;verified_admissions:number|null;partner_payable_kobo:number|null;visit_end_at:string};
+type Booking={booking_id:string;pool_id:string;offer_title:string;buyer_email:string;headcount:number;status:string;revenue_kobo:number;currency:string;payment_reference:string|null;reconciliation_id:string|null;verified_admissions:number|null;partner_payable_kobo:number|null;visit_end_at:string};
 const currency=(kobo:number,c:string)=>new Intl.NumberFormat("en-NG",{style:"currency",currency:c}).format(kobo/100);
 export default function PoolAccessSettlement(){
  const [items,setItems]=useState<Booking[]>([]);
@@ -13,6 +13,31 @@ export default function PoolAccessSettlement(){
  async function reconcile(b:Booking){setError("");setBusy(b.booking_id);
   try{await apiPost("/api/v1/pools/access/bookings/"+b.booking_id+"/reconcile",{}, {auth:true});await load();}
   catch(e){setError(e instanceof Error?e.message:"Could not reconcile this booking")}
+  finally{setBusy(null)}
+ }
+ async function recordExternalSettlement(b:Booking){
+  if(!b.reconciliation_id)return;
+  setError("");setBusy(b.booking_id);
+  try{
+   const current=await apiGet<{liability_kobo:number;settled_kobo:number;currency:string;entries:unknown[]}>(
+    "/api/v1/pools/access/reconciliations/"+b.reconciliation_id+"/settlements",{auth:true}
+   );
+   const due=current.liability_kobo-current.settled_kobo;
+   if(due<=0){setError("This partner liability has already been fully recorded as settled.");return;}
+   const rawAmount=window.prompt("Outstanding: "+currency(due,b.currency)+". Enter the amount actually confirmed paid to the pool (₦):",(due/100).toFixed(2));
+   if(!rawAmount)return;
+   const amount_kobo=Math.round(Number(rawAmount)*100);
+   if(!Number.isSafeInteger(amount_kobo)||amount_kobo<=0||amount_kobo>due)throw new Error("Amount must be a positive value not exceeding the outstanding liability.");
+   const bank_reference=window.prompt("Enter the verified bank transfer reference:");
+   if(!bank_reference)return;
+   const evidence_note=window.prompt("Record payment evidence, paying account and bank confirmation details:");
+   if(!evidence_note)return;
+   await apiPost("/api/v1/pools/access/reconciliations/"+b.reconciliation_id+"/record-external-settlement",{
+    amount_kobo,bank_reference:bank_reference.trim(),evidence_note:evidence_note.trim()
+   },{auth:true});
+   setError("External bank payment recorded. This did not initiate a transfer.");
+   await load();
+  }catch(e){setError(e instanceof Error?e.message:"Could not record external partner settlement");}
   finally{setBusy(null)}
  }
  return <main className="mx-auto max-w-6xl space-y-6 p-6">
@@ -31,7 +56,7 @@ export default function PoolAccessSettlement(){
      <td className="p-3">{currency(b.revenue_kobo,b.currency)}</td>
      <td className="p-3">{b.verified_admissions??"Pending"}</td>
      <td className="p-3">{b.partner_payable_kobo===null?"Not reconciled":currency(b.partner_payable_kobo,b.currency)}</td>
-     <td className="p-3">{b.status==="confirmed"&&b.verified_admissions===null?<button className="rounded-lg border p-2 text-cyan-700" disabled={busy===b.booking_id} onClick={()=>void reconcile(b)}>{busy===b.booking_id?"Processing…":"Reconcile after visit"}</button>:null}</td>
+     <td className="p-3"><div className="flex flex-col gap-2">{b.status==="confirmed"&&b.verified_admissions===null?<button className="rounded-lg border p-2 text-cyan-700" disabled={busy===b.booking_id} onClick={()=>void reconcile(b)}>{busy===b.booking_id?"Processing…":"Reconcile after visit"}</button>:null}{b.reconciliation_id&&b.partner_payable_kobo!==null&&b.partner_payable_kobo>0?<button className="rounded-lg border p-2 text-cyan-700" disabled={busy===b.booking_id} onClick={()=>void recordExternalSettlement(b)}>Record verified bank payout</button>:null}</div></td>
     </tr>)}</tbody></table>
    </div>}
  </main>;
