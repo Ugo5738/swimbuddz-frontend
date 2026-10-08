@@ -28,6 +28,17 @@ export default function AdminAlumniEvidencePage() {
     } catch { setNotice("Unable to load videos."); }
   }, []);
   useEffect(() => { void reload(); }, [reload]);
+  const coachReview = async (id: string) => {
+    const coach_notes = feedback[id]?.trim();
+    if (!coach_notes) { setNotice("Enter coaching feedback first."); return; }
+    setBusy(id); setNotice("");
+    try {
+      await apiPost(`/api/v1/academy/evidence/${id}/coach-review`, { coach_notes }, { auth: true });
+      await reload();
+      setNotice("Coaching feedback saved without changing milestone verification.");
+    } catch { setNotice("Unable to save coaching feedback."); }
+    finally { setBusy(null); }
+  };
   const review = async (id: string, approve: boolean) => {
     const notes = feedback[id]?.trim();
     if (!notes) { setNotice("Add a review note before submitting."); return; }
@@ -56,6 +67,8 @@ export default function AdminAlumniEvidencePage() {
       <label className="block text-sm font-medium">Editorial review notes
         <textarea className="mt-2 w-full rounded-lg border p-3" rows={2} value={feedback[item.id] || ""} onChange={e=>setFeedback(v=>({...v,[item.id]:e.target.value}))}/>
       </label>
+      {item.coach_notes && <p className="text-sm text-slate-700">Coach: {item.coach_notes}</p>}
+      <button type="button" disabled={busy===item.id} onClick={()=>void coachReview(item.id)} className="rounded-lg border border-cyan-700 px-4 py-2 font-medium text-cyan-700">Save coaching feedback</button>
       <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={Boolean(verified[item.id])} onChange={e=>setVerified(v=>({...v,[item.id]:e.target.checked}))}/> I have verified separate publication consent and permissions for everyone identifiable in this video.</label>
       <div className="flex gap-3"><button type="button" disabled={busy===item.id} onClick={()=>void review(item.id,false)} className="rounded-lg border px-4 py-2">Keep private / revoke</button><button type="button" disabled={busy===item.id || !item.consent_to_share || !verified[item.id]} onClick={()=>void review(item.id,true)} className="rounded-lg bg-cyan-700 px-4 py-2 text-white disabled:opacity-50">Approve for showcase</button></div>
     </section>)}
