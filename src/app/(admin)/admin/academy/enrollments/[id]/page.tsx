@@ -50,7 +50,7 @@ export default function EnrollmentDetailPage({ params }: { params: { id: string 
   const loadData = async () => {
     setLoading(true);
     try {
-      const found = await AcademyApi.getEnrollment(params.id);
+      const found = await AcademyApi.getAdminEnrollment(params.id);
 
       if (found) {
         setEnrollment(found);
