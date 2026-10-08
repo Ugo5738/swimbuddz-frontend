@@ -151,6 +151,12 @@ export const AcademyApi = {
     }),
 
 
+  getMyEnrollmentChangeRequests: () =>
+    apiGet<Array<{
+      id: string; from_enrollment_id: string; target_cohort_id: string;
+      state: "needs_review" | "rejected" | "completed"; created_at: string;
+    }>>("/api/v1/academy/my-enrollment-change-requests", { auth: true }),
+
   getMyAcademyJourneys: () =>
     apiGet<Array<{
       program_id: string;
