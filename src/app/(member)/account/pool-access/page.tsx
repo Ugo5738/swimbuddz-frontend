@@ -2,16 +2,21 @@
 import {apiGet,apiPost} from "@/lib/api";
 import {QRCodeSVG} from "qrcode.react";
 import Link from "next/link";
+import {useSearchParams} from "next/navigation";
 import {useEffect,useState} from "react";
 type Booking={id:string;offer_id:string;status:string;headcount:number;selling_total_kobo:number;currency:string;payment_reference:string|null};
 type Ticket={id:string;guest_name:string;ticket:string|null;checked_in_at:string|null};
 export default function PoolAccessBookings(){
+ const params=useSearchParams();
  const [bookings,setBookings]=useState<Booking[]>([]);
  const [tickets,setTickets]=useState<Record<string,Ticket[]>>({});
  const [error,setError]=useState("");
  const [verifying,setVerifying]=useState<string|null>(null);
  const load=()=>apiGet<Booking[]>("/api/v1/pools/access/bookings/me",{auth:true}).then(setBookings).catch(()=>setError("Could not load your pool visits"));
  useEffect(()=>{void load()},[]);
+ useEffect(()=>{const ref=params.get("reference")||params.get("trxref");if(!ref||!ref.startsWith("PAY-"))return;
+   apiPost("/api/v1/payments/paystack/verify/"+encodeURIComponent(ref),{}, {auth:true}).then(()=>load()).catch(()=>setError("Payment confirmation is still processing; please try verifying from Billing."));
+ },[params]);
  async function verify(b:Booking){
   if(!b.payment_reference)return;
   setVerifying(b.id);setError("");
