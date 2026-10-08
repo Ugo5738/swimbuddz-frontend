@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { apiGet } from "@/lib/api";
 import {
   AdminAcademyApi,
   type AcademyEnrollmentChangeReview,
@@ -13,14 +14,46 @@ const formatNaira = (kobo?: number | null) =>
 export default function AcademyEnrollmentChangeReviewsPage() {
   const [reviews, setReviews] = useState<AcademyEnrollmentChangeReview[]>([]);
   const [loading, setLoading] = useState(true);
+  const [memberNames, setMemberNames] = useState<Record<string, string>>({});
+  const [working, setWorking] = useState<string | null>(null);
   const [error, setError] = useState("");
 
+  async function loadReviews() {
+    const data = await AdminAcademyApi.listEnrollmentChangeReviews();
+    setReviews(data);
+    const members = [...new Set(data.map((item) => item.member_id).filter((id): id is string => !!id))];
+    const names = await Promise.all(members.map(async (id) => {
+      try {
+        const member = await apiGet<{ first_name?: string; last_name?: string; email?: string }>(
+          `/api/v1/members/${id}`, { auth: true }
+        );
+        return [id, [member.first_name, member.last_name].filter(Boolean).join(" ") || member.email || "Member"] as const;
+      } catch {
+        return [id, "Member (details unavailable)"] as const;
+      }
+    }));
+    setMemberNames(Object.fromEntries(names));
+  }
+
   useEffect(() => {
-    AdminAcademyApi.listEnrollmentChangeReviews()
-      .then(setReviews)
+    loadReviews()
       .catch(() => setError("Could not load pending Academy transfer reviews."))
       .finally(() => setLoading(false));
   }, []);
+
+  async function rejectRequest(id: string) {
+    if (!window.confirm("Reject this request? The member's enrollment and payments will remain unchanged.")) return;
+    setWorking(id);
+    setError("");
+    try {
+      await AdminAcademyApi.rejectEnrollmentChange(id);
+      await loadReviews();
+    } catch {
+      setError("Could not reject this request. Please retry.");
+    } finally {
+      setWorking(null);
+    }
+  }
 
   return (
     <main className="mx-auto max-w-5xl space-y-6">
@@ -41,24 +74,35 @@ export default function AcademyEnrollmentChangeReviewsPage() {
         {reviews.map((review) => (
           <section key={review.id} className="rounded-xl border border-slate-200 bg-white p-5 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="font-semibold text-slate-900">Pending financial or progress review</h2>
+              <h2 className="font-semibold text-slate-900">{review.member_id ? memberNames[review.member_id] || "Academy member" : "Academy member"} · Cohort change</h2>
               <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800">Needs review</span>
             </div>
             <div className="grid gap-3 text-sm text-slate-700 sm:grid-cols-2">
-              <div><span className="text-slate-500">Original enrollment</span><p className="break-all font-mono text-xs">{review.from_enrollment_id}</p></div>
-              <div><span className="text-slate-500">Requested cohort</span><p className="break-all font-mono text-xs">{review.target_cohort_id}</p></div>
+              <div><span className="text-slate-500">Current cohort</span><p className="font-medium">{review.original_cohort_name || "Cohort details unavailable"}</p></div>
+              <div><span className="text-slate-500">Requested cohort</span><p className="font-medium">{review.target_cohort_name || "Cohort details unavailable"}</p></div>
               <div><span className="text-slate-500">Original tuition snapshot</span><p className="font-semibold">{formatNaira(review.snapshot.old_price_kobo)}</p></div>
               <div><span className="text-slate-500">New cohort base tuition</span><p className="font-semibold">{formatNaira(review.snapshot.target_base_price_kobo)}</p></div>
             </div>
             <p className="text-sm text-slate-600">
-              Payment references: {review.snapshot.payment_references?.length ? review.snapshot.payment_references.join(", ") : "None recorded"}
+              Payment attempts: {review.snapshot.payment_references?.length || 0} · {review.snapshot.payment_statuses?.join(", ") || "No statuses"}
             </p>
             <p className="text-xs text-amber-800">
               Do not mark this transfer complete until deposits, payment proofs, discounts and old payment attempts have been reconciled.
               A shared receipt must never be counted twice.
             </p>
             <Link href={`/admin/academy/enrollments/${review.from_enrollment_id}`}
-              className="inline-block text-sm font-medium text-cyan-700 underline">View original enrollment</Link>
+              className="inline-block text-sm font-medium text-cyan-700 underline">View enrollment details</Link>
+            <button type="button" onClick={() => rejectRequest(review.id)}
+              disabled={working !== null}
+              className="ml-4 rounded-md border border-red-300 px-3 py-2 text-sm text-red-600 disabled:opacity-50">
+              {working === review.id ? "Rejecting…" : "Reject request"}
+            </button>
+            <details className="text-xs text-slate-500">
+              <summary className="cursor-pointer">Technical references</summary>
+              <p>Enrollment: {review.from_enrollment_id}</p>
+              <p>Destination cohort: {review.target_cohort_id}</p>
+              <p>Payment references: {review.snapshot.payment_references?.join(", ") || "None"}</p>
+            </details>
           </section>
         ))}
       </div>
