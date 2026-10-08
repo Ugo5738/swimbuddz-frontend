@@ -81,7 +81,7 @@ export default function AcademySharedReceiptsPage() {
       const updated = await AdminAcademyApi.allocateAcademyReceipt(receipt.id, {
         enrollment_id: selectedEnrollment,
         amount_kobo: amount,
-        idempotency_key: `academy:${receipt.id}:${selectedEnrollment}:${amount}`,
+        idempotency_key: `academy:${receipt.id}:${selectedEnrollment}:${crypto.randomUUID()}`,
       });
       setReceipt(updated);
       setMessage("Allocation reserved. Select Apply to credit this learner's Academy balance.");
