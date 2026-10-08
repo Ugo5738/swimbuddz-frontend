@@ -74,7 +74,7 @@ export default function ManageAcademyPage() {
             {journey.enrollments.map((enrollment) => {
               const pending = requests.find((r) => r.from_enrollment_id === enrollment.id && r.state === "needs_review");
               const mostRecent = requests.find((r) => r.from_enrollment_id === enrollment.id);
-              const canRequest = !pending && ["pending_approval", "waitlist"].includes(enrollment.status);
+              const canRequest = !pending && ["pending_approval", "waitlist", "enrolled"].includes(enrollment.status);
               const available = cohorts.filter((c) => c.program_id === journey.program_id && c.id !== enrollment.cohort_id);
               return (
                 <div key={enrollment.id} className="rounded-lg border border-slate-200 p-4">
