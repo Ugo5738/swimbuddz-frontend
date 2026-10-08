@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { API_BASE_URL } from "@/lib/config";
 import { apiGet, apiPost } from "@/lib/api";
 
 type Clip = {
@@ -19,7 +18,16 @@ export default function CoachAlumniEvidencePage() {
   const [clips, setClips] = useState<Clip[]>([]);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
+  const [videoUrls, setVideoUrls] = useState<Record<string,string>>({});
   const [saving, setSaving] = useState<string | null>(null);
+  const viewClip = async (id: string) => {
+    try {
+      const response = await apiGet<{url: string}>(
+        `/api/v1/academy/evidence/${id}/playback-url`, {auth: true}
+      );
+      setVideoUrls(prev => ({...prev, [id]: response.url}));
+    } catch { setMessage("Unable to play this video."); }
+  };
   const reload = useCallback(async () => {
     try { setClips(await apiGet<Clip[]>("/api/v1/academy/coach/evidence", {auth:true})); }
     catch { setMessage("Unable to retrieve student uploads."); }
@@ -47,7 +55,8 @@ export default function CoachAlumniEvidencePage() {
       <p className="font-semibold">Enrollment {item.enrollment_id}</p>
       <p className="text-sm text-slate-500">{new Date(item.created_at).toLocaleDateString()} · {item.kind}</p>
       {item.caption && <p>{item.caption}</p>}
-      <a href={`${API_BASE_URL}/api/v1/academy/evidence/${item.id}/play`} target="_blank" rel="noopener noreferrer" className="text-cyan-700 underline">Open video</a>
+      <button type="button" onClick={()=>void viewClip(item.id)} className="text-cyan-700 underline">View video</button>
+      {videoUrls[item.id] && <video src={videoUrls[item.id]} controls preload="none" className="w-full rounded-lg"/>}
       {item.coach_notes && <p className="text-sm">Previous coach feedback: {item.coach_notes}</p>}
       <label className="block text-sm">Feedback
         <textarea rows={3} maxLength={2000} className="mt-1 w-full rounded-lg border p-3" value={notes[item.id] || ""} onChange={e=>setNotes(v=>({...v,[item.id]:e.target.value}))}/>
