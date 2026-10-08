@@ -169,6 +169,11 @@ function RegisterContent() {
   const isUpgrade = searchParams.get("upgrade") === "true";
   const isCoachRegistration = searchParams.get("coach") === "true";
   const referralCode = searchParams.get("ref") || "";
+  // First-party editorial origin is captured by the Members registration flow.
+  // No service-to-service callback or anonymous identity matching required.
+  const sourcePostId = searchParams.get("content_id");
+  const contentOrigin = sourcePostId && /^[0-9a-fA-F-]{36}$/.test(sourcePostId)
+    ? `content:${sourcePostId.toLowerCase()}` : null;
   const intendedStartPath =
     startPathFromGoal(searchParams.get("goal")) ??
     (isAcademyDestination(searchParams.get("next")) ? "academy" : null);
@@ -447,7 +452,7 @@ function RegisterContent() {
         // Typed acquisition channel (powers flywheel funnel attribution).
         acquisition_source: formData.acquisitionSource || undefined,
         // Keep legacy discovery_source populated for back-compat with profile page.
-        discovery_source: formData.acquisitionSource || formData.discoverySource || undefined,
+        discovery_source: contentOrigin || formData.acquisitionSource || formData.discoverySource || undefined,
         // Always allow account access after email verification; tier upgrades are handled separately.
         membership_tier: "community",
         membership_tiers: ["community"],
