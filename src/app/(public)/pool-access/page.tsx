@@ -20,6 +20,9 @@ export default function PoolAccessPage(){
  const [error,setError]=useState("");
  const [selected,setSelected]=useState<Offer|null>(null);
  const [guests,setGuests]=useState([""]);
+ const [acceptRules,setAcceptRules]=useState(false);
+ const [acceptCancellation,setAcceptCancellation]=useState(false);
+ const [acknowledgeUncoached,setAcknowledgeUncoached]=useState(false);
  const [booking,setBooking]=useState<Booking|null>(null);
  const [busy,setBusy]=useState(false);
  const [paymentBusy,setPaymentBusy]=useState(false);
@@ -28,12 +31,15 @@ export default function PoolAccessPage(){
  async function reserve(){
   if(!await getCurrentAccessToken()){window.location.assign("/pool-access/visitor");return;}
   if(!selected||busy)return;
+  if(!acceptRules||!acceptCancellation||!acknowledgeUncoached){setError("Please accept the visit rules and conditions.");return;}
   if(guests.some(g=>g.trim().length<2)){setError("Enter each swimmer's name.");return;}
   setBusy(true);setError("");
   try{
     const key=crypto.randomUUID();
     const result=await apiPost<Booking>("/api/v1/pools/access/bookings",{
-      offer_id:selected.id, idempotency_key:key,guests:guests.map(name=>({name:name.trim()}))
+      offer_id:selected.id, idempotency_key:key,
+      accept_access_rules:true,accept_cancellation_policy:true,acknowledge_uncoached_activity:true,
+      guests:guests.map(name=>({name:name.trim()}))
     },{auth:true});
     setBooking(result);
   }catch(e){setError(e instanceof Error?e.message:"Could not hold these places. Please sign in and try again.")}
@@ -85,8 +91,13 @@ export default function PoolAccessPage(){
    </label>)}
    <div className="flex gap-2"><button className="rounded-lg border p-2" disabled={guests.length>=25} onClick={()=>setGuests(a=>[...a,""])}>Add guest</button>
     <button className="rounded-lg border p-2" disabled={guests.length<=1} onClick={()=>setGuests(a=>a.slice(0,-1))}>Remove guest</button></div>
+   <div className="space-y-3 rounded-lg border bg-slate-50 p-4 text-sm">
+    <label className="flex gap-3"><input type="checkbox" checked={acceptRules} onChange={e=>setAcceptRules(e.target.checked)}/><span>I have read and accept the facility's admission and safety rules shown above.</span></label>
+    <label className="flex gap-3"><input type="checkbox" checked={acceptCancellation} onChange={e=>setAcceptCancellation(e.target.checked)}/><span>I accept the cancellation and no-show policy for this reservation.</span></label>
+    <label className="flex gap-3"><input type="checkbox" checked={acknowledgeUncoached} onChange={e=>setAcknowledgeUncoached(e.target.checked)}/><span>I understand that Pool Access does not include coaching or SwimBuddz supervision. Every swimmer must comply with the pool's eligibility and lifeguard requirements.</span></label>
+   </div>
    <p className="font-semibold">Total: {total}</p>
-   <button disabled={busy} className="rounded-lg bg-cyan-700 px-5 py-3 font-semibold text-white disabled:opacity-40" onClick={reserve}>{busy?"Reserving…":"Hold places to proceed to payment"}</button>
+   <button disabled={busy||!acceptRules||!acceptCancellation||!acknowledgeUncoached} className="rounded-lg bg-cyan-700 px-5 py-3 font-semibold text-white disabled:opacity-40" onClick={reserve}>{busy?"Reserving…":"Hold places to proceed to payment"}</button>
    <p className="text-xs text-slate-500">Payment is processed by Paystack. Admission requires verified payment and a valid QR ticket.</p>
   </section>:loading?<p>Loading available swims…</p>:visibleOffers.length?<div className="grid gap-4 md:grid-cols-2">{visibleOffers.map(offer=><article key={offer.id} className="rounded-xl border bg-white p-5 space-y-3">
    <h2 className="text-xl font-semibold">{offer.title}</h2>
@@ -94,7 +105,7 @@ export default function PoolAccessPage(){
    <p className="text-sm text-slate-600">{new Date(offer.starts_at).toLocaleString()} – {new Date(offer.ends_at).toLocaleTimeString()}</p>
    <p className="font-semibold">{money(offer.selling_price_kobo,offer.currency)} / person</p>
    {!!offer.amenities.length&&<p className="text-sm">{offer.amenities.join(" · ")}</p>}
-   <button className="rounded-lg bg-cyan-700 px-4 py-2 text-white" onClick={()=>{setSelected(offer);setGuests([""]);setError("")}}>View visit</button>
+   <button className="rounded-lg bg-cyan-700 px-4 py-2 text-white" onClick={()=>{setSelected(offer);setGuests([""]);setAcceptRules(false);setAcceptCancellation(false);setAcknowledgeUncoached(false);setError("")}}>View visit</button>
   </article>)}</div>:<div className="rounded-xl border bg-slate-50 p-8 text-center">
    <h2 className="font-semibold">No Pool Access visits published yet</h2>
    <p className="mt-2 text-sm text-slate-600">No published visits match this area. Adjust the filter or explore our organised swims.</p>
