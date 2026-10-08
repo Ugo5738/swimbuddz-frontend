@@ -54,6 +54,9 @@ export default function AdminContentPage() {
     title: "",
     summary: "",
     category: "swimming_tips",
+    video_url: "",
+    episode_number: "",
+    guest_names: "",
     featured_image_url: "",
     featured_image_media_id: "",
     tier_access: "community",
@@ -137,6 +140,9 @@ export default function AdminContentPage() {
     try {
       const payload = {
         ...formData,
+        video_url: formData.category === "beyond_the_pool" ? formData.video_url || null : null,
+        episode_number: formData.category === "beyond_the_pool" && formData.episode_number ? Number(formData.episode_number) : null,
+        guest_names: formData.category === "beyond_the_pool" ? formData.guest_names || null : null,
         body: serializeBlocks(editorContent),
         featured_image_url: formData.featured_image_url || null,
         featured_image_media_id: formData.featured_image_media_id || null,
@@ -164,6 +170,9 @@ export default function AdminContentPage() {
         summary: formData.summary,
         body: serializeBlocks(editorContent),
         category: formData.category,
+        video_url: formData.category === "beyond_the_pool" ? formData.video_url || null : null,
+        episode_number: formData.category === "beyond_the_pool" && formData.episode_number ? Number(formData.episode_number) : null,
+        guest_names: formData.category === "beyond_the_pool" ? formData.guest_names || null : null,
         tier_access: formData.tier_access,
         featured_image_url: formData.featured_image_url || null,
         featured_image_media_id: formData.featured_image_media_id || null,
@@ -222,6 +231,9 @@ export default function AdminContentPage() {
   const handleEditPost = (post: ContentPost) => {
     setEditingPost(post);
     setFormData({
+      video_url: post.video_url || "",
+      episode_number: post.episode_number ? String(post.episode_number) : "",
+      guest_names: post.guest_names || "",
       title: post.title,
       summary: post.summary,
       category: post.category,
