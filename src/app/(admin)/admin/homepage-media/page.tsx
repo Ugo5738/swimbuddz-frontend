@@ -238,6 +238,7 @@ export default function AdminHomepageMediaPage() {
   const saveAdjustedImage = async (recipe: ImageTransformRecipe) => {
     if (!pendingImage) return;
 
+    setUploadProgress(0);
     setUploading(pendingImage.uploadingKey);
     setError(null);
     try {
@@ -983,6 +984,7 @@ export default function AdminHomepageMediaPage() {
           imageUrl={pendingImage.objectUrl}
           purpose={pendingImage.purpose}
           isSaving={uploading !== null}
+          uploadProgress={uploadProgress}
           error={error}
           onCancel={closeImageAdjustment}
           onConfirm={saveAdjustedImage}
