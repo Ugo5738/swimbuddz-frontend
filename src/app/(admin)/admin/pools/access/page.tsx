@@ -1,5 +1,6 @@
 "use client";
 import { apiGet, apiPost } from "@/lib/api";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 type Pool = {id:string;name:string;location_area:string|null};
 type PoolList={items:Pool[]};
@@ -44,6 +45,7 @@ export default function PoolAccessAdmin(){
   <p className="text-sm text-slate-600">Create scheduled admission inventory with separate negotiated facility costs and public selling prices. New offers remain drafts until explicitly published.</p></header>
   {error&&<p role="alert" className="rounded-lg bg-red-50 p-3 text-red-800">{error}</p>}
   {saved&&<div className="rounded-lg bg-green-50 p-4 text-green-900">Draft created: {saved.title} ({saved.id}). Publishing must be done after operational approval. No admission is issued.</div>}
+  <Link href="/admin/pools/access/bookings" className="text-cyan-700 underline">View bookings and partner reconciliations →</Link>
   <section className="rounded-xl border bg-white p-5 space-y-3"><h2 className="text-xl font-semibold">Published and draft inventory</h2>
   {offers.length===0?<p className="text-sm text-slate-500">No Pool Access offers created yet.</p>:
   <div className="space-y-3">{offers.map(o=><div key={o.id} className="flex items-center justify-between gap-3 rounded-lg border p-3">
