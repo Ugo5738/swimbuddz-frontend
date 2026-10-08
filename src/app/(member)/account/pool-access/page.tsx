@@ -12,6 +12,7 @@ export default function PoolAccessBookings(){
  const [tickets,setTickets]=useState<Record<string,Ticket[]>>({});
  const [error,setError]=useState("");
  const [verifying,setVerifying]=useState<string|null>(null);
+ const [working,setWorking]=useState<string|null>(null);
  const load=()=>apiGet<Booking[]>("/api/v1/pools/access/bookings/me",{auth:true}).then(setBookings).catch(()=>setError("Could not load your pool visits"));
  useEffect(()=>{void load()},[]);
  useEffect(()=>{const ref=params.get("reference")||params.get("trxref");if(!ref||!ref.startsWith("PAY-"))return;
@@ -24,6 +25,25 @@ export default function PoolAccessBookings(){
    await load();
   }catch(e){setError(e instanceof Error?e.message:"Payment verification is still pending");}
   finally{setVerifying(null)}
+ }
+ async function resumeCheckout(b:Booking){
+  setWorking(b.id);setError("");
+  try{
+   const payment=await apiPost<{checkout_url:string|null;status:string}>("/api/v1/payments/intents",{
+     purpose:"pool_access",pool_access_booking_id:b.id,payment_method:"paystack",currency:"NGN"
+   },{auth:true});
+   if(payment.status==="paid"){await load();return;}
+   if(!payment.checkout_url)throw new Error("Checkout is awaiting confirmation. Contact SwimBuddz if you were charged.");
+   window.location.assign(payment.checkout_url);
+  }catch(e){setError(e instanceof Error?e.message:"Could not resume this checkout");}
+  finally{setWorking(null);}
+ }
+ async function cancelUnpaid(b:Booking){
+  if(!window.confirm("Cancel this unpaid pool access hold?"))return;
+  setWorking(b.id);setError("");
+  try{await apiPost("/api/v1/pools/access/bookings/"+b.id+"/cancel",{}, {auth:true});await load();}
+  catch(e){setError(e instanceof Error?e.message:"Booking must be reviewed before cancellation");}
+  finally{setWorking(null);}
  }
  async function showTickets(b:Booking){
   setError("");
@@ -45,7 +65,11 @@ export default function PoolAccessBookings(){
     {b.status==="confirmed"?
       <button className="rounded-lg bg-cyan-700 px-4 py-2 text-white" onClick={()=>void showTickets(b)}>View admission QR codes</button>:
       b.payment_reference?<button className="rounded-lg border px-4 py-2" disabled={verifying===b.id} onClick={()=>void verify(b)}>{verifying===b.id?"Verifying…":"Verify payment"}</button>:
-      <p className="text-sm text-amber-700">Pending checkout. No admission credentials have been issued.</p>}
+      b.status==="pending_payment"?<div className="flex flex-wrap gap-2">
+       <button className="rounded-lg bg-cyan-700 px-4 py-2 text-white disabled:opacity-50" disabled={working===b.id} onClick={()=>void resumeCheckout(b)}>{working===b.id?"Please wait…":"Resume checkout"}</button>
+       <button className="rounded-lg border px-4 py-2 text-slate-700 disabled:opacity-50" disabled={working===b.id} onClick={()=>void cancelUnpaid(b)}>Cancel unpaid hold</button>
+       <p className="w-full text-sm text-amber-700">Admission is issued only after verified payment. An initiated payment cannot be cancelled until it is reconciled.</p>
+      </div>:<p className="text-sm text-slate-600">No active admission credentials.</p>}
     {tickets[b.id]?.map(t=><article key={t.id} className="rounded-lg bg-slate-50 p-4">
      <h3 className="font-medium">{t.guest_name}</h3>
      {t.checked_in_at?<p className="text-sm text-green-700">Checked in {new Date(t.checked_in_at).toLocaleString()}</p>:
