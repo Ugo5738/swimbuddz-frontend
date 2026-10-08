@@ -73,6 +73,7 @@ export default function ManageAcademyPage() {
           <div className="mt-4 space-y-4">
             {journey.enrollments.map((enrollment) => {
               const pending = requests.find((r) => r.from_enrollment_id === enrollment.id && r.state === "needs_review");
+              const mostRecent = requests.find((r) => r.from_enrollment_id === enrollment.id);
               const canRequest = !pending && ["pending_approval", "waitlist"].includes(enrollment.status);
               const available = cohorts.filter((c) => c.program_id === journey.program_id && c.id !== enrollment.cohort_id);
               return (
@@ -89,6 +90,11 @@ export default function ManageAcademyPage() {
                   {pending && (
                     <p role="status" className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
                       Cohort change pending admin review. Your current enrollment and payment history remain unchanged.
+                    </p>
+                  )}
+                  {!pending && mostRecent?.state === "rejected" && (
+                    <p role="status" className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                      Your previous cohort change request was declined. Your original enrollment remains unchanged; you can request a different cohort.
                     </p>
                   )}
                   {canRequest && available.length > 0 && (
