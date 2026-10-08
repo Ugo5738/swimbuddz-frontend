@@ -145,6 +145,7 @@ const navSections: NavSection[] = [
         icon: BookOpen,
       },
       { href: "/account/academy", label: "My Progress", icon: GraduationCap },
+      { href: "/account/academy/manage", label: "Manage Academy", icon: GraduationCap },
     ],
   },
   {
