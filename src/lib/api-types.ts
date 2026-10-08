@@ -9197,6 +9197,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/payments/reports/attributed-payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Attributed Payments Report
+         * @description Payment-owned settled rows, grouped by payer and canonical purpose.
+         *
+         *     The Reporting Service joins these aggregates to its first-party Member
+         *     acquisition origin. No Payment -> Members or Payment -> Content dependency.
+         */
+        post: operations["attributed_payments_report_internal_payments_reports_attributed_payments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/payments/{reference}/proof": {
         parameters: {
             query?: never;
@@ -23611,6 +23634,8 @@ export interface components {
         JoinedTierMember: {
             /** Id */
             id: string;
+            /** Member Auth Id */
+            member_auth_id?: string | null;
             /** Source Joined At */
             source_joined_at: string;
             /** Acquisition Source */
@@ -31432,6 +31457,24 @@ export interface components {
              * Format: uuid
              */
             proof_media_id: string;
+        };
+        /**
+         * AttributionPaymentQuery
+         * @description Bounded bulk reporting query; never callable by public clients.
+         */
+        AttributionPaymentQuery: {
+            /** Member Auth Ids */
+            member_auth_ids?: string[];
+            /**
+             * Date From
+             * Format: date-time
+             */
+            date_from: string;
+            /**
+             * Date To
+             * Format: date-time
+             */
+            date_to: string;
         };
         /** Body_upload_transfer_receipt_payments_manual_transfer__reference__upload_post */
         Body_upload_transfer_receipt_payments_manual_transfer__reference__upload_post: {
@@ -62945,6 +62988,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["AnnotateRefundRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attributed_payments_report_internal_payments_reports_attributed_payments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttributionPaymentQuery"];
             };
         };
         responses: {
