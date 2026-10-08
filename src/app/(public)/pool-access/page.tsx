@@ -71,7 +71,7 @@ export default function PoolAccessPage(){
    <h2 className="text-2xl font-semibold">{selected.title}</h2>
    <p className="text-sm text-slate-600">{selected.location_area} · {selected.pool_address}</p>
    <p className="text-sm text-slate-600">{selected.pool_length_m?selected.pool_length_m+"m pool · ":""}{selected.depth_min_m!=null&&selected.depth_max_m!=null?selected.depth_min_m+"–"+selected.depth_max_m+"m depth · ":""}{selected.has_lifeguard?"Lifeguard on site":""}</p>
-   {!!selected.amenities.length&&<p className="text-sm">Included amenities: {selected.amenities.join(", ")}</p>
+   {!!selected.amenities.length&&<p className="text-sm">Included amenities: {selected.amenities.join(", ")}</p>}
    <p>{new Date(selected.starts_at).toLocaleString()} – {new Date(selected.ends_at).toLocaleTimeString()}</p>
    <p className="font-medium">{money(selected.selling_price_kobo,selected.currency)} per swimmer</p>
    <p className="text-sm text-slate-600">{selected.access_rules||"Follow the host facility's safety and entry instructions."}</p>
