@@ -91,7 +91,75 @@ export type AcademyEnrollmentChangeReview = {
   created_at: string;
 };
 
+export type AcademySharedReceipt = {
+  id: string;
+  external_reference: string;
+  amount_kobo: number;
+  allocated_kobo: number;
+  unallocated_kobo: number;
+  currency: string;
+  verification_note: string;
+  allocations: Array<{
+    id: string; enrollment_id: string; member_auth_id: string;
+    amount_kobo: number; state: string; idempotency_key: string;
+  }>;
+};
+
+export type ReviewedAcademyFinancePreview = {
+  change_id: string;
+  source_enrollment_id: string;
+  member_auth_id: string | null;
+  verified_paid_tuition_kobo: number;
+  verified_allocation_credit_kobo: number;
+  verified_total_kobo: number;
+  destination_base_tuition_kobo: number;
+  recorded_progress_count: number;
+  eligible: boolean;
+  blocked_payment_references: string[];
+  attempts: Array<{ reference: string; status: string; amount_kobo: number }>;
+};
+
+export type ReviewedAcademyTransferPayload = {
+  reason: string;
+  transferable_credit_kobo: number;
+  consumed_services_kobo: number;
+  discount_kobo: number;
+  discount_reason?: string;
+  confirmed_attendance_review: boolean;
+};
+
 export const AdminAcademyApi = {
+  verifyAcademyReceipt: (body: {
+    external_reference: string; amount_kobo: number; verification_note: string;
+  }) => apiPost<AcademySharedReceipt>(
+    "/api/v1/payments/admin/academy-receipts", body, { auth: true },
+  ),
+  getAcademyReceipt: (id: string) =>
+    apiGet<AcademySharedReceipt>(
+      `/api/v1/payments/admin/academy-receipts/${id}`, { auth: true },
+    ),
+  allocateAcademyReceipt: (id: string, body: {
+    enrollment_id: string; amount_kobo: number; idempotency_key: string;
+  }) => apiPost<AcademySharedReceipt>(
+    `/api/v1/payments/admin/academy-receipts/${id}/allocations`,
+    body, { auth: true },
+  ),
+  applyAcademyReceiptAllocation: (receiptId: string, allocationId: string) =>
+    apiPost<{ state: string; enrollment_id: string }>(
+      `/api/v1/payments/admin/academy-receipts/${receiptId}/allocations/${allocationId}/apply`,
+      {}, { auth: true },
+    ),
+  previewReviewedAcademyTransfer: (id: string) =>
+    apiGet<ReviewedAcademyFinancePreview>(
+      `/api/v1/academy/admin/academy/enrollment-changes/${id}/finance-preview`,
+      { auth: true },
+    ),
+  approveReviewedAcademyTransfer: (id: string, body: ReviewedAcademyTransferPayload) =>
+    apiPost<{ state: string; enrollment_id: string; remaining_tuition_kobo: number }>(
+      `/api/v1/academy/admin/academy/enrollment-changes/${id}/approve-reviewed`,
+      body, { auth: true },
+    ),
+
   approveUnpaidEnrollmentChange: (changeId: string, reason: string) =>
     apiPost<{ state: string; enrollment_id: string }>(
       `/api/v1/academy/admin/academy/enrollment-changes/${changeId}/approve-unpaid`,
