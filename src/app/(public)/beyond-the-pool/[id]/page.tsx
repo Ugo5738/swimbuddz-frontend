@@ -37,6 +37,6 @@ export default function EpisodePage() {
       </>}
     </div> : <p>Video coming soon.</p>}
     <section className="prose max-w-none"><BlockViewer content={data.body}/></section>
-    <aside className="rounded-xl bg-cyan-50 p-6"><h2 className="text-2xl font-bold">Your swimming journey starts here.</h2><p className="mt-2">Learn with the Academy or find your swimming level.</p><div className="mt-4 flex flex-wrap gap-4"><Link href="/academy" onClick={()=>track("academy_click")} className="rounded-lg bg-cyan-700 px-5 py-3 font-medium text-white">Explore Academy</Link><Link href="/assessment" onClick={()=>track("assessment_click")} className="rounded-lg border border-cyan-700 px-5 py-3 font-medium text-cyan-700">Take an assessment</Link></div></aside>
+    <aside className="rounded-xl bg-cyan-50 p-6"><h2 className="text-2xl font-bold">Your swimming journey starts here.</h2><p className="mt-2">Learn with the Academy or find your swimming level.</p><div className="mt-4 flex flex-wrap gap-4"><Link href={`/register?goal=academy&content_id=${data.id}`} onClick={()=>track("academy_click")} className="rounded-lg bg-cyan-700 px-5 py-3 font-medium text-white">Explore Academy</Link><Link href={`/assessment?content_id=${data.id}`} onClick={()=>track("assessment_click")} className="rounded-lg border border-cyan-700 px-5 py-3 font-medium text-cyan-700">Take an assessment</Link></div></aside>
   </main>;
 }
