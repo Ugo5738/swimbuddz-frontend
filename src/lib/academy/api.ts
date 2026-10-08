@@ -136,6 +136,10 @@ export const AcademyApi = {
   getEnrollment: (id: string) =>
     apiGet<Enrollment>(`/api/v1/academy/my-enrollments/${id}`, { auth: true }),
 
+  /** Admin-only: the member endpoint intentionally denies access to other users. */
+  getAdminEnrollment: (id: string) =>
+    apiGet<Enrollment>(`/api/v1/academy/enrollments/${id}`, { auth: true }),
+
   getEnrollmentOnboarding: (id: string) =>
     apiGet<OnboardingInfo>(`/api/v1/academy/my-enrollments/${id}/onboarding`, {
       auth: true,
