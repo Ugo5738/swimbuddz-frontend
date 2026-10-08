@@ -301,7 +301,7 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive, me
           </div>
 
           <Link
-            href={`/checkout?purpose=academy_cohort&cohort_id=${enrollment.cohort_id}`}
+            href={`/account/academy/enrollments/${enrollment.id}`}
             className="block"
           >
             <Button className="w-full sm:w-auto">Complete Payment</Button>
@@ -314,11 +314,11 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive, me
         <Card className="p-4 md:p-6 space-y-3 md:space-y-4">
           <div>
             <h2 className="text-base md:text-lg font-semibold text-slate-900">
-              {myEnrollments.length > 0 ? "Enroll in Another Cohort" : "Want to join Academy?"}
+              {myEnrollments.length > 0 ? "Manage or start another Academy programme" : "Want to join Academy?"}
             </h2>
             <p className="text-xs md:text-sm text-slate-600 mt-0.5 md:mt-1">
               {myEnrollments.length > 0
-                ? `${availableCohorts.length} more cohort${availableCohorts.length > 1 ? "s" : ""} available for enrollment.`
+                ? `Manage an existing enrollment or explore ${availableCohorts.length} available cohorts.`
                 : "Structured swimming programs with expert coaches. Complete your goals faster with personalized training."}
             </p>
             {!communityActive && myEnrollments.length === 0 && (
@@ -359,9 +359,9 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive, me
           )}
 
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:items-center">
-            <Link href="/upgrade/academy/details" className="block">
+            <Link href={myEnrollments.length > 0 ? "/account/academy/manage" : "/upgrade/academy/details"} className="block">
               <Button className="w-full sm:w-auto">
-                {myEnrollments.length > 0 ? "Browse All Cohorts" : "Enroll in Academy"}
+                {myEnrollments.length > 0 ? "Manage Academy" : "Enroll in Academy"}
               </Button>
             </Link>
             <Link
