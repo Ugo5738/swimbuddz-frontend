@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { API_BASE_URL } from "@/lib/config";
 import { apiGet, apiPost } from "@/lib/api";
 
 type Evidence = {
@@ -63,7 +64,7 @@ export default function AdminAlumniEvidencePage() {
       <p className="font-semibold">Enrollment {item.enrollment_id}</p>
       <p className="text-sm text-slate-500">Milestone {item.milestone_id} · {new Date(item.created_at).toLocaleDateString()}</p>
       <p>{item.caption || "No note from swimmer"}</p>
-      <a className="text-cyan-700 underline" href={`/api/v1/media/media/${item.video_media_id}/play`} target="_blank" rel="noopener noreferrer">Open media (requires authorized access)</a>
+      <a className="text-cyan-700 underline" href={`${API_BASE_URL}/api/v1/academy/evidence/${item.id}/play`} target="_blank" rel="noopener noreferrer">Open media (requires authorized access)</a>
       <p className="text-sm">Publication permission: {item.publication_consent_at ? "Yes" : "No"} · Showcase status: {item.approved_for_public ? "Approved" : "Private"}</p>
       <label className="block text-sm font-medium">Editorial review notes
         <textarea className="mt-2 w-full rounded-lg border p-3" rows={2} value={feedback[item.id] || ""} onChange={e=>setFeedback(v=>({...v,[item.id]:e.target.value}))}/>
