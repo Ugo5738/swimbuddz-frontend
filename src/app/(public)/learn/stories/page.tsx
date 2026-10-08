@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { API_BASE_URL } from "@/lib/config";
 import { useApi } from "@/hooks/useApi";
 
 type Story = { id: string; title: string; display_name: string; published_at: string };
@@ -13,6 +14,7 @@ export default function SwimmerStoriesPage() {
       <p className="text-xs font-semibold uppercase text-cyan-700">Swimming milestone</p>
       <h2 className="mt-2 text-xl font-bold">{story.title}</h2>
       <p className="mt-2 text-slate-600">Shared by {story.display_name}</p>
+      <video className="mt-4 w-full rounded-lg bg-slate-950" controls preload="none" src={`${API_BASE_URL}/api/v1/academy/public/showcase/${story.id}/play`} />
     </article>)}</div> : <p className="rounded-xl border p-6">Approved swimmer stories will appear here.</p>}
     <Link href="/academy" className="inline-flex rounded-lg bg-cyan-700 px-5 py-3 font-semibold text-white">Begin your swimming journey</Link>
   </main>;
