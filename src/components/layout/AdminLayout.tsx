@@ -139,6 +139,7 @@ const navSections: NavSection[] = [
     title: "Operations",
     items: [
       { href: "/admin/pools", label: "Locations & Transport", icon: Waves },
+      { href: "/admin/pools/access", label: "Pool Access Offers", icon: CalendarDays },
       { href: "/admin/store", label: "Store", icon: ShoppingBag },
       { href: "/admin/reports", label: "Quarterly Reports", icon: BarChart3 },
       { href: "/admin/flywheel", label: "Flywheel", icon: TrendingUp },
