@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { MediaInput } from "@/components/ui/MediaInput";
 import { apiGet, apiPost, apiPatch } from "@/lib/api";
-import { useMediaUrl } from "@/hooks/useMediaUrl";
+
 
 type Evidence = {
   id: string;
@@ -21,13 +21,25 @@ type Evidence = {
 type Milestone = { id: string; name: string };
 
 function EvidenceItem({ item }: { item: Evidence }) {
-  const [url] = useMediaUrl(item.video_media_id);
-  return <li className="rounded-lg border border-slate-200 p-3">
+  const [url, setUrl] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+  const open = async () => {
+    setError(false);
+    try {
+      const response = await apiGet<{url: string}>(
+        `/api/v1/academy/evidence/${item.id}/playback-url`, {auth: true}
+      );
+      setUrl(response.url);
+    } catch { setError(true); }
+  };
+  return <div className="rounded-lg border border-slate-200 p-3">
     <div className="text-xs text-slate-500">{item.kind === "cohort_archive" ? "Cohort archive" : "Continued progress"} · {new Date(item.created_at).toLocaleDateString()}</div>
     {item.caption && <p className="mt-1 text-sm">{item.caption}</p>}
     {item.coach_notes && <p className="mt-2 text-sm"><strong>Coach feedback:</strong> {item.coach_notes}</p>}
-    {url && <a href={url} target="_blank" rel="noopener noreferrer" className="text-sm text-cyan-700 underline">View video</a>}
-  </li>;
+    {url ? <video className="mt-3 w-full rounded-lg" src={url} controls preload="none"/> :
+      <button type="button" onClick={()=>void open()} className="mt-2 text-sm text-cyan-700 underline">View my video</button>}
+    {error && <p role="alert" className="text-sm text-red-600">Video unavailable. Try again later.</p>}
+  </div>;
 }
 
 export function SupplementaryEvidence({ enrollmentId, milestones, canUpload }: {
