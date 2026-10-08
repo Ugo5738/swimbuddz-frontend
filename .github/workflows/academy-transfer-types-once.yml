@@ -1,0 +1,32 @@
+name: Academy transfer API types (temporary)
+on:
+  push:
+    branches: [codex/academy-transfer-resolution-and-admin-ux]
+permissions:
+  contents: write
+jobs:
+  sync:
+    if: "!contains(github.event.head_commit.message, '[academy-transfer-types-done]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/academy-transfer-resolution-and-admin-ux
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm ci
+      - run: |
+          mkdir -p ../swimbuddz-backend
+          curl --fail --location --retry 3 --silent --show-error https://raw.githubusercontent.com/Ugo5738/swimbuddz-backend/codex/academy-transfer-resolution-and-admin-ux/openapi.json -o ../swimbuddz-backend/openapi.json
+          python -m json.tool ../swimbuddz-backend/openapi.json >/dev/null
+      - run: npm run generate:types
+      - run: |
+          git diff --check
+          if ! git diff --quiet -- src/lib/api-types.ts src/lib/openapi.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add src/lib/api-types.ts src/lib/openapi.json
+            git commit -m "chore(academy): synchronize transfer types [academy-transfer-types-done]"
+            git push origin HEAD:codex/academy-transfer-resolution-and-admin-ux
+          fi
