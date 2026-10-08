@@ -126,6 +126,7 @@ const navSections: NavSection[] = [
   {
     title: "Finance",
     items: [
+      { href: "/admin/finance", label: "Finance Overview", icon: LayoutDashboard },
       { href: "/admin/finance/reports", label: "Reports", icon: Banknote },
       { href: "/admin/finance/deferred-revenue", label: "Deferred Revenue", icon: Hourglass },
       { href: "/admin/finance/journal-entries", label: "Journal Entries", icon: FileText },
