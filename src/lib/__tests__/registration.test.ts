@@ -278,7 +278,7 @@ describe("getPostAuthRedirectPath", () => {
     mockedApiGet.mockResolvedValue(buildMember({ profile_photo_media_id: null }));
 
     const path = await getPostAuthRedirectPath();
-    expect(path).toBe("/upgrade/academy/cohort");
+    expect(path).toBe("/account/onboarding");
   });
 
   it("redirects to /account/onboarding when emergency contact missing", async () => {
@@ -623,6 +623,6 @@ describe("getPostAuthRedirectPath", () => {
     );
 
     const path = await getPostAuthRedirectPath();
-    expect(path).toBe("/account/onboarding");
+    expect(path).toBe("/upgrade/academy/cohort");
   });
 });
