@@ -1,6 +1,7 @@
 "use client";
 import { apiGet, apiPost } from "@/lib/api";
 import Link from "next/link";
+import {getCurrentAccessToken} from "@/lib/auth";
 import { useEffect, useMemo, useState } from "react";
 
 type Offer = {id:string;pool_id:string;pool_name:string;location_area:string|null;pool_address:string|null;pool_length_m:number|null;depth_min_m:number|null;depth_max_m:number|null;has_lifeguard:boolean|null;title:string;starts_at:string;ends_at:string;capacity:number;
@@ -25,6 +26,7 @@ export default function PoolAccessPage(){
  useEffect(()=>{apiGet<Offer[]>("/api/v1/pools/access/offers").then(setOffers).catch(()=>setError("Could not load published Pool Access availability.")).finally(()=>setLoading(false))},[]);
  const total=useMemo(()=>selected?money(selected.selling_price_kobo*guests.length,selected.currency):"",[selected,guests]);
  async function reserve(){
+  if(!await getCurrentAccessToken()){window.location.assign("/pool-access/visitor");return;}
   if(!selected||busy)return;
   if(guests.some(g=>g.trim().length<2)){setError("Enter each swimmer's name.");return;}
   setBusy(true);setError("");
@@ -52,6 +54,7 @@ export default function PoolAccessPage(){
   <header className="space-y-2"><p className="text-sm font-semibold uppercase tracking-widest text-cyan-700">Find a Swim</p>
    <h1 className="text-3xl font-bold text-slate-900">Pool Access</h1>
    <p className="max-w-2xl text-slate-600">Discover independent swims at published SwimBuddz partner locations. Coaching is not included. Entry requires a confirmed, paid booking and compliance with pool safety rules.</p>
+   <div className="flex flex-wrap gap-4 text-sm"><Link className="text-cyan-700 underline" href="/pool-access/visitor">New here? Book as a visitor</Link><Link className="text-cyan-700 underline" href="/login?redirect=%2Fpool-access">Sign in</Link><Link className="text-cyan-700 underline" href="/pool-access/my-bookings">My Pool Access tickets</Link></div>
    <Link className="text-cyan-700 underline" href="/sessions">Looking for an organised Club or Community swim instead?</Link>
   </header>
   {error&&<p role="alert" className="rounded-lg bg-red-50 p-3 text-red-700">{error}</p>}
