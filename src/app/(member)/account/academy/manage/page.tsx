@@ -68,7 +68,7 @@ export default function ManageAcademyPage() {
       {journeys.length === 0 && <p className="text-slate-600">No Academy history yet.</p>}
       {journeys.map((journey) => (
         <section key={journey.program_id} className="rounded-xl border border-slate-200 bg-white p-5">
-          <h2 className="font-semibold">Academy programme</h2>
+          <h2 className="font-semibold">{journey.program_name}</h2>
           <p className="mt-1 text-xs text-slate-500">Your cohort and enrollment history</p>
           <div className="mt-4 space-y-4">
             {journey.enrollments.map((enrollment) => {
