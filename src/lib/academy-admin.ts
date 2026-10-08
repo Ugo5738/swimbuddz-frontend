@@ -73,6 +73,9 @@ export type StudentProgressRow = {
 export type AcademyEnrollmentChangeReview = {
   id: string;
   journey_id: string;
+  member_id: string | null;
+  original_cohort_name: string | null;
+  target_cohort_name: string | null;
   from_enrollment_id: string;
   target_cohort_id: string;
   state: "needs_review";
@@ -89,6 +92,29 @@ export type AcademyEnrollmentChangeReview = {
 };
 
 export const AdminAcademyApi = {
+  approveUnpaidEnrollmentChange: (changeId: string, reason: string) =>
+    apiPost<{ state: string; enrollment_id: string }>(
+      `/api/v1/academy/admin/academy/enrollment-changes/${changeId}/approve-unpaid`,
+      { reason }, { auth: true },
+    ),
+  previewCheckoutAttempt: (reference: string) =>
+    apiGet<{ payment: { status: string; amount: number; metadata: Record<string, unknown> }; preview_token: string }>(
+      `/api/v1/payments/admin/checkout-reconciliation/${encodeURIComponent(reference)}`,
+      { auth: true },
+    ),
+  closeUnpaidCheckoutAttempt: (
+    reference: string,
+    body: { preview_token: string; provider_closure_evidence: string; note: string; apply: boolean },
+  ) =>
+    apiPost<{ applied: boolean; closed_unpaid?: boolean }>(
+      `/api/v1/payments/admin/checkout-reconciliation/${encodeURIComponent(reference)}/close-unpaid`,
+      body, { auth: true },
+    ),
+  rejectEnrollmentChange: (changeId: string) =>
+    apiPost<{ state: string; change_id: string }>(
+      `/api/v1/academy/admin/academy/enrollment-changes/${changeId}/reject`,
+      {}, { auth: true },
+    ),
   listEnrollmentChangeReviews: () => apiGet<AcademyEnrollmentChangeReview[]>(
     "/api/v1/academy/admin/academy/enrollment-changes", { auth: true }
   ),

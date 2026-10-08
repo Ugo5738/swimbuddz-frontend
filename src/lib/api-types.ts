@@ -6690,6 +6690,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/academy/admin/enrollments/{enrollment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Admin Enrollment
+         * @description Admin-scoped canonical enrollment details for transfer and billing review.
+         */
+        get: operations["get_admin_enrollment_academy_admin_enrollments__enrollment_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/academy/enrollments/{enrollment_id}": {
         parameters: {
             query?: never;
@@ -6790,6 +6810,70 @@ export interface paths {
          * @description Admin review queue. Financial settlement is not approved by this endpoint.
          */
         get: operations["list_academy_change_reviews_academy_admin_academy_enrollment_changes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/academy/enrollment-changes/{change_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject Enrollment Change
+         * @description Reject a request without altering the source enrollment or its money.
+         */
+        post: operations["reject_enrollment_change_academy_admin_academy_enrollment_changes__change_id__reject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/academy/enrollment-changes/{change_id}/approve-unpaid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve Unpaid Enrollment Change
+         * @description Finalize a correction ONLY if no payment or attended progress can be lost.
+         *
+         *     Payments-service must certify that every previous attempt is documented
+         *     closed-unpaid. Verified or proof-pending receipts are never moved by this
+         *     endpoint; those need the separate finance allocation/credit process.
+         */
+        post: operations["approve_unpaid_enrollment_change_academy_admin_academy_enrollment_changes__change_id__approve_unpaid_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/my-enrollment-change-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Enrollment Change Requests
+         * @description Member-visible request status, scoped by the original enrollment owner.
+         */
+        get: operations["my_enrollment_change_requests_academy_my_enrollment_change_requests_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -29446,6 +29530,11 @@ export interface components {
             /** Note */
             note?: string | null;
         };
+        /** ApproveUnpaidCohortChange */
+        ApproveUnpaidCohortChange: {
+            /** Reason */
+            reason: string;
+        };
         /**
          * AssignmentRoleEnum
          * @enum {string}
@@ -31898,7 +31987,7 @@ export interface components {
         };
         /**
          * AcademyEnrollmentFinancialState
-         * @description Fail-closed transfer gate: any initiated payment needs reconciliation.
+         * @description Payments-service-owned transfer safety view, never client assertions.
          */
         AcademyEnrollmentFinancialState: {
             /** Has Payment Activity */
@@ -31907,6 +31996,12 @@ export interface components {
             references: string[];
             /** Statuses */
             statuses: string[];
+            /** Attempts */
+            attempts: {
+                [key: string]: unknown;
+            }[];
+            /** All Unpaid Closed */
+            all_unpaid_closed: boolean;
         };
         /**
          * AdminBookingOfflinePaymentRequest
@@ -59766,6 +59861,37 @@ export interface operations {
             };
         };
     };
+    get_admin_enrollment_academy_admin_enrollments__enrollment_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnrollmentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_enrollment_academy_enrollments__enrollment_id__get: {
         parameters: {
             query?: never;
@@ -59930,6 +60056,92 @@ export interface operations {
         };
     };
     list_academy_change_reviews_academy_admin_academy_enrollment_changes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    reject_enrollment_change_academy_admin_academy_enrollment_changes__change_id__reject_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_unpaid_enrollment_change_academy_admin_academy_enrollment_changes__change_id__approve_unpaid_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApproveUnpaidCohortChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_enrollment_change_requests_academy_my_enrollment_change_requests_get: {
         parameters: {
             query?: never;
             header?: never;

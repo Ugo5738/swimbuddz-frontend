@@ -12,18 +12,21 @@ export default function ManageAcademyPage() {
   const router = useRouter();
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
+  const [requests, setRequests] = useState<Awaited<ReturnType<typeof AcademyApi.getMyEnrollmentChangeRequests>>>([]);
   const [selection, setSelection] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
   async function reload() {
-    const [j, c] = await Promise.all([
+    const [j, c, r] = await Promise.all([
       AcademyApi.getMyAcademyJourneys(),
       AcademyApi.getEnrollableCohorts(),
+      AcademyApi.getMyEnrollmentChangeRequests(),
     ]);
     setJourneys(j);
     setCohorts(c);
+    setRequests(r);
   }
   useEffect(() => {
     reload().catch(() => setError("Could not load Academy enrollments."));
@@ -65,11 +68,13 @@ export default function ManageAcademyPage() {
       {journeys.length === 0 && <p className="text-slate-600">No Academy history yet.</p>}
       {journeys.map((journey) => (
         <section key={journey.program_id} className="rounded-xl border border-slate-200 bg-white p-5">
-          <h2 className="font-semibold">Academy programme</h2>
+          <h2 className="font-semibold">{journey.program_name}</h2>
           <p className="mt-1 text-xs text-slate-500">Your cohort and enrollment history</p>
           <div className="mt-4 space-y-4">
             {journey.enrollments.map((enrollment) => {
-              const canRequest = ["pending_approval", "waitlist"].includes(enrollment.status);
+              const pending = requests.find((r) => r.from_enrollment_id === enrollment.id && r.state === "needs_review");
+              const mostRecent = requests.find((r) => r.from_enrollment_id === enrollment.id);
+              const canRequest = !pending && ["pending_approval", "waitlist"].includes(enrollment.status);
               const available = cohorts.filter((c) => c.program_id === journey.program_id && c.id !== enrollment.cohort_id);
               return (
                 <div key={enrollment.id} className="rounded-lg border border-slate-200 p-4">
@@ -82,6 +87,16 @@ export default function ManageAcademyPage() {
                     </div>
                     <Link className="text-sm text-cyan-700 underline" href={`/account/academy/enrollments/${enrollment.id}`}>View details</Link>
                   </div>
+                  {pending && (
+                    <p role="status" className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                      Cohort change pending admin review. Your current enrollment and payment history remain unchanged.
+                    </p>
+                  )}
+                  {!pending && mostRecent?.state === "rejected" && (
+                    <p role="status" className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                      Your previous cohort change request was declined. Your original enrollment remains unchanged; you can request a different cohort.
+                    </p>
+                  )}
                   {canRequest && available.length > 0 && (
                     <div className="mt-4 space-y-2">
                       <label htmlFor={`target-${enrollment.id}`} className="block text-sm font-medium">Change cohort</label>
