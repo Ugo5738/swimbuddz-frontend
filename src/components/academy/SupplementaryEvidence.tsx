@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { MediaInput } from "@/components/ui/MediaInput";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiGet, apiPost, apiPatch } from "@/lib/api";
 import { useMediaUrl } from "@/hooks/useMediaUrl";
 
 type Evidence = {
@@ -13,6 +13,10 @@ type Evidence = {
   caption: string | null;
   recorded_on: string | null;
   created_at: string;
+  publication_consent_at?: string | null;
+  public_display_name?: string | null;
+  coach_notes?: string | null;
+  approved_for_public?: boolean;
 };
 type Milestone = { id: string; name: string };
 
@@ -21,6 +25,7 @@ function EvidenceItem({ item }: { item: Evidence }) {
   return <li className="rounded-lg border border-slate-200 p-3">
     <div className="text-xs text-slate-500">{item.kind === "cohort_archive" ? "Cohort archive" : "Continued progress"} · {new Date(item.created_at).toLocaleDateString()}</div>
     {item.caption && <p className="mt-1 text-sm">{item.caption}</p>}
+    {item.coach_notes && <p className="mt-2 text-sm"><strong>Coach feedback:</strong> {item.coach_notes}</p>}
     {url && <a href={url} target="_blank" rel="noopener noreferrer" className="text-sm text-cyan-700 underline">View video</a>}
   </li>;
 }
@@ -37,6 +42,7 @@ export function SupplementaryEvidence({ enrollmentId, milestones, canUpload }: {
   const [caption, setCaption] = useState("");
   const [recordedOn, setRecordedOn] = useState("");
   const [consent, setConsent] = useState(false);
+  const [displayName, setDisplayName] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -49,6 +55,14 @@ export function SupplementaryEvidence({ enrollmentId, milestones, canUpload }: {
   }, [enrollmentId]);
   useEffect(() => { void reload(); }, [reload]);
 
+  const publicationConsent = async (id: string, consentValue: boolean) => {
+    setSaving(true); setError("");
+    try {
+      await apiPatch(`/api/v1/academy/enrollments/${enrollmentId}/evidence/${id}/publication-consent`, { consent: consentValue, display_name: consentValue ? displayName : null }, { auth: true });
+      await reload();
+    } catch { setError("Could not update publication consent."); }
+    finally { setSaving(false); }
+  };
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!milestoneId || !mediaId || uploading || saving) return;
@@ -93,7 +107,16 @@ export function SupplementaryEvidence({ enrollmentId, milestones, canUpload }: {
       <button type="submit" disabled={!milestoneId || !mediaId || uploading || saving} className="rounded-lg bg-cyan-700 px-4 py-3 font-medium text-white disabled:opacity-50">{saving ? "Saving…" : "Save video"}</button>
     </form>}
     {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
-    <ul className="space-y-2">{items.map(item=><EvidenceItem item={item} key={item.id}/>)}</ul>
+    <label className="block text-sm font-medium">Public display name (optional; leave blank for anonymous)
+      <input className="mt-1 w-full rounded-lg border p-3" maxLength={80} value={displayName} onChange={e=>setDisplayName(e.target.value)}/>
+    </label>
+    <ul className="space-y-2">{items.map(item=><li key={item.id}><EvidenceItem item={item}/>
+      <div className="mt-2 flex items-center gap-3">
+        <button type="button" disabled={saving} onClick={()=>void publicationConsent(item.id, !item.publication_consent_at)} className="text-sm font-medium text-cyan-700 underline">
+          {item.publication_consent_at ? "Withdraw publication permission" : "Allow consideration for public showcase"}
+        </button>
+        {item.approved_for_public && <span className="text-xs text-slate-600">Showcased</span>}
+      </div></li>)}</ul>
     {!items.length && <p className="text-sm text-slate-500">No additional videos yet.</p>}
   </section>;
 }
