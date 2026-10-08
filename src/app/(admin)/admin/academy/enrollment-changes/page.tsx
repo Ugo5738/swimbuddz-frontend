@@ -55,6 +55,55 @@ export default function AcademyEnrollmentChangeReviewsPage() {
     }
   }
 
+  async function closeUnpaid(reference: string) {
+    const evidence = window.prompt(
+      "Enter evidence from the bank or payment provider confirming no funds were received. Do NOT use this for a transfer with an uploaded proof."
+    );
+    if (!evidence || evidence.trim().length < 10) return;
+    const note = window.prompt("Explain why this payment attempt can safely be closed as unpaid.");
+    if (!note || note.trim().length < 10) return;
+    if (!window.confirm(`Close ${reference} as unpaid? You must already have verified no transfer was received.`)) return;
+    setWorking(reference);
+    setError("");
+    try {
+      const preview = await AdminAcademyApi.previewCheckoutAttempt(reference);
+      if (preview.payment.status === "paid" || preview.payment.status === "pending_review") {
+        throw new Error("This payment is paid or has proof awaiting review. Reconcile it instead.");
+      }
+      await AdminAcademyApi.closeUnpaidCheckoutAttempt(reference, {
+        preview_token: preview.preview_token,
+        provider_closure_evidence: evidence.trim(),
+        note: note.trim(),
+        apply: true,
+      });
+      await loadReviews();
+      window.alert("Payment attempt closed with an audit trail. Complete the remaining attempts before approving the cohort change.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not close checkout.");
+    } finally {
+      setWorking(null);
+    }
+  }
+
+  async function approveUnpaid(changeId: string) {
+    const reason = window.prompt(
+      "Reason for approving this unpaid cohort change (minimum 10 characters)."
+    );
+    if (!reason || reason.trim().length < 10) return;
+    if (!window.confirm("The backend will block this unless every previous attempt is certified closed-unpaid, with no paid installments or progress. Continue?")) return;
+    setWorking(changeId);
+    setError("");
+    try {
+      await AdminAcademyApi.approveUnpaidEnrollmentChange(changeId, reason.trim());
+      await loadReviews();
+      window.alert("Cohort moved. The member can review their new enrollment.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not approve transfer.");
+    } finally {
+      setWorking(null);
+    }
+  }
+
   return (
     <main className="mx-auto max-w-5xl space-y-6">
       <header>
@@ -92,6 +141,21 @@ export default function AcademyEnrollmentChangeReviewsPage() {
             </p>
             <Link href={`/admin/academy/enrollments/${review.from_enrollment_id}`}
               className="inline-block text-sm font-medium text-cyan-700 underline">View enrollment details</Link>
+            <div className="flex flex-wrap gap-2">
+              {(review.snapshot.payment_references || []).map((reference) => (
+                <button type="button" key={reference}
+                  disabled={working !== null}
+                  onClick={() => closeUnpaid(reference)}
+                  className="rounded-md border border-amber-300 px-3 py-2 text-sm text-amber-800 disabled:opacity-50">
+                  Verify and close unpaid attempt
+                </button>
+              ))}
+              <button type="button" onClick={() => approveUnpaid(review.id)}
+                disabled={working !== null}
+                className="rounded-md bg-cyan-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-50">
+                Approve verified-unpaid transfer
+              </button>
+            </div>
             <button type="button" onClick={() => rejectRequest(review.id)}
               disabled={working !== null}
               className="ml-4 rounded-md border border-red-300 px-3 py-2 text-sm text-red-600 disabled:opacity-50">
