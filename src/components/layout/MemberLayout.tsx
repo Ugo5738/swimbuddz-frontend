@@ -125,6 +125,7 @@ const navSections: NavSection[] = [
     title: "Swim",
     items: [
       { href: "/pool-access", label: "Find a Swim · Pool Access", icon: Waves },
+      { href: "/account/pool-access", label: "My Pool Access", icon: Calendar },
       { href: "/account/calendar", label: "Calendar", icon: CalendarDays },
       { href: "/sessions", label: "Sessions", icon: Calendar },
       { href: "/account/club", label: "My Club swims", icon: Calendar },
