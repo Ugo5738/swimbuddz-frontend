@@ -76,6 +76,7 @@ const navSections: NavSection[] = [
     title: "Programs",
     items: [
       { href: "/admin/academy", label: "Academy", icon: GraduationCap },
+      { href: "/admin/academy/evidence", label: "Alumni Videos", icon: GraduationCap },
       { href: "/admin/academy/extension-requests", label: "Academy Extensions", icon: CalendarClock },
       { href: "/admin/club-applications", label: "Club Assessments", icon: ClipboardCheck },
       { href: "/admin/club-plans", label: "Club Plans & Pricing", icon: Waves },
@@ -108,6 +109,7 @@ const navSections: NavSection[] = [
       { href: "/admin/community/events", label: "Events", icon: CalendarDays },
       { href: "/admin/community/volunteers", label: "Volunteers", icon: HandHeart },
       { href: "/admin/community/content", label: "Tips & Content", icon: FileText },
+      { href: "/admin/community/content/analytics", label: "Content Analytics", icon: FileText },
       { href: "/admin/community/challenges", label: "Challenges", icon: Trophy },
     ],
   },
