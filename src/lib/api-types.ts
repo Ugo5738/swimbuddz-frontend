@@ -3338,6 +3338,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/members/academy-swim-clearance/{member_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Academy Clearance */
+        get: operations["academy_clearance_internal_members_academy_swim_clearance__member_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/members/academy-swim-clearance/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Academy Clearance Batch */
+        post: operations["academy_clearance_batch_internal_members_academy_swim_clearance_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/members/birthdays-today": {
         parameters: {
             query?: never;
@@ -4137,9 +4171,10 @@ export interface paths {
          *         use the same server-authoritative access/rate resolver as member booking
          *         (including cross-location Club visitor rates) unless Admin explicitly
          *         records an agreed override.
-         *       - Idempotent: if a PENDING or CONFIRMED booking already exists for
-         *         ``(session_id, member_id)``, returns it instead of creating a new one.
-         *         Cancelled/expired bookings raise 409 (admin must investigate).
+         *       - Idempotent: reuse a PENDING, EXPIRED or CONFIRMED booking for
+         *         ``(session_id, member_id)``. Confirming attendance preserves the
+         *         original price and payment links; it does not collect payment.
+         *         Cancelled bookings still require explicit reconciliation.
          *       - Channel is hard-coded to ``ADMIN`` so the row is distinguishable from
          *         member-self bookings in reporting.
          *       - Coach payouts pick this up like any other booking — paying happens
@@ -6743,6 +6778,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/academy/admin/academy/enrollment-changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Academy Change Reviews
+         * @description Admin review queue. Financial settlement is not approved by this endpoint.
+         */
+        get: operations["list_academy_change_reviews_academy_admin_academy_enrollment_changes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/my-academy-journeys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Academy Journeys
+         * @description Group a member's cohort attempts by programme without collapsing history.
+         */
+        get: operations["my_academy_journeys_academy_my_academy_journeys_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/my-enrollments/{enrollment_id}/change-cohort": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Change My Cohort */
+        post: operations["change_my_cohort_academy_my_enrollments__enrollment_id__change_cohort_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/academy/my-enrollments": {
         parameters: {
             query?: never;
@@ -7113,6 +7205,189 @@ export interface paths {
          *     Returns the (possibly newly-created) ``StudentProgress`` row.
          */
         post: operations["override_progress_academy_admin_progress_override_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/enrollments/{enrollment_id}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Milestone Evidence */
+        get: operations["list_milestone_evidence_academy_enrollments__enrollment_id__evidence_get"];
+        put?: never;
+        /** Create Milestone Evidence */
+        post: operations["create_milestone_evidence_academy_enrollments__enrollment_id__evidence_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/coach/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Coach Evidence */
+        get: operations["list_coach_evidence_academy_coach_evidence_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Admin Evidence */
+        get: operations["list_admin_evidence_academy_admin_evidence_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/evidence/{evidence_id}/coach-review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Review Evidence */
+        post: operations["review_evidence_academy_evidence__evidence_id__coach_review_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/evidence/{evidence_id}/showcase": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Review Showcase */
+        post: operations["review_showcase_academy_admin_evidence__evidence_id__showcase_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/enrollments/{enrollment_id}/evidence/{evidence_id}/publication-consent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Publication Consent
+         * @description Owners can withdraw publication immediately; approval must be redone.
+         */
+        patch: operations["update_publication_consent_academy_enrollments__enrollment_id__evidence__evidence_id__publication_consent_patch"];
+        trace?: never;
+    };
+    "/api/v1/academy/public/showcase": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Public Showcase */
+        get: operations["list_public_showcase_academy_public_showcase_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/public/showcase/{evidence_id}/play": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Play Showcase Video
+         * @description Check current consent on every playback, including after withdrawal.
+         */
+        get: operations["play_showcase_video_academy_public_showcase__evidence_id__play_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/evidence/{evidence_id}/playback-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Evidence Playback Url
+         * @description Resolve a private clip URL after checking owner/assigned-coach/admin access.
+         *
+         *     Browsers use this JSON endpoint with a bearer token, rather than opening a
+         *     protected redirect from a bare <video> tag without authorization headers.
+         */
+        get: operations["evidence_playback_url_academy_evidence__evidence_id__playback_url_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/evidence/{evidence_id}/play": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Play Evidence For Authorized Person */
+        get: operations["play_evidence_for_authorized_person_academy_evidence__evidence_id__play_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8752,6 +9027,26 @@ export interface paths {
         patch: operations["update_discount_payments_admin_discounts__discount_id__patch"];
         trace?: never;
     };
+    "/api/v1/internal/payments/pool-access/paid/{reference}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Verified Pool Access Payment
+         * @description Authoritative ledger-side paid evidence; never accepts a client paid flag.
+         */
+        get: operations["verified_pool_access_payment_internal_payments_pool_access_paid__reference__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/payments/recurring-payouts/cohorts/{cohort_id}/extend": {
         parameters: {
             query?: never;
@@ -9007,6 +9302,46 @@ export interface paths {
          *     including its disbursement state. Amount changes require reconciliation.
          */
         post: operations["annotate_refund_obligation_internal_payments__reference__annotate_refund_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/payments/academy/enrollments/{enrollment_id}/financial-state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Academy Enrollment Financial State */
+        get: operations["academy_enrollment_financial_state_internal_payments_academy_enrollments__enrollment_id__financial_state_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/payments/reports/attributed-payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Attributed Payments Report
+         * @description Payment-owned settled rows, grouped by payer and canonical purpose.
+         *
+         *     The Reporting Service joins these aggregates to its first-party Member
+         *     acquisition origin. No Payment -> Members or Payment -> Content dependency.
+         */
+        post: operations["attributed_payments_report_internal_payments_reports_attributed_payments_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9860,6 +10195,40 @@ export interface paths {
          * @description Add a comment to an announcement.
          */
         post: operations["create_announcement_comment_announcements__announcement_id__comments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/content/{post_id}/engagement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record Engagement */
+        post: operations["record_engagement_content__post_id__engagement_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/content/admin/engagement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Engagement Report */
+        get: operations["engagement_report_content_admin_engagement_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -11235,6 +11604,26 @@ export interface paths {
          * @description Funnel conversion snapshots, filterable by stage and period.
          */
         get: operations["flywheel_funnel_admin_reports_flywheel_funnel_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/reports/flywheel/content-acquisition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Content Acquisition
+         * @description Reporting-owned confirmed registration counts, not attributed payments.
+         */
+        get: operations["content_acquisition_admin_reports_flywheel_content_acquisition_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -14577,6 +14966,383 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/pools/access/partner/assigned-pools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Assigned Pools */
+        get: operations["assigned_pools_pools_access_partner_assigned_pools_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pools/access/partner/{pool_id}/redeem": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Redeem At Partner */
+        post: operations["redeem_at_partner_pools_access_partner__pool_id__redeem_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/pools/access/partner/{pool_id}/operators": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Reception Operators */
+        get: operations["list_reception_operators_admin_pools_access_partner__pool_id__operators_get"];
+        put?: never;
+        /** Authorize Reception */
+        post: operations["authorize_reception_admin_pools_access_partner__pool_id__operators_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/pools/access/partner/{pool_id}/operators/{auth_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke Reception */
+        delete: operations["revoke_reception_admin_pools_access_partner__pool_id__operators__auth_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/pools/access/bookings/{booking_id}/quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Quote */
+        get: operations["quote_internal_pools_access_bookings__booking_id__quote_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/pools/access/bookings/{booking_id}/claim-checkout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Claim Checkout */
+        post: operations["claim_checkout_internal_pools_access_bookings__booking_id__claim_checkout_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/pools/access/bookings/{booking_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm */
+        post: operations["confirm_internal_pools_access_bookings__booking_id__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pools/access/bookings/{booking_id}/tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My Tickets */
+        get: operations["my_tickets_pools_access_bookings__booking_id__tickets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pools/access/redeem": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Redeem
+         * @description Admin-only check-in for first pilot. Partner-scoped roles required before rollout.
+         */
+        post: operations["redeem_pools_access_redeem_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pools/access/bookings/{booking_id}/reconcile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reconcile */
+        post: operations["reconcile_pools_access_bookings__booking_id__reconcile_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pools/access/reconciliations/{reconciliation_id}/record-external-settlement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record External Settlement
+         * @description Record bank-confirmed settlement, never execute or claim to execute a transfer.
+         */
+        post: operations["record_external_settlement_pools_access_reconciliations__reconciliation_id__record_external_settlement_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pools/access/reconciliations/{reconciliation_id}/settlements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Settlement Records */
+        get: operations["settlement_records_pools_access_reconciliations__reconciliation_id__settlements_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pools/access/offers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Published Offers */
+        get: operations["published_offers_pools_access_offers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pools/access/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reserve Access
+         * @description Temporary reservation; NEVER issues a valid QR or paid entitlement.
+         */
+        post: operations["reserve_access_pools_access_bookings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pools/access/bookings/{booking_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel Unpaid Hold
+         * @description Only release holds that have never started a payment checkout.
+         *
+         *     Once checkout was claimed, Paystack may still accept money. Cancellation
+         *     must wait for verified provider closure and a refund review.
+         */
+        post: operations["cancel_unpaid_hold_pools_access_bookings__booking_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pools/access/bookings/{booking_id}/request-cancellation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request Paid Cancellation
+         * @description Request review without revoking a paid ticket or claiming a refund.
+         */
+        post: operations["request_paid_cancellation_pools_access_bookings__booking_id__request_cancellation_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pools/access/bookings/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My Bookings */
+        get: operations["my_bookings_pools_access_bookings_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/pools/access/offers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin List Offers */
+        get: operations["admin_list_offers_admin_pools_access_offers_get"];
+        put?: never;
+        /** Create Offer */
+        post: operations["create_offer_admin_pools_access_offers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/pools/access/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin List Access Bookings */
+        get: operations["admin_list_access_bookings_admin_pools_access_bookings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/pools/access/offers/{offer_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish Offer */
+        post: operations["publish_offer_admin_pools_access_offers__offer_id__publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/pools/access/cancellation-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cancellation Review Queue */
+        get: operations["cancellation_review_queue_admin_pools_access_cancellation_requests_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pools": {
         parameters: {
             query?: never;
@@ -17283,6 +18049,52 @@ export interface paths {
          *     - 0.5 = mix both at equal volume
          */
         post: operations["apply_audio_to_video_media_videos__media_id__apply_audio_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/media/alumni-evidence/{media_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Validate Alumni Evidence
+         * @description Check ownership and private video purpose without leaking media URLs.
+         *
+         *     Only backend service callers can use this route. Any mismatch is a 404,
+         *     including media owned by another person or media intended for a gallery.
+         */
+        get: operations["validate_alumni_evidence_internal_media_alumni_evidence__media_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/media/alumni-evidence/{media_id}/public-playback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Alumni Public Playback
+         * @description Return a short-lived private URL only to a trusted calling service.
+         *
+         *     Authorization to publish must be checked on each request by Academy. Public
+         *     clients must never be able to call this internal service route directly.
+         */
+        get: operations["get_alumni_public_playback_internal_media_alumni_evidence__media_id__public_playback_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -20818,6 +21630,11 @@ export interface components {
             /** Proof Media */
             proof_media?: components["schemas"]["ChallengeSubmissionMediaResponse"][];
         };
+        /** ClearanceBatchRequest */
+        ClearanceBatchRequest: {
+            /** Member Ids */
+            member_ids: string[];
+        };
         /**
          * ClubAccessCheck
          * @description One session-specific Club access decision requested internally.
@@ -23327,10 +24144,14 @@ export interface components {
         JoinedTierMember: {
             /** Id */
             id: string;
+            /** Member Auth Id */
+            member_auth_id?: string | null;
             /** Source Joined At */
             source_joined_at: string;
             /** Acquisition Source */
             acquisition_source?: string | null;
+            /** Content Source */
+            content_source?: string | null;
         };
         /** JoinedTierResponse */
         JoinedTierResponse: {
@@ -28640,6 +29461,28 @@ export interface components {
          * @enum {string}
          */
         BillingType: "one_time" | "subscription" | "per_session";
+        /** ChangeCohortRequest */
+        ChangeCohortRequest: {
+            /**
+             * Target Cohort Id
+             * Format: uuid
+             */
+            target_cohort_id: string;
+        };
+        /** ChangeCohortResult */
+        ChangeCohortResult: {
+            /** State */
+            state: string;
+            /** Enrollment Id */
+            enrollment_id?: string | null;
+            /**
+             * Change Id
+             * Format: uuid
+             */
+            change_id: string;
+            /** Message */
+            message: string;
+        };
         /**
          * CoachAssignmentCreate
          * @description Create a new coach assignment.
@@ -30081,6 +30924,39 @@ export interface components {
          * @enum {string}
          */
         EvalRecommendation: "continue_shadow" | "ready_for_assistant" | "ready_for_lead";
+        /** EvidenceReviewRequest */
+        EvidenceReviewRequest: {
+            /** Coach Notes */
+            coach_notes: string;
+        };
+        /** EvidenceReviewResponse */
+        EvidenceReviewResponse: {
+            /**
+             * Evidence Id
+             * Format: uuid
+             */
+            evidence_id: string;
+            /** Coach Notes */
+            coach_notes?: string | null;
+            /** Reviewed At */
+            reviewed_at?: string | null;
+            /** Approved For Public */
+            approved_for_public: boolean;
+            /** Showcase Review Notes */
+            showcase_review_notes?: string | null;
+        };
+        /** EvidenceShowcaseRequest */
+        EvidenceShowcaseRequest: {
+            /** Approve */
+            approve: boolean;
+            /** Review Notes */
+            review_notes: string;
+            /**
+             * Publication Consent Confirmed
+             * @default false
+             */
+            publication_consent_confirmed: boolean;
+        };
         /**
          * InstallmentStatus
          * @enum {string}
@@ -30177,6 +31053,87 @@ export interface components {
          * @enum {string}
          */
         MilestoneEventType: "claimed" | "approved" | "rejected" | "status_changed" | "override";
+        /** MilestoneEvidenceCreate */
+        MilestoneEvidenceCreate: {
+            /**
+             * Milestone Id
+             * Format: uuid
+             */
+            milestone_id: string;
+            /**
+             * Video Media Id
+             * Format: uuid
+             */
+            video_media_id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "cohort_archive" | "continued_progress";
+            /** Caption */
+            caption?: string | null;
+            /** Recorded On */
+            recorded_on?: string | null;
+            /**
+             * Consent To Share
+             * @default false
+             */
+            consent_to_share: boolean;
+        };
+        /** MilestoneEvidenceResponse */
+        MilestoneEvidenceResponse: {
+            /**
+             * Milestone Id
+             * Format: uuid
+             */
+            milestone_id: string;
+            /**
+             * Video Media Id
+             * Format: uuid
+             */
+            video_media_id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "cohort_archive" | "continued_progress";
+            /** Caption */
+            caption?: string | null;
+            /** Recorded On */
+            recorded_on?: string | null;
+            /**
+             * Consent To Share
+             * @default false
+             */
+            consent_to_share: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Enrollment Id
+             * Format: uuid
+             */
+            enrollment_id: string;
+            /** Approved For Public */
+            approved_for_public: boolean;
+            /** Public Display Name */
+            public_display_name?: string | null;
+            /** Publication Consent At */
+            publication_consent_at?: string | null;
+            /** Coach Notes */
+            coach_notes?: string | null;
+            /** Reviewed At */
+            reviewed_at?: string | null;
+            /** Showcase Review Notes */
+            showcase_review_notes?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** MilestoneResponse */
         MilestoneResponse: {
             /** Name */
@@ -30664,6 +31621,30 @@ export interface components {
          * @enum {string}
          */
         ProgressStatus: "pending" | "achieved";
+        /** PublicShowcaseItem */
+        PublicShowcaseItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /** Display Name */
+            display_name: string;
+            /**
+             * Published At
+             * Format: date-time
+             */
+            published_at: string;
+        };
+        /** PublicationConsentRequest */
+        PublicationConsentRequest: {
+            /** Consent */
+            consent: boolean;
+            /** Display Name */
+            display_name?: string | null;
+        };
         /**
          * ReadinessCheckItem
          * @description Individual readiness check result.
@@ -30916,6 +31897,18 @@ export interface components {
             refund_note: string;
         };
         /**
+         * AcademyEnrollmentFinancialState
+         * @description Fail-closed transfer gate: any initiated payment needs reconciliation.
+         */
+        AcademyEnrollmentFinancialState: {
+            /** Has Payment Activity */
+            has_payment_activity: boolean;
+            /** References */
+            references: string[];
+            /** Statuses */
+            statuses: string[];
+        };
+        /**
          * AdminBookingOfflinePaymentRequest
          * @description Auditable receipt details for a session fee collected off-platform.
          */
@@ -31008,6 +32001,24 @@ export interface components {
              * Format: uuid
              */
             proof_media_id: string;
+        };
+        /**
+         * AttributionPaymentQuery
+         * @description Bounded bulk reporting query; never callable by public clients.
+         */
+        AttributionPaymentQuery: {
+            /** Member Auth Ids */
+            member_auth_ids?: string[];
+            /**
+             * Date From
+             * Format: date-time
+             */
+            date_from: string;
+            /**
+             * Date To
+             * Format: date-time
+             */
+            date_to: string;
         };
         /** Body_upload_transfer_receipt_payments_manual_transfer__reference__upload_post */
         Body_upload_transfer_receipt_payments_manual_transfer__reference__upload_post: {
@@ -31452,6 +32463,8 @@ export interface components {
             enrollment_id?: string | null;
             /** Order Id */
             order_id?: string | null;
+            /** Pool Access Booking Id */
+            pool_access_booking_id?: string | null;
             /** Discount Code */
             discount_code?: string | null;
             /**
@@ -32038,7 +33051,7 @@ export interface components {
          * PaymentPurpose
          * @enum {string}
          */
-        PaymentPurpose: "community" | "club" | "club_bundle" | "academy_cohort" | "session_fee" | "session_bundle" | "store_order" | "wallet_topup" | "ride_share" | "session_booking" | "guest_pass" | "community_experience" | "strokelab_founding";
+        PaymentPurpose: "community" | "club" | "club_bundle" | "academy_cohort" | "session_fee" | "session_bundle" | "store_order" | "wallet_topup" | "ride_share" | "session_booking" | "guest_pass" | "pool_access" | "community_experience" | "strokelab_founding";
         /** PaymentResponse */
         PaymentResponse: {
             /**
@@ -33139,6 +34152,12 @@ export interface components {
             category: string;
             /** Featured Image Media Id */
             featured_image_media_id?: string | null;
+            /** Video Url */
+            video_url?: string | null;
+            /** Episode Number */
+            episode_number?: number | null;
+            /** Guest Names */
+            guest_names?: string | null;
             /** Featured Image Prompt */
             featured_image_prompt?: string | null;
             /**
@@ -33175,6 +34194,12 @@ export interface components {
             category: string;
             /** Featured Image Media Id */
             featured_image_media_id?: string | null;
+            /** Video Url */
+            video_url?: string | null;
+            /** Episode Number */
+            episode_number?: number | null;
+            /** Guest Names */
+            guest_names?: string | null;
             /** Featured Image Prompt */
             featured_image_prompt?: string | null;
             /**
@@ -33281,6 +34306,12 @@ export interface components {
             body?: string | null;
             /** Category */
             category?: string | null;
+            /** Video Url */
+            video_url?: string | null;
+            /** Episode Number */
+            episode_number?: number | null;
+            /** Guest Names */
+            guest_names?: string | null;
             /** Featured Image Media Id */
             featured_image_media_id?: string | null;
             /** Featured Image Prompt */
@@ -33336,6 +34367,20 @@ export interface components {
              * @default 0
              */
             failed_count: number;
+        };
+        /** EventInput */
+        EventInput: {
+            /**
+             * Event Type
+             * @enum {string}
+             */
+            event_type: "page_view" | "watch_click" | "assessment_click" | "academy_click" | "club_click" | "event_click" | "register_click";
+            /**
+             * Source
+             * @default website
+             * @enum {string}
+             */
+            source: "website" | "beyond_the_pool" | "articles" | "stories";
         };
         /**
          * MessageLogResponse
@@ -39048,6 +40093,130 @@ export interface components {
          * @enum {string}
          */
         VolunteerTier: "tier_1" | "tier_2" | "tier_3";
+        /** AdminOfferOut */
+        AdminOfferOut: {
+            /**
+             * Pool Id
+             * Format: uuid
+             */
+            pool_id: string;
+            /** Title */
+            title: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Capacity */
+            capacity: number;
+            /** Selling Price Kobo */
+            selling_price_kobo: number;
+            /** Negotiated Cost Kobo */
+            negotiated_cost_kobo: number;
+            /**
+             * Cost Basis
+             * @default per_person
+             * @enum {string}
+             */
+            cost_basis: "per_person" | "per_group";
+            /**
+             * Currency
+             * @default NGN
+             */
+            currency: string;
+            /**
+             * Self Directed Permitted
+             * @default false
+             */
+            self_directed_permitted: boolean;
+            /**
+             * Admissions Require Lifeguard
+             * @default true
+             */
+            admissions_require_lifeguard: boolean;
+            /** Amenities */
+            amenities?: string[];
+            /**
+             * Access Rules
+             * @default
+             */
+            access_rules: string;
+            /**
+             * Cancellation Policy
+             * @default
+             */
+            cancellation_policy: string;
+            /**
+             * Public Booking Enabled
+             * @default false
+             */
+            public_booking_enabled: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Status */
+            status: string;
+        };
+        /** BookingInput */
+        BookingInput: {
+            /**
+             * Offer Id
+             * Format: uuid
+             */
+            offer_id: string;
+            /**
+             * Accept Access Rules
+             * @constant
+             */
+            accept_access_rules: true;
+            /**
+             * Accept Cancellation Policy
+             * @constant
+             */
+            accept_cancellation_policy: true;
+            /**
+             * Acknowledge Uncoached Activity
+             * @constant
+             */
+            acknowledge_uncoached_activity: true;
+            /** Guests */
+            guests: components["schemas"]["GuestInput"][];
+            /** Idempotency Key */
+            idempotency_key: string;
+        };
+        /** BookingOut */
+        BookingOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Offer Id
+             * Format: uuid
+             */
+            offer_id: string;
+            /** Headcount */
+            headcount: number;
+            /** Selling Total Kobo */
+            selling_total_kobo: number;
+            /** Status */
+            status: string;
+            /** Payment Reference */
+            payment_reference: string | null;
+            /**
+             * Hold Expires At
+             * Format: date-time
+             */
+            hold_expires_at: string;
+        };
         /** CostQuoteLine */
         CostQuoteLine: {
             /** Category */
@@ -39140,11 +40309,139 @@ export interface components {
             /** Warnings */
             warnings?: string[];
         };
+        /** GuestInput */
+        GuestInput: {
+            /** Name */
+            name: string;
+        };
         /**
          * IndoorOutdoor
          * @enum {string}
          */
         IndoorOutdoor: "indoor" | "outdoor" | "both";
+        /** OfferInput */
+        OfferInput: {
+            /**
+             * Pool Id
+             * Format: uuid
+             */
+            pool_id: string;
+            /** Title */
+            title: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Capacity */
+            capacity: number;
+            /** Selling Price Kobo */
+            selling_price_kobo: number;
+            /** Negotiated Cost Kobo */
+            negotiated_cost_kobo: number;
+            /**
+             * Cost Basis
+             * @default per_person
+             * @enum {string}
+             */
+            cost_basis: "per_person" | "per_group";
+            /**
+             * Currency
+             * @default NGN
+             */
+            currency: string;
+            /**
+             * Self Directed Permitted
+             * @default false
+             */
+            self_directed_permitted: boolean;
+            /**
+             * Admissions Require Lifeguard
+             * @default true
+             */
+            admissions_require_lifeguard: boolean;
+            /** Amenities */
+            amenities?: string[];
+            /**
+             * Access Rules
+             * @default
+             */
+            access_rules: string;
+            /**
+             * Cancellation Policy
+             * @default
+             */
+            cancellation_policy: string;
+            /**
+             * Public Booking Enabled
+             * @default false
+             */
+            public_booking_enabled: boolean;
+        };
+        /**
+         * OfferOut
+         * @description Public catalog representation: NEVER expose negotiated partner costs.
+         */
+        OfferOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Pool Id
+             * Format: uuid
+             */
+            pool_id: string;
+            /**
+             * Pool Name
+             * @default
+             */
+            pool_name: string;
+            /** Location Area */
+            location_area?: string | null;
+            /** Pool Address */
+            pool_address?: string | null;
+            /** Pool Length M */
+            pool_length_m?: number | null;
+            /** Depth Min M */
+            depth_min_m?: number | null;
+            /** Depth Max M */
+            depth_max_m?: number | null;
+            /** Has Lifeguard */
+            has_lifeguard?: boolean | null;
+            /** Title */
+            title: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Capacity */
+            capacity: number;
+            /** Selling Price Kobo */
+            selling_price_kobo: number;
+            /** Currency */
+            currency: string;
+            /** Status */
+            status: string;
+            /** Amenities */
+            amenities: string[];
+            /** Access Rules */
+            access_rules: string;
+            /** Cancellation Policy */
+            cancellation_policy: string;
+        };
         /** OperatingAreaCreate */
         OperatingAreaCreate: {
             /** Name */
@@ -39412,6 +40709,11 @@ export interface components {
             notes?: string | null;
             /** Is Active */
             is_active?: boolean | null;
+        };
+        /** PartnerGrant */
+        PartnerGrant: {
+            /** Auth Id */
+            auth_id: string;
         };
         /**
          * PartnershipStatus
@@ -40439,6 +41741,11 @@ export interface components {
          * @enum {string}
          */
         PreferredContactChannel: "whatsapp" | "phone" | "email" | "in_person";
+        /** ScanInput */
+        ScanInput: {
+            /** Ticket */
+            ticket: string;
+        };
         /**
          * WeatherRefreshResult
          * @description Summary of a pre-fetch refresh run (worker or admin-triggered).
@@ -52935,6 +54242,70 @@ export interface operations {
             };
         };
     };
+    academy_clearance_internal_members_academy_swim_clearance__member_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    academy_clearance_batch_internal_members_academy_swim_clearance_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClearanceBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_birthdays_today_internal_members_birthdays_today_get: {
         parameters: {
             query?: {
@@ -58558,6 +59929,81 @@ export interface operations {
             };
         };
     };
+    list_academy_change_reviews_academy_admin_academy_enrollment_changes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    my_academy_journeys_academy_my_academy_journeys_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    change_my_cohort_academy_my_enrollments__enrollment_id__change_cohort_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeCohortRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeCohortResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_my_enrollments_academy_my_enrollments_get: {
         parameters: {
             query?: never;
@@ -59055,6 +60501,331 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudentProgressResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_milestone_evidence_academy_enrollments__enrollment_id__evidence_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MilestoneEvidenceResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_milestone_evidence_academy_enrollments__enrollment_id__evidence_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MilestoneEvidenceCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MilestoneEvidenceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_coach_evidence_academy_coach_evidence_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MilestoneEvidenceResponse"][];
+                };
+            };
+        };
+    };
+    list_admin_evidence_academy_admin_evidence_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MilestoneEvidenceResponse"][];
+                };
+            };
+        };
+    };
+    review_evidence_academy_evidence__evidence_id__coach_review_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                evidence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EvidenceReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidenceReviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    review_showcase_academy_admin_evidence__evidence_id__showcase_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                evidence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EvidenceShowcaseRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidenceReviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_publication_consent_academy_enrollments__enrollment_id__evidence__evidence_id__publication_consent_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+                evidence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicationConsentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MilestoneEvidenceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_public_showcase_academy_public_showcase_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicShowcaseItem"][];
+                };
+            };
+        };
+    };
+    play_showcase_video_academy_public_showcase__evidence_id__play_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                evidence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    evidence_playback_url_academy_evidence__evidence_id__playback_url_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                evidence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    play_evidence_for_authorized_person_academy_evidence__evidence_id__play_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                evidence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -61790,6 +63561,37 @@ export interface operations {
             };
         };
     };
+    verified_pool_access_payment_internal_payments_pool_access_paid__reference__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     internal_extend_recurring_payouts_internal_payments_recurring_payouts_cohorts__cohort_id__extend_post: {
         parameters: {
             query?: never;
@@ -62164,6 +63966,70 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["AnnotateRefundRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    academy_enrollment_financial_state_internal_payments_academy_enrollments__enrollment_id__financial_state_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcademyEnrollmentFinancialState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attributed_payments_report_internal_payments_reports_attributed_payments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttributionPaymentQuery"];
             };
         };
         responses: {
@@ -63710,6 +65576,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_engagement_content__post_id__engagement_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    engagement_report_content_admin_engagement_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };
@@ -66021,6 +67940,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    content_acquisition_admin_reports_flywheel_content_acquisition_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };
@@ -71896,6 +73835,701 @@ export interface operations {
             };
         };
     };
+    assigned_pools_pools_access_partner_assigned_pools_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    redeem_at_partner_pools_access_partner__pool_id__redeem_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScanInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_reception_operators_admin_pools_access_partner__pool_id__operators_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    authorize_reception_admin_pools_access_partner__pool_id__operators_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartnerGrant"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revoke_reception_admin_pools_access_partner__pool_id__operators__auth_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pool_id: string;
+                auth_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    quote_internal_pools_access_bookings__booking_id__quote_get: {
+        parameters: {
+            query: {
+                member_auth_id: string;
+            };
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    claim_checkout_internal_pools_access_bookings__booking_id__claim_checkout_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_internal_pools_access_bookings__booking_id__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_tickets_pools_access_bookings__booking_id__tickets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    redeem_pools_access_redeem_post: {
+        parameters: {
+            query: {
+                ticket: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reconcile_pools_access_bookings__booking_id__reconcile_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_external_settlement_pools_access_reconciliations__reconciliation_id__record_external_settlement_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reconciliation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    settlement_records_pools_access_reconciliations__reconciliation_id__settlements_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reconciliation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    published_offers_pools_access_offers_get: {
+        parameters: {
+            query?: {
+                location_area?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfferOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reserve_access_pools_access_bookings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_unpaid_hold_pools_access_bookings__booking_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    request_paid_cancellation_pools_access_bookings__booking_id__request_cancellation_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_bookings_pools_access_bookings_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingOut"][];
+                };
+            };
+        };
+    };
+    admin_list_offers_admin_pools_access_offers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminOfferOut"][];
+                };
+            };
+        };
+    };
+    create_offer_admin_pools_access_offers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OfferInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminOfferOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_list_access_bookings_admin_pools_access_bookings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    publish_offer_admin_pools_access_offers__offer_id__publish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                offer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminOfferOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancellation_review_queue_admin_pools_access_cancellation_requests_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     list_partner_pools_pools_get: {
         parameters: {
             query?: {
@@ -77700,6 +80334,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MediaItemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    validate_alumni_evidence_internal_media_alumni_evidence__media_id__get: {
+        parameters: {
+            query: {
+                owner_auth_id: string;
+            };
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_alumni_public_playback_internal_media_alumni_evidence__media_id__public_playback_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
                 };
             };
             /** @description Validation Error */
