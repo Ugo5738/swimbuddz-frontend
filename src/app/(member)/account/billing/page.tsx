@@ -231,9 +231,9 @@ export default function BillingPage() {
     <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <header className="space-y-1">
-        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Membership & Billing</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Payments & Credits</h1>
         <p className="text-sm md:text-base text-slate-600">
-          Manage your memberships and upgrade when you're ready.
+          Review your memberships, outstanding balances, payment history and credits.
         </p>
       </header>
 

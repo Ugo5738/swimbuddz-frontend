@@ -240,6 +240,18 @@ function EnrollmentSuccessContent() {
         </div>
       </Card>
 
+      <Card className="border-amber-200 bg-amber-50 p-5">
+        <h2 className="text-lg font-semibold text-amber-950">Complete your pre-swim setup</h2>
+        <p className="mt-1 text-sm text-amber-900">
+          Your Academy purchase is separate from your swimming readiness profile.
+          Before your first class, complete your emergency contact, swimming background,
+          safety details, goals and preferences.
+        </p>
+        <Link href="/account/onboarding?step=core">
+          <Button className="mt-3">Complete pre-swim onboarding</Button>
+        </Link>
+      </Card>
+
       {/* Actions */}
       <div className="flex flex-col sm:flex-row gap-4">
         <Link href={onboarding.dashboard_link} className="flex-1">

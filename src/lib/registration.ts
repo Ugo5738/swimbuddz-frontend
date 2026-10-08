@@ -1,7 +1,7 @@
 import { hasAcademyReadiness as isAcademyReadinessComplete } from "@/lib/academy-readiness";
 import { apiGet, apiPost } from "./api";
 import { isAcademyDestination, safeReturnPath } from "./returnPath";
-import { getCurrentAccessToken } from "./auth";
+import { getCurrentAccessToken, supabase } from "./auth";
 import {
   getRequestedTiers,
   getTierStatus,
@@ -144,6 +144,8 @@ export async function completePendingRegistrationOnBackend(): Promise<PendingCom
 
 export async function getPostAuthRedirectPath(destination?: string | null): Promise<string> {
   const returnTo = safeReturnPath(destination);
+  // Pool Access visitors are not required to join a membership programme.
+  if (returnTo && /^\/pool-access(?:\/|$|\?)/.test(returnTo)) return returnTo;
   try {
     const member = await apiGet<MemberForRedirect>("/api/v1/members/me", {
       auth: true,
@@ -231,6 +233,14 @@ export async function getPostAuthRedirectPath(destination?: string | null): Prom
 
     const hasAcademyReadiness = isAcademyReadinessComplete(membership);
 
+    // Academy signup: payment follows cohort selection. Full logistics,
+    // emergency contacts and learning goals are collected after checkout,
+    // before the student's first supervised swim.
+    if (wantsAcademy && !academyActive) {
+      if (returnTo && isAcademyDestination(returnTo)) return returnTo;
+      return "/upgrade/academy/cohort";
+    }
+
     const onboardingComplete =
       hasCoreOnboarding &&
       hasSafetyLogistics &&
@@ -262,6 +272,10 @@ export async function getPostAuthRedirectPath(destination?: string | null): Prom
 
     return "/account";
   } catch {
+    try {
+      const { data } = await supabase.auth.getUser();
+      if (data.user?.user_metadata?.pool_access_visitor === true) return "/pool-access/my-bookings";
+    } catch { /* No authenticated visitor profile */ }
     // No member profile. Finance-team users invited via /admin/finance/users
     // have a ledger role but no member row, so /members/me 404s for them —
     // route them to the books instead of the member surface, which would

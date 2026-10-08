@@ -27,6 +27,7 @@ import {
   GraduationCap,
   HandHeart,
   Home,
+  Waves,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -123,6 +124,9 @@ const navSections: NavSection[] = [
   {
     title: "Swim",
     items: [
+      { href: "/find-a-swim", label: "Find a Swim", icon: Waves },
+      { href: "/account/bookings", label: "My Bookings", icon: CalendarDays },
+      { href: "/account/pool-access", label: "My Pool Access", icon: Calendar },
       { href: "/account/calendar", label: "Calendar", icon: CalendarDays },
       { href: "/sessions", label: "Sessions", icon: Calendar },
       { href: "/account/club", label: "My Club swims", icon: Calendar },
@@ -145,6 +149,7 @@ const navSections: NavSection[] = [
         icon: BookOpen,
       },
       { href: "/account/academy", label: "My Progress", icon: GraduationCap },
+      { href: "/account/academy/manage", label: "Manage Academy", icon: GraduationCap },
     ],
   },
   {
@@ -184,7 +189,7 @@ const navSections: NavSection[] = [
   {
     title: "Finance",
     items: [
-      { href: "/account/billing", label: "Billing", icon: CreditCard },
+      { href: "/account/billing", label: "Payments & Credits", icon: CreditCard },
       { href: "/account/wallet", label: "Wallet", icon: Wallet },
     ],
   },
