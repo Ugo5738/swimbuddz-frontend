@@ -90,7 +90,7 @@ export default function ManageAcademyPage() {
                         value={selection[enrollment.id] || ""}
                         onChange={(e) => setSelection((old) => ({...old, [enrollment.id]: e.target.value}))}>
                         <option value="">Choose another cohort</option>
-                        {available.map((c) => <option key={c.id} value={c.id}>{c.name} · {c.location_name || "Location TBD"} · ₦{(c.price_override ?? 0).toLocaleString("en-NG")}</option>)}
+                        {available.map((c) => <option key={c.id} value={c.id}>{c.name} · {c.location_name || "Location TBD"} · {c.price_override != null ? `₦${c.price_override.toLocaleString("en-NG")}` : "Price confirmed at checkout"}</option>)}
                       </select>
                       <p className="text-xs text-slate-500">Published price is shown before any personal discount or credited transfer. Final payment terms are confirmed separately.</p>
                       <button disabled={!selection[enrollment.id] || busy !== null}
