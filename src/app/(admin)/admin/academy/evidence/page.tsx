@@ -12,6 +12,7 @@ type Evidence = {
   caption: string | null;
   coach_notes?: string | null;
   consent_to_share: boolean;
+  publication_consent_at?: string | null;
   approved_for_public: boolean;
   created_at: string;
 };
@@ -63,14 +64,14 @@ export default function AdminAlumniEvidencePage() {
       <p className="text-sm text-slate-500">Milestone {item.milestone_id} · {new Date(item.created_at).toLocaleDateString()}</p>
       <p>{item.caption || "No note from swimmer"}</p>
       <a className="text-cyan-700 underline" href={`/api/v1/media/media/${item.video_media_id}/play`} target="_blank" rel="noopener noreferrer">Open media (requires authorized access)</a>
-      <p className="text-sm">Swimmer requested contact: {item.consent_to_share ? "Yes" : "No"} · Showcase status: {item.approved_for_public ? "Approved" : "Private"}</p>
+      <p className="text-sm">Publication permission: {item.publication_consent_at ? "Yes" : "No"} · Showcase status: {item.approved_for_public ? "Approved" : "Private"}</p>
       <label className="block text-sm font-medium">Editorial review notes
         <textarea className="mt-2 w-full rounded-lg border p-3" rows={2} value={feedback[item.id] || ""} onChange={e=>setFeedback(v=>({...v,[item.id]:e.target.value}))}/>
       </label>
       {item.coach_notes && <p className="text-sm text-slate-700">Coach: {item.coach_notes}</p>}
       <button type="button" disabled={busy===item.id} onClick={()=>void coachReview(item.id)} className="rounded-lg border border-cyan-700 px-4 py-2 font-medium text-cyan-700">Save coaching feedback</button>
       <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={Boolean(verified[item.id])} onChange={e=>setVerified(v=>({...v,[item.id]:e.target.checked}))}/> I have verified separate publication consent and permissions for everyone identifiable in this video.</label>
-      <div className="flex gap-3"><button type="button" disabled={busy===item.id} onClick={()=>void review(item.id,false)} className="rounded-lg border px-4 py-2">Keep private / revoke</button><button type="button" disabled={busy===item.id || !item.consent_to_share || !verified[item.id]} onClick={()=>void review(item.id,true)} className="rounded-lg bg-cyan-700 px-4 py-2 text-white disabled:opacity-50">Approve for showcase</button></div>
+      <div className="flex gap-3"><button type="button" disabled={busy===item.id} onClick={()=>void review(item.id,false)} className="rounded-lg border px-4 py-2">Keep private / revoke</button><button type="button" disabled={busy===item.id || !item.publication_consent_at || !verified[item.id]} onClick={()=>void review(item.id,true)} className="rounded-lg bg-cyan-700 px-4 py-2 text-white disabled:opacity-50">Approve for showcase</button></div>
     </section>)}
   </main>;
 }
