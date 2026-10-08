@@ -82,7 +82,7 @@ export function SupplementaryEvidence({ enrollmentId, milestones, canUpload }: {
           <option value="continued_progress">Progress since my cohort</option>
         </select>
       </label>
-      <MediaInput purpose="milestone_video" mode="upload-only" value={mediaId} onChange={setMediaId} onUploadingChange={setUploading} accept="video/*" />
+      <MediaInput purpose="milestone_evidence" mode="upload-only" value={mediaId} onChange={setMediaId} onUploadingChange={setUploading} accept="video/*" />
       <label className="block text-sm font-medium">When was this recorded? (optional)
         <input type="date" max={new Date().toISOString().slice(0,10)} value={recordedOn} onChange={e=>setRecordedOn(e.target.value)} className="mt-1 block w-full rounded-lg border p-3"/>
       </label>
