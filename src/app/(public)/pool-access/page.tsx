@@ -3,7 +3,7 @@ import { apiGet, apiPost } from "@/lib/api";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-type Offer = {id:string;pool_id:string;title:string;starts_at:string;ends_at:string;capacity:number;
+type Offer = {id:string;pool_id:string;pool_name:string;location_area:string|null;pool_address:string|null;pool_length_m:number|null;depth_min_m:number|null;depth_max_m:number|null;has_lifeguard:boolean|null;title:string;starts_at:string;ends_at:string;capacity:number;
  selling_price_kobo:number;currency:string;amenities:string[];access_rules:string;cancellation_policy:string};
 type Booking = {id:string;status:string;headcount:number;selling_total_kobo:number;currency:string;hold_expires_at:string};
 type PaymentIntent={reference:string;checkout_url?:string|null;};
@@ -12,6 +12,9 @@ const money=(minor:number,currency:string)=>new Intl.NumberFormat("en-NG",{style
 
 export default function PoolAccessPage(){
  const [offers,setOffers]=useState<Offer[]>([]);
+ const [area,setArea]=useState("");
+ const areas=useMemo(()=>Array.from(new Set(offers.map(x=>x.location_area).filter((x):x is string=>!!x))).sort(),[offers]);
+ const visibleOffers=useMemo(()=>offers.filter(x=>!area||x.location_area===area),[offers,area]);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
  const [selected,setSelected]=useState<Offer|null>(null);
@@ -52,6 +55,11 @@ export default function PoolAccessPage(){
    <Link className="text-cyan-700 underline" href="/sessions">Looking for an organised Club or Community swim instead?</Link>
   </header>
   {error&&<p role="alert" className="rounded-lg bg-red-50 p-3 text-red-700">{error}</p>}
+  {!selected&&!booking&&areas.length>0&&<label className="block max-w-sm text-sm font-semibold text-slate-800">Find a swim near your area
+   <select className="mt-2 w-full rounded-lg border bg-white p-3" value={area} onChange={e=>setArea(e.target.value)}>
+    <option value="">All available areas</option>{areas.map(x=><option key={x} value={x}>{x}</option>)}
+   </select>
+  </label>}
   {booking?<section className="rounded-xl border bg-white p-6 space-y-3">
    <h2 className="text-xl font-semibold">Places held — complete payment</h2>
    <p>Your reservation does not grant entry until your payment is verified.</p>
@@ -61,6 +69,9 @@ export default function PoolAccessPage(){
   </section>:selected?<section className="rounded-xl border bg-white p-6 space-y-4">
    <button className="text-cyan-700 underline" onClick={()=>{setSelected(null);setError("")}}>← All available visits</button>
    <h2 className="text-2xl font-semibold">{selected.title}</h2>
+   <p className="text-sm text-slate-600">{selected.location_area} · {selected.pool_address}</p>
+   <p className="text-sm text-slate-600">{selected.pool_length_m?selected.pool_length_m+"m pool · ":""}{selected.depth_min_m!=null&&selected.depth_max_m!=null?selected.depth_min_m+"–"+selected.depth_max_m+"m depth · ":""}{selected.has_lifeguard?"Lifeguard on site":""}</p>
+   {!!selected.amenities.length&&<p className="text-sm">Included amenities: {selected.amenities.join(", ")}</p>
    <p>{new Date(selected.starts_at).toLocaleString()} – {new Date(selected.ends_at).toLocaleTimeString()}</p>
    <p className="font-medium">{money(selected.selling_price_kobo,selected.currency)} per swimmer</p>
    <p className="text-sm text-slate-600">{selected.access_rules||"Follow the host facility's safety and entry instructions."}</p>
@@ -74,15 +85,16 @@ export default function PoolAccessPage(){
    <p className="font-semibold">Total: {total}</p>
    <button disabled={busy} className="rounded-lg bg-cyan-700 px-5 py-3 font-semibold text-white disabled:opacity-40" onClick={reserve}>{busy?"Reserving…":"Hold places to proceed to payment"}</button>
    <p className="text-xs text-slate-500">Payment is processed by Paystack. Admission requires verified payment and a valid QR ticket.</p>
-  </section>:loading?<p>Loading available swims…</p>:offers.length?<div className="grid gap-4 md:grid-cols-2">{offers.map(offer=><article key={offer.id} className="rounded-xl border bg-white p-5 space-y-3">
+  </section>:loading?<p>Loading available swims…</p>:visibleOffers.length?<div className="grid gap-4 md:grid-cols-2">{visibleOffers.map(offer=><article key={offer.id} className="rounded-xl border bg-white p-5 space-y-3">
    <h2 className="text-xl font-semibold">{offer.title}</h2>
+   <p className="text-sm text-slate-600">{offer.location_area} · {offer.pool_address}</p>
    <p className="text-sm text-slate-600">{new Date(offer.starts_at).toLocaleString()} – {new Date(offer.ends_at).toLocaleTimeString()}</p>
    <p className="font-semibold">{money(offer.selling_price_kobo,offer.currency)} / person</p>
    {!!offer.amenities.length&&<p className="text-sm">{offer.amenities.join(" · ")}</p>}
    <button className="rounded-lg bg-cyan-700 px-4 py-2 text-white" onClick={()=>{setSelected(offer);setGuests([""]);setError("")}}>View visit</button>
   </article>)}</div>:<div className="rounded-xl border bg-slate-50 p-8 text-center">
    <h2 className="font-semibold">No Pool Access visits published yet</h2>
-   <p className="mt-2 text-sm text-slate-600">Explore our organised swims while we prepare independent visits.</p>
+   <p className="mt-2 text-sm text-slate-600">No published visits match this area. Adjust the filter or explore our organised swims.</p>
    <Link href="/sessions" className="mt-3 inline-block text-cyan-700 underline">Browse sessions</Link>
   </div>}
  </main>;
