@@ -4,6 +4,9 @@ export interface ContentPost {
   summary: string;
   body: string;
   category: string;
+  video_url: string | null;
+  episode_number: number | null;
+  guest_names: string | null;
   featured_image_url: string | null;
   featured_image_media_id: string | null;
   status: string;
