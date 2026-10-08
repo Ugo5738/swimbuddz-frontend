@@ -9,6 +9,7 @@ const resources = [
   { href: "/beyond-the-pool", title: "Beyond the Pool", description: "Conversations about confidence, consistency and community." },
   { href: "/tips", title: "Swimming Tips & Articles", description: "Practical skills, technique and water-safety knowledge." },
   { href: "/guides", title: "Guides", description: "Get the most out of SwimBuddz programs and experiences." },
+  { href: "/learn/stories", title: "Swimmer Stories", description: "Progress and personal journeys shared with permission." },
   { href: "/gallery", title: "Community Highlights", description: "Our swims, events, achievements and memories." },
   { href: "/assessment", title: "Find Your Swim Level", description: "Get oriented before choosing your next swimming experience." },
 ];
