@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { API_BASE_URL } from "@/lib/config";
 import { apiGet, apiPost } from "@/lib/api";
 
 type Clip = {
@@ -8,6 +9,7 @@ type Clip = {
   enrollment_id: string;
   milestone_id: string;
   kind: string;
+  video_media_id: string;
   caption: string | null;
   coach_notes?: string | null;
   created_at: string;
@@ -45,6 +47,7 @@ export default function CoachAlumniEvidencePage() {
       <p className="font-semibold">Enrollment {item.enrollment_id}</p>
       <p className="text-sm text-slate-500">{new Date(item.created_at).toLocaleDateString()} · {item.kind}</p>
       {item.caption && <p>{item.caption}</p>}
+      <a href={`${API_BASE_URL}/api/v1/academy/evidence/${item.id}/play`} target="_blank" rel="noopener noreferrer" className="text-cyan-700 underline">Open video</a>
       {item.coach_notes && <p className="text-sm">Previous coach feedback: {item.coach_notes}</p>}
       <label className="block text-sm">Feedback
         <textarea rows={3} maxLength={2000} className="mt-1 w-full rounded-lg border p-3" value={notes[item.id] || ""} onChange={e=>setNotes(v=>({...v,[item.id]:e.target.value}))}/>
