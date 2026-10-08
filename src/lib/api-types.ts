@@ -4137,9 +4137,10 @@ export interface paths {
          *         use the same server-authoritative access/rate resolver as member booking
          *         (including cross-location Club visitor rates) unless Admin explicitly
          *         records an agreed override.
-         *       - Idempotent: if a PENDING or CONFIRMED booking already exists for
-         *         ``(session_id, member_id)``, returns it instead of creating a new one.
-         *         Cancelled/expired bookings raise 409 (admin must investigate).
+         *       - Idempotent: reuse a PENDING, EXPIRED or CONFIRMED booking for
+         *         ``(session_id, member_id)``. Confirming attendance preserves the
+         *         original price and payment links; it does not collect payment.
+         *         Cancelled bookings still require explicit reconciliation.
          *       - Channel is hard-coded to ``ADMIN`` so the row is distinguishable from
          *         member-self bookings in reporting.
          *       - Coach payouts pick this up like any other booking — paying happens
@@ -7119,6 +7120,166 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/academy/enrollments/{enrollment_id}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Milestone Evidence */
+        get: operations["list_milestone_evidence_academy_enrollments__enrollment_id__evidence_get"];
+        put?: never;
+        /** Create Milestone Evidence */
+        post: operations["create_milestone_evidence_academy_enrollments__enrollment_id__evidence_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/coach/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Coach Evidence */
+        get: operations["list_coach_evidence_academy_coach_evidence_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Admin Evidence */
+        get: operations["list_admin_evidence_academy_admin_evidence_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/evidence/{evidence_id}/coach-review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Review Evidence */
+        post: operations["review_evidence_academy_evidence__evidence_id__coach_review_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/evidence/{evidence_id}/showcase": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Review Showcase */
+        post: operations["review_showcase_academy_admin_evidence__evidence_id__showcase_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/enrollments/{enrollment_id}/evidence/{evidence_id}/publication-consent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Publication Consent
+         * @description Owners can withdraw publication immediately; approval must be redone.
+         */
+        patch: operations["update_publication_consent_academy_enrollments__enrollment_id__evidence__evidence_id__publication_consent_patch"];
+        trace?: never;
+    };
+    "/api/v1/academy/public/showcase": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Public Showcase */
+        get: operations["list_public_showcase_academy_public_showcase_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/public/showcase/{evidence_id}/play": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Play Showcase Video
+         * @description Check current consent on every playback, including after withdrawal.
+         */
+        get: operations["play_showcase_video_academy_public_showcase__evidence_id__play_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/evidence/{evidence_id}/play": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Play Evidence For Authorized Person */
+        get: operations["play_evidence_for_authorized_person_academy_evidence__evidence_id__play_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/academy/coach/me/dashboard": {
         parameters: {
             query?: never;
@@ -9860,6 +10021,40 @@ export interface paths {
          * @description Add a comment to an announcement.
          */
         post: operations["create_announcement_comment_announcements__announcement_id__comments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/content/{post_id}/engagement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record Engagement */
+        post: operations["record_engagement_content__post_id__engagement_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/content/admin/engagement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Engagement Report */
+        get: operations["engagement_report_content_admin_engagement_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -17283,6 +17478,52 @@ export interface paths {
          *     - 0.5 = mix both at equal volume
          */
         post: operations["apply_audio_to_video_media_videos__media_id__apply_audio_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/media/alumni-evidence/{media_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Validate Alumni Evidence
+         * @description Check ownership and private video purpose without leaking media URLs.
+         *
+         *     Only backend service callers can use this route. Any mismatch is a 404,
+         *     including media owned by another person or media intended for a gallery.
+         */
+        get: operations["validate_alumni_evidence_internal_media_alumni_evidence__media_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/media/alumni-evidence/{media_id}/public-playback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Alumni Public Playback
+         * @description Return a short-lived private URL only to a trusted calling service.
+         *
+         *     Authorization to publish must be checked on each request by Academy. Public
+         *     clients must never be able to call this internal service route directly.
+         */
+        get: operations["get_alumni_public_playback_internal_media_alumni_evidence__media_id__public_playback_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -30081,6 +30322,39 @@ export interface components {
          * @enum {string}
          */
         EvalRecommendation: "continue_shadow" | "ready_for_assistant" | "ready_for_lead";
+        /** EvidenceReviewRequest */
+        EvidenceReviewRequest: {
+            /** Coach Notes */
+            coach_notes: string;
+        };
+        /** EvidenceReviewResponse */
+        EvidenceReviewResponse: {
+            /**
+             * Evidence Id
+             * Format: uuid
+             */
+            evidence_id: string;
+            /** Coach Notes */
+            coach_notes?: string | null;
+            /** Reviewed At */
+            reviewed_at?: string | null;
+            /** Approved For Public */
+            approved_for_public: boolean;
+            /** Showcase Review Notes */
+            showcase_review_notes?: string | null;
+        };
+        /** EvidenceShowcaseRequest */
+        EvidenceShowcaseRequest: {
+            /** Approve */
+            approve: boolean;
+            /** Review Notes */
+            review_notes: string;
+            /**
+             * Publication Consent Confirmed
+             * @default false
+             */
+            publication_consent_confirmed: boolean;
+        };
         /**
          * InstallmentStatus
          * @enum {string}
@@ -30177,6 +30451,87 @@ export interface components {
          * @enum {string}
          */
         MilestoneEventType: "claimed" | "approved" | "rejected" | "status_changed" | "override";
+        /** MilestoneEvidenceCreate */
+        MilestoneEvidenceCreate: {
+            /**
+             * Milestone Id
+             * Format: uuid
+             */
+            milestone_id: string;
+            /**
+             * Video Media Id
+             * Format: uuid
+             */
+            video_media_id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "cohort_archive" | "continued_progress";
+            /** Caption */
+            caption?: string | null;
+            /** Recorded On */
+            recorded_on?: string | null;
+            /**
+             * Consent To Share
+             * @default false
+             */
+            consent_to_share: boolean;
+        };
+        /** MilestoneEvidenceResponse */
+        MilestoneEvidenceResponse: {
+            /**
+             * Milestone Id
+             * Format: uuid
+             */
+            milestone_id: string;
+            /**
+             * Video Media Id
+             * Format: uuid
+             */
+            video_media_id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "cohort_archive" | "continued_progress";
+            /** Caption */
+            caption?: string | null;
+            /** Recorded On */
+            recorded_on?: string | null;
+            /**
+             * Consent To Share
+             * @default false
+             */
+            consent_to_share: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Enrollment Id
+             * Format: uuid
+             */
+            enrollment_id: string;
+            /** Approved For Public */
+            approved_for_public: boolean;
+            /** Public Display Name */
+            public_display_name?: string | null;
+            /** Publication Consent At */
+            publication_consent_at?: string | null;
+            /** Coach Notes */
+            coach_notes?: string | null;
+            /** Reviewed At */
+            reviewed_at?: string | null;
+            /** Showcase Review Notes */
+            showcase_review_notes?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** MilestoneResponse */
         MilestoneResponse: {
             /** Name */
@@ -30664,6 +31019,30 @@ export interface components {
          * @enum {string}
          */
         ProgressStatus: "pending" | "achieved";
+        /** PublicShowcaseItem */
+        PublicShowcaseItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /** Display Name */
+            display_name: string;
+            /**
+             * Published At
+             * Format: date-time
+             */
+            published_at: string;
+        };
+        /** PublicationConsentRequest */
+        PublicationConsentRequest: {
+            /** Consent */
+            consent: boolean;
+            /** Display Name */
+            display_name?: string | null;
+        };
         /**
          * ReadinessCheckItem
          * @description Individual readiness check result.
@@ -33139,6 +33518,12 @@ export interface components {
             category: string;
             /** Featured Image Media Id */
             featured_image_media_id?: string | null;
+            /** Video Url */
+            video_url?: string | null;
+            /** Episode Number */
+            episode_number?: number | null;
+            /** Guest Names */
+            guest_names?: string | null;
             /** Featured Image Prompt */
             featured_image_prompt?: string | null;
             /**
@@ -33175,6 +33560,12 @@ export interface components {
             category: string;
             /** Featured Image Media Id */
             featured_image_media_id?: string | null;
+            /** Video Url */
+            video_url?: string | null;
+            /** Episode Number */
+            episode_number?: number | null;
+            /** Guest Names */
+            guest_names?: string | null;
             /** Featured Image Prompt */
             featured_image_prompt?: string | null;
             /**
@@ -33285,6 +33676,12 @@ export interface components {
             featured_image_media_id?: string | null;
             /** Featured Image Prompt */
             featured_image_prompt?: string | null;
+            /** Video Url */
+            video_url?: string | null;
+            /** Episode Number */
+            episode_number?: number | null;
+            /** Guest Names */
+            guest_names?: string | null;
             /** Tier Access */
             tier_access?: ("community" | "club" | "academy") | null;
             /** Is Published */
@@ -33336,6 +33733,20 @@ export interface components {
              * @default 0
              */
             failed_count: number;
+        };
+        /** EventInput */
+        EventInput: {
+            /**
+             * Event Type
+             * @enum {string}
+             */
+            event_type: "page_view" | "watch_click" | "assessment_click" | "academy_click" | "club_click" | "event_click" | "register_click";
+            /**
+             * Source
+             * @default website
+             * @enum {string}
+             */
+            source: "website" | "beyond_the_pool" | "articles" | "stories";
         };
         /**
          * MessageLogResponse
@@ -59068,6 +59479,300 @@ export interface operations {
             };
         };
     };
+    list_milestone_evidence_academy_enrollments__enrollment_id__evidence_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MilestoneEvidenceResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_milestone_evidence_academy_enrollments__enrollment_id__evidence_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MilestoneEvidenceCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MilestoneEvidenceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_coach_evidence_academy_coach_evidence_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MilestoneEvidenceResponse"][];
+                };
+            };
+        };
+    };
+    list_admin_evidence_academy_admin_evidence_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MilestoneEvidenceResponse"][];
+                };
+            };
+        };
+    };
+    review_evidence_academy_evidence__evidence_id__coach_review_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                evidence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EvidenceReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidenceReviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    review_showcase_academy_admin_evidence__evidence_id__showcase_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                evidence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EvidenceShowcaseRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidenceReviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_publication_consent_academy_enrollments__enrollment_id__evidence__evidence_id__publication_consent_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+                evidence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicationConsentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MilestoneEvidenceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_public_showcase_academy_public_showcase_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicShowcaseItem"][];
+                };
+            };
+        };
+    };
+    play_showcase_video_academy_public_showcase__evidence_id__play_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                evidence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    play_evidence_for_authorized_person_academy_evidence__evidence_id__play_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                evidence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_coach_dashboard_academy_coach_me_dashboard_get: {
         parameters: {
             query?: never;
@@ -63710,6 +64415,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_engagement_content__post_id__engagement_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    engagement_report_content_admin_engagement_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };
@@ -77700,6 +78458,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MediaItemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    validate_alumni_evidence_internal_media_alumni_evidence__media_id__get: {
+        parameters: {
+            query: {
+                owner_auth_id: string;
+            };
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_alumni_public_playback_internal_media_alumni_evidence__media_id__public_playback_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
                 };
             };
             /** @description Validation Error */
