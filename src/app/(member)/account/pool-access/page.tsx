@@ -1,0 +1,92 @@
+"use client";
+import {apiGet,apiPost} from "@/lib/api";
+import {QRCodeSVG} from "qrcode.react";
+import Link from "next/link";
+import {useSearchParams} from "next/navigation";
+import {useEffect,useState} from "react";
+type Booking={id:string;offer_id:string;status:string;headcount:number;selling_total_kobo:number;currency:string;payment_reference:string|null};
+type Ticket={id:string;guest_name:string;ticket:string|null;checked_in_at:string|null};
+export default function PoolAccessBookings(){
+ const params=useSearchParams();
+ const [bookings,setBookings]=useState<Booking[]>([]);
+ const [tickets,setTickets]=useState<Record<string,Ticket[]>>({});
+ const [error,setError]=useState("");
+ const [verifying,setVerifying]=useState<string|null>(null);
+ const [working,setWorking]=useState<string|null>(null);
+ const load=()=>apiGet<Booking[]>("/api/v1/pools/access/bookings/me",{auth:true}).then(setBookings).catch(()=>setError("Could not load your pool visits"));
+ useEffect(()=>{void load()},[]);
+ useEffect(()=>{const ref=params.get("reference")||params.get("trxref");if(!ref||!ref.startsWith("PAY-"))return;
+   apiPost("/api/v1/payments/paystack/verify/"+encodeURIComponent(ref),{}, {auth:true}).then(()=>load()).catch(()=>setError("Payment confirmation is still processing; please try verifying from Billing."));
+ },[params]);
+ async function verify(b:Booking){
+  if(!b.payment_reference)return;
+  setVerifying(b.id);setError("");
+  try{await apiPost("/api/v1/payments/paystack/verify/"+encodeURIComponent(b.payment_reference),{}, {auth:true});
+   await load();
+  }catch(e){setError(e instanceof Error?e.message:"Payment verification is still pending");}
+  finally{setVerifying(null)}
+ }
+ async function resumeCheckout(b:Booking){
+  setWorking(b.id);setError("");
+  try{
+   const payment=await apiPost<{checkout_url:string|null;status:string}>("/api/v1/payments/intents",{
+     purpose:"pool_access",pool_access_booking_id:b.id,payment_method:"paystack",currency:"NGN"
+   },{auth:true});
+   if(payment.status==="paid"){await load();return;}
+   if(!payment.checkout_url)throw new Error("Checkout is awaiting confirmation. Contact SwimBuddz if you were charged.");
+   window.location.assign(payment.checkout_url);
+  }catch(e){setError(e instanceof Error?e.message:"Could not resume this checkout");}
+  finally{setWorking(null);}
+ }
+ async function cancelUnpaid(b:Booking){
+  if(!window.confirm("Cancel this unpaid pool access hold?"))return;
+  setWorking(b.id);setError("");
+  try{await apiPost("/api/v1/pools/access/bookings/"+b.id+"/cancel",{}, {auth:true});await load();}
+  catch(e){setError(e instanceof Error?e.message:"Booking must be reviewed before cancellation");}
+  finally{setWorking(null);}
+ }
+ async function requestCancellation(b:Booking){
+  const reason=window.prompt("Why do you need to cancel this visit? SwimBuddz will review the request before any refund or ticket change.");
+  if(!reason)return;
+  if(reason.trim().length<5){setError("Please provide a cancellation reason.");return;}
+  setWorking(b.id);setError("");
+  try{
+   await apiPost("/api/v1/pools/access/bookings/"+b.id+"/request-cancellation",{reason:reason.trim()},{auth:true});
+   setError("Cancellation review requested. Your booking remains valid until SwimBuddz confirms a decision.");
+  }catch(e){setError(e instanceof Error?e.message:"Could not request cancellation review");}
+  finally{setWorking(null);}
+ }
+ async function showTickets(b:Booking){
+  setError("");
+  try{const rows=await apiGet<Ticket[]>("/api/v1/pools/access/bookings/"+b.id+"/tickets",{auth:true});
+   setTickets(prev=>({...prev,[b.id]:rows}));
+  }catch(e){setError(e instanceof Error?e.message:"Could not retrieve admission tickets")}
+ }
+ return <main className="mx-auto max-w-4xl space-y-6 p-6">
+  <header><h1 className="text-3xl font-bold">My Pool Access bookings</h1>
+   <p className="text-slate-600">View verified visits and individual entry credentials.</p>
+   <Link className="text-cyan-700 underline" href="/pool-access">Find another swim</Link>
+  </header>
+  {error&&<p role="alert" className="rounded-lg bg-red-50 p-3 text-red-800">{error}</p>}
+  {bookings.length===0?<div className="rounded-xl border p-6">No Pool Access bookings yet.</div>:bookings.map(b=>
+   <section key={b.id} className="space-y-3 rounded-xl border bg-white p-5">
+    <h2 className="font-semibold">Visit {b.id.slice(0,8)}</h2>
+    <p>Status: <strong>{b.status.replace("_"," ")}</strong> · {b.headcount} swimmer(s)</p>
+    <p className="text-sm text-slate-600">Total: {new Intl.NumberFormat("en-NG",{style:"currency",currency:b.currency}).format(b.selling_total_kobo/100)}</p>
+    {b.status==="confirmed"?
+      <div className="flex flex-wrap gap-2"><button className="rounded-lg bg-cyan-700 px-4 py-2 text-white" onClick={()=>void showTickets(b)}>View admission QR codes</button><button className="rounded-lg border px-4 py-2 text-slate-700 disabled:opacity-50" disabled={working===b.id} onClick={()=>void requestCancellation(b)}>Request cancellation review</button></div>:
+      b.payment_reference?<button className="rounded-lg border px-4 py-2" disabled={verifying===b.id} onClick={()=>void verify(b)}>{verifying===b.id?"Verifying…":"Verify payment"}</button>:
+      b.status==="pending_payment"?<div className="flex flex-wrap gap-2">
+       <button className="rounded-lg bg-cyan-700 px-4 py-2 text-white disabled:opacity-50" disabled={working===b.id} onClick={()=>void resumeCheckout(b)}>{working===b.id?"Please wait…":"Resume checkout"}</button>
+       <button className="rounded-lg border px-4 py-2 text-slate-700 disabled:opacity-50" disabled={working===b.id} onClick={()=>void cancelUnpaid(b)}>Cancel unpaid hold</button>
+       <p className="w-full text-sm text-amber-700">Admission is issued only after verified payment. An initiated payment cannot be cancelled until it is reconciled.</p>
+      </div>:<p className="text-sm text-slate-600">No active admission credentials.</p>}
+    {tickets[b.id]?.map(t=><article key={t.id} className="rounded-lg bg-slate-50 p-4">
+     <h3 className="font-medium">{t.guest_name}</h3>
+     {t.checked_in_at?<p className="text-sm text-green-700">Checked in {new Date(t.checked_in_at).toLocaleString()}</p>:
+       t.ticket?<div className="mt-3 inline-block rounded-lg bg-white p-4"><QRCodeSVG value={t.ticket} size={180}/></div>:null}
+     <p className="text-xs text-slate-500">Show this code at authorised SwimBuddz reception check-in. Each code works once.</p>
+    </article>)}
+   </section>)}
+ </main>;
+}
