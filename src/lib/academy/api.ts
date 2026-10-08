@@ -160,6 +160,7 @@ export const AcademyApi = {
   getMyAcademyJourneys: () =>
     apiGet<Array<{
       program_id: string;
+      program_name: string;
       enrollments: Array<{ id: string; cohort_id: string | null; cohort_name: string | null; status: string; payment_status: string }>;
     }>>("/api/v1/academy/my-academy-journeys", { auth: true }),
 
