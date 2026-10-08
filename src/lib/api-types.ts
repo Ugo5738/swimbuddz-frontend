@@ -6919,6 +6919,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/academy/admin/academy/enrollment-changes/{change_id}/finance-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview Reviewed Transfer
+         * @description Show authoritative tuition credit, old payments, and destination price.
+         */
+        get: operations["preview_reviewed_transfer_academy_admin_academy_enrollment_changes__change_id__finance_preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/academy/enrollment-changes/{change_id}/approve-reviewed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve Reviewed Transfer
+         * @description Make one Academy-side atomic transfer of verified prepaid tuition.
+         *
+         *     All original payment references remain on the source enrollment. The
+         *     destination gets a single internally credited obligation, not new cash.
+         */
+        post: operations["approve_reviewed_transfer_academy_admin_academy_enrollment_changes__change_id__approve_reviewed_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/academy/my-enrollments": {
         parameters: {
             query?: never;
@@ -7931,6 +7974,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/academy/enrollments/{enrollment_id}/verified-credit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply Verified Academy Credit
+         * @description Idempotent service-owned tuition application; does NOT record bank income.
+         *
+         *     Every source reference is globally unique; the payments service owns the
+         *     corresponding cash receipt and authorizes allocation before calling here.
+         */
+        post: operations["apply_verified_academy_credit_internal_academy_enrollments__enrollment_id__verified_credit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/academy/enrollments/{enrollment_id}/allocation-identity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Academy Allocation Identity
+         * @description Private payments-service ownership projection; no user-controlled member ID.
+         */
+        get: operations["academy_allocation_identity_internal_academy_enrollments__enrollment_id__allocation_identity_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/academy/enrollments/{enrollment_id}": {
         parameters: {
             query?: never;
@@ -8918,6 +9004,103 @@ export interface paths {
          *     It never marks a payment paid, refunds money, or changes a paid receipt.
          */
         post: operations["close_unpaid_checkout_payments_admin_checkout_reconciliation__reference__close_unpaid_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/academy-receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Verify Bank Receipt */
+        post: operations["verify_bank_receipt_payments_admin_academy_receipts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/academy-receipts/{receipt_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Verified Receipt */
+        get: operations["get_verified_receipt_payments_admin_academy_receipts__receipt_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/academy-receipts/{receipt_id}/allocations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Allocate Receipt */
+        post: operations["allocate_receipt_payments_admin_academy_receipts__receipt_id__allocations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/academy-receipts/{receipt_id}/allocations/{allocation_id}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply Receipt Allocation
+         * @description Deliver verified credit to its true enrollment, with retry-safe acknowledgement.
+         *
+         *     Payments records cash once at receipt verification. The Academy service
+         *     applies tuition credit and owns installments; no synthetic second payment.
+         */
+        post: operations["apply_receipt_allocation_payments_admin_academy_receipts__receipt_id__allocations__allocation_id__apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/academy-receipts/{receipt_id}/reconcile-attempt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Link Superseded Academy Checkout To Shared Receipt
+         * @description Retire an individual proof/checkout after its verified shared allocation.
+         *
+         *     A proof is never treated as unpaid. Instead, we preserve it on the old
+         *     attempt and link its claim to the one bank receipt already recorded.
+         */
+        post: operations["link_superseded_academy_checkout_to_shared_receipt_payments_admin_academy_receipts__receipt_id__reconcile_attempt_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -29530,6 +29713,40 @@ export interface components {
             /** Note */
             note?: string | null;
         };
+        /** ApplyVerifiedAcademyCredit */
+        ApplyVerifiedAcademyCredit: {
+            /** Source Reference */
+            source_reference: string;
+            /** Source Kind */
+            source_kind: string;
+            /** Member Auth Id */
+            member_auth_id: string;
+            /** Amount Kobo */
+            amount_kobo: number;
+            /** Actor Auth Id */
+            actor_auth_id: string;
+        };
+        /** ApproveReviewedTransfer */
+        ApproveReviewedTransfer: {
+            /** Reason */
+            reason: string;
+            /** Transferable Credit Kobo */
+            transferable_credit_kobo: number;
+            /** Consumed Services Kobo */
+            consumed_services_kobo: number;
+            /**
+             * Discount Kobo
+             * @default 0
+             */
+            discount_kobo: number;
+            /** Discount Reason */
+            discount_reason?: string | null;
+            /**
+             * Confirmed Attendance Review
+             * @default false
+             */
+            confirmed_attendance_review: boolean;
+        };
         /** ApproveUnpaidCohortChange */
         ApproveUnpaidCohortChange: {
             /** Reason */
@@ -32002,6 +32219,12 @@ export interface components {
             }[];
             /** All Unpaid Closed */
             all_unpaid_closed: boolean;
+            /** Paid Transfer Eligible */
+            paid_transfer_eligible: boolean;
+            /** Verified Paid Tuition Kobo */
+            verified_paid_tuition_kobo: number;
+            /** Blocked References */
+            blocked_references: string[];
         };
         /**
          * AdminBookingOfflinePaymentRequest
@@ -32070,6 +32293,18 @@ export interface components {
         AdminReviewRequest: {
             /** Note */
             note?: string | null;
+        };
+        /** AllocateReceiptRequest */
+        AllocateReceiptRequest: {
+            /**
+             * Enrollment Id
+             * Format: uuid
+             */
+            enrollment_id: string;
+            /** Amount Kobo */
+            amount_kobo: number;
+            /** Idempotency Key */
+            idempotency_key: string;
         };
         /**
          * AnnotateRefundRequest
@@ -33453,6 +33688,13 @@ export interface components {
              */
             currency: string;
         };
+        /** ReconcileLegacyAttempt */
+        ReconcileLegacyAttempt: {
+            /** Payment Reference */
+            payment_reference: string;
+            /** Review Note */
+            review_note: string;
+        };
         /**
          * RecurringPayoutConfigCreate
          * @description Admin payload to create a recurring payout config for a coach+cohort.
@@ -33730,6 +33972,15 @@ export interface components {
             receipt_attached: boolean;
             /** Reservation Expires At */
             reservation_expires_at?: string | null;
+        };
+        /** VerifyReceiptRequest */
+        VerifyReceiptRequest: {
+            /** External Reference */
+            external_reference: string;
+            /** Amount Kobo */
+            amount_kobo: number;
+            /** Verification Note */
+            verification_note: string;
         };
         /** _BankItem */
         _BankItem: {
@@ -60216,6 +60467,72 @@ export interface operations {
             };
         };
     };
+    preview_reviewed_transfer_academy_admin_academy_enrollment_changes__change_id__finance_preview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_reviewed_transfer_academy_admin_academy_enrollment_changes__change_id__approve_reviewed_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApproveReviewedTransfer"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_my_enrollments_academy_my_enrollments_get: {
         parameters: {
             query?: never;
@@ -61692,6 +62009,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": string[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_verified_academy_credit_internal_academy_enrollments__enrollment_id__verified_credit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplyVerifiedAcademyCredit"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    academy_allocation_identity_internal_academy_enrollments__enrollment_id__allocation_identity_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -63386,6 +63769,172 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CloseUnpaidCheckout"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    verify_bank_receipt_payments_admin_academy_receipts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyReceiptRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_verified_receipt_payments_admin_academy_receipts__receipt_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    allocate_receipt_payments_admin_academy_receipts__receipt_id__allocations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AllocateReceiptRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_receipt_allocation_payments_admin_academy_receipts__receipt_id__allocations__allocation_id__apply_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                receipt_id: string;
+                allocation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    link_superseded_academy_checkout_to_shared_receipt_payments_admin_academy_receipts__receipt_id__reconcile_attempt_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReconcileLegacyAttempt"];
             };
         };
         responses: {
