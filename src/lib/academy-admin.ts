@@ -144,6 +144,13 @@ export const AdminAcademyApi = {
     `/api/v1/payments/admin/academy-receipts/${id}/allocations`,
     body, { auth: true },
   ),
+  reconcileLegacyAcademyAttempt: (
+    receiptId: string,
+    body: { payment_reference: string; review_note: string },
+  ) => apiPost<{ state: string; payment_reference: string }>(
+    `/api/v1/payments/admin/academy-receipts/${receiptId}/reconcile-attempt`,
+    body, { auth: true },
+  ),
   applyAcademyReceiptAllocation: (receiptId: string, allocationId: string) =>
     apiPost<{ state: string; enrollment_id: string }>(
       `/api/v1/payments/admin/academy-receipts/${receiptId}/allocations/${allocationId}/apply`,
