@@ -543,10 +543,10 @@ export default function HomePage() {
       <section className="space-y-10">
         <div className="text-center space-y-4">
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
-            Three Tiers
+            Three Ways to Swim
           </p>
           <h2 className="text-3xl font-bold text-slate-900 md:text-4xl">
-            Choose Your Level of Commitment
+            Find Your Place in SwimBuddz
           </h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
             Choose Community for belonging and activities, Club for consistent practice, or

@@ -54,6 +54,9 @@ export default function AdminContentPage() {
     title: "",
     summary: "",
     category: "swimming_tips",
+    video_url: "",
+    episode_number: "",
+    guest_names: "",
     featured_image_url: "",
     featured_image_media_id: "",
     tier_access: "community",
@@ -137,6 +140,9 @@ export default function AdminContentPage() {
     try {
       const payload = {
         ...formData,
+        video_url: formData.category === "beyond_the_pool" ? formData.video_url || null : null,
+        episode_number: formData.category === "beyond_the_pool" && formData.episode_number ? Number(formData.episode_number) : null,
+        guest_names: formData.category === "beyond_the_pool" ? formData.guest_names || null : null,
         body: serializeBlocks(editorContent),
         featured_image_url: formData.featured_image_url || null,
         featured_image_media_id: formData.featured_image_media_id || null,
@@ -164,6 +170,9 @@ export default function AdminContentPage() {
         summary: formData.summary,
         body: serializeBlocks(editorContent),
         category: formData.category,
+        video_url: formData.category === "beyond_the_pool" ? formData.video_url || null : null,
+        episode_number: formData.category === "beyond_the_pool" && formData.episode_number ? Number(formData.episode_number) : null,
+        guest_names: formData.category === "beyond_the_pool" ? formData.guest_names || null : null,
         tier_access: formData.tier_access,
         featured_image_url: formData.featured_image_url || null,
         featured_image_media_id: formData.featured_image_media_id || null,
@@ -222,6 +231,9 @@ export default function AdminContentPage() {
   const handleEditPost = (post: ContentPost) => {
     setEditingPost(post);
     setFormData({
+      video_url: post.video_url || "",
+      episode_number: post.episode_number ? String(post.episode_number) : "",
+      guest_names: post.guest_names || "",
       title: post.title,
       summary: post.summary,
       category: post.category,
@@ -247,6 +259,9 @@ export default function AdminContentPage() {
       title: "",
       summary: "",
       category: "swimming_tips",
+      video_url: "",
+      episode_number: "",
+      guest_names: "",
       featured_image_url: "",
       featured_image_media_id: "",
       tier_access: "community",
@@ -454,8 +469,14 @@ export default function AdminContentPage() {
                   <option value="community_culture">Community &amp; Culture</option>
                   <option value="news">News</option>
                   <option value="education">Education</option>
+                  <option value="beyond_the_pool">Beyond the Pool</option>
                 </Select>
 
+                {formData.category === "beyond_the_pool" && <div className="space-y-3 rounded-lg border bg-cyan-50 p-4">
+                  <label className="block text-sm font-medium">YouTube video URL<input type="url" className="mt-1 w-full rounded-lg border p-2" value={formData.video_url} onChange={e => setFormData(v => ({ ...v, video_url: e.target.value }))} /></label>
+                  <label className="block text-sm font-medium">Episode number<input type="number" min={1} className="mt-1 w-full rounded-lg border p-2" value={formData.episode_number} onChange={e => setFormData(v => ({ ...v, episode_number: e.target.value }))} /></label>
+                  <label className="block text-sm font-medium">Guests<input className="mt-1 w-full rounded-lg border p-2" value={formData.guest_names} onChange={e => setFormData(v => ({ ...v, guest_names: e.target.value }))} /></label>
+                </div>}
                 <Select
                   label="Tier Access"
                   value={formData.tier_access}

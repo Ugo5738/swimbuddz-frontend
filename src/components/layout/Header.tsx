@@ -93,7 +93,7 @@ const navGroups = [
   // member-portal sidebar. Keeping it out of the top nav prevents the
   // nav from creeping past 7 items and reserves top-level slots for
   // conversion-oriented links rather than engagement features.
-  { href: "/tips", label: "Resources", type: "link" as const },
+  { href: "/learn", label: "Learn", type: "link" as const },
   { href: "/store", label: "Store", type: "link" as const },
 ];
 

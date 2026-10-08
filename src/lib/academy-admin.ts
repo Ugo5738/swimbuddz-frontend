@@ -70,7 +70,28 @@ export type StudentProgressRow = {
   updated_at: string;
 };
 
+export type AcademyEnrollmentChangeReview = {
+  id: string;
+  journey_id: string;
+  from_enrollment_id: string;
+  target_cohort_id: string;
+  state: "needs_review";
+  snapshot: {
+    old_cohort_id?: string;
+    target_cohort_id?: string;
+    old_price_kobo?: number | null;
+    target_base_price_kobo?: number | null;
+    payment_references?: string[];
+    payment_statuses?: string[];
+    requires_financial_review?: boolean;
+  };
+  created_at: string;
+};
+
 export const AdminAcademyApi = {
+  listEnrollmentChangeReviews: () => apiGet<AcademyEnrollmentChangeReview[]>(
+    "/api/v1/academy/admin/academy/enrollment-changes", { auth: true }
+  ),
   /**
    * Fetch the evidence gallery for an enrollment. Returns one
    * item per StudentProgress claim that has a linked media item;

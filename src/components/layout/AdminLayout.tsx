@@ -76,7 +76,9 @@ const navSections: NavSection[] = [
     title: "Programs",
     items: [
       { href: "/admin/academy", label: "Academy", icon: GraduationCap },
+      { href: "/admin/academy/evidence", label: "Alumni Videos", icon: GraduationCap },
       { href: "/admin/academy/extension-requests", label: "Academy Extensions", icon: CalendarClock },
+      { href: "/admin/academy/enrollment-changes", label: "Academy Transfers", icon: Repeat },
       { href: "/admin/club-applications", label: "Club Assessments", icon: ClipboardCheck },
       { href: "/admin/club-plans", label: "Club Plans & Pricing", icon: Waves },
       { href: "/admin/community/clubs", label: "Clubs & Pods", icon: Users },
@@ -108,6 +110,7 @@ const navSections: NavSection[] = [
       { href: "/admin/community/events", label: "Events", icon: CalendarDays },
       { href: "/admin/community/volunteers", label: "Volunteers", icon: HandHeart },
       { href: "/admin/community/content", label: "Tips & Content", icon: FileText },
+      { href: "/admin/community/content/analytics", label: "Content Analytics", icon: FileText },
       { href: "/admin/community/challenges", label: "Challenges", icon: Trophy },
     ],
   },
@@ -126,6 +129,7 @@ const navSections: NavSection[] = [
   {
     title: "Finance",
     items: [
+      { href: "/admin/finance", label: "Finance Overview", icon: LayoutDashboard },
       { href: "/admin/finance/reports", label: "Reports", icon: Banknote },
       { href: "/admin/finance/deferred-revenue", label: "Deferred Revenue", icon: Hourglass },
       { href: "/admin/finance/journal-entries", label: "Journal Entries", icon: FileText },
@@ -139,6 +143,9 @@ const navSections: NavSection[] = [
     title: "Operations",
     items: [
       { href: "/admin/pools", label: "Locations & Transport", icon: Waves },
+      { href: "/admin/pools/access", label: "Pool Access Offers", icon: CalendarDays },
+      { href: "/admin/pools/access/bookings", label: "Pool Access Settlements", icon: Receipt },
+      { href: "/admin/pools/access/cancellations", label: "Pool Access Refund Reviews", icon: Receipt },
       { href: "/admin/store", label: "Store", icon: ShoppingBag },
       { href: "/admin/reports", label: "Quarterly Reports", icon: BarChart3 },
       { href: "/admin/flywheel", label: "Flywheel", icon: TrendingUp },

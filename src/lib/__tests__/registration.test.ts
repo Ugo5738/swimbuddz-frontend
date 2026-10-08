@@ -138,6 +138,12 @@ describe("completePendingRegistrationOnBackend", () => {
 // ---------------------------------------------------------------------------
 
 describe("getPostAuthRedirectPath", () => {
+  it("routes Pool Access visitors directly to bookable offers without full member onboarding", async () => {
+    const destination = await getPostAuthRedirectPath("/pool-access");
+    expect(destination).toBe("/pool-access");
+    expect(mockedApiGet).not.toHaveBeenCalled();
+  });
+
   // Helper to build a member object with sensible defaults
   function buildMember(overrides: Record<string, any> = {}) {
     return {
@@ -189,7 +195,7 @@ describe("getPostAuthRedirectPath", () => {
 
   it("keeps a first-time Academy prospect's selected cohort through onboarding", async () => {
     mockedApiGet.mockResolvedValue(buildMember({ profile_photo_media_id: null, membership: { tier_statuses: { community: { status: "inactive" } } } }));
-    expect(await getPostAuthRedirectPath("/account/academy/cohorts/chosen")).toBe("/account/onboarding?next=%2Faccount%2Facademy%2Fcohorts%2Fchosen");
+    expect(await getPostAuthRedirectPath("/account/academy/cohorts/chosen")).toBe("/account/academy/cohorts/chosen");
   });
 
   it("returns a ready prospect to the selected cohort without Community payment", async () => {
@@ -200,9 +206,9 @@ describe("getPostAuthRedirectPath", () => {
     expect(await getPostAuthRedirectPath("/account/academy/cohorts/chosen")).toBe("/account/academy/cohorts/chosen");
   });
 
-  it("requires Academy readiness when intent exists only in the deep link", async () => {
+  it("preserves an Academy checkout deep link before post-payment setup", async () => {
     mockedApiGet.mockResolvedValue(buildMember());
-    expect(await getPostAuthRedirectPath("/checkout?purpose=academy_cohort&cohort_id=chosen")).toContain("/account/onboarding?next=");
+    expect(await getPostAuthRedirectPath("/checkout?purpose=academy_cohort&cohort_id=chosen")).toBe("/checkout?purpose=academy_cohort&cohort_id=chosen");
   });
 
   it("rejects external post-auth destinations", async () => {
@@ -597,7 +603,7 @@ describe("getPostAuthRedirectPath", () => {
 
   // --- Academy onboarding ---
 
-  it("redirects to onboarding when academy requested but assessment missing", async () => {
+  it("lets Academy prospects choose a payable cohort before full readiness setup", async () => {
     mockedApiGet.mockResolvedValue(
       buildMember({
         membership: {
@@ -623,6 +629,6 @@ describe("getPostAuthRedirectPath", () => {
     );
 
     const path = await getPostAuthRedirectPath();
-    expect(path).toBe("/account/onboarding");
+    expect(path).toBe("/upgrade/academy/cohort");
   });
 });
