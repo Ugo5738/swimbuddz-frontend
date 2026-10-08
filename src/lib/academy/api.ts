@@ -146,6 +146,21 @@ export const AcademyApi = {
       auth: true,
     }),
 
+
+  getMyAcademyJourneys: () =>
+    apiGet<Array<{
+      program_id: string;
+      enrollments: Array<{ id: string; cohort_id: string | null; cohort_name: string | null; status: string; payment_status: string }>;
+    }>>("/api/v1/academy/my-academy-journeys", { auth: true }),
+
+  changeMyCohort: (enrollmentId: string, targetCohortId: string) =>
+    apiPost<{
+      state: "completed" | "needs_review";
+      enrollment_id: string | null;
+      change_id: string;
+      message: string;
+    }>(`/api/v1/academy/my-enrollments/${enrollmentId}/change-cohort`,
+      { target_cohort_id: targetCohortId }, { auth: true }),
   getMyEnrollments: () => apiGet<Enrollment[]>("/api/v1/academy/my-enrollments", { auth: true }),
 
   /**
