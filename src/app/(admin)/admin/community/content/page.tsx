@@ -466,8 +466,14 @@ export default function AdminContentPage() {
                   <option value="community_culture">Community &amp; Culture</option>
                   <option value="news">News</option>
                   <option value="education">Education</option>
+                  <option value="beyond_the_pool">Beyond the Pool</option>
                 </Select>
 
+                {formData.category === "beyond_the_pool" && <div className="space-y-3 rounded-lg border bg-cyan-50 p-4">
+                  <label className="block text-sm font-medium">YouTube video URL<input type="url" className="mt-1 w-full rounded-lg border p-2" value={formData.video_url} onChange={e => setFormData(v => ({ ...v, video_url: e.target.value }))} /></label>
+                  <label className="block text-sm font-medium">Episode number<input type="number" min={1} className="mt-1 w-full rounded-lg border p-2" value={formData.episode_number} onChange={e => setFormData(v => ({ ...v, episode_number: e.target.value }))} /></label>
+                  <label className="block text-sm font-medium">Guests<input className="mt-1 w-full rounded-lg border p-2" value={formData.guest_names} onChange={e => setFormData(v => ({ ...v, guest_names: e.target.value }))} /></label>
+                </div>}
                 <Select
                   label="Tier Access"
                   value={formData.tier_access}
