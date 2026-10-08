@@ -231,6 +231,14 @@ export async function getPostAuthRedirectPath(destination?: string | null): Prom
 
     const hasAcademyReadiness = isAcademyReadinessComplete(membership);
 
+    // Academy signup: payment follows cohort selection. Full logistics,
+    // emergency contacts and learning goals are collected after checkout,
+    // before the student's first supervised swim.
+    if (wantsAcademy && !academyActive) {
+      if (returnTo && isAcademyDestination(returnTo)) return returnTo;
+      return "/upgrade/academy/cohort";
+    }
+
     const onboardingComplete =
       hasCoreOnboarding &&
       hasSafetyLogistics &&
