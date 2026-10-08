@@ -165,11 +165,15 @@ export default function AcademyEnrollmentChangeReviewsPage() {
                         Status at request: {review.snapshot.payment_statuses?.[index]?.replaceAll("_", " ") || "Unknown"}
                       </p>
                     </div>
-                    <button type="button" disabled={working !== null}
-                      onClick={() => updateClosure(reference, { expanded: !closureForms[reference]?.expanded })}
-                      className="rounded-md border border-amber-300 px-3 py-2 text-sm text-amber-800 disabled:opacity-50">
-                      {closureForms[reference]?.expanded ? "Close form" : "Review as unpaid"}
-                    </button>
+                    {["paid", "pending_review", "waived"].includes(review.snapshot.payment_statuses?.[index] || "") ? (
+                      <span className="text-xs font-medium text-red-700">Finance reconciliation required</span>
+                    ) : (
+                      <button type="button" disabled={working !== null}
+                        onClick={() => updateClosure(reference, { expanded: !closureForms[reference]?.expanded })}
+                        className="rounded-md border border-amber-300 px-3 py-2 text-sm text-amber-800 disabled:opacity-50">
+                        {closureForms[reference]?.expanded ? "Close form" : "Review as unpaid"}
+                      </button>
+                    )}
                   </div>
                   {closureForms[reference]?.expanded && (
                     <div className="space-y-3">
@@ -200,6 +204,11 @@ export default function AcademyEnrollmentChangeReviewsPage() {
                 </div>
               ))}
               <div className="rounded-lg border border-cyan-200 p-3 space-y-2">
+                {(review.snapshot.payment_statuses || []).some((status) => ["paid", "pending_review", "waived"].includes(status)) && (
+                  <p className="text-sm text-red-700">
+                    This request has evidence of payment or proof review. Do not use unpaid approval; finance must first reconcile or allocate the received funds.
+                  </p>
+                )}
                 <p className="text-sm font-semibold">Finalize a verified-unpaid cohort change</p>
                 <p className="text-xs text-slate-600">
                   The backend requires all existing checkout attempts to be formally closed, with no received money, paid installments or attendance. Otherwise approval is refused.
