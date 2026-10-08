@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { API_BASE_URL } from "@/lib/config";
 import { apiGet, apiPost } from "@/lib/api";
 
 type Evidence = {
@@ -22,7 +21,16 @@ export default function AdminAlumniEvidencePage() {
   const [feedback, setFeedback] = useState<Record<string, string>>({});
   const [verified, setVerified] = useState<Record<string, boolean>>({});
   const [notice, setNotice] = useState("");
+  const [videoUrls, setVideoUrls] = useState<Record<string,string>>({});
   const [busy, setBusy] = useState<string | null>(null);
+  const viewClip = async (id: string) => {
+    try {
+      const response = await apiGet<{url: string}>(
+        `/api/v1/academy/evidence/${id}/playback-url`, {auth: true}
+      );
+      setVideoUrls(prev => ({...prev, [id]: response.url}));
+    } catch { setNotice("Unable to play this video."); }
+  };
   const reload = useCallback(async () => {
     try {
       const rows = await apiGet<Evidence[]>("/api/v1/academy/admin/evidence", { auth: true });
@@ -64,7 +72,8 @@ export default function AdminAlumniEvidencePage() {
       <p className="font-semibold">Enrollment {item.enrollment_id}</p>
       <p className="text-sm text-slate-500">Milestone {item.milestone_id} · {new Date(item.created_at).toLocaleDateString()}</p>
       <p>{item.caption || "No note from swimmer"}</p>
-      <a className="text-cyan-700 underline" href={`${API_BASE_URL}/api/v1/academy/evidence/${item.id}/play`} target="_blank" rel="noopener noreferrer">Open media (requires authorized access)</a>
+      <button type="button" className="text-cyan-700 underline" onClick={()=>void viewClip(item.id)}>View video</button>
+      {videoUrls[item.id] && <video src={videoUrls[item.id]} controls preload="none" className="w-full rounded-lg"/>}
       <p className="text-sm">Publication permission: {item.publication_consent_at ? "Yes" : "No"} · Showcase status: {item.approved_for_public ? "Approved" : "Private"}</p>
       <label className="block text-sm font-medium">Editorial review notes
         <textarea className="mt-2 w-full rounded-lg border p-3" rows={2} value={feedback[item.id] || ""} onChange={e=>setFeedback(v=>({...v,[item.id]:e.target.value}))}/>
