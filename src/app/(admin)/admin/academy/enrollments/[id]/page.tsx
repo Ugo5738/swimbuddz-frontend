@@ -100,7 +100,7 @@ export default function EnrollmentDetailPage({ params }: { params: { id: string 
     try {
       await AcademyApi.updateEnrollment(params.id, {
         status,
-        cohort_id: cohortId || undefined,
+        ...(!enrollment?.cohort_id ? { cohort_id: cohortId || undefined } : {}),
       });
       toast.success("Enrollment updated successfully");
       router.push("/admin/academy/enrollments");
@@ -571,20 +571,32 @@ export default function EnrollmentDetailPage({ params }: { params: { id: string 
                 <option value={EnrollmentStatus.GRADUATED}>Graduated</option>
               </Select>
 
-              <Select
-                label="Assign Cohort"
-                name="cohort"
-                value={cohortId}
-                onChange={(e) => setCohortId(e.target.value)}
-                hint="Assign the student to a specific cohort"
-              >
-                <option value="">No Cohort Assigned</option>
-                {cohorts.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} ({formatDate(c.start_date)} - Capacity: {c.capacity})
-                  </option>
-                ))}
-              </Select>
+              {enrollment.cohort_id ? (
+                <div className="rounded-lg border border-cyan-200 bg-cyan-50 p-3 text-sm text-slate-700">
+                  <p className="font-medium">Assigned cohort: {enrollment.cohort?.name || "Current cohort"}</p>
+                  <p className="mt-1">
+                    Existing cohort placements must be changed through Academy Transfers so payment and attendance records remain correct.
+                  </p>
+                  <Link href="/admin/academy/enrollment-changes" className="mt-2 inline-block text-cyan-700 underline">
+                    Open Academy Transfers
+                  </Link>
+                </div>
+              ) : (
+                <Select
+                  label="Assign Cohort"
+                  name="cohort"
+                  value={cohortId}
+                  onChange={(e) => setCohortId(e.target.value)}
+                  hint="Assign this learner's first cohort"
+                >
+                  <option value="">No Cohort Assigned</option>
+                  {cohorts.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({formatDate(c.start_date)} - Capacity: {c.capacity})
+                    </option>
+                  ))}
+                </Select>
+              )}
 
               <div className="flex justify-end pt-4">
                 <Button onClick={handleSave} disabled={updating}>
