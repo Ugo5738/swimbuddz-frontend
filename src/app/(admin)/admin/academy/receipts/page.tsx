@@ -21,6 +21,8 @@ export default function AcademySharedReceiptsPage() {
   const [names, setNames] = useState<Record<string, string>>({});
   const [selectedEnrollment, setSelectedEnrollment] = useState("");
   const [allocationNaira, setAllocationNaira] = useState("");
+  const [oldPaymentReference, setOldPaymentReference] = useState("");
+  const [oldPaymentReviewNote, setOldPaymentReviewNote] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -99,6 +101,29 @@ export default function AcademySharedReceiptsPage() {
       setMessage("This amount has been applied once to the learner's Academy balance.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not confirm Academy credit. Retry Apply; do not register another receipt.");
+    } finally { setLoading(false); }
+  }
+
+  async function linkOldCheckout() {
+    if (!receipt) return;
+    if (oldPaymentReference.trim().length < 3 || oldPaymentReviewNote.trim().length < 20) {
+      setError("Enter the old checkout reference and a reconciliation explanation of at least 20 characters.");
+      return;
+    }
+    if (!window.confirm(
+      "Confirm this old individual checkout is represented by an APPLIED allocation of the verified shared receipt. Its existing proof stays on record and will no longer be individually collected."
+    )) return;
+    setLoading(true); setError(""); setMessage("");
+    try {
+      await AdminAcademyApi.reconcileLegacyAcademyAttempt(receipt.id, {
+        payment_reference: oldPaymentReference.trim(),
+        review_note: oldPaymentReviewNote.trim(),
+      });
+      setMessage("Original checkout linked to the verified shared receipt. Its proof remains available in payment history.");
+      setOldPaymentReference("");
+      setOldPaymentReviewNote("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not reconcile this checkout.");
     } finally { setLoading(false); }
   }
 
@@ -200,6 +225,31 @@ export default function AcademySharedReceiptsPage() {
                 )}
               </div>
             ))}
+          </div>
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
+            <h3 className="font-semibold text-sm">3. Reconcile the old individual checkout or POP</h3>
+            <p className="text-xs text-amber-900">
+              After an allocation has been applied, link the learner's outdated individual
+              payment attempt to this one verified bank receipt. This preserves uploaded
+              proof and stops a separate payment attempt from being mistaken for a second deposit.
+            </p>
+            <label className="block text-sm">Original checkout/payment reference
+              <input value={oldPaymentReference}
+                onChange={(e) => setOldPaymentReference(e.target.value)}
+                className="mt-1 w-full rounded-md border border-amber-300 p-2"
+                placeholder="PAY-..." />
+            </label>
+            <label className="block text-sm">Reconciliation note
+              <textarea rows={2} value={oldPaymentReviewNote}
+                onChange={(e) => setOldPaymentReviewNote(e.target.value)}
+                className="mt-1 w-full rounded-md border border-amber-300 p-2"
+                placeholder="Bank proof matches the verified shared deposit and learner's applied allocation" />
+            </label>
+            <button type="button" disabled={loading || !receipt.allocations.some((a) => a.state === "applied")}
+              onClick={linkOldCheckout}
+              className="rounded-md border border-amber-700 px-4 py-2 text-sm font-medium text-amber-900 disabled:opacity-50">
+              Link old checkout to shared receipt
+            </button>
           </div>
         </section>
       )}
