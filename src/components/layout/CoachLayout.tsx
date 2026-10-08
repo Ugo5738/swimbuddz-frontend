@@ -59,6 +59,7 @@ const baseNavSections: NavSection[] = [
     items: [
       { href: "/coach/cohorts", label: "My Cohorts", icon: GraduationCap },
       { href: "/coach/students", label: "Students", icon: Users },
+      { href: "/coach/alumni-evidence", label: "Alumni Videos", icon: GraduationCap },
       { href: "/coach/schedule", label: "Schedule", icon: Calendar },
       { href: "/coach/availability", label: "Availability", icon: Calendar },
     ],
