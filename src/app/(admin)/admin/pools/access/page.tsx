@@ -17,6 +17,9 @@ export default function PoolAccessAdmin(){
  const [cost,setCost]=useState("");
  const [basis,setBasis]=useState<"per_person"|"per_group">("per_person");
  const [enabled,setEnabled]=useState(false);
+ const [amenities,setAmenities]=useState("");
+ const [rules,setRules]=useState("");
+ const [cancellation,setCancellation]=useState("");
  const [busy,setBusy]=useState(false);
  useEffect(()=>{apiGet<PoolList>("/api/v1/admin/pools?page_size=100",{auth:true}).then(x=>setPools(x.items)).catch(()=>setError("Could not load pool locations"))},[]);
  async function save(e:React.FormEvent){e.preventDefault();setBusy(true);setError("");setSaved(null);
@@ -24,7 +27,7 @@ export default function PoolAccessAdmin(){
     pool_id:poolId,title,starts_at:new Date(start).toISOString(),ends_at:new Date(end).toISOString(),
     capacity,selling_price_kobo:Math.round(Number(sell)*100),negotiated_cost_kobo:Math.round(Number(cost)*100),
     cost_basis:basis,currency:"NGN",self_directed_permitted:enabled,public_booking_enabled:enabled,
-    admissions_require_lifeguard:true,amenities:[],access_rules:"",cancellation_policy:""
+    admissions_require_lifeguard:true,amenities:amenities.split(",").map(s=>s.trim()).filter(Boolean),access_rules:rules,cancellation_policy:cancellation
    };
    const x=await apiPost<Offer>("/api/v1/admin/pools/access/offers",payload,{auth:true});setSaved(x);
   }catch(e){setError(e instanceof Error?e.message:"Unable to save offer");}finally{setBusy(false)}
@@ -44,6 +47,9 @@ export default function PoolAccessAdmin(){
    <div className="grid gap-3 sm:grid-cols-2"><label className="text-sm font-semibold">Customer price (₦ per swimmer)<input required type="number" min="1" step=".01" value={sell} onChange={e=>setSell(e.target.value)} className="mt-1 w-full rounded-lg border p-3"/></label>
    <label className="text-sm font-semibold">Negotiated pool cost (₦)<input required type="number" min="0" step=".01" value={cost} onChange={e=>setCost(e.target.value)} className="mt-1 w-full rounded-lg border p-3"/></label></div>
    <label className="block text-sm font-semibold">Pool cost basis<select className="mt-1 w-full rounded-lg border p-3" value={basis} onChange={e=>setBasis(e.target.value as typeof basis)}><option value="per_person">Per verified admission</option><option value="per_group">One charge per visiting group</option></select></label>
+   <label className="block text-sm font-semibold">Verified amenities (comma-separated)<textarea className="mt-1 w-full rounded-lg border p-3" rows={2} value={amenities} onChange={e=>setAmenities(e.target.value)} placeholder="Showers, lockers, changing rooms, parking" /></label>
+   <label className="block text-sm font-semibold">Pool entry and safety rules<textarea required className="mt-1 w-full rounded-lg border p-3" rows={3} value={rules} onChange={e=>setRules(e.target.value)} placeholder="Eligibility, swimwear, lifeguard, reception instructions"/></label>
+   <label className="block text-sm font-semibold">Cancellation and no-show terms<textarea required className="mt-1 w-full rounded-lg border p-3" rows={3} value={cancellation} onChange={e=>setCancellation(e.target.value)} placeholder="Customer-facing cancellation and refund terms"/></label>
    <label className="flex gap-2 text-sm"><input type="checkbox" checked={enabled} onChange={e=>setEnabled(e.target.checked)}/> Pool permits self-directed visits and published inventory</label>
    <p className="text-xs text-slate-500">The offer starts as a draft even if the checkbox is enabled. Confirm pool capacity, safety, terms and payment integration before publishing.</p>
    <button disabled={busy} className="rounded-lg bg-cyan-700 px-5 py-3 text-white disabled:opacity-40">{busy?"Saving…":"Create draft offer"}</button>
