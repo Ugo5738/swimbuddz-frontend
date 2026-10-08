@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
 import { apiPost } from "@/lib/api";
 import { useParams } from "next/navigation";
 import { useApi } from "@/hooks/useApi";
@@ -9,6 +10,7 @@ import { Episode, youtubeId } from "../data";
 
 export default function EpisodePage() {
   const { id } = useParams<{ id: string }>();
+  const [playVideo, setPlayVideo] = useState(false);
   const { data, loading, error } = useApi<Episode & { category: string; status: string }>(id ? `/api/v1/content/${id}` : null, { auth: false });
   useEffect(() => {
     if (!data || data.status !== "published" || data.category !== "beyond_the_pool") return;
@@ -28,7 +30,12 @@ export default function EpisodePage() {
   return <main className="mx-auto max-w-4xl space-y-7 px-4 py-12">
     <Link href="/beyond-the-pool" className="text-cyan-700">← All episodes</Link>
     <header className="space-y-3"><p className="font-bold uppercase tracking-widest text-cyan-700">Beyond the Pool · Episode {data.episode_number ?? "—"}</p><h1 className="text-4xl font-bold">{data.title}</h1><p className="text-lg text-slate-600">{data.summary}</p>{data.guest_names && <p className="text-sm text-slate-500">With {data.guest_names}</p>}</header>
-    {videoId ? <div className="aspect-video overflow-hidden rounded-xl bg-slate-900"><iframe title={data.title} src={`https://www.youtube-nocookie.com/embed/${videoId}`} onLoad={()=>track("watch_click")} className="h-full w-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen loading="lazy"/></div> : <p>Video coming soon.</p>}
+    {videoId ? <div className="relative aspect-video overflow-hidden rounded-xl bg-slate-900">
+      {playVideo ? <iframe title={data.title} src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`} className="h-full w-full" allow="autoplay; encrypted-media; picture-in-picture; web-share" allowFullScreen loading="lazy"/> : <>
+        <Image unoptimized width={1280} height={720} className="h-full w-full object-cover" alt="" src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`}/>
+        <button type="button" onClick={()=>{track("watch_click");setPlayVideo(true);}} className="absolute inset-0 flex items-center justify-center bg-slate-950/30 text-xl font-semibold text-white transition hover:bg-slate-950/50" aria-label={`Play ${data.title}`}><span className="rounded-full bg-cyan-700 px-8 py-5 shadow-xl">▶ Play episode</span></button>
+      </>}
+    </div> : <p>Video coming soon.</p>}
     <section className="prose max-w-none"><BlockViewer content={data.body}/></section>
     <aside className="rounded-xl bg-cyan-50 p-6"><h2 className="text-2xl font-bold">Your swimming journey starts here.</h2><p className="mt-2">Learn with the Academy or find your swimming level.</p><div className="mt-4 flex flex-wrap gap-4"><Link href="/academy" onClick={()=>track("academy_click")} className="rounded-lg bg-cyan-700 px-5 py-3 font-medium text-white">Explore Academy</Link><Link href="/assessment" onClick={()=>track("assessment_click")} className="rounded-lg border border-cyan-700 px-5 py-3 font-medium text-cyan-700">Take an assessment</Link></div></aside>
   </main>;
