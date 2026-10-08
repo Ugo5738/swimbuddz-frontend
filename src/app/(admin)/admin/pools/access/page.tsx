@@ -6,6 +6,8 @@ type PoolList={items:Pool[]};
 type Offer={id:string;title:string;status:string};
 export default function PoolAccessAdmin(){
  const [pools,setPools]=useState<Pool[]>([]);
+ const [offers,setOffers]=useState<Offer[]>([]);
+ const loadOffers=()=>apiGet<Offer[]>("/api/v1/admin/pools/access/offers",{auth:true}).then(setOffers).catch(()=>setError("Could not load existing offers"));
  const [error,setError]=useState("");
  const [saved,setSaved]=useState<Offer|null>(null);
  const [poolId,setPoolId]=useState("");
@@ -21,7 +23,7 @@ export default function PoolAccessAdmin(){
  const [rules,setRules]=useState("");
  const [cancellation,setCancellation]=useState("");
  const [busy,setBusy]=useState(false);
- useEffect(()=>{apiGet<PoolList>("/api/v1/admin/pools?page_size=100",{auth:true}).then(x=>setPools(x.items)).catch(()=>setError("Could not load pool locations"))},[]);
+ useEffect(()=>{void loadOffers();apiGet<PoolList>("/api/v1/admin/pools?page_size=100",{auth:true}).then(x=>setPools(x.items)).catch(()=>setError("Could not load pool locations"))},[]);
  async function save(e:React.FormEvent){e.preventDefault();setBusy(true);setError("");setSaved(null);
   try{const payload={
     pool_id:poolId,title,starts_at:new Date(start).toISOString(),ends_at:new Date(end).toISOString(),
@@ -29,8 +31,12 @@ export default function PoolAccessAdmin(){
     cost_basis:basis,currency:"NGN",self_directed_permitted:enabled,public_booking_enabled:enabled,
     admissions_require_lifeguard:true,amenities:amenities.split(",").map(s=>s.trim()).filter(Boolean),access_rules:rules,cancellation_policy:cancellation
    };
-   const x=await apiPost<Offer>("/api/v1/admin/pools/access/offers",payload,{auth:true});setSaved(x);
+   const x=await apiPost<Offer>("/api/v1/admin/pools/access/offers",payload,{auth:true});setSaved(x);void loadOffers();
   }catch(e){setError(e instanceof Error?e.message:"Unable to save offer");}finally{setBusy(false)}
+ }
+ async function publish(offer:Offer){
+  setError("");try{await apiPost("/api/v1/admin/pools/access/offers/"+offer.id+"/publish",{}, {auth:true});await loadOffers();}
+  catch(e){setError(e instanceof Error?e.message:"Cannot publish until pool safety and offer rules are confirmed");}
  }
  return <main className="mx-auto max-w-3xl p-6 space-y-6">
   <header><p className="text-sm uppercase tracking-widest text-cyan-700">Operations</p>
@@ -38,6 +44,13 @@ export default function PoolAccessAdmin(){
   <p className="text-sm text-slate-600">Create scheduled admission inventory with separate negotiated facility costs and public selling prices. New offers remain drafts until explicitly published.</p></header>
   {error&&<p role="alert" className="rounded-lg bg-red-50 p-3 text-red-800">{error}</p>}
   {saved&&<div className="rounded-lg bg-green-50 p-4 text-green-900">Draft created: {saved.title} ({saved.id}). Publishing must be done after operational approval. No admission is issued.</div>}
+  <section className="rounded-xl border bg-white p-5 space-y-3"><h2 className="text-xl font-semibold">Published and draft inventory</h2>
+  {offers.length===0?<p className="text-sm text-slate-500">No Pool Access offers created yet.</p>:
+  <div className="space-y-3">{offers.map(o=><div key={o.id} className="flex items-center justify-between gap-3 rounded-lg border p-3">
+    <div><h3 className="font-medium">{o.title}</h3><p className="text-xs text-slate-500">{o.status}</p></div>
+    {o.status==="draft"&&<button className="rounded-lg bg-cyan-700 px-3 py-2 text-sm text-white" onClick={()=>publish(o)}>Publish offer</button>}
+  </div>)}</div>}
+  </section>
   <form className="space-y-4 rounded-xl border bg-white p-5" onSubmit={save}>
    <label className="block text-sm font-semibold">Partner pool<select required className="mt-1 w-full rounded-lg border p-3" value={poolId} onChange={e=>setPoolId(e.target.value)}><option value="">Select a pool</option>{pools.map(p=><option key={p.id} value={p.id}>{p.name} {p.location_area?"· "+p.location_area:""}</option>)}</select></label>
    <label className="block text-sm font-semibold">Offer title<input required minLength={3} maxLength={160} className="mt-1 w-full rounded-lg border p-3" value={title} onChange={e=>setTitle(e.target.value)}/></label>
