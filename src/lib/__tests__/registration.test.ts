@@ -138,6 +138,12 @@ describe("completePendingRegistrationOnBackend", () => {
 // ---------------------------------------------------------------------------
 
 describe("getPostAuthRedirectPath", () => {
+  it("routes Pool Access visitors directly to bookable offers without full member onboarding", async () => {
+    const destination = await getPostAuthRedirectPath("/pool-access");
+    expect(destination).toBe("/pool-access");
+    expect(mockedApiGet).not.toHaveBeenCalled();
+  });
+
   // Helper to build a member object with sensible defaults
   function buildMember(overrides: Record<string, any> = {}) {
     return {
