@@ -872,7 +872,7 @@ export default function EnrollmentDetailPage() {
       </div>
 
       {/* Milestone Claim Modal */}
-      <SupplementaryEvidence enrollmentId={enrollmentId} milestones={milestones} canUpload={!isDropped && !isSuspended && isPaid && (enrollment.status === EnrollmentStatus.ENROLLED || enrollment.status === EnrollmentStatus.GRADUATED)} />
+      <SupplementaryEvidence enrollmentId={enrollmentId} milestones={milestones} canUpload={!isDropped && !isSuspended && (isPaid || enrollment.status === EnrollmentStatus.GRADUATED) && (enrollment.status === EnrollmentStatus.ENROLLED || enrollment.status === EnrollmentStatus.GRADUATED)} />
       {selectedMilestone && (
         <MilestoneClaimModal
           isOpen={!!selectedMilestone}
