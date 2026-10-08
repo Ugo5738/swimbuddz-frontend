@@ -7263,6 +7263,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/academy/evidence/{evidence_id}/playback-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Evidence Playback Url
+         * @description Resolve a private clip URL after checking owner/assigned-coach/admin access.
+         *
+         *     Browsers use this JSON endpoint with a bearer token, rather than opening a
+         *     protected redirect from a bare <video> tag without authorization headers.
+         */
+        get: operations["evidence_playback_url_academy_evidence__evidence_id__playback_url_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/academy/evidence/{evidence_id}/play": {
         parameters: {
             query?: never;
@@ -11430,6 +11453,26 @@ export interface paths {
          * @description Funnel conversion snapshots, filterable by stage and period.
          */
         get: operations["flywheel_funnel_admin_reports_flywheel_funnel_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/reports/flywheel/content-acquisition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Content Acquisition
+         * @description Reporting-owned confirmed registration counts, not attributed payments.
+         */
+        get: operations["content_acquisition_admin_reports_flywheel_content_acquisition_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -23572,6 +23615,8 @@ export interface components {
             source_joined_at: string;
             /** Acquisition Source */
             acquisition_source?: string | null;
+            /** Content Source */
+            content_source?: string | null;
         };
         /** JoinedTierResponse */
         JoinedTierResponse: {
@@ -33672,16 +33717,16 @@ export interface components {
             body?: string | null;
             /** Category */
             category?: string | null;
-            /** Featured Image Media Id */
-            featured_image_media_id?: string | null;
-            /** Featured Image Prompt */
-            featured_image_prompt?: string | null;
             /** Video Url */
             video_url?: string | null;
             /** Episode Number */
             episode_number?: number | null;
             /** Guest Names */
             guest_names?: string | null;
+            /** Featured Image Media Id */
+            featured_image_media_id?: string | null;
+            /** Featured Image Prompt */
+            featured_image_prompt?: string | null;
             /** Tier Access */
             tier_access?: ("community" | "club" | "academy") | null;
             /** Is Published */
@@ -59742,6 +59787,37 @@ export interface operations {
             };
         };
     };
+    evidence_playback_url_academy_evidence__evidence_id__playback_url_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                evidence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     play_evidence_for_authorized_person_academy_evidence__evidence_id__play_get: {
         parameters: {
             query?: never;
@@ -66779,6 +66855,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    content_acquisition_admin_reports_flywheel_content_acquisition_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };
