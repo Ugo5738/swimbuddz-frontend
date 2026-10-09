@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AdminAcademyApi, type AcademyCommercialTermsPreview } from "@/lib/academy-admin";
 
 const naira = (kobo: number) => `₦${(kobo / 100).toLocaleString("en-NG")}`;
