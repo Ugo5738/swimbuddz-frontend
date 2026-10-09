@@ -101,6 +101,21 @@ export default function AcademySharedReceiptsPage() {
     } finally { setLoading(false); }
   }
 
+  async function lookupExistingReceipt() {
+    if (bankReference.trim().length < 5) {
+      setError("Enter the original bank transaction reference to find its receipt.");
+      return;
+    }
+    setLoading(true); setError(""); setMessage("");
+    try {
+      const data = await AdminAcademyApi.findAcademyReceiptByReference(bankReference.trim());
+      setReceipt(data);
+      setMessage("Existing verified receipt loaded; continue reviewing and allocating its remaining balance. Do not record the payment again.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Receipt not found.");
+    } finally { setLoading(false); }
+  }
+
   async function allocate() {
     if (!receipt || !selectedEnrollment) return;
     const amount = Math.round(Number(allocationNaira) * 100);
@@ -242,6 +257,11 @@ export default function AcademySharedReceiptsPage() {
           className="rounded-md bg-cyan-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
           {loading ? "Working…" : "Verify and record receipt"}
         </button>
+        <button type="button" disabled={loading} onClick={lookupExistingReceipt}
+          className="rounded-md border border-cyan-600 px-4 py-2 text-sm text-cyan-800">
+          Find existing bank receipt
+        </button>
+        </div>
       </section>
       {receipt && (
         <section className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
@@ -289,7 +309,7 @@ export default function AcademySharedReceiptsPage() {
               <div key={allocation.id} className="flex flex-wrap justify-between gap-3 rounded-lg border border-slate-200 p-3">
                 <div className="text-sm">
                   <p className="font-medium">{labelFor(allocation.enrollment_id)}</p>
-                  <p className="text-slate-500">{money(allocation.amount_kobo)} · {allocation.state}</p>
+                  <p className="text-slate-500">{money(allocation.amount_kobo)} · {allocation.state === "historical" ? "Already paid — preserved history" : allocation.state}</p>
                 </div>
                 {allocation.state === "reserved" && (
                   <div className="flex flex-wrap gap-2">
