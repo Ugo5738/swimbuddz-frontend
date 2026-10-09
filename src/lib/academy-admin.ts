@@ -183,6 +183,10 @@ export const AdminAcademyApi = {
   }) => apiPost<AcademySharedReceipt>(
     "/api/v1/payments/admin/academy-receipts", body, { auth: true },
   ),
+  findAcademyReceiptByReference: (reference: string) =>
+    apiGet<AcademySharedReceipt>(
+      `/api/v1/payments/admin/academy-receipts/by-reference/${encodeURIComponent(reference)}`, { auth: true },
+    ),
   getAcademyReceipt: (id: string) =>
     apiGet<AcademySharedReceipt>(
       `/api/v1/payments/admin/academy-receipts/${id}`, { auth: true },
