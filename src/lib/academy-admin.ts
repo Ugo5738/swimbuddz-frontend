@@ -123,6 +123,8 @@ export type ReviewedAcademyTransferPayload = {
   reason: string;
   transferable_credit_kobo: number;
   consumed_services_kobo: number;
+  refund_due_kobo: number;
+  refund_reason?: string;
   discount_kobo: number;
   discount_reason?: string;
   confirmed_attendance_review: boolean;
