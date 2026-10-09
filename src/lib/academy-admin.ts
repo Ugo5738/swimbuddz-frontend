@@ -128,6 +128,7 @@ export type ReviewedAcademyTransferPayload = {
   discount_kobo: number;
   discount_reason?: string;
   confirmed_attendance_review: boolean;
+  installment_amounts_kobo?: number[];
 };
 
 export const AdminAcademyApi = {
