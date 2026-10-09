@@ -254,7 +254,6 @@ export default function AcademyEnrollmentChangeReviewsPage() {
                   {working === review.id ? "Reviewing…" : "Approve verified-unpaid transfer"}
                 </button>
               </div>
-            </div>
             </div>)}
             {reviewMode[review.id] === "paid" && <ReviewedPaidTransfer changeId={review.id} onCompleted={loadReviews} />}
             <button type="button" onClick={() => rejectRequest(review.id)}
