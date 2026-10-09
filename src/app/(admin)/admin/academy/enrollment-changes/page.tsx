@@ -183,7 +183,7 @@ export default function AcademyEnrollmentChangeReviewsPage() {
                 <p>Then use the reviewed paid transfer form below, specifying destination tuition discount and, optionally, a negotiated enrollment-specific installment schedule.</p>
               </div>}
             </div>
-            {reviewMode[review.id] === "unpaid" && <div className="space-y-3">
+            {reviewMode[review.id] === "unpaid" && (<div className="space-y-3">
               {(review.snapshot.payment_references || []).map((reference, index) => (
                 <div key={reference} className="rounded-lg border border-slate-200 p-3 space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -255,7 +255,7 @@ export default function AcademyEnrollmentChangeReviewsPage() {
                 </button>
               </div>
             </div>
-            {reviewMode[review.id] === "unpaid" && </div>}
+            </div>)}
             {reviewMode[review.id] === "paid" && <ReviewedPaidTransfer changeId={review.id} onCompleted={loadReviews} />}
             <button type="button" onClick={() => rejectRequest(review.id)}
               disabled={working !== null}
