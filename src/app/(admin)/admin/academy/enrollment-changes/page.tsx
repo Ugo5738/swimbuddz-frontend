@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ReviewedPaidTransfer } from "./ReviewedPaidTransfer";
 import { apiGet } from "@/lib/api";
 import {
   AdminAcademyApi,
@@ -125,9 +126,13 @@ export default function AcademyEnrollmentChangeReviewsPage() {
         <h1 className="mt-2 text-2xl font-bold text-slate-900">Cohort Change Reviews</h1>
         <p className="mt-1 text-sm text-slate-600">
           Review change requests with payment activity or recorded progress.
-          Approve only verified-unpaid transfers here. Requests involving received money, receipts or attendance must be reconciled separately.
+          Review unpaid and paid cohort changes with verified payment information. Shared bank receipts can be split into auditable beneficiary credits before approving a transfer.
         </p>
       </header>
+      <Link href="/admin/academy/receipts"
+        className="inline-block rounded-md border border-cyan-700 px-4 py-2 text-sm font-medium text-cyan-800">
+        Manage shared bank receipts
+      </Link>
       {loading && <p className="text-sm text-slate-600">Loading transfer requests…</p>}
       {error && <p role="alert" className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</p>}
       {!loading && !error && reviews.length === 0 && (
@@ -227,6 +232,7 @@ export default function AcademyEnrollmentChangeReviewsPage() {
                 </button>
               </div>
             </div>
+            <ReviewedPaidTransfer changeId={review.id} onCompleted={loadReviews} />
             <button type="button" onClick={() => rejectRequest(review.id)}
               disabled={working !== null}
               className="ml-4 rounded-md border border-red-300 px-3 py-2 text-sm text-red-600 disabled:opacity-50">
