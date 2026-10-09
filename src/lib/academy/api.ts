@@ -136,6 +136,10 @@ export const AcademyApi = {
   getEnrollment: (id: string) =>
     apiGet<Enrollment>(`/api/v1/academy/my-enrollments/${id}`, { auth: true }),
 
+  /** Admin-only: the member endpoint intentionally denies access to other users. */
+  getAdminEnrollment: (id: string) =>
+    apiGet<Enrollment>(`/api/v1/academy/admin/enrollments/${id}`, { auth: true }),
+
   getEnrollmentOnboarding: (id: string) =>
     apiGet<OnboardingInfo>(`/api/v1/academy/my-enrollments/${id}/onboarding`, {
       auth: true,
@@ -147,9 +151,16 @@ export const AcademyApi = {
     }),
 
 
+  getMyEnrollmentChangeRequests: () =>
+    apiGet<Array<{
+      id: string; from_enrollment_id: string; target_cohort_id: string;
+      state: "needs_review" | "rejected" | "completed"; created_at: string;
+    }>>("/api/v1/academy/my-enrollment-change-requests", { auth: true }),
+
   getMyAcademyJourneys: () =>
     apiGet<Array<{
       program_id: string;
+      program_name: string;
       enrollments: Array<{ id: string; cohort_id: string | null; cohort_name: string | null; status: string; payment_status: string }>;
     }>>("/api/v1/academy/my-academy-journeys", { auth: true }),
 

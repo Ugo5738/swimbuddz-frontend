@@ -79,6 +79,7 @@ const navSections: NavSection[] = [
       { href: "/admin/academy/evidence", label: "Alumni Videos", icon: GraduationCap },
       { href: "/admin/academy/extension-requests", label: "Academy Extensions", icon: CalendarClock },
       { href: "/admin/academy/enrollment-changes", label: "Academy Transfers", icon: Repeat },
+      { href: "/admin/academy/receipts", label: "Shared Academy Receipts", icon: Receipt },
       { href: "/admin/club-applications", label: "Club Assessments", icon: ClipboardCheck },
       { href: "/admin/club-plans", label: "Club Plans & Pricing", icon: Waves },
       { href: "/admin/community/clubs", label: "Clubs & Pods", icon: Users },
