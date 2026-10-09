@@ -15,6 +15,10 @@ const money = (kobo: number) => `₦${(kobo / 100).toLocaleString("en-NG", {
 export default function AcademySharedReceiptsPage() {
   const [bankReference, setBankReference] = useState("");
   const [receivedNaira, setReceivedNaira] = useState("");
+  const [adoptMode, setAdoptMode] = useState(false);
+  const [originalPaymentReference, setOriginalPaymentReference] = useState("");
+  const [confirmOldPaid, setConfirmOldPaid] = useState(false);
+  const [confirmRemainder, setConfirmRemainder] = useState(false);
   const [evidence, setEvidence] = useState("");
   const [receipt, setReceipt] = useState<AcademySharedReceipt | null>(null);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
@@ -66,6 +70,34 @@ export default function AcademySharedReceiptsPage() {
       setMessage("Verified receipt recorded. You can allocate the total across the intended learners below.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not register the verified receipt.");
+    } finally { setLoading(false); }
+  }
+
+  async function adoptSettled() {
+    const amount = Math.round(Number(receivedNaira) * 100);
+    if (!originalPaymentReference.trim() || !bankReference.trim() ||
+        !Number.isSafeInteger(amount) || amount <= 0 ||
+        evidence.trim().length < 30 || !confirmOldPaid || !confirmRemainder) {
+      setError("Enter the paid Academy reference, verified full bank amount, bank reference and detailed evidence. Confirm both reconciliation checks.");
+      return;
+    }
+    if (!window.confirm(
+      "Adopt a previously PAID Academy checkout? The system preserves its old cash and fulfillment, and posts only the independently verified unrecorded remainder. This is a financial settlement."
+    )) return;
+    setLoading(true); setError(""); setMessage("");
+    try {
+      const result = await AdminAcademyApi.adoptSettledAcademyReceipt({
+        original_payment_reference: originalPaymentReference.trim(),
+        external_reference: bankReference.trim(),
+        actual_bank_amount_kobo: amount,
+        reviewed_bank_evidence: evidence.trim(),
+        confirm_original_payment_is_one_beneficiary: confirmOldPaid,
+        confirm_unrecorded_remainder: confirmRemainder,
+      });
+      setReceipt(result);
+      setMessage("Existing paid tuition preserved. Only any unrecorded cash remainder was recognized. Allocate ONLY the available remaining amount, then reconcile the old checkout.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not adopt settled payment. No replacement receipt should be created.");
     } finally { setLoading(false); }
   }
 
@@ -170,6 +202,22 @@ export default function AcademySharedReceiptsPage() {
       {message && <p role="status" className="rounded-lg bg-cyan-50 p-4 text-sm text-cyan-800">{message}</p>}
       <section className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
         <h2 className="font-semibold">1. Verify one bank receipt</h2>
+        <div className="flex items-start gap-2 rounded-md border border-slate-300 p-3">
+          <input type="checkbox" id="adopt-settled-receipt" checked={adoptMode}
+            onChange={(event) => { setAdoptMode(event.target.checked); setReceipt(null); setError(""); }}
+          />
+          <label htmlFor="adopt-settled-receipt" className="text-sm">
+            <strong>This bank transfer was already partly approved for one student</strong>
+            <span className="block text-slate-500">Adopt its existing PAID Academy record instead of registering the bank receipt again. The original payment is not changed.</span>
+          </label>
+        </div>
+        {adoptMode && (
+          <label className="block text-sm">Original PAID Academy payment reference
+            <input value={originalPaymentReference} onChange={(e) => setOriginalPaymentReference(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-slate-300 p-2"
+              placeholder="PAY-... (from Payment Reviews)" />
+          </label>
+        )}
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm">Bank transaction reference
             <input value={bankReference} onChange={(e) => setBankReference(e.target.value)}
@@ -198,6 +246,13 @@ export default function AcademySharedReceiptsPage() {
       {receipt && (
         <section className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
           <h2 className="font-semibold">2. Allocate verified receipt</h2>
+          {receipt.preexisting_paid_kobo != null && receipt.preexisting_paid_kobo > 0 && (
+            <p className="rounded-md border border-cyan-300 p-3 text-sm">
+              Already paid and historically allocated: <strong>{money(receipt.preexisting_paid_kobo)}</strong>.
+              Cash newly recognized in this reconciliation: <strong>{money(receipt.new_cash_kobo ?? 0)}</strong>.
+              Do not reserve or apply the historical share again.
+            </p>
+          )}
           <div className="grid grid-cols-3 gap-3 text-sm">
             <div><p className="text-slate-500">Received</p><p className="font-semibold">{money(receipt.amount_kobo)}</p></div>
             <div><p className="text-slate-500">Allocated</p><p className="font-semibold">{money(receipt.allocated_kobo)}</p></div>
