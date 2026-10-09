@@ -249,18 +249,34 @@ export default function AcademySharedReceiptsPage() {
             className="mt-1 w-full rounded-md border border-slate-300 p-2"
             placeholder="Statement date, transaction ID, verified amount and reviewer reference" />
         </label>
+        {adoptMode && (
+          <div className="space-y-3 rounded-md border border-amber-300 p-3">
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" checked={confirmOldPaid}
+                onChange={(event) => setConfirmOldPaid(event.target.checked)} />
+              <span>I verified the original PAID checkout belongs to one beneficiary only and has already credited that swimmer. Do not credit it again.</span>
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" checked={confirmRemainder}
+                onChange={(event) => setConfirmRemainder(event.target.checked)} />
+              <span>I verified the complete bank transaction and independently checked that the remainder is not recorded as PAID on another checkout.</span>
+            </label>
+          </div>
+        )}
         <p className="text-xs text-amber-700">
           Do not re-register an existing PAID payment under a new receipt.
           If a payment reference has already been settled, reconcile that payment rather than creating a second cash-in.
         </p>
-        <button disabled={loading} onClick={register}
-          className="rounded-md bg-cyan-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
-          {loading ? "Working…" : "Verify and record receipt"}
-        </button>
-        <button type="button" disabled={loading} onClick={lookupExistingReceipt}
-          className="rounded-md border border-cyan-600 px-4 py-2 text-sm text-cyan-800">
-          Find existing bank receipt
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" disabled={loading}
+            onClick={adoptMode ? adoptSettled : register}
+            className="rounded-md bg-cyan-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
+            {loading ? "Working…" : adoptMode ? "Adopt existing payment and verify remainder" : "Verify and record receipt"}
+          </button>
+          <button type="button" disabled={loading} onClick={lookupExistingReceipt}
+            className="rounded-md border border-cyan-600 px-4 py-2 text-sm text-cyan-800">
+            Find existing bank receipt
+          </button>
         </div>
       </section>
       {receipt && (
