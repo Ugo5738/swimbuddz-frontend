@@ -25,6 +25,8 @@ export function ReviewedPaidTransfer({
   const [transferNaira, setTransferNaira] = useState("");
   const [consumedNaira, setConsumedNaira] = useState("0");
   const [discountNaira, setDiscountNaira] = useState("0");
+  const [customTerms, setCustomTerms] = useState(false);
+  const [installmentValues, setInstallmentValues] = useState(["50000", "50000", "45000"]);
   const [refundNaira, setRefundNaira] = useState("0");
   const [refundReason, setRefundReason] = useState("");
   const [discountReason, setDiscountReason] = useState("");
@@ -50,6 +52,10 @@ export function ReviewedPaidTransfer({
     const used = toKobo(consumedNaira);
     const discount = toKobo(discountNaira);
     const refund = toKobo(refundNaira);
+    const negotiatedInstallments = customTerms ? installmentValues.map(toKobo) : undefined;
+    if (negotiatedInstallments && (negotiatedInstallments.some((n) => !Number.isSafeInteger(n) || n <= 0) || negotiatedInstallments.reduce((a, b) => a + b, 0) !== preview.destination_base_tuition_kobo - discount)) {
+      setError("Negotiated installment amounts must be positive and add up to the discounted destination tuition."); return;
+    }
     if ([transfer, used, discount, refund].some((value) => !Number.isSafeInteger(value) || value < 0)) {
       setError("Enter non-negative whole-kobo amounts."); return;
     }
@@ -83,6 +89,7 @@ export function ReviewedPaidTransfer({
         discount_kobo: discount,
         discount_reason: discount ? discountReason.trim() : undefined,
         confirmed_attendance_review: attendanceReviewed,
+        installment_amounts_kobo: negotiatedInstallments,
       });
       await onCompleted();
     } catch (err) {
@@ -149,6 +156,26 @@ export function ReviewedPaidTransfer({
                 </label>
               </div>
               {toKobo(refundNaira) > 0 && <p className="text-sm text-amber-800">This records an outstanding refund liability, not a completed bank refund. Finance must verify any future payout separately.</p>}
+              <label className="flex items-start gap-2 text-sm">
+                <input type="checkbox" checked={customTerms} onChange={(e) => setCustomTerms(e.target.checked)} />
+                <span>Use an approved enrollment-specific installment schedule (optional). Standard cohort installments remain unchanged if unchecked.</span>
+              </label>
+              {customTerms && (
+                <div className="space-y-2 rounded-lg border border-slate-300 p-3">
+                  <p className="font-medium text-sm">Approved installments (NGN) — totals must equal the discounted tuition, before allocating verified cash.</p>
+                  {installmentValues.map((value, index) => (
+                    <label className="block text-sm" key={index}>Installment {index + 1}
+                      <input inputMode="decimal" value={value} onChange={(event) => setInstallmentValues((previous) => previous.map((x, i) => i === index ? event.target.value : x))}
+                        className="mt-1 w-full rounded-md border border-slate-300 p-2" />
+                    </label>
+                  ))}
+                  <div className="flex gap-3">
+                    <button type="button" disabled={installmentValues.length >= 6} onClick={() => setInstallmentValues((previous) => [...previous, "0"])} className="text-sm text-cyan-700 underline">Add installment</button>
+                    <button type="button" disabled={installmentValues.length <= 2} onClick={() => setInstallmentValues((previous) => previous.slice(0, -1))} className="text-sm text-cyan-700 underline">Remove last</button>
+                  </div>
+                  <p className="text-sm">Scheduled tuition: ₦{toNaira(installmentValues.reduce((sum, v) => sum + toKobo(v), 0))}</p>
+                </div>
+              )}
               <p className="text-sm text-slate-700">
                 Expected new tuition balance: <strong>₦{toNaira(Math.max(0, preview.destination_base_tuition_kobo - toKobo(discountNaira) - toKobo(transferNaira)))}</strong>
               </p>

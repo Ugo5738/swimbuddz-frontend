@@ -128,9 +128,44 @@ export type ReviewedAcademyTransferPayload = {
   discount_kobo: number;
   discount_reason?: string;
   confirmed_attendance_review: boolean;
+  installment_amounts_kobo?: number[];
+};
+
+export type AcademyCommercialTermsPreview = {
+  enrollment_id: string;
+  price_snapshot_kobo: number;
+  verified_cash_kobo: number;
+  installments: Array<{
+    id: string; number: number; amount_kobo: number;
+    status: string; reference: string | null;
+  }>;
+  adjustments: Array<{
+    id: string; reason: string; actor_auth_id: string;
+    created_at: string; approved_terms: Record<string, unknown>;
+  }>;
+};
+
+export type AcademyCommercialTermsRequest = {
+  adjustment_id: string;
+  reason: string;
+  expected_price_snapshot_kobo: number;
+  expected_installments: AcademyCommercialTermsPreview["installments"];
+  unpaid_installment_amounts_kobo: number[];
+  historic_discount_kobo: number;
+  agreed_cash_total_kobo: number;
 };
 
 export const AdminAcademyApi = {
+  previewAcademyCommercialTerms: (id: string) =>
+    apiGet<AcademyCommercialTermsPreview>(
+      `/api/v1/academy/admin/enrollments/${id}/commercial-terms`,
+      { auth: true },
+    ),
+  approveAcademyCommercialTerms: (id: string, body: AcademyCommercialTermsRequest) =>
+    apiPost<{ state: string; adjustment_id: string; idempotent: boolean }>(
+      `/api/v1/academy/admin/enrollments/${id}/commercial-terms`,
+      body, { auth: true },
+    ),
   verifyAcademyReceipt: (body: {
     external_reference: string; amount_kobo: number; verification_note: string;
   }) => apiPost<AcademySharedReceipt>(
