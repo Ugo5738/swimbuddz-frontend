@@ -25,6 +25,8 @@ export function ReviewedPaidTransfer({
   const [transferNaira, setTransferNaira] = useState("");
   const [consumedNaira, setConsumedNaira] = useState("0");
   const [discountNaira, setDiscountNaira] = useState("0");
+  const [refundNaira, setRefundNaira] = useState("0");
+  const [refundReason, setRefundReason] = useState("");
   const [discountReason, setDiscountReason] = useState("");
   const [reason, setReason] = useState("");
   const [attendanceReviewed, setAttendanceReviewed] = useState(false);
@@ -47,19 +49,20 @@ export function ReviewedPaidTransfer({
     const transfer = toKobo(transferNaira);
     const used = toKobo(consumedNaira);
     const discount = toKobo(discountNaira);
-    if ([transfer, used, discount].some((value) => !Number.isSafeInteger(value) || value < 0)) {
+    const refund = toKobo(refundNaira);
+    if ([transfer, used, discount, refund].some((value) => !Number.isSafeInteger(value) || value < 0)) {
       setError("Enter non-negative whole-kobo amounts."); return;
     }
-    if (transfer + used !== preview.verified_total_kobo) {
-      setError("Tuition credit plus verified consumed services must equal the verified balance. Resolve any refund or surplus before approval.");
+    if (transfer + used + refund !== preview.verified_total_kobo) {
+      setError("Tuition credit, verified consumed services, and recorded refund liability must equal the verified balance.");
       return;
     }
     if (transfer > preview.destination_base_tuition_kobo - discount) {
       setError("Transfer credit exceeds discounted destination tuition. Resolve any refundable surplus first.");
       return;
     }
-    if (reason.trim().length < 20 || (discount > 0 && discountReason.trim().length < 10)) {
-      setError("Enter a detailed approval reason, and explain any manually approved discount.");
+    if (reason.trim().length < 20 || (discount > 0 && discountReason.trim().length < 10) || (refund > 0 && refundReason.trim().length < 20)) {
+      setError("Enter an approval reason and explain any approved discount or outstanding refund.");
       return;
     }
     if (preview.recorded_progress_count > 0 && !attendanceReviewed) {
@@ -75,6 +78,8 @@ export function ReviewedPaidTransfer({
         reason: reason.trim(),
         transferable_credit_kobo: transfer,
         consumed_services_kobo: used,
+        refund_due_kobo: refund,
+        refund_reason: refund ? refundReason.trim() : undefined,
         discount_kobo: discount,
         discount_reason: discount ? discountReason.trim() : undefined,
         confirmed_attendance_review: attendanceReviewed,
@@ -124,6 +129,15 @@ export function ReviewedPaidTransfer({
                   <input inputMode="decimal" value={consumedNaira} onChange={(e) => setConsumedNaira(e.target.value)}
                     className="mt-1 w-full rounded-md border border-slate-300 p-2" />
                 </label>
+                <label className="text-sm">Unspent tuition owed to student (NGN)
+                  <input inputMode="decimal" value={refundNaira} onChange={(e) => setRefundNaira(e.target.value)}
+                    className="mt-1 w-full rounded-md border border-slate-300 p-2" />
+                </label>
+                <label className="text-sm">Reason for refund obligation
+                  <input value={refundReason} onChange={(e) => setRefundReason(e.target.value)}
+                    className="mt-1 w-full rounded-md border border-slate-300 p-2"
+                    placeholder="Explain source, amount and resolution required before payout" />
+                </label>
                 <label className="text-sm">New-cohort discount (NGN)
                   <input inputMode="decimal" value={discountNaira} onChange={(e) => setDiscountNaira(e.target.value)}
                     className="mt-1 w-full rounded-md border border-slate-300 p-2" />
@@ -134,6 +148,7 @@ export function ReviewedPaidTransfer({
                     placeholder="Only if carrying an approved discount" />
                 </label>
               </div>
+              {toKobo(refundNaira) > 0 && <p className="text-sm text-amber-800">This records an outstanding refund liability, not a completed bank refund. Finance must verify any future payout separately.</p>}
               <p className="text-sm text-slate-700">
                 Expected new tuition balance: <strong>₦{toNaira(Math.max(0, preview.destination_base_tuition_kobo - toKobo(discountNaira) - toKobo(transferNaira)))}</strong>
               </p>
