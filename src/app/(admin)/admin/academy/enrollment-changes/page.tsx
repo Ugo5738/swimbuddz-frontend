@@ -20,6 +20,7 @@ export default function AcademyEnrollmentChangeReviewsPage() {
   const [error, setError] = useState("");
   const [closureForms, setClosureForms] = useState<Record<string, { evidence: string; note: string; expanded: boolean }>>({});
   const [approvalReasons, setApprovalReasons] = useState<Record<string, string>>({});
+  const [reviewMode, setReviewMode] = useState<Record<string, "unknown" | "unpaid" | "paid">>({});
 
   function updateClosure(reference: string, patch: Partial<{ evidence: string; note: string; expanded: boolean }>) {
     setClosureForms((current) => ({
@@ -160,7 +161,29 @@ export default function AcademyEnrollmentChangeReviewsPage() {
             </p>
             <Link href={`/admin/academy/enrollments/${review.from_enrollment_id}`}
               className="inline-block text-sm font-medium text-cyan-700 underline">View enrollment details</Link>
-            <div className="space-y-3">
+            <div className="rounded-lg border border-slate-300 p-4 space-y-3">
+              <h3 className="font-semibold text-sm">1. Choose the financial review path</h3>
+              <p className="text-sm text-slate-600">The displayed attempt statuses are historical snapshots, not proof of cash received. Verify the bank/provider and existing receipt allocations before selecting a path. No money is moved by choosing below.</p>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" onClick={() => setReviewMode((current) => ({...current, [review.id]: "unpaid"}))}
+                  aria-pressed={reviewMode[review.id] === "unpaid"}
+                  className={`rounded-md border px-3 py-2 text-sm ${reviewMode[review.id] === "unpaid" ? "border-cyan-500 bg-cyan-950 text-white" : "border-slate-500"}`}>
+                  Verified: no money received
+                </button>
+                <button type="button" onClick={() => setReviewMode((current) => ({...current, [review.id]: "paid"}))}
+                  aria-pressed={reviewMode[review.id] === "paid"}
+                  className={`rounded-md border px-3 py-2 text-sm ${reviewMode[review.id] === "paid" ? "border-cyan-500 bg-cyan-950 text-white" : "border-slate-500"}`}>
+                  Money received or proof submitted
+                </button>
+              </div>
+              {!reviewMode[review.id] && <p className="text-sm text-amber-700">Select a verified route to show its controls. Never close a genuine payment as unpaid.</p>}
+              {reviewMode[review.id] === "paid" && <div className="space-y-2 text-sm">
+                <p>First reconcile paid transactions and old checkout attempts. For one bank transfer covering multiple students, allocate that original receipt once; do not create multiple income records.</p>
+                <Link className="font-medium text-cyan-700 underline" href="/admin/academy/receipts">Manage verified shared receipts and allocations</Link>
+                <p>Then use the reviewed paid transfer form below, specifying destination tuition discount and, optionally, a negotiated enrollment-specific installment schedule.</p>
+              </div>}
+            </div>
+            {reviewMode[review.id] === "unpaid" && <div className="space-y-3">
               {(review.snapshot.payment_references || []).map((reference, index) => (
                 <div key={reference} className="rounded-lg border border-slate-200 p-3 space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -232,7 +255,8 @@ export default function AcademyEnrollmentChangeReviewsPage() {
                 </button>
               </div>
             </div>
-            <ReviewedPaidTransfer changeId={review.id} onCompleted={loadReviews} />
+            {reviewMode[review.id] === "unpaid" && </div>}
+            {reviewMode[review.id] === "paid" && <ReviewedPaidTransfer changeId={review.id} onCompleted={loadReviews} />}
             <button type="button" onClick={() => rejectRequest(review.id)}
               disabled={working !== null}
               className="ml-4 rounded-md border border-red-300 px-3 py-2 text-sm text-red-600 disabled:opacity-50">
