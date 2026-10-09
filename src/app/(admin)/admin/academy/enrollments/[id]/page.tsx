@@ -5,6 +5,7 @@ import {
   extractLateJoinPrefs,
 } from "@/components/academy/LateJoinAvailabilityCard";
 import { EnrollmentEvidenceGallery } from "@/components/admin/EnrollmentEvidenceGallery";
+import { AcademyCommercialTerms } from "@/components/admin/AcademyCommercialTerms";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -454,6 +455,11 @@ export default function EnrollmentDetailPage({ params }: { params: { id: string 
               return null;
             })()}
           </Card>
+
+          {/* Existing enrollment commercial amendments, separate from transfers. */}
+          {enrollment.cohort_id && installments.length > 0 && (
+            <AcademyCommercialTerms enrollmentId={enrollment.id} onChanged={loadData} />
+          )}
 
           {/* Installment Schedule */}
           {installments.length > 0 && (
