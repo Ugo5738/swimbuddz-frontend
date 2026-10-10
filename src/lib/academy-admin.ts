@@ -97,6 +97,8 @@ export type AcademySharedReceipt = {
   amount_kobo: number;
   allocated_kobo: number;
   unallocated_kobo: number;
+  preexisting_paid_kobo?: number;
+  new_cash_kobo?: number;
   currency: string;
   verification_note: string;
   allocations: Array<{
@@ -156,6 +158,16 @@ export type AcademyCommercialTermsRequest = {
 };
 
 export const AdminAcademyApi = {
+  adoptSettledAcademyReceipt: (body: {
+    original_payment_reference: string;
+    external_reference: string;
+    actual_bank_amount_kobo: number;
+    reviewed_bank_evidence: string;
+    confirm_original_payment_is_one_beneficiary: boolean;
+    confirm_unrecorded_remainder: boolean;
+  }) => apiPost<AcademySharedReceipt>(
+    "/api/v1/payments/admin/academy-receipts/adopt-settled", body, { auth: true },
+  ),
   previewAcademyCommercialTerms: (id: string) =>
     apiGet<AcademyCommercialTermsPreview>(
       `/api/v1/academy/admin/enrollments/${id}/commercial-terms`,
@@ -171,6 +183,10 @@ export const AdminAcademyApi = {
   }) => apiPost<AcademySharedReceipt>(
     "/api/v1/payments/admin/academy-receipts", body, { auth: true },
   ),
+  findAcademyReceiptByReference: (reference: string) =>
+    apiGet<AcademySharedReceipt>(
+      `/api/v1/payments/admin/academy-receipts/by-reference/${encodeURIComponent(reference)}`, { auth: true },
+    ),
   getAcademyReceipt: (id: string) =>
     apiGet<AcademySharedReceipt>(
       `/api/v1/payments/admin/academy-receipts/${id}`, { auth: true },
