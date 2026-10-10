@@ -2,7 +2,7 @@
 
 import { EnrollmentStatusBadge } from "@/components/academy/EnrollmentStatusBadge";
 import { MilestoneProgressModal } from "@/components/academy/MilestoneProgressModal";
-import { PaymentStatusBadge } from "@/components/academy/PaymentStatusBadge";
+import { academyPaymentPosition, formatAcademyNaira } from "@/lib/academy/paymentPosition";
 import { UpdateEnrollmentModal } from "@/components/academy/UpdateEnrollmentModal";
 import { CohortSessionsSection } from "@/components/sessions/CohortSessionsSection";
 import { Badge } from "@/components/ui/Badge";
@@ -188,9 +188,11 @@ export default function CohortDetailsPage() {
     return Math.round(total / students.length);
   };
 
-  const getPendingPaymentsCount = (): number => {
-    return students.filter((s) => s.payment_status === "pending").length;
-  };
+  const cohortOutstanding = students.map(academyPaymentPosition);
+  const outstandingKnown = cohortOutstanding.filter((item) => item.outstandingKobo !== null);
+  const cohortOutstandingKobo = outstandingKnown.reduce((sum, item) => sum + (item.outstandingKobo ?? 0), 0);
+  const outstandingUnknownCount = cohortOutstanding.length - outstandingKnown.length;
+  const cohortNeedsAttentionCount = cohortOutstanding.filter((item) => item.missedCount > 0 || (!item.upToDate && !item.fullySettled)).length;
 
   const formatStudentName = (enrollment: Enrollment) => {
     const member = memberLookup[enrollment.member_id];
@@ -357,8 +359,9 @@ export default function CohortDetailsPage() {
         <Card className="bg-gradient-to-br from-yellow-50 to-orange-50 min-w-0">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-600">Pending Payments</p>
-              <p className="text-3xl font-bold text-slate-900">{getPendingPaymentsCount()}</p>
+              <p className="text-sm font-medium text-slate-600">Tuition outstanding</p>
+              <p className="text-3xl font-bold text-slate-900">{formatAcademyNaira(cohortOutstandingKobo)}</p>
+              <p className="text-xs text-slate-600">{cohortNeedsAttentionCount} need payment attention{outstandingUnknownCount > 0 ? ` · ${outstandingUnknownCount} balances unavailable` : ""}</p>
             </div>
             <div className="rounded-full bg-yellow-100 p-3">
               <svg
@@ -472,7 +475,8 @@ export default function CohortDetailsPage() {
               <tr>
                 <th className="p-4 font-semibold">Student</th>
                 <th className="p-4 font-semibold">Status</th>
-                <th className="p-4 font-semibold">Payment</th>
+                <th className="p-4 font-semibold">Payment position</th>
+                 <th className="p-4 font-semibold">Tuition outstanding</th>
                 <th className="p-4 font-semibold">Progress</th>
                 {milestones.map((milestone) => (
                   <th key={milestone.id} className="p-4 font-semibold min-w-[150px]">
@@ -484,13 +488,14 @@ export default function CohortDetailsPage() {
             <tbody className="divide-y divide-slate-100">
               {students.length === 0 ? (
                 <tr>
-                  <td colSpan={milestones.length + 4} className="p-8 text-center text-slate-500">
+                  <td colSpan={milestones.length + 5} className="p-8 text-center text-slate-500">
                     No students enrolled yet.
                   </td>
                 </tr>
               ) : (
                 students.map((student) => {
                   const completion = calculateCompletion(student);
+                  const position = academyPaymentPosition(student);
                   return (
                     <tr key={student.id} className="hover:bg-slate-50/50">
                       <td className="p-4 font-medium text-slate-900">
@@ -525,7 +530,15 @@ export default function CohortDetailsPage() {
                       </td>
                       <td className="p-4">
                         <button onClick={() => handleEnrollmentClick(student)}>
-                          <PaymentStatusBadge status={student.payment_status} />
+                          <span className={`rounded-full border px-2 py-1 text-xs ${position.fullySettled || position.upToDate ? "border-green-300 text-green-700" : "border-amber-300 text-amber-800"}`}>
+                            {position.label}
+                          </span>
+                        </button>
+                      </td>
+                      <td className="p-4 text-sm font-medium">
+                        {position.outstandingKobo === null ? "Not available" : formatAcademyNaira(position.outstandingKobo)}
+                        <button type="button" className="mt-1 block text-xs text-cyan-700 underline" onClick={() => router.push(`/admin/academy/enrollments/${student.id}`)}>
+                          View enrollment and installments
                         </button>
                       </td>
                       <td className="p-4">
