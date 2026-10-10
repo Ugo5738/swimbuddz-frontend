@@ -11,6 +11,7 @@ import {
   PaymentStatus,
 } from "@/lib/academy";
 import { apiGet } from "@/lib/api";
+import { academyPaymentPosition, formatAcademyNaira } from "@/lib/academy/paymentPosition";
 import { formatDate } from "@/lib/format";
 import { CheckCircle, Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -21,6 +22,7 @@ export default function AdminEnrollmentsPage() {
   const router = useRouter();
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<EnrollmentStatus | "all">(
     "all",
   );
@@ -120,6 +122,12 @@ export default function AdminEnrollmentsPage() {
       e.payment_status === PaymentStatus.PAID,
   ).length;
 
+  const filteredEnrollments = enrollments.filter((enrollment) => {
+    const member = members[enrollment.member_id];
+    const text = [member?.first_name, member?.last_name, member?.email, enrollment.cohort?.name, enrollment.id].filter(Boolean).join(" ").toLowerCase();
+    return text.includes(searchTerm.trim().toLowerCase());
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -134,7 +142,8 @@ export default function AdminEnrollmentsPage() {
             </p>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <input aria-label="Find learner or cohort" placeholder="Search learner, email or cohort" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
           <select
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
             value={filterStatus}
@@ -172,7 +181,10 @@ export default function AdminEnrollmentsPage() {
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
-                    Payment
+                    Payment position
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+                    Tuition outstanding
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
                     Date
@@ -183,17 +195,18 @@ export default function AdminEnrollmentsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 bg-white">
-                {enrollments.length === 0 ? (
+                {filteredEnrollments.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={7}
                       className="px-6 py-8 text-center text-sm text-slate-500"
                     >
                       No enrollments found.
                     </td>
                   </tr>
                 ) : (
-                  enrollments.map((enrollment) => {
+                  filteredEnrollments.map((enrollment) => {
+                    const position = academyPaymentPosition(enrollment);
                     const member = members[enrollment.member_id];
                     const name = member
                       ? `${member.first_name} ${member.last_name}`
@@ -245,8 +258,11 @@ export default function AdminEnrollmentsPage() {
                               enrollment.payment_status,
                             )}
                           >
-                            {enrollment.payment_status}
+                            {position.label}
                           </Badge>
+                        </td>
+                        <td className="px-6 py-4 text-sm font-semibold text-slate-800">
+                          {position.outstandingKobo === null ? "Not available" : formatAcademyNaira(position.outstandingKobo)}
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-500">
                           {formatDate(enrollment.created_at)}

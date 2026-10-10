@@ -6,6 +6,7 @@ import {
 } from "@/components/academy/LateJoinAvailabilityCard";
 import { EnrollmentEvidenceGallery } from "@/components/admin/EnrollmentEvidenceGallery";
 import { AcademyCommercialTerms } from "@/components/admin/AcademyCommercialTerms";
+import { academyPaymentPosition, formatAcademyNaira } from "@/lib/academy/paymentPosition";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -194,6 +195,7 @@ export default function EnrollmentDetailPage({ params }: { params: { id: string 
   const isPaid = enrollment.payment_status === PaymentStatus.PAID;
   const isSuspended = !!enrollment.access_suspended;
   const installments: EnrollmentInstallment[] = enrollment.installments ?? [];
+  const paymentPosition = academyPaymentPosition(enrollment);
   const totalInstallments = enrollment.total_installments ?? installments.length;
   const paidCount = enrollment.paid_installments_count ?? 0;
   const missedCount = enrollment.missed_installments_count ?? 0;
@@ -253,7 +255,7 @@ export default function EnrollmentDetailPage({ params }: { params: { id: string 
             {enrollment.status.replace("_", " ")}
           </Badge>
           <Badge variant={getPaymentBadgeVariant(enrollment.payment_status)}>
-            {enrollment.payment_status}
+            {paymentPosition.label}
           </Badge>
         </div>
       </div>
@@ -627,12 +629,22 @@ export default function EnrollmentDetailPage({ params }: { params: { id: string 
               <div className="flex justify-between items-center">
                 <span className="text-sm text-slate-500">Status</span>
                 <Badge variant={getPaymentBadgeVariant(enrollment.payment_status)}>
-                  {enrollment.payment_status}
+                  {paymentPosition.label}
                 </Badge>
+              </div>
+              {enrollment.price_snapshot_amount != null && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-slate-500">Agreed tuition (frozen)</span>
+                  <span className="font-semibold">{formatAcademyNaira(enrollment.price_snapshot_amount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-500">Scheduled tuition outstanding</span>
+                <span className="font-semibold">{paymentPosition.outstandingKobo === null ? "Not available" : formatAcademyNaira(paymentPosition.outstandingKobo)}</span>
               </div>
               {enrollment.program?.price_amount !== undefined && (
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-500">Amount</span>
+                  <span className="text-sm text-slate-500">Programme list price (not agreed tuition)</span>
                   <span className="font-semibold text-slate-900">
                     {enrollment.program.price_amount > 0
                       ? `₦${enrollment.program.price_amount.toLocaleString()}`
