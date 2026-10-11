@@ -56,6 +56,7 @@ export default function AdminContentPage() {
     category: "swimming_tips",
     video_url: "",
     episode_number: "",
+    episode_air_date: "",
     guest_names: "",
     featured_image_url: "",
     featured_image_media_id: "",
@@ -142,6 +143,7 @@ export default function AdminContentPage() {
         ...formData,
         video_url: formData.category === "beyond_the_pool" ? formData.video_url || null : null,
         episode_number: formData.category === "beyond_the_pool" && formData.episode_number ? Number(formData.episode_number) : null,
+        episode_air_date: formData.category === "beyond_the_pool" ? formData.episode_air_date || null : null,
         guest_names: formData.category === "beyond_the_pool" ? formData.guest_names || null : null,
         body: serializeBlocks(editorContent),
         featured_image_url: formData.featured_image_url || null,
@@ -172,6 +174,7 @@ export default function AdminContentPage() {
         category: formData.category,
         video_url: formData.category === "beyond_the_pool" ? formData.video_url || null : null,
         episode_number: formData.category === "beyond_the_pool" && formData.episode_number ? Number(formData.episode_number) : null,
+        episode_air_date: formData.category === "beyond_the_pool" ? formData.episode_air_date || null : null,
         guest_names: formData.category === "beyond_the_pool" ? formData.guest_names || null : null,
         tier_access: formData.tier_access,
         featured_image_url: formData.featured_image_url || null,
@@ -233,6 +236,7 @@ export default function AdminContentPage() {
     setFormData({
       video_url: post.video_url || "",
       episode_number: post.episode_number ? String(post.episode_number) : "",
+      episode_air_date: post.episode_air_date || "",
       guest_names: post.guest_names || "",
       title: post.title,
       summary: post.summary,
@@ -261,6 +265,7 @@ export default function AdminContentPage() {
       category: "swimming_tips",
       video_url: "",
       episode_number: "",
+      episode_air_date: "",
       guest_names: "",
       featured_image_url: "",
       featured_image_media_id: "",
@@ -475,6 +480,7 @@ export default function AdminContentPage() {
                 {formData.category === "beyond_the_pool" && <div className="space-y-3 rounded-lg border bg-cyan-50 p-4">
                   <label className="block text-sm font-medium">YouTube video URL<input type="url" className="mt-1 w-full rounded-lg border p-2" value={formData.video_url} onChange={e => setFormData(v => ({ ...v, video_url: e.target.value }))} /></label>
                   <label className="block text-sm font-medium">Episode number<input type="number" min={1} className="mt-1 w-full rounded-lg border p-2" value={formData.episode_number} onChange={e => setFormData(v => ({ ...v, episode_number: e.target.value }))} /></label>
+                  <label className="block text-sm font-medium">Original broadcast date<input type="date" className="mt-1 w-full rounded-lg border p-2" value={formData.episode_air_date} onChange={e => setFormData(v => ({ ...v, episode_air_date: e.target.value }))} /><span className="mt-1 block text-xs font-normal text-slate-500">Used for quarterly episode counts, even when the recording is uploaded later.</span></label>
                   <label className="block text-sm font-medium">Guests<input className="mt-1 w-full rounded-lg border p-2" value={formData.guest_names} onChange={e => setFormData(v => ({ ...v, guest_names: e.target.value }))} /></label>
                 </div>}
                 <Select

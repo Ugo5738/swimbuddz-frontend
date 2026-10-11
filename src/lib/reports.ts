@@ -3,6 +3,20 @@ import { getCurrentAccessToken } from "./auth";
 import { API_BASE_URL } from "./config";
 
 // ── Types ──
+export type MemberActivityDetails = {
+  version: number;
+  attendance: {
+    available: boolean; all_sessions_attended: number | null;
+    attended_by_type: Record<string, number> | null;
+    expected_by_type: Record<string, number> | null;
+    locations: Array<{ location: string; checkins: number }> | null;
+    pool_hours_basis: string; programme: string;
+  };
+  wallet: import("@/components/reports/QuarterlyEcosystem").ReportingSection;
+  members: import("@/components/reports/QuarterlyEcosystem").ReportingSection;
+  percentile_basis?: string;
+  data_quality: string[];
+};
 
 export type MemberQuarterlyReport = {
   id: string;
@@ -22,6 +36,7 @@ export type MemberQuarterlyReport = {
   streak_current: number;
   favorite_day: string | null;
   favorite_location: string | null;
+  activity_details?: MemberActivityDetails | null;
 
   // Academy
   milestones_achieved: number;
@@ -215,6 +230,7 @@ export type YTDStats = {
   attendance_percentile: number;
   favorite_day: string | null;
   favorite_location: string | null;
+  activity_details?: MemberActivityDetails | null;
   quarters_loaded: number;
 };
 

@@ -8583,6 +8583,80 @@
         }
       }
     },
+    "/api/v1/internal/members/reporting-summary": {
+      "get": {
+        "tags": [
+          "internal"
+        ],
+        "summary": "Get Reporting Summary",
+        "operationId": "get_reporting_summary_internal_members_reporting_summary_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "To"
+            }
+          },
+          {
+            "name": "member_auth_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Member Auth Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportingSection"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/internal/members/by-auth/{auth_id}": {
       "get": {
         "tags": [
@@ -13985,6 +14059,64 @@
         ]
       }
     },
+    "/api/v1/internal/sessions/reporting-summary": {
+      "get": {
+        "tags": [
+          "internal"
+        ],
+        "summary": "Get Reporting Summary",
+        "operationId": "get_reporting_summary_internal_sessions_reporting_summary_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportingSection"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/internal/sessions/participants/{participant_id}/settlement-context": {
       "get": {
         "tags": [
@@ -18666,6 +18798,106 @@
         }
       }
     },
+    "/api/v1/academy/admin/enrollments/{enrollment_id}/commercial-terms": {
+      "get": {
+        "tags": [
+          "academy"
+        ],
+        "summary": "Preview Commercial Terms",
+        "operationId": "preview_commercial_terms_academy_admin_enrollments__enrollment_id__commercial_terms_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "enrollment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Enrollment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "academy"
+        ],
+        "summary": "Approve Commercial Terms",
+        "operationId": "approve_commercial_terms_academy_admin_enrollments__enrollment_id__commercial_terms_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "enrollment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Enrollment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommercialTermsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/academy/my-enrollments": {
       "get": {
         "tags": [
@@ -20977,6 +21209,64 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/internal/academy/reporting-summary": {
+      "get": {
+        "tags": [
+          "internal"
+        ],
+        "summary": "Get Reporting Summary",
+        "operationId": "get_reporting_summary_internal_academy_reporting_summary_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportingSection"
+                }
               }
             }
           },
@@ -23902,6 +24192,99 @@
         ]
       }
     },
+    "/api/v1/payments/admin/academy-receipts/adopt-settled": {
+      "post": {
+        "tags": [
+          "payments",
+          "academy-receipts"
+        ],
+        "summary": "Adopt Previously Settled Academy Receipt",
+        "description": "Adopt a settled single-student payment, creating cash-in ONLY for a\nseparately confirmed, previously unrecorded bank remainder.\n\nPaid history and previous ledger postings are never edited. This is\ndeliberately not a refund, reversal or entitlement reapplication.",
+        "operationId": "adopt_previously_settled_academy_receipt_payments_admin_academy_receipts_adopt_settled_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdoptSettledAcademyReceiptRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/payments/admin/academy-receipts/by-reference/{external_reference}": {
+      "get": {
+        "tags": [
+          "payments",
+          "academy-receipts"
+        ],
+        "summary": "Find Verified Receipt By Bank Reference",
+        "description": "Resume previously verified receipt allocations without registering cash again.",
+        "operationId": "find_verified_receipt_by_bank_reference_payments_admin_academy_receipts_by_reference__external_reference__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "external_reference",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "External Reference"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/payments/admin/academy-receipts/{receipt_id}": {
       "get": {
         "tags": [
@@ -24096,6 +24479,74 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ReconcileLegacyAttempt"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/payments/admin/academy-receipts/{receipt_id}/allocations/{allocation_id}/void": {
+      "post": {
+        "tags": [
+          "payments",
+          "academy-receipts"
+        ],
+        "summary": "Void Unapplied Allocation",
+        "description": "Return an unapplied mistaken allocation to the receipt pool.\n\nAn applied tuition credit is never voided here; it requires explicit\nfinance reversal so a member cannot silently lose money.",
+        "operationId": "void_unapplied_allocation_payments_admin_academy_receipts__receipt_id__allocations__allocation_id__void_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "receipt_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Receipt Id"
+            }
+          },
+          {
+            "name": "allocation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Allocation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoidReservedAllocation"
               }
             }
           }
@@ -30364,6 +30815,64 @@
         }
       }
     },
+    "/api/v1/internal/communications/reporting-summary": {
+      "get": {
+        "tags": [
+          "internal"
+        ],
+        "summary": "Get Reporting Summary",
+        "operationId": "get_reporting_summary_internal_communications_reporting_summary_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportingSection"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/internal/communications/session-published": {
       "post": {
         "tags": [
@@ -35010,6 +35519,80 @@
         }
       }
     },
+    "/api/v1/internal/wallet/reporting-summary": {
+      "get": {
+        "tags": [
+          "internal"
+        ],
+        "summary": "Get Reporting Summary",
+        "operationId": "get_reporting_summary_internal_wallet_reporting_summary_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "To"
+            }
+          },
+          {
+            "name": "member_auth_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Member Auth Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportingSection"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/internal/wallet/referral-code/resolve": {
       "get": {
         "tags": [
@@ -38814,6 +39397,64 @@
             "HTTPBearer": []
           }
         ]
+      }
+    },
+    "/api/v1/internal/ai/reporting-summary": {
+      "get": {
+        "tags": [
+          "internal"
+        ],
+        "summary": "Get Reporting Summary",
+        "operationId": "get_reporting_summary_internal_ai_reporting_summary_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportingSection"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/internal/ai/founding-members/confirm": {
@@ -52944,6 +53585,64 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MediaItemResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/internal/media/reporting-summary": {
+      "get": {
+        "tags": [
+          "internal"
+        ],
+        "summary": "Get Reporting Summary",
+        "operationId": "get_reporting_summary_internal_media_reporting_summary_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportingSection"
                 }
               }
             }
@@ -75246,6 +75945,46 @@
         "title": "RecurringBlockInput",
         "description": "A weekly availability window, sliced into bookable slots downstream."
       },
+      "ReportingSection": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available",
+            "default": true
+          },
+          "metrics": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Metrics"
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Details"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "title": "ReportingSection"
+      },
       "ResolveAccountRequest": {
         "properties": {
           "bank_code": {
@@ -81555,6 +82294,28 @@
       },
       "SessionListSummary": {
         "properties": {
+          "ends_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
           "id": {
             "type": "string",
             "title": "Id"
@@ -84421,6 +85182,11 @@
           "status": {
             "type": "string",
             "title": "Status"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "default": "swimmer"
           }
         },
         "type": "object",
@@ -84855,6 +85621,19 @@
             "type": "number",
             "title": "Total Pool Hours",
             "default": 0.0
+          },
+          "attendance_available": {
+            "type": "boolean",
+            "title": "Attendance Available",
+            "default": false
+          },
+          "attended_sessions": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Attended Sessions"
           }
         },
         "type": "object",
@@ -84988,6 +85767,14 @@
             },
             "type": "array",
             "title": "Participant Ids"
+          },
+          "member_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Member Ids"
           }
         },
         "type": "object",
@@ -85587,6 +86374,25 @@
             "minimum": 0.0,
             "title": "Consumed Services Kobo"
           },
+          "refund_due_kobo": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Refund Due Kobo",
+            "default": 0
+          },
+          "refund_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000,
+                "minLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refund Reason"
+          },
           "discount_kobo": {
             "type": "integer",
             "minimum": 0.0,
@@ -85597,7 +86403,8 @@
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 1000
+                "maxLength": 1000,
+                "minLength": 10
               },
               {
                 "type": "null"
@@ -85609,6 +86416,14 @@
             "type": "boolean",
             "title": "Confirmed Attendance Review",
             "default": false
+          },
+          "installment_amounts_kobo": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "maxItems": 6,
+            "title": "Installment Amounts Kobo"
           }
         },
         "type": "object",
@@ -88283,6 +89098,66 @@
         },
         "type": "object",
         "title": "CohortUpdate"
+      },
+      "CommercialTermsRequest": {
+        "properties": {
+          "adjustment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Adjustment Id"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 20,
+            "title": "Reason"
+          },
+          "expected_price_snapshot_kobo": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Expected Price Snapshot Kobo"
+          },
+          "expected_installments": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "maxItems": 6,
+            "minItems": 1,
+            "title": "Expected Installments"
+          },
+          "unpaid_installment_amounts_kobo": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "maxItems": 6,
+            "minItems": 1,
+            "title": "Unpaid Installment Amounts Kobo"
+          },
+          "historic_discount_kobo": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Historic Discount Kobo",
+            "default": 0
+          },
+          "agreed_cash_total_kobo": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Agreed Cash Total Kobo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "adjustment_id",
+          "reason",
+          "expected_price_snapshot_kobo",
+          "expected_installments",
+          "unpaid_installment_amounts_kobo",
+          "agreed_cash_total_kobo"
+        ],
+        "title": "CommercialTermsRequest"
       },
       "ComplexityScoreCalculateRequest": {
         "properties": {
@@ -91921,6 +92796,51 @@
         "type": "object",
         "title": "AdminReviewRequest",
         "description": "Admin review action for a manual payment."
+      },
+      "AdoptSettledAcademyReceiptRequest": {
+        "properties": {
+          "original_payment_reference": {
+            "type": "string",
+            "maxLength": 180,
+            "minLength": 4,
+            "title": "Original Payment Reference"
+          },
+          "external_reference": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 5,
+            "title": "External Reference"
+          },
+          "actual_bank_amount_kobo": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Actual Bank Amount Kobo"
+          },
+          "reviewed_bank_evidence": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 30,
+            "title": "Reviewed Bank Evidence"
+          },
+          "confirm_original_payment_is_one_beneficiary": {
+            "type": "boolean",
+            "title": "Confirm Original Payment Is One Beneficiary"
+          },
+          "confirm_unrecorded_remainder": {
+            "type": "boolean",
+            "title": "Confirm Unrecorded Remainder"
+          }
+        },
+        "type": "object",
+        "required": [
+          "original_payment_reference",
+          "external_reference",
+          "actual_bank_amount_kobo",
+          "reviewed_bank_evidence",
+          "confirm_original_payment_is_one_beneficiary",
+          "confirm_unrecorded_remainder"
+        ],
+        "title": "AdoptSettledAcademyReceiptRequest"
       },
       "AllocateReceiptRequest": {
         "properties": {
@@ -96229,6 +97149,21 @@
         ],
         "title": "VerifyReceiptRequest"
       },
+      "VoidReservedAllocation": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 15,
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "VoidReservedAllocation"
+      },
       "_BankItem": {
         "properties": {
           "name": {
@@ -97512,6 +98447,18 @@
             ],
             "title": "Video Url"
           },
+          "episode_air_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Episode Air Date"
+          },
           "episode_number": {
             "anyOf": [
               {
@@ -97638,6 +98585,18 @@
               }
             ],
             "title": "Video Url"
+          },
+          "episode_air_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Episode Air Date"
           },
           "episode_number": {
             "anyOf": [
@@ -97958,6 +98917,18 @@
               }
             ],
             "title": "Video Url"
+          },
+          "episode_air_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Episode Air Date"
           },
           "episode_number": {
             "anyOf": [
@@ -99624,6 +100595,11 @@
             "type": "object",
             "title": "Session Mix"
           },
+          "ecosystem": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Ecosystem"
+          },
           "data_quality": {
             "items": {
               "type": "string"
@@ -99909,6 +100885,18 @@
               }
             ],
             "title": "Community Milestones"
+          },
+          "ecosystem_stats": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ecosystem Stats"
           },
           "computed_at": {
             "type": "string",
@@ -100598,6 +101586,18 @@
               }
             ],
             "title": "Favorite Location"
+          },
+          "activity_details": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activity Details"
           },
           "milestones_achieved": {
             "type": "integer",
